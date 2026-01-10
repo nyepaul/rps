@@ -1,0 +1,203 @@
+#!/bin/bash
+
+# Determine project directory dynamically
+PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+show_help() {
+    echo "Retirement Planning System - Management Script"
+    echo ""
+    echo "Usage: ./manage.sh [command]"
+    echo ""
+    echo "Commands:"
+    echo "  start         Start the application (simple mode, no Docker)"
+    echo "  start-docker  Start the application in Docker"
+    echo "  stop          Stop the application"
+    echo "  restart       Restart the application"
+    echo "  logs          View application logs"
+    echo "  tunnel        Start Cloudflare tunnel for public access"
+    echo "  backup        Backup database and config"
+    echo "  restore       Restore from backup"
+    echo "  clean         Remove all containers and data"
+    echo "  status        Check application status"
+    echo "  skills        View available planning skills"
+    echo ""
+}
+
+start_simple() {
+    echo "Starting application..."
+    ./start.sh
+}
+
+start_docker() {
+    echo "Building Docker image..."
+    cd $PROJECT_DIR/webapp
+    docker build -t retirement-planning .
+    
+    echo "Starting container..."
+    docker run -d \
+        --name retirement-planner \
+        -p 8080:8080 \
+        -v $PROJECT_DIR/webapp/data:/app/data \
+        retirement-planning
+    
+    echo ""
+    echo "Application started!"
+    echo "API: http://127.0.0.1:8080"
+    echo "Web Interface: file://$PROJECT_DIR/webapp/index.html"
+    echo ""
+}
+
+stop_app() {
+    echo "Stopping application..."
+    docker stop retirement-planner 2>/dev/null || true
+    docker rm retirement-planner 2>/dev/null || true
+    pkill -f "python app.py" 2>/dev/null || true
+    echo "Application stopped"
+}
+
+view_logs() {
+    docker logs -f retirement-planner 2>/dev/null || tail -f /tmp/retirement-planner.log
+}
+
+start_tunnel() {
+    echo "Starting Cloudflare Tunnel..."
+    echo "This creates a public HTTPS URL for your planning system"
+    echo ""
+    
+    if ! command -v cloudflared &> /dev/null; then
+        echo "Installing cloudflared..."
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            brew install cloudflare/cloudflare/cloudflared
+        else
+            echo "Please install cloudflared manually:"
+            echo "  https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/"
+            exit 1
+        fi
+    fi
+    
+    cloudflared tunnel --url http://127.0.0.1:8080
+}
+
+backup_data() {
+    BACKUP_DIR="$PROJECT_DIR/backups/$(date +%Y%m%d_%H%M%S)"
+    mkdir -p $BACKUP_DIR
+    
+    cp -r $PROJECT_DIR/webapp/data $BACKUP_DIR/
+    cp -r $PROJECT_DIR/skills $BACKUP_DIR/
+    
+    echo "Backup created at: $BACKUP_DIR"
+}
+
+restore_data() {
+    echo "Available backups:"
+    ls -1 $PROJECT_DIR/backups/ 2>/dev/null || echo "No backups found"
+    echo ""
+    echo "Enter backup directory name to restore:"
+    read backup_name
+    
+    if [ -d "$PROJECT_DIR/backups/$backup_name" ]; then
+        cp -r $PROJECT_DIR/backups/$backup_name/data/* $PROJECT_DIR/webapp/data/
+        echo "Restored from backup: $backup_name"
+    else
+        echo "Backup not found"
+    fi
+}
+
+clean_all() {
+    echo "WARNING: This will delete all data and containers!"
+    echo "Type 'yes' to confirm:"
+    read confirm
+    
+    if [ "$confirm" = "yes" ]; then
+        stop_app
+        rm -rf $PROJECT_DIR/webapp/data/*
+        rm -rf $PROJECT_DIR/webapp/venv
+        echo "Cleaned all data"
+    else
+        echo "Cancelled"
+    fi
+}
+
+check_status() {
+    echo "Application Status"
+    echo "=================="
+    echo ""
+    
+    if docker ps | grep -q retirement-planner; then
+        echo "Docker container: RUNNING"
+    elif pgrep -f "python app.py" > /dev/null; then
+        echo "Python process: RUNNING"
+    else
+        echo "Status: STOPPED"
+    fi
+    
+    echo ""
+    
+    if curl -s http://127.0.0.1:8080/health > /dev/null; then
+        echo "Health check: OK"
+    else
+        echo "Health check: FAILED"
+    fi
+    
+    echo ""
+    echo "Database:"
+    if [ -f "$PROJECT_DIR/webapp/data/planning.db" ]; then
+        echo "  Size: $(du -h $PROJECT_DIR/webapp/data/planning.db | cut -f1)"
+    else
+        echo "  Not initialized"
+    fi
+}
+
+view_skills() {
+    echo "Available Planning Skills"
+    echo "========================="
+    echo ""
+    
+    for skill in $PROJECT_DIR/skills/*-SKILL.md; do
+        basename $skill | sed 's/-SKILL.md//'
+    done
+    
+    echo ""
+    echo "To view a skill: cat $PROJECT_DIR/skills/[name]-SKILL.md"
+}
+
+case "$1" in
+    start)
+        start_simple
+        ;;
+    start-docker)
+        start_docker
+        ;;
+    stop)
+        stop_app
+        ;;
+    restart)
+        stop_app
+        sleep 2
+        start_simple
+        ;;
+    logs)
+        view_logs
+        ;;
+    tunnel)
+        start_tunnel
+        ;;
+    backup)
+        backup_data
+        ;;
+    restore)
+        restore_data
+        ;;
+    clean)
+        clean_all
+        ;;
+    status)
+        check_status
+        ;;
+    skills)
+        view_skills
+        ;;
+    *)
+        show_help
+        ;;
+esac

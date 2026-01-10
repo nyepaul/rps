@@ -1,0 +1,4 @@
+webapp/data/planning.db
+webapp/venv/
+__pycache__/
+.gemini-clipboard/

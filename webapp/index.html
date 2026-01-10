@@ -1,0 +1,1764 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Retirement Planning System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+        }
+        
+        h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            color: #ecf0f1;
+            font-size: 14px;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            background: white;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+            color: #2c3e50;
+            font-weight: 500;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+
+        .tab.active {
+            background: #3498db;
+            color: white;
+            font-weight: 600;
+            border-color: #3498db;
+        }
+        
+        .tab-content {
+            display: none;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            border-radius: 8px;
+            color: white;
+        }
+        
+        .metric-card.success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        
+        .metric-card.warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .metric-label {
+            font-size: 13px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+        
+        .metric-value {
+            font-size: 32px;
+            font-weight: 700;
+        }
+        
+        .form-section {
+            margin-bottom: 30px;
+        }
+        
+        .form-section h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            font-size: 20px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        label {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        
+        input, select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        button {
+            background: #3498db;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 4px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        button.secondary {
+            background: #95a5a6;
+        }
+        
+        button.secondary:hover {
+            background: #7f8c8d;
+        }
+        
+        .action-items-list {
+            list-style: none;
+        }
+        
+        .action-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .action-item.critical {
+            border-left-color: #e74c3c;
+        }
+        
+        .action-item.high {
+            border-left-color: #e67e22;
+        }
+        
+        .action-item.medium {
+            border-left-color: #f39c12;
+        }
+        
+        .action-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .action-item-category {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .action-item-priority {
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .priority-critical {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .priority-high {
+            background: #e67e22;
+            color: white;
+        }
+        
+        .priority-medium {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .analysis-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .analysis-section h4 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background: #ecf0f1;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #95a5a6;
+        }
+
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .chat-message {
+            margin-bottom: 15px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+
+        .chat-message.user {
+            background: #3498db;
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .chat-message.assistant {
+            background: white;
+            border: 1px solid #ddd;
+        }
+
+        .chat-message.error {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .chat-input-container {
+            display: flex;
+            padding: 15px;
+            background: white;
+            border-top: 1px solid #ddd;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 40px;
+        }
+
+        .chat-button {
+            padding: 10px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .chat-button:hover {
+            background: #2980b9;
+        }
+
+        .chat-button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        .api-key-notice {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            color: #856404;
+        }
+
+        .api-key-input {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .api-key-input input {
+            flex: 1;
+        }
+
+        .scenario-parameters {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+        }
+
+        .scenario-parameters h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            font-size: 18px;
+        }
+
+        .slider-group {
+            margin-bottom: 15px;
+        }
+
+        .slider-group label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .slider-value {
+            font-weight: 700;
+            color: #3498db;
+            font-size: 15px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #3498db;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: #2980b9;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #3498db;
+            cursor: pointer;
+            border: none;
+            transition: background 0.3s;
+        }
+
+        input[type="range"]::-moz-range-thumb:hover {
+            background: #2980b9;
+        }
+
+        .advanced-toggle {
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+
+        .advanced-parameters {
+            display: none;
+            margin-top: 10px;
+            padding-top: 15px;
+            border-top: 1px dashed #ddd;
+        }
+
+        .advanced-parameters.show {
+            display: block;
+        }
+
+        .reset-button {
+            background: #95a5a6;
+            margin-top: 10px;
+        }
+
+        .reset-button:hover {
+            background: #7f8c8d;
+        }
+
+        .auto-update-option {
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .auto-update-option input[type="checkbox"] {
+            width: auto;
+        }
+
+        .assumptions-used {
+            background: #e8f5e9;
+            border: 1px solid #4caf50;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .assumptions-used h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .assumptions-used p {
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Retirement & Wealth Planning System</h1>
+            <div class="subtitle">Comprehensive financial, tax, estate, and legacy planning</div>
+        </header>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('dashboard')">Dashboard</button>
+            <button class="tab" onclick="showTab('profile')">Profile & Data</button>
+            <button class="tab" onclick="showTab('accounts')">Accounts</button>
+            <button class="tab" onclick="showTab('analysis')">Analysis</button>
+            <button class="tab" onclick="showTab('actions')">Action Items</button>
+            <button class="tab" onclick="showTab('advisor')">AI Advisor</button>
+        </div>
+        
+        <div id="dashboard-tab" class="tab-content active">
+            <h2>Financial Overview</h2>
+            <div id="dashboard-metrics" class="metric-grid">
+                <div class="loading">Load your profile data to see dashboard</div>
+            </div>
+        </div>
+        
+        <div id="profile-tab" class="tab-content">
+            <h2>Financial Profile</h2>
+            
+            <div class="form-section">
+                <h3>You</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" id="p1-name" value="Person 1">
+                    </div>
+                    <div class="form-group">
+                        <label>Birth Date</label>
+                        <input type="date" id="p1-birth" value="1970-01-01">
+                    </div>
+                    <div class="form-group">
+                        <label>Retirement Date</label>
+                        <input type="date" id="p1-retire" value="2035-01-01">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Social Security (monthly)</label>
+                        <input type="number" id="p1-ss" value="3000">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h3>Spouse</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" id="p2-name" value="Person 2">
+                    </div>
+                    <div class="form-group">
+                        <label>Birth Date</label>
+                        <input type="date" id="p2-birth" value="1972-01-01">
+                    </div>
+                    <div class="form-group">
+                        <label>Retirement Date (age 55)</label>
+                        <input type="date" id="p2-retire" value="2037-01-01">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Social Security (monthly)</label>
+                        <input type="number" id="p2-ss" value="2500">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h3>Assets & Investments</h3>
+                <p style="margin-bottom: 15px; font-size: 14px; color: #666;">
+                    List all your investment holdings below. Categorize them by account type (e.g., Traditional IRA, Roth IRA) so we can apply the correct tax treatment.
+                </p>
+                
+                <div style="overflow-x: auto;">
+                    <table id="investment-types-table" style="margin-bottom: 15px;">
+                        <thead>
+                            <tr>
+                                <th>Asset Name</th>
+                                <th>Account Type</th>
+                                <th>Value</th>
+                                <th>% Total</th>
+                                <th>1-Day %</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="investment-types-body">
+                            <!-- Rows rendered via JS -->
+                        </tbody>
+                        <tfoot>
+                            <tr style="background: #f8f9fa;">
+                                <td colspan="2"><strong>Grand Total</strong></td>
+                                <td id="investment-total-value"><strong>$0.00</strong></td>
+                                <td><strong>100%</strong></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                
+                <div style="background: #f1f2f6; padding: 15px; border-radius: 4px; display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
+                    <div class="form-group" style="flex: 2; min-width: 200px;">
+                        <label style="font-size: 12px;">Asset Name</label>
+                        <input type="text" id="new-inv-class" placeholder="e.g., S&P 500 Index">
+                    </div>
+                    <div class="form-group" style="flex: 1; min-width: 150px;">
+                        <label style="font-size: 12px;">Account Type</label>
+                        <select id="new-inv-account">
+                            <option value="Liquid">Liquid (Cash/Brokerage)</option>
+                            <option value="Traditional IRA">Traditional IRA/401k</option>
+                            <option value="Roth IRA">Roth IRA</option>
+                            <option value="Pension">Pension Lump Sum</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1; min-width: 120px;">
+                        <label style="font-size: 12px;">Value ($)</label>
+                        <input type="number" id="new-inv-value" placeholder="0.00">
+                    </div>
+                    <div class="form-group" style="flex: 1; min-width: 80px;">
+                        <label style="font-size: 12px;">1-Day %</label>
+                        <input type="number" id="new-inv-change" placeholder="0.00" step="0.01">
+                    </div>
+                    <button class="secondary" onclick="addInvestmentType()" style="height: 42px;">Add</button>
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h3>Expenses & Goals</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Current Annual Expenses</label>
+                        <input type="number" id="expenses" value="100000">
+                    </div>
+                    <div class="form-group">
+                        <label>Target Retirement Income</label>
+                        <input type="number" id="target-income" value="150000">
+                    </div>
+                    <div class="form-group">
+                        <label>Risk Tolerance</label>
+                        <select id="risk">
+                            <option value="conservative">Conservative</option>
+                            <option value="moderate" selected>Moderate</option>
+                            <option value="aggressive">Aggressive</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="background: #e8f4f8; padding: 20px; border-radius: 8px; margin-top: 30px; border: 1px solid #bce0fd;">
+                <h3 style="margin-bottom: 15px; color: #2980b9;">Profile Management</h3>
+                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <label style="font-size: 12px; display: block; margin-bottom: 5px;">Select Existing Profile</label>
+                        <select id="profile-select" style="width: 100%; padding: 8px;" onchange="onProfileSelectChange()">
+                            <option value="" disabled selected>Select a profile...</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 5px; align-items: flex-end;">
+                        <button class="secondary" onclick="loadSelectedProfile()" style="height: 38px; margin-top: 21px;">Load</button>
+                        <button class="secondary" style="background-color: #e74c3c; height: 38px; margin-top: 21px;" onclick="deleteSelectedProfile()">Delete</button>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px; align-items: flex-end; border-top: 1px dashed #bce0fd; padding-top: 15px;">
+                    <div style="flex: 1;">
+                        <label style="font-size: 12px; display: block; margin-bottom: 5px;">Profile Name (Save As...)</label>
+                        <input type="text" id="profile-name-input" placeholder="e.g. 'Conservative Scenario', 'Main Plan'" style="width: 100%;">
+                    </div>
+                    <button onclick="saveCurrentProfile()" style="height: 38px;">Save Profile</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="accounts-tab" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Account Statements</h2>
+                <button onclick="addAccount()" class="secondary">Add New Account</button>
+            </div>
+            
+            <div id="accounts-container">
+                <!-- Accounts will be rendered here -->
+            </div>
+        </div>
+
+        <div id="analysis-tab" class="tab-content">
+            <h2>Financial Analysis</h2>
+
+            <div class="scenario-parameters">
+                <h3>Scenario Parameters</h3>
+
+                <div class="slider-group">
+                    <label>
+                        <span>Stock Allocation: <span class="slider-value" id="stocks-value">50</span>% (Bonds: <span id="bonds-value">50</span>%)</span>
+                    </label>
+                    <input type="range" id="stocks-slider" min="0" max="100" value="50" step="5">
+                </div>
+
+                <div class="slider-group">
+                    <label>
+                        <span>Stock Return Rate: <span class="slider-value" id="stock-return-value">10.00</span>%</span>
+                    </label>
+                    <input type="range" id="stock-return-slider" min="4" max="15" value="10" step="0.25">
+                </div>
+
+                <div class="slider-group">
+                    <label>
+                        <span>Bond Return Rate: <span class="slider-value" id="bond-return-value">4.00</span>%</span>
+                    </label>
+                    <input type="range" id="bond-return-slider" min="2" max="8" value="4" step="0.25">
+                </div>
+
+                <div class="slider-group">
+                    <label>
+                        <span>Inflation Rate: <span class="slider-value" id="inflation-value">3.00</span>%</span>
+                    </label>
+                    <input type="range" id="inflation-slider" min="0" max="6" value="3" step="0.25">
+                </div>
+
+                <div class="advanced-toggle">
+                    <button class="secondary" onclick="toggleAdvanced()">Show Advanced Parameters</button>
+                </div>
+
+                <div class="advanced-parameters" id="advanced-parameters">
+                    <div class="slider-group">
+                        <label>
+                            <span>Stock Volatility (Std Dev): <span class="slider-value" id="stock-volatility-value">18.00</span>%</span>
+                        </label>
+                        <input type="range" id="stock-volatility-slider" min="5" max="30" value="18" step="0.5">
+                    </div>
+
+                    <div class="slider-group">
+                        <label>
+                            <span>Bond Volatility (Std Dev): <span class="slider-value" id="bond-volatility-value">6.00</span>%</span>
+                        </label>
+                        <input type="range" id="bond-volatility-slider" min="2" max="12" value="6" step="0.5">
+                    </div>
+
+                    <div class="slider-group">
+                        <label>
+                            <span>Inflation Volatility (Std Dev): <span class="slider-value" id="inflation-volatility-value">1.00</span>%</span>
+                        </label>
+                        <input type="range" id="inflation-volatility-slider" min="0" max="3" value="1" step="0.25">
+                    </div>
+
+                    <div class="slider-group">
+                        <label>
+                            <span>Social Security Discount Rate: <span class="slider-value" id="ss-discount-value">3.00</span>%</span>
+                        </label>
+                        <input type="range" id="ss-discount-slider" min="0" max="8" value="3" step="0.25">
+                    </div>
+                </div>
+
+                <div class="auto-update-option">
+                    <input type="checkbox" id="auto-update-checkbox">
+                    <label for="auto-update-checkbox" style="margin: 0;">Auto-update analysis when sliders change</label>
+                </div>
+
+                <button class="reset-button" onclick="resetToDefaults()">Reset to Defaults</button>
+            </div>
+
+            <button onclick="runAnalysis()">Run Complete Analysis</button>
+            <div id="analysis-results"></div>
+        </div>
+        
+        <div id="actions-tab" class="tab-content">
+            <h2>Action Items</h2>
+            <button onclick="loadActionItems()">Refresh</button>
+            <button class="secondary" onclick="generateActionItems()">Auto-Generate Items</button>
+            <button class="secondary" onclick="runSelfAssessment()" style="background: #9b59b6;">Run AI Self-Assessment</button>
+            <ul id="action-items-list" class="action-items-list"></ul>
+        </div>
+
+        <div id="advisor-tab" class="tab-content">
+            <h2>AI Financial Advisor</h2>
+            <p style="margin-bottom: 20px; color: #555;">
+                Ask questions about your retirement plan, get personalized advice, and explore different scenarios.
+                The AI advisor has full access to your financial profile and analysis results.
+            </p>
+
+            <div id="api-key-notice" class="api-key-notice">
+                <strong>API Key Required:</strong> To use the AI Advisor, you need a Google Gemini API key.
+                <div class="api-key-input">
+                    <input type="password" id="api-key-input" placeholder="Enter your Gemini API key (AIza...)">
+                    <button class="chat-button" onclick="saveApiKey()">Save Key</button>
+                </div>
+                <div style="margin-top: 10px; font-size: 12px;">
+                    Your API key is stored in browser localStorage and sent securely to the backend.
+                    Get your free key at <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>
+                </div>
+            </div>
+
+            <div id="api-key-status" style="margin-bottom: 15px; display: none;">
+                <div style="background: #d4edda; border: 1px solid #c3e6cb; padding: 10px; border-radius: 4px; color: #155724; margin-bottom: 10px;">
+                    ✓ API key is configured
+                </div>
+                <button onclick="resetApiKey()" class="secondary">Reset API Key</button>
+                <button onclick="clearConversation()" class="secondary">Clear Conversation</button>
+            </div>
+
+            <div class="chat-container">
+                <div id="chat-messages" class="chat-messages"></div>
+                <div class="chat-input-container">
+                    <textarea
+                        id="chat-input"
+                        class="chat-input"
+                        placeholder="Ask me anything about your retirement plan..."
+                        onkeydown="handleChatKeypress(event)"></textarea>
+                    <button id="send-button" class="chat-button" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = 'http://127.0.0.1:8080/api';
+        
+        // State for investment types - Seeded with user's allocations
+        let investmentTypes = [
+            { name: 'Cash', account: 'Liquid', value: 50000, change: 0.04 },
+            { name: 'U.S. Stocks', account: 'Traditional IRA', value: 250000, change: 0.56 },
+            { name: 'Intl Stocks', account: 'Traditional IRA', value: 100000, change: 0.46 },
+            { name: 'Bonds', account: 'Traditional IRA', value: 100000, change: 0.09 }
+        ];
+
+        // State for detailed accounts
+        let accounts = [
+            {
+                id: 1,
+                name: "Example 401(k) Statement",
+                summary: {
+                    beginning_balance: 500000.00,
+                    deposits: 20000.00,
+                    withdrawals: 0.00,
+                    dividends: 5000.00,
+                    change: 25000.00,
+                    ending_balance: 550000.00,
+                    vested_balance: 550000.00
+                },
+                sources: [
+                    { name: "Pre-Tax Contribution", begin: 400000.00, deposits: 15000.00, withdrawals: 0.00, end: 440000.00 },
+                    { name: "Employer Match", begin: 100000.00, deposits: 5000.00, withdrawals: 0.00, end: 110000.00 }
+                ],
+                holdings: [
+                    { name: "Target Date 2040 Fund", begin: 500000.00, end: 550000.00, shares: 1250.00 }
+                ]
+            }
+        ];
+
+        function renderAccounts() {
+            const container = document.getElementById('accounts-container');
+            container.innerHTML = '';
+
+            if (accounts.length === 0) {
+                container.innerHTML = '<div style="color: #666; font-style: italic;">No detailed account statements added yet.</div>';
+                return;
+            }
+
+            accounts.forEach((acc, index) => {
+                const div = document.createElement('div');
+                div.className = 'analysis-section';
+                div.style.marginBottom = '30px';
+                
+                // Account Header
+                div.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">
+                        <h3 style="color: #2c3e50; margin: 0;">${acc.name}</h3>
+                        <div>
+                            <button onclick="deleteAccount(${index})" style="background: #e74c3c; font-size: 12px; padding: 5px 10px; color: white; border: none; border-radius: 3px; cursor: pointer;">Remove</button>
+                        </div>
+                    </div>
+                `;
+
+                // 1. Account at a Glance
+                const summary = acc.summary;
+                const glanceHtml = `
+                    <h4 style="color: #34495e; border-left: 4px solid #3498db; padding-left: 10px; margin-bottom: 15px;">Account-at-a-Glance</h4>
+                    <div class="metric-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 20px;">
+                        <div style="background: #f8f9fa; padding: 10px; border-radius: 4px; border: 1px solid #ddd;">
+                            <div style="font-size: 11px; color: #7f8c8d;">Beginning Balance</div>
+                            <div style="font-size: 16px; font-weight: 600;">$${summary.beginning_balance.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+                        </div>
+                        <div style="background: #f8f9fa; padding: 10px; border-radius: 4px; border: 1px solid #ddd;">
+                            <div style="font-size: 11px; color: #7f8c8d;">Deposits</div>
+                            <div style="font-size: 16px; font-weight: 600; color: #27ae60;">+$${summary.deposits.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+                        </div>
+                        <div style="background: #f8f9fa; padding: 10px; border-radius: 4px; border: 1px solid #ddd;">
+                            <div style="font-size: 11px; color: #7f8c8d;">Withdrawals</div>
+                            <div style="font-size: 16px; font-weight: 600; color: #c0392b;">$${summary.withdrawals.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+                        </div>
+                        <div style="background: #f8f9fa; padding: 10px; border-radius: 4px; border: 1px solid #ddd;">
+                            <div style="font-size: 11px; color: #7f8c8d;">Change in Value</div>
+                            <div style="font-size: 16px; font-weight: 600; color: ${summary.change >= 0 ? '#27ae60' : '#c0392b'};">$${summary.change.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+                        </div>
+                        <div style="background: #e8f6f3; padding: 10px; border-radius: 4px; border: 1px solid #2ecc71;">
+                            <div style="font-size: 11px; color: #16a085;">Ending Balance</div>
+                            <div style="font-size: 18px; font-weight: 700; color: #16a085;">$${summary.ending_balance.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+                        </div>
+                    </div>
+                `;
+                div.innerHTML += glanceHtml;
+
+                // 2. Activity by Source
+                let sourcesHtml = `
+                    <h4 style="color: #34495e; border-left: 4px solid #9b59b6; padding-left: 10px; margin-bottom: 15px;">Activity by Contribution Source</h4>
+                    <div style="overflow-x: auto; margin-bottom: 20px;">
+                        <table style="font-size: 13px; width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f1f2f6;">
+                                    <th style="padding: 8px; text-align: left;">Source</th>
+                                    <th style="padding: 8px; text-align: right;">Beginning</th>
+                                    <th style="padding: 8px; text-align: right;">Deposits</th>
+                                    <th style="padding: 8px; text-align: right;">Withdrawals</th>
+                                    <th style="padding: 8px; text-align: right;">Ending</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${acc.sources.map(s => `
+                                    <tr style="border-bottom: 1px solid #eee;">
+                                        <td style="padding: 8px;">${s.name}</td>
+                                        <td style="padding: 8px; text-align: right;">$${s.begin.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                                        <td style="padding: 8px; text-align: right;">$${s.deposits.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                                        <td style="padding: 8px; text-align: right;">$${s.withdrawals.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                                        <td style="padding: 8px; text-align: right; font-weight: 600;">$${s.end.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                div.innerHTML += sourcesHtml;
+
+                // 3. Activity by Investment
+                let holdingsHtml = `
+                    <h4 style="color: #34495e; border-left: 4px solid #e67e22; padding-left: 10px; margin-bottom: 15px;">Activity by Investment Option</h4>
+                    <div style="overflow-x: auto;">
+                        <table style="font-size: 13px; width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f1f2f6;">
+                                    <th style="padding: 8px; text-align: left;">Option</th>
+                                    <th style="padding: 8px; text-align: right;">Beginning</th>
+                                    <th style="padding: 8px; text-align: right;">Ending Balance</th>
+                                    <th style="padding: 8px; text-align: right;">Shares/Units</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${acc.holdings.map(h => `
+                                    <tr style="border-bottom: 1px solid #eee;">
+                                        <td style="padding: 8px;">${h.name}</td>
+                                        <td style="padding: 8px; text-align: right;">$${h.begin.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                                        <td style="padding: 8px; text-align: right; font-weight: 600;">$${h.end.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                                        <td style="padding: 8px; text-align: right;">${h.shares.toFixed(4)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                div.innerHTML += holdingsHtml;
+
+                container.appendChild(div);
+            });
+        }
+
+        function addAccount() {
+            const name = prompt("Enter account name:");
+            if (name) {
+                accounts.push({
+                    id: Date.now(),
+                    name: name,
+                    summary: { beginning_balance: 0, deposits: 0, withdrawals: 0, change: 0, ending_balance: 0 },
+                    sources: [],
+                    holdings: []
+                });
+                renderAccounts();
+            }
+        }
+        
+        function deleteAccount(index) {
+            if (confirm("Delete this account statement?")) {
+                accounts.splice(index, 1);
+                renderAccounts();
+            }
+        }
+
+        function renderInvestmentTypes() {
+            const tbody = document.getElementById('investment-types-body');
+            tbody.innerHTML = '';
+            
+            const totalValue = investmentTypes.reduce((sum, item) => sum + item.value, 0);
+            
+            investmentTypes.forEach((item, index) => {
+                const pct = totalValue > 0 ? (item.value / totalValue * 100) : 0;
+                const change = item.change || 0;
+                const account = item.account || 'Unspecified';
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${item.name}</td>
+                    <td><span style="padding: 2px 6px; background: #e8f4f8; border-radius: 4px; font-size: 12px; color: #2980b9;">${account}</span></td>
+                    <td>$${item.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td>${pct.toFixed(2)}%</td>
+                    <td style="color: ${change >= 0 ? '#27ae60' : '#c0392b'}">${change > 0 ? '+' : ''}${change}%</td>
+                    <td>
+                        <button onclick="editInvestmentType(${index})" style="padding: 5px 10px; background: #f39c12; color: white; border: none; border-radius: 3px; font-size: 12px; margin-right: 5px; cursor: pointer;">Edit</button>
+                        <button onclick="deleteInvestmentType(${index})" style="padding: 5px 10px; background: #e74c3c; color: white; border: none; border-radius: 3px; font-size: 12px; cursor: pointer;">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            document.getElementById('investment-total-value').innerHTML = `<strong>$${totalValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>`;
+        }
+
+        function addInvestmentType() {
+            const nameInput = document.getElementById('new-inv-class');
+            const accountInput = document.getElementById('new-inv-account');
+            const valueInput = document.getElementById('new-inv-value');
+            const changeInput = document.getElementById('new-inv-change');
+            
+            const name = nameInput.value.trim();
+            const account = accountInput.value;
+            const value = parseFloat(valueInput.value);
+            const change = parseFloat(changeInput.value) || 0;
+            
+            if (!name || isNaN(value)) {
+                alert('Please enter a valid name and value');
+                return;
+            }
+            
+            investmentTypes.push({ name, account, value, change });
+            renderInvestmentTypes();
+            
+            // Clear inputs (except account type, maybe useful to keep)
+            nameInput.value = '';
+            valueInput.value = '';
+            changeInput.value = '';
+            nameInput.focus();
+        }
+
+        function editInvestmentType(index) {
+            const item = investmentTypes[index];
+            document.getElementById('new-inv-class').value = item.name;
+            document.getElementById('new-inv-account').value = item.account || 'Liquid';
+            document.getElementById('new-inv-value').value = item.value;
+            document.getElementById('new-inv-change').value = item.change || 0;
+            
+            investmentTypes.splice(index, 1);
+            renderInvestmentTypes();
+        }
+
+        function deleteInvestmentType(index) {
+            if (confirm('Are you sure you want to remove this investment type?')) {
+                investmentTypes.splice(index, 1);
+                renderInvestmentTypes();
+            }
+        }
+        
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + '-tab').classList.add('active');
+        }
+        
+        function getFormData() {
+            // Aggregate assets from investmentTypes
+            let liquid = 0;
+            let tradIra = 0;
+            let rothIra = 0;
+            let pension = 0;
+
+            investmentTypes.forEach(item => {
+                if (item.account === 'Liquid') liquid += item.value;
+                else if (item.account === 'Traditional IRA') tradIra += item.value;
+                else if (item.account === 'Roth IRA') rothIra += item.value;
+                else if (item.account === 'Pension') pension += item.value;
+                // Fallback for legacy or unspecified
+                else if (item.name === 'Cash') liquid += item.value;
+                else tradIra += item.value; // Default bucket
+            });
+
+            return {
+                person1: {
+                    name: document.getElementById('p1-name').value,
+                    birth_date: document.getElementById('p1-birth').value,
+                    retirement_date: document.getElementById('p1-retire').value,
+                    social_security: parseFloat(document.getElementById('p1-ss').value)
+                },
+                person2: {
+                    name: document.getElementById('p2-name').value,
+                    birth_date: document.getElementById('p2-birth').value,
+                    retirement_date: document.getElementById('p2-retire').value,
+                    social_security: parseFloat(document.getElementById('p2-ss').value)
+                },
+                children: [
+                    {name: 'Child 1', birth_date: '2010-01-01'},
+                    {name: 'Child 2', birth_date: '2012-01-01'}
+                ],
+                liquid_assets: liquid,
+                traditional_ira: tradIra,
+                roth_ira: rothIra,
+                pension_lump_sum: pension,
+                annual_expenses: parseFloat(document.getElementById('expenses').value),
+                target_annual_income: parseFloat(document.getElementById('target-income').value),
+                risk_tolerance: document.getElementById('risk').value,
+                asset_allocation: {stocks: 0.5, bonds: 0.5},
+                future_expenses: [],
+                investment_types: investmentTypes,
+                accounts: accounts,
+                market_assumptions: {
+                    stock_allocation: parseFloat(document.getElementById('stocks-slider').value) / 100,
+                    stock_return_mean: parseFloat(document.getElementById('stock-return-slider').value) / 100,
+                    bond_return_mean: parseFloat(document.getElementById('bond-return-slider').value) / 100,
+                    inflation_mean: parseFloat(document.getElementById('inflation-slider').value) / 100,
+                    stock_return_std: parseFloat(document.getElementById('stock-volatility-slider').value) / 100,
+                    bond_return_std: parseFloat(document.getElementById('bond-volatility-slider').value) / 100,
+                    inflation_std: parseFloat(document.getElementById('inflation-volatility-slider').value) / 100,
+                    ss_discount_rate: parseFloat(document.getElementById('ss-discount-slider').value) / 100
+                }
+            };
+        }
+        
+        async function fetchProfiles() {
+            try {
+                const response = await fetch(`${API_URL}/profiles`);
+                const profiles = await response.json();
+                
+                const select = document.getElementById('profile-select');
+                const currentVal = select.value;
+                
+                select.innerHTML = '<option value="" disabled selected>Select a profile...</option>';
+                
+                profiles.forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p.name;
+                    option.textContent = `${p.name} (Updated: ${new Date(p.updated_at).toLocaleDateString()})`;
+                    select.appendChild(option);
+                });
+                
+                // Restore selection if still exists
+                if (currentVal && profiles.some(p => p.name === currentVal)) {
+                    select.value = currentVal;
+                }
+            } catch (error) {
+                console.error('Error fetching profiles:', error);
+            }
+        }
+
+        function onProfileSelectChange() {
+            const select = document.getElementById('profile-select');
+            const nameInput = document.getElementById('profile-name-input');
+            if (select.value) {
+                nameInput.value = select.value;
+            }
+        }
+
+        async function saveCurrentProfile() {
+            const name = document.getElementById('profile-name-input').value.trim();
+            if (!name) {
+                alert('Please enter a profile name');
+                return;
+            }
+
+            const data = getFormData();
+            
+            try {
+                const response = await fetch(`${API_URL}/profile/${encodeURIComponent(name)}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    alert('Profile saved successfully!');
+                    await fetchProfiles();
+                    document.getElementById('profile-select').value = name;
+                } else {
+                    const result = await response.json();
+                    alert('Error saving profile: ' + (result.error || response.statusText));
+                }
+            } catch (error) {
+                alert('Error saving profile: ' + error.message);
+            }
+        }
+        
+        async function loadSelectedProfile() {
+            const name = document.getElementById('profile-select').value;
+            if (!name) {
+                alert('Please select a profile to load');
+                return;
+            }
+            
+            await loadProfile(name);
+        }
+
+        async function deleteSelectedProfile() {
+            const name = document.getElementById('profile-select').value;
+            if (!name) {
+                alert('Please select a profile to delete');
+                return;
+            }
+            
+            if (!confirm(`Are you sure you want to delete profile "${name}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/profile/${encodeURIComponent(name)}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    alert('Profile deleted!');
+                    document.getElementById('profile-name-input').value = '';
+                    fetchProfiles();
+                } else {
+                    alert('Error deleting profile');
+                }
+            } catch (error) {
+                alert('Error deleting profile: ' + error.message);
+            }
+        }
+        
+        // Main load function (internal use)
+        async function loadProfile(profileName = 'main') {
+            try {
+                // Try to load specific profile
+                let response = await fetch(`${API_URL}/profile/${encodeURIComponent(profileName)}`);
+                
+                // Fallback for backward compatibility if 404
+                if (response.status === 404 && profileName === 'main') {
+                    // Try to list profiles and load the first one? 
+                    // Or just ignore.
+                    return; 
+                }
+                
+                const data = await response.json();
+                
+                if (data) {
+                    document.getElementById('p1-name').value = data.person1.name;
+                    document.getElementById('p1-birth').value = data.person1.birth_date;
+                    document.getElementById('p1-retire').value = data.person1.retirement_date;
+                    document.getElementById('p1-ss').value = data.person1.social_security;
+                    
+                    document.getElementById('p2-name').value = data.person2.name;
+                    document.getElementById('p2-birth').value = data.person2.birth_date;
+                    document.getElementById('p2-retire').value = data.person2.retirement_date;
+                    document.getElementById('p2-ss').value = data.person2.social_security;
+                    
+                    // No inputs to populate for assets anymore, handled by investmentTypes table
+                    // document.getElementById('liquid').value = data.liquid_assets;
+                    // ...
+                    
+                    document.getElementById('expenses').value = data.annual_expenses;
+                    document.getElementById('target-income').value = data.target_annual_income;
+                    document.getElementById('risk').value = data.risk_tolerance;
+                    
+                    if (data.investment_types && Array.isArray(data.investment_types) && data.investment_types.length > 0) {
+                        investmentTypes = data.investment_types;
+                    } else {
+                        // Migration: Create rows from legacy data fields if they exist and are > 0
+                        investmentTypes = [];
+                        if (data.liquid_assets > 0) {
+                            investmentTypes.push({ name: 'Liquid Assets (Legacy)', account: 'Liquid', value: data.liquid_assets, change: 0 });
+                        }
+                        if (data.traditional_ira > 0) {
+                            investmentTypes.push({ name: 'Traditional IRA (Legacy)', account: 'Traditional IRA', value: data.traditional_ira, change: 0 });
+                        }
+                        if (data.roth_ira > 0) {
+                            investmentTypes.push({ name: 'Roth IRA (Legacy)', account: 'Roth IRA', value: data.roth_ira, change: 0 });
+                        }
+                        if (data.pension_lump_sum > 0) {
+                            investmentTypes.push({ name: 'Pension Lump Sum (Legacy)', account: 'Pension', value: data.pension_lump_sum, change: 0 });
+                        }
+                    }
+                    
+                    if (data.accounts && Array.isArray(data.accounts)) {
+                        accounts = data.accounts;
+                    } else {
+                        // Keep the default parsed data if nothing saved, or clear it if loading a different profile?
+                        // For now, let's NOT clear it if it matches our initial hardcoded data, 
+                        // but if we are loading a profile that *should* have empty accounts, we should probably clear it.
+                        // However, to satisfy the user request "update the app with the following data", 
+                        // we want this data to persist in the current session until saved.
+                        // So we will only overwrite 'accounts' if data.accounts is explicitly present.
+                    }
+
+                    renderInvestmentTypes();
+                    renderAccounts();
+                    
+                    // Update input name to match loaded profile
+                    document.getElementById('profile-name-input').value = profileName;
+                    
+                    alert(`Profile "${profileName}" loaded!`);
+                }
+            } catch (error) {
+                alert('Error loading profile: ' + error.message);
+            }
+        }
+        
+        async function runAnalysis() {
+            const data = getFormData();
+            
+            document.getElementById('analysis-results').innerHTML = '<div class="loading">Running analysis...</div>';
+            
+            try {
+                const response = await fetch(`${API_URL}/analysis`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                const results = await response.json();
+                window.currentAnalysis = results;
+                
+                displayAnalysis(results);
+                updateDashboard(results);
+            } catch (error) {
+                document.getElementById('analysis-results').innerHTML = '<div class="loading">Error: ' + error.message + '</div>';
+            }
+        }
+        
+        function displayAnalysis(results) {
+            const assumptions = results.market_assumptions_used;
+
+            const html = `
+                <div class="assumptions-used">
+                    <h4>Analysis Parameters Used:</h4>
+                    <p><strong>Asset Allocation:</strong> ${(assumptions.stock_allocation * 100).toFixed(0)}% stocks, ${(100 - assumptions.stock_allocation * 100).toFixed(0)}% bonds</p>
+                    <p><strong>Expected Returns:</strong> ${(assumptions.stock_return_mean * 100).toFixed(2)}% stocks, ${(assumptions.bond_return_mean * 100).toFixed(2)}% bonds</p>
+                    <p><strong>Expected Inflation:</strong> ${(assumptions.inflation_mean * 100).toFixed(2)}%</p>
+                    <p><strong>Volatility (Std Dev):</strong> Stocks ${(assumptions.stock_return_std * 100).toFixed(2)}%, Bonds ${(assumptions.bond_return_std * 100).toFixed(2)}%, Inflation ${(assumptions.inflation_std * 100).toFixed(2)}%</p>
+                    <p><strong>Social Security Discount Rate:</strong> ${(assumptions.ss_discount_rate * 100).toFixed(2)}%</p>
+                </div>
+
+                <div class="analysis-section">
+                    <h4>Monte Carlo Retirement Simulation</h4>
+                    <p><strong>Success Rate:</strong> ${results.monte_carlo.success_rate.toFixed(1)}%</p>
+                    <p><strong>Starting Portfolio:</strong> $${results.monte_carlo.starting_portfolio.toLocaleString()}</p>
+                    <p><strong>Annual Withdrawal Need:</strong> $${results.monte_carlo.annual_withdrawal_need.toLocaleString()}</p>
+                    <p><strong>Median Ending Balance:</strong> $${results.monte_carlo.median_ending_balance.toLocaleString()}</p>
+                    <p><strong>5th Percentile (worst case):</strong> $${results.monte_carlo.percentile_5.toLocaleString()}</p>
+                    <p><strong>95th Percentile (best case):</strong> $${results.monte_carlo.percentile_95.toLocaleString()}</p>
+                </div>
+                
+                <div class="analysis-section">
+                    <h4>Social Security Optimization</h4>
+                    <table>
+                        <tr>
+                            <th>Strategy</th>
+                            <th>You Claim At</th>
+                            <th>Spouse Claim At</th>
+                            <th>Your Monthly</th>
+                            <th>Spouse Monthly</th>
+                            <th>Lifetime NPV</th>
+                        </tr>
+                        ${results.social_security_optimization.map(s => `
+                            <tr>
+                                <td>${s.person1_claim_age === 70 && s.person2_claim_age === 70 ? '✓ Recommended' : ''}</td>
+                                <td>${s.person1_claim_age}</td>
+                                <td>${s.person2_claim_age}</td>
+                                <td>$${s.person1_monthly.toLocaleString()}</td>
+                                <td>$${s.person2_monthly.toLocaleString()}</td>
+                                <td>$${s.lifetime_benefit_npv.toLocaleString()}</td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                </div>
+                
+                <div class="analysis-section">
+                    <h4>Roth Conversion Opportunity</h4>
+                    <p><strong>Status:</strong> ${results.roth_conversion.opportunity}</p>
+                    ${results.roth_conversion.conversion_years ? `
+                        <p><strong>Conversion Window:</strong> ${results.roth_conversion.conversion_years} years</p>
+                        <p><strong>Annual Conversion (12% bracket):</strong> $${results.roth_conversion.annual_conversion_12_bracket.toLocaleString()}</p>
+                        <p><strong>Total Convertible:</strong> $${results.roth_conversion.total_convertible_12.toLocaleString()}</p>
+                        <p><strong>Tax Cost:</strong> $${results.roth_conversion.tax_cost_12.toLocaleString()}</p>
+                        <p><strong>Recommendation:</strong> ${results.roth_conversion.recommendation}</p>
+                    ` : `<p>${results.roth_conversion.reason}</p>`}
+                </div>
+                
+                <div class="analysis-section">
+                    <h4>Wealth Transfer Strategy</h4>
+                    <p><strong>Annual Gift Capacity:</strong> $${results.wealth_transfer.annual_gift_capacity.toLocaleString()}</p>
+                    <p><strong>Per Child:</strong> $${results.wealth_transfer.per_child_annual.toLocaleString()}/year</p>
+                    <p><strong>Lifetime Gifting:</strong> $${results.wealth_transfer.lifetime_gift_capacity.toLocaleString()} over ${results.wealth_transfer.years_of_gifting} years</p>
+                    <p><strong>% of Estate:</strong> ${results.wealth_transfer.percentage_transferred.toFixed(1)}%</p>
+                    <p><strong>Recommendation:</strong> ${results.wealth_transfer.recommendation}</p>
+                </div>
+            `;
+            
+            document.getElementById('analysis-results').innerHTML = html;
+        }
+        
+        function updateDashboard(results) {
+            const successClass = results.monte_carlo.success_rate >= 90 ? 'success' : 'warning';
+            
+            const html = `
+                <div class="metric-card ${successClass}">
+                    <div class="metric-label">Retirement Success Rate</div>
+                    <div class="metric-value">${results.monte_carlo.success_rate.toFixed(0)}%</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Total Net Worth</div>
+                    <div class="metric-value">$${(results.total_net_worth / 1000000).toFixed(2)}M</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Guaranteed Income (SS only)</div>
+                    <div class="metric-value">$${(results.guaranteed_income_delayed / 1000).toFixed(0)}k</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Annual Withdrawal Need</div>
+                    <div class="metric-value">$${(results.monte_carlo.annual_withdrawal_need / 1000).toFixed(0)}k</div>
+                </div>
+            `;
+            
+            document.getElementById('dashboard-metrics').innerHTML = html;
+        }
+        
+        async function loadActionItems() {
+            try {
+                const response = await fetch(`${API_URL}/action-items`);
+                const items = await response.json();
+                
+                const html = items.map(item => `
+                    <li class="action-item ${item.priority}">
+                        <div class="action-item-header">
+                            <span class="action-item-category">${item.category}</span>
+                            <span class="action-item-priority priority-${item.priority}">${item.priority}</span>
+                        </div>
+                        <div>${item.description}</div>
+                        <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                            Due: ${item.due_date ? new Date(item.due_date).toLocaleDateString() : 'No date'}
+                            | Status: ${item.status}
+                        </div>
+                    </li>
+                `).join('');
+                
+                document.getElementById('action-items-list').innerHTML = html || '<div class="loading">No action items</div>';
+            } catch (error) {
+                document.getElementById('action-items-list').innerHTML = '<div class="loading">Error loading items</div>';
+            }
+        }
+        
+        async function generateActionItems() {
+            if (!window.currentAnalysis) {
+                alert('Please run analysis first');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/generate-action-items`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({analysis: window.currentAnalysis})
+                });
+
+                const result = await response.json();
+                alert(`Generated ${result.items_created} action items`);
+                loadActionItems();
+            } catch (error) {
+                alert('Error generating items: ' + error.message);
+            }
+        }
+
+        async function runSelfAssessment() {
+            const apiKey = checkApiKey();
+            if (!apiKey) {
+                alert("Please set your Gemini API Key in the 'AI Advisor' tab first.");
+                showTab('advisor');
+                return;
+            }
+
+            // Visual feedback
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = "Analyzing...";
+            btn.disabled = true;
+
+            const currentProfile = document.getElementById('profile-name-input').value || 'main';
+
+            try {
+                const response = await fetch(`${API_URL}/perform-self-assessment`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ 
+                        api_key: apiKey,
+                        profile_name: currentProfile
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert(`AI Assessment Complete!\n\nAdded ${result.items_created} new strategic tasks based on the Skills library.`);
+                    loadActionItems();
+                } else {
+                    alert('Error: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Request failed: ' + error.message);
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // AI Advisor functions
+        function saveApiKey() {
+            const apiKey = document.getElementById('api-key-input').value.trim();
+            if (apiKey) {
+                localStorage.setItem('gemini_api_key', apiKey);
+                document.getElementById('api-key-notice').style.display = 'none';
+                document.getElementById('api-key-status').style.display = 'block';
+                document.getElementById('api-key-input').value = '';
+                alert('API key saved successfully!');
+            } else {
+                alert('Please enter a valid API key');
+            }
+        }
+
+        function checkApiKey() {
+            const apiKey = localStorage.getItem('gemini_api_key');
+            if (apiKey) {
+                document.getElementById('api-key-notice').style.display = 'none';
+                document.getElementById('api-key-status').style.display = 'block';
+            } else {
+                document.getElementById('api-key-notice').style.display = 'block';
+                document.getElementById('api-key-status').style.display = 'none';
+            }
+            return apiKey;
+        }
+
+        function resetApiKey() {
+            if (confirm('Are you sure you want to reset your API key? You will need to enter a new one.')) {
+                localStorage.removeItem('gemini_api_key');
+                document.getElementById('api-key-notice').style.display = 'block';
+                document.getElementById('api-key-status').style.display = 'none';
+                alert('API key has been reset. Please enter a new key.');
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            const apiKey = checkApiKey();
+            if (!apiKey) {
+                alert('Please set your Anthropic API key first');
+                return;
+            }
+
+            // Disable input while processing
+            const sendButton = document.getElementById('send-button');
+            sendButton.disabled = true;
+            sendButton.textContent = 'Sending...';
+            input.disabled = true;
+
+            // Add user message to chat
+            addMessageToChat('user', message);
+            input.value = '';
+
+            const currentProfile = document.getElementById('profile-name-input').value || 'main';
+
+            try {
+                const response = await fetch(`${API_URL}/advisor/chat`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        message: message,
+                        api_key: apiKey,
+                        include_context: true,
+                        profile_name: currentProfile
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    addMessageToChat('assistant', data.response);
+                } else {
+                    addMessageToChat('error', data.error || 'An error occurred');
+                }
+            } catch (error) {
+                addMessageToChat('error', 'Error: ' + error.message);
+            } finally {
+                // Re-enable input
+                sendButton.disabled = false;
+                sendButton.textContent = 'Send';
+                input.disabled = false;
+                input.focus();
+            }
+        }
+
+        function addMessageToChat(role, content) {
+            const messagesDiv = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${role}`;
+
+            // Convert markdown-style formatting to HTML
+            let formattedContent = content
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>');
+
+            messageDiv.innerHTML = formattedContent;
+            messagesDiv.appendChild(messageDiv);
+
+            // Scroll to bottom
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function handleChatKeypress(event) {
+            // Send message on Enter (but allow Shift+Enter for new line)
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        async function clearConversation() {
+            if (!confirm('Are you sure you want to clear the conversation history?')) {
+                return;
+            }
+
+            try {
+                await fetch(`${API_URL}/advisor/clear`, {
+                    method: 'POST'
+                });
+
+                document.getElementById('chat-messages').innerHTML = '';
+                alert('Conversation cleared!');
+            } catch (error) {
+                alert('Error clearing conversation: ' + error.message);
+            }
+        }
+
+        async function loadConversationHistory() {
+            try {
+                const response = await fetch(`${API_URL}/advisor/history`);
+                const history = await response.json();
+
+                const messagesDiv = document.getElementById('chat-messages');
+                messagesDiv.innerHTML = '';
+
+                history.forEach(msg => {
+                    addMessageToChat(msg.role, msg.content);
+                });
+            } catch (error) {
+                console.error('Error loading conversation history:', error);
+            }
+        }
+
+        // Slider helper functions
+        function toggleAdvanced() {
+            const advancedParams = document.getElementById('advanced-parameters');
+            const button = event.target;
+            if (advancedParams.classList.contains('show')) {
+                advancedParams.classList.remove('show');
+                button.textContent = 'Show Advanced Parameters';
+            } else {
+                advancedParams.classList.add('show');
+                button.textContent = 'Hide Advanced Parameters';
+            }
+        }
+
+        function resetToDefaults() {
+            document.getElementById('stocks-slider').value = 50;
+            document.getElementById('stock-return-slider').value = 10;
+            document.getElementById('bond-return-slider').value = 4;
+            document.getElementById('inflation-slider').value = 3;
+            document.getElementById('stock-volatility-slider').value = 18;
+            document.getElementById('bond-volatility-slider').value = 6;
+            document.getElementById('inflation-volatility-slider').value = 1;
+            document.getElementById('ss-discount-slider').value = 3;
+
+            // Update all displays
+            updateSliderDisplay(document.getElementById('stocks-slider'));
+            updateSliderDisplay(document.getElementById('stock-return-slider'));
+            updateSliderDisplay(document.getElementById('bond-return-slider'));
+            updateSliderDisplay(document.getElementById('inflation-slider'));
+            updateSliderDisplay(document.getElementById('stock-volatility-slider'));
+            updateSliderDisplay(document.getElementById('bond-volatility-slider'));
+            updateSliderDisplay(document.getElementById('inflation-volatility-slider'));
+            updateSliderDisplay(document.getElementById('ss-discount-slider'));
+        }
+
+        function updateSliderDisplay(slider) {
+            const id = slider.id;
+            const value = parseFloat(slider.value);
+
+            if (id === 'stocks-slider') {
+                document.getElementById('stocks-value').textContent = value.toFixed(0);
+                document.getElementById('bonds-value').textContent = (100 - value).toFixed(0);
+            } else if (id === 'stock-return-slider') {
+                document.getElementById('stock-return-value').textContent = value.toFixed(2);
+            } else if (id === 'bond-return-slider') {
+                document.getElementById('bond-return-value').textContent = value.toFixed(2);
+            } else if (id === 'inflation-slider') {
+                document.getElementById('inflation-value').textContent = value.toFixed(2);
+            } else if (id === 'stock-volatility-slider') {
+                document.getElementById('stock-volatility-value').textContent = value.toFixed(2);
+            } else if (id === 'bond-volatility-slider') {
+                document.getElementById('bond-volatility-value').textContent = value.toFixed(2);
+            } else if (id === 'inflation-volatility-slider') {
+                document.getElementById('inflation-volatility-value').textContent = value.toFixed(2);
+            } else if (id === 'ss-discount-slider') {
+                document.getElementById('ss-discount-value').textContent = value.toFixed(2);
+            }
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        function attachSliderListeners() {
+            const sliders = document.querySelectorAll('.scenario-parameters input[type="range"]');
+
+            sliders.forEach(slider => {
+                // Update display on input (immediate feedback)
+                slider.addEventListener('input', debounce(() => {
+                    updateSliderDisplay(slider);
+                }, 50));
+
+                // Auto-run analysis on change if checkbox is checked
+                slider.addEventListener('change', debounce(() => {
+                    if (document.getElementById('auto-update-checkbox')?.checked) {
+                        runAnalysis();
+                    }
+                }, 500));
+            });
+        }
+
+        // Check API key on load
+        window.addEventListener('load', () => {
+            checkApiKey();
+            loadConversationHistory();
+            attachSliderListeners();
+            renderInvestmentTypes();
+            renderAccounts();
+            fetchProfiles();
+        });
+
+        // loadProfile(); // Removed, user must select profile
+    </script>
+</body>
+</html>
