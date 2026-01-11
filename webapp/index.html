@@ -1655,9 +1655,10 @@
                 // Add new
                 incomeStreams.push({ name, owner, amount, start_date, inflation_adjusted, survivor_benefit });
             }
-            
+
             renderIncomeStreams();
-            
+            debouncedAutoSave(); // Auto-save after adding/editing income stream
+
             // Clear inputs
             nameInput.value = '';
             amountInput.value = '';
@@ -1689,6 +1690,7 @@
                 }
                 incomeStreams.splice(index, 1);
                 renderIncomeStreams();
+                debouncedAutoSave(); // Auto-save after deleting income stream
             }
         }
 
@@ -1946,9 +1948,9 @@
 
                 if (missingInImage.length > 0) {
                     const removeMsg = `The image did not contain ${missingInImage.length} accounts currently in your profile:\n` +
-                        missingInImage.map(m => `• ${m.name}`).join('\n') + 
+                        missingInImage.map(m => `• ${m.name}`).join('\n') +
                         `\n\nShould these be DELETED (assuming the image is your complete portfolio)? \n\nClick CANCEL to keep them, or OK to delete.`;
-                    
+
                     if (confirm(removeMsg)) {
                         missingInImage.forEach(m => {
                             const idx = investmentTypes.indexOf(m);
@@ -1958,6 +1960,7 @@
                     }
                 }
 
+                debouncedAutoSave(); // Auto-save after asset extraction
                 alert("✅ Portfolio synchronized successfully.");
             }
         }
@@ -2104,9 +2107,10 @@
                 // Add new
                 investmentTypes.push({ name, account, value, cost_basis, change: 0 });
             }
-            
+
             renderInvestmentTypes();
-            
+            debouncedAutoSave(); // Auto-save after adding/editing investment
+
             // Clear inputs
             nameInput.value = '';
             valueInput.value = '';
@@ -2137,9 +2141,10 @@
                 } else if (index < editingIndex) {
                     editingIndex--; // Shift index if deleting item before current edit
                 }
-                
+
                 investmentTypes.splice(index, 1);
                 renderInvestmentTypes();
+                debouncedAutoSave(); // Auto-save after deleting investment
             }
         }
         
@@ -2295,14 +2300,14 @@
 
             const data = getFormData();
             console.log("Saving profile data:", data);
-            
+
             try {
                 const response = await fetch(`${API_URL}/profile/${encodeURIComponent(name)}`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(data)
                 });
-                
+
                 if (response.ok) {
                     await fetchProfiles();
                     document.getElementById('profile-select').value = name;
@@ -2334,6 +2339,39 @@
                 alert('Error saving profile: ' + error.message);
             }
         }
+
+        // Silent auto-save without notifications
+        async function autoSaveProfile() {
+            const settings = getSettings();
+            if (!settings.autoSave) return;
+
+            const name = document.getElementById('profile-name-input').value.trim();
+            if (!name) return; // Don't auto-save if no profile name
+
+            const data = getFormData();
+
+            try {
+                const response = await fetch(`${API_URL}/profile/${encodeURIComponent(name)}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    // Update selects silently
+                    document.getElementById('profile-select').value = name;
+                    document.getElementById('dashboard-profile-select').value = name;
+                    console.log(`Auto-saved profile: ${name}`);
+                } else {
+                    console.error('Auto-save failed:', response.statusText);
+                }
+            } catch (error) {
+                console.error("Auto-save error:", error);
+            }
+        }
+
+        // Debounced auto-save (1 second delay)
+        const debouncedAutoSave = debounce(autoSaveProfile, 1000);
         
         async function loadSelectedProfile() {
             const name = document.getElementById('profile-select').value;
@@ -4620,12 +4658,39 @@ Return ONLY the JSON array, no other text.`;
             });
         }
 
+        function attachAutoSaveListeners() {
+            // Person 1 fields
+            ['p1-name', 'p1-birth', 'p1-retire', 'p1-ss'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', debouncedAutoSave);
+            });
+
+            // Person 2 fields
+            ['p2-name', 'p2-birth', 'p2-retire', 'p2-ss'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', debouncedAutoSave);
+            });
+
+            // Expenses
+            const expenses = document.getElementById('expenses');
+            if (expenses) expenses.addEventListener('input', debouncedAutoSave);
+
+            // Market assumption sliders
+            ['stocks-slider', 'stock-return-slider', 'stock-volatility-slider',
+             'bond-return-slider', 'bond-volatility-slider', 'inflation-slider',
+             'inflation-volatility-slider', 'ss-discount-slider', 'tax-rate-slider'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('change', debouncedAutoSave);
+            });
+        }
+
         // Check API key on load
         window.addEventListener('load', () => {
             checkApiKey();
             loadConversationHistory();
             attachDashboardListeners();
             attachSliderListeners();
+            attachAutoSaveListeners();
             renderInvestmentTypes();
             fetchProfiles();
             refreshScenarios();
@@ -4708,7 +4773,7 @@ Return ONLY the JSON array, no other text.`;
                 compactMode: false,
                 userName: 'User',
                 fontSize: 'medium',
-                autoSave: false,
+                autoSave: true,  // Auto-save enabled by default
                 animations: true,
                 defaultLLM: 'gemini',
                 targetSuccessRate: 90
