@@ -3330,7 +3330,17 @@ Return ONLY the JSON array, no other text.`;
             try {
                 const response = await fetch(`${API_URL}/scenarios`);
                 savedScenarios = await response.json();
+
+                // Remove deleted scenarios from selection
+                const validIds = savedScenarios.map(s => s.id);
+                selectedScenarioIds = selectedScenarioIds.filter(id => validIds.includes(id));
+
                 renderScenariosList();
+
+                // Update comparison charts if scenarios are selected
+                if (selectedScenarioIds.length > 0) {
+                    await compareScenarios();
+                }
             } catch (e) {
                 console.error("Failed to load scenarios", e);
             }
@@ -3339,7 +3349,7 @@ Return ONLY the JSON array, no other text.`;
         function renderScenariosList() {
             const list = document.getElementById('scenarios-list');
             list.innerHTML = '';
-            
+
             savedScenarios.forEach(s => {
                 const item = document.createElement('div');
                 item.style.padding = '10px';
@@ -3347,20 +3357,24 @@ Return ONLY the JSON array, no other text.`;
                 item.style.display = 'flex';
                 item.style.alignItems = 'center';
                 item.style.gap = '10px';
-                
+
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.value = s.id;
+
+                // Restore checked state from selectedScenarioIds
+                checkbox.checked = selectedScenarioIds.includes(s.id);
+
                 checkbox.onchange = (e) => {
                     if (e.target.checked) selectedScenarioIds.push(s.id);
                     else selectedScenarioIds = selectedScenarioIds.filter(id => id !== s.id);
                     compareScenarios();
                 };
-                
+
                 const label = document.createElement('div');
                 label.style.flex = 1;
                 label.innerHTML = `<strong>${s.name}</strong><br><span style="font-size:11px;color:#777">${new Date(s.created_at).toLocaleString()}</span>`;
-                
+
                 const delBtn = document.createElement('button');
                 delBtn.textContent = '×';
                 delBtn.style.padding = '2px 6px';
@@ -3370,7 +3384,7 @@ Return ONLY the JSON array, no other text.`;
                     await fetch(`${API_URL}/scenarios/${s.id}`, { method: 'DELETE' });
                     refreshScenarios();
                 };
-                
+
                 item.append(checkbox, label, delBtn);
                 list.append(item);
             });
@@ -3381,15 +3395,37 @@ Return ONLY the JSON array, no other text.`;
                 // Clear charts
                 if (window.compBarChart) window.compBarChart.destroy();
                 if (window.compLineChart) window.compLineChart.destroy();
+                // Clear table
+                const table = document.getElementById('comparison-table');
+                const tbody = table.tBodies[0];
+                tbody.innerHTML = '';
                 return;
             }
-            
-            // Fetch details for selected
-            const details = await Promise.all(selectedScenarioIds.map(id => 
-                fetch(`${API_URL}/scenarios/${id}`).then(r => r.json())
-            ));
-            
-            renderComparisonCharts(details);
+
+            try {
+                // Fetch details for selected scenarios, filter out any that fail (e.g., 404)
+                const detailsPromises = selectedScenarioIds.map(id =>
+                    fetch(`${API_URL}/scenarios/${id}`)
+                        .then(r => {
+                            if (!r.ok) return null;
+                            return r.json();
+                        })
+                        .catch(() => null)
+                );
+
+                const details = (await Promise.all(detailsPromises)).filter(d => d !== null);
+
+                if (details.length === 0) {
+                    // All scenarios failed to load, clear charts
+                    if (window.compBarChart) window.compBarChart.destroy();
+                    if (window.compLineChart) window.compLineChart.destroy();
+                    return;
+                }
+
+                renderComparisonCharts(details);
+            } catch (e) {
+                console.error("Error comparing scenarios:", e);
+            }
         }
         
         function renderComparisonCharts(scenarios) {
