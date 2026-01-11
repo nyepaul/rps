@@ -16,64 +16,160 @@ from reportlab.lib.styles import getSampleStyleSheet
 import io
 import os
 import google.generativeai as genai
-
+import anthropic
+import logging
+from logging.handlers import RotatingFileHandler
 app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
-
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 # 16MB limit for image uploads
+# Configure logging
+handler = RotatingFileHandler('../app.log', maxBytes=10000, backupCount=1)
+handler.setLevel(logging.INFO)
+app.logger.addHandler(handler)
+@app.errorhandler(500)
+def server_error(e):
+    app.logger.error(f"Server Error: {e}", exc_info=True)
+    return jsonify(error=str(e)), 500
 # Use local data directory if not in Docker
 if os.path.exists('/app/data'):
     DB_PATH = '/app/data/planning.db'
 else:
     DB_PATH = './data/planning.db'
-
+def call_gemini_with_fallback(prompt, api_key, image_data=None):
+    """Calls Gemini with a prioritized list of models and fallback logic."""
+    models = [
+        'models/gemini-3-pro',
+        'models/gemini-3-flash',
+        'models/gemini-3-flash-preview'
+    ]
+    last_error = None
+    genai.configure(api_key=api_key)
+    for model_name in models:
+        try:
+            print(f"Attempting Gemini model: {model_name}")
+            model = genai.GenerativeModel(model_name)
+            if image_data:
+                # Image extraction case
+                image_part = {"mime_type": "image/jpeg", "data": image_data}
+                response = model.generate_content([prompt, image_part])
+            else:
+                # Text generation case
+                response = model.generate_content(prompt)
+            if response and response.text:
+                return response.text
+        except Exception as e:
+            last_error = str(e)
+            print(f"Gemini model {model_name} failed: {last_error}")
+            continue
+    raise Exception(f"All Gemini models failed. Last error: {last_error}")
+def call_claude_with_fallback(prompt, api_key, system_prompt=None, history=None):
+    """Calls Claude with a prioritized list of models and fallback logic."""
+    models = [
+        'claude-3-5-sonnet-latest',
+        'claude-3-5-haiku-latest',
+        'claude-3-opus-latest'
+    ]
+    last_error = None
+    client = anthropic.Anthropic(api_key=api_key)
+    for model_name in models:
+        try:
+            print(f"Attempting Claude model: {model_name}")
+            messages = []
+            if history:
+                for role, content in history:
+                    messages.append({"role": "user" if role == "user" else "assistant", "content": content})
+            messages.append({"role": "user", "content": prompt})
+            kwargs = {
+                "model": model_name,
+                "max_tokens": 2000,
+                "messages": messages
+            }
+            if system_prompt:
+                kwargs["system"] = system_prompt
+            response = client.messages.create(**kwargs)
+            if response and response.content:
+                return response.content[0].text
+        except Exception as e:
+            last_error = str(e)
+            print(f"Claude model {model_name} failed: {last_error}")
+            continue
+    raise Exception(f"All Claude models failed. Last error: {last_error}")
 @app.route('/')
 def index():
     return send_file('index.html')
-
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    
     c.execute('''CREATE TABLE IF NOT EXISTS profile
                  (id INTEGER PRIMARY KEY,
-                  name TEXT,
+                  name TEXT UNIQUE,
                   birth_date TEXT,
                   retirement_date TEXT,
                   data TEXT,
                   updated_at TEXT)''')
-    
     c.execute('''CREATE TABLE IF NOT EXISTS scenarios
                  (id INTEGER PRIMARY KEY,
                   name TEXT,
                   parameters TEXT,
                   results TEXT,
                   created_at TEXT)''')
-    
     c.execute('''CREATE TABLE IF NOT EXISTS action_items
                  (id INTEGER PRIMARY KEY,
+                  profile_name TEXT,
                   category TEXT,
                   description TEXT,
                   priority TEXT,
                   status TEXT,
                   due_date TEXT,
                   created_at TEXT)''')
-
     c.execute('''CREATE TABLE IF NOT EXISTS conversations
                  (id INTEGER PRIMARY KEY,
+                  profile_name TEXT,
                   role TEXT,
                   content TEXT,
                   created_at TEXT)''')
-
+    c.execute('''CREATE TABLE IF NOT EXISTS system_settings
+                 (key TEXT PRIMARY KEY,
+                  value TEXT)''')
+    # Migration: Add action_data column if it doesn't exist
+    try:
+        c.execute('ALTER TABLE action_items ADD COLUMN action_data TEXT')
+    except sqlite3.OperationalError:
+        pass # Column likely already exists
+    # Migration: Add subtasks column if it doesn't exist
+    try:
+        c.execute('ALTER TABLE action_items ADD COLUMN subtasks TEXT')
+    except sqlite3.OperationalError:
+        pass
+    # Migration: Add profile_name column to action_items and conversations if they don't exist
+    for table in ['action_items', 'conversations']:
+        try:
+            c.execute(f'ALTER TABLE {table} ADD COLUMN profile_name TEXT DEFAULT "main"')
+        except sqlite3.OperationalError:
+            pass
+    # Deduplication Cleanup: Remove items with duplicate profile, category and description
+    c.execute('''
+        DELETE FROM action_items 
+        WHERE id NOT IN (
+            SELECT MAX(id) 
+            FROM action_items 
+            GROUP BY profile_name, category, description
+        )
+    ''')
+    # Migration: Add unique index to prevent future duplicates (now includes profile_name)
+    try:
+        c.execute('DROP INDEX IF EXISTS idx_action_items_unique')
+        c.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_action_items_unique ON action_items (profile_name, category, description)')
+    except sqlite3.OperationalError:
+        pass
     conn.commit()
     conn.close()
-
 @dataclass
 class Person:
     name: str
     birth_date: datetime
     retirement_date: datetime
     social_security: float
-
 @dataclass
 class FinancialProfile:
     person1: Person
@@ -83,6 +179,7 @@ class FinancialProfile:
     traditional_ira: float
     roth_ira: float
     pension_lump_sum: float
+    pension_annual: float
     annual_expenses: float
     target_annual_income: float
     risk_tolerance: str
@@ -90,7 +187,7 @@ class FinancialProfile:
     future_expenses: List[Dict]
     investment_types: List[Dict] = None
     accounts: List[Dict] = None
-
+    income_streams: List[Dict] = None
 @dataclass
 class MarketAssumptions:
     """Market and economic assumptions for financial modeling"""
@@ -102,79 +199,167 @@ class MarketAssumptions:
     bond_return_std: float = 0.06
     inflation_std: float = 0.01
     ss_discount_rate: float = 0.03
-
 class RetirementModel:
     def __init__(self, profile: FinancialProfile):
         self.profile = profile
         self.current_year = datetime.now().year
-        
     def calculate_life_expectancy_years(self, person: Person, target_age: int = 90):
         age_now = (datetime.now() - person.birth_date).days / 365.25
         return int(target_age - age_now)
-    
-    def monte_carlo_simulation(self, years: int, simulations: int = 10000, assumptions: MarketAssumptions = None):
-        """Run Monte Carlo simulation with configurable market assumptions"""
+    def monte_carlo_simulation(self, years: int, simulations: int = 10000, assumptions: MarketAssumptions = None, effective_tax_rate: float = 0.22):
+        """Run Monte Carlo simulation with granular account logic and expert tax modeling"""
         if assumptions is None:
             assumptions = MarketAssumptions()
-
-        # Use assumptions for stock allocation and returns
         stock_pct = assumptions.stock_allocation
-
         returns_mean_adj = stock_pct * assumptions.stock_return_mean + (1 - stock_pct) * assumptions.bond_return_mean
         returns_std_adj = stock_pct * assumptions.stock_return_std + (1 - stock_pct) * assumptions.bond_return_std
-        
-        # Total portfolio includes pension lump sum
-        starting_portfolio = (self.profile.traditional_ira + 
-                            self.profile.roth_ira + 
-                            self.profile.liquid_assets +
-                            self.profile.pension_lump_sum)
-        
-        # Social Security only (no pension income)
-        # At FRA (age 67): $3,700 + $3,300 = $7,000/mo = $84k/year
-        # Delayed to 70 (1.24x): $4,588 + $4,092 = $8,680/mo = $104k/year
-        # Using delayed strategy
-        annual_income = 8680 * 12
-        
-        annual_shortfall = self.profile.target_annual_income - annual_income
-        
+        # Initial bucket values from investment_types for granularity
+        # 1. Taxable (Liquid)
+        start_taxable_val = 0
+        start_taxable_basis = 0
+        # 2. Pre-Tax (Standard: IRA, 401k, 403b, 401a)
+        start_pretax_std = 0
+        # 3. Pre-Tax (457b: No early penalty)
+        start_pretax_457 = 0
+        # 4. Roth
+        start_roth = 0
+        inv_types = self.profile.investment_types or []
+        for inv in inv_types:
+            acc = inv.get('account', 'Liquid')
+            val = float(inv.get('value', 0))
+            basis = float(inv.get('cost_basis', 0))
+            if acc == 'Liquid':
+                start_taxable_val += val
+                start_taxable_basis += basis
+            elif acc in ['Traditional IRA', '401k', '403b', '401a']:
+                start_pretax_std += val
+            elif acc == '457b':
+                start_pretax_457 += val
+            elif acc == 'Roth IRA':
+                start_roth += val
+            elif acc == 'Pension':
+                start_pretax_std += val # Treat pension lump sum as pre-tax standard
+        # Guaranteed Income
+        base_ss = (self.profile.person1.social_security + self.profile.person2.social_security) * 12
+        base_pension = self.profile.pension_annual
+        # Pre-process income streams
+        stream_data = []
+        if self.profile.income_streams:
+            for s in self.profile.income_streams:
+                try:
+                    start_year = datetime.fromisoformat(s['start_date']).year
+                    stream_data.append({
+                        'name': s['name'],
+                        'amount': float(s['amount']),
+                        'start_year': start_year,
+                        'inflation_adjusted': s.get('inflation_adjusted', True)
+                    })
+                except: pass
         success_count = 0
         ending_balances = []
-        failure_years = []
-        
+        all_paths = np.zeros((simulations, years))
+        ORDINARY_TAX = effective_tax_rate
+        CAP_GAINS_TAX = 0.15
+        EARLY_PENALTY = 0.10
         for sim in range(simulations):
-            portfolio = starting_portfolio
-            years_data = []
-            
+            taxable_val = start_taxable_val
+            taxable_basis = start_taxable_basis
+            pretax_std = start_pretax_std
+            pretax_457 = start_pretax_457
+            roth = start_roth
+            p1_birth_year = self.profile.person1.birth_date.year
+            current_cpi = 1.0
             for year in range(years):
+                current_age = (self.current_year + year) - p1_birth_year
+                simulation_year = self.current_year + year
                 annual_return = np.random.normal(returns_mean_adj, returns_std_adj)
-
                 inflation = np.random.normal(assumptions.inflation_mean, assumptions.inflation_std)
-                expenses = annual_shortfall * (1 + inflation) ** year
-                
-                portfolio = portfolio * (1 + annual_return) - expenses
-                years_data.append(portfolio)
-                
-                if portfolio <= 0:
-                    failure_years.append(year)
+                if year > 0: current_cpi *= (1 + inflation)
+                # Grow all buckets
+                taxable_val *= (1 + annual_return)
+                # Basis stays same (simplified - no reinvestment of dividends modeling)
+                pretax_std *= (1 + annual_return)
+                pretax_457 *= (1 + annual_return)
+                roth *= (1 + annual_return)
+                target_spending = self.profile.target_annual_income * current_cpi
+                income_this_year = (base_ss + base_pension) * current_cpi
+                for s in stream_data:
+                    if simulation_year >= s['start_year']:
+                        income_this_year += (s['amount'] * (current_cpi if s['inflation_adjusted'] else 1.0))
+                shortfall = max(0, target_spending - income_this_year)
+                # 1. RMD Logic (Age 73+) - applies to both pretax buckets
+                if current_age >= 73:
+                    rmd_std = self.calculate_rmd(current_age, pretax_std)
+                    rmd_457 = self.calculate_rmd(current_age, pretax_457)
+                    total_rmd = rmd_std + rmd_457
+                    pretax_std -= rmd_std
+                    pretax_457 -= rmd_457
+                    net_rmd = total_rmd * (1 - ORDINARY_TAX)
+                    used_for_shortfall = min(shortfall, net_rmd)
+                    shortfall -= used_for_shortfall
+                    taxable_val += (net_rmd - used_for_shortfall) # Reinvest excess RMD
+                # 2. Sequential Withdrawal Strategy
+                if shortfall > 0:
+                    # Strategy: Use 457(b) FIRST if under 59.5 to avoid penalties on others
+                    if current_age < 59.5:
+                        gross_needed = shortfall / (1 - ORDINARY_TAX)
+                        from_457 = min(gross_needed, pretax_457)
+                        pretax_457 -= from_457
+                        shortfall -= (from_457 * (1 - ORDINARY_TAX))
+                if shortfall > 0:
+                    # Strategy: Use Taxable Assets
+                    # Tax modeling: Withdrawal = Cash_Needed + LTCG_Tax
+                    # Tax = (Withdrawal * Gain_Ratio) * 0.15
+                    gain_ratio = max(0, (taxable_val - taxable_basis) / taxable_val) if taxable_val > 0 else 0
+                    # X = shortfall / (1 - (gain_ratio * 0.15))
+                    gross_taxable_needed = shortfall / (1 - (gain_ratio * CAP_GAINS_TAX))
+                    from_taxable = min(gross_taxable_needed, taxable_val)
+                    taxable_val -= from_taxable
+                    # Reduce basis proportionally
+                    taxable_basis -= (from_taxable * (taxable_basis / (taxable_val + from_taxable))) if (taxable_val + from_taxable) > 0 else 0
+                    shortfall -= (from_taxable * (1 - (gain_ratio * CAP_GAINS_TAX)))
+                if shortfall > 0:
+                    # Strategy: Use Pre-Tax Standard (IRA/401k)
+                    tax_rate = ORDINARY_TAX + (EARLY_PENALTY if current_age < 59.5 else 0)
+                    gross_std_needed = shortfall / (1 - tax_rate)
+                    from_std = min(gross_std_needed, pretax_std)
+                    pretax_std -= from_std
+                    shortfall -= (from_std * (1 - tax_rate))
+                if shortfall > 0:
+                    # Strategy: Use remaining 457(b) (if any left after early access or if over 59.5)
+                    gross_457_needed = shortfall / (1 - ORDINARY_TAX)
+                    from_457 = min(gross_457_needed, pretax_457)
+                    pretax_457 -= from_457
+                    shortfall -= (from_457 * (1 - ORDINARY_TAX))
+                if shortfall > 0:
+                    # Strategy: Use Roth (Tax-Free)
+                    from_roth = min(shortfall, roth)
+                    roth -= from_roth
+                    shortfall -= from_roth
+                total_portfolio = taxable_val + pretax_std + pretax_457 + roth
+                if total_portfolio <= 0:
+                    total_portfolio = 0
+                    all_paths[sim, year] = 0
                     break
-            
-            if portfolio > 0:
+                all_paths[sim, year] = total_portfolio
+            if (taxable_val + pretax_std + pretax_457 + roth) > 0:
                 success_count += 1
-            
-            ending_balances.append(max(0, portfolio))
-        
+            ending_balances.append(taxable_val + pretax_std + pretax_457 + roth)
         success_rate = (success_count / simulations) * 100
-        
         return {
             'success_rate': success_rate,
             'median_ending_balance': np.median(ending_balances),
             'percentile_5': np.percentile(ending_balances, 5),
             'percentile_95': np.percentile(ending_balances, 95),
-            'average_failure_year': np.mean(failure_years) if failure_years else None,
-            'starting_portfolio': starting_portfolio,
-            'annual_withdrawal_need': annual_shortfall
+            'starting_portfolio': start_taxable_val + start_pretax_std + start_pretax_457 + start_roth,
+            'annual_withdrawal_need': self.profile.target_annual_income - (base_ss + base_pension),
+            'timeline': {
+                'years': list(range(self.current_year, self.current_year + years)),
+                'p5': np.percentile(all_paths, 5, axis=0).tolist(),
+                'median': np.median(all_paths, axis=0).tolist(),
+                'p95': np.percentile(all_paths, 95, axis=0).tolist()
+            }
         }
-    
     def calculate_rmd(self, age: int, ira_balance: float):
         rmd_factors = {
             73: 26.5, 74: 25.5, 75: 24.6, 76: 23.7, 77: 22.9,
@@ -182,48 +367,36 @@ class RetirementModel:
             83: 17.7, 84: 16.8, 85: 16.0, 86: 15.2, 87: 14.4,
             88: 13.7, 89: 12.9, 90: 12.2
         }
-        
         if age < 73:
             return 0
-        
         factor = rmd_factors.get(age, 12.2)
         return ira_balance / factor
-    
     def optimize_social_security(self, assumptions: MarketAssumptions = None):
         """Optimize Social Security claiming strategy with configurable discount rate"""
         if assumptions is None:
             assumptions = MarketAssumptions()
-
         person1_fra_benefit = self.profile.person1.social_security
         person2_fra_benefit = self.profile.person2.social_security
-        
         strategies = []
-        
         for p1_age in [62, 67, 70]:
             for p2_age in [62, 67, 70]:
                 p1_multiplier = {62: 0.70, 67: 1.0, 70: 1.24}[p1_age]
                 p2_multiplier = {62: 0.70, 67: 1.0, 70: 1.24}[p2_age]
-                
                 p1_monthly = person1_fra_benefit * p1_multiplier
                 p2_monthly = person2_fra_benefit * p2_multiplier
-                
                 p1_birth_year = self.profile.person1.birth_date.year
                 p2_birth_year = self.profile.person2.birth_date.year
-                
                 total_lifetime = 0
                 for year in range(30):
                     current_year = datetime.now().year + year
                     p1_current_age = current_year - p1_birth_year
                     p2_current_age = current_year - p2_birth_year
-                    
                     yearly_benefit = 0
                     if p1_current_age >= p1_age and p1_current_age <= 90:
                         yearly_benefit += p1_monthly * 12
                     if p2_current_age >= p2_age and p2_current_age <= 90:
                         yearly_benefit += p2_monthly * 12
-
                     total_lifetime += yearly_benefit / ((1 + assumptions.ss_discount_rate) ** year)
-                
                 strategies.append({
                     'person1_claim_age': p1_age,
                     'person2_claim_age': p2_age,
@@ -231,43 +404,42 @@ class RetirementModel:
                     'person2_monthly': p2_monthly,
                     'lifetime_benefit_npv': total_lifetime
                 })
-        
         return sorted(strategies, key=lambda x: x['lifetime_benefit_npv'], reverse=True)
-    
     def calculate_roth_conversion_opportunity(self):
         years_until_rmd = 73 - ((datetime.now() - self.profile.person1.birth_date).days / 365.25)
-        
         if years_until_rmd <= 0:
             return {'opportunity': 'none', 'reason': 'Already past RMD age'}
-        
-        current_income = 390000
-        # Pension income is $120k/year (annual, not lump sum)
-        pension_annual = 120000
+        # Use target annual income as a proxy for retirement taxable income baseline
+        # This is a simplification but better than hardcoding
+        current_income = self.profile.target_annual_income
+        pension_annual = self.profile.pension_annual
+        # Include dynamic income streams starting before or at RMD age (73)
+        p1_birth_year = self.profile.person1.birth_date.year
+        rmd_year = p1_birth_year + 73
+        if self.profile.income_streams:
+            for s in self.profile.income_streams:
+                try:
+                    start_year = datetime.fromisoformat(s['start_date']).year
+                    if start_year <= rmd_year:
+                        pension_annual += float(s['amount'])
+                except: pass
         retirement_income = (self.profile.person1.social_security * 12 +
                            self.profile.person2.social_security * 12 +
                            pension_annual)
-        
         years_to_retirement = (self.profile.person1.retirement_date - datetime.now()).days / 365.25
-        
         if years_to_retirement > 0:
             conversion_years = int(years_until_rmd - years_to_retirement)
-            
             standard_deduction = 29200 + 3100
             top_of_12_bracket = 94300
             top_of_22_bracket = 201050
-            
             available_12_bracket = top_of_12_bracket - standard_deduction - retirement_income
             available_22_bracket = top_of_22_bracket - top_of_12_bracket
-            
             annual_conversion_12 = max(0, available_12_bracket)
             annual_conversion_22 = available_22_bracket
-            
             total_12_bracket = annual_conversion_12 * conversion_years
             total_22_bracket = annual_conversion_22 * conversion_years
-            
             tax_cost_12 = total_12_bracket * 0.12
             tax_cost_22 = total_22_bracket * 0.22
-            
             return {
                 'opportunity': 'excellent',
                 'conversion_years': conversion_years,
@@ -281,22 +453,17 @@ class RetirementModel:
             }
         else:
             return {'opportunity': 'limited', 'reason': 'Already retired or retiring soon'}
-    
     def calculate_wealth_transfer_strategy(self):
         annual_gift_per_child = 18000 * 2
         total_annual_gifts = annual_gift_per_child * len(self.profile.children)
-        
         years_until_90 = min(
             self.calculate_life_expectancy_years(self.profile.person1),
             self.calculate_life_expectancy_years(self.profile.person2)
         )
-        
         total_lifetime_gifts = total_annual_gifts * years_until_90
-        
         net_worth = (self.profile.liquid_assets + 
                     self.profile.traditional_ira + 
                     self.profile.roth_ira)
-        
         return {
             'annual_gift_capacity': total_annual_gifts,
             'lifetime_gift_capacity': total_lifetime_gifts,
@@ -306,7 +473,120 @@ class RetirementModel:
             'percentage_transferred': (total_lifetime_gifts / net_worth * 100) if net_worth > 0 else 0,
             'recommendation': f'Gift ${total_annual_gifts:,.0f}/year (${annual_gift_per_child:,.0f} per child) starting immediately'
         }
+@app.route('/api/extract-assets', methods=['POST'])
+def extract_assets():
+    print("Received extract-assets request")
+    data = request.json
+    api_key = data.get('api_key')
+    image_b64 = data.get('image')
+    provider = data.get('llm_provider', 'gemini')
+    existing_assets = data.get('existing_assets', [])  # Accept existing asset data for merging
+    print(f"Provider: {provider}, Image data length: {len(image_b64) if image_b64 else 0}")
+    # Fallback to server environment keys if not provided by client
+    if not api_key:
+        if provider == 'gemini':
+            api_key = os.environ.get('GEMINI_API_KEY')
+        else:
+            api_key = os.environ.get('ANTHROPIC_API_KEY')
+    if not api_key or not image_b64:
+        return jsonify({'error': 'Missing API key or image data. Please set it in Settings or on the server.'}), 400
+    try:
+        import base64
+        # Decode base64 string to raw bytes
+        image_bytes = base64.b64decode(image_b64)
+        prompt = """
+        Analyze this image of a financial statement or dashboard.
+        Extract a list of investment accounts or assets.
 
+        CRITICAL RULES - ONLY UPDATE VERIFIABLE FIELDS:
+        1. Ignore "Total", "Grand Total", "Subtotal", "Margin", or "Buying Power" lines.
+        2. Clean all values: remove "$", "USD", and commas. Return as numbers only.
+        3. For each asset, extract ONLY the fields you can clearly see and verify:
+           - "name": The specific name (e.g., "Cash & Money Market", "Vanguard 500"). REQUIRED.
+           - "type": One of: "Liquid", "Traditional IRA", "Roth IRA", "401k", "403b", "401a", "457b", "Pension".
+             ⚠️ ONLY include "type" if it is EXPLICITLY stated in the image (e.g., "IRA", "401k" visible in account name/label).
+             If the account type is not clearly visible, set "type" to null.
+           - "value": The current balance as a number. REQUIRED if visible.
+           - "cost_basis": Only include if explicitly shown (rare). Otherwise set to null.
+
+        4. DO NOT GUESS or INFER field values. If a field is not clearly visible, use null.
+        5. Return ONLY a JSON array of objects with the structure: [{"name": "...", "type": null or "...", "value": ..., "cost_basis": null or ...}]
+        """
+        if provider == 'gemini':
+            text_response = call_gemini_with_fallback(prompt, api_key, image_data=image_bytes)
+            # Parse JSON
+            try:
+                # Clean markdown
+                json_str = text_response.replace('```json', '').replace('```', '').strip()
+                extracted_assets = json.loads(json_str)
+
+                # Merge with existing assets: preserve fields that are null in extracted data
+                merged_assets = []
+                for extracted in extracted_assets:
+                    # Find matching existing asset by name (case-insensitive)
+                    existing = next(
+                        (a for a in existing_assets if a.get('name', '').lower() == extracted.get('name', '').lower()),
+                        None
+                    )
+
+                    if existing:
+                        # Merge: use extracted values if present, otherwise keep existing
+                        merged = {
+                            'name': extracted.get('name') or existing.get('name'),
+                            'type': extracted.get('type') or existing.get('type', 'Liquid'),
+                            'value': extracted.get('value') if extracted.get('value') is not None else existing.get('value', 0),
+                            'cost_basis': extracted.get('cost_basis') if extracted.get('cost_basis') is not None else existing.get('cost_basis', 0)
+                        }
+                    else:
+                        # New asset: use extracted data with defaults for null fields
+                        merged = {
+                            'name': extracted.get('name', 'Unknown Asset'),
+                            'type': extracted.get('type') or 'Liquid',  # Default to Liquid if type not visible
+                            'value': extracted.get('value', 0),
+                            'cost_basis': extracted.get('cost_basis', 0)
+                        }
+                    merged_assets.append(merged)
+
+                return jsonify({'assets': merged_assets, 'status': 'success'})
+            except Exception as e:
+                return jsonify({'error': f'Failed to parse LLM response: {str(e)}', 'raw_response': text_response}), 500
+        else:
+            return jsonify({'error': 'Only Gemini is currently supported for image extraction'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+@app.route('/api/scenarios', methods=['GET', 'POST'])
+def scenarios():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    if request.method == 'POST':
+        data = request.json
+        c.execute('INSERT INTO scenarios (name, parameters, results, created_at) VALUES (?, ?, ?, ?)',
+                  (data['name'], json.dumps(data['parameters']), json.dumps(data['results']), datetime.now().isoformat()))
+        conn.commit()
+        scenario_id = c.lastrowid
+        conn.close()
+        return jsonify({'status': 'success', 'id': scenario_id})
+    else:
+        c.execute('SELECT id, name, created_at FROM scenarios ORDER BY created_at DESC')
+        rows = c.fetchall()
+        conn.close()
+        return jsonify([{'id': r[0], 'name': r[1], 'created_at': r[2]} for r in rows])
+@app.route('/api/scenarios/<int:id>', methods=['GET', 'DELETE'])
+def scenario_detail(id):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    if request.method == 'DELETE':
+        c.execute('DELETE FROM scenarios WHERE id = ?', (id,))
+        conn.commit()
+        conn.close()
+        return jsonify({'status': 'success'})
+    else:
+        c.execute('SELECT * FROM scenarios WHERE id = ?', (id,))
+        row = c.fetchone()
+        conn.close()
+        if row:
+            return jsonify({'id': row[0], 'name': row[1], 'parameters': json.loads(row[2]), 'results': json.loads(row[3]), 'created_at': row[4]})
+        return jsonify(None), 404
 @app.route('/api/profiles', methods=['GET'])
 def list_profiles():
     conn = sqlite3.connect(DB_PATH)
@@ -314,38 +594,30 @@ def list_profiles():
     c.execute('SELECT name, updated_at FROM profile ORDER BY updated_at DESC')
     rows = c.fetchall()
     conn.close()
-    
     profiles = [{'name': row[0], 'updated_at': row[1]} for row in rows]
     return jsonify(profiles)
-
 @app.route('/api/profile/<name>', methods=['GET', 'POST', 'DELETE'])
 def manage_profile(name):
     try:
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
-        
         if request.method == 'GET':
             c.execute('SELECT data FROM profile WHERE name = ?', (name,))
             row = c.fetchone()
             conn.close()
-            
             if row:
                 return jsonify(json.loads(row[0]))
             else:
                 return jsonify(None), 404
-                
         elif request.method == 'POST':
             if not request.is_json:
                 return jsonify({'error': 'Request must be JSON'}), 400
-                
             data = request.json
             if data is None:
                  return jsonify({'error': 'No JSON data provided'}), 400
-                 
             # Check if exists to update, or insert new
             c.execute('SELECT id FROM profile WHERE name = ?', (name,))
             row = c.fetchone()
-            
             if row:
                 c.execute('''UPDATE profile 
                              SET data = ?, updated_at = ? 
@@ -355,22 +627,18 @@ def manage_profile(name):
                 c.execute('''INSERT INTO profile (name, data, updated_at) 
                              VALUES (?, ?, ?)''',
                           (name, json.dumps(data), datetime.now().isoformat()))
-            
             conn.commit()
             conn.close()
             return jsonify({'status': 'success'})
-            
         elif request.method == 'DELETE':
             c.execute('DELETE FROM profile WHERE name = ?', (name,))
             conn.commit()
             conn.close()
             return jsonify({'status': 'success'})
-            
     except sqlite3.Error as e:
         return jsonify({'error': f'Database error: {str(e)}'}), 500
     except Exception as e:
         return jsonify({'error': f'Server error: {str(e)}'}), 500
-
 # Legacy endpoint for backward compatibility (defaults to 'main')
 @app.route('/api/profile', methods=['GET', 'POST'])
 def profile_legacy():
@@ -378,11 +646,9 @@ def profile_legacy():
         return manage_profile('main')
     else:
         return manage_profile('main')
-
 @app.route('/api/analysis', methods=['POST'])
 def analysis():
     data = request.json
-
     # Extract market assumptions with defaults
     market_assumptions_data = data.get('market_assumptions', {})
     assumptions = MarketAssumptions(
@@ -395,21 +661,20 @@ def analysis():
         inflation_std=market_assumptions_data.get('inflation_std', 0.01),
         ss_discount_rate=market_assumptions_data.get('ss_discount_rate', 0.03)
     )
-
+    # Extract assumed tax rate
+    effective_tax_rate = data.get('assumed_tax_rate', 0.22)
     person1 = Person(
         name=data['person1']['name'],
         birth_date=datetime.fromisoformat(data['person1']['birth_date']),
         retirement_date=datetime.fromisoformat(data['person1']['retirement_date']),
         social_security=data['person1']['social_security']
     )
-    
     person2 = Person(
         name=data['person2']['name'],
         birth_date=datetime.fromisoformat(data['person2']['birth_date']),
         retirement_date=datetime.fromisoformat(data['person2']['retirement_date']),
         social_security=data['person2']['social_security']
     )
-    
     profile = FinancialProfile(
         person1=person1,
         person2=person2,
@@ -418,26 +683,24 @@ def analysis():
         traditional_ira=data['traditional_ira'],
         roth_ira=data['roth_ira'],
         pension_lump_sum=data.get('pension_lump_sum', 0),
+        pension_annual=data.get('pension_annual', 0),
         annual_expenses=data['annual_expenses'],
         target_annual_income=data['target_annual_income'],
         risk_tolerance=data.get('risk_tolerance', 'moderate'),
         asset_allocation=data.get('asset_allocation', {'stocks': 0.5, 'bonds': 0.5}),
         future_expenses=data.get('future_expenses', []),
         investment_types=data.get('investment_types', []),
-        accounts=data.get('accounts', [])
+        accounts=data.get('accounts', []),
+        income_streams=data.get('income_streams', [])
     )
-    
     model = RetirementModel(profile)
-
     years = 30
-    monte_carlo = model.monte_carlo_simulation(years, assumptions=assumptions)
+    monte_carlo = model.monte_carlo_simulation(years, assumptions=assumptions, effective_tax_rate=effective_tax_rate)
     ss_optimization = model.optimize_social_security(assumptions=assumptions)
     roth_conversion = model.calculate_roth_conversion_opportunity()
     wealth_transfer = model.calculate_wealth_transfer_strategy()
-    
     person1_age_now = (datetime.now() - person1.birth_date).days / 365.25
     current_rmd = model.calculate_rmd(int(person1_age_now), profile.traditional_ira)
-    
     return jsonify({
         'monte_carlo': monte_carlo,
         'social_security_optimization': ss_optimization[:3],
@@ -459,33 +722,149 @@ def analysis():
             'ss_discount_rate': assumptions.ss_discount_rate
         }
     })
-
+@app.route('/api/report/pdf', methods=['POST'])
+def generate_pdf_report():
+    data = request.json
+    profile_data = data.get('profile', {})
+    analysis_data = data.get('analysis', {})
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    styles = getSampleStyleSheet()
+    story = []
+    # Title
+    story.append(Paragraph("Retirement Planning Report", styles['Title']))
+    story.append(Spacer(1, 12))
+    story.append(Paragraph(f"Generated on {datetime.now().strftime('%Y-%m-%d')}", styles['Normal']))
+    story.append(Spacer(1, 24))
+    # Financial Profile Summary
+    story.append(Paragraph("Financial Profile Summary", styles['Heading2']))
+    net_worth = (profile_data.get('liquid_assets', 0) + 
+                 profile_data.get('traditional_ira', 0) + 
+                 profile_data.get('roth_ira', 0) + 
+                 profile_data.get('pension_lump_sum', 0))
+    profile_summary = [
+        ["Category", "Value"],
+        ["Net Worth", f"${net_worth:,.2f}"],
+        ["Target Annual Income", f"${profile_data.get('target_annual_income', 0):,.2f}"],
+        ["Annual Expenses", f"${profile_data.get('annual_expenses', 0):,.2f}"],
+        ["Risk Tolerance", profile_data.get('risk_tolerance', 'N/A').capitalize()]
+    ]
+    t = Table(profile_summary, colWidths=[200, 200])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+    story.append(t)
+    story.append(Spacer(1, 24))
+    # Monte Carlo Results
+    if 'monte_carlo' in analysis_data:
+        mc = analysis_data['monte_carlo']
+        story.append(Paragraph("Monte Carlo Simulation Results", styles['Heading2']))
+        mc_data = [
+            ["Metric", "Result"],
+            ["Success Rate", f"{mc.get('success_rate', 0):.1f}%"],
+            ["Median Ending Balance", f"${mc.get('median_ending_balance', 0):,.2f}"],
+            ["Worst Case (5th %ile)", f"${mc.get('percentile_5', 0):,.2f}"],
+            ["Best Case (95th %ile)", f"${mc.get('percentile_95', 0):,.2f}"]
+        ]
+        t_mc = Table(mc_data, colWidths=[200, 200])
+        t_mc.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (1, 0), colors.blue),
+            ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        story.append(t_mc)
+        story.append(Spacer(1, 24))
+    # Social Security Strategy
+    if 'social_security_optimization' in analysis_data:
+        story.append(Paragraph("Recommended Social Security Strategy", styles['Heading2']))
+        ss_opts = analysis_data['social_security_optimization']
+        if ss_opts:
+            best = ss_opts[0]
+            story.append(Paragraph(f"Person 1 Claim Age: {best['person1_claim_age']}", styles['Normal']))
+            story.append(Paragraph(f"Person 2 Claim Age: {best['person2_claim_age']}", styles['Normal']))
+            story.append(Paragraph(f"Total Lifetime NPV: ${best['lifetime_benefit_npv']:,.2f}", styles['Normal']))
+        story.append(Spacer(1, 24))
+    # Action Items
+    story.append(Paragraph("Top Action Items", styles['Heading2']))
+    # Fetch top 5 pending action items
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT category, description, due_date FROM action_items WHERE status='pending' ORDER BY priority, due_date LIMIT 5")
+    rows = c.fetchall()
+    conn.close()
+    if rows:
+        action_data = [["Category", "Action", "Due Date"]]
+        for row in rows:
+            # Clean HTML tags from description if any
+            clean_desc = row[1].replace('<br>', '\n').replace('<b>', '').replace('</b>', '')
+            # Simple link removal
+            if "<a" in clean_desc:
+                clean_desc = clean_desc.split("<a")[0]
+            action_data.append([row[0], clean_desc, row[2] or 'N/A'])
+        t_ai = Table(action_data, colWidths=[100, 250, 80])
+        t_ai.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.darkgreen),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP')
+        ]))
+        story.append(t_ai)
+    else:
+        story.append(Paragraph("No pending action items found.", styles['Normal']))
+    doc.build(story)
+    buffer.seek(0)
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=f'retirement_plan_{datetime.now().strftime("%Y%m%d")}.pdf',
+        mimetype='application/pdf'
+    )
 @app.route('/api/action-items', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def action_items():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    
+    profile_name = request.args.get('profile_name', 'main')
     if request.method == 'POST':
         data = request.json
+        category = data['category']
+        description = data['description']
+        p_name = data.get('profile_name', profile_name)
+        # Deduplication check
+        c.execute('SELECT id FROM action_items WHERE profile_name = ? AND category = ? AND description = ?', (p_name, category, description))
+        existing = c.fetchone()
+        if existing:
+            conn.close()
+            return jsonify({'id': existing[0], 'status': 'exists'})
+        action_data = json.dumps(data.get('action_data')) if data.get('action_data') else None
+        subtasks = json.dumps(data.get('subtasks')) if data.get('subtasks') else None
         c.execute('''INSERT INTO action_items 
-                     (category, description, priority, status, due_date, created_at)
-                     VALUES (?, ?, ?, ?, ?, ?)''',
-                  (data['category'], data['description'], data['priority'],
+                     (profile_name, category, description, priority, status, due_date, action_data, subtasks, created_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                  (p_name, category, description, data['priority'],
                    data.get('status', 'pending'), data.get('due_date'),
+                   action_data, subtasks,
                    datetime.now().isoformat()))
         conn.commit()
         item_id = c.lastrowid
         conn.close()
         return jsonify({'id': item_id, 'status': 'success'})
-    
     elif request.method == 'GET':
-        c.execute('SELECT * FROM action_items ORDER BY priority, due_date')
+        c.execute('SELECT id, category, description, priority, status, due_date, created_at, action_data, subtasks FROM action_items WHERE profile_name = ? ORDER BY priority, due_date', (profile_name,))
         rows = c.fetchall()
         conn.close()
-        
         items = []
         for row in rows:
-            items.append({
+            item = {
                 'id': row[0],
                 'category': row[1],
                 'description': row[2],
@@ -493,169 +872,198 @@ def action_items():
                 'status': row[4],
                 'due_date': row[5],
                 'created_at': row[6]
-            })
-        
+            }
+            if row[7]:
+                try:
+                    item['action_data'] = json.loads(row[7])
+                except:
+                    item['action_data'] = None
+            if row[8]:
+                try:
+                    item['subtasks'] = json.loads(row[8])
+                except:
+                    item['subtasks'] = []
+            else:
+                item['subtasks'] = []
+            items.append(item)
         return jsonify(items)
-    
     elif request.method == 'PUT':
         data = request.json
-        c.execute('''UPDATE action_items 
-                     SET status = ? 
-                     WHERE id = ?''',
-                  (data['status'], data['id']))
+        # Build update query dynamically based on provided fields
+        fields = []
+        values = []
+        if 'status' in data:
+            fields.append("status = ?")
+            values.append(data['status'])
+        if 'action_data' in data:
+            fields.append("action_data = ?")
+            values.append(json.dumps(data['action_data']))
+        if 'subtasks' in data:
+            fields.append("subtasks = ?")
+            values.append(json.dumps(data['subtasks']))
+        if not fields:
+            return jsonify({'status': 'no_change'})
+        values.append(data['id'])
+        query = f"UPDATE action_items SET {', '.join(fields)} WHERE id = ?"
+        c.execute(query, tuple(values))
         conn.commit()
         conn.close()
         return jsonify({'status': 'success'})
-    
     elif request.method == 'DELETE':
         data = request.json
         c.execute('DELETE FROM action_items WHERE id = ?', (data['id'],))
         conn.commit()
         conn.close()
         return jsonify({'status': 'success'})
-
+@app.route('/api/action-items/cleanup', methods=['POST'])
+def cleanup_action_items():
+    """Manually trigger deduplication of action items"""
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('''
+        DELETE FROM action_items
+        WHERE id NOT IN (
+            SELECT MAX(id)
+            FROM action_items
+            GROUP BY profile_name, category, description
+        )
+    ''')
+    removed = conn.total_changes
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'success', 'removed_count': removed})
 @app.route('/api/generate-action-items', methods=['POST'])
 def generate_action_items():
     data = request.json
     analysis = data.get('analysis', {})
-    
+    profile_name = data.get('profile_name', 'main')
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    
     items = []
-    
     roth = analysis.get('roth_conversion', {})
     if roth.get('opportunity') == 'excellent':
         items.append({
             'category': 'Tax Planning',
-            'description': f"Execute Roth conversion of ${roth.get('annual_conversion_12_bracket', 0):,.0f} in 12% bracket",
+            'description': f"Execute Roth conversion of ${roth.get('annual_conversion_12_bracket', 0):,.0f} in 12% bracket. <br><a href='https://www.irs.gov/retirement-plans/roth-iras' target='_blank'>IRS Roth IRA Info</a>",
             'priority': 'high',
             'status': 'pending',
             'due_date': (datetime.now() + timedelta(days=90)).isoformat()
         })
-    
     items.append({
         'category': 'Estate Planning',
-        'description': 'Create Healthcare Power of Attorney and Living Will',
+        'description': 'Create Healthcare Power of Attorney and Living Will. <br><a href=\'https://www.nolo.com/legal-encyclopedia/living-wills-healthcare-power-of-attorney-29569.html\' target=\'_blank\'>Guide to Healthcare Directives</a>',
         'priority': 'critical',
         'status': 'pending',
         'due_date': (datetime.now() + timedelta(days=30)).isoformat()
     })
-    
     items.append({
         'category': 'Estate Planning',
-        'description': 'Create Durable Financial Power of Attorney',
+        'description': 'Create Durable Financial Power of Attorney. <br><a href=\'https://www.investopedia.com/articles/managing-wealth/04/durable-power-of-attorney.asp\' target=\'_blank\'>Investopedia Guide</a>',
         'priority': 'critical',
         'status': 'pending',
         'due_date': (datetime.now() + timedelta(days=30)).isoformat()
     })
-    
     items.append({
         'category': 'Estate Planning',
-        'description': 'Draft Revocable Living Trust and Pour-Over Will',
+        'description': 'Draft Revocable Living Trust and Pour-Over Will. <br><a href=\'https://www.legalzoom.com/articles/living-trust-vs-will\' target=\'_blank\'>Trust vs. Will</a>',
         'priority': 'high',
         'status': 'pending',
         'due_date': (datetime.now() + timedelta(days=60)).isoformat()
     })
-    
     items.append({
         'category': 'Estate Planning',
-        'description': 'Review and update all beneficiary designations',
+        'description': 'Review and update all beneficiary designations. <br><a href=\'https://www.schwab.com/learn/story/beneficiary-designations-5-steps-to-protect-your-legacy\' target=\'_blank\'>Beneficiary Guide</a>',
         'priority': 'high',
         'status': 'pending',
         'due_date': (datetime.now() + timedelta(days=45)).isoformat()
     })
-    
     wealth = analysis.get('wealth_transfer', {})
     if wealth.get('annual_gift_capacity', 0) > 0:
         items.append({
             'category': 'Wealth Transfer',
-            'description': f"Begin annual gifts of ${wealth['annual_gift_capacity']:,.0f} to sons",
+            'description': f"Begin annual gifts of ${wealth['annual_gift_capacity']:,.0f} to sons. <br><a href='https://www.irs.gov/businesses/small-businesses-self-employed/frequently-asked-questions-on-gift-taxes' target='_blank'>IRS Gift Tax FAQs</a>",
             'priority': 'high',
             'status': 'pending',
             'due_date': (datetime.now() + timedelta(days=60)).isoformat()
         })
-    
     items.append({
         'category': 'Insurance',
-        'description': 'Evaluate long-term care insurance options',
+        'description': 'Evaluate long-term care insurance options. <br><a href=\'https://acl.gov/ltc\' target=\'_blank\'>LongTermCare.gov</a>',
         'priority': 'medium',
         'status': 'pending',
         'due_date': (datetime.now() + timedelta(days=90)).isoformat()
     })
-    
     items.append({
         'category': 'Insurance',
-        'description': 'Review life insurance coverage and beneficiaries',
+        'description': 'Review life insurance coverage and beneficiaries. <br><a href=\'https://www.policygenius.com/life-insurance/\' target=\'_blank\'>Life Insurance Guide</a>',
         'priority': 'medium',
         'status': 'pending',
         'due_date': (datetime.now() + timedelta(days=60)).isoformat()
     })
-    
     monte = analysis.get('monte_carlo', {})
     if monte.get('success_rate', 100) < 85:
         items.append({
             'category': 'Retirement Planning',
-            'description': f"Review spending plan - success rate is {monte['success_rate']:.0f}%, target 90%+",
+            'description': f"Review spending plan - success rate is {monte['success_rate']:.0f}%, target 90%+. <br><a href='https://www.bogleheads.org/wiki/Safe_withdrawal_rates' target='_blank'>Safe Withdrawal Rates</a>",
             'priority': 'high',
             'status': 'pending',
             'due_date': (datetime.now() + timedelta(days=30)).isoformat()
         })
-    
     items_created = 0
     for item in items:
-        # Check if this action item already exists
-        c.execute('''SELECT COUNT(*) FROM action_items
-                     WHERE category = ? AND description = ?''',
-                  (item['category'], item['description']))
-        exists = c.fetchone()[0] > 0
-
-        # Only insert if it doesn't already exist
-        if not exists:
-            c.execute('''INSERT INTO action_items
-                         (category, description, priority, status, due_date, created_at)
-                         VALUES (?, ?, ?, ?, ?, ?)''',
-                      (item['category'], item['description'], item['priority'],
-                       item['status'], item['due_date'], datetime.now().isoformat()))
+        c.execute('''INSERT OR IGNORE INTO action_items
+                     (profile_name, category, description, priority, status, due_date, created_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                  (profile_name, item['category'], item['description'], item['priority'],
+                   item['status'], item['due_date'], datetime.now().isoformat()))
+        if c.rowcount > 0:
             items_created += 1
-
     conn.commit()
     conn.close()
-
     return jsonify({'status': 'success', 'items_created': items_created})
-
 @app.route('/api/perform-self-assessment', methods=['POST'])
 def perform_self_assessment():
-    """Uses Gemini to assess the plan against available skills and generate todos"""
+    """Uses LLM to assess the plan against available skills and generate todos"""
     data = request.json
-    api_key = os.environ.get('GEMINI_API_KEY') or data.get('api_key')
-    
-    if not api_key:
-        return jsonify({'error': 'GEMINI_API_KEY not set'}), 400
-
-    try:
-        genai.configure(api_key=api_key)
-        
-        # 1. Gather Context
-        # A. Profile
-        profile_name = data.get('profile_name', 'main')
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute('SELECT data FROM profile WHERE name = ?', (profile_name,))
+    profile_name = data.get('profile_name', 'main')
+    # Get provider and API key
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    llm_provider = data.get('llm_provider')
+    if not llm_provider:
+        c.execute('SELECT value FROM system_settings WHERE key = "default_llm"')
         row = c.fetchone()
-        
-        # Fallback to any profile if specific one not found
-        if not row:
-             c.execute('SELECT data FROM profile ORDER BY updated_at DESC LIMIT 1')
-             row = c.fetchone()
-
-        profile_data = json.loads(row[0]) if row else {}
-        
-        # B. Existing Action Items
-        c.execute('SELECT category, description, status FROM action_items')
+        llm_provider = row[0] if row else 'gemini'
+    api_key = None
+    if llm_provider == 'gemini':
+        api_key = os.environ.get('GEMINI_API_KEY') or data.get('api_key')
+        if not api_key:
+            c.execute('SELECT value FROM system_settings WHERE key = "gemini_api_key"')
+            row = c.fetchone()
+            api_key = row[0] if row else None
+    else: # claude
+        api_key = os.environ.get('ANTHROPIC_API_KEY') or data.get('api_key')
+        if not api_key:
+            c.execute('SELECT value FROM system_settings WHERE key = "claude_api_key"')
+            row = c.fetchone()
+            api_key = row[0] if row else None
+    if not api_key:
+        conn.close()
+        return jsonify({'error': f'{llm_provider.capitalize()} API key not set'}), 400
+    try:
+        # 1. Gather Context
+        profile_data = data.get('profile_data')
+        if not profile_data:
+            c.execute('SELECT data FROM profile WHERE name = ?', (profile_name,))
+            row = c.fetchone()
+            if not row:
+                 c.execute('SELECT data FROM profile ORDER BY updated_at DESC LIMIT 1')
+                 row = c.fetchone()
+            profile_data = json.loads(row[0]) if row else {}
+        # B. Existing Action Items (Profile-specific)
+        c.execute('SELECT category, description, status FROM action_items WHERE profile_name = ?', (profile_name,))
         existing_items = [{'category': r[0], 'description': r[1], 'status': r[2]} for r in c.fetchall()]
         conn.close()
-        
         # C. Skills Content
         skills_content = ""
         skills_path = Path('../skills')
@@ -663,24 +1071,17 @@ def perform_self_assessment():
             for skill_file in skills_path.glob('*-SKILL.md'):
                 with open(skill_file, 'r') as f:
                     skills_content += f"\n\n--- {skill_file.name} ---\n{f.read()}"
-        
         # 2. Construct Prompt
         prompt = f"""You are an expert financial auditor. Your task is to review a user's financial profile against a library of "Financial Skills" (best practices) and their current to-do list.
-
 Identify GAPS where the user is failing to implement the advice in the skills.
 Generate a list of 3-5 high-impact, specific "Action Items" to close these gaps.
-
 CONTEXT:
-
 USER PROFILE:
 {json.dumps(profile_data, indent=2)}
-
 CURRENT ACTION ITEMS:
 {json.dumps(existing_items, indent=2)}
-
 AVAILABLE SKILLS (Best Practices):
-{skills_content[:20000]}  # Truncate to avoid token limits if necessary, but skills are priority
-
+{skills_content[:20000]}
 INSTRUCTIONS:
 1. Compare the Profile + Current Items against the Skills.
 2. Find specific strategies mentioned in the Skills that are NOT in the Profile or Action Items.
@@ -690,236 +1091,196 @@ INSTRUCTIONS:
     "category": "Category Name",
     "description": "Specific action to take",
     "priority": "high|medium|low",
-    "due_date_days": 30  # days from now
+    "due_date_days": 30,
+    "action_data": {{ "field": "...", "value": ... }}
   }}
 ]
 Do not output markdown formatting, just the raw JSON.
 """
-
-        # 3. Call Gemini
-        model = genai.GenerativeModel('gemini-3-flash-preview')
-        response = model.generate_content(prompt)
-        
+        text = ""
+        if llm_provider == 'gemini':
+            text = call_gemini_with_fallback(prompt, api_key)
+        else: # Claude
+            text = call_claude_with_fallback(prompt, api_key)
         # 4. Parse and Save
-        text = response.text
-        # Strip markdown code blocks if present
         if "```json" in text:
             text = text.split("```json")[1].split("```")[0]
         elif "```" in text:
             text = text.split("```")[1].split("```")[0]
-            
         new_items = json.loads(text.strip())
-        
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         items_created = 0
-        
         for item in new_items:
             # Check for duplicates
             c.execute('''SELECT COUNT(*) FROM action_items 
-                         WHERE description = ?''', (item['description'],))
+                         WHERE profile_name = ? AND description = ?''', (profile_name, item['description']))
             if c.fetchone()[0] == 0:
+                action_data = json.dumps(item.get('action_data')) if item.get('action_data') else None
                 due_date = (datetime.now() + timedelta(days=item.get('due_date_days', 30))).isoformat()
                 c.execute('''INSERT INTO action_items 
-                             (category, description, priority, status, due_date, created_at)
-                             VALUES (?, ?, ?, ?, ?, ?)''',
-                          ('AI Assessment', item['description'], item['priority'], 
-                           'pending', due_date, datetime.now().isoformat()))
+                             (profile_name, category, description, priority, status, due_date, action_data, created_at)
+                             VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
+                          (profile_name, item['category'], item['description'], item['priority'], 
+                           'pending', due_date, action_data, datetime.now().isoformat()))
                 items_created += 1
-                
         conn.commit()
         conn.close()
-        
         return jsonify({'status': 'success', 'items_created': items_created})
-        
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 @app.route('/api/advisor/chat', methods=['POST'])
 def advisor_chat():
     """AI advisor endpoint that provides personalized financial guidance"""
     data = request.json
     user_message = data.get('message', '')
     include_context = data.get('include_context', True)
-
-    # Get API key from environment or request
-    api_key = os.environ.get('GEMINI_API_KEY') or data.get('api_key')
+    profile_name = data.get('profile_name', 'main')
+    # Get provider and API key
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    # Check system settings for default provider if not in request
+    llm_provider = data.get('llm_provider')
+    if not llm_provider:
+        c.execute('SELECT value FROM system_settings WHERE key = "default_llm"')
+        row = c.fetchone()
+        llm_provider = row[0] if row else 'gemini'
+    api_key = None
+    if llm_provider == 'gemini':
+        api_key = os.environ.get('GEMINI_API_KEY') or data.get('api_key')
+        if not api_key:
+            c.execute('SELECT value FROM system_settings WHERE key = "gemini_api_key"')
+            row = c.fetchone()
+            api_key = row[0] if row else None
+    else: # claude
+        api_key = os.environ.get('ANTHROPIC_API_KEY') or data.get('api_key')
+        if not api_key:
+            c.execute('SELECT value FROM system_settings WHERE key = "claude_api_key"')
+            row = c.fetchone()
+            api_key = row[0] if row else None
     if not api_key:
-        return jsonify({'error': 'GEMINI_API_KEY not set. Please set it as an environment variable or pass it in the request.'}), 400
-
+        conn.close()
+        return jsonify({'error': f'{llm_provider.capitalize()} API key not set. Please set it in Settings.'}), 400
     try:
-        # Configure Gemini API
-        genai.configure(api_key=api_key)
-
-        # Load conversation history from database
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute('SELECT role, content FROM conversations ORDER BY id ASC')
+        # Load conversation history from database (Profile-specific)
+        c.execute('SELECT role, content FROM conversations WHERE profile_name = ? ORDER BY id ASC', (profile_name,))
         history_rows = c.fetchall()
-
         # Build financial context if requested
         system_prompt = """You are an expert financial advisor specializing in retirement planning, tax optimization, estate planning, and wealth transfer strategies.
-
 You provide personalized, actionable advice based on the user's specific financial situation. Your guidance should be:
 - Clear and easy to understand (avoid jargon unless explaining it)
 - Based on current tax laws and financial planning best practices
 - Focused on actionable recommendations with specific next steps
 - Balanced between optimism and realistic risk assessment
 - Comprehensive, considering tax, legal, and financial implications
-
 When discussing strategies, explain both the benefits and potential drawbacks. Always remind users to consult with their own tax advisor, attorney, or financial planner before making major financial decisions."""
-
         financial_context = ""
-
         if include_context:
-            # Get user profile
-            profile_name = data.get('profile_name', 'main')
-            c.execute('SELECT data FROM profile WHERE name = ?', (profile_name,))
-            profile_row = c.fetchone()
-            
-            # Fallback
-            if not profile_row:
-                 c.execute('SELECT data FROM profile ORDER BY updated_at DESC LIMIT 1')
-                 profile_row = c.fetchone()
-
-            if profile_row:
-                profile_data = json.loads(profile_row[0])
-
+            # 1. Get Profile Data (Prefer request data, fallback to DB)
+            profile_data = data.get('profile_data')
+            if not profile_data:
+                c.execute('SELECT data FROM profile WHERE name = ?', (profile_name,))
+                profile_row = c.fetchone()
+                if profile_row:
+                    profile_data = json.loads(profile_row[0])
+            # 2. Get Action Items (Profile-specific)
+            c.execute('SELECT category, description, priority, status, due_date FROM action_items WHERE profile_name = ? ORDER BY status DESC, priority', (profile_name,))
+            action_rows = c.fetchall()
+            action_items_text = ""
+            if action_rows:
+                action_items_text = "\n### Current Action Items\n"
+                for r in action_rows:
+                    status_icon = "✅" if r[3] == 'completed' else "⬜"
+                    action_items_text += f"- {status_icon} [{r[3].upper()}] {r[0]}: {r[1]} (Priority: {r[2]})\n"
+            if profile_data:
                 # Build detailed financial context
                 financial_context = f"""
-
-## USER'S FINANCIAL PROFILE
-
+## USER'S FINANCIAL PROFILE ({profile_name})
 ### Personal Information
 - Person 1: {profile_data.get('person1', {}).get('name', 'N/A')}
   - Birth Date: {profile_data.get('person1', {}).get('birth_date', 'N/A')}
   - Retirement Date: {profile_data.get('person1', {}).get('retirement_date', 'N/A')}
   - Social Security (monthly): ${profile_data.get('person1', {}).get('social_security', 0):,.2f}
-
 - Person 2: {profile_data.get('person2', {}).get('name', 'N/A')}
   - Birth Date: {profile_data.get('person2', {}).get('birth_date', 'N/A')}
   - Retirement Date: {profile_data.get('person2', {}).get('retirement_date', 'N/A')}
   - Social Security (monthly): ${profile_data.get('person2', {}).get('social_security', 0):,.2f}
-
 - Children: {len(profile_data.get('children', []))} children
-
 ### Assets
 - Liquid Assets: ${profile_data.get('liquid_assets', 0):,.2f}
 - Traditional IRA: ${profile_data.get('traditional_ira', 0):,.2f}
 - Roth IRA: ${profile_data.get('roth_ira', 0):,.2f}
 - Pension Lump Sum: ${profile_data.get('pension_lump_sum', 0):,.2f}
+- Annual Pension Income: ${profile_data.get('pension_annual', 0):,.2f}
 - Total Net Worth: ${profile_data.get('liquid_assets', 0) + profile_data.get('traditional_ira', 0) + profile_data.get('roth_ira', 0) + profile_data.get('pension_lump_sum', 0):,.2f}
-
 ### Income & Expenses
 - Annual Expenses: ${profile_data.get('annual_expenses', 0):,.2f}
 - Target Annual Income: ${profile_data.get('target_annual_income', 0):,.2f}
 - Risk Tolerance: {profile_data.get('risk_tolerance', 'N/A')}
 - Asset Allocation: Stocks {profile_data.get('asset_allocation', {}).get('stocks', 0.5)*100:.0f}%, Bonds {profile_data.get('asset_allocation', {}).get('bonds', 0.5)*100:.0f}%
-
-### Analysis Summary (from Monte Carlo simulation and optimization models)
-
-The system has run comprehensive analysis including:
-- Monte Carlo simulation (10,000 scenarios over 30 years)
-- Social Security claiming optimization (9 strategies)
-- Roth conversion opportunity analysis
-- Wealth transfer planning
-
-Note: For the most current detailed analysis results, the user can run a new analysis in the Analysis tab.
-
+{action_items_text}
 ### Key Planning Considerations
-
-**Social Security Strategy**: The user can claim at ages 62, 67 (FRA), or 70. Delaying to 70 provides a 24% increase in benefits (both spouses combined: ~$8,680/month or $104,160/year).
-
-**Roth Conversion Window**: Between retirement and age 73 (RMD age), there's opportunity to convert Traditional IRA to Roth IRA at lower tax rates.
-
-**Tax Brackets (2024 - Married Filing Jointly)**:
-- Standard Deduction: $29,200 + $3,100 (over 65) = $32,300
-- 12% bracket: Up to $94,300
-- 22% bracket: $94,300 to $201,050
-- 24% bracket: $201,050 to $383,900
-
-**Annual Gift Exclusion**: $18,000 per person per recipient (2024). Both spouses can each gift $18,000 to each child ($36,000 per child total).
-
-**RMD Age**: Required Minimum Distributions begin at age 73 (SECURE Act 2.0).
+- Social Security optimization, Roth conversions, RMD management (age 73), annual gifting.
 """
-
         full_system_prompt = system_prompt + financial_context
-
-        # Create model - use gemini-3-flash-preview (latest model with frontier performance)
-        model = genai.GenerativeModel('gemini-3-flash-preview')
-
-        # Build conversation history for Gemini
-        # Prepend system prompt as the first exchange if no history exists
-        gemini_history = []
-
-        if len(history_rows) == 0:
-            # First message - add system context
-            gemini_history.append({
-                'role': 'user',
-                'parts': [full_system_prompt + "\n\nUnderstood. I'm ready to provide financial advice."]
-            })
-            gemini_history.append({
-                'role': 'model',
-                'parts': ["I understand. I'm your financial advisor with access to your complete financial profile. I'll provide personalized retirement planning advice. How can I help you today?"]
-            })
-
-        for role, content in history_rows:
-            gemini_role = 'user' if role == 'user' else 'model'
-            gemini_history.append({
-                'role': gemini_role,
-                'parts': [content]
-            })
-
-        # Start chat with history
-        chat = model.start_chat(history=gemini_history)
-
-        # Send message with context reminder if this is continuation
-        if len(history_rows) > 0:
-            response = chat.send_message(user_message)
-        else:
-            # First real user message - remind of context
-            response = chat.send_message(f"Context: {full_system_prompt}\n\nUser question: {user_message}")
-
-        assistant_message = response.text
-
-        # Store conversation in database
-        c.execute('''INSERT INTO conversations (role, content, created_at)
-                     VALUES (?, ?, ?)''',
-                  ('user', user_message, datetime.now().isoformat()))
-        c.execute('''INSERT INTO conversations (role, content, created_at)
-                     VALUES (?, ?, ?)''',
-                  ('assistant', assistant_message, datetime.now().isoformat()))
-
+        assistant_message = ""
+        if llm_provider == 'gemini':
+            # Gemini history needs special formatting
+            gemini_history = []
+            if len(history_rows) == 0:
+                # Add system prompt as a user/model interaction to establish context in flash-preview
+                # Or just prepend to the first message. For simplicity with the helper:
+                contextual_message = full_system_prompt + "\n\nUser Message: " + user_message
+                assistant_message = call_gemini_with_fallback(contextual_message, api_key)
+            else:
+                # Build context from history
+                context_string = full_system_prompt + "\n\nConversation History:\n"
+                for role, content in history_rows:
+                    context_string += f"{'User' if role == 'user' else 'Assistant'}: {content}\n"
+                context_string += f"User: {user_message}"
+                assistant_message = call_gemini_with_fallback(context_string, api_key)
+        else: # Claude
+            assistant_message = call_claude_with_fallback(
+                user_message, 
+                api_key, 
+                system_prompt=full_system_prompt,
+                history=history_rows
+            )
+        # Store conversation in database (Profile-specific)
+        c.execute('''INSERT INTO conversations (profile_name, role, content, created_at)
+                     VALUES (?, ?, ?, ?)''',
+                  (profile_name, 'user', user_message, datetime.now().isoformat()))
+        c.execute('''INSERT INTO conversations (profile_name, role, content, created_at)
+                     VALUES (?, ?, ?, ?)''',
+                  (profile_name, 'assistant', assistant_message, datetime.now().isoformat()))
         conn.commit()
         conn.close()
-
         return jsonify({
             'response': assistant_message,
             'status': 'success'
         })
-
     except Exception as e:
+        if 'conn' in locals(): conn.close()
         return jsonify({'error': str(e)}), 500
-
 @app.route('/api/advisor/clear', methods=['POST'])
 def clear_conversation():
-    """Clear conversation history"""
+    """Clear conversation history (Profile-specific)"""
+    profile_name = request.args.get('profile_name', 'main')
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute('DELETE FROM conversations')
+    c.execute('DELETE FROM conversations WHERE profile_name = ?', (profile_name,))
     conn.commit()
     conn.close()
     return jsonify({'status': 'success'})
-
 @app.route('/api/advisor/history', methods=['GET'])
 def get_conversation_history():
-    """Get full conversation history"""
+    """Get full conversation history (Profile-specific)"""
+    profile_name = request.args.get('profile_name', 'main')
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute('SELECT role, content, created_at FROM conversations ORDER BY id ASC')
+    c.execute('SELECT role, content, created_at FROM conversations WHERE profile_name = ? ORDER BY id ASC', (profile_name,))
     rows = c.fetchall()
     conn.close()
-
     history = []
     for role, content, created_at in rows:
         history.append({
@@ -927,18 +1288,30 @@ def get_conversation_history():
             'content': content,
             'created_at': created_at
         })
-
     return jsonify(history)
-
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({'status': 'healthy'})
-
+@app.route('/api/system/settings', methods=['GET', 'POST'])
+def system_settings():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    if request.method == 'POST':
+        data = request.json
+        for key, value in data.items():
+            c.execute('INSERT OR REPLACE INTO system_settings (key, value) VALUES (?, ?)', (key, str(value)))
+        conn.commit()
+        conn.close()
+        return jsonify({'status': 'success'})
+    else:
+        c.execute('SELECT key, value FROM system_settings')
+        rows = c.fetchall()
+        conn.close()
+        return jsonify({row[0]: row[1] for row in rows})
 if __name__ == '__main__':
     # Create data directory
     data_dir = os.path.dirname(DB_PATH)
     if data_dir and not os.path.exists(data_dir):
         os.makedirs(data_dir)
-    
     init_db()
     app.run(host='0.0.0.0', port=8080, debug=False)
