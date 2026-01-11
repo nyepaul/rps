@@ -213,21 +213,25 @@ class RetirementModel:
         returns_mean_adj = stock_pct * assumptions.stock_return_mean + (1 - stock_pct) * assumptions.bond_return_mean
         returns_std_adj = stock_pct * assumptions.stock_return_std + (1 - stock_pct) * assumptions.bond_return_std
         # Initial bucket values from investment_types for granularity
-        # 1. Taxable (Liquid)
+        # 1. Cash (Checking/Savings) - No market growth, just inflation protection
+        start_cash = 0
+        # 2. Taxable (Taxable Brokerage + legacy Liquid)
         start_taxable_val = 0
         start_taxable_basis = 0
-        # 2. Pre-Tax (Standard: IRA, 401k, 403b, 401a)
+        # 3. Pre-Tax (Standard: IRA, 401k, 403b, 401a)
         start_pretax_std = 0
-        # 3. Pre-Tax (457b: No early penalty)
+        # 4. Pre-Tax (457b: No early penalty)
         start_pretax_457 = 0
-        # 4. Roth
+        # 5. Roth
         start_roth = 0
         inv_types = self.profile.investment_types or []
         for inv in inv_types:
             acc = inv.get('account', 'Liquid')
             val = float(inv.get('value', 0))
             basis = float(inv.get('cost_basis', 0))
-            if acc == 'Liquid':
+            if acc in ['Checking', 'Savings']:
+                start_cash += val
+            elif acc in ['Liquid', 'Taxable Brokerage']:
                 start_taxable_val += val
                 start_taxable_basis += basis
             elif acc in ['Traditional IRA', '401k', '403b', '401a']:
@@ -260,7 +264,9 @@ class RetirementModel:
         ORDINARY_TAX = effective_tax_rate
         CAP_GAINS_TAX = 0.15
         EARLY_PENALTY = 0.10
+        CASH_INTEREST = 0.015  # 1.5% interest on cash (savings account rate)
         for sim in range(simulations):
+            cash = start_cash
             taxable_val = start_taxable_val
             taxable_basis = start_taxable_basis
             pretax_std = start_pretax_std
@@ -275,6 +281,7 @@ class RetirementModel:
                 inflation = np.random.normal(assumptions.inflation_mean, assumptions.inflation_std)
                 if year > 0: current_cpi *= (1 + inflation)
                 # Grow all buckets
+                cash *= (1 + CASH_INTEREST)  # Low interest rate for cash accounts
                 taxable_val *= (1 + annual_return)
                 # Basis stays same (simplified - no reinvestment of dividends modeling)
                 pretax_std *= (1 + annual_return)
@@ -299,7 +306,12 @@ class RetirementModel:
                     taxable_val += (net_rmd - used_for_shortfall) # Reinvest excess RMD
                 # 2. Sequential Withdrawal Strategy
                 if shortfall > 0:
-                    # Strategy: Use 457(b) FIRST if under 59.5 to avoid penalties on others
+                    # Strategy: Use Cash FIRST (checking/savings - no tax, no penalty)
+                    from_cash = min(shortfall, cash)
+                    cash -= from_cash
+                    shortfall -= from_cash
+                if shortfall > 0:
+                    # Strategy: Use 457(b) if under 59.5 to avoid penalties on others
                     if current_age < 59.5:
                         gross_needed = shortfall / (1 - ORDINARY_TAX)
                         from_457 = min(gross_needed, pretax_457)
@@ -335,15 +347,15 @@ class RetirementModel:
                     from_roth = min(shortfall, roth)
                     roth -= from_roth
                     shortfall -= from_roth
-                total_portfolio = taxable_val + pretax_std + pretax_457 + roth
+                total_portfolio = cash + taxable_val + pretax_std + pretax_457 + roth
                 if total_portfolio <= 0:
                     total_portfolio = 0
                     all_paths[sim, year] = 0
                     break
                 all_paths[sim, year] = total_portfolio
-            if (taxable_val + pretax_std + pretax_457 + roth) > 0:
+            if (cash + taxable_val + pretax_std + pretax_457 + roth) > 0:
                 success_count += 1
-            ending_balances.append(taxable_val + pretax_std + pretax_457 + roth)
+            ending_balances.append(cash + taxable_val + pretax_std + pretax_457 + roth)
         success_rate = (success_count / simulations) * 100
         return {
             'success_rate': success_rate,
