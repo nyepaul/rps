@@ -3223,7 +3223,7 @@ Return ONLY the JSON array, no other text.`;
                                 label: '95th Percentile',
                                 data: results.monte_carlo.timeline.p95,
                                 borderColor: '#2ecc71',
-                                borderDash: [5, 5],
+                                borderWidth: 2,
                                 fill: false,
                                 tension: 0.1
                             },
@@ -3231,7 +3231,7 @@ Return ONLY the JSON array, no other text.`;
                                 label: '5th Percentile',
                                 data: results.monte_carlo.timeline.p5,
                                 borderColor: '#e74c3c',
-                                borderDash: [5, 5],
+                                borderWidth: 2,
                                 fill: false,
                                 tension: 0.1
                             }
@@ -3721,8 +3721,7 @@ Return ONLY the JSON array, no other text.`;
                                 label: 'Best Case (95%)',
                                 data: results.monte_carlo.timeline.p95,
                                 borderColor: '#2ecc71',
-                                borderDash: [5, 5],
-                                borderWidth: 1,
+                                borderWidth: 2,
                                 fill: false,
                                 tension: 0.4,
                                 pointRadius: 0
@@ -3731,7 +3730,6 @@ Return ONLY the JSON array, no other text.`;
                                 label: 'Worst Case (5%)',
                                 data: results.monte_carlo.timeline.p5,
                                 borderColor: '#e74c3c',
-                                borderDash: [5, 5],
                                 borderWidth: 2,
                                 fill: false,
                                 tension: 0.4,
