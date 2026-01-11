@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify, send_file, send_from_directory
 from flask_cors import CORS
 import numpy as np
-import pandas as pd
 from datetime import datetime, timedelta
 import json
 from pathlib import Path
