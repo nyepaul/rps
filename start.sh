@@ -18,18 +18,18 @@ fi
 if [ ! -d "venv" ]; then
     echo "Creating virtual environment..."
     python3 -m venv venv
+    echo "✓ Virtual environment created"
 fi
 
-# Activate virtual environment
-source venv/bin/activate
-
-# Install dependencies
+# Install/upgrade dependencies using venv's pip directly
 echo "Installing dependencies..."
-pip install -q -r requirements.txt
+./venv/bin/pip install --upgrade pip > /dev/null 2>&1
+./venv/bin/pip install -q -r requirements.txt
 
 # Create data directory
 mkdir -p data
 
+echo "✓ Dependencies installed"
 echo ""
 echo "==================================================="
 echo "  Starting Flask Server...                        "
@@ -43,5 +43,5 @@ echo ""
 echo "==================================================="
 echo ""
 
-# Run the application
-python app.py
+# Run the application using venv's python directly
+./venv/bin/python app.py
