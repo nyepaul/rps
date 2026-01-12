@@ -1371,12 +1371,55 @@
                     </label>
                     <select id="market-profile-preset" style="width: 100%; padding: 8px; margin-top: 8px; font-size: 14px; border: 2px solid #3498db; border-radius: 4px;" onchange="applyMarketPreset()">
                         <option value="custom">Custom (Manual Adjustment)</option>
-                        <option value="conservative">Conservative 60/40 (Balanced)</option>
-                        <option value="sp500" selected>S&P 500 Historical (10% return, 18% vol)</option>
-                        <option value="growth">Growth/Tech Sector (12% return, 22% vol)</option>
-                        <option value="tech-aggressive">Tech/AI Aggressive (15% return, 28% vol)</option>
+
+                        <optgroup label="📊 Standard Portfolios">
+                            <option value="conservative">Conservative 60/40 (9.5% return, 15% vol)</option>
+                            <option value="sp500" selected>S&P 500 Historical (10% return, 18% vol)</option>
+                            <option value="aggressive">Aggressive Growth (11% return, 20% vol)</option>
+                        </optgroup>
+
+                        <optgroup label="🚀 Sector Focus">
+                            <option value="growth">Growth/Tech Sector (12% return, 22% vol)</option>
+                            <option value="tech-aggressive">Tech/AI Aggressive (15% return, 28% vol)</option>
+                            <option value="healthcare">Healthcare Focus (11.5% return, 16% vol)</option>
+                            <option value="financials">Financial Sector (10.5% return, 23% vol)</option>
+                            <option value="energy">Energy Sector (9% return, 25% vol)</option>
+                        </optgroup>
+
+                        <optgroup label="💰 Income & Stability">
+                            <option value="dividend">Dividend Aristocrats (9% return, 14% vol)</option>
+                            <option value="bonds-heavy">Bond Heavy 30/70 (5.5% return, 8% vol)</option>
+                            <option value="retirement-glide">Retirement Glide Path (7% return, 12% vol)</option>
+                        </optgroup>
+
+                        <optgroup label="🌍 Global & Alternative">
+                            <option value="emerging">Emerging Markets (13% return, 26% vol)</option>
+                            <option value="international">International Diversified (9.5% return, 19% vol)</option>
+                            <option value="gold-hedge">Inflation Hedge (8% return, 16% vol)</option>
+                            <option value="real-estate">REIT Focus (10% return, 20% vol)</option>
+                        </optgroup>
+
+                        <optgroup label="📉 Bear/Crisis Scenarios">
+                            <option value="bear-market">Bear Market (-5% return, 25% vol)</option>
+                            <option value="recession">Recession (2% return, 22% vol)</option>
+                            <option value="stagflation">Stagflation (4% return, 5% inflation)</option>
+                            <option value="crisis-2008">2008 Financial Crisis (-22% return, 35% vol)</option>
+                        </optgroup>
+
+                        <optgroup label="📈 Bull/Optimistic Scenarios">
+                            <option value="bull-market">Bull Market (18% return, 14% vol)</option>
+                            <option value="post-covid">Post-COVID Recovery (16% return, 20% vol)</option>
+                            <option value="roaring-20s">Roaring 20s (14% return, 16% vol)</option>
+                        </optgroup>
+
+                        <optgroup label="🎯 Historical Periods">
+                            <option value="dotcom-boom">Dot-com Boom (25% return, 30% vol)</option>
+                            <option value="dotcom-bust">Dot-com Bust (-15% return, 32% vol)</option>
+                            <option value="great-recession">Great Recession (-30% return, 38% vol)</option>
+                            <option value="decade-2010s">2010s Bull Run (14% return, 15% vol)</option>
+                        </optgroup>
                     </select>
-                    <div style="font-size: 11px; color: #666; margin-top: 8px; padding: 8px; background: #f8f9fa; border-radius: 4px;">
+                    <div style="font-size: 11px; color: #666; margin-top: 8px; padding: 8px; background: #f8f9fa; border-radius: 4px;" id="preset-description">
                         <strong>Tip:</strong> Select a preset to automatically configure returns and volatility, or choose "Custom" to manually adjust all parameters.
                     </div>
                 </div>
@@ -4768,10 +4811,11 @@ Return ONLY the JSON array, no other text.`;
 
             // Define preset configurations based on historical market data
             const presets = {
+                // Standard Portfolios
                 'conservative': {
                     stock_allocation: 60,
-                    stock_return: 9.5,      // Slightly lower due to conservative mix
-                    stock_volatility: 15,    // Lower volatility
+                    stock_return: 9.5,
+                    stock_volatility: 15,
                     bond_return: 4.5,
                     bond_volatility: 5,
                     inflation: 2.5,
@@ -4779,13 +4823,24 @@ Return ONLY the JSON array, no other text.`;
                 },
                 'sp500': {
                     stock_allocation: 80,
-                    stock_return: 10.0,      // Historical S&P 500 average
+                    stock_return: 10.0,      // Historical S&P 500 average ~10%
                     stock_volatility: 18,    // Historical S&P 500 volatility
                     bond_return: 4.0,
                     bond_volatility: 6,
                     inflation: 3.0,
                     description: 'S&P 500 historical performance'
                 },
+                'aggressive': {
+                    stock_allocation: 90,
+                    stock_return: 11.0,
+                    stock_volatility: 20,
+                    bond_return: 4.0,
+                    bond_volatility: 6,
+                    inflation: 3.0,
+                    description: 'Aggressive Growth portfolio'
+                },
+
+                // Sector Focus
                 'growth': {
                     stock_allocation: 90,
                     stock_return: 12.0,      // Growth/tech sector average
@@ -4803,6 +4858,205 @@ Return ONLY the JSON array, no other text.`;
                     bond_volatility: 6,
                     inflation: 3.0,
                     description: 'Aggressive tech/AI sector with high growth potential'
+                },
+                'healthcare': {
+                    stock_allocation: 85,
+                    stock_return: 11.5,      // Healthcare historically stable growth
+                    stock_volatility: 16,    // Moderate volatility
+                    bond_return: 4.0,
+                    bond_volatility: 6,
+                    inflation: 3.0,
+                    description: 'Healthcare sector focus with defensive characteristics'
+                },
+                'financials': {
+                    stock_allocation: 85,
+                    stock_return: 10.5,      // Financial sector average
+                    stock_volatility: 23,    // High volatility, sensitive to rates
+                    bond_return: 4.0,
+                    bond_volatility: 6,
+                    inflation: 3.0,
+                    description: 'Financial sector exposure with cyclical sensitivity'
+                },
+                'energy': {
+                    stock_allocation: 80,
+                    stock_return: 9.0,       // Energy sector volatile returns
+                    stock_volatility: 25,    // Very high volatility
+                    bond_return: 4.0,
+                    bond_volatility: 6,
+                    inflation: 3.5,          // Energy correlates with inflation
+                    description: 'Energy sector with commodity exposure'
+                },
+
+                // Income & Stability
+                'dividend': {
+                    stock_allocation: 75,
+                    stock_return: 9.0,       // Dividend aristocrats lower growth
+                    stock_volatility: 14,    // Low volatility blue chips
+                    bond_return: 4.5,
+                    bond_volatility: 5,
+                    inflation: 2.5,
+                    description: 'Dividend Aristocrats for income stability'
+                },
+                'bonds-heavy': {
+                    stock_allocation: 30,    // Only 30% stocks
+                    stock_return: 10.0,
+                    stock_volatility: 18,
+                    bond_return: 4.5,
+                    bond_volatility: 5,
+                    inflation: 2.5,
+                    description: 'Bond Heavy 30/70 portfolio for capital preservation'
+                },
+                'retirement-glide': {
+                    stock_allocation: 50,    // Balanced for retirees
+                    stock_return: 10.0,
+                    stock_volatility: 15,
+                    bond_return: 4.0,
+                    bond_volatility: 5,
+                    inflation: 2.5,
+                    description: 'Retirement Glide Path balanced allocation'
+                },
+
+                // Global & Alternative
+                'emerging': {
+                    stock_allocation: 90,
+                    stock_return: 13.0,      // Higher growth potential
+                    stock_volatility: 26,    // Very high volatility
+                    bond_return: 5.0,        // Emerging market bonds yield more
+                    bond_volatility: 8,
+                    inflation: 4.0,          // Higher inflation in emerging markets
+                    description: 'Emerging Markets with high growth potential'
+                },
+                'international': {
+                    stock_allocation: 85,
+                    stock_return: 9.5,       // Slightly lower than US
+                    stock_volatility: 19,    // Similar to US
+                    bond_return: 3.5,        // Lower yields internationally
+                    bond_volatility: 7,
+                    inflation: 2.5,
+                    description: 'International Diversified portfolio'
+                },
+                'gold-hedge': {
+                    stock_allocation: 70,    // Mixed with commodities
+                    stock_return: 8.0,       // Lower returns with hedge
+                    stock_volatility: 16,    // Reduced by gold hedge
+                    bond_return: 4.0,
+                    bond_volatility: 6,
+                    inflation: 2.0,          // Gold hedges inflation
+                    description: 'Inflation Hedge with gold/commodities'
+                },
+                'real-estate': {
+                    stock_allocation: 85,
+                    stock_return: 10.0,      // REITs historical average
+                    stock_volatility: 20,    // Moderate-high volatility
+                    bond_return: 4.0,
+                    bond_volatility: 6,
+                    inflation: 3.0,
+                    description: 'REIT Focus for real estate exposure'
+                },
+
+                // Bear/Crisis Scenarios
+                'bear-market': {
+                    stock_allocation: 80,
+                    stock_return: -5.0,      // Negative returns in bear market
+                    stock_volatility: 25,    // High volatility during decline
+                    bond_return: 3.5,        // Flight to safety
+                    bond_volatility: 5,
+                    inflation: 2.0,
+                    description: 'Bear Market conditions (-20% to -40% decline)'
+                },
+                'recession': {
+                    stock_allocation: 70,
+                    stock_return: 2.0,       // Low positive or flat returns
+                    stock_volatility: 22,    // Elevated volatility
+                    bond_return: 4.0,        // Bonds outperform
+                    bond_volatility: 6,
+                    inflation: 1.5,          // Low inflation in recession
+                    description: 'Recession scenario with economic contraction'
+                },
+                'stagflation': {
+                    stock_allocation: 70,
+                    stock_return: 4.0,       // Low growth
+                    stock_volatility: 20,
+                    bond_return: 2.0,        // Real rates negative
+                    bond_volatility: 8,      // Bond volatility high
+                    inflation: 5.0,          // High inflation key feature
+                    description: 'Stagflation with high inflation and low growth'
+                },
+                'crisis-2008': {
+                    stock_allocation: 80,
+                    stock_return: -22.0,     // S&P 500 lost 37% in 2008
+                    stock_volatility: 35,    // Extreme volatility
+                    bond_return: 5.0,        // Treasuries rallied
+                    bond_volatility: 8,
+                    inflation: 0.1,          // Near deflationary
+                    description: '2008 Financial Crisis conditions'
+                },
+
+                // Bull/Optimistic Scenarios
+                'bull-market': {
+                    stock_allocation: 90,
+                    stock_return: 18.0,      // Strong bull market gains
+                    stock_volatility: 14,    // Lower vol in uptrend
+                    bond_return: 3.5,
+                    bond_volatility: 5,
+                    inflation: 2.5,
+                    description: 'Bull Market with sustained upward trend'
+                },
+                'post-covid': {
+                    stock_allocation: 90,
+                    stock_return: 16.0,      // 2020-2021 recovery
+                    stock_volatility: 20,    // Still elevated
+                    bond_return: 1.5,        // Near-zero rates
+                    bond_volatility: 6,
+                    inflation: 4.5,          // Supply chain inflation
+                    description: 'Post-COVID Recovery conditions (2020-2021)'
+                },
+                'roaring-20s': {
+                    stock_allocation: 90,
+                    stock_return: 14.0,      // Strong sustained growth
+                    stock_volatility: 16,
+                    bond_return: 4.0,
+                    bond_volatility: 6,
+                    inflation: 3.0,
+                    description: 'Roaring 20s style economic boom'
+                },
+
+                // Historical Periods
+                'dotcom-boom': {
+                    stock_allocation: 95,
+                    stock_return: 25.0,      // Late 90s tech bubble gains
+                    stock_volatility: 30,    // High volatility even in boom
+                    bond_return: 5.5,        // Higher rates in late 90s
+                    bond_volatility: 6,
+                    inflation: 2.5,
+                    description: 'Dot-com Boom (1997-1999) conditions'
+                },
+                'dotcom-bust': {
+                    stock_allocation: 80,
+                    stock_return: -15.0,     // 2000-2002 crash
+                    stock_volatility: 32,    // Extreme volatility
+                    bond_return: 6.0,        // Flight to quality
+                    bond_volatility: 6,
+                    inflation: 2.5,
+                    description: 'Dot-com Bust (2000-2002) crash period'
+                },
+                'great-recession': {
+                    stock_allocation: 80,
+                    stock_return: -30.0,     // 2008-2009 losses
+                    stock_volatility: 38,    // Unprecedented volatility
+                    bond_return: 5.5,        // Treasuries soared
+                    bond_volatility: 8,
+                    inflation: -0.4,         // Deflationary
+                    description: 'Great Recession (2008-2009) conditions'
+                },
+                'decade-2010s': {
+                    stock_allocation: 85,
+                    stock_return: 14.0,      // 2010-2019 bull run
+                    stock_volatility: 15,    // Lower vol bull market
+                    bond_return: 3.0,        // Low rate environment
+                    bond_volatility: 5,
+                    inflation: 1.8,          // Low inflation decade
+                    description: '2010s Bull Run with low rates/inflation'
                 }
             };
 
