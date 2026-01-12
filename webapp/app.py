@@ -187,6 +187,7 @@ class FinancialProfile:
     investment_types: List[Dict] = None
     accounts: List[Dict] = None
     income_streams: List[Dict] = None
+    home_properties: List[Dict] = None
 @dataclass
 class MarketAssumptions:
     """Market and economic assumptions for financial modeling"""
@@ -258,6 +259,32 @@ class RetirementModel:
                         'inflation_adjusted': s.get('inflation_adjusted', True)
                     })
                 except: pass
+        # Pre-process home properties
+        home_properties = []
+        if self.profile.home_properties:
+            for prop in self.profile.home_properties:
+                prop_dict = {
+                    'value': float(prop.get('current_value', 0)),
+                    'mortgage': float(prop.get('mortgage_balance', 0)),
+                    'appreciation_rate': prop.get('appreciation_rate') if prop.get('appreciation_rate') is not None else assumptions.inflation_mean,
+                    'annual_costs': (
+                        float(prop.get('annual_property_tax', 0)) +
+                        float(prop.get('annual_insurance', 0)) +
+                        float(prop.get('annual_maintenance', 0)) +
+                        float(prop.get('annual_hoa', 0))
+                    ),
+                    'property_type': prop.get('property_type', 'Primary Residence'),
+                    'purchase_price': float(prop.get('purchase_price', prop.get('current_value', 0))),
+                    'replacement_cost': float(prop.get('replacement_value', 0)),
+                    'sale_year': None
+                }
+                # Calculate sale year from planned_sale_date
+                if prop.get('planned_sale_date'):
+                    try:
+                        sale_year = datetime.fromisoformat(prop['planned_sale_date']).year
+                        prop_dict['sale_year'] = sale_year
+                    except: pass
+                home_properties.append(prop_dict)
         success_count = 0
         ending_balances = []
         all_paths = np.zeros((simulations, years))
@@ -272,6 +299,8 @@ class RetirementModel:
             pretax_std = start_pretax_std
             pretax_457 = start_pretax_457
             roth = start_roth
+            # Deep copy home properties for this simulation
+            sim_home_properties = [prop.copy() for prop in home_properties]
             p1_birth_year = self.profile.person1.birth_date.year
             current_cpi = 1.0
             for year in range(years):
@@ -287,12 +316,55 @@ class RetirementModel:
                 pretax_std *= (1 + annual_return)
                 pretax_457 *= (1 + annual_return)
                 roth *= (1 + annual_return)
-                target_spending = self.profile.target_annual_income * current_cpi
+                # Grow home values with their appreciation rates
+                for prop in sim_home_properties:
+                    if prop['value'] > 0:  # Not yet sold
+                        annual_appreciation = np.random.normal(prop['appreciation_rate'], 0.05)
+                        prop['value'] *= (1 + annual_appreciation)
+                # Calculate housing costs from unsold properties
+                housing_costs = sum(prop['annual_costs'] for prop in sim_home_properties if prop['value'] > 0)
+                target_spending = (self.profile.target_annual_income + housing_costs) * current_cpi
                 income_this_year = (base_ss + base_pension) * current_cpi
                 for s in stream_data:
                     if simulation_year >= s['start_year']:
                         income_this_year += (s['amount'] * (current_cpi if s['inflation_adjusted'] else 1.0))
                 shortfall = max(0, target_spending - income_this_year)
+                # 0. Check for planned home sales
+                for prop in sim_home_properties:
+                    if prop['value'] > 0 and prop['sale_year'] and simulation_year == prop['sale_year']:
+                        # Calculate sale proceeds
+                        gross_proceeds = prop['value']
+                        mortgage_payoff = prop['mortgage']
+                        transaction_costs = gross_proceeds * 0.06  # 6% realtor fees
+
+                        # Calculate capital gains tax
+                        gain = gross_proceeds - prop['purchase_price']
+
+                        # Section 121 exclusion for primary residence
+                        # Assume married for now (could check marital status from profile)
+                        if prop['property_type'] == 'Primary Residence':
+                            exclusion = 500000  # Married filing jointly
+                            taxable_gain = max(0, gain - exclusion)
+                        else:
+                            taxable_gain = gain
+
+                        capital_gains_tax = max(0, taxable_gain * CAP_GAINS_TAX)
+
+                        # Net proceeds after costs
+                        net_proceeds = (gross_proceeds - mortgage_payoff -
+                                      transaction_costs - capital_gains_tax)
+
+                        # Purchase replacement home if specified
+                        replacement_cost = prop['replacement_cost']
+                        available_proceeds = net_proceeds - replacement_cost
+
+                        # Add to taxable investments
+                        taxable_val += max(0, available_proceeds)
+
+                        # Mark property as sold
+                        prop['value'] = 0
+                        prop['mortgage'] = 0
+                        prop['annual_costs'] = 0
                 # 1. RMD Logic (Age 73+) - applies to both pretax buckets
                 if current_age >= 73:
                     rmd_std = self.calculate_rmd(current_age, pretax_std)
@@ -700,7 +772,8 @@ def analysis():
         future_expenses=data.get('future_expenses', []),
         investment_types=data.get('investment_types', []),
         accounts=data.get('accounts', []),
-        income_streams=data.get('income_streams', [])
+        income_streams=data.get('income_streams', []),
+        home_properties=data.get('home_properties', [])
     )
     model = RetirementModel(profile)
     years = 30
@@ -710,6 +783,12 @@ def analysis():
     wealth_transfer = model.calculate_wealth_transfer_strategy()
     person1_age_now = (datetime.now() - person1.birth_date).days / 365.25
     current_rmd = model.calculate_rmd(int(person1_age_now), profile.traditional_ira)
+    # Calculate home equity
+    total_home_equity = 0
+    if profile.home_properties:
+        for prop in profile.home_properties:
+            total_home_equity += (float(prop.get('current_value', 0)) -
+                                 float(prop.get('mortgage_balance', 0)))
     return jsonify({
         'monte_carlo': monte_carlo,
         'social_security_optimization': ss_optimization[:3],
@@ -717,7 +796,8 @@ def analysis():
         'wealth_transfer': wealth_transfer,
         'current_rmd': current_rmd,
         'total_net_worth': (profile.liquid_assets + profile.traditional_ira +
-                           profile.roth_ira + profile.pension_lump_sum),
+                           profile.roth_ira + profile.pension_lump_sum + total_home_equity),
+        'home_equity': total_home_equity,
         'guaranteed_income': person1.social_security * 12 + person2.social_security * 12,
         'guaranteed_income_delayed': 8680 * 12,  # Both delayed to 70
         'market_assumptions_used': {

@@ -1213,6 +1213,98 @@
             </div>
 
             <div class="form-section">
+                <h3>Real Estate & Properties</h3>
+                <p style="color: #666; font-size: 14px; margin-bottom: 15px;">
+                    Track your home and other properties. Home equity counts toward net worth, and you can model future sale/downsize scenarios.
+                </p>
+
+                <table class="data-table" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                            <th style="padding: 12px; text-align: left;">Property Name</th>
+                            <th style="padding: 12px; text-align: left;">Type</th>
+                            <th style="padding: 12px; text-align: right;">Current Value</th>
+                            <th style="padding: 12px; text-align: right;">Mortgage Balance</th>
+                            <th style="padding: 12px; text-align: right;">Net Equity</th>
+                            <th style="padding: 12px; text-align: right;">Annual Costs</th>
+                            <th style="padding: 12px; text-align: center;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="home-properties-body">
+                        <!-- Rendered by JavaScript -->
+                    </tbody>
+                </table>
+
+                <button type="button" onclick="showAddPropertyModal()" style="margin-top: 15px; padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    + Add Property
+                </button>
+            </div>
+
+            <!-- Property Modal (detailed form) -->
+            <div id="property-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; overflow-y: auto;">
+                <div style="background: white; margin: 50px auto; max-width: 600px; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <h3 id="property-modal-title">Add Property</h3>
+
+                    <label style="display: block; margin-top: 15px; font-weight: 600;">Property Name</label>
+                    <input type="text" id="prop-name" placeholder="e.g., Main Residence" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+
+                    <label style="display: block; margin-top: 15px; font-weight: 600;">Property Type</label>
+                    <select id="prop-type" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="Primary Residence">Primary Residence</option>
+                        <option value="Investment Property">Investment Property</option>
+                        <option value="Vacation Home">Vacation Home</option>
+                    </select>
+
+                    <label style="display: block; margin-top: 15px; font-weight: 600;">Current Market Value (Zillow estimate)</label>
+                    <input type="number" id="prop-value" placeholder="e.g., 850000" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+
+                    <label style="display: block; margin-top: 15px; font-weight: 600;">Mortgage Balance Remaining</label>
+                    <input type="number" id="prop-mortgage" value="0" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+
+                    <label style="display: block; margin-top: 15px; font-weight: 600;">Purchase Price (for tax basis)</label>
+                    <input type="number" id="prop-purchase-price" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+
+                    <label style="display: block; margin-top: 15px; font-weight: 600;">Purchase Date</label>
+                    <input type="date" id="prop-purchase-date" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+
+                    <hr style="margin: 25px 0; border: none; border-top: 1px solid #ddd;">
+                    <h4 style="margin-bottom: 15px;">Annual Costs</h4>
+
+                    <label style="display: block; margin-top: 15px; font-weight: 600;">Property Tax (annual)</label>
+                    <input type="number" id="prop-tax" value="0" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+
+                    <label style="display: block; margin-top: 15px; font-weight: 600;">Homeowner's Insurance (annual)</label>
+                    <input type="number" id="prop-insurance" value="0" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+
+                    <label style="display: block; margin-top: 15px; font-weight: 600;">Maintenance & Repairs (annual estimate)</label>
+                    <input type="number" id="prop-maintenance" value="0" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+
+                    <label style="display: block; margin-top: 15px; font-weight: 600;">HOA Fees (annual)</label>
+                    <input type="number" id="prop-hoa" value="0" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+
+                    <hr style="margin: 25px 0; border: none; border-top: 1px solid #ddd;">
+                    <h4 style="margin-bottom: 15px;">Future Plans (Optional)</h4>
+
+                    <label style="display: block; margin-top: 15px; font-weight: 600;">Annual Appreciation Rate (%)</label>
+                    <input type="number" id="prop-appreciation" step="0.1" placeholder="Leave blank to use inflation rate" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <p style="font-size: 12px; color: #666; margin-top: 4px;">Default: Uses inflation rate from market assumptions</p>
+
+                    <label style="display: block; margin-top: 15px; font-weight: 600;">Planned Sale Date</label>
+                    <input type="date" id="prop-sale-date" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <p style="font-size: 12px; color: #666; margin-top: 4px;">When you plan to sell this property</p>
+
+                    <label style="display: block; margin-top: 15px; font-weight: 600;">Replacement Home Cost</label>
+                    <input type="number" id="prop-replacement" value="0" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <p style="font-size: 12px; color: #666; margin-top: 4px;">Cost of home you'll buy after selling (for downsize scenarios)</p>
+
+                    <div style="margin-top: 25px; display: flex; gap: 10px;">
+                        <button type="button" onclick="saveProperty()" style="flex: 1; padding: 12px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Save Property</button>
+                        <button type="button" onclick="closePropertyModal()" style="flex: 1; padding: 12px; background: #95a5a6; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
                 <h3>Expenses & Goals</h3>
                 <div class="form-row">
                     <div class="form-group">
@@ -1609,6 +1701,8 @@
         let incomeStreams = [];
         let accounts = []; // Legacy support for profile data structure
         let editingIncomeIndex = -1;
+        let homeProperties = [];
+        let editingPropertyIndex = -1;
 
         function getCurrentProfileName() {
             return document.getElementById('profile-name-input').value || 'main';
@@ -1770,6 +1864,155 @@
                 incomeStreams.splice(index, 1);
                 renderIncomeStreams();
                 debouncedAutoSave(); // Auto-save after deleting income stream
+            }
+        }
+
+        // Home Properties Management Functions
+        function renderHomeProperties() {
+            const tbody = document.getElementById('home-properties-body');
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+
+            if (!homeProperties || homeProperties.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #999; padding: 20px;">No properties added yet</td></tr>';
+                return;
+            }
+
+            let totalEquity = 0;
+
+            homeProperties.forEach((prop, index) => {
+                const equity = (prop.current_value || 0) - (prop.mortgage_balance || 0);
+                const annualCosts = (
+                    (prop.annual_property_tax || 0) +
+                    (prop.annual_insurance || 0) +
+                    (prop.annual_maintenance || 0) +
+                    (prop.annual_hoa || 0)
+                );
+
+                totalEquity += equity;
+
+                const row = document.createElement('tr');
+                row.style.borderBottom = '1px solid #dee2e6';
+                row.innerHTML = `
+                    <td style="padding: 12px;">${prop.name}</td>
+                    <td style="padding: 12px;">${prop.property_type}</td>
+                    <td style="padding: 12px; text-align: right;">$${formatNumber(prop.current_value || 0)}</td>
+                    <td style="padding: 12px; text-align: right;">$${formatNumber(prop.mortgage_balance || 0)}</td>
+                    <td style="padding: 12px; text-align: right;"><strong>$${formatNumber(equity)}</strong></td>
+                    <td style="padding: 12px; text-align: right;">$${formatNumber(annualCosts)}</td>
+                    <td style="padding: 12px; text-align: center;">
+                        <button onclick="editProperty(${index})" style="padding: 6px 12px; margin: 0 4px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">Edit</button>
+                        <button onclick="deleteProperty(${index})" style="padding: 6px 12px; margin: 0 4px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer;">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Add total row
+            const totalRow = document.createElement('tr');
+            totalRow.style.fontWeight = 'bold';
+            totalRow.style.backgroundColor = '#f8f9fa';
+            totalRow.innerHTML = `
+                <td colspan="4" style="padding: 12px;">Total Home Equity</td>
+                <td style="padding: 12px; text-align: right;">$${formatNumber(totalEquity)}</td>
+                <td colspan="2"></td>
+            `;
+            tbody.appendChild(totalRow);
+        }
+
+        function showAddPropertyModal() {
+            document.getElementById('property-modal').style.display = 'block';
+            document.getElementById('property-modal-title').textContent = 'Add Property';
+            clearPropertyForm();
+            editingPropertyIndex = -1;
+        }
+
+        function closePropertyModal() {
+            document.getElementById('property-modal').style.display = 'none';
+        }
+
+        function clearPropertyForm() {
+            document.getElementById('prop-name').value = '';
+            document.getElementById('prop-type').value = 'Primary Residence';
+            document.getElementById('prop-value').value = '';
+            document.getElementById('prop-mortgage').value = '0';
+            document.getElementById('prop-purchase-price').value = '';
+            document.getElementById('prop-purchase-date').value = '';
+            document.getElementById('prop-tax').value = '0';
+            document.getElementById('prop-insurance').value = '0';
+            document.getElementById('prop-maintenance').value = '0';
+            document.getElementById('prop-hoa').value = '0';
+            document.getElementById('prop-appreciation').value = '';
+            document.getElementById('prop-sale-date').value = '';
+            document.getElementById('prop-replacement').value = '0';
+        }
+
+        function saveProperty() {
+            const prop = {
+                name: document.getElementById('prop-name').value,
+                property_type: document.getElementById('prop-type').value,
+                current_value: parseFloat(document.getElementById('prop-value').value) || 0,
+                mortgage_balance: parseFloat(document.getElementById('prop-mortgage').value) || 0,
+                purchase_price: parseFloat(document.getElementById('prop-purchase-price').value) || 0,
+                purchase_date: document.getElementById('prop-purchase-date').value,
+                annual_property_tax: parseFloat(document.getElementById('prop-tax').value) || 0,
+                annual_insurance: parseFloat(document.getElementById('prop-insurance').value) || 0,
+                annual_maintenance: parseFloat(document.getElementById('prop-maintenance').value) || 0,
+                annual_hoa: parseFloat(document.getElementById('prop-hoa').value) || 0,
+                appreciation_rate: parseFloat(document.getElementById('prop-appreciation').value) / 100 || null,
+                planned_sale_date: document.getElementById('prop-sale-date').value,
+                replacement_value: parseFloat(document.getElementById('prop-replacement').value) || 0
+            };
+
+            if (!prop.name) {
+                alert('Please enter a property name');
+                return;
+            }
+
+            if (editingPropertyIndex >= 0) {
+                homeProperties[editingPropertyIndex] = prop;
+            } else {
+                homeProperties.push(prop);
+            }
+
+            renderHomeProperties();
+            closePropertyModal();
+            debouncedAutoSave();
+        }
+
+        function editProperty(index) {
+            const prop = homeProperties[index];
+
+            document.getElementById('prop-name').value = prop.name;
+            document.getElementById('prop-type').value = prop.property_type;
+            document.getElementById('prop-value').value = prop.current_value;
+            document.getElementById('prop-mortgage').value = prop.mortgage_balance || 0;
+            document.getElementById('prop-purchase-price').value = prop.purchase_price || '';
+            document.getElementById('prop-purchase-date').value = prop.purchase_date || '';
+            document.getElementById('prop-tax').value = prop.annual_property_tax || 0;
+            document.getElementById('prop-insurance').value = prop.annual_insurance || 0;
+            document.getElementById('prop-maintenance').value = prop.annual_maintenance || 0;
+            document.getElementById('prop-hoa').value = prop.annual_hoa || 0;
+            document.getElementById('prop-appreciation').value = prop.appreciation_rate ? (prop.appreciation_rate * 100) : '';
+            document.getElementById('prop-sale-date').value = prop.planned_sale_date || '';
+            document.getElementById('prop-replacement').value = prop.replacement_value || 0;
+
+            editingPropertyIndex = index;
+            document.getElementById('property-modal-title').textContent = 'Edit Property';
+            document.getElementById('property-modal').style.display = 'block';
+        }
+
+        function deleteProperty(index) {
+            if (confirm('Are you sure you want to delete this property?')) {
+                homeProperties.splice(index, 1);
+                if (index === editingPropertyIndex) {
+                    editingPropertyIndex = -1;
+                } else if (index < editingPropertyIndex) {
+                    editingPropertyIndex--;
+                }
+                renderHomeProperties();
+                debouncedAutoSave();
             }
         }
 
@@ -2303,6 +2546,7 @@
                 future_expenses: [],
                 investment_types: investmentTypes,
                 income_streams: incomeStreams,
+                home_properties: homeProperties,
                 accounts: accounts,
                 assumed_tax_rate: (parseFloat(document.getElementById('db-tax-rate')?.value) || 22) / 100,
                 market_assumptions: {
@@ -2591,7 +2835,13 @@
                     } else {
                         incomeStreams = [];
                     }
-                    
+
+                    if (data.home_properties && Array.isArray(data.home_properties)) {
+                        homeProperties = data.home_properties;
+                    } else {
+                        homeProperties = [];
+                    }
+
                     if (data.accounts && Array.isArray(data.accounts)) {
                         accounts = data.accounts;
                     } else {
@@ -2605,6 +2855,7 @@
 
                     renderInvestmentTypes();
                     renderIncomeStreams();
+                    renderHomeProperties();
                     updateIncomeOwnerLabels();
 
                     // Update input name to match loaded profile
