@@ -1364,6 +1364,23 @@
             <div class="scenario-parameters">
                 <h3>Scenario Parameters</h3>
 
+                <!-- Market Profile Preset Selector -->
+                <div class="slider-group" style="margin-bottom: 20px;">
+                    <label style="font-weight: 600; color: #2c3e50;">
+                        <span>Market Profile Preset</span>
+                    </label>
+                    <select id="market-profile-preset" style="width: 100%; padding: 8px; margin-top: 8px; font-size: 14px; border: 2px solid #3498db; border-radius: 4px;" onchange="applyMarketPreset()">
+                        <option value="custom">Custom (Manual Adjustment)</option>
+                        <option value="conservative">Conservative 60/40 (Balanced)</option>
+                        <option value="sp500" selected>S&P 500 Historical (10% return, 18% vol)</option>
+                        <option value="growth">Growth/Tech Sector (12% return, 22% vol)</option>
+                        <option value="tech-aggressive">Tech/AI Aggressive (15% return, 28% vol)</option>
+                    </select>
+                    <div style="font-size: 11px; color: #666; margin-top: 8px; padding: 8px; background: #f8f9fa; border-radius: 4px;">
+                        <strong>Tip:</strong> Select a preset to automatically configure returns and volatility, or choose "Custom" to manually adjust all parameters.
+                    </div>
+                </div>
+
                 <div class="slider-group">
                     <label>
                         <span>Stock Allocation: <span class="slider-value" id="stocks-value">50</span>% (Bonds: <span id="bonds-value">50</span>%)</span>
@@ -1375,7 +1392,8 @@
                     <label>
                         <span>Stock Return Rate: <span class="slider-value" id="stock-return-value">10.00</span>%</span>
                     </label>
-                    <input type="range" id="stock-return-slider" min="4" max="15" value="10" step="0.25">
+                    <input type="range" id="stock-return-slider" min="4" max="20" value="10" step="0.25">
+                    <div style="font-size: 10px; color: #999; margin-top: 2px;">Higher returns = growth/tech focus (higher risk)</div>
                 </div>
 
                 <div class="slider-group">
@@ -1401,7 +1419,8 @@
                         <label>
                             <span>Stock Volatility (Std Dev): <span class="slider-value" id="stock-volatility-value">18.00</span>%</span>
                         </label>
-                        <input type="range" id="stock-volatility-slider" min="5" max="30" value="18" step="0.5">
+                        <input type="range" id="stock-volatility-slider" min="5" max="35" value="18" step="0.5">
+                        <div style="font-size: 10px; color: #999; margin-top: 2px;">Tech/AI sectors can have 25-35% volatility</div>
                     </div>
 
                     <div class="slider-group">
@@ -4739,6 +4758,92 @@ Return ONLY the JSON array, no other text.`;
             }
         }
 
+        function applyMarketPreset() {
+            const preset = document.getElementById('market-profile-preset').value;
+
+            if (preset === 'custom') {
+                // Don't change anything, let user manually adjust
+                return;
+            }
+
+            // Define preset configurations based on historical market data
+            const presets = {
+                'conservative': {
+                    stock_allocation: 60,
+                    stock_return: 9.5,      // Slightly lower due to conservative mix
+                    stock_volatility: 15,    // Lower volatility
+                    bond_return: 4.5,
+                    bond_volatility: 5,
+                    inflation: 2.5,
+                    description: 'Conservative 60/40 balanced portfolio'
+                },
+                'sp500': {
+                    stock_allocation: 80,
+                    stock_return: 10.0,      // Historical S&P 500 average
+                    stock_volatility: 18,    // Historical S&P 500 volatility
+                    bond_return: 4.0,
+                    bond_volatility: 6,
+                    inflation: 3.0,
+                    description: 'S&P 500 historical performance'
+                },
+                'growth': {
+                    stock_allocation: 90,
+                    stock_return: 12.0,      // Growth/tech sector average
+                    stock_volatility: 22,    // Higher volatility for tech
+                    bond_return: 4.0,
+                    bond_volatility: 6,
+                    inflation: 3.0,
+                    description: 'Growth and technology sector focus'
+                },
+                'tech-aggressive': {
+                    stock_allocation: 95,
+                    stock_return: 15.0,      // Aggressive tech/AI sector
+                    stock_volatility: 28,    // High volatility for emerging tech
+                    bond_return: 4.0,
+                    bond_volatility: 6,
+                    inflation: 3.0,
+                    description: 'Aggressive tech/AI sector with high growth potential'
+                }
+            };
+
+            const config = presets[preset];
+            if (!config) return;
+
+            // Apply the preset values to all sliders
+            document.getElementById('stocks-slider').value = config.stock_allocation;
+            document.getElementById('stock-return-slider').value = config.stock_return;
+            document.getElementById('stock-volatility-slider').value = config.stock_volatility;
+            document.getElementById('bond-return-slider').value = config.bond_return;
+            document.getElementById('bond-volatility-slider').value = config.bond_volatility;
+            document.getElementById('inflation-slider').value = config.inflation;
+
+            // Update all displays
+            updateSliderDisplay(document.getElementById('stocks-slider'));
+            updateSliderDisplay(document.getElementById('stock-return-slider'));
+            updateSliderDisplay(document.getElementById('stock-volatility-slider'));
+            updateSliderDisplay(document.getElementById('bond-return-slider'));
+            updateSliderDisplay(document.getElementById('bond-volatility-slider'));
+            updateSliderDisplay(document.getElementById('inflation-slider'));
+
+            // Show a notification
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #3498db;
+                color: white;
+                padding: 15px 20px;
+                border-radius: 4px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                z-index: 10000;
+                font-weight: 600;
+            `;
+            notification.textContent = `✓ Applied ${config.description}`;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+
         function resetToDefaults() {
             document.getElementById('stocks-slider').value = 50;
             document.getElementById('stock-return-slider').value = 10;
@@ -4794,12 +4899,24 @@ Return ONLY the JSON array, no other text.`;
 
         function attachSliderListeners() {
             const sliders = document.querySelectorAll('.scenario-parameters input[type="range"]');
+            const marketSliders = ['stocks-slider', 'stock-return-slider', 'stock-volatility-slider',
+                                  'bond-return-slider', 'bond-volatility-slider', 'inflation-slider'];
 
             sliders.forEach(slider => {
                 // Update display on input (immediate feedback)
                 slider.addEventListener('input', debounce(() => {
                     updateSliderDisplay(slider);
                 }, 50));
+
+                // If a market slider is manually changed, switch preset to "custom"
+                if (marketSliders.includes(slider.id)) {
+                    slider.addEventListener('input', () => {
+                        const presetSelector = document.getElementById('market-profile-preset');
+                        if (presetSelector && presetSelector.value !== 'custom') {
+                            presetSelector.value = 'custom';
+                        }
+                    });
+                }
 
                 // Auto-run analysis on change if checkbox is checked
                 slider.addEventListener('change', debounce(() => {
