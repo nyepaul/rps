@@ -2,3 +2,7 @@ webapp/data/planning.db
 webapp/venv/
 __pycache__/
 .gemini-clipboard/
+*.log
+*.log.*
+data/
+app_direct.log

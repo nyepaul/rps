@@ -11,26 +11,27 @@ A comprehensive retirement and wealth planning system with:
 - **Wealth Transfer**: Annual gifting, 529 plans, generation-skipping, estate tax planning
 
 ### 2. Web-Based Planning Application
-- Input and store your financial data securely
-- Run Monte Carlo retirement simulations (10,000 scenarios)
-- Optimize Social Security claiming strategies
-- Plan Roth conversions and calculate tax costs
-- Model wealth transfer to your sons
-- Track action items with priorities and deadlines
-- Generate PDF reports
+- **AI Strategic Advisor**: Personalized guidance powered by Gemini/Claude to optimize your specific situation.
+- **Dynamic Scenario Sandbox**: Real-time sliders to test "What If" scenarios for spending, allocation, and retirement dates.
+- **Flexible Income Streams**: Model pensions as annual income or lump sums with COLA and survivor options.
+- **Monte Carlo retirement simulations** (10,000 scenarios) with granular account sequencing logic.
+- **Smart Action Items**: Automated task breakdown and "Quick Apply" parameter updates.
+- **Optimize Social Security** claiming strategies and plan Roth conversions.
+- **Model wealth transfer** to your sons and track action items.
+- **Generate PDF reports** for professional coordination.
 
 ### 3. Your Personalized Analysis
 
 Based on your data:
-- **You**: Age 60, retiring 7/1/27, SS $3,700/mo, pension $120k/year
+- **You**: Age 60, retiring 7/1/27, SS $3,700/mo, pension $120k/year (Adjustable)
 - **Mindy**: Age 52, retiring age 55, SS $3,300/mo
-- **Net Worth**: $3.4M ($100k liquid, $2.8M traditional IRA, $850k Roth)
+- **Net Worth**: $3.87M ($100k liquid, $2.8M traditional IRA, $850k Roth, $120k Pension opportunity)
 - **Target**: $300k/year retirement income
 
-**Key Findings:**
-- ✅ 95%+ retirement success rate (excellent)
+**Key Findings (Annual Pension Scenario):**
+- ✅ 97%+ retirement success rate (excellent)
 - ✅ Guaranteed income covers 75% of needs ($224k pension + SS delayed to 70)
-- ✅ Only 2.5% withdrawal rate needed ($76k from $3.4M portfolio)
+- ✅ Only 2.2% withdrawal rate needed ($76k from portfolio)
 - ✅ 10-year Roth conversion window worth $300k
 - ✅ $72k/year gifting capacity to sons
 

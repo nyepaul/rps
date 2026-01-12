@@ -488,19 +488,17 @@ class RetirementModel:
 def extract_assets():
     print("Received extract-assets request")
     data = request.json
-    api_key = data.get('api_key')
     image_b64 = data.get('image')
     provider = data.get('llm_provider', 'gemini')
     existing_assets = data.get('existing_assets', [])  # Accept existing asset data for merging
     print(f"Provider: {provider}, Image data length: {len(image_b64) if image_b64 else 0}")
-    # Fallback to server environment keys if not provided by client
-    if not api_key:
-        if provider == 'gemini':
-            api_key = os.environ.get('GEMINI_API_KEY')
-        else:
-            api_key = os.environ.get('ANTHROPIC_API_KEY')
+    # API keys are now only read from environment variables
+    if provider == 'gemini':
+        api_key = os.environ.get('GEMINI_API_KEY')
+    else:
+        api_key = os.environ.get('ANTHROPIC_API_KEY')
     if not api_key or not image_b64:
-        return jsonify({'error': 'Missing API key or image data. Please set it in Settings or on the server.'}), 400
+        return jsonify({'error': f'Missing API key or image data. Set {provider.upper()}_API_KEY environment variable.'}), 400
     try:
         import base64
         # Decode base64 string to raw bytes
@@ -1045,22 +1043,15 @@ def perform_self_assessment():
         c.execute('SELECT value FROM system_settings WHERE key = "default_llm"')
         row = c.fetchone()
         llm_provider = row[0] if row else 'gemini'
+    # API keys are now only read from environment variables
     api_key = None
     if llm_provider == 'gemini':
-        api_key = os.environ.get('GEMINI_API_KEY') or data.get('api_key')
-        if not api_key:
-            c.execute('SELECT value FROM system_settings WHERE key = "gemini_api_key"')
-            row = c.fetchone()
-            api_key = row[0] if row else None
+        api_key = os.environ.get('GEMINI_API_KEY')
     else: # claude
-        api_key = os.environ.get('ANTHROPIC_API_KEY') or data.get('api_key')
-        if not api_key:
-            c.execute('SELECT value FROM system_settings WHERE key = "claude_api_key"')
-            row = c.fetchone()
-            api_key = row[0] if row else None
+        api_key = os.environ.get('ANTHROPIC_API_KEY')
     if not api_key:
         conn.close()
-        return jsonify({'error': f'{llm_provider.capitalize()} API key not set'}), 400
+        return jsonify({'error': f'{llm_provider.capitalize()} API key not configured. Set {llm_provider.upper()}_API_KEY environment variable.'}), 400
     try:
         # 1. Gather Context
         profile_data = data.get('profile_data')
@@ -1156,22 +1147,15 @@ def advisor_chat():
         c.execute('SELECT value FROM system_settings WHERE key = "default_llm"')
         row = c.fetchone()
         llm_provider = row[0] if row else 'gemini'
+    # API keys are now only read from environment variables
     api_key = None
     if llm_provider == 'gemini':
-        api_key = os.environ.get('GEMINI_API_KEY') or data.get('api_key')
-        if not api_key:
-            c.execute('SELECT value FROM system_settings WHERE key = "gemini_api_key"')
-            row = c.fetchone()
-            api_key = row[0] if row else None
+        api_key = os.environ.get('GEMINI_API_KEY')
     else: # claude
-        api_key = os.environ.get('ANTHROPIC_API_KEY') or data.get('api_key')
-        if not api_key:
-            c.execute('SELECT value FROM system_settings WHERE key = "claude_api_key"')
-            row = c.fetchone()
-            api_key = row[0] if row else None
+        api_key = os.environ.get('ANTHROPIC_API_KEY')
     if not api_key:
         conn.close()
-        return jsonify({'error': f'{llm_provider.capitalize()} API key not set. Please set it in Settings.'}), 400
+        return jsonify({'error': f'{llm_provider.capitalize()} API key not configured. Set {llm_provider.upper()}_API_KEY environment variable.'}), 400
     try:
         # Load conversation history from database (Profile-specific)
         c.execute('SELECT role, content FROM conversations WHERE profile_name = ? ORDER BY id ASC', (profile_name,))
@@ -1184,6 +1168,44 @@ You provide personalized, actionable advice based on the user's specific financi
 - Focused on actionable recommendations with specific next steps
 - Balanced between optimism and realistic risk assessment
 - Comprehensive, considering tax, legal, and financial implications
+
+CRITICAL: When providing recommendations, you MUST consider and advise on:
+1. **Retirement Timing**: Analyze whether the current retirement dates are optimal. Consider:
+   - Social Security claiming strategies (early at 62, full at 67, delayed to 70)
+   - Portfolio sustainability vs. additional working years
+   - Healthcare coverage gaps before Medicare (age 65)
+   - Tax bracket optimization through retirement date selection
+
+2. **Financial Structure Recommendations**: Provide specific guidance on:
+   - Roth conversion strategies and optimal conversion amounts
+   - Asset allocation adjustments based on age and risk tolerance
+   - Tax-efficient withdrawal sequencing
+   - RMD planning and management strategies
+   - Income stream optimization (pensions, annuities, Social Security)
+
+3. **Scenario Optimization**: When you identify improvements, provide them in a structured format that can be applied to their profile:
+   - Include specific parameter changes with exact values
+   - Explain the rationale for each recommendation
+   - Quantify expected improvements where possible
+
+IMPORTANT: When you provide specific numerical recommendations (retirement dates, asset allocations, income targets, etc.), format them in a special ACTION_DATA block at the end of your response like this:
+
+```action_data
+{
+  "retirement_date_p1": "2030-06-01",
+  "retirement_date_p2": "2032-01-01",
+  "stock_allocation": 0.65,
+  "target_annual_income": 180000
+}
+```
+
+Use these exact field names when applicable:
+- retirement_date_p1, retirement_date_p2 (YYYY-MM-DD format)
+- stock_allocation (0.0-1.0)
+- target_annual_income (number)
+- annual_expenses (number)
+- p1_ss_monthly, p2_ss_monthly (Social Security monthly amounts)
+
 When discussing strategies, explain both the benefits and potential drawbacks. Always remind users to consult with their own tax advisor, attorney, or financial planner before making major financial decisions."""
         financial_context = ""
         if include_context:
@@ -1257,6 +1279,16 @@ When discussing strategies, explain both the benefits and potential drawbacks. A
                 system_prompt=full_system_prompt,
                 history=history_rows
             )
+        # Parse action_data if present
+        action_data = None
+        import re
+        action_data_match = re.search(r'```action_data\s*\n(.*?)\n```', assistant_message, re.DOTALL)
+        if action_data_match:
+            try:
+                action_data = json.loads(action_data_match.group(1))
+            except json.JSONDecodeError:
+                pass  # Ignore malformed action_data
+
         # Store conversation in database (Profile-specific)
         c.execute('''INSERT INTO conversations (profile_name, role, content, created_at)
                      VALUES (?, ?, ?, ?)''',
@@ -1266,10 +1298,15 @@ When discussing strategies, explain both the benefits and potential drawbacks. A
                   (profile_name, 'assistant', assistant_message, datetime.now().isoformat()))
         conn.commit()
         conn.close()
-        return jsonify({
+
+        result = {
             'response': assistant_message,
             'status': 'success'
-        })
+        }
+        if action_data:
+            result['action_data'] = action_data
+
+        return jsonify(result)
     except Exception as e:
         if 'conn' in locals(): conn.close()
         return jsonify({'error': str(e)}), 500

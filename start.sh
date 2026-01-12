@@ -25,7 +25,7 @@ source venv/bin/activate
 
 # Install dependencies
 echo "Installing dependencies..."
-pip install -q flask flask-cors sqlalchemy numpy pandas matplotlib reportlab cryptography
+pip install -q -r requirements.txt
 
 # Create data directory
 mkdir -p data

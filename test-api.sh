@@ -15,13 +15,57 @@ health=$(curl -s $BASE_URL/health)
 echo "   Result: $health"
 echo ""
 
-# Test 2: Get Profile
-echo "2. Get Saved Profile..."
-profile=$(curl -s $BASE_URL/api/profile)
-if [ "$profile" != "null" ]; then
-    echo "   ✓ Profile exists"
+# Test 2: Profile Lifecycle (Create, List, Get)
+echo "2. Testing Profile Lifecycle..."
+
+# 2a. Create Profile
+echo "   Creating 'TestProfile'..."
+cat > /tmp/profile.json << 'EOF'
+{
+  "person1": {"name": "Test User", "birth_date": "1980-01-01", "retirement_date": "2045-01-01", "social_security": 2000},
+  "person2": {"name": "Test Spouse", "birth_date": "1982-01-01", "retirement_date": "2047-01-01", "social_security": 1500},
+  "children": [],
+  "liquid_assets": 50000,
+  "traditional_ira": 100000,
+  "roth_ira": 50000,
+  "pension_lump_sum": 0,
+  "pension_annual": 0,
+  "annual_expenses": 60000,
+  "target_annual_income": 80000,
+  "risk_tolerance": "moderate",
+  "asset_allocation": {"stocks": 0.6, "bonds": 0.4},
+  "future_expenses": [],
+  "investment_types": [],
+  "accounts": []
+}
+EOF
+
+create_status=$(curl -s -o /dev/null -w "%{http_code}" -X POST $BASE_URL/api/profile/TestProfile \
+  -H "Content-Type: application/json" \
+  -d @/tmp/profile.json)
+
+if [ "$create_status" -eq 200 ]; then
+    echo "   ✓ Profile created"
 else
-    echo "   ✗ No profile found"
+    echo "   ✗ Failed to create profile (Status: $create_status)"
+fi
+
+# 2b. List Profiles
+echo "   Listing profiles..."
+profiles=$(curl -s $BASE_URL/api/profiles)
+if echo "$profiles" | grep -q "TestProfile"; then
+    echo "   ✓ 'TestProfile' found in list"
+else
+    echo "   ✗ 'TestProfile' NOT found in list"
+fi
+
+# 2c. Get Profile
+echo "   Getting 'TestProfile'..."
+profile_data=$(curl -s $BASE_URL/api/profile/TestProfile)
+if echo "$profile_data" | grep -q "Test User"; then
+    echo "   ✓ Profile data verified"
+else
+    echo "   ✗ Failed to retrieve profile data"
 fi
 echo ""
 

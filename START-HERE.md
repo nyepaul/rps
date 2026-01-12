@@ -1,65 +1,47 @@
-# Getting Started - 2 Steps
+# Welcome to Your Planning System
 
-## Step 1: Start the Server
+The application is now running with **Advanced AI Integration** and **Dynamic Pension Modeling**.
 
-    cd retirement-planning-system
-    ./start.sh
+## Quick Start - 3 Steps
 
-Wait for this message:
-```
-Access the application at:
-http://127.0.0.1:8080
+### 1. Start the Server
+```bash
+./start.sh
 ```
 
-## Step 2: Open Browser
+### 2. Open the Dashboard
+Navigate to: **[http://127.0.0.1:8080](http://127.0.0.1:8080)**
 
-Navigate to: **http://127.0.0.1:8080**
-
-(NOT file://, must be http://)
-
----
-
-## That's It!
-
-The application will open. Your data is pre-loaded.
-
-**Click "Run Complete Analysis"** to see your retirement projections.
+### 3. Load & Optimize
+- Go to the **Profile & Data** tab.
+- Select your profile (e.g., "Initial") and click **Load**.
+- **Adjust Pension**: Under "Income Streams," you can modify pension amounts, start dates, and inflation rules.
+- **Get AI Advice**: Go to the **Analysis** tab and click **🤖 AI Recommendations**.
 
 ---
 
-## To Stop
+## What's New in Version 2.0
 
-Press **Ctrl+C** in the terminal where the server is running.
+### 🤖 Smart Recommendations
+The system now connects directly to Gemini and Claude. Click the **"🤖 AI Recommendations"** button to get a prioritized list of strategic moves tailored to your specific balances and income.
 
----
+### ⚡ Quick Apply
+Found a better strategy in the AI advice? Use the **"⚡ Quick Apply"** button to instantly update your retirement dates or spending targets without manual entry.
 
-## Troubleshooting
+### 🎛️ Scenario Sandbox
+On the **Dashboard**, use the sliders to test "What If" scenarios in real-time. See how reducing spending by $10k/year or working 2 years longer impacts your 30-year projection.
 
-If you get errors, see: [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
-
-Common fix:
-
-    chmod +x start.sh
-    ./start.sh
-
----
-
-## Key Files to Read
-
-1. **CORRECTED-ANALYSIS.md** - Your financial situation
-2. **TROUBLESHOOTING.md** - Fix errors
-3. **README.md** - Full documentation
-4. **QUICKSTART.md** - Detailed guide
+### 🏦 Flexible Income Streams
+Pensions are no longer static hardcoded values. You can model them as:
+- **Annual Income**: Standard pension payments with COLA (inflation) options.
+- **Lump Sum**: Large one-time payouts that roll into your Traditional IRA.
 
 ---
 
-## Your Numbers
+## Critical Files
+- **CORRECTED-ANALYSIS.md**: Interpreting your current baseline results.
+- **YOUR-ACTION-PLAN.md**: Your 30-year implementation timeline.
+- **TROUBLESHOOTING.md**: Solutions for "Failed to Fetch" or Port errors.
 
-- **Total Assets:** $3.87M
-- **Guaranteed Income:** $104k/year (SS only)
-- **Target Spending:** $300k/year
-- **Withdrawal Rate:** 5.1% ⚠️ (too high)
-
-**Recommendation:** Reduce to $275k/year for 90%+ success rate
-
-Read CORRECTED-ANALYSIS.md for full details.
+---
+*Press **Ctrl+C** in the terminal to stop the server when finished.*
