@@ -1806,14 +1806,6 @@
         async function handleImageUpload(file) {
             if (!file) return;
 
-            // Check API Key
-            const apiKey = checkApiKey();
-            if (!apiKey) {
-                alert("Please set your API Keys in Settings to use image extraction.");
-                openSettings();
-                return;
-            }
-
             const pasteArea = document.getElementById('asset-paste-area');
             const originalHtml = pasteArea.innerHTML;
             pasteArea.style.borderColor = "#3498db";
@@ -1846,7 +1838,6 @@
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
                         image: base64Image,
-                        api_key: apiKey,
                         llm_provider: localStorage.getItem('default_llm') || 'gemini',
                         existing_assets: existing_assets
                     })
@@ -2615,15 +2606,7 @@
             const resultsDiv = document.getElementById('ai-recommendations');
             resultsDiv.innerHTML = '<div class="loading">🤖 AI analyzing your financial profile and generating personalized recommendations...</div>';
 
-            // Check if we need an API key
-            const apiKey = checkApiKey();
             const provider = localStorage.getItem('default_llm') || 'gemini';
-            
-            if (!apiKey) {
-                alert('Please configure your API keys in Settings.');
-                openSettings();
-                return;
-            }
 
             try {
                 const prompt = `Based on my complete financial profile and the comprehensive analysis results, please provide:
@@ -2644,7 +2627,6 @@ Please be direct and actionable. My success rate is currently ${window.currentAn
                     body: JSON.stringify({
                         message: prompt,
                         include_context: true,
-                        api_key: apiKey,
                         profile_data: getFormData(),
                         llm_provider: provider
                     })
@@ -2715,12 +2697,6 @@ Please be direct and actionable. My success rate is currently ${window.currentAn
                 return;
             }
 
-            const apiKey = localStorage.getItem('gemini_api_key');
-            if (!apiKey) {
-                alert('API key not found. Please get AI recommendations first.');
-                return;
-            }
-
             const loadingMsg = document.createElement('div');
             loadingMsg.innerHTML = '<div class="loading" style="margin-top: 10px;">🤖 Parsing recommendations into action items...</div>';
             document.getElementById('quick-apply-options').appendChild(loadingMsg);
@@ -2770,8 +2746,7 @@ Return ONLY the JSON array, no other text.`;
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
                         message: structurePrompt,
-                        include_context: false,
-                        api_key: apiKey
+                        include_context: false
                     })
                 });
 
@@ -4113,12 +4088,6 @@ Return ONLY the JSON array, no other text.`;
             const item = wizardItems.find(i => i.id === itemId);
             if (!item) return;
 
-            const apiKey = checkApiKey();
-            if (!apiKey) {
-                alert("Please set API key in Settings first");
-                return;
-            }
-
             const bodyDiv = document.getElementById('wizard-body');
             const originalContent = bodyDiv.innerHTML;
             bodyDiv.innerHTML += '<div class="loading" style="position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); display:flex; align-items:center; justify-content:center;">🤖 Generating subtasks...</div>';
@@ -4127,7 +4096,7 @@ Return ONLY the JSON array, no other text.`;
                 const prompt = `Break down this financial task into 3-5 specific, actionable sub-steps (checklist).
                 Task: "${item.description}"
                 Category: "${item.category}"
-                
+
                 Return ONLY a JSON array of strings. Example: ["Step 1", "Step 2"]`;
 
                 const response = await fetch(`${API_URL}/advisor/chat`, {
@@ -4135,8 +4104,7 @@ Return ONLY the JSON array, no other text.`;
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
                         message: prompt,
-                        include_context: false,
-                        api_key: apiKey
+                        include_context: false
                     })
                 });
 
@@ -4396,14 +4364,7 @@ Return ONLY the JSON array, no other text.`;
         }
 
         async function runSelfAssessment() {
-            const apiKey = checkApiKey();
             const provider = localStorage.getItem('default_llm') || 'gemini';
-            
-            if (!apiKey) {
-                alert("Please set your API Keys in Settings first.");
-                openSettings();
-                return;
-            }
 
             // Visual feedback
             const btn = event.target;
@@ -4417,8 +4378,7 @@ Return ONLY the JSON array, no other text.`;
                 const response = await fetch(`${API_URL}/perform-self-assessment`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ 
-                        api_key: apiKey,
+                    body: JSON.stringify({
                         profile_name: currentProfile,
                         profile_data: getFormData(),
                         llm_provider: provider
@@ -4444,18 +4404,11 @@ Return ONLY the JSON array, no other text.`;
         // AI Advisor functions
         function checkApiKey() {
             const provider = localStorage.getItem('default_llm') || 'gemini';
-            const geminiKey = localStorage.getItem('gemini_api_key');
-            const claudeKey = localStorage.getItem('claude_api_key');
-            
-            const currentKey = (provider === 'gemini') ? geminiKey : claudeKey;
-            
-            if (currentKey) {
-                document.getElementById('api-key-notice').style.display = 'none';
-                document.getElementById('api-key-status').style.display = 'block';
-            } else {
-                document.getElementById('api-key-notice').style.display = 'block';
-                document.getElementById('api-key-status').style.display = 'none';
-            }
+
+            // API keys are now configured via environment variables on the backend
+            // We always show the status as configured since we can't check env vars from the frontend
+            document.getElementById('api-key-notice').style.display = 'none';
+            document.getElementById('api-key-status').style.display = 'block';
 
             // Update indicator
             const indicator = document.getElementById('current-llm-name');
@@ -4463,7 +4416,7 @@ Return ONLY the JSON array, no other text.`;
                 indicator.textContent = provider.charAt(0).toUpperCase() + provider.slice(1);
             }
 
-            return currentKey;
+            return true; // Return true since keys are checked on backend
         }
 
         function applySettings(settings) {
@@ -4513,14 +4466,7 @@ Return ONLY the JSON array, no other text.`;
 
             if (!message) return;
 
-            const apiKey = checkApiKey();
             const provider = localStorage.getItem('default_llm') || 'gemini';
-            
-            if (!apiKey) {
-                alert('Please set your API keys in Settings first');
-                openSettings();
-                return;
-            }
 
             // Disable input while processing
             const sendButton = document.getElementById('send-button');
@@ -4540,7 +4486,6 @@ Return ONLY the JSON array, no other text.`;
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
                         message: message,
-                        api_key: apiKey,
                         include_context: true,
                         profile_name: currentProfile,
                         profile_data: getFormData(),
@@ -4551,7 +4496,7 @@ Return ONLY the JSON array, no other text.`;
                 const data = await response.json();
 
                 if (response.ok) {
-                    addMessageToChat('assistant', data.response);
+                    addMessageToChat('assistant', data.response, data.action_data);
                 } else {
                     addMessageToChat('error', data.error || 'An error occurred');
                 }
@@ -4566,7 +4511,7 @@ Return ONLY the JSON array, no other text.`;
             }
         }
 
-        function addMessageToChat(role, content) {
+        function addMessageToChat(role, content, actionData = null) {
             const messagesDiv = document.getElementById('chat-messages');
             const messageDiv = document.createElement('div');
             messageDiv.className = `chat-message ${role}`;
@@ -4577,10 +4522,166 @@ Return ONLY the JSON array, no other text.`;
                 .replace(/\n/g, '<br>');
 
             messageDiv.innerHTML = formattedContent;
+
+            // If action_data is present, add action buttons
+            if (actionData && role === 'assistant') {
+                const actionsDiv = document.createElement('div');
+                actionsDiv.style.marginTop = '15px';
+                actionsDiv.style.padding = '15px';
+                actionsDiv.style.background = '#f0f9ff';
+                actionsDiv.style.borderLeft = '4px solid #3498db';
+                actionsDiv.style.borderRadius = '4px';
+
+                const actionsHeader = document.createElement('div');
+                actionsHeader.innerHTML = '<strong>⚡ AI Recommendations Available</strong>';
+                actionsHeader.style.marginBottom = '10px';
+                actionsDiv.appendChild(actionsHeader);
+
+                const buttonContainer = document.createElement('div');
+                buttonContainer.style.display = 'flex';
+                buttonContainer.style.gap = '10px';
+                buttonContainer.style.flexWrap = 'wrap';
+
+                // Apply to Current Profile button
+                const applyBtn = document.createElement('button');
+                applyBtn.textContent = '✓ Apply to Current Profile';
+                applyBtn.style.padding = '8px 16px';
+                applyBtn.style.background = '#2ecc71';
+                applyBtn.style.color = 'white';
+                applyBtn.style.border = 'none';
+                applyBtn.style.borderRadius = '4px';
+                applyBtn.style.cursor = 'pointer';
+                applyBtn.style.fontSize = '13px';
+                applyBtn.onclick = () => applyActionData(actionData);
+                buttonContainer.appendChild(applyBtn);
+
+                // Save as Optimized Profile button
+                const saveOptimizedBtn = document.createElement('button');
+                saveOptimizedBtn.textContent = '💾 Save as Optimized Profile';
+                saveOptimizedBtn.style.padding = '8px 16px';
+                saveOptimizedBtn.style.background = '#3498db';
+                saveOptimizedBtn.style.color = 'white';
+                saveOptimizedBtn.style.border = 'none';
+                saveOptimizedBtn.style.borderRadius = '4px';
+                saveOptimizedBtn.style.cursor = 'pointer';
+                saveOptimizedBtn.style.fontSize = '13px';
+                saveOptimizedBtn.onclick = () => saveAsOptimizedProfile(actionData);
+                buttonContainer.appendChild(saveOptimizedBtn);
+
+                actionsDiv.appendChild(buttonContainer);
+                messageDiv.appendChild(actionsDiv);
+            }
+
             messagesDiv.appendChild(messageDiv);
 
             // Scroll to bottom
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function applyActionData(actionData) {
+            if (!actionData) return;
+
+            // Apply recommendations to current profile
+            if (actionData.retirement_date_p1) {
+                document.getElementById('p1-retire').value = actionData.retirement_date_p1;
+            }
+            if (actionData.retirement_date_p2) {
+                document.getElementById('p2-retire').value = actionData.retirement_date_p2;
+            }
+            if (actionData.stock_allocation !== undefined) {
+                const stockSlider = document.getElementById('stock-allocation');
+                if (stockSlider) {
+                    stockSlider.value = actionData.stock_allocation;
+                    // Trigger the update display if there's an onchange handler
+                    stockSlider.dispatchEvent(new Event('input'));
+                }
+            }
+            if (actionData.target_annual_income !== undefined) {
+                const incomeInput = document.getElementById('target-income');
+                if (incomeInput) {
+                    incomeInput.value = actionData.target_annual_income;
+                }
+            }
+            if (actionData.annual_expenses !== undefined) {
+                const expensesInput = document.getElementById('annual-expenses');
+                if (expensesInput) {
+                    expensesInput.value = actionData.annual_expenses;
+                }
+            }
+            if (actionData.p1_ss_monthly !== undefined) {
+                const p1SSInput = document.getElementById('p1-ss');
+                if (p1SSInput) {
+                    p1SSInput.value = actionData.p1_ss_monthly;
+                }
+            }
+            if (actionData.p2_ss_monthly !== undefined) {
+                const p2SSInput = document.getElementById('p2-ss');
+                if (p2SSInput) {
+                    p2SSInput.value = actionData.p2_ss_monthly;
+                }
+            }
+
+            // Auto-save the changes
+            debouncedAutoSave();
+
+            // Show confirmation and switch to profile tab
+            showNotification('✅ AI recommendations applied to current profile!', 'success');
+            showTab('profile');
+        }
+
+        async function saveAsOptimizedProfile(actionData) {
+            if (!actionData) return;
+
+            const currentProfileName = getCurrentProfileName();
+            const newProfileName = prompt('Enter name for optimized profile:', `${currentProfileName} (Optimized)`);
+
+            if (!newProfileName) return;
+
+            try {
+                // Get current profile data
+                const currentData = getFormData();
+
+                // Apply action_data recommendations to the data
+                if (actionData.retirement_date_p1) {
+                    currentData.person1.retirement_date = actionData.retirement_date_p1;
+                }
+                if (actionData.retirement_date_p2) {
+                    currentData.person2.retirement_date = actionData.retirement_date_p2;
+                }
+                if (actionData.stock_allocation !== undefined) {
+                    currentData.market_assumptions.stock_allocation = actionData.stock_allocation;
+                }
+                if (actionData.target_annual_income !== undefined) {
+                    currentData.target_annual_income = actionData.target_annual_income;
+                }
+                if (actionData.annual_expenses !== undefined) {
+                    currentData.annual_expenses = actionData.annual_expenses;
+                }
+                if (actionData.p1_ss_monthly !== undefined) {
+                    currentData.person1.social_security = actionData.p1_ss_monthly;
+                }
+                if (actionData.p2_ss_monthly !== undefined) {
+                    currentData.person2.social_security = actionData.p2_ss_monthly;
+                }
+
+                // Save as new profile
+                const response = await fetch(`${API_URL}/profile/${encodeURIComponent(newProfileName)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(currentData)
+                });
+
+                if (response.ok) {
+                    showNotification(`✅ Optimized profile "${newProfileName}" created successfully!`, 'success');
+                    await refreshProfilesList();
+                    await loadProfile(newProfileName);
+                } else {
+                    const error = await response.json();
+                    showNotification('❌ Error creating optimized profile: ' + (error.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showNotification('❌ Error: ' + error.message, 'error');
+            }
         }
 
         function handleChatKeypress(event) {
@@ -4801,14 +4902,6 @@ Return ONLY the JSON array, no other text.`;
             try {
                 const response = await fetch(`${API_URL}/system/settings`);
                 const sysSettings = await response.json();
-                if (sysSettings.gemini_api_key) {
-                    document.getElementById('setting-api-key').value = sysSettings.gemini_api_key;
-                    localStorage.setItem('gemini_api_key', sysSettings.gemini_api_key);
-                }
-                if (sysSettings.claude_api_key) {
-                    document.getElementById('setting-claude-api-key').value = sysSettings.claude_api_key;
-                    localStorage.setItem('claude_api_key', sysSettings.claude_api_key);
-                }
                 if (sysSettings.default_llm) {
                     document.getElementById('setting-default-llm').value = sysSettings.default_llm;
                     localStorage.setItem('default_llm', sysSettings.default_llm);
@@ -4846,15 +4939,11 @@ Return ONLY the JSON array, no other text.`;
                 targetSuccessRate: parseInt(document.getElementById('setting-target-success').value)
             };
 
-            const geminiKey = document.getElementById('setting-api-key').value.trim();
-            const claudeKey = document.getElementById('setting-claude-api-key').value.trim();
             const defaultLLM = document.getElementById('setting-default-llm').value;
 
             localStorage.setItem('app_settings', JSON.stringify(settings));
-            if (geminiKey) localStorage.setItem('gemini_api_key', geminiKey);
-            if (claudeKey) localStorage.setItem('claude_api_key', claudeKey);
             localStorage.setItem('default_llm', defaultLLM);
-            
+
             applySettings(settings);
 
             // Save to backend
@@ -4863,8 +4952,6 @@ Return ONLY the JSON array, no other text.`;
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
-                        gemini_api_key: geminiKey,
-                        claude_api_key: claudeKey,
                         default_llm: defaultLLM
                     })
                 });
@@ -5047,18 +5134,14 @@ Return ONLY the JSON array, no other text.`;
 
                     <div class="setting-item">
                         <div>
-                            <label>Gemini API Key</label>
-                            <div class="description">Required for Google Gemini models</div>
+                            <label>API Keys</label>
+                            <div class="description">
+                                Set API keys via environment variables before starting the server:<br>
+                                <code style="font-size: 0.85em; background: var(--border-color); padding: 2px 6px; border-radius: 3px; display: inline-block; margin-top: 4px;">
+                                    export GEMINI_API_KEY="..." && export ANTHROPIC_API_KEY="..."
+                                </code>
+                            </div>
                         </div>
-                        <input type="password" id="setting-api-key" placeholder="AIza...">
-                    </div>
-
-                    <div class="setting-item">
-                        <div>
-                            <label>Claude API Key</label>
-                            <div class="description">Required for Anthropic Claude models</div>
-                        </div>
-                        <input type="password" id="setting-claude-api-key" placeholder="sk-ant-...">
                     </div>
                 </div>
 

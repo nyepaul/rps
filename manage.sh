@@ -31,7 +31,10 @@ start_simple() {
 start_docker() {
     echo "Building Docker image..."
     cd $PROJECT_DIR/webapp
-    docker build -t retirement-planning .
+    if ! docker build -t retirement-planning .; then
+        echo "Docker build failed!"
+        exit 1
+    fi
     
     echo "Starting container..."
     docker run -d \
@@ -51,7 +54,7 @@ stop_app() {
     echo "Stopping application..."
     docker stop retirement-planner 2>/dev/null || true
     docker rm retirement-planner 2>/dev/null || true
-    pkill -f "python app.py" 2>/dev/null || true
+    pkill -if "python app.py" 2>/dev/null || true
     echo "Application stopped"
 }
 
@@ -125,7 +128,7 @@ check_status() {
     
     if docker ps | grep -q retirement-planner; then
         echo "Docker container: RUNNING"
-    elif pgrep -f "python app.py" > /dev/null; then
+    elif pgrep -if "python app.py" > /dev/null; then
         echo "Python process: RUNNING"
     else
         echo "Status: STOPPED"
