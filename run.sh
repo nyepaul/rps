@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd /home/claude/retirement-planning-system/webapp
+cd /home/claude/pan-rps/webapp
 
 docker build -t retirement-planning .
 

@@ -1,4 +1,4 @@
-# Retirement Planning System - Complete
+# PAN-RPS (Retirement Planning System) - Complete
 
 ## What I Built For You
 
@@ -51,7 +51,7 @@ Based on your data:
 ## File Structure
 
 ```
-retirement-planning-system/
+pan-rps/
 ├── QUICKSTART.md              # Start here (5 minutes)
 ├── README.md                  # Full documentation
 ├── manage.sh                  # Management commands
@@ -76,13 +76,13 @@ retirement-planning-system/
 
 ### Quick Start (5 minutes)
 
-    cd retirement-planning-system
+    cd pan-rps
     chmod +x manage.sh
     ./manage.sh start
 
 Then open in browser:
 
-    file:///path/to/retirement-planning-system/webapp/index.html
+    file:///path/to/pan-rps/webapp/index.html
 
 ### Essential Commands
 
@@ -413,10 +413,10 @@ This gives you a framework to make informed decisions with your professional adv
 
 **Ready to start?**
 
-    cd retirement-planning-system
+    cd pan-rps
     ./manage.sh start
     
     # Then open in browser:
-    file:///path/to/retirement-planning-system/webapp/index.html
+    file:///path/to/pan-rps/webapp/index.html
 
 **Good luck with your planning!**

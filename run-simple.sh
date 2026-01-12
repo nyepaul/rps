@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd /home/claude/retirement-planning-system/webapp
+cd /home/claude/pan-rps/webapp
 
 python3 -m venv venv
 source venv/bin/activate

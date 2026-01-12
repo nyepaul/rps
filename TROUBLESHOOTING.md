@@ -8,7 +8,7 @@ This error means the backend Flask server isn't running properly.
 
 **Step 1: Start the server correctly**
 
-    cd retirement-planning-system
+    cd pan-rps
     ./start.sh
 
 You should see:
@@ -117,7 +117,7 @@ Linux:
 
 ## How to completely restart
 
-    cd retirement-planning-system
+    cd pan-rps
     ./manage.sh clean
     ./start.sh
 
@@ -146,7 +146,7 @@ This removes all data and starts fresh.
 
 4. **Test manually:**
 
-       cd retirement-planning-system/webapp
+       cd pan-rps/webapp
        source venv/bin/activate
        python app.py
 
