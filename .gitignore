@@ -1,11 +1,30 @@
-webapp/data/planning.db
-webapp/venv/
-__pycache__/
-.gemini-clipboard/
+# Logs
+logs/
 *.log
 *.log.*
-data/
-backups/
-app_direct.log
-.DS_Store
+
+# Python
+__pycache__/
 *.pyc
+*.pyo
+src/venv/
+*.egg-info/
+
+# Data (keep local only)
+data/
+data/*.db
+data/*.db-*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+.gemini-clipboard/
+
+# Backups
+backups/

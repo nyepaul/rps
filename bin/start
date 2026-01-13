@@ -5,7 +5,7 @@ echo "  Retirement Planning System - Starting...       "
 echo "==================================================="
 echo ""
 
-cd "$(dirname "$0")/webapp"
+cd "$(dirname "$0")/../src"
 
 # Check if Python 3 is installed
 if ! command -v python3 &> /dev/null; then
@@ -27,7 +27,7 @@ echo "Installing dependencies..."
 ./venv/bin/pip install -q -r requirements.txt
 
 # Create data directory
-mkdir -p data
+mkdir -p ../data
 
 echo "✓ Dependencies installed"
 echo ""

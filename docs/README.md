@@ -1,58 +1,74 @@
-# Documentation Directory
+# Documentation Index
 
-This directory contains technical documentation, guides, and analysis reports for the Retirement Planning System.
+Welcome to the pan-rps documentation. This directory contains comprehensive guides for using, understanding, and maintaining the Retirement Planning System.
 
-## Documentation Files
+## Quick Navigation
 
-### Technical Documentation
-- **[CLAUDE.md](CLAUDE.md)** - Project instructions for Claude Code AI assistant
-- **[GEMINI.md](GEMINI.md)** - Google Gemini AI integration notes
-- **[SAMPLE-PROFILE.md](SAMPLE-PROFILE.md)** - Comprehensive sample profile documentation
-- **[SYSTEM-OVERVIEW.md](SYSTEM-OVERVIEW.md)** - System architecture and design
-- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and solutions
+### Getting Started
+- **[START-HERE.md](START-HERE.md)** - Welcome guide for new users
+- **[../QUICKSTART.md](../QUICKSTART.md)** - 5-minute quick start guide
+- **[../README.md](../README.md)** - Project overview and main documentation
 
-### Planning Guides
-- **[YOUR-ACTION-PLAN.md](YOUR-ACTION-PLAN.md)** - 30-year implementation timeline
-- **[PENSION-CLARIFICATION.md](PENSION-CLARIFICATION.md)** - Pension modeling clarifications
+### Architecture & Technical
+- **[architecture/SYSTEM-OVERVIEW.md](architecture/SYSTEM-OVERVIEW.md)** - Complete system architecture, features, and technical details
+- **[ai-integration/CLAUDE.md](ai-integration/CLAUDE.md)** - API reference and development guide for Claude Code assistants
+- **[ai-integration/GEMINI.md](ai-integration/GEMINI.md)** - Gemini integration notes
+- **[ai-integration/SAMPLE-PROFILE.md](ai-integration/SAMPLE-PROFILE.md)** - Sample profile documentation
 
-### Analysis & Reviews (reviews/ subdirectory)
-- **[CODE-REVIEW-ASSESSMENT.md](reviews/CODE-REVIEW-ASSESSMENT.md)** - Comprehensive code security review
-- **[REALITY-CHECK-ANALYSIS.md](reviews/REALITY-CHECK-ANALYSIS.md)** - Financial modeling validation
-- **[CORRECTED-ANALYSIS.md](reviews/CORRECTED-ANALYSIS.md)** - Analysis corrections
-- **[APP-FIX-SUMMARY.md](reviews/APP-FIX-SUMMARY.md)** - Application fix summary
-- **[PENSION-UPDATE.md](reviews/PENSION-UPDATE.md)** - Pension update notes
-- **[TEST-RESULTS.md](reviews/TEST-RESULTS.md)** - Test execution results
-- **[test-asset-extraction.md](reviews/test-asset-extraction.md)** - Asset extraction testing
+### User Guides
+- **[guides/TROUBLESHOOTING.md](guides/TROUBLESHOOTING.md)** - Common issues and solutions
+- **[guides/YOUR-ACTION-PLAN.md](guides/YOUR-ACTION-PLAN.md)** - Personalized 30-year implementation timeline
+- **[guides/PENSION-CLARIFICATION.md](guides/PENSION-CLARIFICATION.md)** - Pension modeling notes
+- **[RESTART-INSTRUCTIONS.md](RESTART-INSTRUCTIONS.md)** - How to restart the application
 
-## Organization
+### Reviews & Analysis
+- **[reviews/](reviews/)** - Code reviews, assessments, and analysis reports
 
-```
-docs/
-├── README.md                    # This file
-├── CLAUDE.md                    # AI assistant instructions
-├── GEMINI.md                    # AI integration notes
-├── SAMPLE-PROFILE.md            # Sample data documentation
-├── SYSTEM-OVERVIEW.md           # Architecture documentation
-├── TROUBLESHOOTING.md           # Support documentation
-├── YOUR-ACTION-PLAN.md          # Planning guide
-├── PENSION-CLARIFICATION.md     # Pension notes
-└── reviews/                     # Analysis & assessment reports
-    ├── CODE-REVIEW-ASSESSMENT.md
-    ├── REALITY-CHECK-ANALYSIS.md
-    ├── CORRECTED-ANALYSIS.md
-    ├── APP-FIX-SUMMARY.md
-    ├── PENSION-UPDATE.md
-    ├── TEST-RESULTS.md
-    └── test-asset-extraction.md
-```
+## Directory Structure
 
-## Getting Started
+This project follows a modern, state-of-the-art layout:
 
-For getting started with the application, see the root-level documentation:
-- **[../README.md](../README.md)** - Main project overview
-- **[../QUICKSTART.md](../QUICKSTART.md)** - Quick start guide
-- **[../START-HERE.md](../START-HERE.md)** - Welcome guide
+\`\`\`
+pan-rps/
+├── bin/                      # Executable scripts
+│   ├── start                 # Start the application
+│   ├── manage                # Management commands
+│   └── setup-api-keys        # Configure AI API keys
+├── src/                      # Application source code
+│   ├── app.py               # Main Flask application
+│   └── static/              # Frontend assets
+├── tests/                    # Test scripts
+├── docker/                   # Docker configuration
+├── docs/                     # Documentation (you are here)
+├── examples/                 # Example configurations
+├── skills/                   # AI domain knowledge
+├── data/                     # SQLite database
+└── logs/                     # Application logs
+\`\`\`
 
-## Skills Directory
+## Common Commands
 
-Financial planning domain knowledge is stored in the **[../skills/](../skills/)** directory with 10 specialized skill documents for AI-powered retirement planning guidance.
+\`\`\`bash
+# Start the application
+./bin/start
+
+# Management commands
+./bin/manage status    # Check application status
+./bin/manage backup    # Backup database
+./bin/manage stop      # Stop application
+
+# Testing
+./tests/test-api.sh            # Run basic API tests
+./tests/test-all-features.sh   # Run comprehensive test suite
+\`\`\`
+
+## Need Help?
+
+1. Check [guides/TROUBLESHOOTING.md](guides/TROUBLESHOOTING.md) for common issues
+2. Review [architecture/SYSTEM-OVERVIEW.md](architecture/SYSTEM-OVERVIEW.md) for technical details
+3. See [START-HERE.md](START-HERE.md) for a guided tour
+
+---
+
+**Last Updated**: January 2026  
+**Structure Version**: 2.0 (Modernized January 2026)

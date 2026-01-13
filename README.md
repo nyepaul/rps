@@ -38,13 +38,13 @@ This system provides a private, interactive environment to:
 
 1. **Configure API Keys** (required for AI features):
    ```bash
-   ./setup-api-keys.sh
+   ./bin/setup-api-keys
    ```
    This interactive script will prompt for your Gemini or Claude API keys and add them to your shell configuration.
 
 2. **Start the Server**:
    ```bash
-   ./start.sh
+   ./bin/start
    ```
 3. **Open Browser**: Navigate to [http://127.0.0.1:8080](http://127.0.0.1:8080)
 4. **Load Data**: Go to **Profile & Data**, select your profile, and click **Load**.
@@ -53,11 +53,11 @@ This system provides a private, interactive environment to:
 ## Management Commands
 
 ```bash
-./manage.sh start           # Start application locally
-./manage.sh stop            # Stop the application
-./manage.sh status          # Check system health
-./manage.sh backup          # Backup the SQLite database
-./manage.sh tunnel          # Create secure public URL for sharing
+./bin/manage start           # Start application locally
+./bin/manage stop            # Stop the application
+./bin/manage status          # Check system health
+./bin/manage backup          # Backup the SQLite database
+./bin/manage tunnel          # Create secure public URL for sharing
 ```
 
 ## Architecture
@@ -65,11 +65,11 @@ This system provides a private, interactive environment to:
 - **Backend**: Python (Flask) serving a stateless calculation engine and SQLite data manager.
 - **Frontend**: Single-page application using vanilla JS and Chart.js for performance and privacy.
 - **AI Integration**: Direct secure connection to Gemini 3 Flash and Claude 3.5 Sonnet.
-- **Local-First**: All data stays on your machine in `webapp/data/planning.db`.
+- **Local-First**: All data stays on your machine in `data/planning.db`.
 
 ## Next Steps
 
-1. **Configure API Keys**: Run `./setup-api-keys.sh` to set up your Gemini or Claude API keys as environment variables.
+1. **Configure API Keys**: Run `./bin/setup-api-keys` to set up your Gemini or Claude API keys as environment variables.
 2. **Verify Income Streams**: Ensure your pension and Social Security estimates are up to date.
 3. **Run AI Assessment**: Use the "Run AI Self-Assessment" button in Action Items to find gaps against best practices.
 

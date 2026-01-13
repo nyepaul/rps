@@ -23,11 +23,11 @@ import google.generativeai as genai
 import anthropic
 import logging
 from logging.handlers import RotatingFileHandler
-app = Flask(__name__, static_folder='.', static_url_path='')
+app = Flask(__name__, static_folder='static', static_url_path='')
 CORS(app)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 # 16MB limit for image uploads
 # Configure logging
-handler = RotatingFileHandler('../app.log', maxBytes=10000, backupCount=1)
+handler = RotatingFileHandler('../logs/app.log', maxBytes=10000, backupCount=1)
 handler.setLevel(logging.INFO)
 app.logger.addHandler(handler)
 @app.errorhandler(500)
@@ -40,9 +40,9 @@ if os.path.exists('/app/data'):
     BACKUP_DIR = '/app/backups'
     DATA_DIR = '/app/data'
 else:
-    DB_PATH = './data/planning.db'
+    DB_PATH = '../data/planning.db'
     BACKUP_DIR = '../backups'
-    DATA_DIR = './data'
+    DATA_DIR = '../data'
 
 # Ensure backup directory exists
 os.makedirs(BACKUP_DIR, exist_ok=True)
@@ -107,7 +107,7 @@ def call_claude_with_fallback(prompt, api_key, system_prompt=None, history=None)
     raise Exception(f"All Claude models failed. Last error: {last_error}")
 @app.route('/')
 def index():
-    return send_file('index.html')
+    return send_file('static/index.html')
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -745,7 +745,7 @@ def load_sample_profile():
     """Load the comprehensive sample profile into the database"""
     try:
         # Read sample profile from file
-        sample_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'sample-profile.json')
+        sample_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'examples', 'sample-profile.json')
         if not os.path.exists(sample_file_path):
             return jsonify({'error': 'Sample profile file not found'}), 404
 

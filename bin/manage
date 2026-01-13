@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Determine project directory dynamically
-PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Determine project directory dynamically (go up one level from bin/)
+PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
 show_help() {
     echo "Retirement Planning System - Management Script"
@@ -25,28 +25,28 @@ show_help() {
 
 start_simple() {
     echo "Starting application..."
-    ./start.sh
+    $PROJECT_DIR/bin/start
 }
 
 start_docker() {
     echo "Building Docker image..."
-    cd $PROJECT_DIR/webapp
-    if ! docker build -t retirement-planning .; then
+    cd $PROJECT_DIR
+    if ! docker build -f docker/Dockerfile -t retirement-planning .; then
         echo "Docker build failed!"
         exit 1
     fi
-    
+
     echo "Starting container..."
     docker run -d \
         --name retirement-planner \
         -p 8080:8080 \
-        -v $PROJECT_DIR/webapp/data:/app/data \
+        -v $PROJECT_DIR/data:/app/data \
         retirement-planning
-    
+
     echo ""
     echo "Application started!"
     echo "API: http://127.0.0.1:8080"
-    echo "Web Interface: file://$PROJECT_DIR/webapp/index.html"
+    echo "Web Interface: http://127.0.0.1:8080"
     echo ""
 }
 
@@ -84,10 +84,10 @@ start_tunnel() {
 backup_data() {
     BACKUP_DIR="$PROJECT_DIR/backups/$(date +%Y%m%d_%H%M%S)"
     mkdir -p $BACKUP_DIR
-    
-    cp -r $PROJECT_DIR/webapp/data $BACKUP_DIR/
+
+    cp -r $PROJECT_DIR/data $BACKUP_DIR/
     cp -r $PROJECT_DIR/skills $BACKUP_DIR/
-    
+
     echo "Backup created at: $BACKUP_DIR"
 }
 
@@ -99,7 +99,7 @@ restore_data() {
     read backup_name
     
     if [ -d "$PROJECT_DIR/backups/$backup_name" ]; then
-        cp -r $PROJECT_DIR/backups/$backup_name/data/* $PROJECT_DIR/webapp/data/
+        cp -r $PROJECT_DIR/backups/$backup_name/data/* $PROJECT_DIR/data/
         echo "Restored from backup: $backup_name"
     else
         echo "Backup not found"
@@ -113,8 +113,8 @@ clean_all() {
     
     if [ "$confirm" = "yes" ]; then
         stop_app
-        rm -rf $PROJECT_DIR/webapp/data/*
-        rm -rf $PROJECT_DIR/webapp/venv
+        rm -rf $PROJECT_DIR/data/*
+        rm -rf $PROJECT_DIR/src/venv
         echo "Cleaned all data"
     else
         echo "Cancelled"
@@ -144,8 +144,8 @@ check_status() {
     
     echo ""
     echo "Database:"
-    if [ -f "$PROJECT_DIR/webapp/data/planning.db" ]; then
-        echo "  Size: $(du -h $PROJECT_DIR/webapp/data/planning.db | cut -f1)"
+    if [ -f "$PROJECT_DIR/data/planning.db" ]; then
+        echo "  Size: $(du -h $PROJECT_DIR/data/planning.db | cut -f1)"
     else
         echo "  Not initialized"
     fi

@@ -4,13 +4,13 @@
 
 ### Step 0: Configure API Keys (One-Time Setup)
 ```bash
-./setup-api-keys.sh
+./bin/setup-api-keys
 ```
 *This interactive script will prompt for your Gemini or Claude API key and configure it as an environment variable.*
 
 ### Step 1: Start the Application
 ```bash
-./start.sh
+./bin/start
 ```
 *Wait for the message: "Access the application at: http://127.0.0.1:8080"*
 
@@ -40,14 +40,14 @@
 ## Important Disclaimers
 ⚠️ **This is NOT financial advice.**
 ⚠️ **Consult licensed professionals** (CPA, Attorney, CFP) before taking action.
-⚠️ **Local Privacy**: Your data is stored only on your computer in `webapp/data/planning.db`.
+⚠️ **Local Privacy**: Your data is stored only on your computer in `data/planning.db`.
 
 ---
 
 ## Common Commands
 - **Stop Server**: `Ctrl+C` in the terminal.
-- **Backup Data**: `./manage.sh backup`
-- **Configure AI Keys**: Run `./setup-api-keys.sh` to update your API keys.
+- **Backup Data**: `./bin/manage backup`
+- **Configure AI Keys**: Run `./bin/setup-api-keys` to update your API keys.
 
 ## What's Next?
-Read **[docs/YOUR-ACTION-PLAN.md](docs/YOUR-ACTION-PLAN.md)** for your 30-year implementation timeline.
+Read **[docs/guides/YOUR-ACTION-PLAN.md](docs/guides/YOUR-ACTION-PLAN.md)** for your 30-year implementation timeline.
