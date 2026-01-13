@@ -1109,6 +1109,7 @@
                         </select>
                     </div>
                     <div style="display: flex; gap: 5px; align-items: flex-end;">
+                        <button class="secondary" style="background-color: #27ae60; height: 38px; margin-top: 21px;" onclick="loadSampleProfile()" title="Load comprehensive sample profile with all features">📦 Load Sample</button>
                         <button class="secondary" style="background-color: #e74c3c; height: 38px; margin-top: 21px;" onclick="deleteSelectedProfile()">Delete</button>
                     </div>
                 </div>
@@ -2963,7 +2964,7 @@
                 alert('Please select a profile to delete');
                 return;
             }
-            
+
             if (!confirm(`Are you sure you want to delete profile "${name}"?`)) {
                 return;
             }
@@ -2972,7 +2973,7 @@
                 const response = await fetch(`${API_URL}/profile/${encodeURIComponent(name)}`, {
                     method: 'DELETE'
                 });
-                
+
                 if (response.ok) {
                     document.getElementById('profile-name-input').value = '';
                     fetchProfiles();
@@ -2983,7 +2984,39 @@
                 alert('Error deleting profile: ' + error.message);
             }
         }
-        
+
+        async function loadSampleProfile() {
+            if (!confirm('Load comprehensive sample profile?\n\nThis will create a new profile called "Sample Family - Complete Demo" with:\n• Dual-income couple (Sarah & Michael)\n• 16 investment accounts across all types\n• 3 real estate properties\n• 5 income streams\n• Complete retirement planning scenario\n\nYour existing profiles will not be affected.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/load-sample-profile`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert(`✅ ${result.message}\n\nThe sample profile has been loaded. Select it from the dropdown to view.`);
+
+                    // Refresh profile list
+                    await fetchProfiles();
+
+                    // Auto-select the sample profile
+                    const select = document.getElementById('profile-select');
+                    select.value = result.profile_name;
+
+                    // Load the profile data
+                    await loadProfile(result.profile_name);
+                } else {
+                    alert('❌ Error loading sample profile: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('❌ Error loading sample profile: ' + error.message);
+            }
+        }
+
         // Main load function (internal use)
         async function loadProfile(profileName = 'main') {
             console.log("Loading profile:", profileName);
