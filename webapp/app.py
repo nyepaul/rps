@@ -739,6 +739,52 @@ def profile_legacy():
         return manage_profile('main')
     else:
         return manage_profile('main')
+
+@app.route('/api/load-sample-profile', methods=['POST'])
+def load_sample_profile():
+    """Load the comprehensive sample profile into the database"""
+    try:
+        # Read sample profile from file
+        sample_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'sample-profile.json')
+        if not os.path.exists(sample_file_path):
+            return jsonify({'error': 'Sample profile file not found'}), 404
+
+        with open(sample_file_path, 'r') as f:
+            sample_data = json.load(f)
+
+        profile_name = sample_data.pop('profile_name', 'Sample Family - Complete Demo')
+
+        # Save to database
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+
+        # Check if profile already exists
+        c.execute('SELECT id FROM profile WHERE name = ?', (profile_name,))
+        row = c.fetchone()
+
+        if row:
+            # Update existing
+            c.execute('''UPDATE profile
+                         SET data = ?, updated_at = ?
+                         WHERE name = ?''',
+                      (json.dumps(sample_data), datetime.now().isoformat(), profile_name))
+        else:
+            # Insert new
+            c.execute('''INSERT INTO profile (name, data, updated_at)
+                         VALUES (?, ?, ?)''',
+                      (profile_name, json.dumps(sample_data), datetime.now().isoformat()))
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({
+            'status': 'success',
+            'profile_name': profile_name,
+            'message': f'Sample profile "{profile_name}" loaded successfully'
+        })
+    except Exception as e:
+        return jsonify({'error': f'Failed to load sample profile: {str(e)}'}), 500
+
 @app.route('/api/analysis', methods=['POST'])
 def analysis():
     data = request.json
