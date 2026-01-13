@@ -1,0 +1,112 @@
+{
+  "profile_name": "Default Profile",
+  "person1": {
+    "name": "Jane Smith",
+    "birth_date": "1970-06-15",
+    "retirement_date": "2035-06-30",
+    "social_security": 2500
+  },
+  "person2": {
+    "name": "John Smith",
+    "birth_date": "1968-09-20",
+    "retirement_date": "2033-12-31",
+    "social_security": 2800
+  },
+  "income_streams": [
+    {
+      "name": "Jane's Pension",
+      "amount": 48000,
+      "start_date": "2035-07-01",
+      "inflation_adjusted": true,
+      "survivor_benefit": 60
+    },
+    {
+      "name": "John's Pension",
+      "amount": 36000,
+      "start_date": "2034-01-01",
+      "inflation_adjusted": true,
+      "survivor_benefit": 50
+    }
+  ],
+  "investment_types": [
+    {
+      "name": "Joint Checking",
+      "account": "Checking",
+      "value": 15000,
+      "cost_basis": 0
+    },
+    {
+      "name": "Emergency Fund",
+      "account": "Savings",
+      "value": 50000,
+      "cost_basis": 0
+    },
+    {
+      "name": "Brokerage Account",
+      "account": "Taxable Brokerage",
+      "value": 425000,
+      "cost_basis": 285000
+    },
+    {
+      "name": "Jane's Traditional IRA",
+      "account": "Traditional IRA",
+      "value": 380000,
+      "cost_basis": 0
+    },
+    {
+      "name": "John's Traditional IRA",
+      "account": "Traditional IRA",
+      "value": 320000,
+      "cost_basis": 0
+    },
+    {
+      "name": "Jane's 401k",
+      "account": "401k",
+      "value": 825000,
+      "cost_basis": 0
+    },
+    {
+      "name": "John's 401k",
+      "account": "401k",
+      "value": 680000,
+      "cost_basis": 0
+    },
+    {
+      "name": "Jane's Roth IRA",
+      "account": "Roth IRA",
+      "value": 145000,
+      "cost_basis": 0
+    },
+    {
+      "name": "John's Roth IRA",
+      "account": "Roth IRA",
+      "value": 125000,
+      "cost_basis": 0
+    }
+  ],
+  "home_properties": [
+    {
+      "name": "Primary Residence",
+      "property_type": "Primary Residence",
+      "current_value": 650000,
+      "purchase_price": 385000,
+      "mortgage_balance": 125000,
+      "annual_costs": 18500,
+      "appreciation_rate": 0.03,
+      "sale_year": 2045,
+      "replacement_cost": 350000
+    }
+  ],
+  "market_assumptions": {
+    "stock_allocation": 0.65,
+    "stock_return_mean": 0.10,
+    "stock_return_std": 0.18,
+    "bond_return_mean": 0.04,
+    "bond_return_std": 0.06,
+    "inflation_mean": 0.03,
+    "inflation_std": 0.012
+  },
+  "assumed_tax_rate": 0.22,
+  "target_annual_income": 120000,
+  "description": "Default retirement planning profile for a typical dual-income couple. Portfolio totals approximately $3M in retirement savings across checking, savings, taxable brokerage, Traditional IRAs, 401k plans, and Roth IRAs. Includes two modest pensions, primary residence with mortgage, and conservative 65% stock allocation. Target retirement income of $120,000/year with combined Social Security of $63,600/year. This profile serves as a realistic starting template for most middle-to-upper-middle-class retirement planning scenarios."
+}
