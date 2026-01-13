@@ -22,6 +22,13 @@
             --success-color: #28a745;
             --warning-color: #ffc107;
             --danger-color: #dc3545;
+            --success-text: #155724;
+            --warning-text: #856404;
+            --success-bg: #d4edda;
+            --warning-bg: #fff3cd;
+            --danger-bg: #f8d7da;
+            --info-bg: #d1ecf1;
+            --info-color: #17a2b8;
             --card-gradient-1: #667eea;
             --card-gradient-2: #764ba2;
         }
@@ -43,6 +50,13 @@
             --success-color: #51cf66;
             --warning-color: #ffd43b;
             --danger-color: #ff6b6b;
+            --success-text: #51cf66;
+            --warning-text: #ffd43b;
+            --success-bg: #1a3a1a;
+            --warning-bg: #3a3a1a;
+            --danger-bg: #3a1a1a;
+            --info-bg: #1a2a3a;
+            --info-color: #4dabf7;
             --card-gradient-1: #5c7cfa;
             --card-gradient-2: #9775fa;
         }
@@ -106,7 +120,7 @@
         }
         
         .subtitle {
-            color: #ecf0f1;
+            color: var(--text-light);
             font-size: 14px;
         }
         
@@ -114,7 +128,7 @@
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
-            border-bottom: 2px solid #ddd;
+            border-bottom: 2px solid var(--border-color);
         }
         
         .tab {
@@ -195,7 +209,7 @@
         
         .form-section h3 {
             margin-bottom: 15px;
-            color: #2c3e50;
+            color: var(--text-primary);
             font-size: 20px;
         }
         
@@ -215,19 +229,21 @@
             font-size: 13px;
             font-weight: 600;
             margin-bottom: 5px;
-            color: #555;
+            color: var(--text-secondary);
         }
         
         input, select {
             padding: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-color);
             border-radius: 4px;
             font-size: 14px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
         }
         
         input:focus, select:focus {
             outline: none;
-            border-color: #3498db;
+            border-color: var(--accent-color);
         }
         
         button {
@@ -268,23 +284,23 @@
         }
         
         .action-item {
-            background: #f8f9fa;
+            background: var(--bg-tertiary);
             padding: 15px;
             margin-bottom: 10px;
             border-radius: 4px;
-            border-left: 4px solid #3498db;
+            border-left: 4px solid var(--accent-color);
         }
         
         .action-item.critical {
-            border-left-color: #e74c3c;
+            border-left-color: var(--danger-color);
         }
-        
+
         .action-item.high {
-            border-left-color: #e67e22;
+            border-left-color: var(--warning-color);
         }
-        
+
         .action-item.medium {
-            border-left-color: #f39c12;
+            border-left-color: var(--warning-color);
         }
         
         .action-item-header {
@@ -296,7 +312,7 @@
         
         .action-item-category {
             font-weight: 600;
-            color: #2c3e50;
+            color: var(--text-primary);
         }
         
         .action-item-priority {
@@ -308,30 +324,30 @@
         }
         
         .priority-critical {
-            background: #e74c3c;
+            background: var(--danger-color);
             color: white;
         }
-        
+
         .priority-high {
-            background: #e67e22;
+            background: var(--warning-color);
             color: white;
         }
-        
+
         .priority-medium {
-            background: #f39c12;
+            background: var(--warning-color);
             color: white;
         }
         
         .analysis-section {
             margin-bottom: 30px;
             padding: 20px;
-            background: #f8f9fa;
+            background: var(--bg-tertiary);
             border-radius: 8px;
         }
-        
+
         .analysis-section h4 {
             margin-bottom: 15px;
-            color: #2c3e50;
+            color: var(--text-primary);
         }
         
         table {
@@ -343,26 +359,26 @@
         th, td {
             padding: 12px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid var(--border-color);
         }
-        
+
         th {
-            background: #ecf0f1;
+            background: var(--bg-tertiary);
             font-weight: 600;
-            color: #2c3e50;
+            color: var(--text-primary);
         }
         
         .loading {
             text-align: center;
             padding: 40px;
-            color: #95a5a6;
+            color: var(--text-light);
         }
 
         .chat-container {
             display: flex;
             flex-direction: column;
             height: 600px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-color);
             border-radius: 8px;
             overflow: hidden;
         }
@@ -371,7 +387,7 @@
             flex: 1;
             overflow-y: auto;
             padding: 20px;
-            background: #f8f9fa;
+            background: var(--bg-tertiary);
         }
 
         .chat-message {
@@ -382,43 +398,46 @@
         }
 
         .chat-message.user {
-            background: #3498db;
+            background: var(--accent-color);
             color: white;
             margin-left: auto;
             text-align: right;
         }
 
         .chat-message.assistant {
-            background: white;
-            border: 1px solid #ddd;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
         }
 
         .chat-message.error {
-            background: #e74c3c;
+            background: var(--danger-color);
             color: white;
         }
 
         .chat-input-container {
             display: flex;
             padding: 15px;
-            background: white;
-            border-top: 1px solid #ddd;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
             gap: 10px;
         }
 
         .chat-input {
             flex: 1;
             padding: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-color);
             border-radius: 4px;
             font-size: 14px;
             resize: vertical;
             min-height: 40px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
         }
 
         .chat-button {
             padding: 10px 20px;
-            background: #3498db;
+            background: var(--accent-color);
             color: white;
             border: none;
             border-radius: 4px;
@@ -427,21 +446,22 @@
         }
 
         .chat-button:hover {
-            background: #2980b9;
+            background: var(--accent-hover);
         }
 
         .chat-button:disabled {
-            background: #95a5a6;
+            background: var(--text-light);
             cursor: not-allowed;
         }
 
         .api-key-notice {
-            background: #fff3cd;
-            border: 1px solid #ffc107;
+            background: var(--warning-color);
+            border: 1px solid var(--warning-color);
             padding: 15px;
             margin-bottom: 20px;
             border-radius: 4px;
-            color: #856404;
+            color: var(--text-primary);
+            opacity: 0.9;
         }
 
         .api-key-input {
@@ -455,16 +475,16 @@
         }
 
         .scenario-parameters {
-            background: #f8f9fa;
+            background: var(--bg-tertiary);
             padding: 20px;
             border-radius: 8px;
             margin-bottom: 20px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-color);
         }
 
         .scenario-parameters h3 {
             margin-bottom: 15px;
-            color: #2c3e50;
+            color: var(--text-primary);
             font-size: 18px;
         }
 
@@ -478,12 +498,12 @@
             align-items: center;
             margin-bottom: 8px;
             font-size: 14px;
-            color: #555;
+            color: var(--text-secondary);
         }
 
         .slider-value {
             font-weight: 700;
-            color: #3498db;
+            color: var(--accent-color);
             font-size: 15px;
         }
 
@@ -491,7 +511,7 @@
             width: 100%;
             height: 6px;
             border-radius: 3px;
-            background: #ddd;
+            background: var(--border-color);
             outline: none;
             -webkit-appearance: none;
         }
@@ -502,27 +522,27 @@
             width: 18px;
             height: 18px;
             border-radius: 50%;
-            background: #3498db;
+            background: var(--accent-color);
             cursor: pointer;
             transition: background 0.3s;
         }
 
         input[type="range"]::-webkit-slider-thumb:hover {
-            background: #2980b9;
+            background: var(--accent-hover);
         }
 
         input[type="range"]::-moz-range-thumb {
             width: 18px;
             height: 18px;
             border-radius: 50%;
-            background: #3498db;
+            background: var(--accent-color);
             cursor: pointer;
             border: none;
             transition: background 0.3s;
         }
 
         input[type="range"]::-moz-range-thumb:hover {
-            background: #2980b9;
+            background: var(--accent-hover);
         }
 
         .advanced-toggle {
@@ -534,7 +554,7 @@
             display: none;
             margin-top: 10px;
             padding-top: 15px;
-            border-top: 1px dashed #ddd;
+            border-top: 1px dashed var(--border-color);
         }
 
         .advanced-parameters.show {
@@ -542,12 +562,12 @@
         }
 
         .reset-button {
-            background: #95a5a6;
+            background: var(--text-secondary);
             margin-top: 10px;
         }
 
         .reset-button:hover {
-            background: #7f8c8d;
+            background: var(--text-primary);
         }
 
         .auto-update-option {
@@ -562,15 +582,15 @@
         }
 
         .assumptions-used {
-            background: #e8f5e9;
-            border: 1px solid #4caf50;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--success-color);
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 20px;
         }
 
         .assumptions-used h4 {
-            color: #2c3e50;
+            color: var(--text-primary);
             margin-bottom: 10px;
             font-size: 16px;
         }
@@ -659,18 +679,18 @@
         }
 
         .settings-body {
-            padding: 30px;
+            padding: 20px;
         }
 
         .setting-group {
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
         .setting-group h3 {
             font-size: 18px;
             color: var(--text-primary);
-            margin-bottom: 15px;
-            padding-bottom: 10px;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
             border-bottom: 2px solid var(--border-color);
         }
 
@@ -678,10 +698,10 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px;
+            padding: 12px 15px;
             background: var(--bg-tertiary);
             border-radius: 8px;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
 
         .setting-item label {
@@ -765,7 +785,7 @@
         }
 
         .btn-reset:hover {
-            background: #c82333;
+            opacity: 0.9;
         }
 
         /* Font Size Classes */
@@ -834,14 +854,62 @@
         }
 
         body.compact-mode .setting-item {
-            padding: 10px;
-            margin-bottom: 8px;
+            padding: 8px 12px;
+            margin-bottom: 6px;
         }
 
         /* Disable Animations */
         body.no-animations * {
             animation: none !important;
             transition: none !important;
+        }
+
+        /* Print Styles for Summary Report */
+        @media print {
+            body {
+                background: var(--bg-secondary);
+            }
+
+            .container, header, .tabs {
+                display: none !important;
+            }
+
+            #summary-tab {
+                display: block !important;
+                position: static;
+                margin: 0;
+                padding: 0;
+            }
+
+            .summary-report {
+                max-width: 100% !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .report-header {
+                background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%) !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .summary-section h2 {
+                page-break-after: avoid;
+            }
+
+            .summary-section {
+                page-break-inside: avoid;
+            }
+
+            /* Preserve gradient backgrounds */
+            * {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
         }
     </style>
 </head>
@@ -866,19 +934,20 @@
             <button class="tab" onclick="showTab('comparison')">Compare Scenarios</button>
             <button class="tab" onclick="showTab('actions')">Action Items</button>
             <button class="tab" onclick="showTab('advisor')">AI Advisor</button>
+            <button class="tab" onclick="showTab('summary')">📄 Summary</button>
         </div>
         
         <div id="dashboard-tab" class="tab-content active">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2>Financial Control Center</h2>
                 <div style="display: flex; gap: 15px; align-items: center;">
-                    <select id="dashboard-profile-select" style="padding: 6px; font-size: 13px; border-radius: 4px; border: 1px solid #ddd; max-width: 200px;" onchange="if(this.value) loadProfile(this.value)">
+                    <select id="dashboard-profile-select" style="padding: 6px; font-size: 13px; border-radius: 4px; border: 1px solid var(--border-color); max-width: 200px;" onchange="if(this.value) loadProfile(this.value)">
                         <option value="" disabled selected>Load Profile...</option>
                     </select>
                     <button onclick="showTab('profile')" style="padding: 6px 12px; font-size: 13px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--accent-hover)'" onmouseout="this.style.background='var(--accent-color)'">
                         ✏️ Edit Profile
                     </button>
-                    <div style="font-size: 13px; color: #666;">
+                    <div style="font-size: 13px; color: var(--text-secondary);">
                         <span id="dashboard-last-updated">Last updated: Never</span>
                     </div>
                 </div>
@@ -890,21 +959,21 @@
             </div>
 
             <!-- NEW: Critical Actions Widget -->
-            <div id="critical-actions-widget" style="display: none; margin-bottom: 20px; background: #fff5f5; border: 1px solid #feb2b2; border-radius: 8px; padding: 15px; border-left: 5px solid #f56565;">
+            <div id="critical-actions-widget" style="display: none; margin-bottom: 20px; background: var(--danger-bg); border: 1px solid var(--danger-color); border-radius: 8px; padding: 15px; border-left: 5px solid var(--danger-color);">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <span style="font-size: 20px;">⚠️</span>
                         <div>
-                            <strong style="color: #c53030;">Critical Actions Required</strong>
-                            <p style="font-size: 12px; color: #742a2a; margin-top: 2px;" id="critical-actions-count">You have 0 urgent tasks pending.</p>
+                            <strong style="color: var(--text-primary);">Critical Actions Required</strong>
+                            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;" id="critical-actions-count">You have 0 urgent tasks pending.</p>
                         </div>
                     </div>
-                    <button onclick="startWizard()" style="background: #f56565; color: white; padding: 8px 16px; font-size: 13px;">⚡ Resolve Now</button>
+                    <button onclick="startWizard()" style="background: var(--danger-color); color: white; padding: 8px 16px; font-size: 13px; border: none; border-radius: 4px; cursor: pointer;">⚡ Resolve Now</button>
                 </div>
             </div>
 
             <!-- Middle Row: Main Chart -->
-            <div class="analysis-section" style="padding: 20px; background: white; border: 1px solid #ddd; margin-bottom: 20px;">
+            <div class="analysis-section" style="padding: 20px; background: var(--bg-secondary); border: 1px solid var(--border-color); margin-bottom: 20px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <h4 style="margin: 0;">Wealth Timeline Projection</h4>
                     <div style="font-size: 12px; display: flex; gap: 15px;">
@@ -918,10 +987,51 @@
                 </div>
             </div>
 
+            <!-- Asset Location & Liquidity Analysis -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <!-- Asset Location Pie Chart -->
+                <div class="analysis-section">
+                    <h4 style="margin-bottom: 15px;">📍 Where Is Your Money?</h4>
+                    <div style="height: 300px; position: relative;">
+                        <canvas id="asset-location-chart"></canvas>
+                    </div>
+                    <div id="asset-location-summary" style="margin-top: 15px; padding: 15px; background: var(--bg-tertiary); border-radius: 6px; font-size: 13px;">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Liquidity by Age Bar Chart -->
+                <div class="analysis-section">
+                    <h4 style="margin-bottom: 15px;">💰 Accessible Assets by Age</h4>
+                    <div style="height: 300px; position: relative;">
+                        <canvas id="liquidity-by-age-chart"></canvas>
+                    </div>
+                    <div id="liquidity-score" style="margin-top: 15px; padding: 15px; background: var(--bg-tertiary); border-radius: 6px; font-size: 13px;">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Age-Based Timeline -->
+            <div class="analysis-section" style="margin-bottom: 20px; background: linear-gradient(135deg, #667eea22 0%, #764ba222 100%); border-left: 4px solid #667eea;">
+                <h4 style="margin-bottom: 15px;">🗓️ Your Financial Timeline</h4>
+                <div id="financial-timeline" style="position: relative; padding: 20px 0;">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Gap Analysis Widget -->
+            <div id="gap-analysis-widget" class="analysis-section" style="display: none; margin-bottom: 20px; background: var(--warning-bg); border-left: 4px solid var(--warning-color);">
+                <h4 style="margin-bottom: 15px; color: var(--text-primary);">⚠️ Portfolio Gap Analysis</h4>
+                <div id="gap-analysis-content">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
             <!-- Bottom Row: Quick Levers -->
-            <div class="analysis-section" style="background: #f8f9fa; border-top: 4px solid #3498db;">
+            <div class="analysis-section" style="background: var(--bg-tertiary); border-top: 4px solid #3498db;">
                 <h4 style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
-                    🎛️ Scenario Sandbox <span style="font-size: 12px; font-weight: normal; color: #666;">(Adjust to see immediate impact)</span>
+                    🎛️ Scenario Sandbox <span style="font-size: 12px; font-weight: normal; color: var(--text-secondary);">(Adjust to see immediate impact)</span>
                 </h4>
                 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
@@ -932,7 +1042,7 @@
                             <span style="font-weight: 700; color: #3498db;" id="db-spending-val">$100,000</span>
                         </div>
                         <input type="range" id="db-spending" min="40000" max="300000" step="1000" value="100000" style="width: 100%;">
-                        <div style="font-size: 11px; color: #999; margin-top: 5px;">Impacts portfolio depletion rate</div>
+                        <div style="font-size: 11px; color: var(--text-light); margin-top: 5px;">Impacts portfolio depletion rate</div>
                     </div>
 
                     <!-- Lever 1b: Withdrawal Rate -->
@@ -942,27 +1052,25 @@
                             <span style="font-weight: 700; color: #3498db;" id="db-withdraw-rate-val">4.0%</span>
                         </div>
                         <input type="range" id="db-withdraw-rate" min="0" max="10" step="0.1" value="4.0" style="width: 100%;">
-                        <div style="font-size: 11px; color: #999; margin-top: 5px;">% of portfolio withdrawn in year 1</div>
+                        <div style="font-size: 11px; color: var(--text-light); margin-top: 5px;">% of portfolio withdrawn in year 1</div>
                     </div>
 
-                    <!-- Lever 2: Retirement Year (Person 1) -->
+                    <!-- Lever 2: Retirement Date (Person 1) -->
                     <div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                            <label for="db-retire-year" style="margin: 0;"><span id="db-p1-label">Person 1</span> Retirement</label>
-                            <span style="font-weight: 700; color: #3498db;" id="db-retire-year-val">2035</span>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <label for="db-retire-month" style="margin: 0;"><span id="db-p1-label">Person 1</span> Retirement</label>
                         </div>
-                        <input type="range" id="db-retire-year" min="2024" max="2050" step="1" value="2035" style="width: 100%;">
-                        <div style="font-size: 11px; color: #999; margin-top: 5px;">Affects accumulation vs. withdrawal</div>
+                        <input type="month" id="db-retire-month" min="2024-01" max="2050-12" value="2035-01" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px;">
+                        <div style="font-size: 11px; color: var(--text-light); margin-top: 5px;">Affects accumulation vs. withdrawal</div>
                     </div>
 
-                    <!-- Lever 2b: Retirement Year (Person 2) -->
+                    <!-- Lever 2b: Retirement Date (Person 2) -->
                     <div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                            <label for="db-retire-year-p2" style="margin: 0;"><span id="db-p2-label">Person 2</span> Retirement</label>
-                            <span style="font-weight: 700; color: #3498db;" id="db-retire-year-p2-val">2035</span>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <label for="db-retire-month-p2" style="margin: 0;"><span id="db-p2-label">Person 2</span> Retirement</label>
                         </div>
-                        <input type="range" id="db-retire-year-p2" min="2024" max="2050" step="1" value="2035" style="width: 100%;">
-                        <div style="font-size: 11px; color: #999; margin-top: 5px;">Affects accumulation vs. withdrawal</div>
+                        <input type="month" id="db-retire-month-p2" min="2024-01" max="2050-12" value="2035-01" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px;">
+                        <div style="font-size: 11px; color: var(--text-light); margin-top: 5px;">Affects accumulation vs. withdrawal</div>
                     </div>
 
                     <!-- Lever 3: Stock Allocation -->
@@ -972,7 +1080,7 @@
                             <span style="font-weight: 700; color: #3498db;" id="db-allocation-val">50%</span>
                         </div>
                         <input type="range" id="db-allocation" min="0" max="100" step="5" value="50" style="width: 100%;">
-                        <div style="font-size: 11px; color: #999; margin-top: 5px;">Growth potential vs volatility</div>
+                        <div style="font-size: 11px; color: var(--text-light); margin-top: 5px;">Growth potential vs volatility</div>
                     </div>
 
                     <!-- Lever 4: Assumed Tax Rate -->
@@ -982,7 +1090,7 @@
                             <span style="font-weight: 700; color: #3498db;" id="db-tax-rate-val">22%</span>
                         </div>
                         <input type="range" id="db-tax-rate" min="0" max="40" step="1" value="22" style="width: 100%;">
-                        <div style="font-size: 11px; color: #999; margin-top: 5px;">Estimated effective tax drag on withdrawals</div>
+                        <div style="font-size: 11px; color: var(--text-light); margin-top: 5px;">Estimated effective tax drag on withdrawals</div>
                     </div>
                 </div>
             </div>
@@ -991,7 +1099,7 @@
         <div id="profile-tab" class="tab-content">
             <h2>Financial Profile</h2>
             
-            <div style="background: #e8f4f8; padding: 20px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #bce0fd;">
+            <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #bce0fd;">
                 <h3 style="margin-bottom: 15px; color: #2980b9;">Profile Management</h3>
                 <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
                     <div style="flex: 1;">
@@ -1014,6 +1122,14 @@
                 </div>
             </div>
 
+            <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #3498db;">
+                <p style="margin: 0; font-size: 13px; color: var(--text-primary);">
+                    <strong>👫 About Joint Planning:</strong> This system is designed for individuals, or couples planning together.
+                    When two names are entered, the analysis assumes a spousal/partner relationship with joint financial planning,
+                    shared expenses, and survivor benefits where applicable.
+                </p>
+            </div>
+
             <div class="form-section">
                 <h3>You</h3>
                 <div class="form-row">
@@ -1026,8 +1142,27 @@
                         <input type="date" id="p1-birth" value="1970-01-01">
                     </div>
                     <div class="form-group">
-                        <label>Retirement Date</label>
-                        <input type="date" id="p1-retire" value="2035-01-01">
+                        <label>Retirement Month & Year</label>
+                        <div style="display: flex; gap: 8px;">
+                            <select id="p1-retire-month" style="flex: 1;">
+                                <option value="01">January</option>
+                                <option value="02">February</option>
+                                <option value="03">March</option>
+                                <option value="04">April</option>
+                                <option value="05">May</option>
+                                <option value="06">June</option>
+                                <option value="07">July</option>
+                                <option value="08">August</option>
+                                <option value="09">September</option>
+                                <option value="10">October</option>
+                                <option value="11">November</option>
+                                <option value="12">December</option>
+                            </select>
+                            <select id="p1-retire-year" style="flex: 1;">
+                                <!-- Years populated by JavaScript -->
+                            </select>
+                        </div>
+                        <input type="hidden" id="p1-retire" value="2035-01-01">
                     </div>
                 </div>
                 <div class="form-row">
@@ -1037,9 +1172,9 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="form-section">
-                <h3>Spouse</h3>
+                <h3>Spouse/Partner</h3>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Name</label>
@@ -1050,8 +1185,27 @@
                         <input type="date" id="p2-birth" value="1972-01-01">
                     </div>
                     <div class="form-group">
-                        <label>Retirement Date (age 55)</label>
-                        <input type="date" id="p2-retire" value="2037-01-01">
+                        <label>Retirement Month & Year</label>
+                        <div style="display: flex; gap: 8px;">
+                            <select id="p2-retire-month" style="flex: 1;">
+                                <option value="01">January</option>
+                                <option value="02">February</option>
+                                <option value="03">March</option>
+                                <option value="04">April</option>
+                                <option value="05">May</option>
+                                <option value="06">June</option>
+                                <option value="07">July</option>
+                                <option value="08">August</option>
+                                <option value="09">September</option>
+                                <option value="10">October</option>
+                                <option value="11">November</option>
+                                <option value="12">December</option>
+                            </select>
+                            <select id="p2-retire-year" style="flex: 1;">
+                                <!-- Years populated by JavaScript -->
+                            </select>
+                        </div>
+                        <input type="hidden" id="p2-retire" value="2037-01-01">
                     </div>
                 </div>
                 <div class="form-row">
@@ -1064,7 +1218,7 @@
             
             <div class="form-section">
                 <h3>Assets & Investments</h3>
-                <p style="margin-bottom: 15px; font-size: 14px; color: #666;">
+                <p style="margin-bottom: 15px; font-size: 14px; color: var(--text-secondary);">
                     List all your investment holdings below. Categorize them by account type (e.g., Traditional IRA, Roth IRA) so we can apply the correct tax treatment.
                 </p>
                 
@@ -1083,7 +1237,7 @@
                             <!-- Rows rendered via JS -->
                         </tbody>
                         <tfoot>
-                            <tr style="background: #f8f9fa;">
+                            <tr style="background: var(--bg-tertiary);">
                                 <td colspan="2"><strong>Grand Total</strong></td>
                                 <td id="investment-total-value"><strong>$0.00</strong></td>
                                 <td></td>
@@ -1092,7 +1246,7 @@
                     </table>
                 </div>
                 
-                <div style="background: #f1f2f6; padding: 15px; border-radius: 4px; display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 15px;">
+                <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 4px; display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 15px;">
                     <div class="form-group" style="flex: 2; min-width: 200px;">
                         <label style="font-size: 12px;">Asset Name</label>
                         <input type="text" id="new-inv-class" placeholder="e.g., S&P 500 Index">
@@ -1142,14 +1296,14 @@
                      onmouseout="this.style.background='#fdfaff'">
                     <div style="font-size: 24px; margin-bottom: 10px;">📋</div>
                     <div style="font-weight: 600; color: #9b59b6;">Paste image here (Cmd+V) or Click to Upload</div>
-                    <div style="font-size: 12px; color: #666; margin-top: 5px;">Take a screenshot of your accounts and paste it here to sync balances instantly.</div>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">Take a screenshot of your accounts and paste it here to sync balances instantly.</div>
                     <input type="file" id="asset-image-upload" accept="image/*" style="display: none;" onchange="handleImageUpload(this.files[0])">
                 </div>
             </div>
             
             <div class="form-section">
                 <h3>Income Streams & Pensions</h3>
-                <p style="margin-bottom: 15px; font-size: 14px; color: #666;">
+                <p style="margin-bottom: 15px; font-size: 14px; color: var(--text-secondary);">
                     Add fixed income sources like pensions, rental income, or annuities. (Social Security is calculated separately above).
                 </p>
                 
@@ -1170,7 +1324,7 @@
                             <!-- Rows rendered via JS -->
                         </tbody>
                         <tfoot>
-                            <tr style="background: #f8f9fa;">
+                            <tr style="background: var(--bg-tertiary);">
                                 <td colspan="2"><strong>Total Annual Income</strong></td>
                                 <td id="income-streams-total"><strong>$0.00</strong></td>
                                 <td colspan="3"></td>
@@ -1179,7 +1333,7 @@
                     </table>
                 </div>
                 
-                <div style="background: #f1f2f6; padding: 15px; border-radius: 4px; display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
+                <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 4px; display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
                     <div class="form-group" style="flex: 2; min-width: 150px;">
                         <label style="font-size: 12px;">Name</label>
                         <input type="text" id="new-inc-name" placeholder="e.g. IBM Pension" oninput="highlightIncomeFields()">
@@ -1214,13 +1368,13 @@
 
             <div class="form-section">
                 <h3>Real Estate & Properties</h3>
-                <p style="color: #666; font-size: 14px; margin-bottom: 15px;">
+                <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 15px;">
                     Track your home and other properties. Home equity counts toward net worth, and you can model future sale/downsize scenarios.
                 </p>
 
                 <table class="data-table" style="width: 100%; border-collapse: collapse;">
                     <thead>
-                        <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                        <tr style="background: var(--bg-tertiary); border-bottom: 2px solid #dee2e6;">
                             <th style="padding: 12px; text-align: left;">Property Name</th>
                             <th style="padding: 12px; text-align: left;">Type</th>
                             <th style="padding: 12px; text-align: right;">Current Value</th>
@@ -1242,60 +1396,60 @@
 
             <!-- Property Modal (detailed form) -->
             <div id="property-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; overflow-y: auto;">
-                <div style="background: white; margin: 50px auto; max-width: 600px; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <div style="background: var(--bg-secondary); margin: 50px auto; max-width: 600px; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                     <h3 id="property-modal-title">Add Property</h3>
 
                     <label style="display: block; margin-top: 15px; font-weight: 600;">Property Name</label>
-                    <input type="text" id="prop-name" placeholder="e.g., Main Residence" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <input type="text" id="prop-name" placeholder="e.g., Main Residence" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px;">
 
                     <label style="display: block; margin-top: 15px; font-weight: 600;">Property Type</label>
-                    <select id="prop-type" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <select id="prop-type" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px;">
                         <option value="Primary Residence">Primary Residence</option>
                         <option value="Investment Property">Investment Property</option>
                         <option value="Vacation Home">Vacation Home</option>
                     </select>
 
                     <label style="display: block; margin-top: 15px; font-weight: 600;">Current Market Value (Zillow estimate)</label>
-                    <input type="number" id="prop-value" placeholder="e.g., 850000" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <input type="number" id="prop-value" placeholder="e.g., 850000" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px;">
 
                     <label style="display: block; margin-top: 15px; font-weight: 600;">Mortgage Balance Remaining</label>
-                    <input type="number" id="prop-mortgage" value="0" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <input type="number" id="prop-mortgage" value="0" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px;">
 
                     <label style="display: block; margin-top: 15px; font-weight: 600;">Purchase Price (for tax basis)</label>
-                    <input type="number" id="prop-purchase-price" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <input type="number" id="prop-purchase-price" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px;">
 
                     <label style="display: block; margin-top: 15px; font-weight: 600;">Purchase Date</label>
-                    <input type="date" id="prop-purchase-date" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <input type="date" id="prop-purchase-date" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px;">
 
-                    <hr style="margin: 25px 0; border: none; border-top: 1px solid #ddd;">
+                    <hr style="margin: 25px 0; border: none; border-top: 1px solid var(--border-color);">
                     <h4 style="margin-bottom: 15px;">Annual Costs</h4>
 
                     <label style="display: block; margin-top: 15px; font-weight: 600;">Property Tax (annual)</label>
-                    <input type="number" id="prop-tax" value="0" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <input type="number" id="prop-tax" value="0" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px;">
 
                     <label style="display: block; margin-top: 15px; font-weight: 600;">Homeowner's Insurance (annual)</label>
-                    <input type="number" id="prop-insurance" value="0" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <input type="number" id="prop-insurance" value="0" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px;">
 
                     <label style="display: block; margin-top: 15px; font-weight: 600;">Maintenance & Repairs (annual estimate)</label>
-                    <input type="number" id="prop-maintenance" value="0" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <input type="number" id="prop-maintenance" value="0" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px;">
 
                     <label style="display: block; margin-top: 15px; font-weight: 600;">HOA Fees (annual)</label>
-                    <input type="number" id="prop-hoa" value="0" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <input type="number" id="prop-hoa" value="0" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px;">
 
-                    <hr style="margin: 25px 0; border: none; border-top: 1px solid #ddd;">
+                    <hr style="margin: 25px 0; border: none; border-top: 1px solid var(--border-color);">
                     <h4 style="margin-bottom: 15px;">Future Plans (Optional)</h4>
 
                     <label style="display: block; margin-top: 15px; font-weight: 600;">Annual Appreciation Rate (%)</label>
-                    <input type="number" id="prop-appreciation" step="0.1" placeholder="Leave blank to use inflation rate" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                    <p style="font-size: 12px; color: #666; margin-top: 4px;">Default: Uses inflation rate from market assumptions</p>
+                    <input type="number" id="prop-appreciation" step="0.1" placeholder="Leave blank to use inflation rate" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px;">
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Default: Uses inflation rate from market assumptions</p>
 
                     <label style="display: block; margin-top: 15px; font-weight: 600;">Planned Sale Date</label>
-                    <input type="date" id="prop-sale-date" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                    <p style="font-size: 12px; color: #666; margin-top: 4px;">When you plan to sell this property</p>
+                    <input type="date" id="prop-sale-date" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px;">
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">When you plan to sell this property</p>
 
                     <label style="display: block; margin-top: 15px; font-weight: 600;">Replacement Home Cost</label>
-                    <input type="number" id="prop-replacement" value="0" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                    <p style="font-size: 12px; color: #666; margin-top: 4px;">Cost of home you'll buy after selling (for downsize scenarios)</p>
+                    <input type="number" id="prop-replacement" value="0" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px;">
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Cost of home you'll buy after selling (for downsize scenarios)</p>
 
                     <div style="margin-top: 25px; display: flex; gap: 10px;">
                         <button type="button" onclick="saveProperty()" style="flex: 1; padding: 12px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Save Property</button>
@@ -1334,43 +1488,43 @@
         
         <div id="accounts-tab" class="tab-content">
             <h2>Tax-Efficient Withdrawal Strategy</h2>
-            <p style="color: #666; margin-bottom: 30px;">Optimize the order and timing of withdrawals to minimize lifetime taxes and maximize wealth transfer.</p>
+            <p style="color: var(--text-secondary); margin-bottom: 30px;">Optimize the order and timing of withdrawals to minimize lifetime taxes and maximize wealth transfer.</p>
 
-            <div class="analysis-section" style="background: #e8f4f8; border-left: 4px solid #3498db;">
-                <h3 style="color: #2c3e50; margin-bottom: 15px;">📊 Current Account Balances</h3>
+            <div class="analysis-section" style="background: var(--bg-tertiary); border-left: 4px solid #3498db;">
+                <h3 style="color: var(--text-primary); margin-bottom: 15px;">📊 Current Account Balances</h3>
                 <div id="account-balances-summary"></div>
             </div>
 
             <div class="analysis-section">
-                <h3 style="color: #2c3e50; margin-bottom: 15px;">🎯 Recommended Withdrawal Sequence</h3>
+                <h3 style="color: var(--text-primary); margin-bottom: 15px;">🎯 Recommended Withdrawal Sequence</h3>
                 <p style="margin-bottom: 20px; line-height: 1.6;">For <strong>tax efficiency</strong>, withdraw in this order to minimize taxes and preserve Roth accounts for wealth transfer:</p>
 
                 <div style="display: grid; gap: 15px;">
-                    <div style="padding: 15px; background: #f8f9fa; border-left: 4px solid #27ae60; border-radius: 4px;">
-                        <div style="font-weight: 700; color: #2c3e50; margin-bottom: 5px;">1️⃣ Taxable Accounts (Liquid Assets) — FIRST</div>
-                        <div style="font-size: 13px; color: #555; line-height: 1.6;">
+                    <div style="padding: 15px; background: var(--bg-tertiary); border-left: 4px solid #27ae60; border-radius: 4px;">
+                        <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 5px;">1️⃣ Taxable Accounts (Liquid Assets) — FIRST</div>
+                        <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
                             <strong>Why:</strong> Taxed at lower capital gains rates (0-20%) vs ordinary income rates (10-37%). Use these before age 73 to delay RMDs and allow tax-deferred accounts to grow. Creates "tax-free" space for Roth conversions.
                         </div>
                     </div>
 
-                    <div style="padding: 15px; background: #f8f9fa; border-left: 4px solid #3498db; border-radius: 4px;">
-                        <div style="font-weight: 700; color: #2c3e50; margin-bottom: 5px;">1.5️⃣ 457(b) Governmental Plans — EARLY OPTION</div>
-                        <div style="font-size: 13px; color: #555; line-height: 1.6;">
+                    <div style="padding: 15px; background: var(--bg-tertiary); border-left: 4px solid #3498db; border-radius: 4px;">
+                        <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 5px;">1.5️⃣ 457(b) Governmental Plans — EARLY OPTION</div>
+                        <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
                             <strong>Why:</strong> Unique benefit: No 10% early withdrawal penalty regardless of age (once separated from service). If you retire before 59.5, use this <em>before</em> your IRAs/401ks to bridge the gap.
                         </div>
                     </div>
 
-                    <div style="padding: 15px; background: #f8f9fa; border-left: 4px solid #f39c12; border-radius: 4px;">
-                        <div style="font-weight: 700; color: #2c3e50; margin-bottom: 5px;">2️⃣ Traditional IRA / 401(k) / 403(b) / 401(a) — SECOND</div>
-                        <div style="font-size: 13px; color: #555; line-height: 1.6;">
+                    <div style="padding: 15px; background: var(--bg-tertiary); border-left: 4px solid #f39c12; border-radius: 4px;">
+                        <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 5px;">2️⃣ Traditional IRA / 401(k) / 403(b) / 401(a) — SECOND</div>
+                        <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
                             <strong>Why:</strong> Withdrawals taxed as ordinary income. Start taking strategic withdrawals after liquid is depleted to "fill up" lower tax brackets (12%, 22%). Warning: 10% penalty if under age 59.5 (unless using Rule of 55). At age 73, RMDs force withdrawals.
                         </div>
-                        <div id="rmd-info" style="margin-top: 10px; padding: 10px; background: white; border-radius: 3px; font-size: 12px;"></div>
+                        <div id="rmd-info" style="margin-top: 10px; padding: 10px; background: var(--bg-secondary); border-radius: 3px; font-size: 12px;"></div>
                     </div>
 
-                    <div style="padding: 15px; background: #f8f9fa; border-left: 4px solid #9b59b6; border-radius: 4px;">
-                        <div style="font-weight: 700; color: #2c3e50; margin-bottom: 5px;">3️⃣ Roth IRA — LAST (Preserve for Heirs)</div>
-                        <div style="font-size: 13px; color: #555; line-height: 1.6;">
+                    <div style="padding: 15px; background: var(--bg-tertiary); border-left: 4px solid #9b59b6; border-radius: 4px;">
+                        <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 5px;">3️⃣ Roth IRA — LAST (Preserve for Heirs)</div>
+                        <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
                             <strong>Why:</strong> Tax-free withdrawals with no RMDs during your lifetime. Let this grow tax-free as long as possible. Excellent for wealth transfer - heirs get tax-free inherited Roth IRA. Only use if other accounts depleted or for strategic tax management.
                         </div>
                     </div>
@@ -1378,25 +1532,25 @@
             </div>
 
             <div class="analysis-section">
-                <h3 style="color: #2c3e50; margin-bottom: 15px;">💡 Tax Optimization Strategies</h3>
+                <h3 style="color: var(--text-primary); margin-bottom: 15px;">💡 Tax Optimization Strategies</h3>
 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px;">
-                    <div style="padding: 15px; background: #fff3cd; border-radius: 4px; border: 1px solid #ffc107;">
-                        <h4 style="color: #856404; margin-bottom: 10px;">Roth Conversions (Age 62-73)</h4>
-                        <p style="font-size: 13px; color: #666; margin-bottom: 10px;">Convert Traditional IRA → Roth IRA before RMDs begin:</p>
-                        <ul style="font-size: 13px; color: #555; margin-left: 20px; line-height: 1.8;">
+                    <div style="padding: 15px; background: var(--warning-bg); border-radius: 4px; border: 1px solid var(--warning-color);">
+                        <h4 style="color: var(--text-primary); margin-bottom: 10px;">Roth Conversions (Age 62-73)</h4>
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 10px;">Convert Traditional IRA → Roth IRA before RMDs begin:</p>
+                        <ul style="font-size: 13px; color: var(--text-secondary); margin-left: 20px; line-height: 1.8;">
                             <li>Fill 12% tax bracket (~$94k income)</li>
                             <li>Pay taxes now at low rates vs higher rates later</li>
                             <li>Reduces future RMDs</li>
                             <li>Creates tax-free growth</li>
                         </ul>
-                        <div id="roth-conversion-suggestion" style="margin-top: 10px; padding: 8px; background: white; border-radius: 3px; font-size: 12px;"></div>
+                        <div id="roth-conversion-suggestion" style="margin-top: 10px; padding: 8px; background: var(--bg-secondary); border-radius: 3px; font-size: 12px;"></div>
                     </div>
 
-                    <div style="padding: 15px; background: #d1ecf1; border-radius: 4px; border: 1px solid #17a2b8;">
-                        <h4 style="color: #0c5460; margin-bottom: 10px;">QCDs (Age 70.5+)</h4>
-                        <p style="font-size: 13px; color: #666; margin-bottom: 10px;">Qualified Charitable Distributions:</p>
-                        <ul style="font-size: 13px; color: #555; margin-left: 20px; line-height: 1.8;">
+                    <div style="padding: 15px; background: var(--info-bg); border-radius: 4px; border: 1px solid var(--info-color);">
+                        <h4 style="color: var(--text-primary); margin-bottom: 10px;">QCDs (Age 70.5+)</h4>
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 10px;">Qualified Charitable Distributions:</p>
+                        <ul style="font-size: 13px; color: var(--text-secondary); margin-left: 20px; line-height: 1.8;">
                             <li>Direct IRA → charity (up to $105k/year in 2024)</li>
                             <li>Counts toward RMD but excluded from taxable income</li>
                             <li>Reduces AGI (helps avoid IRMAA surcharges)</li>
@@ -1404,10 +1558,10 @@
                         </ul>
                     </div>
 
-                    <div style="padding: 15px; background: #d4edda; border-radius: 4px; border: 1px solid #28a745;">
-                        <h4 style="color: #155724; margin-bottom: 10px;">Tax Bracket Management</h4>
-                        <p style="font-size: 13px; color: #666; margin-bottom: 10px;">Strategic annual planning:</p>
-                        <ul style="font-size: 13px; color: #555; margin-left: 20px; line-height: 1.8;">
+                    <div style="padding: 15px; background: var(--success-bg); border-radius: 4px; border: 1px solid var(--success-color);">
+                        <h4 style="color: var(--text-primary); margin-bottom: 10px;">Tax Bracket Management</h4>
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 10px;">Strategic annual planning:</p>
+                        <ul style="font-size: 13px; color: var(--text-secondary); margin-left: 20px; line-height: 1.8;">
                             <li>"Fill" 12% and 22% brackets each year</li>
                             <li>Avoid IRMAA thresholds (Medicare surcharges)</li>
                             <li>Consider state income taxes</li>
@@ -1418,29 +1572,29 @@
             </div>
 
             <div class="analysis-section">
-                <h3 style="color: #2c3e50; margin-bottom: 15px;">🧮 RMD Calculator</h3>
+                <h3 style="color: var(--text-primary); margin-bottom: 15px;">🧮 RMD Calculator</h3>
                 <div id="rmd-calculator"></div>
             </div>
 
-            <div class="analysis-section" style="background: #fff9e6; border-left: 4px solid #f39c12;">
-                <h3 style="color: #2c3e50; margin-bottom: 15px;">⚠️ Common Withdrawal Mistakes to Avoid</h3>
+            <div class="analysis-section" style="background: var(--warning-bg); border-left: 4px solid var(--warning-color);">
+                <h3 style="color: var(--text-primary); margin-bottom: 15px;">⚠️ Common Withdrawal Mistakes to Avoid</h3>
                 <div style="display: grid; gap: 10px;">
-                    <div style="padding: 10px; background: white; border-radius: 3px;">
+                    <div style="padding: 10px; background: var(--bg-secondary); border-radius: 3px;">
                         <strong style="color: #c0392b;">❌ Withdrawing from Roth first</strong> — Loses tax-free growth and wealth transfer benefits
                     </div>
-                    <div style="padding: 10px; background: white; border-radius: 3px;">
+                    <div style="padding: 10px; background: var(--bg-secondary); border-radius: 3px;">
                         <strong style="color: #c0392b;">❌ Ignoring Roth conversions before RMDs</strong> — Miss 11-year window (62-73) for tax arbitrage
                     </div>
-                    <div style="padding: 10px; background: white; border-radius: 3px;">
+                    <div style="padding: 10px; background: var(--bg-secondary); border-radius: 3px;">
                         <strong style="color: #c0392b;">❌ Large IRA withdrawals pushing into high brackets</strong> — Can trigger 22-24% rates unnecessarily
                     </div>
-                    <div style="padding: 10px; background: white; border-radius: 3px;">
+                    <div style="padding: 10px; background: var(--bg-secondary); border-radius: 3px;">
                         <strong style="color: #c0392b;">❌ Not planning for IRMAA</strong> — High income years (age 63+) increase Medicare premiums 2 years later
                     </div>
                 </div>
             </div>
 
-            <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px; font-size: 13px; color: #666;">
+            <div style="margin-top: 20px; padding: 15px; background: var(--bg-tertiary); border-radius: 4px; font-size: 13px; color: var(--text-secondary);">
                 <strong>📚 Resources:</strong>
                 <ul style="margin: 10px 0 0 20px; line-height: 1.8;">
                     <li><a href="https://www.irs.gov/retirement-plans/plan-participant-employee/retirement-topics-required-minimum-distributions-rmds" target="_blank">IRS RMD Rules</a></li>
@@ -1458,7 +1612,7 @@
 
                 <!-- Market Profile Preset Selector -->
                 <div class="slider-group" style="margin-bottom: 20px;">
-                    <label style="font-weight: 600; color: #2c3e50;">
+                    <label style="font-weight: 600; color: var(--text-primary);">
                         <span>Market Profile Preset</span>
                     </label>
                     <select id="market-profile-preset" style="width: 100%; padding: 8px; margin-top: 8px; font-size: 14px; border: 2px solid #3498db; border-radius: 4px;" onchange="applyMarketPreset()">
@@ -1511,7 +1665,7 @@
                             <option value="decade-2010s">2010s Bull Run (14% return, 15% vol)</option>
                         </optgroup>
                     </select>
-                    <div style="font-size: 11px; color: #666; margin-top: 8px; padding: 8px; background: #f8f9fa; border-radius: 4px;" id="preset-description">
+                    <div style="font-size: 11px; color: var(--text-secondary); margin-top: 8px; padding: 8px; background: var(--bg-tertiary); border-radius: 4px;" id="preset-description">
                         <strong>Tip:</strong> Select a preset to automatically configure returns and volatility, or choose "Custom" to manually adjust all parameters.
                     </div>
                 </div>
@@ -1528,7 +1682,7 @@
                         <span>Stock Return Rate: <span class="slider-value" id="stock-return-value">10.00</span>%</span>
                     </label>
                     <input type="range" id="stock-return-slider" min="4" max="20" value="10" step="0.25">
-                    <div style="font-size: 10px; color: #999; margin-top: 2px;">Higher returns = growth/tech focus (higher risk)</div>
+                    <div style="font-size: 10px; color: var(--text-light); margin-top: 2px;">Higher returns = growth/tech focus (higher risk)</div>
                 </div>
 
                 <div class="slider-group">
@@ -1555,7 +1709,7 @@
                             <span>Stock Volatility (Std Dev): <span class="slider-value" id="stock-volatility-value">18.00</span>%</span>
                         </label>
                         <input type="range" id="stock-volatility-slider" min="5" max="35" value="18" step="0.5">
-                        <div style="font-size: 10px; color: #999; margin-top: 2px;">Tech/AI sectors can have 25-35% volatility</div>
+                        <div style="font-size: 10px; color: var(--text-light); margin-top: 2px;">Tech/AI sectors can have 25-35% volatility</div>
                     </div>
 
                     <div class="slider-group">
@@ -1603,7 +1757,7 @@
             </div>
             
             <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px;">
-                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
+                <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
                     <h3 style="margin-bottom: 15px; font-size: 16px;">Saved Scenarios</h3>
                     <div id="scenarios-list" style="max-height: 400px; overflow-y: auto;">
                         <!-- List of scenarios -->
@@ -1612,7 +1766,7 @@
                 </div>
                 
                 <div>
-                    <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 20px;">
+                    <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px;">
                         <h3 style="margin-bottom: 15px; font-size: 16px;">Comparison Charts</h3>
                         <div style="height: 300px; margin-bottom: 30px;">
                             <canvas id="comparison-chart-bar"></canvas>
@@ -1622,12 +1776,12 @@
                         </div>
                     </div>
                     
-                    <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
+                    <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
                         <h3 style="margin-bottom: 15px; font-size: 16px;">Assumption Comparison</h3>
                         <div style="overflow-x: auto;">
                             <table id="comparison-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
                                 <thead>
-                                    <tr style="background: #f8f9fa; border-bottom: 2px solid #ddd;">
+                                    <tr style="background: var(--bg-tertiary); border-bottom: 2px solid #ddd;">
                                         <th style="padding: 10px; text-align: left;">Parameter</th>
                                         <!-- Scenario columns added by JS -->
                                     </tr>
@@ -1661,7 +1815,7 @@
                     Provider: <span id="current-llm-name" style="font-weight: 600; color: var(--accent-color);">Gemini</span>
                 </div>
             </div>
-            <p style="margin-bottom: 20px; color: #555;">
+            <p style="margin-bottom: 20px; color: var(--text-secondary);">
                 Ask questions about your retirement plan, get personalized advice, and explore different scenarios.
                 The AI advisor has full access to your financial profile and analysis results.
             </p>
@@ -1687,8 +1841,50 @@
                 </div>
             </div>
         </div>
+
+        <div id="summary-tab" class="tab-content">
+            <div id="summary-content">
+                <!-- Content will be generated dynamically -->
+                <div style="text-align: center; padding: 60px 20px; color: var(--text-light);">
+                    <h3>No Profile Loaded</h3>
+                    <p>Please load or create a profile to view the financial summary.</p>
+                </div>
+            </div>
+        </div>
     </div>
-    
+
+    <!-- AI Q&A Wizard Modal -->
+    <div id="wizard-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; align-items: center; justify-content: center;">
+        <div style="background: var(--bg-secondary); border-radius: 12px; width: 90%; max-width: 700px; max-height: 85vh; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.3); display: flex; flex-direction: column;">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 25px; color: white;">
+                <h2 style="margin: 0 0 8px 0; font-size: 24px;">🧙‍♂️ Profile Q&A Wizard</h2>
+                <p style="margin: 0; opacity: 0.9; font-size: 14px;">Help us understand your financial situation better</p>
+            </div>
+
+            <!-- Content Area -->
+            <div style="flex: 1; overflow-y: auto; padding: 25px;">
+                <div id="wizard-messages" style="display: flex; flex-direction: column; gap: 15px;">
+                    <!-- Messages will be added here -->
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div style="border-top: 1px solid var(--border-color); padding: 20px; background: var(--bg-tertiary);">
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="wizard-input" placeholder="Type your answer..."
+                           style="flex: 1; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px;"
+                           onkeypress="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); sendWizardResponse(); }">
+                    <button onclick="sendWizardResponse()" style="padding: 12px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Send</button>
+                </div>
+                <div style="margin-top: 12px; display: flex; justify-content: space-between; align-items: center;">
+                    <button onclick="skipWizardQuestion()" class="secondary" style="font-size: 13px; padding: 6px 12px;">Skip Question</button>
+                    <button onclick="closeWizard()" class="secondary" style="font-size: 13px; padding: 6px 12px;">Close Wizard</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Global variables
         const API_URL = '/api';
@@ -1706,6 +1902,60 @@
 
         function getCurrentProfileName() {
             return document.getElementById('profile-name-input').value || 'main';
+        }
+
+        // Initialize retirement date selectors
+        function initRetirementDateSelectors() {
+            const currentYear = new Date().getFullYear();
+            const p1YearSelect = document.getElementById('p1-retire-year');
+            const p2YearSelect = document.getElementById('p2-retire-year');
+
+            // Populate year dropdowns (current year to 50 years in future)
+            for (let year = currentYear; year <= currentYear + 50; year++) {
+                const option1 = document.createElement('option');
+                option1.value = year;
+                option1.textContent = year;
+                p1YearSelect.appendChild(option1);
+
+                const option2 = document.createElement('option');
+                option2.value = year;
+                option2.textContent = year;
+                p2YearSelect.appendChild(option2);
+            }
+
+            // Set default values from hidden inputs
+            updateMonthYearFromDate('p1');
+            updateMonthYearFromDate('p2');
+
+            // Add change listeners to sync back to hidden inputs
+            document.getElementById('p1-retire-month').addEventListener('change', () => syncRetirementDate('p1'));
+            document.getElementById('p1-retire-year').addEventListener('change', () => syncRetirementDate('p1'));
+            document.getElementById('p2-retire-month').addEventListener('change', () => syncRetirementDate('p2'));
+            document.getElementById('p2-retire-year').addEventListener('change', () => syncRetirementDate('p2'));
+        }
+
+        function updateMonthYearFromDate(person) {
+            const dateInput = document.getElementById(`${person}-retire`);
+            const monthSelect = document.getElementById(`${person}-retire-month`);
+            const yearSelect = document.getElementById(`${person}-retire-year`);
+
+            if (dateInput.value) {
+                const [year, month] = dateInput.value.split('-');
+                monthSelect.value = month;
+                yearSelect.value = year;
+            }
+        }
+
+        function syncRetirementDate(person) {
+            const monthSelect = document.getElementById(`${person}-retire-month`);
+            const yearSelect = document.getElementById(`${person}-retire-year`);
+            const dateInput = document.getElementById(`${person}-retire`);
+
+            const month = monthSelect.value;
+            const year = yearSelect.value;
+
+            // Set to first day of selected month
+            dateInput.value = `${year}-${month}-01`;
         }
 
         function highlightIncomeFields() {
@@ -1765,7 +2015,7 @@
                 
                 tr.innerHTML = `
                     <td>${item.name}</td>
-                    <td><span style="padding: 2px 6px; background: #e8f4f8; border-radius: 4px; font-size: 12px; color: #2980b9;">${ownerLabel}</span></td>
+                    <td><span style="padding: 2px 6px; background: var(--accent-color); border-radius: 4px; font-size: 12px; color: white; opacity: 0.9;">${ownerLabel}</span></td>
                     <td>$${item.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                     <td>${item.start_date}</td>
                     <td>${item.inflation_adjusted ? '✅' : '❌'}</td>
@@ -1875,7 +2125,7 @@
             tbody.innerHTML = '';
 
             if (!homeProperties || homeProperties.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #999; padding: 20px;">No properties added yet</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-light); padding: 20px;">No properties added yet</td></tr>';
                 return;
             }
 
@@ -1897,10 +2147,10 @@
                 row.innerHTML = `
                     <td style="padding: 12px;">${prop.name}</td>
                     <td style="padding: 12px;">${prop.property_type}</td>
-                    <td style="padding: 12px; text-align: right;">$${formatNumber(prop.current_value || 0)}</td>
-                    <td style="padding: 12px; text-align: right;">$${formatNumber(prop.mortgage_balance || 0)}</td>
-                    <td style="padding: 12px; text-align: right;"><strong>$${formatNumber(equity)}</strong></td>
-                    <td style="padding: 12px; text-align: right;">$${formatNumber(annualCosts)}</td>
+                    <td style="padding: 12px; text-align: right;">$${(prop.current_value || 0).toLocaleString()}</td>
+                    <td style="padding: 12px; text-align: right;">$${(prop.mortgage_balance || 0).toLocaleString()}</td>
+                    <td style="padding: 12px; text-align: right;"><strong>$${equity.toLocaleString()}</strong></td>
+                    <td style="padding: 12px; text-align: right;">$${annualCosts.toLocaleString()}</td>
                     <td style="padding: 12px; text-align: center;">
                         <button onclick="editProperty(${index})" style="padding: 6px 12px; margin: 0 4px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">Edit</button>
                         <button onclick="deleteProperty(${index})" style="padding: 6px 12px; margin: 0 4px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer;">Delete</button>
@@ -1912,10 +2162,10 @@
             // Add total row
             const totalRow = document.createElement('tr');
             totalRow.style.fontWeight = 'bold';
-            totalRow.style.backgroundColor = '#f8f9fa';
+            totalRow.style.backgroundColor = 'var(--bg-tertiary)';
             totalRow.innerHTML = `
                 <td colspan="4" style="padding: 12px;">Total Home Equity</td>
-                <td style="padding: 12px; text-align: right;">$${formatNumber(totalEquity)}</td>
+                <td style="padding: 12px; text-align: right;">$${totalEquity.toLocaleString()}</td>
                 <td colspan="2"></td>
             `;
             tbody.appendChild(totalRow);
@@ -1979,6 +2229,11 @@
             renderHomeProperties();
             closePropertyModal();
             debouncedAutoSave();
+
+            // Re-run analysis to show impact of property on retirement plan
+            setTimeout(() => {
+                runAnalysis();
+            }, 500);
         }
 
         function editProperty(index) {
@@ -2013,6 +2268,11 @@
                 }
                 renderHomeProperties();
                 debouncedAutoSave();
+
+                // Re-run analysis to show impact of property deletion on retirement plan
+                setTimeout(() => {
+                    runAnalysis();
+                }, 500);
             }
         }
 
@@ -2038,25 +2298,25 @@
             // Render account balances summary
             const balancesHtml = `
                 <div class="metric-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                    <div style="background: white; padding: 15px; border-radius: 4px; border: 1px solid #ddd;">
-                        <div style="font-size: 12px; color: #7f8c8d; margin-bottom: 5px;">💵 Liquid/Taxable</div>
+                    <div style="background: var(--bg-secondary); padding: 15px; border-radius: 4px; border: 1px solid var(--border-color);">
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">💵 Liquid/Taxable</div>
                         <div style="font-size: 20px; font-weight: 700; color: #27ae60;">$${liquid.toLocaleString()}</div>
-                        <div style="font-size: 11px; color: #999; margin-top: 3px;">${totalAssets > 0 ? ((liquid / totalAssets) * 100).toFixed(1) : 0}% of total</div>
+                        <div style="font-size: 11px; color: var(--text-light); margin-top: 3px;">${totalAssets > 0 ? ((liquid / totalAssets) * 100).toFixed(1) : 0}% of total</div>
                     </div>
-                    <div style="background: white; padding: 15px; border-radius: 4px; border: 1px solid #ddd;">
-                        <div style="font-size: 12px; color: #7f8c8d; margin-bottom: 5px;">🏦 Traditional IRA/401(k)</div>
+                    <div style="background: var(--bg-secondary); padding: 15px; border-radius: 4px; border: 1px solid var(--border-color);">
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">🏦 Traditional IRA/401(k)</div>
                         <div style="font-size: 20px; font-weight: 700; color: #e67e22;">$${tradIra.toLocaleString()}</div>
-                        <div style="font-size: 11px; color: #999; margin-top: 3px;">${totalAssets > 0 ? ((tradIra / totalAssets) * 100).toFixed(1) : 0}% of total</div>
+                        <div style="font-size: 11px; color: var(--text-light); margin-top: 3px;">${totalAssets > 0 ? ((tradIra / totalAssets) * 100).toFixed(1) : 0}% of total</div>
                     </div>
-                    <div style="background: white; padding: 15px; border-radius: 4px; border: 1px solid #ddd;">
-                        <div style="font-size: 12px; color: #7f8c8d; margin-bottom: 5px;">💎 Roth IRA</div>
+                    <div style="background: var(--bg-secondary); padding: 15px; border-radius: 4px; border: 1px solid var(--border-color);">
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">💎 Roth IRA</div>
                         <div style="font-size: 20px; font-weight: 700; color: #9b59b6;">$${rothIra.toLocaleString()}</div>
-                        <div style="font-size: 11px; color: #999; margin-top: 3px;">${totalAssets > 0 ? ((rothIra / totalAssets) * 100).toFixed(1) : 0}% of total</div>
+                        <div style="font-size: 11px; color: var(--text-light); margin-top: 3px;">${totalAssets > 0 ? ((rothIra / totalAssets) * 100).toFixed(1) : 0}% of total</div>
                     </div>
-                    <div style="background: white; padding: 15px; border-radius: 4px; border: 1px solid #ddd;">
-                        <div style="font-size: 12px; color: #7f8c8d; margin-bottom: 5px;">📊 Total Assets</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #2c3e50;">$${totalAssets.toLocaleString()}</div>
-                        <div style="font-size: 11px; color: #999; margin-top: 3px;">All retirement accounts</div>
+                    <div style="background: var(--bg-secondary); padding: 15px; border-radius: 4px; border: 1px solid var(--border-color);">
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">📊 Total Assets</div>
+                        <div style="font-size: 20px; font-weight: 700; color: var(--text-primary);">$${totalAssets.toLocaleString()}</div>
+                        <div style="font-size: 11px; color: var(--text-light); margin-top: 3px;">All retirement accounts</div>
                     </div>
                 </div>
             `;
@@ -2095,7 +2355,7 @@
             }
 
             // RMD Calculator
-            let rmdCalcHtml = '<table style="font-size: 13px; width: 100%; border-collapse: collapse;"><thead><tr style="background: #f1f2f6;"><th style="padding: 8px; text-align: left;">Age</th><th style="padding: 8px; text-align: right;">Life Expectancy Factor</th><th style="padding: 8px; text-align: right;">Est. RMD Amount</th><th style="padding: 8px; text-align: right;">% of Account</th></tr></thead><tbody>';
+            let rmdCalcHtml = '<table style="font-size: 13px; width: 100%; border-collapse: collapse;"><thead><tr style="background: var(--bg-tertiary);"><th style="padding: 8px; text-align: left;">Age</th><th style="padding: 8px; text-align: right;">Life Expectancy Factor</th><th style="padding: 8px; text-align: right;">Est. RMD Amount</th><th style="padding: 8px; text-align: right;">% of Account</th></tr></thead><tbody>';
 
             for (let age = 73; age <= 85; age++) {
                 const factor = 27.4 - (age - 73) * 1.0;
@@ -2104,7 +2364,7 @@
                 rmdCalcHtml += `<tr style="border-bottom: 1px solid #eee;"><td style="padding: 8px;">${age}</td><td style="padding: 8px; text-align: right;">${factor.toFixed(1)}</td><td style="padding: 8px; text-align: right; font-weight: 600;">$${rmd.toLocaleString(undefined, {maximumFractionDigits: 0})}</td><td style="padding: 8px; text-align: right;">${pct.toFixed(2)}%</td></tr>`;
             }
             rmdCalcHtml += '</tbody></table>';
-            rmdCalcHtml += '<p style="margin-top: 10px; font-size: 12px; color: #666;">Note: RMD factors decrease each year (you must withdraw larger % as you age). Calculated using 2024 Uniform Lifetime Table.</p>';
+            rmdCalcHtml += '<p style="margin-top: 10px; font-size: 12px; color: var(--text-secondary);">Note: RMD factors decrease each year (you must withdraw larger % as you age). Calculated using 2024 Uniform Lifetime Table.</p>';
             document.getElementById('rmd-calculator').innerHTML = rmdCalcHtml;
         }
 
@@ -2118,7 +2378,7 @@
                 <div class="loading" style="padding: 0;">
                     <div style="font-size: 24px; margin-bottom: 10px;">🤖</div>
                     <div style="font-weight: 600; color: #3498db;">Analyzing Screenshot...</div>
-                    <div style="font-size: 12px; color: #666; margin-top: 5px;">This usually takes 3-5 seconds.</div>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">This usually takes 3-5 seconds.</div>
                 </div>
             `;
 
@@ -2381,7 +2641,7 @@
                 
                 tr.innerHTML = `
                     <td>${item.name}</td>
-                    <td><span style="padding: 2px 6px; background: #e8f4f8; border-radius: 4px; font-size: 12px; color: #2980b9;">${account}</span></td>
+                    <td><span style="padding: 2px 6px; background: var(--accent-color); border-radius: 4px; font-size: 12px; color: white; opacity: 0.9;">${account}</span></td>
                     <td>$${item.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                     <td>${item.cost_basis ? '$' + item.cost_basis.toLocaleString() : '-'}</td>
                     <td>
@@ -2748,11 +3008,13 @@
                     document.getElementById('p1-name').value = data.person1.name;
                     document.getElementById('p1-birth').value = data.person1.birth_date;
                     document.getElementById('p1-retire').value = data.person1.retirement_date;
+                    updateMonthYearFromDate('p1');
                     document.getElementById('p1-ss').value = data.person1.social_security;
-                    
+
                     document.getElementById('p2-name').value = data.person2.name;
                     document.getElementById('p2-birth').value = data.person2.birth_date;
                     document.getElementById('p2-retire').value = data.person2.retirement_date;
+                    updateMonthYearFromDate('p2');
                     document.getElementById('p2-ss').value = data.person2.social_security;
                     
                     // No inputs to populate for assets anymore, handled by investmentTypes table
@@ -2895,6 +3157,10 @@
         
         async function runAnalysis() {
             const data = getFormData();
+            const settings = getSettings();
+
+            // Add simulation count to request
+            data.simulations = settings.monteCarloSimulations || 10000;
 
             document.getElementById('analysis-results').innerHTML = '<div class="loading">Running analysis...</div>';
 
@@ -2962,7 +3228,7 @@ Please be direct and actionable. My success rate is currently ${window.currentAn
                             <h4 style="margin: 0;">🤖 AI-Powered Strategic Recommendations</h4>
                             <button class="secondary" onclick="getAIRecommendations()" style="font-size: 12px; padding: 6px 12px;">Refresh</button>
                         </div>
-                        <div style="background: white; padding: 15px; border-radius: 4px; line-height: 1.8; white-space: pre-wrap;">${data.response}</div>
+                        <div style="background: var(--bg-secondary); padding: 15px; border-radius: 4px; line-height: 1.8; white-space: pre-wrap;">${data.response}</div>
 
                         <div style="margin-top: 20px; padding-top: 15px; border-top: 2px solid #667eea33;">
                             <h5 style="margin: 0 0 10px 0; color: #667eea;">📋 Implement These Recommendations</h5>
@@ -2980,7 +3246,7 @@ Please be direct and actionable. My success rate is currently ${window.currentAn
                             <div id="quick-apply-options" style="margin-top: 15px;"></div>
                         </div>
 
-                        <div style="margin-top: 10px; font-size: 12px; color: #666; font-style: italic;">
+                        <div style="margin-top: 10px; font-size: 12px; color: var(--text-secondary); font-style: italic;">
                             Powered by Google Gemini • <a href="#" onclick="localStorage.removeItem('gemini_api_key'); alert('API key cleared'); return false;">Clear API Key</a>
                         </div>
                     </div>
@@ -3196,7 +3462,7 @@ Return ONLY the JSON array, no other text.`;
 
             if (options.length === 0) {
                 optionsDiv.innerHTML = `
-                    <div style="background: #e7f3ff; padding: 15px; border-radius: 4px; border-left: 4px solid #2196f3;">
+                    <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 4px; border-left: 4px solid #2196f3;">
                         <p style="margin: 0; color: #014361;">
                             ℹ️ No quick-apply options detected in recommendations. Use "Convert to Action Items" instead.
                         </p>
@@ -3206,14 +3472,14 @@ Return ONLY the JSON array, no other text.`;
             }
 
             const html = `
-                <div style="background: white; padding: 15px; border-radius: 4px; border: 1px solid #667eea;">
+                <div style="background: var(--bg-secondary); padding: 15px; border-radius: 4px; border: 1px solid #667eea;">
                     <h6 style="margin: 0 0 10px 0; color: #667eea;">⚡ Quick Apply Options</h6>
                     ${options.map(opt => `
-                        <div style="margin-bottom: 10px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+                        <div style="margin-bottom: 10px; padding: 10px; background: var(--bg-tertiary); border-radius: 4px;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <div>
                                     <div style="font-weight: 600; margin-bottom: 3px;">${opt.label}</div>
-                                    <div style="font-size: 12px; color: #666;">${opt.description}</div>
+                                    <div style="font-size: 12px; color: var(--text-secondary);">${opt.description}</div>
                                 </div>
                                 <button onclick="applyQuickAction('${opt.action}', ${opt.data ? `'${opt.data}'` : 'null'})"
                                         style="padding: 6px 12px; font-size: 12px; background: #667eea; color: white; white-space: nowrap;">
@@ -3354,8 +3620,8 @@ Return ONLY the JSON array, no other text.`;
 
                 if (response.ok) {
                     document.getElementById('quick-apply-options').innerHTML = `
-                        <div style="background: #d4edda; padding: 15px; border-radius: 4px; border-left: 4px solid #28a745;">
-                            <p style="margin: 0; color: #155724;">
+                        <div style="background: var(--success-bg); padding: 15px; border-radius: 4px; border-left: 4px solid var(--success-color);">
+                            <p style="margin: 0; color: var(--text-primary);">
                                 ✅ Saved scenario "${scenarioName}" with AI recommendations!
                             </p>
                         </div>
@@ -3388,6 +3654,7 @@ Return ONLY the JSON array, no other text.`;
 
                 <div class="analysis-section">
                     <h4>Monte Carlo Retirement Simulation</h4>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 10px;"><em>Based on ${(results.monte_carlo.simulations_run || 10000).toLocaleString()} simulations</em></p>
                     <p><strong>Success Rate:</strong> ${results.monte_carlo.success_rate.toFixed(1)}%</p>
                     <p><strong>Starting Portfolio:</strong> $${results.monte_carlo.starting_portfolio.toLocaleString()}</p>
                     <p><strong>Annual Withdrawal Need:</strong> $${results.monte_carlo.annual_withdrawal_need.toLocaleString()}</p>
@@ -3401,35 +3668,93 @@ Return ONLY the JSON array, no other text.`;
                         const warningThreshold = targetRate - 10;
                         const withdrawalRate = (results.monte_carlo.annual_withdrawal_need / results.monte_carlo.starting_portfolio) * 100;
                         const successRate = results.monte_carlo.success_rate;
-                        let rationale = '';
+                        const failureRate = 100 - successRate;
+                        let narrative = '';
                         let rationaleBg = '';
                         let rationaleIcon = '';
 
                         if (successRate >= targetRate) {
-                            rationaleBg = '#d4edda';
+                            rationaleBg = 'var(--success-bg)';
                             rationaleIcon = '✓';
                             if (withdrawalRate <= 4) {
-                                rationale = `Your ${withdrawalRate.toFixed(2)}% withdrawal rate is conservative and aligns with the "4% rule." This exceeds your ${targetRate}% target with a ${successRate.toFixed(1)}% probability.`;
+                                narrative = `<strong>Your Plan Looks Strong</strong><br><br>
+                                    Your ${withdrawalRate.toFixed(2)}% withdrawal rate is conservative and aligns with the "4% rule." With a ${successRate.toFixed(1)}% success rate, this means only ${failureRate.toFixed(0)} out of 100 scenarios run out of money.<br><br>
+                                    <strong>What happens in those ${failureRate.toFixed(0)} scenarios?</strong><br>
+                                    Failures typically occur when markets decline 30%+ in the first 5 years of retirement (sequence-of-returns risk), combined with sustained inflation above ${(assumptions.inflation_mean * 100 + 2).toFixed(1)}%. Even in these scenarios, you typically have 15+ years before running out.<br><br>
+                                    <strong>Why this works:</strong> Your conservative withdrawal rate leaves cushion for market volatility, and you're likely to end with substantial wealth in most scenarios.`;
                             } else {
-                                rationale = `Despite a ${withdrawalRate.toFixed(2)}% withdrawal rate (above the 4% rule), your success rate of ${successRate.toFixed(1)}% exceeds your ${targetRate}% target due to favorable factors.`;
+                                narrative = `<strong>Your Plan Succeeds Despite Higher Withdrawals</strong><br><br>
+                                    Your ${withdrawalRate.toFixed(2)}% withdrawal rate is above the traditional 4% rule, yet your ${successRate.toFixed(1)}% success rate exceeds your ${targetRate}% target.<br><br>
+                                    <strong>What makes this work?</strong><br>
+                                    Likely factors: higher stock allocation (${(assumptions.stock_allocation * 100).toFixed(0)}%), income streams reducing portfolio dependence, or shorter retirement time horizon. In the ${failureRate.toFixed(0)}% of failed scenarios, money runs out when early bear markets (losses >25% in first 3 years) combine with high inflation.<br><br>
+                                    <strong>Watch for:</strong> RMDs at age 73 may push you into higher tax brackets, potentially draining portfolios faster than planned.`;
                             }
                         } else if (successRate >= warningThreshold) {
-                            rationaleBg = '#fff3cd';
+                            rationaleBg = 'var(--warning-bg)';
                             rationaleIcon = '⚠';
-                            rationale = `Your ${withdrawalRate.toFixed(2)}% withdrawal rate gives you a ${successRate.toFixed(1)}% success rate, which is below your ${targetRate}% target. Consider small adjustments to reach your goal.`;
+                            narrative = `<strong>Your Plan Needs Minor Adjustments</strong><br><br>
+                                Your ${withdrawalRate.toFixed(2)}% withdrawal rate yields a ${successRate.toFixed(1)}% success rate, ${(targetRate - successRate).toFixed(1)} points below your ${targetRate}% target. This means ${failureRate.toFixed(0)} out of 100 scenarios fail.<br><br>
+                                <strong>What happens in failed scenarios?</strong><br>
+                                Money typically runs out around age ${(() => {
+                                    const data = getFormData();
+                                    const retireAge = Math.floor((new Date(data.person1.retirement_date) - new Date(data.person1.birth_date)) / (1000 * 60 * 60 * 24 * 365.25));
+                                    return retireAge + 18; // Rough estimate
+                                })()}, usually triggered by poor market returns in years 1-5 of retirement (down 20%+), followed by insufficient recovery. RMDs at age 73 can accelerate depletion by forcing larger taxable withdrawals.<br><br>
+                                <strong>Small fixes make a big difference:</strong><br>
+                                • Reduce spending by 5-8% → adds ~3-5 points to success rate<br>
+                                • Delay retirement 1 year → adds ~2-4 points<br>
+                                • Shift 10% to bonds → reduces volatility, adds ~2 points<br>
+                                • Plan Roth conversions before age 73 → reduces RMD tax drag`;
                         } else if (successRate >= 50) {
-                            rationaleBg = '#f8d7da';
+                            rationaleBg = 'var(--danger-bg)';
                             rationaleIcon = '⚠';
-                            rationale = `Your ${withdrawalRate.toFixed(2)}% withdrawal rate results in a ${successRate.toFixed(1)}% success rate, significantly below your ${targetRate}% target. The median scenario ends with $0.`;
+                            narrative = `<strong>Your Plan Has Significant Risk</strong><br><br>
+                                With a ${successRate.toFixed(1)}% success rate, ${failureRate.toFixed(0)} out of 100 scenarios fail. Your ${withdrawalRate.toFixed(2)}% withdrawal rate is straining your portfolio.<br><br>
+                                <strong>What happens in failed scenarios?</strong><br>
+                                In roughly half of the simulations, you run out of money, typically between ages ${(() => {
+                                    const data = getFormData();
+                                    const retireAge = Math.floor((new Date(data.person1.retirement_date) - new Date(data.person1.birth_date)) / (1000 * 60 * 60 * 24 * 365.25));
+                                    return `${retireAge + 12}-${retireAge + 18}`;
+                                })()} when early market downturns (30%+ losses in first 3 years) combine with persistent inflation. The median ending balance near $0 means even average market conditions barely sustain you.<br><br>
+                                <strong>Why failures occur:</strong><br>
+                                1. <strong>Sequence risk:</strong> Bear markets early in retirement lock in losses through forced selling<br>
+                                2. <strong>RMD tax drag:</strong> At 73, required distributions push you into higher brackets, accelerating depletion<br>
+                                3. <strong>Inflation erosion:</strong> ${withdrawalRate.toFixed(2)}% today becomes ${(withdrawalRate * 1.5).toFixed(2)}% in 15 years with 3% inflation<br><br>
+                                <strong>Actions to consider:</strong><br>
+                                • Reduce spending 10-15% (adds ~7-10 points)<br>
+                                • Delay retirement 2-3 years (adds ~8-12 points)<br>
+                                • Generate part-time income $20-30K/year (adds ~5-8 points)<br>
+                                • Increase stock allocation if you have time horizon >15 years`;
                         } else {
-                            rationaleBg = '#f8d7da';
+                            rationaleBg = 'var(--danger-bg)';
                             rationaleIcon = '✗';
-                            rationale = `Your ${withdrawalRate.toFixed(2)}% withdrawal rate is unsustainable with only a ${successRate.toFixed(1)}% success rate (Target: ${targetRate}%). Significant action needed.`;
+                            narrative = `<strong>Your Current Plan Is Unsustainable</strong><br><br>
+                                With only a ${successRate.toFixed(1)}% success rate, ${failureRate.toFixed(0)} out of 100 scenarios fail. Your ${withdrawalRate.toFixed(2)}% withdrawal rate far exceeds sustainable levels.<br><br>
+                                <strong>What happens in most scenarios?</strong><br>
+                                Money runs out between ages ${(() => {
+                                    const data = getFormData();
+                                    const retireAge = Math.floor((new Date(data.person1.retirement_date) - new Date(data.person1.birth_date)) / (1000 * 60 * 60 * 24 * 365.25));
+                                    return `${retireAge + 8}-${retireAge + 15}`;
+                                })()}, even with average market returns. You're withdrawing principal so fast that compound growth can't keep up. Any bear market accelerates failure dramatically.<br><br>
+                                <strong>Why this doesn't work:</strong><br>
+                                1. <strong>Withdrawal too high:</strong> ${withdrawalRate.toFixed(2)}% vs sustainable 4-5%<br>
+                                2. <strong>Time horizon:</strong> Portfolio needs ${Math.round((withdrawalRate - 4) * 5)} more years of growth<br>
+                                3. <strong>Tax trap:</strong> Pre-tax accounts face RMDs at 73, forcing larger taxable withdrawals<br>
+                                4. <strong>No margin for error:</strong> Any deviation from perfect conditions causes failure<br><br>
+                                <strong>Required actions (choose multiple):</strong><br>
+                                • <strong>Critical:</strong> Reduce spending 20%+ OR delay retirement 3-5 years<br>
+                                • Work part-time: $40-50K/year adds ~12-15 points to success rate<br>
+                                • Downsize home: $200K+ proceeds adds ~4-6 points<br>
+                                • Re-evaluate retirement lifestyle: Target income may need 15-25% reduction<br>
+                                • Consider phased retirement: Work 2-3 more years full-time, then part-time`;
                         }
 
+                        const borderColor = successRate >= targetRate ? 'var(--success-color)' : successRate >= warningThreshold ? 'var(--warning-color)' : 'var(--danger-color)';
+                        const textColor = 'var(--text-primary)';
+
                         return `
-                            <div style="margin-top: 15px; padding: 15px; background: ${rationaleBg}; border-left: 4px solid ${successRate >= targetRate ? '#28a745' : successRate >= warningThreshold ? '#ffc107' : '#dc3545'}; border-radius: 4px;">
-                                <p style="margin: 0;"><strong>${rationaleIcon} Rationale:</strong> ${rationale}</p>
+                            <div style="margin-top: 15px; padding: 15px; background: ${rationaleBg}; border-left: 4px solid ${borderColor}; border-radius: 4px; color: ${textColor};">
+                                <div style="margin: 0;">${rationaleIcon} ${narrative}</div>
                             </div>
                         `;
                     })()}
@@ -3535,13 +3860,44 @@ Return ONLY the JSON array, no other text.`;
                         plugins: {
                             title: {
                                 display: true,
-                                text: 'Projected Portfolio Balance'
+                                text: 'Projected Portfolio Balance',
+                                color: getComputedStyle(document.body).getPropertyValue('--text-primary').trim() || '#000',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            legend: {
+                                labels: {
+                                    color: getComputedStyle(document.body).getPropertyValue('--text-primary').trim() || '#000',
+                                    font: {
+                                        size: 12
+                                    }
+                                }
                             }
                         },
                         scales: {
+                            x: {
+                                ticks: {
+                                    color: getComputedStyle(document.body).getPropertyValue('--text-secondary').trim() || '#666'
+                                },
+                                grid: {
+                                    color: getComputedStyle(document.body).getPropertyValue('--border-color').trim() || '#ddd'
+                                }
+                            },
                             y: {
                                 beginAtZero: true,
-                                title: { display: true, text: 'Balance ($)' }
+                                title: {
+                                    display: true,
+                                    text: 'Balance ($)',
+                                    color: getComputedStyle(document.body).getPropertyValue('--text-primary').trim() || '#000'
+                                },
+                                ticks: {
+                                    color: getComputedStyle(document.body).getPropertyValue('--text-secondary').trim() || '#666'
+                                },
+                                grid: {
+                                    color: getComputedStyle(document.body).getPropertyValue('--border-color').trim() || '#ddd'
+                                }
                             }
                         }
                     }
@@ -3888,6 +4244,10 @@ Return ONLY the JSON array, no other text.`;
         function updateDashboard(results) {
             updateDashboardMetrics(results);
             updateDashboardChart(results);
+            renderAssetLocationChart();
+            renderLiquidityByAgeChart();
+            renderFinancialTimeline();
+            renderGapAnalysis(results);
         }
 
         function updateDashboardMetrics(results) {
@@ -3952,19 +4312,17 @@ Return ONLY the JSON array, no other text.`;
                 document.getElementById('db-withdraw-rate-val').textContent = withdrawalRate.toFixed(1) + '%';
             }
 
-            // 3. Retirement Year Levers
-            const syncRetireLever = (inputId, sliderId, labelId, nameInputId) => {
-                if (document.activeElement.id !== sliderId) {
+            // 3. Retirement Month Levers
+            const syncRetireLever = (inputId, monthInputId, labelId, nameInputId) => {
+                if (document.activeElement.id !== monthInputId) {
                     const dateVal = document.getElementById(inputId).value;
-                    const year = dateVal ? new Date(dateVal).getFullYear() : new Date().getFullYear();
-                    const slider = document.getElementById(sliderId);
-                    
-                    // Dynamic Range
-                    if (year > parseInt(slider.max)) slider.max = year + 5;
-                    if (year < parseInt(slider.min)) slider.min = year - 5;
-                    
-                    slider.value = year;
-                    document.getElementById(sliderId + '-val').textContent = year;
+                    if (dateVal) {
+                        const date = new Date(dateVal);
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const monthValue = `${year}-${month}`;
+                        document.getElementById(monthInputId).value = monthValue;
+                    }
                 }
                 // Update Name Label
                 const name = document.getElementById(nameInputId).value || (nameInputId.includes('p1') ? 'Person 1' : 'Person 2');
@@ -3972,8 +4330,8 @@ Return ONLY the JSON array, no other text.`;
                 if (label) label.textContent = name;
             };
 
-            syncRetireLever('p1-retire', 'db-retire-year', 'db-p1-label', 'p1-name');
-            syncRetireLever('p2-retire', 'db-retire-year-p2', 'db-p2-label', 'p2-name');
+            syncRetireLever('p1-retire', 'db-retire-month', 'db-p1-label', 'p1-name');
+            syncRetireLever('p2-retire', 'db-retire-month-p2', 'db-p2-label', 'p2-name');
 
             // 4. Allocation Lever
             if (document.activeElement.id !== 'db-allocation') {
@@ -4045,20 +4403,415 @@ Return ONLY the JSON array, no other text.`;
                         scales: {
                             y: {
                                 beginAtZero: true,
-                                grid: { color: '#f0f0f0' },
+                                grid: {
+                                    color: getComputedStyle(document.body).getPropertyValue('--border-color').trim() || '#f0f0f0'
+                                },
                                 ticks: {
+                                    color: getComputedStyle(document.body).getPropertyValue('--text-secondary').trim() || '#666',
                                     callback: function(value) {
                                         return '$' + (value / 1000000).toFixed(1) + 'M';
                                     }
                                 }
                             },
                             x: {
-                                grid: { display: false }
+                                grid: { display: false },
+                                ticks: {
+                                    color: getComputedStyle(document.body).getPropertyValue('--text-secondary').trim() || '#666'
+                                }
                             }
                         }
                     }
                 });
             }
+        }
+
+        function renderAssetLocationChart() {
+            const data = getFormData();
+            const invTypes = data.investment_types || [];
+
+            let cash = 0, taxable = 0, pretax = 0, roth = 0;
+
+            invTypes.forEach(inv => {
+                const val = inv.value || 0;
+                const acc = inv.account || 'Liquid';
+
+                if (acc === 'Checking' || acc === 'Savings') {
+                    cash += val;
+                } else if (acc === 'Liquid' || acc === 'Taxable Brokerage') {
+                    taxable += val;
+                } else if (acc === 'Traditional IRA' || acc === '401k' || acc === '403b' || acc === '401a' || acc === '457b' || acc === 'Pension') {
+                    pretax += val;
+                } else if (acc === 'Roth IRA') {
+                    roth += val;
+                }
+            });
+
+            const total = cash + taxable + pretax + roth;
+
+            if (total === 0) {
+                document.getElementById('asset-location-summary').innerHTML = '<p style="color: var(--text-secondary); font-style: italic;">No investment accounts added yet.</p>';
+                return;
+            }
+
+            const ctx = document.getElementById('asset-location-chart').getContext('2d');
+
+            if (window.assetLocationChart) window.assetLocationChart.destroy();
+
+            window.assetLocationChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Cash', 'Taxable', 'Pre-Tax', 'Roth'],
+                    datasets: [{
+                        data: [cash, taxable, pretax, roth],
+                        backgroundColor: ['#95a5a6', '#3498db', '#e67e22', '#9b59b6'],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: getComputedStyle(document.body).getPropertyValue('--text-primary').trim() || '#fff',
+                                font: {
+                                    size: 13
+                                },
+                                generateLabels: function(chart) {
+                                    const data = chart.data;
+                                    return data.labels.map((label, i) => {
+                                        const value = data.datasets[0].data[i];
+                                        const pct = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                        return {
+                                            text: `${label}: $${(value/1000).toFixed(0)}K (${pct}%)`,
+                                            fillStyle: data.datasets[0].backgroundColor[i],
+                                            hidden: false,
+                                            index: i
+                                        };
+                                    });
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw;
+                                    const pct = ((value / total) * 100).toFixed(1);
+                                    return context.label + ': $' + value.toLocaleString() + ' (' + pct + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Summary text
+            const cashPct = ((cash / total) * 100).toFixed(0);
+            const taxablePct = ((taxable / total) * 100).toFixed(0);
+            const pretaxPct = ((pretax / total) * 100).toFixed(0);
+            const rothPct = ((roth / total) * 100).toFixed(0);
+
+            document.getElementById('asset-location-summary').innerHTML = `
+                <p style="margin-bottom: 10px;"><strong>Total Portfolio: $${total.toLocaleString()}</strong></p>
+                <p style="margin-bottom: 8px; line-height: 1.5;">
+                    💡 <strong>Tax Diversification:</strong> ${pretaxPct}% in pre-tax accounts means you'll pay taxes on withdrawals.
+                    ${rothPct}% in Roth gives you tax-free income.
+                    ${taxablePct}% in taxable provides flexibility with capital gains treatment.
+                </p>
+                ${pretaxPct > 70 ? `<p style="color: var(--warning-text, #f39c12); margin-top: 10px;">⚠️ Consider Roth conversions to reduce future RMD tax burden.</p>` : ''}
+                ${rothPct > 40 ? `<p style="color: var(--success-text, #27ae60); margin-top: 10px;">✅ Strong Roth allocation provides tax-free retirement income!</p>` : ''}
+            `;
+        }
+
+        function renderLiquidityByAgeChart() {
+            const data = getFormData();
+            const invTypes = data.investment_types || [];
+            const p1BirthDate = new Date(data.person1.birth_date);
+            const currentYear = new Date().getFullYear();
+            const currentAge = currentYear - p1BirthDate.getFullYear();
+
+            let cash = 0, taxable = 0, pretax457 = 0, pretaxStd = 0, roth = 0;
+
+            invTypes.forEach(inv => {
+                const val = inv.value || 0;
+                const acc = inv.account || 'Liquid';
+
+                if (acc === 'Checking' || acc === 'Savings') {
+                    cash += val;
+                } else if (acc === 'Liquid' || acc === 'Taxable Brokerage') {
+                    taxable += val;
+                } else if (acc === '457b') {
+                    pretax457 += val;
+                } else if (acc === 'Traditional IRA' || acc === '401k' || acc === '403b' || acc === '401a' || acc === 'Pension') {
+                    pretaxStd += val;
+                } else if (acc === 'Roth IRA') {
+                    roth += val;
+                }
+            });
+
+            const ages = [currentAge, 59.5, 62, 67, 73];
+            const accessible = ages.map(age => {
+                let total = cash + taxable; // Always accessible
+
+                if (age >= 55) total += pretax457; // 457b no penalty after separation
+                if (age >= 59.5) total += pretaxStd; // Standard pre-tax no penalty
+                if (age >= 59.5) total += roth; // Roth no penalty (but save for last)
+
+                return total;
+            });
+
+            const ctx = document.getElementById('liquidity-by-age-chart').getContext('2d');
+
+            if (window.liquidityChart) window.liquidityChart.destroy();
+
+            window.liquidityChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ages.map(a => `Age ${a}`),
+                    datasets: [{
+                        label: 'Accessible Without Penalty',
+                        data: accessible,
+                        backgroundColor: '#27ae60',
+                        borderColor: '#229954',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Accessible: $' + context.raw.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: getComputedStyle(document.body).getPropertyValue('--text-secondary').trim() || '#ccc',
+                                callback: function(value) {
+                                    return '$' + (value / 1000000).toFixed(1) + 'M';
+                                }
+                            },
+                            grid: {
+                                color: getComputedStyle(document.body).getPropertyValue('--border-color').trim() || '#444'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: getComputedStyle(document.body).getPropertyValue('--text-secondary').trim() || '#ccc'
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            const accessibleNow = cash + taxable;
+            const accessibleAt595 = cash + taxable + pretax457 + pretaxStd + roth;
+            const totalAssets = cash + taxable + pretax457 + pretaxStd + roth;
+
+            document.getElementById('liquidity-score').innerHTML = `
+                <p style="margin-bottom: 10px;"><strong>Current Age: ${currentAge}</strong></p>
+                <p style="margin-bottom: 8px;">
+                    💵 <strong>Accessible Today:</strong> $${accessibleNow.toLocaleString()} (${((accessibleNow/totalAssets)*100).toFixed(0)}% of total)
+                </p>
+                <p style="margin-bottom: 8px;">
+                    🔓 <strong>At Age 59.5:</strong> $${accessibleAt595.toLocaleString()} (${((accessibleAt595/totalAssets)*100).toFixed(0)}% of total)
+                </p>
+                ${currentAge < 59.5 && accessibleNow < totalAssets * 0.15 ?
+                    `<p style="color: var(--warning-text, #f39c12); margin-top: 10px;">⚠️ Only ${((accessibleNow/totalAssets)*100).toFixed(0)}% accessible before age 59.5. Consider maintaining more in taxable accounts for early retirement flexibility.</p>`
+                    : ''}
+            `;
+        }
+
+        function renderFinancialTimeline() {
+            const data = getFormData();
+            const p1BirthDate = new Date(data.person1.birth_date);
+            const p1RetireDate = new Date(data.person1.retirement_date);
+            const currentYear = new Date().getFullYear();
+            const currentAge = currentYear - p1BirthDate.getFullYear();
+
+            const milestones = [];
+
+            // Retirement
+            const retireAge = Math.floor((p1RetireDate - p1BirthDate) / (1000 * 60 * 60 * 24 * 365.25));
+            const retireYear = p1RetireDate.getFullYear();
+            milestones.push({
+                age: retireAge,
+                year: retireYear,
+                icon: '🎯',
+                title: `Retire`,
+                description: `Begin retirement withdrawals`,
+                color: '#3498db'
+            });
+
+            // Social Security eligibility
+            if (currentAge < 70) {
+                milestones.push({
+                    age: 62,
+                    year: p1BirthDate.getFullYear() + 62,
+                    icon: '💰',
+                    title: 'SS Early Eligibility',
+                    description: 'Reduced benefits available',
+                    color: '#95a5a6'
+                });
+                milestones.push({
+                    age: 67,
+                    year: p1BirthDate.getFullYear() + 67,
+                    icon: '💵',
+                    title: 'SS Full Retirement',
+                    description: 'Full benefits available',
+                    color: '#27ae60'
+                });
+            }
+
+            // Medicare
+            if (currentAge < 65) {
+                milestones.push({
+                    age: 65,
+                    year: p1BirthDate.getFullYear() + 65,
+                    icon: '🏥',
+                    title: 'Medicare Begins',
+                    description: 'Healthcare coverage starts',
+                    color: '#e74c3c'
+                });
+            }
+
+            // RMDs
+            if (currentAge < 73) {
+                milestones.push({
+                    age: 73,
+                    year: p1BirthDate.getFullYear() + 73,
+                    icon: '📋',
+                    title: 'RMDs Begin',
+                    description: 'Required minimum distributions',
+                    color: '#e67e22'
+                });
+            }
+
+            // Income streams
+            if (data.income_streams) {
+                data.income_streams.forEach(stream => {
+                    const startDate = new Date(stream.start_date);
+                    const startAge = Math.floor((startDate - p1BirthDate) / (1000 * 60 * 60 * 24 * 365.25));
+                    milestones.push({
+                        age: startAge,
+                        year: startDate.getFullYear(),
+                        icon: '💼',
+                        title: stream.name,
+                        description: `$${stream.amount.toLocaleString()}/year`,
+                        color: '#9b59b6'
+                    });
+                });
+            }
+
+            // Property sales
+            if (data.home_properties) {
+                data.home_properties.forEach(prop => {
+                    if (prop.planned_sale_date) {
+                        const saleDate = new Date(prop.planned_sale_date);
+                        const saleAge = Math.floor((saleDate - p1BirthDate) / (1000 * 60 * 60 * 24 * 365.25));
+                        milestones.push({
+                            age: saleAge,
+                            year: saleDate.getFullYear(),
+                            icon: '🏡',
+                            title: `Sell ${prop.name}`,
+                            description: `Est. $${prop.current_value.toLocaleString()}`,
+                            color: '#16a085'
+                        });
+                    }
+                });
+            }
+
+            // Sort by age
+            milestones.sort((a, b) => a.age - b.age);
+
+            // Render timeline
+            let html = '<div style="display: flex; gap: 20px; overflow-x: auto; padding-bottom: 10px;">';
+
+            milestones.forEach((m, i) => {
+                const isPast = currentAge > m.age;
+                const isCurrent = currentAge === m.age;
+                const opacity = isPast ? '0.5' : '1.0';
+
+                html += `
+                    <div style="min-width: 180px; opacity: ${opacity}; position: relative;">
+                        <div style="text-align: center; margin-bottom: 10px;">
+                            <div style="font-size: 32px; margin-bottom: 5px;">${m.icon}</div>
+                            <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 2px;">${m.title}</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">Age ${m.age} (${m.year})</div>
+                        </div>
+                        <div style="padding: 10px; background: var(--bg-secondary); border: 2px solid ${m.color}; border-radius: 6px; font-size: 12px; text-align: center; color: var(--text-primary);">
+                            ${m.description}
+                        </div>
+                        ${isCurrent ? '<div style="text-align: center; margin-top: 5px; color: var(--text-primary); font-weight: 700; font-size: 11px;">← You are here</div>' : ''}
+                    </div>
+                `;
+
+                if (i < milestones.length - 1) {
+                    html += `<div style="align-self: center; color: var(--text-light); font-size: 20px; padding: 0 10px;">→</div>`;
+                }
+            });
+
+            html += '</div>';
+
+            if (milestones.length === 0) {
+                html = '<p style="color: var(--text-secondary); font-style: italic;">Add income streams or property sales to see your timeline.</p>';
+            }
+
+            document.getElementById('financial-timeline').innerHTML = html;
+        }
+
+        function renderGapAnalysis(results) {
+            if (!results || !results.monte_carlo) return;
+
+            const successRate = results.monte_carlo.success_rate;
+            const targetRate = 90;
+
+            if (successRate >= targetRate) {
+                document.getElementById('gap-analysis-widget').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('gap-analysis-widget').style.display = 'block';
+
+            const gap = targetRate - successRate;
+            const data = getFormData();
+            const totalAssets = (data.investment_types || []).reduce((sum, inv) => sum + (inv.value || 0), 0);
+
+            // Estimate needed additional assets (rough heuristic: 2% success rate ≈ $100K more assets)
+            const estimatedNeed = gap * 50000;
+
+            let html = `
+                <p style="margin-bottom: 15px; font-size: 14px;">
+                    Your current success rate is <strong>${successRate.toFixed(0)}%</strong>, which is
+                    <strong>${gap.toFixed(0)} percentage points</strong> below the recommended ${targetRate}% target.
+                </p>
+                <div style="background: var(--bg-secondary); padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                    <h5 style="margin: 0 0 10px 0; color: #856404;">Recommended Actions:</h5>
+                    <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
+                        <li><strong>Increase savings by ~$${estimatedNeed.toLocaleString()}</strong> to reach ${targetRate}% success rate</li>
+                        <li>Reduce annual spending by ${(data.target_annual_income * 0.1).toLocaleString()} (10%) to improve sustainability</li>
+                        <li>Delay retirement by 1-2 years to allow more accumulation</li>
+                        <li>Consider a more conservative allocation during early retirement years</li>
+                    </ul>
+                </div>
+                <p style="font-size: 12px; color: var(--text-secondary); font-style: italic;">
+                    💡 These are general recommendations. Use the Scenario Sandbox below to model specific changes.
+                </p>
+            `;
+
+            document.getElementById('gap-analysis-content').innerHTML = html;
         }
 
         function attachDashboardListeners() {
@@ -4203,31 +4956,27 @@ Return ONLY the JSON array, no other text.`;
                 runAnalysis();
             }, 300));
 
-            // Retirement Year Lever
-            const retireSlider = document.getElementById('db-retire-year');
-            retireSlider.addEventListener('input', () => {
-                const year = retireSlider.value;
-                document.getElementById('db-retire-year-val').textContent = year;
-                // Update main form (keep month/day same)
-                const current = new Date(document.getElementById('p1-retire').value);
-                const newDate = `${year}-${String(current.getMonth()+1).padStart(2,'0')}-${String(current.getDate()).padStart(2,'0')}`;
+            // Retirement Month Lever
+            const retireMonthInput = document.getElementById('db-retire-month');
+            retireMonthInput.addEventListener('input', () => {
+                const monthValue = retireMonthInput.value; // Format: "YYYY-MM"
+                // Update main form with first day of selected month
+                const newDate = `${monthValue}-01`;
                 document.getElementById('p1-retire').value = newDate;
             });
-            retireSlider.addEventListener('change', debounce(() => {
+            retireMonthInput.addEventListener('change', debounce(() => {
                 runAnalysis();
             }, 300));
 
-            // Retirement Year Lever (Person 2)
-            const retireSliderP2 = document.getElementById('db-retire-year-p2');
-            retireSliderP2.addEventListener('input', () => {
-                const year = retireSliderP2.value;
-                document.getElementById('db-retire-year-p2-val').textContent = year;
-                // Update main form (keep month/day same)
-                const current = new Date(document.getElementById('p2-retire').value);
-                const newDate = `${year}-${String(current.getMonth()+1).padStart(2,'0')}-${String(current.getDate()).padStart(2,'0')}`;
+            // Retirement Month Lever (Person 2)
+            const retireMonthInputP2 = document.getElementById('db-retire-month-p2');
+            retireMonthInputP2.addEventListener('input', () => {
+                const monthValue = retireMonthInputP2.value; // Format: "YYYY-MM"
+                // Update main form with first day of selected month
+                const newDate = `${monthValue}-01`;
                 document.getElementById('p2-retire').value = newDate;
             });
-            retireSliderP2.addEventListener('change', debounce(() => {
+            retireMonthInputP2.addEventListener('change', debounce(() => {
                 runAnalysis();
             }, 300));
 
@@ -4303,8 +5052,8 @@ Return ONLY the JSON array, no other text.`;
             let subtasksHtml = '';
             if (!item.subtasks || item.subtasks.length === 0) {
                 subtasksHtml = `
-                    <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px; margin-top: 20px;">
-                        <p style="color: #666; margin-bottom: 10px;">No subtasks defined.</p>
+                    <div style="text-align: center; padding: 20px; background: var(--bg-tertiary); border-radius: 8px; margin-top: 20px;">
+                        <p style="color: var(--text-secondary); margin-bottom: 10px;">No subtasks defined.</p>
                         <button class="secondary" onclick="generateSubtasks(${item.id})" style="font-size: 13px;">🪄 Use AI to Breakdown Task</button>
                     </div>
                 `;
@@ -4312,9 +5061,9 @@ Return ONLY the JSON array, no other text.`;
                 subtasksHtml = '<ul style="list-style: none; margin-top: 20px;">';
                 item.subtasks.forEach((sub, idx) => {
                     subtasksHtml += `
-                        <li style="background: white; padding: 10px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px;">
+                        <li style="background: var(--bg-secondary); padding: 10px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px;">
                             <input type="checkbox" ${sub.completed ? 'checked' : ''} onchange="toggleSubtask(${item.id}, ${idx})" style="width: 18px; height: 18px;">
-                            <span style="${sub.completed ? 'text-decoration: line-through; color: #999;' : ''}">${sub.text}</span>
+                            <span style="${sub.completed ? 'text-decoration: line-through; color: var(--text-light);' : ''}">${sub.text}</span>
                         </li>
                     `;
                 });
@@ -4324,14 +5073,14 @@ Return ONLY the JSON array, no other text.`;
             const html = `
                 <div style="margin-bottom: 20px;">
                     <span style="background: ${pColor}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; text-transform: uppercase;">${item.priority}</span>
-                    <span style="color: #666; font-size: 13px; margin-left: 10px;">${item.category}</span>
+                    <span style="color: var(--text-secondary); font-size: 13px; margin-left: 10px;">${item.category}</span>
                 </div>
                 
-                <h3 style="font-size: 24px; margin-bottom: 15px; color: #2c3e50;">${item.description}</h3>
+                <h3 style="font-size: 24px; margin-bottom: 15px; color: var(--text-primary);">${item.description}</h3>
                 
                 ${item.due_date ? `<div style="margin-bottom: 20px; font-size: 14px; color: #e74c3c;">📅 Due: ${new Date(item.due_date).toLocaleDateString()}</div>` : ''}
                 
-                <div style="background: #f1f2f6; padding: 20px; border-radius: 8px; flex: 1;">
+                <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; flex: 1;">
                     <h4 style="margin-bottom: 15px; font-size: 16px;">Action Plan</h4>
                     ${subtasksHtml}
                 </div>
@@ -4346,7 +5095,7 @@ Return ONLY the JSON array, no other text.`;
             if (item.action_data) {
                 const dataStr = JSON.stringify(item.action_data).replace(/"/g, '&quot;');
                 assistContainer.innerHTML = `
-                    <div style="background: #e8f4f8; padding: 15px; border-radius: 8px; border: 1px solid #3498db; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; border: 1px solid #3498db; display: flex; justify-content: space-between; align-items: center;">
                         <div>
                             <strong style="color: #2980b9;">⚡ Smart Apply Available</strong>
                             <p style="font-size: 13px; margin-top: 5px;">The system can automatically update your profile to implement this recommendation.</p>
@@ -4500,7 +5249,7 @@ Return ONLY the JSON array, no other text.`;
                 const progressPct = total > 0 ? (completed / total) * 100 : 0;
 
                 const progressHtml = `
-                    <div style="margin-bottom: 20px; background: #f1f2f6; padding: 15px; border-radius: 8px;">
+                    <div style="margin-bottom: 20px; background: var(--bg-tertiary); padding: 15px; border-radius: 8px;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; font-weight: 600;">
                             <span>Progress</span>
                             <span>${completed} of ${total} completed</span>
@@ -4520,8 +5269,8 @@ Return ONLY the JSON array, no other text.`;
                     }
 
                     const isCompleted = item.status === 'completed';
-                    const itemStyle = isCompleted ? 'opacity: 0.6; background: #f8f9fa; border-left-color: #bdc3c7;' : '';
-                    const descStyle = isCompleted ? 'text-decoration: line-through; color: #7f8c8d;' : '';
+                    const itemStyle = isCompleted ? 'opacity: 0.6; background: var(--bg-tertiary); border-left-color: #bdc3c7;' : '';
+                    const descStyle = isCompleted ? 'text-decoration: line-through; color: var(--text-secondary);' : '';
 
                     // Smart Apply Button
                     let applyBtn = '';
@@ -4549,7 +5298,7 @@ Return ONLY the JSON array, no other text.`;
                                 <span class="action-item-priority priority-${item.priority}">${item.priority}</span>
                             </div>
                             <div style="${descStyle}">${item.description}${actionLink}</div>
-                            <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">
                                 Due: ${item.due_date ? new Date(item.due_date).toLocaleDateString() : 'No date'}
                                 ${applyBtn}
                             </div>
@@ -5469,6 +6218,7 @@ Return ONLY the JSON array, no other text.`;
             fetchProfiles();
             refreshScenarios();
             updateIncomeOwnerLabels();
+            initRetirementDateSelectors();
 
             // Update income owner dropdown labels when person names change
             document.getElementById('p1-name').addEventListener('input', updateIncomeOwnerLabels);
@@ -5520,6 +6270,11 @@ Return ONLY the JSON array, no other text.`;
             // Load target success
             document.getElementById('setting-target-success').value = settings.targetSuccessRate || 90;
 
+            // Load Monte Carlo simulations
+            const simCount = settings.monteCarloSimulations || 10000;
+            document.getElementById('setting-simulations').value = simCount;
+            document.getElementById('sim-count-display').textContent = simCount.toLocaleString();
+
             // Load system settings from backend
             try {
                 const response = await fetch(`${API_URL}/system/settings`);
@@ -5531,6 +6286,28 @@ Return ONLY the JSON array, no other text.`;
             } catch (e) {
                 console.error("Failed to load system settings", e);
             }
+
+            // Load backup settings from backend
+            try {
+                const response = await fetch(`${API_URL}/backup/settings`);
+                const backupSettings = await response.json();
+                document.getElementById('setting-autobackup-enabled').checked = backupSettings.auto_backup_enabled || false;
+                document.getElementById('setting-autobackup-interval').value = backupSettings.auto_backup_interval_hours || 24;
+
+                // Display last backup time
+                if (backupSettings.last_backup_time) {
+                    const lastBackupDate = new Date(backupSettings.last_backup_time);
+                    document.getElementById('last-backup-time').textContent =
+                        `Last backup: ${lastBackupDate.toLocaleString()}`;
+                } else {
+                    document.getElementById('last-backup-time').textContent = 'No backups yet';
+                }
+            } catch (e) {
+                console.error("Failed to load backup settings", e);
+            }
+
+            // Load backup list
+            refreshBackupList();
         }
 
         function getSettings() {
@@ -5542,7 +6319,8 @@ Return ONLY the JSON array, no other text.`;
                 autoSave: true,  // Auto-save enabled by default
                 animations: true,
                 defaultLLM: 'gemini',
-                targetSuccessRate: 90
+                targetSuccessRate: 90,
+                monteCarloSimulations: 10000
             };
 
             const stored = localStorage.getItem('app_settings');
@@ -5558,7 +6336,8 @@ Return ONLY the JSON array, no other text.`;
                 autoSave: document.getElementById('setting-autosave').checked,
                 animations: document.getElementById('setting-animations').checked,
                 defaultLLM: document.getElementById('setting-default-llm').value,
-                targetSuccessRate: parseInt(document.getElementById('setting-target-success').value)
+                targetSuccessRate: parseInt(document.getElementById('setting-target-success').value),
+                monteCarloSimulations: parseInt(document.getElementById('setting-simulations').value)
             };
 
             const defaultLLM = document.getElementById('setting-default-llm').value;
@@ -5567,6 +6346,20 @@ Return ONLY the JSON array, no other text.`;
             localStorage.setItem('default_llm', defaultLLM);
 
             applySettings(settings);
+
+            // Save backup settings to backend
+            try {
+                await fetch(`${API_URL}/backup/settings`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        auto_backup_enabled: document.getElementById('setting-autobackup-enabled').checked,
+                        auto_backup_interval_hours: parseInt(document.getElementById('setting-autobackup-interval').value)
+                    })
+                });
+            } catch (e) {
+                console.error("Failed to save backup settings", e);
+            }
 
             // Save to backend
             try {
@@ -5651,6 +6444,191 @@ Return ONLY the JSON array, no other text.`;
             alert('Settings reset to defaults!');
         }
 
+        // ========================================
+        // Backup Management Functions
+        // ========================================
+
+        async function createManualBackup() {
+            try {
+                const button = event.target;
+                button.disabled = true;
+                button.textContent = 'Creating...';
+
+                const response = await fetch(`${API_URL}/backup/create`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert(`✓ Backup created successfully: ${result.backup_path}`);
+                    refreshBackupList();
+
+                    // Update last backup time
+                    const now = new Date();
+                    document.getElementById('last-backup-time').textContent =
+                        `Last backup: ${now.toLocaleString()}`;
+                } else {
+                    alert(`✗ Backup failed: ${result.error}`);
+                }
+
+                button.disabled = false;
+                button.textContent = 'Create Backup';
+            } catch (e) {
+                console.error('Backup error:', e);
+                alert('✗ Failed to create backup');
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = 'Create Backup';
+                }
+            }
+        }
+
+        async function refreshBackupList() {
+            try {
+                const response = await fetch(`${API_URL}/backup/list`);
+                const result = await response.json();
+
+                const listEl = document.getElementById('backup-list');
+                if (result.backups && result.backups.length > 0) {
+                    listEl.innerHTML = '';
+                    result.backups.forEach(backup => {
+                        const item = document.createElement('div');
+                        item.style.cssText = `
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            padding: 10px;
+                            margin-bottom: 8px;
+                            background: var(--bg-tertiary);
+                            border-radius: 6px;
+                            border: 1px solid var(--border-color);
+                        `;
+
+                        const info = document.createElement('div');
+                        info.style.cssText = 'flex: 1;';
+
+                        const name = document.createElement('div');
+                        name.style.cssText = 'font-weight: 600; color: var(--text-primary); margin-bottom: 4px;';
+                        name.textContent = formatBackupTimestamp(backup.timestamp);
+
+                        const size = document.createElement('div');
+                        size.style.cssText = 'font-size: 12px; color: var(--text-secondary);';
+                        size.textContent = `${backup.size_mb} MB`;
+
+                        info.appendChild(name);
+                        info.appendChild(size);
+
+                        const actions = document.createElement('div');
+                        actions.style.cssText = 'display: flex; gap: 8px;';
+
+                        const restoreBtn = document.createElement('button');
+                        restoreBtn.textContent = 'Restore';
+                        restoreBtn.style.cssText = `
+                            padding: 6px 12px;
+                            background: var(--accent-color);
+                            color: white;
+                            border: none;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 12px;
+                        `;
+                        restoreBtn.onclick = () => restoreBackup(backup.name);
+
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.textContent = 'Delete';
+                        deleteBtn.style.cssText = `
+                            padding: 6px 12px;
+                            background: var(--danger-color);
+                            color: white;
+                            border: none;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 12px;
+                        `;
+                        deleteBtn.onclick = () => deleteBackup(backup.name);
+
+                        actions.appendChild(restoreBtn);
+                        actions.appendChild(deleteBtn);
+
+                        item.appendChild(info);
+                        item.appendChild(actions);
+                        listEl.appendChild(item);
+                    });
+                } else {
+                    listEl.innerHTML = '<div style="text-align: center; color: var(--text-light); padding: 20px;">No backups found</div>';
+                }
+            } catch (e) {
+                console.error('Failed to load backups:', e);
+                document.getElementById('backup-list').innerHTML =
+                    '<div style="text-align: center; color: var(--danger-color); padding: 20px;">Error loading backups</div>';
+            }
+        }
+
+        function formatBackupTimestamp(timestamp) {
+            // Format: 20260112_175510 -> Jan 12, 2026 5:55 PM
+            const year = timestamp.substr(0, 4);
+            const month = timestamp.substr(4, 2);
+            const day = timestamp.substr(6, 2);
+            const hour = timestamp.substr(9, 2);
+            const minute = timestamp.substr(11, 2);
+
+            const date = new Date(year, month - 1, day, hour, minute);
+            return date.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            });
+        }
+
+        async function restoreBackup(backupName) {
+            if (!confirm(`Are you sure you want to restore from backup "${formatBackupTimestamp(backupName)}"?\n\nThis will replace all current data!`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/backup/restore/${encodeURIComponent(backupName)}`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert(`✓ Restored from backup successfully!\n\nThe page will reload now.`);
+                    location.reload();
+                } else {
+                    alert(`✗ Restore failed: ${result.error}`);
+                }
+            } catch (e) {
+                console.error('Restore error:', e);
+                alert('✗ Failed to restore backup');
+            }
+        }
+
+        async function deleteBackup(backupName) {
+            if (!confirm(`Are you sure you want to delete backup "${formatBackupTimestamp(backupName)}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/backup/delete/${encodeURIComponent(backupName)}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert(`✓ Backup deleted successfully`);
+                    refreshBackupList();
+                } else {
+                    alert(`✗ Delete failed: ${result.error}`);
+                }
+            } catch (e) {
+                console.error('Delete error:', e);
+                alert('✗ Failed to delete backup');
+            }
+        }
+
         // Apply settings on page load
         window.addEventListener('DOMContentLoaded', () => {
             const settings = getSettings();
@@ -5664,6 +6642,443 @@ Return ONLY the JSON array, no other text.`;
                 closeSettings();
             }
         });
+
+        // ===== AI Q&A WIZARD FUNCTIONS =====
+        let wizardConversation = [];
+        let wizardQuestionQueue = [];
+
+        async function startWizard() {
+            const profileName = getCurrentProfileName();
+            if (!profileName || profileName === 'main') {
+                alert('Please save your profile first before starting the wizard.');
+                return;
+            }
+
+            // Check if API key is configured
+            const hasKey = await checkApiKey();
+            if (!hasKey) {
+                alert('Please configure your API keys in Settings before using the wizard.');
+                return;
+            }
+
+            // Initialize wizard
+            wizardConversation = [];
+            document.getElementById('wizard-messages').innerHTML = '';
+            document.getElementById('wizard-input').value = '';
+
+            // Show modal
+            document.getElementById('wizard-modal').style.display = 'flex';
+
+            // Add welcome message
+            addWizardMessage('ai', 'Hello! I\'m here to help complete your financial profile. Let me analyze what information we have and what might be missing...');
+
+            // Call backend to analyze profile
+            setTimeout(() => analyzeProfileCompleteness(), 1000);
+        }
+
+        async function analyzeProfileCompleteness() {
+            try {
+                const profileName = getCurrentProfileName();
+                const profileData = collectProfileData();
+
+                const response = await fetch(`${API_URL}/wizard/analyze`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        profile_name: profileName,
+                        profile: profileData
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.questions && result.questions.length > 0) {
+                    wizardQuestionQueue = result.questions;
+                    addWizardMessage('ai', result.analysis_summary || 'I have a few questions to help optimize your plan.');
+                    askNextWizardQuestion();
+                } else {
+                    addWizardMessage('ai', '✅ Your profile looks complete! No additional information needed at this time.');
+                }
+            } catch (error) {
+                addWizardMessage('ai', '❌ Error analyzing profile: ' + error.message);
+            }
+        }
+
+        function askNextWizardQuestion() {
+            if (wizardQuestionQueue.length === 0) {
+                addWizardMessage('ai', '🎉 Thank you! I\'ve gathered all the information I need. Your profile has been updated. Running fresh analysis...');
+                setTimeout(() => {
+                    runAnalysis();
+                    updateSummaryTab();
+                    closeWizard();
+                }, 2000);
+                return;
+            }
+
+            const question = wizardQuestionQueue[0];
+            addWizardMessage('ai', question.question);
+        }
+
+        function sendWizardResponse() {
+            const input = document.getElementById('wizard-input');
+            const userResponse = input.value.trim();
+
+            if (!userResponse) return;
+
+            addWizardMessage('user', userResponse);
+            input.value = '';
+
+            // Process the response
+            processWizardResponse(userResponse);
+        }
+
+        async function processWizardResponse(userResponse) {
+            try {
+                const currentQuestion = wizardQuestionQueue.shift();
+
+                const response = await fetch(`${API_URL}/wizard/process`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        profile_name: getCurrentProfileName(),
+                        question: currentQuestion,
+                        response: userResponse,
+                        profile: collectProfileData()
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.update_applied) {
+                    addWizardMessage('ai', '✓ Got it! Information saved.');
+
+                    // Apply updates to form if provided
+                    if (result.profile_updates) {
+                        applyProfileUpdates(result.profile_updates);
+                    }
+                }
+
+                if (result.follow_up) {
+                    wizardQuestionQueue.unshift({ question: result.follow_up, field: currentQuestion.field });
+                }
+
+                setTimeout(() => askNextWizardQuestion(), 800);
+
+            } catch (error) {
+                addWizardMessage('ai', '❌ Error processing response: ' + error.message);
+            }
+        }
+
+        function skipWizardQuestion() {
+            wizardQuestionQueue.shift();
+            addWizardMessage('ai', 'Okay, skipping that one.');
+            setTimeout(() => askNextWizardQuestion(), 500);
+        }
+
+        function closeWizard() {
+            document.getElementById('wizard-modal').style.display = 'none';
+        }
+
+        function addWizardMessage(role, text) {
+            const messagesDiv = document.getElementById('wizard-messages');
+            const messageDiv = document.createElement('div');
+
+            if (role === 'ai') {
+                messageDiv.style.cssText = 'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 16px; border-radius: 12px 12px 12px 2px; max-width: 80%; align-self: flex-start;';
+            } else {
+                messageDiv.style.cssText = 'background: var(--bg-tertiary); color: var(--text-primary); padding: 12px 16px; border-radius: 12px 12px 2px 12px; max-width: 80%; align-self: flex-end; border: 1px solid var(--border-color);';
+            }
+
+            messageDiv.textContent = text;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function applyProfileUpdates(updates) {
+            // Apply updates to the form
+            for (const [key, value] of Object.entries(updates)) {
+                const element = document.getElementById(key);
+                if (element) {
+                    element.value = value;
+                }
+            }
+        }
+
+        // ===== SUMMARY TAB FUNCTIONS =====
+        function updateSummaryTab() {
+            const profileName = getCurrentProfileName();
+            const profileData = collectProfileData();
+            const analysis = window.currentAnalysis;
+
+            if (!profileData.person1.name) {
+                document.getElementById('summary-content').innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px; color: var(--text-light);">
+                        <h3>No Profile Loaded</h3>
+                        <p>Please load or create a profile to view the financial summary.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            generateSummaryReport(profileName, profileData, analysis);
+        }
+
+        function generateSummaryReport(profileName, profile, analysis) {
+            const p1 = profile.person1;
+            const p2 = profile.person2;
+
+            // Calculate ages and years to retirement
+            const calcAge = (birthDate) => {
+                if (!birthDate) return 'N/A';
+                const today = new Date();
+                const birth = new Date(birthDate);
+                return Math.floor((today - birth) / (365.25 * 24 * 60 * 60 * 1000));
+            };
+
+            const calcYearsTo = (targetDate) => {
+                if (!targetDate) return 'N/A';
+                const today = new Date();
+                const target = new Date(targetDate);
+                const years = (target - today) / (365.25 * 24 * 60 * 60 * 1000);
+                return years > 0 ? years.toFixed(1) : '0';
+            };
+
+            const p1Age = calcAge(p1.birth_date);
+            const p2Age = calcAge(p2.birth_date);
+            const p1YearsToRetire = calcYearsTo(p1.retirement_date);
+            const p2YearsToRetire = calcYearsTo(p2.retirement_date);
+
+            // Calculate total assets
+            const totalAssets = profile.investment_types.reduce((sum, inv) => sum + inv.value, 0);
+            const totalCostBasis = profile.investment_types.reduce((sum, inv) => sum + (inv.cost_basis || 0), 0);
+            const unrealizedGains = totalAssets - totalCostBasis;
+
+            // Calculate by account type
+            const assetsByType = {};
+            profile.investment_types.forEach(inv => {
+                if (!assetsByType[inv.account]) assetsByType[inv.account] = 0;
+                assetsByType[inv.account] += inv.value;
+            });
+
+            const totalHomeValue = profile.home_properties?.reduce((sum, prop) => sum + prop.current_value, 0) || 0;
+            const totalMortgages = profile.home_properties?.reduce((sum, prop) => sum + (prop.mortgage_balance || 0), 0) || 0;
+
+            // Success rate styling
+            const successRate = analysis?.monte_carlo?.success_rate || 0;
+            const successColor = successRate >= 90 ? '#2ecc71' : successRate >= 75 ? '#f39c12' : '#e74c3c';
+            const successStatus = successRate >= 90 ? 'Excellent' : successRate >= 75 ? 'Good' : 'Needs Attention';
+
+            const html = `
+                <div class="summary-report" style="max-width: 1200px; margin: 0 auto;">
+                    <!-- Header with Logo -->
+                    <div class="report-header" style="text-align: center; padding: 40px 20px; background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color: white; border-radius: 12px 12px 0 0;">
+                        <img src="pan-rps-logo.svg" alt="PAN RPS" style="max-width: 350px; margin-bottom: 15px;">
+                        <h1 style="margin: 10px 0; font-size: 28px;">Financial Profile Summary</h1>
+                        <p style="margin: 5px 0; opacity: 0.9; font-size: 16px;">Profile: <strong>${profileName}</strong></p>
+                        <p style="margin: 5px 0; opacity: 0.7; font-size: 14px;">Generated: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    </div>
+
+                    <!-- Main Content -->
+                    <div style="background: var(--bg-secondary); padding: 40px;">
+                        <!-- Demographics Section -->
+                        <div class="summary-section" style="margin-bottom: 40px;">
+                            <h2 style="color: var(--text-primary); border-bottom: 3px solid #3498db; padding-bottom: 10px; margin-bottom: 25px;">
+                                👥 Demographics
+                            </h2>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px;">
+                                ${p1.name ? `
+                                <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid #3498db;">
+                                    <h3 style="margin: 0 0 15px 0; color: var(--text-primary); font-size: 18px;">${p1.name}</h3>
+                                    <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px;">
+                                        <div><strong>Current Age:</strong> ${p1Age}</div>
+                                        <div><strong>Date of Birth:</strong> ${p1.birth_date ? new Date(p1.birth_date).toLocaleDateString() : 'N/A'}</div>
+                                        <div><strong>Retirement Date:</strong> ${p1.retirement_date ? new Date(p1.retirement_date).toLocaleDateString() : 'N/A'}</div>
+                                        <div><strong>Years to Retirement:</strong> <span style="color: #3498db; font-weight: 600;">${p1YearsToRetire}</span></div>
+                                        <div><strong>Social Security:</strong> $${(p1.social_security || 0).toLocaleString()}/month</div>
+                                    </div>
+                                </div>
+                                ` : ''}
+                                ${p2.name ? `
+                                <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid #2ecc71;">
+                                    <h3 style="margin: 0 0 15px 0; color: var(--text-primary); font-size: 18px;">${p2.name}</h3>
+                                    <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px;">
+                                        <div><strong>Current Age:</strong> ${p2Age}</div>
+                                        <div><strong>Date of Birth:</strong> ${p2.birth_date ? new Date(p2.birth_date).toLocaleDateString() : 'N/A'}</div>
+                                        <div><strong>Retirement Date:</strong> ${p2.retirement_date ? new Date(p2.retirement_date).toLocaleDateString() : 'N/A'}</div>
+                                        <div><strong>Years to Retirement:</strong> <span style="color: #2ecc71; font-weight: 600;">${p2YearsToRetire}</span></div>
+                                        <div><strong>Social Security:</strong> $${(p2.social_security || 0).toLocaleString()}/month</div>
+                                    </div>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+
+                        <!-- Financial Overview -->
+                        <div class="summary-section" style="margin-bottom: 40px;">
+                            <h2 style="color: var(--text-primary); border-bottom: 3px solid #2ecc71; padding-bottom: 10px; margin-bottom: 25px;">
+                                💰 Financial Overview
+                            </h2>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 12px; text-align: center;">
+                                    <div style="font-size: 13px; opacity: 0.9; margin-bottom: 5px;">Total Investment Assets</div>
+                                    <div style="font-size: 32px; font-weight: bold;">$${(totalAssets/1000000).toFixed(2)}M</div>
+                                </div>
+                                <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 25px; border-radius: 12px; text-align: center;">
+                                    <div style="font-size: 13px; opacity: 0.9; margin-bottom: 5px;">Real Estate Value</div>
+                                    <div style="font-size: 32px; font-weight: bold;">$${(totalHomeValue/1000000).toFixed(2)}M</div>
+                                </div>
+                                <div style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; padding: 25px; border-radius: 12px; text-align: center;">
+                                    <div style="font-size: 13px; opacity: 0.9; margin-bottom: 5px;">Annual Expenses</div>
+                                    <div style="font-size: 32px; font-weight: bold;">$${(profile.annual_expenses/1000).toFixed(0)}K</div>
+                                </div>
+                                <div style="background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%); color: white; padding: 25px; border-radius: 12px; text-align: center;">
+                                    <div style="font-size: 13px; opacity: 0.9; margin-bottom: 5px;">Plan Success Rate</div>
+                                    <div style="font-size: 32px; font-weight: bold;">${successRate.toFixed(0)}%</div>
+                                    <div style="font-size: 12px; opacity: 0.9;">${successStatus}</div>
+                                </div>
+                            </div>
+
+                            <!-- Asset Allocation Chart -->
+                            <div style="background: var(--bg-tertiary); padding: 25px; border-radius: 8px;">
+                                <h3 style="margin: 0 0 20px 0; color: var(--text-primary);">Asset Allocation by Account Type</h3>
+                                <div style="display: flex; flex-direction: column; gap: 15px;">
+                                    ${Object.entries(assetsByType).map(([type, value]) => {
+                                        const percentage = (value / totalAssets * 100).toFixed(1);
+                                        const colors = {
+                                            'Checking': '#3498db',
+                                            'Savings': '#2ecc71',
+                                            'Liquid': '#1abc9c',
+                                            'Taxable Brokerage': '#9b59b6',
+                                            'Traditional IRA': '#e67e22',
+                                            '401k': '#e74c3c',
+                                            '403b': '#c0392b',
+                                            '401a': '#d35400',
+                                            '457b': '#f39c12',
+                                            'Roth IRA': '#16a085',
+                                            'Pension': '#27ae60'
+                                        };
+                                        const color = colors[type] || '#95a5a6';
+                                        return `
+                                            <div>
+                                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px;">
+                                                    <span style="font-weight: 600;">${type}</span>
+                                                    <span>$${value.toLocaleString()} (${percentage}%)</span>
+                                                </div>
+                                                <div style="background: #ecf0f1; height: 24px; border-radius: 12px; overflow: hidden;">
+                                                    <div style="background: ${color}; height: 100%; width: ${percentage}%; transition: width 0.3s;"></div>
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Retirement Milestones -->
+                        <div class="summary-section" style="margin-bottom: 40px;">
+                            <h2 style="color: var(--text-primary); border-bottom: 3px solid #f39c12; padding-bottom: 10px; margin-bottom: 25px;">
+                                🎯 Key Milestones
+                            </h2>
+                            <div style="position: relative; padding-left: 30px;">
+                                ${p1.retirement_date ? `
+                                <div style="position: relative; margin-bottom: 25px; padding: 15px; background: var(--bg-tertiary); border-radius: 8px; border-left: 4px solid #3498db;">
+                                    <div style="position: absolute; left: -38px; top: 20px; width: 16px; height: 16px; background: #3498db; border-radius: 50%; border: 3px solid white;"></div>
+                                    <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 5px;">${p1.name} Retirement</div>
+                                    <div style="font-size: 14px; color: var(--text-secondary);">${new Date(p1.retirement_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })} (${p1YearsToRetire} years)</div>
+                                </div>
+                                ` : ''}
+                                ${p2.retirement_date ? `
+                                <div style="position: relative; margin-bottom: 25px; padding: 15px; background: #e8f8f5; border-radius: 8px; border-left: 4px solid #2ecc71;">
+                                    <div style="position: absolute; left: -38px; top: 20px; width: 16px; height: 16px; background: #2ecc71; border-radius: 50%; border: 3px solid white;"></div>
+                                    <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 5px;">${p2.name} Retirement</div>
+                                    <div style="font-size: 14px; color: var(--text-secondary);">${new Date(p2.retirement_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })} (${p2YearsToRetire} years)</div>
+                                </div>
+                                ` : ''}
+                                ${profile.income_streams && profile.income_streams.length > 0 ? profile.income_streams.map(stream => `
+                                <div style="position: relative; margin-bottom: 25px; padding: 15px; background: #fef5e7; border-radius: 8px; border-left: 4px solid #f39c12;">
+                                    <div style="position: absolute; left: -38px; top: 20px; width: 16px; height: 16px; background: #f39c12; border-radius: 50%; border: 3px solid white;"></div>
+                                    <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 5px;">${stream.name} Begins</div>
+                                    <div style="font-size: 14px; color: var(--text-secondary);">$${stream.amount.toLocaleString()}/year starting ${new Date(stream.start_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}</div>
+                                </div>
+                                `).join('') : ''}
+                            </div>
+                        </div>
+
+                        <!-- Action Items -->
+                        <div class="summary-section" style="margin-bottom: 40px;">
+                            <h2 style="color: var(--text-primary); border-bottom: 3px solid #e74c3c; padding-bottom: 10px; margin-bottom: 25px;">
+                                ✅ Action Items
+                            </h2>
+                            <div id="summary-action-items" style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px;">
+                                <p style="color: var(--text-secondary);">Loading action items...</p>
+                            </div>
+                        </div>
+
+                        <!-- Footer -->
+                        <div style="text-align: center; padding: 30px 20px; border-top: 2px solid #ecf0f1; margin-top: 40px; color: var(--text-secondary);">
+                            <p style="margin: 0; font-size: 13px;">This report was generated by <strong>PAN RPS</strong> - Professional Financial Analysis & Planning</p>
+                            <p style="margin: 5px 0 0 0; font-size: 12px;">For informational purposes only. Consult with a qualified financial advisor for personalized advice.</p>
+                        </div>
+                    </div>
+
+                    <!-- Print Button -->
+                    <div class="no-print" style="text-align: center; padding: 20px; background: var(--bg-tertiary); border-radius: 0 0 12px 12px;">
+                        <button onclick="window.print()" style="padding: 15px 40px; font-size: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
+                            🖨️ Print Summary Report
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('summary-content').innerHTML = html;
+            loadSummaryActionItems();
+        }
+
+        async function loadSummaryActionItems() {
+            try {
+                const profileName = getCurrentProfileName();
+                const response = await fetch(`${API_URL}/action-items?profile_name=${encodeURIComponent(profileName)}`);
+                const items = await response.json();
+
+                const itemsDiv = document.getElementById('summary-action-items');
+                if (items.length === 0) {
+                    itemsDiv.innerHTML = '<p style="color: var(--text-secondary); font-style: italic;">No action items found. <a href="#" onclick="showTab(\'actions\'); return false;">Add some in the Action Items tab</a>.</p>';
+                    return;
+                }
+
+                const priorityIcons = { high: '🔴', medium: '🟡', low: '🟢' };
+                const statusColors = { pending: '#f39c12', in_progress: '#3498db', completed: '#2ecc71' };
+
+                itemsDiv.innerHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        ${items.slice(0, 8).map(item => `
+                            <div style="display: flex; align-items: center; gap: 15px; padding: 12px; background: var(--bg-secondary); border-radius: 6px; border-left: 4px solid ${statusColors[item.status]};">
+                                <span style="font-size: 20px;">${priorityIcons[item.priority]}</span>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 3px;">${item.description}</div>
+                                    ${item.due_date ? `<div style="font-size: 12px; color: var(--text-secondary);">Due: ${new Date(item.due_date).toLocaleDateString()}</div>` : ''}
+                                </div>
+                                <div style="font-size: 11px; padding: 4px 10px; background: ${statusColors[item.status]}; color: white; border-radius: 12px; text-transform: uppercase; font-weight: 600;">
+                                    ${item.status.replace('_', ' ')}
+                                </div>
+                            </div>
+                        `).join('')}
+                        ${items.length > 8 ? `<p style="text-align: center; color: var(--text-secondary); font-size: 14px; margin-top: 10px;">... and ${items.length - 8} more. <a href="#" onclick="showTab('actions'); return false;">View all</a></p>` : ''}
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('summary-action-items').innerHTML = '<p style="color: #e74c3c;">Error loading action items.</p>';
+            }
+        }
+
+        // Update summary when switching to summary tab
+        const originalShowTab = showTab;
+        showTab = function(tabName) {
+            originalShowTab(tabName);
+            if (tabName === 'summary') {
+                updateSummaryTab();
+            }
+        };
 
     </script>
 
@@ -5767,6 +7182,62 @@ Return ONLY the JSON array, no other text.`;
                     </div>
                 </div>
 
+                <!-- Backup Settings -->
+                <div class="setting-group">
+                    <h3>💾 Auto-Backup</h3>
+
+                    <div class="setting-item">
+                        <div>
+                            <label>Enable Auto-Backup</label>
+                            <div class="description">Automatically backup your data at regular intervals</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="setting-autobackup-enabled">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="setting-item">
+                        <div>
+                            <label>Backup Frequency</label>
+                            <div class="description">How often to create automatic backups</div>
+                        </div>
+                        <select id="setting-autobackup-interval">
+                            <option value="24">Daily</option>
+                            <option value="168">Weekly</option>
+                            <option value="720">Monthly</option>
+                            <option value="6">Every 6 hours</option>
+                            <option value="12">Every 12 hours</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-item" style="flex-direction: column; align-items: flex-start; padding: 20px; background: var(--bg-tertiary); border: 1px solid var(--border-color);">
+                        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; margin-bottom: 12px;">
+                            <div>
+                                <label style="margin-bottom: 4px;">Manual Backup</label>
+                                <div class="description">Create a backup now</div>
+                                <div id="last-backup-time" class="description" style="margin-top: 8px; color: var(--success-color);"></div>
+                            </div>
+                            <button onclick="createManualBackup()" style="padding: 10px 20px; background: var(--success-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                                Create Backup
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="setting-item" style="flex-direction: column; align-items: flex-start;">
+                        <div style="width: 100%; margin-bottom: 12px;">
+                            <label>Backup Management</label>
+                            <div class="description">View, restore, or delete backups</div>
+                        </div>
+                        <div id="backup-list" style="width: 100%; max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; background: var(--bg-secondary);">
+                            <div style="text-align: center; color: var(--text-light); padding: 20px;">Loading backups...</div>
+                        </div>
+                        <button onclick="refreshBackupList()" style="margin-top: 10px; padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            Refresh List
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Behavior Settings -->
                 <div class="setting-group">
                     <h3>⚡ Behavior</h3>
@@ -5789,6 +7260,14 @@ Return ONLY the JSON array, no other text.`;
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
+
+                    <div class="setting-item">
+                        <div>
+                            <label>Monte Carlo Simulations</label>
+                            <div class="description">Number of scenarios to run for each analysis (1,000 - 50,000). More = accurate but slower. <strong>Current: <span id="sim-count-display">10,000</span></strong></div>
+                        </div>
+                        <input type="number" id="setting-simulations" min="1000" max="50000" step="1000" value="10000" style="width: 100px; min-width: 100px;" oninput="document.getElementById('sim-count-display').textContent = parseInt(this.value).toLocaleString()">
+                    </div>
                 </div>
             </div>
 
@@ -5809,7 +7288,7 @@ Return ONLY the JSON array, no other text.`;
 
             <div class="settings-body" id="wizard-body" style="min-height: 400px; display: flex; flex-direction: column;">
                 <!-- Wizard content populated by JS -->
-                <div style="flex: 1; display: flex; align-items: center; justify-content: center; color: #666;">
+                <div style="flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">
                     Loading wizard...
                 </div>
             </div>
@@ -5817,7 +7296,7 @@ Return ONLY the JSON array, no other text.`;
             <div class="settings-footer" style="justify-content: space-between;">
                 <button class="secondary" onclick="wizardPrev()">← Previous</button>
                 <div>
-                    <span id="wizard-progress" style="margin-right: 15px; color: #666; font-size: 13px;"></span>
+                    <span id="wizard-progress" style="margin-right: 15px; color: var(--text-secondary); font-size: 13px;"></span>
                     <button id="wizard-ai-assist-btn" class="ai-button" onclick="wizardAIAssist()" style="display: none;">🤖 AI Assist</button>
                     <button id="wizard-complete-btn" class="secondary" onclick="wizardMarkComplete()" style="background: #27ae60; color: white; display: none;">Mark Complete</button>
                     <button onclick="wizardNext()">Next →</button>

@@ -50,17 +50,27 @@ Add these exports to your `~/.zshrc` or `~/.bashrc` to make them persistent.
 ## System Architecture
 
 ### Monte Carlo Simulation Engine (RetirementModel in app.py)
-The core calculation engine performs 10,000 simulations with granular tax modeling:
+The core calculation engine (`RetirementModel.monte_carlo_simulation` at webapp/app.py:209) performs 10,000 simulations with granular tax modeling:
 
-**Account Sequencing Logic**:
-1. **457(b) accounts**: No early withdrawal penalty (withdraw first if under 59.5)
-2. **Taxable accounts**: Capital gains tax only (15%)
-3. **Traditional IRA/401k**: Ordinary income tax + 10% penalty if under 59.5
-4. **Roth IRA**: Tax-free (withdraw last)
+**Five Account Buckets**:
+1. **Cash** (Checking/Savings): No market growth, used first for withdrawals
+2. **Taxable** (Brokerage): Capital gains tax only (15%)
+3. **Pre-Tax Standard** (Traditional IRA/401k/403b/401a): Ordinary income tax + 10% penalty if under 59.5
+4. **Pre-Tax 457(b)**: No early withdrawal penalty (withdraw first if under 59.5)
+5. **Roth IRA**: Tax-free, withdraw last
+
+**Withdrawal Strategy** (applies after RMDs):
+1. Cash first (no tax or penalty)
+2. 457(b) if under 59.5 (no penalty)
+3. Taxable accounts (capital gains tax only)
+4. Traditional IRA/401k (ordinary income tax + penalty if under 59.5)
+5. Roth IRA last (tax-free)
 
 **RMD Handling**: At age 73+, Required Minimum Distributions are calculated and withdrawn from pre-tax accounts. Excess RMDs not needed for spending are reinvested in taxable accounts.
 
 **Income Streams**: Dynamic modeling of pensions, annuities, rental income, etc. with configurable start dates and inflation adjustments.
+
+**Home Asset Tracking**: Real estate properties are modeled with appreciation rates, carrying costs, planned sale dates, and Section 121 exclusion for primary residences. Sale proceeds are automatically invested in taxable accounts.
 
 ### AI Integration Architecture
 Two LLM providers supported (Gemini and Claude) with automatic model fallback:
@@ -112,9 +122,22 @@ The profile JSON structure drives all calculations:
   "investment_types": [
     {
       "name": "Vanguard 401k",
-      "account": "Traditional IRA",  // Or: Liquid, 457b, Roth IRA, Pension
+      "account": "Traditional IRA",  // Options: Checking, Savings, Liquid, Taxable Brokerage, Traditional IRA, 401k, 403b, 401a, 457b, Roth IRA, Pension
       "value": 2800000,
-      "cost_basis": 0  // For taxable accounts only
+      "cost_basis": 0  // For taxable accounts only (Liquid, Taxable Brokerage)
+    }
+  ],
+  "home_properties": [
+    {
+      "name": "Primary Home",
+      "property_type": "Primary Residence",  // Or: "Rental Property", "Vacation Home"
+      "current_value": 800000,
+      "purchase_price": 500000,  // Used for capital gains calculation
+      "mortgage_balance": 200000,
+      "annual_costs": 24000,  // Property tax, insurance, maintenance
+      "appreciation_rate": 0.03,  // Annual mean appreciation
+      "sale_year": 2030,  // Optional: year to sell
+      "replacement_cost": 400000  // Optional: cost of downsizing replacement
     }
   ],
   "market_assumptions": {
@@ -159,7 +182,19 @@ The profile JSON structure drives all calculations:
 
 When modifying AI features:
 
-1. **Skills Library**: The `skills/` directory contains domain expertise documents that are injected into AI prompts. Add new skills as `*-SKILL.md` files.
+1. **Skills Library**: The `skills/` directory contains domain expertise documents (10 total) that are ALL injected into AI prompts:
+   - `retirement-planning-SKILL.md` - Core retirement planning concepts
+   - `tax-strategy-SKILL.md` - Tax optimization strategies
+   - `estate-legal-SKILL.md` - Estate planning and legal structures
+   - `wealth-transfer-SKILL.md` - Gifting and inheritance strategies
+   - `investment-policy-SKILL.md` - Asset allocation and rebalancing
+   - `real-estate-SKILL.md` - Real estate planning
+   - `healthcare-gap-SKILL.md` - Healthcare cost planning
+   - `education-planning-SKILL.md` - 529 plans and education funding
+   - `charitable-giving-SKILL.md` - Donor-advised funds, QCDs
+   - `lifestyle-design-SKILL.md` - Non-financial planning aspects
+
+   Add new skills as `*-SKILL.md` files. All skills are loaded and injected into AI context for self-assessments and advisor chat.
 
 2. **Structured Recommendations**: When AI returns parameter recommendations, include `action_data` JSON with field mappings:
    ```json
@@ -173,6 +208,8 @@ When modifying AI features:
    ```
 
 3. **Model Fallback**: Use `call_gemini_with_fallback()` or `call_claude_with_fallback()` which automatically try multiple models if primary fails.
+
+4. **Market Presets**: The frontend includes 24+ market scenario presets (Bull, Bear, Stagflation, Tech Boom, etc.) for stress-testing plans under different economic conditions.
 
 ## Development Constraints
 

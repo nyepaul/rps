@@ -8,12 +8,17 @@ from dataclasses import dataclass, asdict
 from typing import List, Dict
 import sqlite3
 from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
+from reportlab.pdfgen import canvas as pdf_canvas
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak, Image, KeepTogether
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
 import io
 import os
+import shutil
+import threading
+import time
 import google.generativeai as genai
 import anthropic
 import logging
@@ -32,8 +37,15 @@ def server_error(e):
 # Use local data directory if not in Docker
 if os.path.exists('/app/data'):
     DB_PATH = '/app/data/planning.db'
+    BACKUP_DIR = '/app/backups'
+    DATA_DIR = '/app/data'
 else:
     DB_PATH = './data/planning.db'
+    BACKUP_DIR = '../backups'
+    DATA_DIR = './data'
+
+# Ensure backup directory exists
+os.makedirs(BACKUP_DIR, exist_ok=True)
 def call_gemini_with_fallback(prompt, api_key, image_data=None):
     """Calls Gemini with a prioritized list of models and fallback logic."""
     models = [
@@ -744,6 +756,10 @@ def analysis():
     )
     # Extract assumed tax rate
     effective_tax_rate = data.get('assumed_tax_rate', 0.22)
+    # Extract simulation count (default to 10000 if not provided)
+    simulations = int(data.get('simulations', 10000))
+    # Clamp to reasonable bounds
+    simulations = max(1000, min(50000, simulations))
     person1 = Person(
         name=data['person1']['name'],
         birth_date=datetime.fromisoformat(data['person1']['birth_date']),
@@ -777,7 +793,9 @@ def analysis():
     )
     model = RetirementModel(profile)
     years = 30
-    monte_carlo = model.monte_carlo_simulation(years, assumptions=assumptions, effective_tax_rate=effective_tax_rate)
+    monte_carlo = model.monte_carlo_simulation(years, simulations=simulations, assumptions=assumptions, effective_tax_rate=effective_tax_rate)
+    # Add simulation count to results for frontend display
+    monte_carlo['simulations_run'] = simulations
     ss_optimization = model.optimize_social_security(assumptions=assumptions)
     roth_conversion = model.calculate_roth_conversion_opportunity()
     wealth_transfer = model.calculate_wealth_transfer_strategy()
@@ -811,111 +829,416 @@ def analysis():
             'ss_discount_rate': assumptions.ss_discount_rate
         }
     })
+def add_page_header_footer(canvas, doc):
+    """Add professional header and footer to each page"""
+    canvas.saveState()
+
+    # Header
+    canvas.setFillColor(colors.HexColor('#003366'))  # Professional dark blue
+    canvas.rect(0, letter[1] - 0.8*inch, letter[0], 0.8*inch, fill=True, stroke=False)
+
+    # Company/System name in header
+    canvas.setFillColor(colors.white)
+    canvas.setFont('Helvetica-Bold', 18)
+    canvas.drawString(0.75*inch, letter[1] - 0.55*inch, "Retirement Planning System")
+    canvas.setFont('Helvetica', 10)
+    canvas.drawString(0.75*inch, letter[1] - 0.7*inch, "Comprehensive Wealth & Legacy Analysis")
+
+    # Footer
+    canvas.setFillColor(colors.HexColor('#003366'))
+    canvas.rect(0, 0, letter[0], 0.5*inch, fill=True, stroke=False)
+
+    canvas.setFillColor(colors.white)
+    canvas.setFont('Helvetica', 8)
+    footer_text = "This report is for informational purposes only and does not constitute financial advice. Consult a qualified advisor before making financial decisions."
+    canvas.drawCentredString(letter[0]/2, 0.25*inch, footer_text)
+
+    # Page number
+    canvas.setFont('Helvetica', 9)
+    canvas.drawRightString(letter[0] - 0.75*inch, letter[1] - 0.55*inch, f"Page {doc.page}")
+
+    canvas.restoreState()
+
 @app.route('/api/report/pdf', methods=['POST'])
 def generate_pdf_report():
     data = request.json
     profile_data = data.get('profile', {})
     analysis_data = data.get('analysis', {})
+
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=letter,
+        topMargin=1*inch,
+        bottomMargin=0.75*inch,
+        leftMargin=0.75*inch,
+        rightMargin=0.75*inch
+    )
+
+    # Custom styles
     styles = getSampleStyleSheet()
+
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#003366'),
+        spaceAfter=6,
+        alignment=TA_LEFT,
+        fontName='Helvetica-Bold'
+    )
+
+    heading_style = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading2'],
+        fontSize=16,
+        textColor=colors.HexColor('#003366'),
+        spaceBefore=20,
+        spaceAfter=12,
+        fontName='Helvetica-Bold',
+        borderPadding=(0, 0, 5, 0),
+        borderColor=colors.HexColor('#003366'),
+        borderWidth=2,
+        borderRadius=None
+    )
+
+    subheading_style = ParagraphStyle(
+        'CustomSubHeading',
+        parent=styles['Heading3'],
+        fontSize=12,
+        textColor=colors.HexColor('#0066CC'),
+        spaceBefore=12,
+        spaceAfter=6,
+        fontName='Helvetica-Bold'
+    )
+
+    body_style = ParagraphStyle(
+        'CustomBody',
+        parent=styles['Normal'],
+        fontSize=10,
+        leading=14,
+        textColor=colors.HexColor('#333333')
+    )
+
+    highlight_style = ParagraphStyle(
+        'Highlight',
+        parent=styles['Normal'],
+        fontSize=11,
+        leading=16,
+        textColor=colors.HexColor('#0066CC'),
+        fontName='Helvetica-Bold'
+    )
+
     story = []
-    # Title
-    story.append(Paragraph("Retirement Planning Report", styles['Title']))
-    story.append(Spacer(1, 12))
-    story.append(Paragraph(f"Generated on {datetime.now().strftime('%Y-%m-%d')}", styles['Normal']))
-    story.append(Spacer(1, 24))
-    # Financial Profile Summary
-    story.append(Paragraph("Financial Profile Summary", styles['Heading2']))
-    net_worth = (profile_data.get('liquid_assets', 0) + 
-                 profile_data.get('traditional_ira', 0) + 
-                 profile_data.get('roth_ira', 0) + 
-                 profile_data.get('pension_lump_sum', 0))
-    profile_summary = [
-        ["Category", "Value"],
-        ["Net Worth", f"${net_worth:,.2f}"],
-        ["Target Annual Income", f"${profile_data.get('target_annual_income', 0):,.2f}"],
-        ["Annual Expenses", f"${profile_data.get('annual_expenses', 0):,.2f}"],
-        ["Risk Tolerance", profile_data.get('risk_tolerance', 'N/A').capitalize()]
+
+    # Cover Page
+    story.append(Spacer(1, 1.5*inch))
+    story.append(Paragraph("RETIREMENT PLANNING ANALYSIS", title_style))
+    story.append(Spacer(1, 0.1*inch))
+    story.append(Paragraph(f"Prepared for {profile_data.get('person1', {}).get('name', 'Client')}", heading_style))
+    story.append(Spacer(1, 0.5*inch))
+    story.append(Paragraph(f"<b>Report Date:</b> {datetime.now().strftime('%B %d, %Y')}", body_style))
+    story.append(Spacer(1, 2*inch))
+
+    # Executive Summary Box
+    exec_summary_data = [[Paragraph("<b>EXECUTIVE SUMMARY</b>", heading_style)]]
+    exec_table = Table(exec_summary_data, colWidths=[6.5*inch])
+    exec_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#E8F4F8')),
+        ('BOX', (0, 0), (-1, -1), 2, colors.HexColor('#003366')),
+        ('TOPPADDING', (0, 0), (-1, -1), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+        ('LEFTPADDING', (0, 0), (-1, -1), 15),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 15),
+    ]))
+    story.append(exec_table)
+    story.append(Spacer(1, 0.2*inch))
+
+    # Calculate key metrics
+    net_worth = sum([
+        profile_data.get('liquid_assets', 0),
+        profile_data.get('traditional_ira', 0),
+        profile_data.get('roth_ira', 0),
+        profile_data.get('pension_lump_sum', 0)
+    ])
+
+    # Calculate total home equity
+    total_home_equity = 0
+    if profile_data.get('home_properties'):
+        for prop in profile_data['home_properties']:
+            total_home_equity += (float(prop.get('current_value', 0)) -
+                                 float(prop.get('mortgage_balance', 0)))
+
+    net_worth += total_home_equity
+
+    mc = analysis_data.get('monte_carlo', {})
+    success_rate = mc.get('success_rate', 0)
+
+    # Key metrics table
+    key_metrics = [
+        ["", ""],
+        [Paragraph("<b>Total Net Worth</b>", body_style), Paragraph(f"<b>${net_worth:,.0f}</b>", highlight_style)],
+        [Paragraph("<b>Plan Success Rate</b>", body_style), Paragraph(f"<b>{success_rate:.1f}%</b>", highlight_style)],
+        [Paragraph("<b>Target Annual Income</b>", body_style), Paragraph(f"<b>${profile_data.get('target_annual_income', 0):,.0f}</b>", highlight_style)],
+        [Paragraph("<b>Projected Median Balance (Age 90)</b>", body_style), Paragraph(f"<b>${mc.get('median_ending_balance', 0):,.0f}</b>", highlight_style)]
     ]
-    t = Table(profile_summary, colWidths=[200, 200])
-    t.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (1, 0), colors.grey),
-        ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
+
+    metrics_table = Table(key_metrics, colWidths=[3*inch, 3*inch])
+    metrics_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#003366')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('TOPPADDING', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F8F9FA')]),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CCCCCC'))
+    ]))
+    story.append(metrics_table)
+
+    story.append(PageBreak())
+
+    # Financial Profile Section
+    story.append(Paragraph("FINANCIAL PROFILE OVERVIEW", heading_style))
+    story.append(Spacer(1, 0.15*inch))
+
+    # Personal Information
+    person1 = profile_data.get('person1', {})
+    person2 = profile_data.get('person2', {})
+
+    personal_info = [
+        [Paragraph("<b>Client Information</b>", subheading_style), ""],
+        ["Primary Client", person1.get('name', 'N/A')],
+        ["Birth Date", person1.get('birth_date', 'N/A')],
+        ["Planned Retirement", person1.get('retirement_date', 'N/A')],
+        ["Social Security (Monthly)", f"${person1.get('social_security', 0):,.0f}"],
+        ["", ""],
+        ["Secondary Client", person2.get('name', 'N/A')],
+        ["Birth Date", person2.get('birth_date', 'N/A')],
+        ["Planned Retirement", person2.get('retirement_date', 'N/A')],
+        ["Social Security (Monthly)", f"${person2.get('social_security', 0):,.0f}"]
+    ]
+
+    personal_table = Table(personal_info, colWidths=[2.5*inch, 3.5*inch])
+    personal_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#003366')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('SPAN', (0, 0), (1, 0)),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ('FONTNAME', (0, 1), (0, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F8F9FA')]),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CCCCCC')),
+        ('LINEABOVE', (0, 6), (-1, 6), 2, colors.HexColor('#003366'))
     ]))
-    story.append(t)
-    story.append(Spacer(1, 24))
-    # Monte Carlo Results
-    if 'monte_carlo' in analysis_data:
-        mc = analysis_data['monte_carlo']
-        story.append(Paragraph("Monte Carlo Simulation Results", styles['Heading2']))
-        mc_data = [
-            ["Metric", "Result"],
-            ["Success Rate", f"{mc.get('success_rate', 0):.1f}%"],
-            ["Median Ending Balance", f"${mc.get('median_ending_balance', 0):,.2f}"],
-            ["Worst Case (5th %ile)", f"${mc.get('percentile_5', 0):,.2f}"],
-            ["Best Case (95th %ile)", f"${mc.get('percentile_95', 0):,.2f}"]
-        ]
-        t_mc = Table(mc_data, colWidths=[200, 200])
-        t_mc.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (1, 0), colors.blue),
-            ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
+    story.append(personal_table)
+    story.append(Spacer(1, 0.3*inch))
+
+    # Asset Allocation
+    story.append(Paragraph("Asset Allocation", subheading_style))
+    story.append(Spacer(1, 0.1*inch))
+
+    investment_types = profile_data.get('investment_types', [])
+    if investment_types:
+        asset_data = [["Account Type", "Institution/Name", "Current Value"]]
+        for inv in investment_types[:10]:  # Limit to 10 for space
+            asset_data.append([
+                inv.get('account', 'N/A'),
+                inv.get('name', 'N/A'),
+                f"${float(inv.get('value', 0)):,.0f}"
+            ])
+
+        asset_table = Table(asset_data, colWidths=[2*inch, 2.5*inch, 1.5*inch])
+        asset_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0066CC')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('ALIGN', (2, 0), (2, -1), 'RIGHT'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F8F9FA')]),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CCCCCC'))
         ]))
-        story.append(t_mc)
-        story.append(Spacer(1, 24))
+        story.append(asset_table)
+
+    story.append(PageBreak())
+
+    # Monte Carlo Analysis
+    story.append(Paragraph("MONTE CARLO SIMULATION RESULTS", heading_style))
+    story.append(Spacer(1, 0.15*inch))
+
+    simulations_run = mc.get('simulations_run', 10000)
+    mc_intro = f"""This analysis ran {simulations_run:,} simulations of your retirement using historical market data and probabilistic modeling.
+    The results show a <b>{success_rate:.1f}%</b> probability that your assets will last through age 90."""
+    story.append(Paragraph(mc_intro, body_style))
+    story.append(Spacer(1, 0.2*inch))
+
+    mc_results = [
+        [Paragraph("<b>Outcome</b>", body_style), Paragraph("<b>Value</b>", body_style), Paragraph("<b>Interpretation</b>", body_style)],
+        ["Best Case (95th %ile)", f"${mc.get('percentile_95', 0):,.0f}", "5% chance of exceeding this amount"],
+        ["Median Outcome", f"${mc.get('median_ending_balance', 0):,.0f}", "Most likely ending balance"],
+        ["Worst Case (5th %ile)", f"${mc.get('percentile_5', 0):,.0f}", "5% chance of falling below this"],
+        ["Plan Success Rate", f"{success_rate:.1f}%", "Probability of success"]
+    ]
+
+    mc_table = Table(mc_results, colWidths=[2*inch, 1.8*inch, 2.7*inch])
+    mc_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0066CC')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('ALIGN', (2, 0), (2, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('TOPPADDING', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F8F9FA')]),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CCCCCC'))
+    ]))
+    story.append(mc_table)
+
+    # Risk Assessment Box
+    story.append(Spacer(1, 0.3*inch))
+    if success_rate >= 90:
+        risk_color = colors.HexColor('#28A745')
+        risk_text = "Your plan shows a HIGH probability of success. Your retirement appears financially secure under most scenarios."
+    elif success_rate >= 75:
+        risk_color = colors.HexColor('#FFC107')
+        risk_text = "Your plan shows a MODERATE probability of success. Consider optimizing spending or retirement timing."
+    else:
+        risk_color = colors.HexColor('#DC3545')
+        risk_text = "Your plan shows a LOWER probability of success. We recommend reviewing your spending, retirement date, or investment strategy."
+
+    risk_assessment = [[Paragraph(f"<b>RISK ASSESSMENT:</b> {risk_text}", body_style)]]
+    risk_table = Table(risk_assessment, colWidths=[6.5*inch])
+    risk_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), risk_color),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.white),
+        ('BOX', (0, 0), (-1, -1), 2, risk_color),
+        ('TOPPADDING', (0, 0), (-1, -1), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+        ('LEFTPADDING', (0, 0), (-1, -1), 15),
+    ]))
+    story.append(risk_table)
+
     # Social Security Strategy
-    if 'social_security_optimization' in analysis_data:
-        story.append(Paragraph("Recommended Social Security Strategy", styles['Heading2']))
-        ss_opts = analysis_data['social_security_optimization']
-        if ss_opts:
-            best = ss_opts[0]
-            story.append(Paragraph(f"Person 1 Claim Age: {best['person1_claim_age']}", styles['Normal']))
-            story.append(Paragraph(f"Person 2 Claim Age: {best['person2_claim_age']}", styles['Normal']))
-            story.append(Paragraph(f"Total Lifetime NPV: ${best['lifetime_benefit_npv']:,.2f}", styles['Normal']))
-        story.append(Spacer(1, 24))
+    if analysis_data.get('social_security_optimization'):
+        story.append(PageBreak())
+        story.append(Paragraph("SOCIAL SECURITY CLAIMING STRATEGY", heading_style))
+        story.append(Spacer(1, 0.15*inch))
+
+        ss_opts = analysis_data['social_security_optimization'][:3]
+        ss_data = [["Claiming Strategy", "Person 1 Age", "Person 2 Age", "Lifetime Value (NPV)"]]
+        for idx, opt in enumerate(ss_opts):
+            strategy_name = "Recommended" if idx == 0 else f"Alternative {idx}"
+            ss_data.append([
+                strategy_name,
+                str(opt['person1_claim_age']),
+                str(opt['person2_claim_age']),
+                f"${opt['lifetime_benefit_npv']:,.0f}"
+            ])
+
+        ss_table = Table(ss_data, colWidths=[2.2*inch, 1.3*inch, 1.3*inch, 1.7*inch])
+        ss_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0066CC')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('BACKGROUND', (0, 1), (-1, 1), colors.HexColor('#E8F4F8')),
+            ('BACKGROUND', (0, 2), (-1, -1), colors.white),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CCCCCC'))
+        ]))
+        story.append(ss_table)
+
     # Action Items
-    story.append(Paragraph("Top Action Items", styles['Heading2']))
-    # Fetch top 5 pending action items
+    story.append(PageBreak())
+    story.append(Paragraph("RECOMMENDED ACTION ITEMS", heading_style))
+    story.append(Spacer(1, 0.15*inch))
+
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT category, description, due_date FROM action_items WHERE status='pending' ORDER BY priority, due_date LIMIT 5")
-    rows = c.fetchall()
+    profile_name = profile_data.get('_profile_name', 'main')
+    c.execute("SELECT category, description, priority, due_date FROM action_items WHERE profile_name = ? AND status='pending' ORDER BY CASE priority WHEN 'critical' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 ELSE 4 END, due_date LIMIT 10", (profile_name,))
+    action_rows = c.fetchall()
     conn.close()
-    if rows:
-        action_data = [["Category", "Action", "Due Date"]]
-        for row in rows:
-            # Clean HTML tags from description if any
-            clean_desc = row[1].replace('<br>', '\n').replace('<b>', '').replace('</b>', '')
-            # Simple link removal
+
+    if action_rows:
+        action_data = [["Priority", "Category", "Action Item", "Due Date"]]
+        for row in action_rows:
+            category, description, priority, due_date = row
+            # Clean HTML
+            clean_desc = description.replace('<br>', ' ').replace('<b>', '').replace('</b>', '')
             if "<a" in clean_desc:
                 clean_desc = clean_desc.split("<a")[0]
-            action_data.append([row[0], clean_desc, row[2] or 'N/A'])
-        t_ai = Table(action_data, colWidths=[100, 250, 80])
-        t_ai.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.darkgreen),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            clean_desc = clean_desc[:100] + "..." if len(clean_desc) > 100 else clean_desc
+
+            action_data.append([
+                priority.upper(),
+                category,
+                clean_desc,
+                due_date[:10] if due_date else 'N/A'
+            ])
+
+        action_table = Table(action_data, colWidths=[0.8*inch, 1.3*inch, 3.2*inch, 0.9*inch])
+        action_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#28A745')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('ALIGN', (0, 0), (0, -1), 'CENTER'),
+            ('ALIGN', (1, 0), (-1, -1), 'LEFT'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F8F9FA')]),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CCCCCC')),
             ('VALIGN', (0, 0), (-1, -1), 'TOP')
         ]))
-        story.append(t_ai)
+        story.append(action_table)
     else:
-        story.append(Paragraph("No pending action items found.", styles['Normal']))
-    doc.build(story)
+        story.append(Paragraph("No pending action items found. Consider running a self-assessment to identify opportunities.", body_style))
+
+    # Important Disclaimer
+    story.append(Spacer(1, 0.4*inch))
+    disclaimer = """<b>IMPORTANT DISCLAIMER:</b> This report is provided for informational and educational purposes only.
+    It does not constitute financial, legal, tax, or investment advice. All projections are based on assumptions about future market returns,
+    inflation, and other economic factors that may not materialize. Past performance does not guarantee future results.
+    Please consult with a qualified financial advisor, tax professional, and attorney before making any financial decisions."""
+
+    disclaimer_data = [[Paragraph(disclaimer, ParagraphStyle('Disclaimer', parent=body_style, fontSize=8, leading=11, textColor=colors.HexColor('#666666')))]]
+    disclaimer_table = Table(disclaimer_data, colWidths=[6.5*inch])
+    disclaimer_table.setStyle(TableStyle([
+        ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#CCCCCC')),
+        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F8F9FA')),
+        ('TOPPADDING', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+        ('LEFTPADDING', (0, 0), (-1, -1), 12),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+    ]))
+    story.append(disclaimer_table)
+
+    # Build PDF with header/footer
+    doc.build(story, onFirstPage=add_page_header_footer, onLaterPages=add_page_header_footer)
+
     buffer.seek(0)
     return send_file(
         buffer,
         as_attachment=True,
-        download_name=f'retirement_plan_{datetime.now().strftime("%Y%m%d")}.pdf',
+        download_name=f'retirement_analysis_{datetime.now().strftime("%Y%m%d")}.pdf',
         mimetype='application/pdf'
     )
 @app.route('/api/action-items', methods=['GET', 'POST', 'PUT', 'DELETE'])
@@ -1417,6 +1740,142 @@ def get_conversation_history():
             'created_at': created_at
         })
     return jsonify(history)
+
+@app.route('/api/wizard/analyze', methods=['POST'])
+def wizard_analyze():
+    """Analyze profile completeness and generate questions"""
+    try:
+        data = request.json
+        profile_name = data.get('profile_name', 'main')
+        profile = data.get('profile', {})
+
+        # Analyze what's missing or could be improved
+        questions = []
+        analysis_points = []
+
+        # Check person details
+        p1 = profile.get('person1', {})
+        p2 = profile.get('person2', {})
+
+        if not p1.get('name'):
+            questions.append({'question': 'What is your first name?', 'field': 'person1.name'})
+        if not p1.get('birth_date'):
+            questions.append({'question': 'What is your date of birth?', 'field': 'person1.birth_date'})
+        if p1.get('social_security', 0) == 0:
+            questions.append({'question': 'What is your estimated monthly Social Security benefit? (Enter 0 if unknown)', 'field': 'person1.social_security'})
+
+        if p2.get('name') and not p2.get('birth_date'):
+            questions.append({'question': f'What is {p2.get("name")}\'s date of birth?', 'field': 'person2.birth_date'})
+        if p2.get('name') and p2.get('social_security', 0) == 0:
+            questions.append({'question': f'What is {p2.get("name")}\'s estimated monthly Social Security benefit?', 'field': 'person2.social_security'})
+
+        # Check investment details
+        investments = profile.get('investment_types', [])
+        taxable_accounts = [inv for inv in investments if inv.get('account') in ['Liquid', 'Taxable Brokerage']]
+
+        for i, inv in enumerate(taxable_accounts):
+            if not inv.get('cost_basis') or inv.get('cost_basis') == 0:
+                questions.append({
+                    'question': f'What is the cost basis (original purchase price) for {inv.get("name")}? This helps calculate capital gains taxes.',
+                    'field': f'investment_types.{i}.cost_basis'
+                })
+
+        # Check for income streams
+        income_streams = profile.get('income_streams', [])
+        if not income_streams:
+            questions.append({
+                'question': 'Do you have any pension, annuity, rental income, or other guaranteed income streams in retirement? (yes/no)',
+                'field': 'income_streams'
+            })
+
+        # Check home properties
+        home_properties = profile.get('home_properties', [])
+        if not home_properties:
+            questions.append({
+                'question': 'Do you own your primary home or any real estate properties? (yes/no)',
+                'field': 'home_properties'
+            })
+
+        # Build analysis summary
+        if len(questions) == 0:
+            analysis_summary = '✅ Your profile looks comprehensive! All key information is present.'
+        else:
+            analysis_summary = f'I found {len(questions)} areas where additional information could improve your plan.'
+
+        return jsonify({
+            'questions': questions[:5],  # Limit to 5 questions at a time
+            'analysis_summary': analysis_summary,
+            'total_gaps': len(questions)
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/wizard/process', methods=['POST'])
+def wizard_process():
+    """Process wizard response and update profile"""
+    try:
+        data = request.json
+        profile_name = data.get('profile_name', 'main')
+        question = data.get('question', {})
+        user_response = data.get('response', '')
+        profile = data.get('profile', {})
+
+        field = question.get('field', '')
+        profile_updates = {}
+        follow_up = None
+
+        # Parse user response based on field
+        if 'person1.name' in field:
+            profile_updates['p1-name'] = user_response
+        elif 'person1.birth_date' in field:
+            # Try to parse date
+            profile_updates['p1-birth'] = user_response
+        elif 'person1.social_security' in field:
+            try:
+                amount = float(user_response.replace('$', '').replace(',', ''))
+                profile_updates['p1-ss'] = amount
+            except:
+                follow_up = 'Please enter a numeric value for Social Security (e.g., 2500)'
+        elif 'person2' in field:
+            # Handle person 2 fields
+            if 'birth_date' in field:
+                profile_updates['p2-birth'] = user_response
+            elif 'social_security' in field:
+                try:
+                    amount = float(user_response.replace('$', '').replace(',', ''))
+                    profile_updates['p2-ss'] = amount
+                except:
+                    follow_up = 'Please enter a numeric value for Social Security (e.g., 2500)'
+        elif 'income_streams' in field:
+            if user_response.lower() in ['yes', 'y']:
+                follow_up = 'What type of income? (e.g., pension, rental, annuity)'
+            else:
+                # No income streams, that's fine
+                pass
+        elif 'home_properties' in field:
+            if user_response.lower() in ['yes', 'y']:
+                follow_up = 'What is the estimated current value of your primary home?'
+            else:
+                # No property, that's fine
+                pass
+        elif 'cost_basis' in field:
+            try:
+                amount = float(user_response.replace('$', '').replace(',', ''))
+                # Would need to update specific investment, but complex - skip for now
+                profile_updates = {}
+            except:
+                follow_up = 'Please enter a numeric value (e.g., 500000)'
+
+        return jsonify({
+            'update_applied': True,
+            'profile_updates': profile_updates,
+            'follow_up': follow_up
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({'status': 'healthy'})
@@ -1436,10 +1895,197 @@ def system_settings():
         rows = c.fetchall()
         conn.close()
         return jsonify({row[0]: row[1] for row in rows})
+# ================================
+# Auto-Backup System
+# ================================
+
+# Global variable to track backup thread
+backup_thread = None
+backup_stop_event = threading.Event()
+
+def create_backup():
+    """Create a timestamped backup of the database and data directory"""
+    try:
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        backup_path = os.path.join(BACKUP_DIR, timestamp)
+        os.makedirs(backup_path, exist_ok=True)
+
+        # Backup database
+        if os.path.exists(DB_PATH):
+            shutil.copy2(DB_PATH, os.path.join(backup_path, 'planning.db'))
+
+        # Backup skills directory if it exists
+        skills_dir = os.path.join(os.path.dirname(DATA_DIR), 'skills')
+        if os.path.exists(skills_dir):
+            shutil.copytree(skills_dir, os.path.join(backup_path, 'skills'))
+
+        # Update last backup timestamp in settings
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute('INSERT OR REPLACE INTO system_settings (key, value) VALUES (?, ?)',
+                  ('last_backup_time', datetime.now().isoformat()))
+        conn.commit()
+        conn.close()
+
+        print(f"Backup created successfully at {backup_path}")
+        return backup_path
+    except Exception as e:
+        print(f"Backup failed: {e}")
+        return None
+
+def auto_backup_worker():
+    """Background thread for automatic backups"""
+    while not backup_stop_event.is_set():
+        try:
+            # Get backup settings from database
+            conn = sqlite3.connect(DB_PATH)
+            c = conn.cursor()
+            c.execute('SELECT value FROM system_settings WHERE key = ?', ('auto_backup_enabled',))
+            enabled_row = c.fetchone()
+
+            c.execute('SELECT value FROM system_settings WHERE key = ?', ('auto_backup_interval_hours',))
+            interval_row = c.fetchone()
+            conn.close()
+
+            auto_backup_enabled = enabled_row and enabled_row[0] == 'true'
+            interval_hours = int(interval_row[0]) if interval_row else 24
+
+            if auto_backup_enabled:
+                create_backup()
+
+            # Wait for the specified interval or until stop event
+            backup_stop_event.wait(timeout=interval_hours * 3600)
+        except Exception as e:
+            print(f"Auto-backup worker error: {e}")
+            backup_stop_event.wait(timeout=3600)  # Wait 1 hour on error
+
+def start_auto_backup_thread():
+    """Start the auto-backup background thread"""
+    global backup_thread
+    if backup_thread is None or not backup_thread.is_alive():
+        backup_stop_event.clear()
+        backup_thread = threading.Thread(target=auto_backup_worker, daemon=True)
+        backup_thread.start()
+        print("Auto-backup thread started")
+
+@app.route('/api/backup/create', methods=['POST'])
+def api_create_backup():
+    """Manually trigger a backup"""
+    backup_path = create_backup()
+    if backup_path:
+        return jsonify({'success': True, 'backup_path': os.path.basename(backup_path)})
+    else:
+        return jsonify({'success': False, 'error': 'Backup failed'}), 500
+
+@app.route('/api/backup/list', methods=['GET'])
+def api_list_backups():
+    """List all available backups"""
+    try:
+        backups = []
+        if os.path.exists(BACKUP_DIR):
+            for item in sorted(os.listdir(BACKUP_DIR), reverse=True):
+                backup_path = os.path.join(BACKUP_DIR, item)
+                if os.path.isdir(backup_path):
+                    # Get backup size
+                    total_size = 0
+                    for dirpath, dirnames, filenames in os.walk(backup_path):
+                        for f in filenames:
+                            fp = os.path.join(dirpath, f)
+                            total_size += os.path.getsize(fp)
+
+                    backups.append({
+                        'name': item,
+                        'timestamp': item,
+                        'size_mb': round(total_size / (1024 * 1024), 2)
+                    })
+        return jsonify({'backups': backups})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/backup/restore/<backup_name>', methods=['POST'])
+def api_restore_backup(backup_name):
+    """Restore from a specific backup"""
+    try:
+        backup_path = os.path.join(BACKUP_DIR, backup_name)
+        if not os.path.exists(backup_path):
+            return jsonify({'error': 'Backup not found'}), 404
+
+        # Restore database
+        backup_db = os.path.join(backup_path, 'planning.db')
+        if os.path.exists(backup_db):
+            shutil.copy2(backup_db, DB_PATH)
+
+        # Restore skills if present
+        backup_skills = os.path.join(backup_path, 'skills')
+        skills_dir = os.path.join(os.path.dirname(DATA_DIR), 'skills')
+        if os.path.exists(backup_skills):
+            if os.path.exists(skills_dir):
+                shutil.rmtree(skills_dir)
+            shutil.copytree(backup_skills, skills_dir)
+
+        return jsonify({'success': True, 'message': f'Restored from backup {backup_name}'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/backup/delete/<backup_name>', methods=['DELETE'])
+def api_delete_backup(backup_name):
+    """Delete a specific backup"""
+    try:
+        backup_path = os.path.join(BACKUP_DIR, backup_name)
+        if not os.path.exists(backup_path):
+            return jsonify({'error': 'Backup not found'}), 404
+
+        shutil.rmtree(backup_path)
+        return jsonify({'success': True, 'message': f'Deleted backup {backup_name}'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/backup/settings', methods=['GET', 'POST'])
+def api_backup_settings():
+    """Get or update auto-backup settings"""
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+
+    if request.method == 'POST':
+        data = request.json
+        if 'auto_backup_enabled' in data:
+            c.execute('INSERT OR REPLACE INTO system_settings (key, value) VALUES (?, ?)',
+                      ('auto_backup_enabled', 'true' if data['auto_backup_enabled'] else 'false'))
+        if 'auto_backup_interval_hours' in data:
+            c.execute('INSERT OR REPLACE INTO system_settings (key, value) VALUES (?, ?)',
+                      ('auto_backup_interval_hours', str(data['auto_backup_interval_hours'])))
+
+        conn.commit()
+        conn.close()
+
+        # Restart backup thread if settings changed
+        if data.get('auto_backup_enabled'):
+            start_auto_backup_thread()
+
+        return jsonify({'success': True})
+    else:
+        c.execute('SELECT value FROM system_settings WHERE key = ?', ('auto_backup_enabled',))
+        enabled_row = c.fetchone()
+        c.execute('SELECT value FROM system_settings WHERE key = ?', ('auto_backup_interval_hours',))
+        interval_row = c.fetchone()
+        c.execute('SELECT value FROM system_settings WHERE key = ?', ('last_backup_time',))
+        last_backup_row = c.fetchone()
+        conn.close()
+
+        return jsonify({
+            'auto_backup_enabled': enabled_row and enabled_row[0] == 'true',
+            'auto_backup_interval_hours': int(interval_row[0]) if interval_row else 24,
+            'last_backup_time': last_backup_row[0] if last_backup_row else None
+        })
+
 if __name__ == '__main__':
     # Create data directory
     data_dir = os.path.dirname(DB_PATH)
     if data_dir and not os.path.exists(data_dir):
         os.makedirs(data_dir)
     init_db()
+
+    # Start auto-backup thread
+    start_auto_backup_thread()
+
     app.run(host='0.0.0.0', port=8080, debug=False)
