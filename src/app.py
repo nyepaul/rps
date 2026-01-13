@@ -27,6 +27,7 @@ app = Flask(__name__, static_folder='static', static_url_path='')
 CORS(app)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 # 16MB limit for image uploads
 # Configure logging
+os.makedirs('../logs', exist_ok=True)
 handler = RotatingFileHandler('../logs/app.log', maxBytes=10000, backupCount=1)
 handler.setLevel(logging.INFO)
 app.logger.addHandler(handler)
