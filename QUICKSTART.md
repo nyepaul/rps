@@ -50,4 +50,4 @@
 - **Configure AI Keys**: Run `./setup-api-keys.sh` to update your API keys.
 
 ## What's Next?
-Read **YOUR-ACTION-PLAN.md** in the `docs/` folder for your 30-year implementation timeline.
+Read **[docs/YOUR-ACTION-PLAN.md](docs/YOUR-ACTION-PLAN.md)** for your 30-year implementation timeline.

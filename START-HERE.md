@@ -39,9 +39,9 @@ Pensions are no longer static hardcoded values. You can model them as:
 ---
 
 ## Critical Files
-- **CORRECTED-ANALYSIS.md**: Interpreting your current baseline results.
-- **YOUR-ACTION-PLAN.md**: Your 30-year implementation timeline.
-- **TROUBLESHOOTING.md**: Solutions for "Failed to Fetch" or Port errors.
+- **docs/reviews/CORRECTED-ANALYSIS.md**: Interpreting your current baseline results.
+- **docs/YOUR-ACTION-PLAN.md**: Your 30-year implementation timeline.
+- **docs/TROUBLESHOOTING.md**: Solutions for "Failed to Fetch" or Port errors.
 
 ---
 *Press **Ctrl+C** in the terminal to stop the server when finished.*
