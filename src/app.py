@@ -19,7 +19,7 @@ import os
 import shutil
 import threading
 import time
-import google.generativeai as genai
+from google import genai
 import anthropic
 import logging
 from logging.handlers import RotatingFileHandler
@@ -49,23 +49,36 @@ os.makedirs(BACKUP_DIR, exist_ok=True)
 def call_gemini_with_fallback(prompt, api_key, image_data=None):
     """Calls Gemini with a prioritized list of models and fallback logic."""
     models = [
-        'models/gemini-3-pro',
-        'models/gemini-3-flash',
-        'models/gemini-3-flash-preview'
+        'gemini-2.0-flash-exp',
+        'gemini-1.5-flash',
+        'gemini-1.5-pro'
     ]
     last_error = None
-    genai.configure(api_key=api_key)
+    client = genai.Client(api_key=api_key)
     for model_name in models:
         try:
             print(f"Attempting Gemini model: {model_name}")
-            model = genai.GenerativeModel(model_name)
             if image_data:
-                # Image extraction case
-                image_part = {"mime_type": "image/jpeg", "data": image_data}
-                response = model.generate_content([prompt, image_part])
+                # Image extraction case - convert base64 to bytes if needed
+                import base64
+                if isinstance(image_data, str):
+                    image_bytes = base64.b64decode(image_data)
+                else:
+                    image_bytes = image_data
+                # Create image part for new API
+                from io import BytesIO
+                from PIL import Image
+                image = Image.open(BytesIO(image_bytes))
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=[prompt, image]
+                )
             else:
                 # Text generation case
-                response = model.generate_content(prompt)
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt
+                )
             if response and response.text:
                 return response.text
         except Exception as e:
