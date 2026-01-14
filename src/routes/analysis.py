@@ -58,7 +58,7 @@ def run_analysis():
             name=profile.name or 'Primary',
             birth_date=datetime.fromisoformat(birth_date_str) if birth_date_str else datetime(1980, 1, 1),
             retirement_date=datetime.fromisoformat(retirement_date_str) if retirement_date_str else datetime(2045, 1, 1),
-            social_security=financial_data.get('social_security_benefit', 0) / 12  # Convert monthly to annual
+            social_security=financial_data.get('social_security_benefit', 0)  # Already monthly
         )
 
         # Create person2 (spouse) if spouse data exists
@@ -69,7 +69,7 @@ def run_analysis():
             name=spouse_data.get('name', 'Spouse'),
             birth_date=datetime.fromisoformat(spouse_birth) if spouse_birth else datetime(1980, 1, 1),
             retirement_date=datetime.fromisoformat(spouse_retire) if spouse_retire else datetime(2045, 1, 1),
-            social_security=spouse_data.get('social_security_benefit', 0) / 12 if spouse_data.get('social_security_benefit') else 0
+            social_security=spouse_data.get('social_security_benefit', 0) if spouse_data.get('social_security_benefit') else 0  # Already monthly
         )
 
         # Get assets from profile
