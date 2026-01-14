@@ -1,14 +1,31 @@
 #!/bin/bash
 set -e
 
-echo "1. Force removing the stuck directory..."
-# Fixes the ENOTEMPTY error by manually removing the directory
-rm -rf "/opt/homebrew/lib/node_modules/@google/gemini-cli"
+echo "1. Locating global node_modules..."
+NPM_ROOT=$(npm root -g)
+GEMINI_PATH="$NPM_ROOT/@google/gemini-cli"
+echo "Found at: $GEMINI_PATH"
 
-echo "2. Installing the latest version of @google/gemini-cli..."
+# Check permissions
+if [ ! -w "$NPM_ROOT" ]; then
+    echo "Error: You do not have write permissions for $NPM_ROOT."
+    echo "Please run this script with sudo:"
+    echo "  sudo $0"
+    exit 1
+fi
+
+echo "2. Force removing the stuck directory..."
+# Fixes the ENOTEMPTY error by manually removing the directory
+if [ -d "$GEMINI_PATH" ]; then
+    rm -rf "$GEMINI_PATH"
+else
+    echo "Directory not found (or already clean)."
+fi
+
+echo "3. Installing the latest version of @google/gemini-cli..."
 npm install -g @google/gemini-cli
 
-echo "3. Verifying installation..."
+echo "4. Verifying installation..."
 npm list -g --depth=0 @google/gemini-cli
 
 echo "✅ Update complete!"
