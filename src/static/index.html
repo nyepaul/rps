@@ -839,6 +839,13 @@
             padding: 20px;
         }
 
+        /* Welcome Screen Hover Effects */
+        .welcome-card:hover, .learn-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 16px var(--shadow);
+            border-color: var(--accent-color) !important;
+        }
+
         body.compact-mode .metric-grid {
             gap: 15px;
             margin-bottom: 20px;
@@ -927,7 +934,8 @@
         </header>
         
         <div class="tabs">
-            <button class="tab active" onclick="showTab('dashboard')">Dashboard</button>
+            <button class="tab active" onclick="showTab('welcome')">✨ Welcome</button>
+            <button class="tab" onclick="showTab('dashboard')">Dashboard</button>
             <button class="tab" onclick="showTab('profile')">Profile & Data</button>
             <button class="tab" onclick="showTab('accounts')">Withdrawal Strategy</button>
             <button class="tab" onclick="showTab('analysis')">Analysis</button>
@@ -935,9 +943,58 @@
             <button class="tab" onclick="showTab('actions')">Action Items</button>
             <button class="tab" onclick="showTab('advisor')">AI Advisor</button>
             <button class="tab" onclick="showTab('summary')">📄 Summary</button>
+            <button class="tab" onclick="showTab('learn')">📚 Learn</button>
         </div>
-        
-        <div id="dashboard-tab" class="tab-content active">
+
+        <div id="welcome-tab" class="tab-content active">
+            <div style="max-width: 900px; margin: 0 auto; padding: 40px 20px;">
+                <h1 style="font-size: 42px; margin-bottom: 20px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                    Welcome to Your Retirement Planning Tool
+                </h1>
+                <p style="font-size: 18px; text-align: center; color: var(--text-secondary); margin-bottom: 50px;">
+                    Plan your future with confidence. Let's get started!
+                </p>
+
+                <div style="display: grid; gap: 20px; margin-bottom: 40px;">
+                    <div class="welcome-card" onclick="startProfileWizard()" style="cursor: pointer; padding: 30px; background: var(--bg-secondary); border: 2px solid var(--border-color); border-radius: 12px; transition: all 0.3s; box-shadow: 0 2px 8px var(--shadow);">
+                        <div style="font-size: 48px; margin-bottom: 15px;">✨</div>
+                        <h2 style="font-size: 24px; margin-bottom: 10px; color: var(--text-primary);">Create New Profile</h2>
+                        <p style="color: var(--text-secondary); margin-bottom: 0;">Start your retirement planning journey with our guided wizard. We'll walk you through every step.</p>
+                    </div>
+
+                    <div class="welcome-card" onclick="showExistingProfiles()" style="cursor: pointer; padding: 30px; background: var(--bg-secondary); border: 2px solid var(--border-color); border-radius: 12px; transition: all 0.3s; box-shadow: 0 2px 8px var(--shadow);">
+                        <div style="font-size: 48px; margin-bottom: 15px;">📂</div>
+                        <h2 style="font-size: 24px; margin-bottom: 10px; color: var(--text-primary);">Open Existing Profile</h2>
+                        <p style="color: var(--text-secondary); margin-bottom: 0;">Continue working on your saved retirement plans.</p>
+                        <div id="profile-list-container" style="margin-top: 20px; display: none;"></div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 60px;">
+                    <h3 style="font-size: 24px; margin-bottom: 20px; color: var(--text-primary);">Learn About Retirement Planning</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                        <div class="learn-card" onclick="showTab('learn')" style="cursor: pointer; padding: 20px; background: var(--bg-tertiary); border-radius: 8px; transition: all 0.3s;">
+                            <h4 style="font-size: 18px; margin-bottom: 8px;">📚 Retirement Basics</h4>
+                            <p style="font-size: 14px; color: var(--text-secondary); margin: 0;">Learn the fundamentals of retirement planning</p>
+                        </div>
+                        <div class="learn-card" onclick="showTab('learn')" style="cursor: pointer; padding: 20px; background: var(--bg-tertiary); border-radius: 8px; transition: all 0.3s;">
+                            <h4 style="font-size: 18px; margin-bottom: 8px;">🏛️ Estate Planning</h4>
+                            <p style="font-size: 14px; color: var(--text-secondary); margin: 0;">Protect your assets and legacy</p>
+                        </div>
+                        <div class="learn-card" onclick="showTab('learn')" style="cursor: pointer; padding: 20px; background: var(--bg-tertiary); border-radius: 8px; transition: all 0.3s;">
+                            <h4 style="font-size: 18px; margin-bottom: 8px;">💰 Tax Strategies</h4>
+                            <p style="font-size: 14px; color: var(--text-secondary); margin: 0;">Optimize your tax efficiency</p>
+                        </div>
+                        <div class="learn-card" onclick="showTab('learn')" style="cursor: pointer; padding: 20px; background: var(--bg-tertiary); border-radius: 8px; transition: all 0.3s;">
+                            <h4 style="font-size: 18px; margin-bottom: 8px;">📊 Investment Basics</h4>
+                            <p style="font-size: 14px; color: var(--text-secondary); margin: 0;">Build a solid investment foundation</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="dashboard-tab" class="tab-content">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2>Financial Control Center</h2>
                 <div style="display: flex; gap: 15px; align-items: center;">
@@ -1098,7 +1155,10 @@
         
         <div id="profile-tab" class="tab-content">
             <h2>Financial Profile</h2>
-            
+
+            <!-- Profile Progress Indicator -->
+            <div id="profile-progress-container"></div>
+
             <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #bce0fd;">
                 <h3 style="margin-bottom: 15px; color: #2980b9;">Profile Management</h3>
                 <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
@@ -1849,6 +1909,35 @@
                 <div style="text-align: center; padding: 60px 20px; color: var(--text-light);">
                     <h3>No Profile Loaded</h3>
                     <p>Please load or create a profile to view the financial summary.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="learn-tab" class="tab-content">
+            <div style="max-width: 1200px; margin: 0 auto;">
+                <h1 style="font-size: 32px; margin-bottom: 10px;">📚 Retirement Planning Education</h1>
+                <p style="color: var(--text-secondary); margin-bottom: 30px;">Choose your learning level and explore topics at your own pace.</p>
+
+                <!-- Level Selector -->
+                <div style="display: flex; gap: 10px; margin-bottom: 30px; overflow-x: auto; padding-bottom: 10px;">
+                    <button class="level-btn active" data-level="1" onclick="selectLevel(1)" style="padding: 10px 20px; border: 2px solid var(--accent-color); background: var(--accent-color); color: white; border-radius: 20px; cursor: pointer; white-space: nowrap; transition: all 0.3s; font-weight: 600;">Level 1 - Beginner</button>
+                    <button class="level-btn" data-level="2" onclick="selectLevel(2)" style="padding: 10px 20px; border: 2px solid var(--border-color); background: transparent; color: var(--text-primary); border-radius: 20px; cursor: pointer; white-space: nowrap; transition: all 0.3s;">Level 2 - Basic</button>
+                    <button class="level-btn" data-level="3" onclick="selectLevel(3)" style="padding: 10px 20px; border: 2px solid var(--border-color); background: transparent; color: var(--text-primary); border-radius: 20px; cursor: pointer; white-space: nowrap; transition: all 0.3s;">Level 3 - Intermediate</button>
+                    <button class="level-btn" data-level="4" onclick="selectLevel(4)" style="padding: 10px 20px; border: 2px solid var(--border-color); background: transparent; color: var(--text-primary); border-radius: 20px; cursor: pointer; white-space: nowrap; transition: all 0.3s;">Level 4 - Advanced</button>
+                    <button class="level-btn" data-level="5" onclick="selectLevel(5)" style="padding: 10px 20px; border: 2px solid var(--border-color); background: transparent; color: var(--text-primary); border-radius: 20px; cursor: pointer; white-space: nowrap; transition: all 0.3s;">Level 5 - Expert</button>
+                </div>
+
+                <!-- Topics Grid -->
+                <div id="learn-topics-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                    <!-- Topics populated by JavaScript -->
+                </div>
+
+                <!-- Content Display -->
+                <div id="learn-content-display" style="display: none; background: var(--bg-secondary); padding: 30px; border-radius: 12px; box-shadow: 0 2px 8px var(--shadow);">
+                    <button onclick="closeLearningContent()" style="float: right; background: var(--text-secondary); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;">← Back to Topics</button>
+                    <div id="learn-content-body" style="clear: both; padding-top: 20px;">
+                        <!-- Markdown content rendered here -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -2905,6 +2994,9 @@
                     notification.textContent = `✓ Profile "${name}" saved successfully`;
                     document.body.appendChild(notification);
                     setTimeout(() => notification.remove(), 3000);
+
+                    // Check for level-up after saving
+                    checkLevelUp();
                 } else {
                     const result = await response.json();
                     alert('Error saving profile: ' + (result.error || response.statusText));
@@ -3179,6 +3271,10 @@
                     notification.textContent = `✓ Profile "${profileName}" loaded successfully`;
                     document.body.appendChild(notification);
                     setTimeout(() => notification.remove(), 3000);
+
+                    // Update progress indicator and initialize level tracking
+                    previousLevel = getUserLevel();
+                    updateProgressIndicator();
 
                     // Run analysis immediately to populate dashboard
                     runAnalysis();
@@ -6737,6 +6833,772 @@ Return ONLY the JSON array, no other text.`;
             }
         }
 
+        // Welcome Screen Functions
+        function showExistingProfiles() {
+            const container = document.getElementById('profile-list-container');
+            const profileSelect = document.getElementById('profile-select');
+
+            if (container.style.display === 'none') {
+                let html = '<select id="welcome-profile-select" style="width: 100%; padding: 12px; margin-top: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);" onchange="if(this.value) { loadProfile(this.value); showTab(\'dashboard\'); }">';
+                html += '<option value="" disabled selected>Select a profile...</option>';
+                for (let i = 1; i < profileSelect.options.length; i++) {
+                    html += `<option value="${profileSelect.options[i].value}">${profileSelect.options[i].text}</option>`;
+                }
+                html += '</select>';
+                container.innerHTML = html;
+                container.style.display = 'block';
+            } else {
+                container.style.display = 'none';
+            }
+        }
+
+        // Profile Creation Wizard State
+        let wizardData = {};
+        let currentWizardStep = 0;
+        const wizardSteps = [
+            { id: 'welcome', title: 'Getting Started', fields: [] },
+            { id: 'profile_name', title: 'Profile Name', fields: ['profile_name'] },
+            { id: 'person1_basic', title: 'Your Information', fields: ['p1_name', 'p1_birth'] },
+            { id: 'person1_retirement', title: 'Your Retirement Plan', fields: ['p1_retire', 'p1_ss'] },
+            { id: 'person2_check', title: 'Spouse/Partner', fields: ['has_person2'] },
+            { id: 'person2_basic', title: 'Partner Information', fields: ['p2_name', 'p2_birth'], conditional: true },
+            { id: 'person2_retirement', title: 'Partner Retirement', fields: ['p2_retire', 'p2_ss'], conditional: true },
+            { id: 'expenses', title: 'Living Expenses', fields: ['annual_expenses', 'target_income'] },
+            { id: 'risk_tolerance', title: 'Risk Assessment', fields: ['risk'] },
+            { id: 'investments_intro', title: 'Investment Accounts', fields: [] },
+            { id: 'investments', title: 'Your Investments', fields: ['investments'] },
+            { id: 'income_streams', title: 'Income Sources', fields: ['income'] },
+            { id: 'properties', title: 'Real Estate', fields: ['properties'] },
+            { id: 'market_assumptions', title: 'Market Assumptions', fields: ['assumptions'] },
+            { id: 'review', title: 'Review & Complete', fields: [] }
+        ];
+
+        async function startProfileWizard() {
+            // Check for in-progress wizard
+            const savedProgress = localStorage.getItem('wizard_in_progress');
+            if (savedProgress) {
+                const resume = confirm('You have a wizard in progress. Would you like to continue where you left off?');
+                if (resume) {
+                    const progress = JSON.parse(savedProgress);
+                    wizardData = progress.data;
+                    currentWizardStep = progress.step;
+                } else {
+                    localStorage.removeItem('wizard_in_progress');
+                    wizardData = { profile_name: '', has_person2: false, investments: [], income: [], properties: [] };
+                    currentWizardStep = 0;
+                }
+            } else {
+                wizardData = { profile_name: '', has_person2: false, investments: [], income: [], properties: [] };
+                currentWizardStep = 0;
+            }
+
+            document.getElementById('profile-wizard-modal').classList.add('active');
+            renderWizardStep();
+        }
+
+        function renderWizardStep() {
+            const step = wizardSteps[currentWizardStep];
+            const body = document.getElementById('profile-wizard-body');
+            const total = wizardSteps.length;
+
+            // Skip conditional steps if needed
+            if (step.conditional && !wizardData.has_person2) {
+                if (currentWizardStep < total - 1) {
+                    currentWizardStep++;
+                    renderWizardStep();
+                }
+                return;
+            }
+
+            // Update header
+            document.getElementById('wizard-step-title').textContent = step.title;
+            document.getElementById('wizard-progress-text').textContent = `Step ${currentWizardStep + 1} of ${total}`;
+            document.getElementById('wizard-progress-bar').style.width = `${((currentWizardStep + 1) / total) * 100}%`;
+
+            // Update buttons
+            document.getElementById('wizard-prev-btn').disabled = currentWizardStep === 0;
+            document.getElementById('wizard-next-btn').textContent = currentWizardStep === total - 1 ? 'Complete ✓' : 'Next →';
+
+            // Render step content
+            body.innerHTML = getStepContent(step);
+        }
+
+        function getStepContent(step) {
+            switch(step.id) {
+                case 'welcome':
+                    return `
+                        <div style="text-align: center; padding: 40px 20px;">
+                            <div style="font-size: 64px; margin-bottom: 20px;">🎉</div>
+                            <h2 style="font-size: 28px; margin-bottom: 15px; color: var(--text-primary);">Let's Build Your Retirement Plan</h2>
+                            <p style="font-size: 16px; color: var(--text-secondary); line-height: 1.6; max-width: 500px; margin: 0 auto 30px;">
+                                This wizard will guide you through creating a comprehensive retirement plan.
+                                We'll collect information about your finances, goals, and timeline to create
+                                personalized projections and recommendations.
+                            </p>
+                            <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; text-align: left; max-width: 500px; margin: 0 auto;">
+                                <h3 style="font-size: 16px; margin-bottom: 10px; color: var(--text-primary);">You'll provide:</h3>
+                                <ul style="color: var(--text-secondary); font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
+                                    <li>Personal information (names, ages, retirement dates)</li>
+                                    <li>Investment accounts and balances</li>
+                                    <li>Income sources (pensions, Social Security)</li>
+                                    <li>Real estate holdings</li>
+                                    <li>Risk tolerance and goals</li>
+                                </ul>
+                            </div>
+                            <p style="margin-top: 20px; font-size: 13px; color: var(--text-light);">
+                                ⏱️ Takes about 10-15 minutes • 💾 Save anytime and continue later
+                            </p>
+                        </div>
+                    `;
+
+                case 'profile_name':
+                    return `
+                        <div style="padding: 20px;">
+                            <h3 style="margin-bottom: 15px; color: var(--text-primary);">What would you like to name this profile?</h3>
+                            <p style="color: var(--text-secondary); margin-bottom: 20px;">Choose a name that helps you identify this plan (e.g., "Our Retirement Plan" or "John & Jane 2026").</p>
+                            <input type="text" id="wizard-profile-name" value="${wizardData.profile_name || ''}"
+                                   placeholder="Enter profile name..."
+                                   style="width: 100%; padding: 14px; font-size: 16px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary);"
+                                   onkeyup="wizardData.profile_name = this.value">
+                            <p style="margin-top: 12px; font-size: 13px; color: var(--text-secondary);">
+                                💡 Tip: Use a descriptive name that you'll recognize later
+                            </p>
+                        </div>
+                    `;
+
+                case 'person1_basic':
+                    return `
+                        <div style="padding: 20px;">
+                            <h3 style="margin-bottom: 15px; color: var(--text-primary);">Tell us about yourself</h3>
+                            <p style="color: var(--text-secondary); margin-bottom: 25px;">We'll use this to calculate your retirement timeline and Social Security benefits.</p>
+
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Full Name</label>
+                                <input type="text" id="wizard-p1-name" value="${wizardData.p1_name || ''}"
+                                       placeholder="Enter your name"
+                                       style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);"
+                                       onkeyup="wizardData.p1_name = this.value">
+                            </div>
+
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Date of Birth</label>
+                                <input type="date" id="wizard-p1-birth" value="${wizardData.p1_birth || ''}"
+                                       style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);"
+                                       onchange="wizardData.p1_birth = this.value">
+                                <p style="font-size: 13px; color: var(--text-secondary); margin-top: 6px;">💡 This helps us calculate your age at retirement and Social Security eligibility.</p>
+                            </div>
+                        </div>
+                    `;
+
+                case 'person1_retirement':
+                    const currentYear = new Date().getFullYear();
+                    let retireYearOptions = '';
+                    for (let year = currentYear; year <= currentYear + 50; year++) {
+                        const selected = wizardData.p1_retire_year == year ? 'selected' : '';
+                        retireYearOptions += `<option value="${year}" ${selected}>${year}</option>`;
+                    }
+                    return `
+                        <div style="padding: 20px;">
+                            <h3 style="margin-bottom: 15px; color: var(--text-primary);">When do you plan to retire?</h3>
+                            <p style="color: var(--text-secondary); margin-bottom: 25px;">This is when you plan to stop working and start drawing from your retirement savings.</p>
+
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Target Retirement Year</label>
+                                <select id="wizard-p1-retire-year" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);" onchange="wizardData.p1_retire_year = this.value">
+                                    <option value="">Select year...</option>
+                                    ${retireYearOptions}
+                                </select>
+                            </div>
+
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Estimated Monthly Social Security (at full retirement age)</label>
+                                <input type="number" id="wizard-p1-ss" value="${wizardData.p1_ss || ''}"
+                                       placeholder="e.g., 3000"
+                                       style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);"
+                                       onkeyup="wizardData.p1_ss = this.value">
+                                <p style="font-size: 13px; color: var(--text-secondary); margin-top: 6px;">
+                                    💡 Check your estimate at <a href="https://www.ssa.gov/myaccount/" target="_blank" style="color: var(--accent-color);">ssa.gov/myaccount</a>
+                                </p>
+                            </div>
+                        </div>
+                    `;
+
+                case 'person2_check':
+                    return `
+                        <div style="padding: 20px;">
+                            <h3 style="margin-bottom: 15px; color: var(--text-primary);">Are you planning retirement with a spouse or partner?</h3>
+                            <p style="color: var(--text-secondary); margin-bottom: 25px;">Including a partner helps us plan for joint expenses, survivor benefits, and coordinated Social Security strategies.</p>
+
+                            <div style="display: flex; gap: 15px;">
+                                <button onclick="wizardData.has_person2 = true; wizardNextStep();" style="flex: 1; padding: 40px 20px; border: 2px solid var(--border-color); border-radius: 12px; background: ${wizardData.has_person2 ? 'var(--accent-color)' : 'var(--bg-secondary)'}; color: ${wizardData.has_person2 ? 'white' : 'var(--text-primary)'}; cursor: pointer; transition: all 0.3s; font-size: 16px;">
+                                    <div style="font-size: 48px; margin-bottom: 10px;">👥</div>
+                                    <div style="font-weight: 600;">Yes, planning together</div>
+                                </button>
+                                <button onclick="wizardData.has_person2 = false; currentWizardStep += 2; wizardNextStep();" style="flex: 1; padding: 40px 20px; border: 2px solid var(--border-color); border-radius: 12px; background: ${wizardData.has_person2 === false ? 'var(--accent-color)' : 'var(--bg-secondary)'}; color: ${wizardData.has_person2 === false ? 'white' : 'var(--text-primary)'}; cursor: pointer; transition: all 0.3s; font-size: 16px;">
+                                    <div style="font-size: 48px; margin-bottom: 10px;">🙋</div>
+                                    <div style="font-weight: 600;">No, just me</div>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+
+                case 'expenses':
+                    return `
+                        <div style="padding: 20px;">
+                            <h3 style="margin-bottom: 15px; color: var(--text-primary);">What are your expected living expenses?</h3>
+                            <p style="color: var(--text-secondary); margin-bottom: 25px;">Help us understand your financial needs in retirement.</p>
+
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Annual Living Expenses (in today's dollars)</label>
+                                <input type="number" id="wizard-annual-expenses" value="${wizardData.annual_expenses || ''}"
+                                       placeholder="e.g., 80000"
+                                       style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);"
+                                       onkeyup="wizardData.annual_expenses = this.value">
+                                <p style="font-size: 13px; color: var(--text-secondary); margin-top: 6px;">
+                                    💡 Include housing, food, healthcare, entertainment, travel, etc.
+                                </p>
+                            </div>
+
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">Target Annual Income in Retirement</label>
+                                <input type="number" id="wizard-target-income" value="${wizardData.target_income || ''}"
+                                       placeholder="e.g., 100000"
+                                       style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);"
+                                       onkeyup="wizardData.target_income = this.value">
+                                <p style="font-size: 13px; color: var(--text-secondary); margin-top: 6px;">
+                                    💡 Often 70-80% of pre-retirement income. Include buffer for unexpected costs.
+                                </p>
+                            </div>
+                        </div>
+                    `;
+
+                case 'risk_tolerance':
+                    return `
+                        <div style="padding: 20px;">
+                            <h3 style="margin-bottom: 15px; color: var(--text-primary);">What's your investment risk tolerance?</h3>
+                            <p style="color: var(--text-secondary); margin-bottom: 25px;">This helps determine your asset allocation between stocks and bonds.</p>
+
+                            <div style="display: grid; gap: 12px;">
+                                ${['Conservative', 'Balanced', 'Aggressive'].map(risk => `
+                                    <button onclick="wizardData.risk = '${risk}'; document.querySelectorAll('.risk-btn').forEach(b => b.style.background = 'var(--bg-secondary)'); this.style.background = 'var(--accent-color)'; this.style.color = 'white';" class="risk-btn" style="padding: 20px; border: 2px solid var(--border-color); border-radius: 8px; background: ${wizardData.risk === risk ? 'var(--accent-color)' : 'var(--bg-secondary)'}; color: ${wizardData.risk === risk ? 'white' : 'var(--text-primary)'}; cursor: pointer; text-align: left; transition: all 0.3s;">
+                                        <div style="font-weight: 600; font-size: 16px; margin-bottom: 5px;">${risk}</div>
+                                        <div style="font-size: 13px; opacity: 0.9;">
+                                            ${risk === 'Conservative' ? 'Prioritize stability, lower volatility (30% stocks / 70% bonds)' :
+                                              risk === 'Balanced' ? 'Balance growth and stability (60% stocks / 40% bonds)' :
+                                              'Maximize growth potential, accept higher volatility (85% stocks / 15% bonds)'}
+                                        </div>
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+
+                case 'investments_intro':
+                    return `
+                        <div style="text-align: center; padding: 40px 20px;">
+                            <div style="font-size: 64px; margin-bottom: 20px;">💰</div>
+                            <h2 style="font-size: 28px; margin-bottom: 15px; color: var(--text-primary);">Let's Add Your Investment Accounts</h2>
+                            <p style="font-size: 16px; color: var(--text-secondary); line-height: 1.6; max-width: 500px; margin: 0 auto 30px;">
+                                On the next screen, you'll be able to add all your investment accounts:
+                                checking, savings, 401(k), IRA, brokerage, and more.
+                            </p>
+                            <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; text-align: left; max-width: 500px; margin: 0 auto;">
+                                <h3 style="font-size: 14px; margin-bottom: 10px; color: var(--text-primary);">💡 Pro Tip:</h3>
+                                <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.6; margin: 0;">
+                                    You can upload a screenshot of your account balances and we'll use AI to extract the information automatically!
+                                </p>
+                            </div>
+                        </div>
+                    `;
+
+                case 'investments':
+                    let investmentsHtml = '<div style="padding: 20px;"><h3 style="margin-bottom: 15px;">Your Investment Accounts</h3><p style="color: var(--text-secondary); margin-bottom: 20px;">Add all accounts: checking, savings, 401k, IRA, brokerage, etc.</p>';
+                    investmentsHtml += '<div id="wizard-investments-list" style="margin-bottom: 15px;">';
+                    if (wizardData.investments && wizardData.investments.length > 0) {
+                        wizardData.investments.forEach((inv, idx) => {
+                            investmentsHtml += `<div style="padding: 12px; background: var(--bg-tertiary); border-radius: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                                <div><strong>${inv.name}</strong> (${inv.account}): $${parseInt(inv.value).toLocaleString()}</div>
+                                <button onclick="wizardRemoveInvestment(${idx})" style="padding: 4px 8px; background: var(--danger-color); color: white; border: none; border-radius: 4px; cursor: pointer;">Remove</button>
+                            </div>`;
+                        });
+                    } else {
+                        investmentsHtml += '<p style="color: var(--text-light); font-style: italic;">No accounts added yet</p>';
+                    }
+                    investmentsHtml += '</div>';
+                    investmentsHtml += `<button onclick="wizardAddInvestmentForm()" style="width: 100%; padding: 12px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">+ Add Investment Account</button>`;
+                    investmentsHtml += '<div id="wizard-investment-form" style="display: none; margin-top: 20px; padding: 15px; background: var(--bg-tertiary); border-radius: 8px;"></div>';
+                    investmentsHtml += '</div>';
+                    return investmentsHtml;
+
+                case 'review':
+                    let reviewHtml = '<div style="padding: 20px;"><h2 style="margin-bottom: 20px; text-align: center;">Review Your Profile</h2>';
+                    reviewHtml += '<div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; margin-bottom: 15px;">';
+                    reviewHtml += `<h3 style="margin-bottom: 10px;">Profile: ${wizardData.profile_name || 'Unnamed'}</h3>`;
+                    reviewHtml += `<p><strong>You:</strong> ${wizardData.p1_name || 'Not provided'}</p>`;
+                    if (wizardData.has_person2) {
+                        reviewHtml += `<p><strong>Partner:</strong> ${wizardData.p2_name || 'Not provided'}</p>`;
+                    }
+                    reviewHtml += `<p><strong>Annual Expenses:</strong> $${parseInt(wizardData.annual_expenses || 0).toLocaleString()}</p>`;
+                    reviewHtml += `<p><strong>Investment Accounts:</strong> ${(wizardData.investments || []).length}</p>`;
+                    reviewHtml += '</div>';
+                    reviewHtml += '<p style="text-align: center; color: var(--text-secondary);">Click "Complete" to save your profile and run your first analysis!</p>';
+                    reviewHtml += '</div>';
+                    return reviewHtml;
+
+                default:
+                    return `<div style="padding: 20px;"><p>Step content for ${step.id} coming soon...</p></div>`;
+            }
+        }
+
+        function wizardNextStep() {
+            const step = wizardSteps[currentWizardStep];
+            if (!validateWizardStep(step)) return;
+
+            if (currentWizardStep === wizardSteps.length - 1) {
+                completeWizard();
+                return;
+            }
+
+            currentWizardStep++;
+            renderWizardStep();
+        }
+
+        function wizardPrevStep() {
+            if (currentWizardStep > 0) {
+                currentWizardStep--;
+                renderWizardStep();
+            }
+        }
+
+        function validateWizardStep(step) {
+            if (step.id === 'profile_name' && !wizardData.profile_name) {
+                alert('Please enter a profile name');
+                return false;
+            }
+            return true;
+        }
+
+        function closeProfileWizard() {
+            if (confirm('Exit wizard? Your progress can be saved.')) {
+                document.getElementById('profile-wizard-modal').classList.remove('active');
+            }
+        }
+
+        function wizardSaveForLater() {
+            localStorage.setItem('wizard_in_progress', JSON.stringify({
+                data: wizardData,
+                step: currentWizardStep,
+                timestamp: Date.now()
+            }));
+            alert('✓ Progress saved! Continue where you left off next time.');
+            document.getElementById('profile-wizard-modal').classList.remove('active');
+        }
+
+        function wizardAddInvestmentForm() {
+            const form = document.getElementById('wizard-investment-form');
+            form.style.display = 'block';
+            form.innerHTML = `
+                <h4 style="margin-bottom: 15px;">Add Investment Account</h4>
+                <div style="margin-bottom: 10px;">
+                    <label style="display: block; margin-bottom: 5px; font-size: 13px;">Account Name</label>
+                    <input type="text" id="inv-name" placeholder="e.g., Fidelity 401k" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px;">
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <label style="display: block; margin-bottom: 5px; font-size: 13px;">Account Type</label>
+                    <select id="inv-type" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px;">
+                        <option value="Liquid">Checking/Savings</option>
+                        <option value="Taxable Brokerage">Taxable Brokerage</option>
+                        <option value="Traditional IRA">Traditional IRA/401k</option>
+                        <option value="Roth IRA">Roth IRA</option>
+                        <option value="Pension">Pension</option>
+                    </select>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <label style="display: block; margin-bottom: 5px; font-size: 13px;">Current Value ($)</label>
+                    <input type="number" id="inv-value" placeholder="e.g., 250000" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px;">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="wizardSaveInvestment()" style="flex: 1; padding: 10px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer;">Save</button>
+                    <button onclick="document.getElementById('wizard-investment-form').style.display='none'" style="flex: 1; padding: 10px; background: var(--text-secondary); color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+                </div>
+            `;
+        }
+
+        function wizardSaveInvestment() {
+            const name = document.getElementById('inv-name').value;
+            const account = document.getElementById('inv-type').value;
+            const value = document.getElementById('inv-value').value;
+
+            if (!name || !value) {
+                alert('Please fill in account name and value');
+                return;
+            }
+
+            if (!wizardData.investments) wizardData.investments = [];
+            wizardData.investments.push({ name, account, value: parseFloat(value), cost_basis: 0, change: 0 });
+
+            document.getElementById('wizard-investment-form').style.display = 'none';
+            renderWizardStep();
+        }
+
+        function wizardRemoveInvestment(idx) {
+            wizardData.investments.splice(idx, 1);
+            renderWizardStep();
+        }
+
+        async function completeWizard() {
+            const profileData = {
+                person1: {
+                    name: wizardData.p1_name || 'Person 1',
+                    birth_date: wizardData.p1_birth || '1970-01-01',
+                    retirement_date: wizardData.p1_retire_year ? `${wizardData.p1_retire_year}-01-01` : '2035-01-01',
+                    social_security: parseFloat(wizardData.p1_ss) || 3000
+                },
+                person2: wizardData.has_person2 ? {
+                    name: wizardData.p2_name || 'Person 2',
+                    birth_date: wizardData.p2_birth || '1970-01-01',
+                    retirement_date: wizardData.p2_retire_year ? `${wizardData.p2_retire_year}-01-01` : '2035-01-01',
+                    social_security: parseFloat(wizardData.p2_ss) || 3000
+                } : { name: '', birth_date: '', retirement_date: '', social_security: 0 },
+                investment_types: wizardData.investments || [],
+                income_streams: wizardData.income || [],
+                home_properties: wizardData.properties || [],
+                annual_expenses: parseFloat(wizardData.annual_expenses) || 100000,
+                target_annual_income: parseFloat(wizardData.target_income) || 150000,
+                risk_tolerance: wizardData.risk || 'Balanced',
+                market_assumptions: {
+                    stock_allocation: wizardData.risk === 'Conservative' ? 30 : wizardData.risk === 'Aggressive' ? 85 : 60,
+                    stock_return_mean: 7.0,
+                    bond_return_mean: 3.0,
+                    inflation_mean: 2.5,
+                    stock_return_std: 18.0,
+                    bond_return_std: 5.0,
+                    inflation_std: 1.5,
+                    ss_discount_rate: 0.0
+                }
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/profile/${encodeURIComponent(wizardData.profile_name)}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(profileData)
+                });
+
+                if (response.ok) {
+                    localStorage.removeItem('wizard_in_progress');
+                    document.getElementById('profile-wizard-body').innerHTML = `
+                        <div style="text-align: center; padding: 60px 20px;">
+                            <div style="font-size: 72px; margin-bottom: 20px;">🎉</div>
+                            <h2 style="font-size: 32px; margin-bottom: 15px; color: var(--text-primary);">Profile Complete!</h2>
+                            <p style="font-size: 16px; color: var(--text-secondary); margin-bottom: 30px;">
+                                Your retirement profile has been created. Let's run your first analysis!
+                            </p>
+                        </div>
+                    `;
+                    document.getElementById('wizard-prev-btn').style.display = 'none';
+                    document.getElementById('wizard-save-later-btn').style.display = 'none';
+                    document.getElementById('wizard-next-btn').textContent = 'Go to Dashboard';
+                    document.getElementById('wizard-next-btn').onclick = () => {
+                        document.getElementById('profile-wizard-modal').classList.remove('active');
+                        loadProfile(wizardData.profile_name);
+                        showTab('dashboard');
+                        setTimeout(() => runAnalysis(), 500);
+                    };
+                }
+            } catch (error) {
+                alert('Error saving profile: ' + error.message);
+            }
+        }
+
+        // ===== LEARNING SYSTEM =====
+
+        const learningTopics = {
+            1: [ // Beginner
+                { file: 'retirement-planning-SKILL.md', title: 'Retirement Planning Basics', emoji: '📚', description: 'Core concepts and getting started' },
+                { file: 'investment-policy-SKILL.md', title: 'Investment Fundamentals', emoji: '📊', description: 'Understanding investment principles' }
+            ],
+            2: [ // Basic
+                { file: 'retirement-planning-SKILL.md', title: 'Retirement Strategies', emoji: '🎯', description: 'Planning your retirement timeline' },
+                { file: 'healthcare-gap-SKILL.md', title: 'Healthcare Planning', emoji: '🏥', description: 'Healthcare costs and Medicare' },
+                { file: 'education-planning-SKILL.md', title: 'Education Planning', emoji: '🎓', description: '529 plans and education savings' }
+            ],
+            3: [ // Intermediate
+                { file: 'estate-legal-SKILL.md', title: 'Estate Planning', emoji: '🏛️', description: 'Wills, trusts, and legacy planning' },
+                { file: 'tax-strategy-SKILL.md', title: 'Tax Optimization', emoji: '💰', description: 'Tax-efficient withdrawal strategies' },
+                { file: 'real-estate-SKILL.md', title: 'Real Estate in Retirement', emoji: '🏠', description: 'Property planning and reverse mortgages' }
+            ],
+            4: [ // Advanced
+                { file: 'wealth-transfer-SKILL.md', title: 'Wealth Transfer', emoji: '💎', description: 'Advanced estate and gift strategies' },
+                { file: 'charitable-giving-SKILL.md', title: 'Charitable Giving', emoji: '❤️', description: 'Tax-efficient philanthropy' },
+                { file: 'investment-policy-SKILL.md', title: 'Advanced Investing', emoji: '📈', description: 'Portfolio optimization and rebalancing' }
+            ],
+            5: [ // Expert
+                { file: 'wealth-transfer-SKILL.md', title: 'Advanced Wealth Strategies', emoji: '🏆', description: 'Complex estate planning techniques' },
+                { file: 'lifestyle-design-SKILL.md', title: 'Lifestyle Design', emoji: '✨', description: 'Comprehensive retirement lifestyle planning' },
+                { file: 'tax-strategy-SKILL.md', title: 'Advanced Tax Planning', emoji: '🧮', description: 'Complex tax optimization strategies' }
+            ]
+        };
+
+        let currentLevel = 1;
+
+        function selectLevel(level) {
+            currentLevel = level;
+
+            // Update button styles
+            document.querySelectorAll('.level-btn').forEach(btn => {
+                if (parseInt(btn.dataset.level) === level) {
+                    btn.style.background = 'var(--accent-color)';
+                    btn.style.color = 'white';
+                    btn.style.borderColor = 'var(--accent-color)';
+                    btn.classList.add('active');
+                } else {
+                    btn.style.background = 'transparent';
+                    btn.style.color = 'var(--text-primary)';
+                    btn.style.borderColor = 'var(--border-color)';
+                    btn.classList.remove('active');
+                }
+            });
+
+            // Render topics for this level
+            renderTopicsGrid(level);
+        }
+
+        function renderTopicsGrid(level) {
+            const grid = document.getElementById('learn-topics-grid');
+            const topics = learningTopics[level];
+
+            let html = '';
+            topics.forEach(topic => {
+                const progress = getLearningProgress(topic.file, level);
+                const progressBadge = progress ? '<span style="position: absolute; top: 10px; right: 10px; background: var(--accent-color); color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px;">✓ Read</span>' : '';
+
+                html += `
+                    <div class="topic-card" onclick="loadEducationalContent('${topic.file}', ${level})"
+                         style="cursor: pointer; padding: 25px; background: var(--bg-secondary); border: 2px solid var(--border-color); border-radius: 12px; transition: all 0.3s; box-shadow: 0 2px 8px var(--shadow); position: relative;">
+                        ${progressBadge}
+                        <div style="font-size: 48px; margin-bottom: 15px;">${topic.emoji}</div>
+                        <h3 style="font-size: 20px; margin-bottom: 10px; color: var(--text-primary);">${topic.title}</h3>
+                        <p style="font-size: 14px; color: var(--text-secondary); margin: 0;">${topic.description}</p>
+                    </div>
+                `;
+            });
+
+            grid.innerHTML = html;
+        }
+
+        async function loadEducationalContent(filename, level) {
+            try {
+                const response = await fetch(`${API_URL}/skills/${filename}`);
+                const data = await response.json();
+
+                if (data.content) {
+                    // Simple markdown to HTML conversion
+                    let html = data.content
+                        .replace(/^### (.+)$/gm, '<h3 style="font-size: 20px; margin-top: 25px; margin-bottom: 10px; color: var(--text-primary);">$1</h3>')
+                        .replace(/^## (.+)$/gm, '<h2 style="font-size: 24px; margin-top: 30px; margin-bottom: 12px; color: var(--text-primary);">$1</h2>')
+                        .replace(/^# (.+)$/gm, '<h1 style="font-size: 28px; margin-bottom: 15px; color: var(--text-primary);">$1</h1>')
+                        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                        .replace(/^- (.+)$/gm, '<li style="margin-left: 20px; margin-bottom: 8px; color: var(--text-secondary);">$1</li>')
+                        .replace(/\n\n/g, '</p><p style="margin-bottom: 15px; line-height: 1.6; color: var(--text-secondary);">')
+                        .replace(/\n/g, '<br>');
+
+                    document.getElementById('learn-content-body').innerHTML = '<div style="line-height: 1.6;">' + html + '</div>';
+                    document.getElementById('learn-topics-grid').style.display = 'none';
+                    document.getElementById('learn-content-display').style.display = 'block';
+
+                    // Track progress
+                    trackLearningProgress(filename, level);
+                } else {
+                    alert('Content not available yet. This feature requires the backend endpoint to be set up.');
+                }
+            } catch (error) {
+                console.error('Error loading content:', error);
+                alert('Error loading content. The skills endpoint may not be available yet.');
+            }
+        }
+
+        function closeLearningContent() {
+            document.getElementById('learn-content-display').style.display = 'none';
+            document.getElementById('learn-topics-grid').style.display = 'grid';
+        }
+
+        function trackLearningProgress(filename, level) {
+            let progress = JSON.parse(localStorage.getItem('learning_progress') || '{}');
+            if (!progress[level]) progress[level] = [];
+            if (!progress[level].includes(filename)) {
+                progress[level].push(filename);
+                localStorage.setItem('learning_progress', JSON.stringify(progress));
+            }
+            // Re-render to show progress badge
+            renderTopicsGrid(level);
+        }
+
+        function getLearningProgress(filename, level) {
+            const progress = JSON.parse(localStorage.getItem('learning_progress') || '{}');
+            return progress[level] && progress[level].includes(filename);
+        }
+
+        // Initialize learning topics on page load
+        window.addEventListener('load', () => {
+            renderTopicsGrid(1);
+        });
+
+        // ===== LEVEL-BASED PROGRESSION SYSTEM =====
+
+        function calculateProfileCompleteness() {
+            const profileName = getCurrentProfileName();
+            if (!profileName || profileName === 'main') return 0;
+
+            let score = 0;
+            const maxScore = 100;
+
+            // Get current profile data
+            const p1Name = document.getElementById('p1-name')?.value || '';
+            const p1Birth = document.getElementById('p1-birth')?.value || '';
+            const p1Retire = document.getElementById('p1-retire')?.value || '';
+            const p1SS = parseFloat(document.getElementById('p1-ss')?.value || 0);
+
+            // Basic info (20 points)
+            if (p1Name && p1Name !== 'Person 1') score += 5;
+            if (p1Birth && p1Birth !== '1970-01-01') score += 5;
+            if (p1Retire && p1Retire !== '2035-01-01') score += 5;
+            if (p1SS > 0) score += 5;
+
+            // Investments (30 points)
+            if (investmentTypes && investmentTypes.length >= 1) score += 10;
+            if (investmentTypes && investmentTypes.length >= 3) score += 10;
+            if (investmentTypes && investmentTypes.some(i => i.cost_basis > 0)) score += 10;
+
+            // Income streams (20 points)
+            if (incomeStreams && incomeStreams.length >= 1) score += 10;
+            if (incomeStreams && incomeStreams.length >= 2) score += 10;
+
+            // Properties (15 points)
+            if (homeProperties && homeProperties.length >= 1) score += 15;
+
+            // Goals & assumptions (15 points)
+            const expenses = parseFloat(document.getElementById('expenses')?.value || 0);
+            const targetIncome = parseFloat(document.getElementById('target-income')?.value || 0);
+            if (expenses > 0) score += 5;
+            if (targetIncome > 0) score += 5;
+
+            // Market assumptions set (check if not default values)
+            const stockSlider = document.getElementById('stocks-slider')?.value;
+            if (stockSlider && stockSlider != 60) score += 5;
+
+            return Math.min(score, maxScore);
+        }
+
+        function getUserLevel() {
+            const score = calculateProfileCompleteness();
+            if (score < 20) return 1;
+            if (score < 40) return 2;
+            if (score < 60) return 3;
+            if (score < 80) return 4;
+            return 5;
+        }
+
+        function getLevelName(level) {
+            const names = {
+                1: 'Beginner',
+                2: 'Basic',
+                3: 'Intermediate',
+                4: 'Advanced',
+                5: 'Expert'
+            };
+            return names[level] || 'Unknown';
+        }
+
+        function checkFeatureAccess(feature) {
+            const level = getUserLevel();
+            const featureRequirements = {
+                'analysis': 3,      // Need 60% complete
+                'scenarios': 4,     // Need 80% complete
+                'advisor': 2        // Need 40% complete
+            };
+
+            return level >= (featureRequirements[feature] || 1);
+        }
+
+        function showLevelUpNotification(newLevel) {
+            const messages = {
+                2: '🎉 Level 2 Unlocked! You can now use the AI Advisor.',
+                3: '🚀 Level 3 Unlocked! Analysis features are now available.',
+                4: '⭐ Level 4 Unlocked! Scenario comparison is now available.',
+                5: '🏆 Level 5 Achieved! All features unlocked. You\'re a retirement planning expert!'
+            };
+
+            if (messages[newLevel]) {
+                // Show notification
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 20px 30px;
+                    border-radius: 12px;
+                    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+                    z-index: 10001;
+                    animation: slideInRight 0.5s ease-out;
+                    max-width: 400px;
+                    font-size: 16px;
+                    font-weight: 600;
+                `;
+                notification.textContent = messages[newLevel];
+                document.body.appendChild(notification);
+
+                setTimeout(() => {
+                    notification.style.animation = 'slideOutRight 0.5s ease-in';
+                    setTimeout(() => notification.remove(), 500);
+                }, 5000);
+            }
+        }
+
+        function renderProgressIndicator() {
+            const score = calculateProfileCompleteness();
+            const level = getUserLevel();
+            const levelName = getLevelName(level);
+
+            return `
+                <div style="background: linear-gradient(135deg, #667eea22 0%, #764ba222 100%); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-color);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span style="font-weight: 600; color: var(--text-primary); font-size: 16px;">Profile Completeness</span>
+                        <span style="font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${score}%</span>
+                    </div>
+                    <div style="width: 100%; height: 10px; background: var(--border-color); border-radius: 5px; overflow: hidden; margin-bottom: 10px;">
+                        <div style="width: ${score}%; height: 100%; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); transition: width 0.5s ease;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 14px; color: var(--text-secondary);">
+                            Level ${level} - ${levelName}
+                        </span>
+                        ${score < 100 ? `<span style="font-size: 13px; color: var(--text-light);">${100 - score}% to completion</span>` : '<span style="font-size: 13px; color: #27ae60; font-weight: 600;">✓ Complete!</span>'}
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateProgressIndicator() {
+            const container = document.getElementById('profile-progress-container');
+            if (container) {
+                container.innerHTML = renderProgressIndicator();
+            }
+        }
+
+        // Check for level up when profile changes
+        let previousLevel = 0;
+        function checkLevelUp() {
+            const currentLevel = getUserLevel();
+            if (currentLevel > previousLevel && previousLevel > 0) {
+                showLevelUpNotification(currentLevel);
+            }
+            previousLevel = currentLevel;
+        }
+
         function askNextWizardQuestion() {
             if (wizardQuestionQueue.length === 0) {
                 addWizardMessage('ai', '🎉 Thank you! I\'ve gathered all the information I need. Your profile has been updated. Running fresh analysis...');
@@ -7337,5 +8199,36 @@ Return ONLY the JSON array, no other text.`;
             </div>
         </div>
     </div>
+
+    <!-- Profile Creation Wizard Modal -->
+    <div id="profile-wizard-modal" class="settings-modal">
+        <div class="settings-content" style="max-width: 800px; max-height: 90vh;">
+            <div class="settings-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <h2 style="color: white;">✨ Profile Creation Wizard</h2>
+                <button class="close-settings" onclick="closeProfileWizard()" style="color: white;">×</button>
+            </div>
+
+            <div style="padding: 20px 30px; background: var(--bg-tertiary); border-bottom: 1px solid var(--border-color);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <span id="wizard-step-title" style="font-weight: 600; font-size: 16px; color: var(--text-primary);">Getting Started</span>
+                    <span id="wizard-progress-text" style="color: var(--text-secondary); font-size: 14px;">Step 1 of 15</span>
+                </div>
+                <div style="width: 100%; height: 6px; background: var(--border-color); border-radius: 3px; overflow: hidden;">
+                    <div id="wizard-progress-bar" style="width: 6.67%; height: 100%; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); transition: width 0.3s;"></div>
+                </div>
+            </div>
+
+            <div class="settings-body" id="profile-wizard-body" style="min-height: 350px; max-height: calc(90vh - 280px); overflow-y: auto;">
+                <!-- Step content rendered here -->
+            </div>
+
+            <div class="settings-footer" style="justify-content: space-between;">
+                <button id="wizard-prev-btn" class="secondary" onclick="wizardPrevStep()" disabled>← Previous</button>
+                <button id="wizard-save-later-btn" class="secondary" onclick="wizardSaveForLater()" style="position: absolute; left: 50%; transform: translateX(-50%);">💾 Save & Continue Later</button>
+                <button id="wizard-next-btn" onclick="wizardNextStep()">Next →</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>

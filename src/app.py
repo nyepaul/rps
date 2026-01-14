@@ -799,6 +799,31 @@ def load_sample_profile():
     except Exception as e:
         return jsonify({'error': f'Failed to load sample profile: {str(e)}'}), 500
 
+@app.route('/api/skills/<filename>', methods=['GET'])
+def serve_skill_file(filename):
+    """Serve markdown skill files for educational content"""
+    try:
+        # Security: only allow .md files and prevent directory traversal
+        if not filename.endswith('.md') or '..' in filename or '/' in filename:
+            return jsonify({'error': 'Invalid filename'}), 400
+
+        # Build path to skills directory
+        skills_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'skills')
+        file_path = os.path.join(skills_dir, filename)
+
+        # Check if file exists
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'Skill file not found'}), 404
+
+        # Read and return file content
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        return jsonify({'content': content}), 200
+
+    except Exception as e:
+        return jsonify({'error': f'Error reading skill file: {str(e)}'}), 500
+
 @app.route('/api/analysis', methods=['POST'])
 def analysis():
     data = request.json
