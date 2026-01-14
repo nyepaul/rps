@@ -160,8 +160,7 @@ function showCreateProfileForm() {
             store.setState({ currentProfile: result.profile });
             modal.remove();
 
-            // Show success and switch to profile tab
-            alert(`Profile "${result.profile.name}" created successfully!`);
+            // Switch to profile tab
             window.app.showTab('profile');
         } catch (error) {
             alert(`Error creating profile: ${error.message}`);
@@ -230,7 +229,6 @@ async function loadProfile(profileName) {
     try {
         const data = await profilesAPI.get(profileName);
         store.setState({ currentProfile: data.profile });
-        alert(`Loaded profile: ${profileName}`);
         window.app.showTab('dashboard');
     } catch (error) {
         alert(`Error loading profile: ${error.message}`);
