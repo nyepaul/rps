@@ -70,14 +70,14 @@
         .container {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 10px;
         }
-        
+
         header {
             background: var(--header-bg);
             color: var(--header-text);
-            padding: 20px;
-            margin-bottom: 30px;
+            padding: 12px 16px;
+            margin-bottom: 15px;
             border-radius: 8px;
             display: flex;
             justify-content: space-between;
@@ -108,28 +108,28 @@
         }
         
         h1 {
-            font-size: 28px;
-            margin-bottom: 5px;
+            font-size: 22px;
+            margin-bottom: 3px;
         }
-        
+
         .subtitle {
             color: var(--text-light);
-            font-size: 14px;
+            font-size: 12px;
         }
-        
+
         .tabs {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 6px;
+            margin-bottom: 12px;
             border-bottom: 2px solid var(--border-color);
         }
-        
+
         .tab {
-            padding: 12px 24px;
+            padding: 8px 16px;
             background: var(--bg-secondary);
             border: none;
             cursor: pointer;
-            font-size: 15px;
+            font-size: 13px;
             color: var(--text-primary);
             font-weight: 500;
             border-top-left-radius: 8px;
@@ -154,7 +154,7 @@
         .tab-content {
             display: none;
             background: var(--bg-secondary);
-            padding: 30px;
+            padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px var(--shadow);
         }

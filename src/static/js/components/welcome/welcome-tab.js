@@ -8,32 +8,32 @@ import { showLoading, showError, createElement } from '../../utils/dom.js';
 
 export function renderWelcomeTab(container) {
     container.innerHTML = `
-        <div style="max-width: 900px; margin: 0 auto; padding: 40px 20px;">
-            <h1 style="font-size: 42px; margin-bottom: 20px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+        <div style="max-width: 900px; margin: 0 auto; padding: 20px 15px;">
+            <h1 style="font-size: 28px; margin-bottom: 10px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
                 Welcome to Your Retirement Planning Tool
             </h1>
-            <p style="font-size: 18px; text-align: center; color: var(--text-secondary); margin-bottom: 50px;">
+            <p style="font-size: 14px; text-align: center; color: var(--text-secondary); margin-bottom: 25px;">
                 Plan your future with confidence. Let's get started!
             </p>
 
-            <div style="display: grid; gap: 20px; margin-bottom: 40px;">
-                <div id="create-profile-card" class="welcome-card" style="cursor: pointer; padding: 30px; background: var(--bg-secondary); border: 2px solid var(--border-color); border-radius: 12px; transition: all 0.3s; box-shadow: 0 2px 8px var(--shadow);">
-                    <div style="font-size: 48px; margin-bottom: 15px;">✨</div>
-                    <h2 style="font-size: 24px; margin-bottom: 10px; color: var(--text-primary);">Create New Profile</h2>
-                    <p style="color: var(--text-secondary); margin-bottom: 0;">Start your retirement planning journey. Create a profile to save your financial data.</p>
+            <div style="display: grid; gap: 15px; margin-bottom: 25px;">
+                <div id="create-profile-card" class="welcome-card" style="cursor: pointer; padding: 20px; background: var(--bg-secondary); border: 2px solid var(--border-color); border-radius: 8px; transition: all 0.3s; box-shadow: 0 2px 8px var(--shadow);">
+                    <div style="font-size: 36px; margin-bottom: 10px;">✨</div>
+                    <h2 style="font-size: 18px; margin-bottom: 8px; color: var(--text-primary);">Create New Profile</h2>
+                    <p style="color: var(--text-secondary); margin-bottom: 0; font-size: 13px;">Start your retirement planning journey. Create a profile to save your financial data.</p>
                 </div>
 
-                <div id="existing-profiles-card" class="welcome-card" style="cursor: pointer; padding: 30px; background: var(--bg-secondary); border: 2px solid var(--border-color); border-radius: 12px; transition: all 0.3s; box-shadow: 0 2px 8px var(--shadow);">
-                    <div style="font-size: 48px; margin-bottom: 15px;">📂</div>
-                    <h2 style="font-size: 24px; margin-bottom: 10px; color: --text-primary);">Open Existing Profile</h2>
-                    <p style="color: var(--text-secondary); margin-bottom: 0;">Continue working on your saved retirement plans.</p>
-                    <div id="profile-list-container" style="margin-top: 20px; display: none;"></div>
+                <div id="existing-profiles-card" class="welcome-card" style="cursor: pointer; padding: 20px; background: var(--bg-secondary); border: 2px solid var(--border-color); border-radius: 8px; transition: all 0.3s; box-shadow: 0 2px 8px var(--shadow);">
+                    <div style="font-size: 36px; margin-bottom: 10px;">📂</div>
+                    <h2 style="font-size: 18px; margin-bottom: 8px; color: var(--text-primary);">Open Existing Profile</h2>
+                    <p style="color: var(--text-secondary); margin-bottom: 0; font-size: 13px;">Continue working on your saved retirement plans.</p>
+                    <div id="profile-list-container" style="margin-top: 15px; display: none;"></div>
                 </div>
             </div>
 
-            <div style="text-align: center; padding: 30px; background: var(--info-bg); border-radius: 12px;">
-                <h3 style="margin-bottom: 15px;">🎯 What You Can Do</h3>
-                <ul style="text-align: left; display: inline-block; margin: 0;">
+            <div style="text-align: center; padding: 20px; background: var(--info-bg); border-radius: 8px;">
+                <h3 style="margin-bottom: 12px; font-size: 16px;">🎯 What You Can Do</h3>
+                <ul style="text-align: left; display: inline-block; margin: 0; font-size: 13px;">
                     <li>Run Monte Carlo simulations with 10,000+ scenarios</li>
                     <li>Optimize Social Security claiming strategies</li>
                     <li>Analyze Roth conversion opportunities</li>

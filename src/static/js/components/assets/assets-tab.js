@@ -38,33 +38,33 @@ export function renderAssetsTab(container) {
     };
 
     container.innerHTML = `
-        <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+        <div style="max-width: 1200px; margin: 0 auto;">
             <!-- Header -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
                 <div>
-                    <h1 style="font-size: 36px; margin-bottom: 10px;">💰 Asset Management</h1>
-                    <p style="color: var(--text-secondary); margin: 0;">
+                    <h1 style="font-size: 24px; margin-bottom: 5px;">💰 Asset Management</h1>
+                    <p style="color: var(--text-secondary); margin: 0; font-size: 13px;">
                         Manage your retirement accounts, real estate, and other assets
                     </p>
                 </div>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button id="add-asset-btn" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s;">
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <button id="add-asset-btn" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s; font-size: 13px;">
                         + Add Asset
                     </button>
-                    <button id="ai-import-btn" style="padding: 12px 24px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; transition: all 0.2s;">
-                        📷 Import Screenshot
+                    <button id="ai-import-btn" style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; transition: all 0.2s; font-size: 13px;">
+                        📷 Import
                     </button>
-                    <button id="csv-export-btn" style="padding: 12px 24px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; transition: all 0.2s;">
-                        ⬇️ Export CSV
+                    <button id="csv-export-btn" style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; transition: all 0.2s; font-size: 13px;">
+                        ⬇️ Export
                     </button>
-                    <button id="csv-import-btn" style="padding: 12px 24px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; transition: all 0.2s;">
-                        ⬆️ Import CSV
+                    <button id="csv-import-btn" style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; transition: all 0.2s; font-size: 13px;">
+                        ⬆️ Import
                     </button>
                 </div>
             </div>
 
             <!-- Summary Cards -->
-            <div id="asset-summary" style="margin-bottom: 30px;"></div>
+            <div id="asset-summary" style="margin-bottom: 15px;"></div>
 
             <!-- Asset Categories -->
             <div id="asset-categories"></div>
