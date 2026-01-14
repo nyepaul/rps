@@ -117,13 +117,18 @@ export function renderAnalysisTab(container) {
     `;
 
     // Set up event handlers
-    setupAnalysisHandlers(profile);
+    setupAnalysisHandlers(container, profile);
 }
 
-function setupAnalysisHandlers(profile) {
-    const runBtn = document.getElementById('run-analysis-btn');
-    const simulationsInput = document.getElementById('simulations');
-    const resultsContainer = document.getElementById('results-container');
+function setupAnalysisHandlers(container, profile) {
+    const runBtn = container.querySelector('#run-analysis-btn');
+    const simulationsInput = container.querySelector('#simulations');
+    const resultsContainer = container.querySelector('#results-container');
+
+    if (!runBtn || !simulationsInput || !resultsContainer) {
+        console.error('Analysis form elements not found');
+        return;
+    }
 
     runBtn.addEventListener('click', async () => {
         const simulations = parseInt(simulationsInput.value, 10);
