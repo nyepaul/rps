@@ -1,10 +1,11 @@
 """Profile routes with authentication and ownership checks."""
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, Response
 from flask_login import login_required, current_user
 from pydantic import BaseModel, validator
 from typing import Optional
 from datetime import datetime
 from src.models.profile import Profile
+from src.services.asset_service import assets_to_csv, csv_to_assets, merge_assets, sync_legacy_arrays
 
 profiles_bp = Blueprint('profiles', __name__, url_prefix='/api')
 
@@ -175,5 +176,106 @@ def delete_profile(name: str):
         profile.delete()
 
         return jsonify({'message': 'Profile deleted successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@profiles_bp.route('/profile/<name>/assets/export', methods=['GET'])
+@login_required
+def export_assets_csv(name: str):
+    """Export all assets as CSV file."""
+    try:
+        # Get profile with ownership check
+        profile = Profile.get_by_name(name, current_user.id)
+        if not profile:
+            return jsonify({'error': 'Profile not found'}), 404
+
+        # Get assets from profile data
+        data_dict = profile.data_dict
+        assets = data_dict.get('assets', {
+            'retirement_accounts': [],
+            'taxable_accounts': [],
+            'real_estate': [],
+            'pensions_annuities': [],
+            'other_assets': []
+        })
+
+        # Convert to CSV
+        csv_content = assets_to_csv(assets)
+
+        # Create response with CSV content
+        timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+        filename = f"{name.replace(' ', '_')}_assets_{timestamp}.csv"
+
+        return Response(
+            csv_content,
+            mimetype='text/csv',
+            headers={
+                'Content-Disposition': f'attachment; filename={filename}'
+            }
+        )
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@profiles_bp.route('/profile/<name>/assets/import', methods=['POST'])
+@login_required
+def import_assets_csv(name: str):
+    """Import assets from CSV file (appends to existing assets)."""
+    try:
+        # Get profile with ownership check
+        profile = Profile.get_by_name(name, current_user.id)
+        if not profile:
+            return jsonify({'error': 'Profile not found'}), 404
+
+        # Check if file was uploaded
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file uploaded'}), 400
+
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+
+        # Read and parse CSV
+        csv_content = file.read().decode('utf-8')
+
+        try:
+            new_assets = csv_to_assets(csv_content)
+        except ValueError as e:
+            return jsonify({'error': f'Invalid CSV format: {str(e)}'}), 400
+
+        # Get current profile data
+        data_dict = profile.data_dict
+
+        # Merge new assets with existing ones
+        existing_assets = data_dict.get('assets', {
+            'retirement_accounts': [],
+            'taxable_accounts': [],
+            'real_estate': [],
+            'pensions_annuities': [],
+            'other_assets': []
+        })
+
+        merged_assets = merge_assets(existing_assets, new_assets)
+
+        # Update profile data
+        data_dict['assets'] = merged_assets
+
+        # Sync legacy arrays for backward compatibility
+        data_dict = sync_legacy_arrays(data_dict)
+
+        # Save profile
+        profile.data = data_dict
+        profile.save()
+
+        # Count imported assets
+        imported_count = sum(len(v) for v in new_assets.values())
+
+        return jsonify({
+            'message': f'Successfully imported {imported_count} assets',
+            'assets': merged_assets,
+            'profile': profile.to_dict()
+        }), 200
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500

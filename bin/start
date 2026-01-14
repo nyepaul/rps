@@ -5,7 +5,9 @@ echo "  Retirement Planning System - Starting...       "
 echo "==================================================="
 echo ""
 
-cd "$(dirname "$0")/../src"
+# Get the project root directory
+PROJECT_ROOT="$(dirname "$0")/.."
+cd "$PROJECT_ROOT"
 
 # Check if Python 3 is installed
 if ! command -v python3 &> /dev/null; then
@@ -15,19 +17,19 @@ if ! command -v python3 &> /dev/null; then
 fi
 
 # Create virtual environment if it doesn't exist
-if [ ! -d "venv" ]; then
+if [ ! -d "src/venv" ]; then
     echo "Creating virtual environment..."
-    python3 -m venv venv
+    python3 -m venv src/venv
     echo "✓ Virtual environment created"
 fi
 
 # Install/upgrade dependencies using venv's pip directly
 echo "Installing dependencies..."
-./venv/bin/pip install --upgrade pip > /dev/null 2>&1
-./venv/bin/pip install -q -r requirements.txt
+./src/venv/bin/pip install --upgrade pip
+./src/venv/bin/pip install -r src/requirements.txt
 
 # Create data directory
-mkdir -p ../data
+mkdir -p data
 
 echo "✓ Dependencies installed"
 echo ""
@@ -43,5 +45,6 @@ echo ""
 echo "==================================================="
 echo ""
 
-# Run the application using venv's python directly
-./venv/bin/python app.py
+# Run the application from project root using venv's python
+# Set PYTHONPATH to include the project root so 'src' module imports work
+PYTHONPATH="$PWD:$PYTHONPATH" ./src/venv/bin/python src/app.py

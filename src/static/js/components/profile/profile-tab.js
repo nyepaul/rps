@@ -180,12 +180,17 @@ export function renderProfileTab(container) {
     `;
 
     // Set up event handlers
-    setupProfileFormHandlers(profile);
+    setupProfileFormHandlers(container, profile);
 }
 
-function setupProfileFormHandlers(profile) {
-    const form = document.getElementById('profile-form');
-    const cancelBtn = document.getElementById('cancel-btn');
+function setupProfileFormHandlers(container, profile) {
+    const form = container.querySelector('#profile-form');
+    const cancelBtn = container.querySelector('#cancel-btn');
+
+    if (!form || !cancelBtn) {
+        console.error('Profile form elements not found');
+        return;
+    }
 
     // Cancel button
     cancelBtn.addEventListener('click', () => {
@@ -198,7 +203,7 @@ function setupProfileFormHandlers(profile) {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const saveBtn = document.getElementById('save-btn');
+        const saveBtn = container.querySelector('#save-btn');
         saveBtn.disabled = true;
         saveBtn.textContent = 'Saving...';
 
@@ -271,7 +276,7 @@ function setupProfileFormHandlers(profile) {
     const currencyFields = ['annual_income', 'annual_expenses', 'liquid_assets',
                            'retirement_assets', 'social_security_benefit', 'pension_benefit'];
     currencyFields.forEach(fieldName => {
-        const field = document.getElementById(fieldName);
+        const field = container.querySelector(`#${fieldName}`);
         if (field) {
             field.addEventListener('blur', (e) => {
                 const value = parseCurrency(e.target.value);
@@ -289,4 +294,72 @@ function setupProfileFormHandlers(profile) {
             }
         }
     });
+
+    // Add automatic age calculation
+    setupAgeCalculation(container);
+}
+
+/**
+ * Calculate age from birth date
+ */
+function calculateAge(birthDate, referenceDate = new Date()) {
+    if (!birthDate) return null;
+
+    const birth = new Date(birthDate);
+    const age = referenceDate.getFullYear() - birth.getFullYear();
+    const monthDiff = referenceDate.getMonth() - birth.getMonth();
+
+    // Adjust if birthday hasn't occurred yet this year
+    if (monthDiff < 0 || (monthDiff === 0 && referenceDate.getDate() < birth.getDate())) {
+        return age - 1;
+    }
+
+    return age;
+}
+
+/**
+ * Set up automatic age calculation based on dates
+ */
+function setupAgeCalculation(container) {
+    const birthDateField = container.querySelector('#birth_date');
+    const retirementDateField = container.querySelector('#retirement_date');
+    const currentAgeField = container.querySelector('#current_age');
+    const retirementAgeField = container.querySelector('#retirement_age');
+
+    if (!birthDateField || !currentAgeField || !retirementAgeField) {
+        return;
+    }
+
+    // Function to update ages
+    const updateAges = () => {
+        const birthDate = birthDateField.value;
+        const retirementDate = retirementDateField ? retirementDateField.value : null;
+
+        if (birthDate) {
+            // Calculate current age
+            const currentAge = calculateAge(birthDate);
+            if (currentAge !== null) {
+                currentAgeField.value = currentAge;
+            }
+
+            // Calculate retirement age if retirement date is set
+            if (retirementDate) {
+                const retirementAge = calculateAge(birthDate, new Date(retirementDate));
+                if (retirementAge !== null) {
+                    retirementAgeField.value = retirementAge;
+                }
+            }
+        }
+    };
+
+    // Update ages when birth date changes
+    birthDateField.addEventListener('change', updateAges);
+
+    // Update retirement age when retirement date changes
+    if (retirementDateField) {
+        retirementDateField.addEventListener('change', updateAges);
+    }
+
+    // Calculate initial values on load
+    updateAges();
 }

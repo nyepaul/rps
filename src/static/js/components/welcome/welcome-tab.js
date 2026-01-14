@@ -46,15 +46,22 @@ export function renderWelcomeTab(container) {
     `;
 
     // Add hover effects
-    addCardHoverEffects();
+    addCardHoverEffects(container);
 
     // Set up event handlers
-    document.getElementById('create-profile-card').addEventListener('click', showCreateProfileForm);
-    document.getElementById('existing-profiles-card').addEventListener('click', showExistingProfiles);
+    const createProfileCard = container.querySelector('#create-profile-card');
+    const existingProfilesCard = container.querySelector('#existing-profiles-card');
+
+    if (createProfileCard) {
+        createProfileCard.addEventListener('click', showCreateProfileForm);
+    }
+    if (existingProfilesCard) {
+        existingProfilesCard.addEventListener('click', showExistingProfiles);
+    }
 }
 
-function addCardHoverEffects() {
-    const cards = document.querySelectorAll('.welcome-card');
+function addCardHoverEffects(container) {
+    const cards = container.querySelectorAll('.welcome-card');
     cards.forEach(card => {
         card.addEventListener('mouseenter', () => {
             card.style.transform = 'translateY(-4px)';
