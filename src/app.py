@@ -7,6 +7,7 @@ from src.routes.profiles import profiles_bp
 from src.routes.analysis import analysis_bp
 from src.routes.scenarios import scenarios_bp
 from src.routes.action_items import action_items_bp
+from src.routes.ai_services import ai_services_bp
 import os
 import logging
 from logging.handlers import RotatingFileHandler
@@ -28,6 +29,7 @@ def create_app(config_name='development'):
     app.register_blueprint(analysis_bp)
     app.register_blueprint(scenarios_bp)
     app.register_blueprint(action_items_bp)
+    app.register_blueprint(ai_services_bp)
 
     # Configure logging
     if not app.debug:
