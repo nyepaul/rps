@@ -1169,6 +1169,7 @@
                         </select>
                     </div>
                     <div style="display: flex; gap: 5px; align-items: flex-end;">
+                        <button class="secondary" style="background-color: #3498db; height: 38px; margin-top: 21px;" onclick="loadDefaultProfile()" title="Load default profile template">📄 Load Default</button>
                         <button class="secondary" style="background-color: #27ae60; height: 38px; margin-top: 21px;" onclick="loadSampleProfile()" title="Load comprehensive sample profile with all features">📦 Load Sample</button>
                         <button class="secondary" style="background-color: #e74c3c; height: 38px; margin-top: 21px;" onclick="deleteSelectedProfile()">Delete</button>
                     </div>
@@ -3106,6 +3107,38 @@
                 }
             } catch (error) {
                 alert('❌ Error loading sample profile: ' + error.message);
+            }
+        }
+
+        async function loadDefaultProfile() {
+            if (!confirm('Load default profile template?\n\nThis will create a new profile called "Default Profile" with:\n• Dual-income couple (Jane & John)\n• ~$3M total retirement savings\n• 9 investment accounts (checking, savings, brokerage, IRAs, 401ks, Roths)\n• 2 modest pensions\n• Primary residence with mortgage\n• $120k annual target income\n\nYour existing profiles will not be affected.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/load-default-profile`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert(`✅ ${result.message}\n\nThe default profile has been loaded. Select it from the dropdown to view.`);
+
+                    // Refresh profile list
+                    await fetchProfiles();
+
+                    // Auto-select the default profile
+                    const select = document.getElementById('profile-select');
+                    select.value = result.profile_name;
+
+                    // Load the profile data
+                    await loadProfile(result.profile_name);
+                } else {
+                    alert('❌ Error loading default profile: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('❌ Error loading default profile: ' + error.message);
             }
         }
 

@@ -15,6 +15,10 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
 import io
+import matplotlib
+matplotlib.use('Agg')  # Non-interactive backend for server use
+import matplotlib.pyplot as plt
+from matplotlib.patches import Wedge
 import os
 import shutil
 import threading
@@ -824,6 +828,51 @@ def serve_skill_file(filename):
     except Exception as e:
         return jsonify({'error': f'Error reading skill file: {str(e)}'}), 500
 
+@app.route('/api/load-default-profile', methods=['POST'])
+def load_default_profile():
+    """Load the default profile into the database"""
+    try:
+        # Read default profile from file
+        default_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'examples', 'default-profile.json')
+        if not os.path.exists(default_file_path):
+            return jsonify({'error': 'Default profile file not found'}), 404
+
+        with open(default_file_path, 'r') as f:
+            default_data = json.load(f)
+
+        profile_name = default_data.pop('profile_name', 'Default Profile')
+
+        # Save to database
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+
+        # Check if profile already exists
+        c.execute('SELECT id FROM profile WHERE name = ?', (profile_name,))
+        row = c.fetchone()
+
+        if row:
+            # Update existing
+            c.execute('''UPDATE profile
+                         SET data = ?, updated_at = ?
+                         WHERE name = ?''',
+                      (json.dumps(default_data), datetime.now().isoformat(), profile_name))
+        else:
+            # Insert new
+            c.execute('''INSERT INTO profile (name, data, updated_at)
+                         VALUES (?, ?, ?)''',
+                      (profile_name, json.dumps(default_data), datetime.now().isoformat()))
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({
+            'status': 'success',
+            'profile_name': profile_name,
+            'message': f'Default profile "{profile_name}" loaded successfully'
+        })
+    except Exception as e:
+        return jsonify({'error': f'Failed to load default profile: {str(e)}'}), 500
+
 @app.route('/api/analysis', methods=['POST'])
 def analysis():
     data = request.json
@@ -943,6 +992,166 @@ def add_page_header_footer(canvas, doc):
     canvas.drawRightString(letter[0] - 0.75*inch, letter[1] - 0.55*inch, f"Page {doc.page}")
 
     canvas.restoreState()
+
+def generate_wealth_timeline_chart(timeline_data, width=6.5, height=3.5):
+    """Generate wealth timeline projection chart"""
+    try:
+        fig, ax = plt.subplots(figsize=(width, height), dpi=100)
+
+        years = timeline_data.get('years', [])
+        median = timeline_data.get('median', [])
+        percentile_95 = timeline_data.get('percentile_95', [])
+        percentile_5 = timeline_data.get('percentile_5', [])
+
+        if not years or not median:
+            plt.close(fig)
+            return None
+
+        # Plot lines
+        ax.plot(years, median, color='#3498db', linewidth=2.5, label='Median', zorder=3)
+        ax.plot(years, percentile_95, color='#27ae60', linewidth=2, label='Best Case (95th %ile)',
+                linestyle='--', alpha=0.8, zorder=2)
+        ax.plot(years, percentile_5, color='#e74c3c', linewidth=2, label='Worst Case (5th %ile)',
+                linestyle='--', alpha=0.8, zorder=2)
+
+        # Fill between for confidence band
+        ax.fill_between(years, percentile_5, percentile_95, alpha=0.15, color='#3498db', zorder=1)
+
+        # Formatting
+        ax.set_xlabel('Year', fontsize=10, fontweight='bold')
+        ax.set_ylabel('Portfolio Value ($)', fontsize=10, fontweight='bold')
+        ax.set_title('Retirement Wealth Projection (Monte Carlo)', fontsize=12, fontweight='bold', pad=15)
+
+        # Format y-axis as currency
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x/1e6:.1f}M' if x >= 1e6 else f'${x/1e3:.0f}K'))
+
+        # Grid
+        ax.grid(True, alpha=0.3, linestyle=':', linewidth=0.5)
+        ax.set_axisbelow(True)
+
+        # Legend
+        ax.legend(loc='best', framealpha=0.9, fontsize=9)
+
+        # Tight layout
+        plt.tight_layout()
+
+        # Save to BytesIO
+        img_buffer = io.BytesIO()
+        plt.savefig(img_buffer, format='png', dpi=100, bbox_inches='tight')
+        img_buffer.seek(0)
+        plt.close(fig)
+
+        return img_buffer
+    except Exception as e:
+        print(f"Error generating wealth timeline chart: {e}")
+        if 'fig' in locals():
+            plt.close(fig)
+        return None
+
+def generate_asset_allocation_chart(investment_types, width=5, height=4):
+    """Generate asset allocation pie chart"""
+    try:
+        fig, ax = plt.subplots(figsize=(width, height), dpi=100)
+
+        # Group investments by account type
+        account_totals = {}
+        for inv in investment_types:
+            account_type = inv.get('account', 'Other')
+            value = float(inv.get('value', 0))
+            account_totals[account_type] = account_totals.get(account_type, 0) + value
+
+        if not account_totals:
+            plt.close(fig)
+            return None
+
+        # Sort by value
+        sorted_accounts = sorted(account_totals.items(), key=lambda x: x[1], reverse=True)
+        labels = [item[0] for item in sorted_accounts]
+        values = [item[1] for item in sorted_accounts]
+
+        # Color palette
+        colors_palette = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6',
+                         '#1abc9c', '#34495e', '#e67e22', '#95a5a6', '#16a085']
+
+        # Create pie chart
+        wedges, texts, autotexts = ax.pie(values, labels=labels, autopct='%1.1f%%',
+                                           colors=colors_palette[:len(labels)],
+                                           startangle=90, textprops={'fontsize': 9})
+
+        # Bold percentage text
+        for autotext in autotexts:
+            autotext.set_color('white')
+            autotext.set_fontweight('bold')
+            autotext.set_fontsize(8)
+
+        ax.set_title('Asset Allocation by Account Type', fontsize=12, fontweight='bold', pad=15)
+
+        plt.tight_layout()
+
+        # Save to BytesIO
+        img_buffer = io.BytesIO()
+        plt.savefig(img_buffer, format='png', dpi=100, bbox_inches='tight')
+        img_buffer.seek(0)
+        plt.close(fig)
+
+        return img_buffer
+    except Exception as e:
+        print(f"Error generating asset allocation chart: {e}")
+        if 'fig' in locals():
+            plt.close(fig)
+        return None
+
+def generate_income_sources_chart(income_streams, width=6.5, height=3.5):
+    """Generate income sources bar chart"""
+    try:
+        if not income_streams:
+            return None
+
+        fig, ax = plt.subplots(figsize=(width, height), dpi=100)
+
+        # Extract data
+        names = [stream.get('name', 'Unnamed') for stream in income_streams]
+        amounts = [float(stream.get('amount', 0)) for stream in income_streams]
+
+        if not names or not amounts:
+            plt.close(fig)
+            return None
+
+        # Sort by amount
+        sorted_data = sorted(zip(names, amounts), key=lambda x: x[1], reverse=True)
+        names, amounts = zip(*sorted_data)
+
+        # Create bar chart
+        bars = ax.barh(names, amounts, color='#3498db', alpha=0.8, edgecolor='#2c3e50', linewidth=1.5)
+
+        # Add value labels
+        for i, (bar, amount) in enumerate(zip(bars, amounts)):
+            ax.text(amount, i, f' ${amount:,.0f}', va='center', fontsize=9, fontweight='bold')
+
+        ax.set_xlabel('Annual Amount ($)', fontsize=10, fontweight='bold')
+        ax.set_title('Income Sources', fontsize=12, fontweight='bold', pad=15)
+
+        # Format x-axis as currency
+        ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x/1000:.0f}K'))
+
+        # Grid
+        ax.grid(True, alpha=0.3, linestyle=':', linewidth=0.5, axis='x')
+        ax.set_axisbelow(True)
+
+        plt.tight_layout()
+
+        # Save to BytesIO
+        img_buffer = io.BytesIO()
+        plt.savefig(img_buffer, format='png', dpi=100, bbox_inches='tight')
+        img_buffer.seek(0)
+        plt.close(fig)
+
+        return img_buffer
+    except Exception as e:
+        print(f"Error generating income sources chart: {e}")
+        if 'fig' in locals():
+            plt.close(fig)
+        return None
 
 @app.route('/api/report/pdf', methods=['POST'])
 def generate_pdf_report():
@@ -1156,6 +1365,26 @@ def generate_pdf_report():
         ]))
         story.append(asset_table)
 
+        # Add Asset Allocation Pie Chart
+        story.append(Spacer(1, 0.3*inch))
+        chart_img = generate_asset_allocation_chart(investment_types)
+        if chart_img:
+            img = Image(chart_img, width=5*inch, height=4*inch)
+            story.append(img)
+
+    # Income Sources
+    income_streams = profile_data.get('income_streams', [])
+    if income_streams:
+        story.append(Spacer(1, 0.3*inch))
+        story.append(Paragraph("Income Sources", subheading_style))
+        story.append(Spacer(1, 0.2*inch))
+
+        # Add Income Sources Chart
+        chart_img = generate_income_sources_chart(income_streams)
+        if chart_img:
+            img = Image(chart_img, width=6.5*inch, height=3.5*inch)
+            story.append(img)
+
     story.append(PageBreak())
 
     # Monte Carlo Analysis
@@ -1216,6 +1445,16 @@ def generate_pdf_report():
         ('LEFTPADDING', (0, 0), (-1, -1), 15),
     ]))
     story.append(risk_table)
+
+    # Add Wealth Timeline Chart
+    story.append(Spacer(1, 0.3*inch))
+    timeline_data = mc.get('timeline', {})
+    if timeline_data:
+        chart_img = generate_wealth_timeline_chart(timeline_data)
+        if chart_img:
+            img = Image(chart_img, width=6.5*inch, height=3.5*inch)
+            story.append(img)
+            story.append(Spacer(1, 0.2*inch))
 
     # Social Security Strategy
     if analysis_data.get('social_security_optimization'):
