@@ -138,6 +138,11 @@ async function loadTabComponent(tabName, container) {
             renderProfileTab(tabContent);
             break;
         }
+        case 'assets': {
+            const { renderAssetsTab } = await import('./components/assets/assets-tab.js');
+            renderAssetsTab(tabContent);
+            break;
+        }
         case 'analysis': {
             const { renderAnalysisTab } = await import('./components/analysis/analysis-tab.js');
             renderAnalysisTab(tabContent);
