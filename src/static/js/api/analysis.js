@@ -9,11 +9,18 @@ export const analysisAPI = {
     /**
      * Run Monte Carlo analysis
      */
-    async runAnalysis(profileName, simulations = 10000) {
-        return apiClient.post(API_ENDPOINTS.ANALYSIS_RUN, {
+    async runAnalysis(profileName, simulations = 10000, marketProfile = null) {
+        const payload = {
             profile_name: profileName,
             simulations
-        });
+        };
+
+        // Add market profile if provided
+        if (marketProfile) {
+            payload.market_profile = marketProfile;
+        }
+
+        return apiClient.post(API_ENDPOINTS.ANALYSIS_RUN, payload);
     },
 
     /**

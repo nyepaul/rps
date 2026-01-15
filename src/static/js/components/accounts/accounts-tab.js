@@ -25,7 +25,17 @@ export function renderAccountsTab(container) {
     }
 
     const data = profile.data || {};
-    const financial = data.financial || {};
+    const assets = data.assets || {};
+
+    // Calculate totals from actual asset data
+    const sumAssets = (arr) => (arr || []).reduce((sum, a) => sum + (a.value || a.current_value || 0), 0);
+
+    const liquidAssets = sumAssets(assets.taxable_accounts);
+    const retirementAssets = sumAssets(assets.retirement_accounts);
+    const realEstateAssets = sumAssets(assets.real_estate);
+    const otherAssets = sumAssets(assets.other_assets);
+    // Pensions are monthly income, not lump sum assets
+    const totalAssets = liquidAssets + retirementAssets + realEstateAssets + otherAssets;
 
     container.innerHTML = `
         <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
@@ -41,19 +51,19 @@ export function renderAccountsTab(container) {
                     <div class="account-card">
                         <div class="account-icon">💵</div>
                         <div class="account-type">Liquid Assets</div>
-                        <div class="account-balance">${financial.liquid_assets ? formatCurrency(financial.liquid_assets) : 'Not set'}</div>
+                        <div class="account-balance">${formatCurrency(liquidAssets, 0)}</div>
                         <div class="account-desc">Checking, savings, taxable investments</div>
                     </div>
                     <div class="account-card">
                         <div class="account-icon">🏦</div>
                         <div class="account-type">Retirement Assets</div>
-                        <div class="account-balance">${financial.retirement_assets ? formatCurrency(financial.retirement_assets) : 'Not set'}</div>
+                        <div class="account-balance">${formatCurrency(retirementAssets, 0)}</div>
                         <div class="account-desc">401(k), IRA, Roth IRA accounts</div>
                     </div>
                     <div class="account-card">
                         <div class="account-icon">📊</div>
                         <div class="account-type">Total Assets</div>
-                        <div class="account-balance">${formatCurrency((financial.liquid_assets || 0) + (financial.retirement_assets || 0))}</div>
+                        <div class="account-balance">${formatCurrency(totalAssets, 0)}</div>
                         <div class="account-desc">Combined portfolio value</div>
                     </div>
                 </div>

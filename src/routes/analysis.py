@@ -11,10 +11,77 @@ from src.services.retirement_model import (
 analysis_bp = Blueprint('analysis', __name__, url_prefix='/api')
 
 
+def transform_assets_to_investment_types(assets_data):
+    """Transform frontend asset structure to investment_types format for the retirement model.
+
+    Frontend stores assets as:
+        assets.retirement_accounts: [{type: 'traditional_ira', value: X}, ...]
+        assets.taxable_accounts: [{type: 'brokerage', value: X}, ...]
+
+    Model expects investment_types as:
+        [{account: 'Traditional IRA', value: X, cost_basis: X}, ...]
+    """
+    investment_types = []
+
+    # Mapping from frontend type to backend account names expected by retirement_model.py
+    ACCOUNT_MAPPING = {
+        # Retirement accounts
+        '401k': '401k',
+        'roth_401k': 'Roth IRA',  # Roth 401k treated as Roth
+        'traditional_ira': 'Traditional IRA',
+        'roth_ira': 'Roth IRA',
+        'sep_ira': 'Traditional IRA',
+        'simple_ira': 'Traditional IRA',
+        '403b': '403b',
+        '457': '457b',
+        # Taxable accounts
+        'brokerage': 'Taxable Brokerage',
+        'savings': 'Savings',
+        'checking': 'Checking',
+        'money_market': 'Savings',
+        'cd': 'Savings',
+        'cash': 'Checking',
+    }
+
+    # Process retirement accounts
+    for asset in assets_data.get('retirement_accounts', []):
+        asset_type = asset.get('type', '').lower()
+        account_name = ACCOUNT_MAPPING.get(asset_type, 'Traditional IRA')
+        investment_types.append({
+            'account': account_name,
+            'value': asset.get('value', 0),
+            'cost_basis': asset.get('cost_basis', asset.get('value', 0)),
+            'name': asset.get('name', '')
+        })
+
+    # Process taxable accounts
+    for asset in assets_data.get('taxable_accounts', []):
+        asset_type = asset.get('type', '').lower()
+        account_name = ACCOUNT_MAPPING.get(asset_type, 'Taxable Brokerage')
+        investment_types.append({
+            'account': account_name,
+            'value': asset.get('value', 0),
+            'cost_basis': asset.get('cost_basis', asset.get('value', 0)),
+            'name': asset.get('name', '')
+        })
+
+    return investment_types
+
+
+class MarketProfileSchema(BaseModel):
+    """Schema for market assumptions profile."""
+    stock_return_mean: float
+    stock_return_std: float
+    bond_return_mean: float
+    bond_return_std: float
+    inflation_mean: float
+    inflation_std: float
+
 class AnalysisRequestSchema(BaseModel):
     """Schema for analysis request."""
     profile_name: str
     simulations: Optional[int] = 10000
+    market_profile: Optional[MarketProfileSchema] = None
 
     @validator('simulations')
     def validate_simulations(cls, v):
@@ -72,14 +139,29 @@ def run_analysis():
             social_security=spouse_data.get('social_security_benefit', 0) if spouse_data.get('social_security_benefit') else 0  # Already monthly
         )
 
-        # Get assets from profile
+        # Get assets from profile and transform to investment_types format
         assets_data = profile_data.get('assets', {})
-        investment_types = profile_data.get('investment_types', [])
+        investment_types = transform_assets_to_investment_types(assets_data)
 
-        # Calculate totals from assets
+        # Calculate totals from assets for display/fallback
         liquid_assets = sum(a.get('value', 0) for a in assets_data.get('taxable_accounts', []))
-        traditional_ira = sum(a.get('value', 0) for a in assets_data.get('retirement_accounts', []) if 'traditional' in a.get('type', '').lower())
+        traditional_ira = sum(a.get('value', 0) for a in assets_data.get('retirement_accounts', []) if 'traditional' in a.get('type', '').lower() or '401' in a.get('type', '').lower() or '403' in a.get('type', '').lower())
         roth_ira = sum(a.get('value', 0) for a in assets_data.get('retirement_accounts', []) if 'roth' in a.get('type', '').lower())
+
+        # DEBUG: Print what we're working with
+        print(f"\n=== ANALYSIS DEBUG ===")
+        print(f"Profile name: {profile.name}")
+        print(f"Investment types count: {len(investment_types)}")
+        print(f"Total investment value: {sum(inv.get('value', 0) for inv in investment_types)}")
+        print(f"Liquid assets: {liquid_assets}")
+        print(f"Traditional IRA: {traditional_ira}")
+        print(f"Roth IRA: {roth_ira}")
+        print(f"Annual expenses from financial: {financial_data.get('annual_expenses', 0)}")
+        print(f"Annual income from financial: {financial_data.get('annual_income', 0)}")
+        print(f"Budget exists: {profile_data.get('budget') is not None}")
+        if profile_data.get('budget'):
+            print(f"Budget structure: {list(profile_data.get('budget', {}).keys())}")
+        print(f"===================\n")
 
         # Create financial profile matching the FinancialProfile dataclass
         financial_profile = FinancialProfile(
@@ -99,11 +181,9 @@ def run_analysis():
             investment_types=investment_types,
             accounts=[],
             income_streams=[],
-            home_properties=profile_data.get('home_properties', [])
+            home_properties=profile_data.get('home_properties', []),
+            budget=profile_data.get('budget')
         )
-
-        # Create market assumptions
-        market_assumptions = MarketAssumptions()
 
         # Create retirement model
         model = RetirementModel(financial_profile)
@@ -114,19 +194,75 @@ def run_analysis():
             model.calculate_life_expectancy_years(person2)
         )
 
-        # Run Monte Carlo simulation
-        results = model.monte_carlo_simulation(years=years, simulations=data.simulations, assumptions=market_assumptions)
+        # Create base market assumptions from request or use defaults
+        base_market_kwargs = {}
+        if data.market_profile:
+            base_market_kwargs = {
+                'stock_return_mean': data.market_profile.stock_return_mean,
+                'stock_return_std': data.market_profile.stock_return_std,
+                'bond_return_mean': data.market_profile.bond_return_mean,
+                'bond_return_std': data.market_profile.bond_return_std,
+                'inflation_mean': data.market_profile.inflation_mean,
+                'inflation_std': data.market_profile.inflation_std
+            }
 
-        # Add metadata
-        results['profile_name'] = data.profile_name
-        results['simulations'] = data.simulations
-        results['timestamp'] = profile.updated_at
+        # Run multiple scenarios (Conservative, Moderate, Aggressive)
+        scenarios = {
+            'conservative': {
+                'name': 'Conservative',
+                'stock_allocation': 0.30,
+                'description': '30% stocks / 70% bonds - Lower risk, lower expected returns'
+            },
+            'moderate': {
+                'name': 'Moderate',
+                'stock_allocation': 0.60,
+                'description': '60% stocks / 40% bonds - Balanced risk and returns'
+            },
+            'aggressive': {
+                'name': 'Aggressive',
+                'stock_allocation': 0.80,
+                'description': '80% stocks / 20% bonds - Higher risk, higher expected returns'
+            }
+        }
 
-        return jsonify(results), 200
+        # Run simulation for each scenario
+        scenario_results = {}
+        for scenario_key, scenario_config in scenarios.items():
+            market_assumptions = MarketAssumptions(
+                stock_allocation=scenario_config['stock_allocation'],
+                **base_market_kwargs
+            )
+            scenario_result = model.monte_carlo_simulation(
+                years=years,
+                simulations=data.simulations,
+                assumptions=market_assumptions
+            )
+            scenario_result['scenario_name'] = scenario_config['name']
+            scenario_result['description'] = scenario_config['description']
+            scenario_result['stock_allocation'] = scenario_config['stock_allocation']
+            scenario_results[scenario_key] = scenario_result
+
+        # Prepare response with all scenarios
+        response = {
+            'profile_name': data.profile_name,
+            'simulations': data.simulations,
+            'timestamp': profile.updated_at,
+            'scenarios': scenario_results,
+            'total_assets': sum(inv.get('value', 0) for inv in investment_types),
+            'years_projected': years
+        }
+
+        return jsonify(response), 200
 
     except KeyError as e:
+        import traceback
+        print(f"KeyError in analysis: {str(e)}")
+        print(traceback.format_exc())
         return jsonify({'error': f'Missing required field: {str(e)}'}), 400
     except Exception as e:
+        import traceback
+        print(f"Exception in analysis: {str(e)}")
+        print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 

@@ -121,14 +121,17 @@ export const ASSET_TYPE_LABELS = {
 
 /**
  * Generate form HTML for a specific asset category
+ * @param {string} category - Asset category
+ * @param {object} asset - Existing asset data
+ * @param {boolean} skipType - Skip the type field (when already selected in wizard)
  */
-export function generateFormFields(category, asset = {}) {
+export function generateFormFields(category, asset = {}, skipType = false) {
     const fields = FIELD_DEFINITIONS[category];
     if (!fields) {
         throw new Error(`Unknown asset category: ${category}`);
     }
 
-    return fields.map(field => {
+    return fields.filter(field => !(skipType && field.name === 'type')).map(field => {
         const value = asset[field.name] || '';
         const id = `asset-${field.name}`;
 

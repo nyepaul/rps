@@ -26,7 +26,27 @@ export function renderDashboardTab(container) {
 
     const data = profile.data || {};
     const financial = data.financial || {};
-    const person = data.person || {};
+    const assets = data.assets || {};
+
+    // Calculate totals from actual asset data
+    const sumAssets = (arr) => (arr || []).reduce((sum, a) => sum + (a.value || a.current_value || 0), 0);
+    const liquidAssets = sumAssets(assets.taxable_accounts);
+    const retirementAssets = sumAssets(assets.retirement_accounts);
+    const realEstateAssets = sumAssets(assets.real_estate);
+    const totalAssets = liquidAssets + retirementAssets + realEstateAssets + sumAssets(assets.other_assets);
+
+    // Calculate ages from dates
+    const calcAge = (dateStr) => {
+        if (!dateStr) return null;
+        const birth = new Date(dateStr);
+        const today = new Date();
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+        return age;
+    };
+    const currentAge = calcAge(profile.birth_date);
+    const retirementAge = profile.retirement_date ? calcAge(profile.birth_date) + Math.round((new Date(profile.retirement_date) - new Date()) / (365.25 * 24 * 60 * 60 * 1000)) : null;
 
     container.innerHTML = `
         <div style="max-width: 1200px; margin: 0 auto;">
@@ -40,14 +60,14 @@ export function renderDashboardTab(container) {
                 <div class="stat-card">
                     <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Liquid Assets</div>
                     <div style="font-size: 32px; font-weight: bold; color: var(--success-color);">
-                        ${financial.liquid_assets ? formatCompact(financial.liquid_assets) : 'Not set'}
+                        ${liquidAssets > 0 ? formatCompact(liquidAssets) : 'Not set'}
                     </div>
                 </div>
 
                 <div class="stat-card">
                     <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Retirement Assets</div>
                     <div style="font-size: 32px; font-weight: bold; color: var(--info-color);">
-                        ${financial.retirement_assets ? formatCompact(financial.retirement_assets) : 'Not set'}
+                        ${retirementAssets > 0 ? formatCompact(retirementAssets) : 'Not set'}
                     </div>
                 </div>
 
@@ -72,19 +92,19 @@ export function renderDashboardTab(container) {
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
                     <div>
                         <div style="color: var(--text-secondary); margin-bottom: 5px;">Current Age</div>
-                        <div style="font-size: 20px; font-weight: 600;">${person.current_age || 'Not set'}</div>
+                        <div style="font-size: 20px; font-weight: 600;">${currentAge || 'Not set'}</div>
                     </div>
                     <div>
-                        <div style="color: var(--text-secondary); margin-bottom: 5px;">Retirement Age</div>
-                        <div style="font-size: 20px; font-weight: 600;">${person.retirement_age || 'Not set'}</div>
+                        <div style="color: var(--text-secondary); margin-bottom: 5px;">Retirement Date</div>
+                        <div style="font-size: 20px; font-weight: 600;">${profile.retirement_date ? new Date(profile.retirement_date).toLocaleDateString() : 'Not set'}</div>
                     </div>
                     <div>
-                        <div style="color: var(--text-secondary); margin-bottom: 5px;">Life Expectancy</div>
-                        <div style="font-size: 20px; font-weight: 600;">${person.life_expectancy || 'Not set'}</div>
+                        <div style="color: var(--text-secondary); margin-bottom: 5px;">Total Assets</div>
+                        <div style="font-size: 20px; font-weight: 600;">${totalAssets > 0 ? formatCompact(totalAssets) : 'Not set'}</div>
                     </div>
                     <div>
                         <div style="color: var(--text-secondary); margin-bottom: 5px;">Social Security</div>
-                        <div style="font-size: 20px; font-weight: 600;">${financial.social_security_benefit ? formatCurrency(financial.social_security_benefit) : 'Not set'}</div>
+                        <div style="font-size: 20px; font-weight: 600;">${financial.social_security_benefit ? formatCurrency(financial.social_security_benefit) + '/mo' : 'Not set'}</div>
                     </div>
                 </div>
             </div>

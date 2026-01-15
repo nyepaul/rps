@@ -29,6 +29,7 @@ class FinancialProfile:
     accounts: List[Dict] = None
     income_streams: List[Dict] = None
     home_properties: List[Dict] = None
+    budget: Dict = None
 @dataclass
 class MarketAssumptions:
     """Market and economic assumptions for financial modeling"""
@@ -164,11 +165,25 @@ class RetirementModel:
                         prop['value'] *= (1 + annual_appreciation)
                 # Calculate housing costs from unsold properties
                 housing_costs = sum(prop['annual_costs'] for prop in sim_home_properties if prop['value'] > 0)
-                target_spending = (self.profile.target_annual_income + housing_costs) * current_cpi
-                income_this_year = (base_ss + base_pension) * current_cpi
-                for s in stream_data:
-                    if simulation_year >= s['start_year']:
-                        income_this_year += (s['amount'] * (current_cpi if s['inflation_adjusted'] else 1.0))
+
+                # Determine if retired this year
+                retirement_year = self.profile.person1.retirement_date.year
+                is_retired = simulation_year >= retirement_year
+
+                # Calculate income and expenses
+                if self.profile.budget:
+                    # Use budget-based calculations
+                    budget_income = self.calculate_budget_income(simulation_year, current_cpi, is_retired)
+                    income_this_year = (base_ss + base_pension) * current_cpi + budget_income
+                    target_spending = self.calculate_budget_expenses(simulation_year, current_cpi, is_retired, housing_costs)
+                else:
+                    # Legacy fallback: use existing logic
+                    target_spending = (self.profile.target_annual_income + housing_costs) * current_cpi
+                    income_this_year = (base_ss + base_pension) * current_cpi
+                    for s in stream_data:
+                        if simulation_year >= s['start_year']:
+                            income_this_year += (s['amount'] * (current_cpi if s['inflation_adjusted'] else 1.0))
+
                 shortfall = max(0, target_spending - income_this_year)
                 # 0. Check for planned home sales
                 for prop in sim_home_properties:
@@ -269,20 +284,26 @@ class RetirementModel:
             if (cash + taxable_val + pretax_std + pretax_457 + roth) > 0:
                 success_count += 1
             ending_balances.append(cash + taxable_val + pretax_std + pretax_457 + roth)
-        success_rate = (success_count / simulations) * 100
+        success_rate = success_count / simulations  # Return as decimal (0-1) not percentage
+        ending_balances_array = np.array(ending_balances)
         return {
             'success_rate': success_rate,
-            'median_ending_balance': np.median(ending_balances),
-            'percentile_5': np.percentile(ending_balances, 5),
-            'percentile_95': np.percentile(ending_balances, 95),
-            'starting_portfolio': start_taxable_val + start_pretax_std + start_pretax_457 + start_roth,
+            'median_final_balance': float(np.median(ending_balances_array)),
+            'percentile_10': float(np.percentile(ending_balances_array, 10)),
+            'percentile_90': float(np.percentile(ending_balances_array, 90)),
+            'expected_value': float(np.mean(ending_balances_array)),
+            'std_deviation': float(np.std(ending_balances_array)),
+            'starting_portfolio': start_cash + start_taxable_val + start_pretax_std + start_pretax_457 + start_roth,
             'annual_withdrawal_need': self.profile.target_annual_income - (base_ss + base_pension),
+            'simulations': simulations,
             'timeline': {
                 'years': list(range(self.current_year, self.current_year + years)),
                 'p5': np.percentile(all_paths, 5, axis=0).tolist(),
                 'median': np.median(all_paths, axis=0).tolist(),
                 'p95': np.percentile(all_paths, 95, axis=0).tolist()
-            }
+            },
+            'warnings': [],
+            'recommendations': []
         }
     def calculate_rmd(self, age: int, ira_balance: float):
         rmd_factors = {
@@ -397,3 +418,83 @@ class RetirementModel:
             'percentage_transferred': (total_lifetime_gifts / net_worth * 100) if net_worth > 0 else 0,
             'recommendation': f'Gift ${total_annual_gifts:,.0f}/year (${annual_gift_per_child:,.0f} per child) starting immediately'
         }
+
+    def _annual_amount(self, amount: float, frequency: str) -> float:
+        """Convert amount to annual based on frequency"""
+        if frequency == 'monthly':
+            return amount * 12
+        elif frequency == 'quarterly':
+            return amount * 4
+        elif frequency == 'annual':
+            return amount
+        return amount  # Default to amount as-is
+
+    def calculate_budget_income(self, simulation_year: int, current_cpi: float, is_retired: bool) -> float:
+        """Calculate total income from budget categories for a given year"""
+        if not self.profile.budget:
+            return 0
+
+        budget = self.profile.budget
+        income_section = budget.get('income', {})
+        period = 'future' if is_retired else 'current'
+
+        total_income = 0
+
+        # Employment income (current only)
+        if period == 'current':
+            employment = income_section.get('current', {}).get('employment', {})
+            total_income += employment.get('primary_person', 0)
+            total_income += employment.get('spouse', 0)
+
+        # Other income categories
+        for category in ['rental_income', 'part_time_consulting', 'business_income',
+                        'investment_income', 'other_income']:
+            items = income_section.get(period, {}).get(category, [])
+            for item in items:
+                try:
+                    # Check if income is active this year
+                    start_year = datetime.fromisoformat(item['start_date']).year
+                    end_year = datetime.fromisoformat(item['end_date']).year if item.get('end_date') else 9999
+
+                    if start_year <= simulation_year <= end_year:
+                        amount = self._annual_amount(item['amount'], item.get('frequency', 'monthly'))
+                        if item.get('inflation_adjusted', True):
+                            amount *= current_cpi
+                        total_income += amount
+                except:
+                    pass  # Skip invalid income items
+
+        return total_income
+
+    def calculate_budget_expenses(self, simulation_year: int, current_cpi: float, is_retired: bool, housing_costs: float) -> float:
+        """Calculate total expenses from budget categories for a given year"""
+        if not self.profile.budget:
+            return 0
+
+        budget = self.profile.budget
+        expenses_section = budget.get('expenses', {})
+        period = 'future' if is_retired else 'current'
+
+        total_expenses = 0
+
+        for category in ['housing', 'transportation', 'food', 'healthcare',
+                        'insurance', 'discretionary', 'other']:
+            cat_data = expenses_section.get(period, {}).get(category, {})
+            amount = cat_data.get('amount', 0)
+            amount = self._annual_amount(amount, cat_data.get('frequency', 'monthly'))
+
+            if cat_data.get('inflation_adjusted', True):
+                amount *= current_cpi
+
+            total_expenses += amount
+
+        # Override housing with real estate costs if available
+        if housing_costs > 0:
+            # Subtract budget housing, add actual housing costs
+            housing_budget = expenses_section.get(period, {}).get('housing', {}).get('amount', 0)
+            housing_budget_annual = self._annual_amount(housing_budget, 'monthly')
+            if expenses_section.get(period, {}).get('housing', {}).get('inflation_adjusted', True):
+                housing_budget_annual *= current_cpi
+            total_expenses = total_expenses - housing_budget_annual + housing_costs
+
+        return total_expenses

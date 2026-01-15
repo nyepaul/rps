@@ -5,7 +5,6 @@
 import { profilesAPI } from '../../api/profiles.js';
 import { store } from '../../state/store.js';
 import { showSuccess, showError } from '../../utils/dom.js';
-import { formatCurrency, parseCurrency } from '../../utils/formatters.js';
 
 export function renderProfileTab(container) {
     const profile = store.get('currentProfile');
@@ -40,14 +39,14 @@ export function renderProfileTab(container) {
             </p>
 
             <form id="profile-form">
-                <!-- Basic Information -->
+                <!-- My Details -->
                 <div class="form-section">
                     <h2 style="font-size: 24px; margin-bottom: 20px; border-bottom: 2px solid var(--accent-color); padding-bottom: 10px;">
-                        Basic Information
+                        My Details
                     </h2>
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="name">Profile Name *</label>
+                            <label for="name">Name *</label>
                             <input type="text" id="name" name="name" value="${profile.name || ''}" required>
                         </div>
                         <div class="form-group">
@@ -55,24 +54,15 @@ export function renderProfileTab(container) {
                             <input type="date" id="birth_date" name="birth_date" value="${profile.birth_date || ''}">
                         </div>
                         <div class="form-group">
-                            <label for="retirement_date">Target Retirement Date</label>
+                            <label for="retirement_date">Retirement Date</label>
                             <input type="date" id="retirement_date" name="retirement_date" value="${profile.retirement_date || ''}">
                         </div>
-                    </div>
-                </div>
-
-                <!-- Personal Details -->
-                <div class="form-section">
-                    <h2 style="font-size: 24px; margin-bottom: 20px; border-bottom: 2px solid var(--accent-color); padding-bottom: 10px;">
-                        Personal Details
-                    </h2>
-                    <div class="form-grid">
                         <div class="form-group">
                             <label for="current_age">Current Age</label>
                             <input type="number" id="current_age" name="current_age" value="${person.current_age || ''}" min="0" max="120">
                         </div>
                         <div class="form-group">
-                            <label for="retirement_age">Planned Retirement Age</label>
+                            <label for="retirement_age">Retirement Age</label>
                             <input type="number" id="retirement_age" name="retirement_age" value="${person.retirement_age || ''}" min="0" max="120">
                         </div>
                         <div class="form-group">
@@ -82,45 +72,35 @@ export function renderProfileTab(container) {
                     </div>
                 </div>
 
-                <!-- Spouse Information -->
+                <!-- Spouse Details -->
                 <div class="form-section">
                     <h2 style="font-size: 24px; margin-bottom: 20px; border-bottom: 2px solid var(--accent-color); padding-bottom: 10px;">
-                        Spouse Information
+                        Spouse Details
                     </h2>
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="spouse_name">Spouse Name</label>
-                            <input type="text" id="spouse_name" name="spouse_name" value="${spouse.name || ''}" placeholder="Optional">
+                            <label for="spouse_name">Name</label>
+                            <input type="text" id="spouse_name" name="spouse_name" value="${spouse.name || ''}" placeholder="Leave blank if no spouse">
                         </div>
                         <div class="form-group">
-                            <label for="spouse_birth_date">Spouse Birth Date</label>
+                            <label for="spouse_birth_date">Birth Date</label>
                             <input type="date" id="spouse_birth_date" name="spouse_birth_date" value="${spouse.birth_date || ''}">
                         </div>
                         <div class="form-group">
-                            <label for="spouse_retirement_date">Spouse Retirement Date</label>
+                            <label for="spouse_retirement_date">Retirement Date</label>
                             <input type="date" id="spouse_retirement_date" name="spouse_retirement_date" value="${spouse.retirement_date || ''}">
                         </div>
                         <div class="form-group">
-                            <label for="spouse_current_age">Spouse Current Age</label>
+                            <label for="spouse_current_age">Current Age</label>
                             <input type="number" id="spouse_current_age" name="spouse_current_age" value="${spouse.current_age || ''}" min="0" max="120">
                         </div>
                         <div class="form-group">
-                            <label for="spouse_retirement_age">Spouse Retirement Age</label>
+                            <label for="spouse_retirement_age">Retirement Age</label>
                             <input type="number" id="spouse_retirement_age" name="spouse_retirement_age" value="${spouse.retirement_age || ''}" min="0" max="120">
                         </div>
                         <div class="form-group">
-                            <label for="spouse_life_expectancy">Spouse Life Expectancy</label>
+                            <label for="spouse_life_expectancy">Life Expectancy</label>
                             <input type="number" id="spouse_life_expectancy" name="spouse_life_expectancy" value="${spouse.life_expectancy || ''}" min="0" max="120">
-                        </div>
-                        <div class="form-group">
-                            <label for="spouse_social_security">Spouse Social Security (monthly)</label>
-                            <input type="text" id="spouse_social_security" name="spouse_social_security" value="${spouse.social_security_benefit || ''}" placeholder="$0">
-                            <small>Estimated monthly benefit at full retirement age</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="spouse_pension">Spouse Pension (monthly)</label>
-                            <input type="text" id="spouse_pension" name="spouse_pension" value="${spouse.pension_benefit || ''}" placeholder="$0">
-                            <small>Monthly pension amount, if applicable</small>
                         </div>
                     </div>
                 </div>
@@ -161,45 +141,6 @@ export function renderProfileTab(container) {
                                 </div>
                             </div>
                         `).join('')}
-                    </div>
-                </div>
-
-                <!-- Financial Information -->
-                <div class="form-section">
-                    <h2 style="font-size: 24px; margin-bottom: 20px; border-bottom: 2px solid var(--accent-color); padding-bottom: 10px;">
-                        Financial Information
-                    </h2>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="annual_income">Annual Income</label>
-                            <input type="text" id="annual_income" name="annual_income" value="${financial.annual_income || ''}" placeholder="$0">
-                            <small>Your current annual gross income</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="annual_expenses">Annual Expenses</label>
-                            <input type="text" id="annual_expenses" name="annual_expenses" value="${financial.annual_expenses || ''}" placeholder="$0">
-                            <small>Your current annual spending</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="liquid_assets">Liquid Assets</label>
-                            <input type="text" id="liquid_assets" name="liquid_assets" value="${financial.liquid_assets || ''}" placeholder="$0">
-                            <small>Cash, savings, taxable investments</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="retirement_assets">Retirement Assets</label>
-                            <input type="text" id="retirement_assets" name="retirement_assets" value="${financial.retirement_assets || ''}" placeholder="$0">
-                            <small>401k, IRA, Roth IRA, etc.</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="social_security_benefit">Social Security Benefit (monthly)</label>
-                            <input type="text" id="social_security_benefit" name="social_security_benefit" value="${financial.social_security_benefit || ''}" placeholder="$0">
-                            <small>Estimated monthly benefit at full retirement age</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="pension_benefit">Pension Benefit (monthly)</label>
-                            <input type="text" id="pension_benefit" name="pension_benefit" value="${financial.pension_benefit || ''}" placeholder="$0">
-                            <small>Monthly pension amount, if applicable</small>
-                        </div>
                     </div>
                 </div>
 
@@ -306,17 +247,6 @@ function setupProfileFormHandlers(container, profile) {
             // Collect form data
             const formData = new FormData(form);
 
-            // Parse financial fields as numbers
-            const financialFields = ['annual_income', 'annual_expenses', 'liquid_assets',
-                                    'retirement_assets', 'social_security_benefit', 'pension_benefit'];
-            const financial = {};
-            financialFields.forEach(field => {
-                const value = formData.get(field);
-                if (value) {
-                    financial[field] = parseCurrency(value);
-                }
-            });
-
             // Parse person fields as numbers
             const personFields = ['current_age', 'retirement_age', 'life_expectancy'];
             const person = {};
@@ -344,11 +274,13 @@ function setupProfileFormHandlers(container, profile) {
                 const spouseLifeExp = formData.get('spouse_life_expectancy');
                 if (spouseLifeExp) spouse.life_expectancy = parseInt(spouseLifeExp, 10);
 
-                const spouseSS = formData.get('spouse_social_security');
-                if (spouseSS) spouse.social_security_benefit = parseCurrency(spouseSS);
-
-                const spousePension = formData.get('spouse_pension');
-                if (spousePension) spouse.pension_benefit = parseCurrency(spousePension);
+                // Preserve existing spouse financial data (managed in Assets tab)
+                if (profile.data?.spouse?.social_security_benefit) {
+                    spouse.social_security_benefit = profile.data.spouse.social_security_benefit;
+                }
+                if (profile.data?.spouse?.pension_benefit) {
+                    spouse.pension_benefit = profile.data.spouse.pension_benefit;
+                }
             }
 
             // Parse children data
@@ -381,10 +313,7 @@ function setupProfileFormHandlers(container, profile) {
                     },
                     spouse: Object.keys(spouse).length > 0 ? spouse : {},
                     children: children,
-                    financial: {
-                        ...(profile.data?.financial || {}),
-                        ...financial
-                    }
+                    financial: profile.data?.financial || {}
                 }
             };
 
@@ -410,29 +339,6 @@ function setupProfileFormHandlers(container, profile) {
         }
     });
 
-    // Add currency formatting on blur for financial fields
-    const currencyFields = ['annual_income', 'annual_expenses', 'liquid_assets',
-                           'retirement_assets', 'social_security_benefit', 'pension_benefit',
-                           'spouse_social_security', 'spouse_pension'];
-    currencyFields.forEach(fieldName => {
-        const field = container.querySelector(`#${fieldName}`);
-        if (field) {
-            field.addEventListener('blur', (e) => {
-                const value = parseCurrency(e.target.value);
-                if (value > 0) {
-                    e.target.value = formatCurrency(value, 0);
-                }
-            });
-
-            // Format initial value if present
-            if (field.value) {
-                const value = parseCurrency(field.value);
-                if (value > 0) {
-                    field.value = formatCurrency(value, 0);
-                }
-            }
-        }
-    });
 
     // Add automatic age calculation
     setupAgeCalculation(container);

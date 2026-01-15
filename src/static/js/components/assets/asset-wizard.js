@@ -14,6 +14,79 @@ const CATEGORIES = {
     other_assets: { label: 'Other Assets', icon: '📦', description: 'Business, Collectibles, etc.' }
 };
 
+// Account types grouped by visual category for selection UI
+const ACCOUNT_TYPES = {
+    retirement: {
+        label: 'Retirement Accounts',
+        icon: '🏦',
+        types: [
+            { value: '401k', label: '401(k)', category: 'retirement_accounts' },
+            { value: 'roth_401k', label: 'Roth 401(k)', category: 'retirement_accounts' },
+            { value: 'traditional_ira', label: 'Traditional IRA', category: 'retirement_accounts' },
+            { value: 'roth_ira', label: 'Roth IRA', category: 'retirement_accounts' },
+            { value: 'sep_ira', label: 'SEP IRA', category: 'retirement_accounts' },
+            { value: 'simple_ira', label: 'SIMPLE IRA', category: 'retirement_accounts' },
+            { value: '403b', label: '403(b)', category: 'retirement_accounts' },
+            { value: '457', label: '457', category: 'retirement_accounts' }
+        ]
+    },
+    taxable: {
+        label: 'Bank & Brokerage',
+        icon: '💰',
+        types: [
+            { value: 'brokerage', label: 'Brokerage Account', category: 'taxable_accounts' },
+            { value: 'savings', label: 'Savings Account', category: 'taxable_accounts' },
+            { value: 'checking', label: 'Checking Account', category: 'taxable_accounts' },
+            { value: 'money_market', label: 'Money Market', category: 'taxable_accounts' },
+            { value: 'cd', label: 'Certificate of Deposit', category: 'taxable_accounts' },
+            { value: 'cash', label: 'Cash', category: 'taxable_accounts' }
+        ]
+    },
+    real_estate: {
+        label: 'Real Estate',
+        icon: '🏠',
+        types: [
+            { value: 'primary_residence', label: 'Primary Residence', category: 'real_estate' },
+            { value: 'rental_property', label: 'Rental Property', category: 'real_estate' },
+            { value: 'vacation_home', label: 'Vacation Home', category: 'real_estate' },
+            { value: 'land', label: 'Land', category: 'real_estate' },
+            { value: 'commercial', label: 'Commercial Property', category: 'real_estate' }
+        ]
+    },
+    income: {
+        label: 'Income Streams',
+        icon: '💵',
+        types: [
+            { value: 'pension', label: 'Pension', category: 'pensions_annuities' },
+            { value: 'annuity', label: 'Annuity', category: 'pensions_annuities' }
+        ]
+    },
+    other: {
+        label: 'Other Assets',
+        icon: '📦',
+        types: [
+            { value: 'hsa', label: 'Health Savings Account (HSA)', category: 'other_assets' },
+            { value: 'business_interest', label: 'Business Interest', category: 'other_assets' },
+            { value: 'cryptocurrency', label: 'Cryptocurrency', category: 'other_assets' },
+            { value: 'trust', label: 'Trust', category: 'other_assets' },
+            { value: 'collectible', label: 'Collectible', category: 'other_assets' },
+            { value: 'other', label: 'Other', category: 'other_assets' }
+        ]
+    }
+};
+
+// Map account type to category
+function getCategoryForType(accountType) {
+    for (const group of Object.values(ACCOUNT_TYPES)) {
+        for (const type of group.types) {
+            if (type.value === accountType) {
+                return type.category;
+            }
+        }
+    }
+    return 'other_assets';
+}
+
 /**
  * Show asset wizard modal
  * @param {string|null} preselectedCategory - Category to jump to (null for category selection)
@@ -38,10 +111,14 @@ export function showAssetWizard(preselectedCategory = null, existingAsset = null
 
     const isEditing = existingAsset !== null;
     const wizardState = {
-        currentStep: preselectedCategory ? 2 : 1,
+        currentStep: (preselectedCategory || isEditing) ? 2 : 1,
         category: preselectedCategory || (existingAsset ? getCategoryForAsset(existingAsset, assets) : null),
         assetData: existingAsset ? { ...existingAsset } : {},
-        assetIndex: assetIndex
+        assetIndex: assetIndex,
+        // Multi-select support
+        selectedTypes: [],  // Array of {type, category} for multi-add
+        currentTypeIndex: 0, // Which selected type we're editing
+        completedAssets: []  // Assets completed so far in multi-add
     };
 
     // Create modal
@@ -157,7 +234,7 @@ function renderWizardStep(wizard, state, assets, onSave, modal, isEditing) {
  */
 function renderProgressIndicator(currentStep) {
     const steps = [
-        { num: 1, label: 'Category' },
+        { num: 1, label: 'Type' },
         { num: 2, label: 'Details' },
         { num: 3, label: 'Review' }
     ];
@@ -183,21 +260,42 @@ function renderProgressIndicator(currentStep) {
 }
 
 /**
- * Step 1: Category Selection
+ * Step 1: Account Type Selection (Multi-select)
  */
 function renderStep1CategorySelection(state) {
+    const selectedCount = state.selectedTypes.length;
+    const isSelected = (typeValue) => state.selectedTypes.some(t => t.type === typeValue);
+
     return `
         <div>
-            <h3 style="margin-bottom: 20px; font-size: 20px;">Choose Asset Category</h3>
-            <div style="display: grid; gap: 15px;">
-                ${Object.entries(CATEGORIES).map(([key, cat]) => `
-                    <div class="category-option" data-category="${key}" style="padding: 20px; background: var(--bg-primary); border: 2px solid ${state.category === key ? 'var(--accent-color)' : 'var(--border-color)'}; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
-                        <div style="display: flex; align-items: center; gap: 15px;">
-                            <span style="font-size: 36px;">${cat.icon}</span>
-                            <div>
-                                <div style="font-size: 18px; font-weight: 600; margin-bottom: 5px;">${cat.label}</div>
-                                <div style="font-size: 14px; color: var(--text-secondary);">${cat.description}</div>
-                            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; font-size: 20px;">Select the assets you want to add</h3>
+                ${selectedCount > 0 ? `
+                    <span style="padding: 6px 12px; background: var(--accent-color); color: white; border-radius: 20px; font-size: 13px; font-weight: 600;">
+                        ${selectedCount} selected
+                    </span>
+                ` : ''}
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;">
+                Click to select multiple asset types, then click Next to enter details for each.
+            </p>
+            <div style="display: grid; gap: 20px; max-height: 400px; overflow-y: auto; padding-right: 10px;">
+                ${Object.entries(ACCOUNT_TYPES).map(([groupKey, group]) => `
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                            <span style="font-size: 20px;">${group.icon}</span>
+                            <span style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">${group.label}</span>
+                        </div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                            ${group.types.map(type => `
+                                <button type="button" class="type-option" data-type="${type.value}" data-category="${type.category}"
+                                    style="padding: 10px 16px; background: ${isSelected(type.value) ? 'var(--accent-color)' : 'var(--bg-primary)'};
+                                    color: ${isSelected(type.value) ? 'white' : 'var(--text-primary)'};
+                                    border: 2px solid ${isSelected(type.value) ? 'var(--accent-color)' : 'var(--border-color)'};
+                                    border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.2s;">
+                                    ${isSelected(type.value) ? '✓ ' : ''}${type.label}
+                                </button>
+                            `).join('')}
                         </div>
                     </div>
                 `).join('')}
@@ -211,18 +309,36 @@ function renderStep1CategorySelection(state) {
  */
 function renderStep2AssetForm(state) {
     if (!state.category) {
-        return '<p>Please select a category first.</p>';
+        return '<p>Please select an account type first.</p>';
     }
 
-    const categoryLabel = CATEGORIES[state.category].label;
+    const typeLabel = getAssetTypeLabel(state.assetData.type);
+    const isMultiAdd = state.selectedTypes.length > 1;
+    const currentNum = state.currentTypeIndex + 1;
+    const totalNum = state.selectedTypes.length;
 
     return `
         <div>
-            <h3 style="margin-bottom: 20px; font-size: 20px;">
-                ${CATEGORIES[state.category].icon} ${categoryLabel} Details
-            </h3>
+            ${isMultiAdd ? `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <span style="font-size: 14px; color: var(--text-secondary);">Adding asset ${currentNum} of ${totalNum}</span>
+                    <div style="display: flex; gap: 4px;">
+                        ${state.selectedTypes.map((_, i) => `
+                            <div style="width: 24px; height: 6px; border-radius: 3px; background: ${i < currentNum ? 'var(--accent-color)' : 'var(--border-color)'};"></div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : ''}
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; padding: 12px 16px; background: var(--bg-primary); border-radius: 8px; border-left: 4px solid var(--accent-color);">
+                <span style="font-size: 24px;">${CATEGORIES[state.category].icon}</span>
+                <div>
+                    <div style="font-size: 16px; font-weight: 600;">${typeLabel}</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">Enter the details below</div>
+                </div>
+            </div>
             <form id="asset-form" style="display: grid; gap: 20px;">
-                ${generateFormFields(state.category, state.assetData)}
+                <input type="hidden" name="type" value="${state.assetData.type}">
+                ${generateFormFields(state.category, state.assetData, true)}
             </form>
         </div>
     `;
@@ -232,57 +348,60 @@ function renderStep2AssetForm(state) {
  * Step 3: Review
  */
 function renderStep3Review(state) {
-    const categoryLabel = CATEGORIES[state.category].label;
-    const typeLabel = getAssetTypeLabel(state.assetData.type);
-
-    let valueDisplay = '';
-    if (state.category === 'pensions_annuities') {
-        valueDisplay = `${formatCurrency(state.assetData.monthly_benefit || 0, 0)}/month`;
-    } else {
-        const value = state.assetData.value || state.assetData.current_value || 0;
-        valueDisplay = formatCurrency(value, 0);
+    // For multi-add, show all completed assets
+    const allAssets = [...state.completedAssets];
+    if (state.assetData.name) {
+        allAssets.push({ asset: state.assetData, category: state.category });
     }
 
-    // Build details list
-    const details = [];
-    for (const [key, value] of Object.entries(state.assetData)) {
-        if (key === 'name' || key === 'type' || !value) continue;
-
-        let displayValue = value;
-        if (typeof value === 'number' && key.includes('value') || key.includes('balance') || key.includes('cost') || key.includes('price')) {
-            displayValue = formatCurrency(value, 0);
-        } else if (typeof value === 'boolean') {
-            displayValue = value ? 'Yes' : 'No';
-        }
-
-        const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        details.push(`<div><strong>${label}:</strong> ${displayValue}</div>`);
+    if (allAssets.length === 0) {
+        return '<p>No assets to review.</p>';
     }
+
+    const isSingleAsset = allAssets.length === 1;
 
     return `
         <div>
-            <h3 style="margin-bottom: 20px; font-size: 20px;">Review Asset</h3>
-            <div style="background: var(--bg-primary); padding: 25px; border-radius: 8px; border: 2px solid var(--accent-color);">
-                <div style="display: flex; align-items: start; gap: 15px; margin-bottom: 20px;">
-                    <span style="font-size: 48px;">${CATEGORIES[state.category].icon}</span>
-                    <div style="flex: 1;">
-                        <div style="font-size: 24px; font-weight: 600; margin-bottom: 5px;">
-                            ${state.assetData.name}
-                        </div>
-                        <div style="padding: 4px 8px; background: var(--bg-tertiary); border-radius: 4px; font-size: 14px; color: var(--text-secondary); display: inline-block;">
-                            ${typeLabel}
-                        </div>
-                    </div>
-                </div>
+            <h3 style="margin-bottom: 20px; font-size: 20px;">
+                ${isSingleAsset ? 'Review Asset' : `Review ${allAssets.length} Assets`}
+            </h3>
+            <div style="display: grid; gap: 15px; max-height: 450px; overflow-y: auto;">
+                ${allAssets.map(({ asset, category }) => {
+                    const typeLabel = getAssetTypeLabel(asset.type);
+                    let valueDisplay = '';
+                    if (category === 'pensions_annuities') {
+                        valueDisplay = `${formatCurrency(asset.monthly_benefit || 0, 0)}/mo`;
+                    } else {
+                        valueDisplay = formatCurrency(asset.value || asset.current_value || 0, 0);
+                    }
 
-                <div style="font-size: 32px; font-weight: 700; color: var(--accent-color); margin-bottom: 20px;">
-                    ${valueDisplay}
-                </div>
-
-                <div style="font-size: 14px; color: var(--text-secondary); display: grid; gap: 8px;">
-                    ${details.join('')}
-                </div>
+                    return `
+                        <div style="background: var(--bg-primary); padding: 16px 20px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <span style="font-size: 28px;">${CATEGORIES[category].icon}</span>
+                                <div>
+                                    <div style="font-size: 16px; font-weight: 600;">${asset.name}</div>
+                                    <div style="font-size: 13px; color: var(--text-secondary);">${typeLabel}</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 20px; font-weight: 700; color: var(--accent-color);">
+                                ${valueDisplay}
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
             </div>
+            ${allAssets.length > 1 ? `
+                <div style="margin-top: 20px; padding: 15px; background: var(--bg-tertiary); border-radius: 8px; text-align: center;">
+                    <span style="font-size: 14px; color: var(--text-secondary);">Total: </span>
+                    <span style="font-size: 20px; font-weight: 700; color: var(--accent-color);">
+                        ${formatCurrency(allAssets.reduce((sum, { asset, category }) => {
+                            if (category === 'pensions_annuities') return sum;
+                            return sum + (asset.value || asset.current_value || 0);
+                        }, 0), 0)}
+                    </span>
+                </div>
+            ` : ''}
         </div>
     `;
 }
@@ -291,9 +410,18 @@ function renderStep3Review(state) {
  * Render footer buttons
  */
 function renderFooterButtons(state, isEditing) {
-    const showBack = state.currentStep > 1;
+    const showBack = state.currentStep > 1 && !isEditing;
     const showNext = state.currentStep < 3;
     const showSave = state.currentStep === 3;
+
+    // Calculate button labels
+    let nextLabel = 'Next →';
+    if (state.currentStep === 1 && state.selectedTypes.length > 0) {
+        nextLabel = `Next → (${state.selectedTypes.length} selected)`;
+    }
+
+    const totalAssets = state.completedAssets.length + (state.assetData?.name ? 1 : 0);
+    const saveLabel = isEditing ? 'Save Changes' : (totalAssets > 1 ? `Add ${totalAssets} Assets` : 'Add Asset');
 
     return `
         <div>
@@ -309,12 +437,12 @@ function renderFooterButtons(state, isEditing) {
             ` : ''}
             ${showNext ? `
                 <button id="next-btn" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                    Next →
+                    ${nextLabel}
                 </button>
             ` : ''}
             ${showSave ? `
                 <button id="save-btn" style="padding: 12px 24px; background: var(--success-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                    💾 ${isEditing ? 'Save Changes' : 'Add Asset'}
+                    ${saveLabel}
                 </button>
             ` : ''}
         </div>
@@ -325,24 +453,36 @@ function renderFooterButtons(state, isEditing) {
  * Setup event handlers
  */
 function setupWizardHandlers(wizard, state, assets, onSave, modal, isEditing) {
-    // Category selection
-    wizard.querySelectorAll('.category-option').forEach(option => {
+    // Account type selection (multi-select toggle)
+    wizard.querySelectorAll('.type-option').forEach(option => {
         option.addEventListener('click', () => {
-            state.category = option.dataset.category;
+            const typeValue = option.dataset.type;
+            const category = option.dataset.category;
+
+            // Toggle selection
+            const existingIndex = state.selectedTypes.findIndex(t => t.type === typeValue);
+            if (existingIndex >= 0) {
+                state.selectedTypes.splice(existingIndex, 1);
+            } else {
+                state.selectedTypes.push({ type: typeValue, category });
+            }
+
             renderWizardStep(wizard, state, assets, onSave, modal, isEditing);
         });
 
         option.addEventListener('mouseenter', () => {
-            if (state.category !== option.dataset.category) {
+            const isSelected = state.selectedTypes.some(t => t.type === option.dataset.type);
+            if (!isSelected) {
                 option.style.borderColor = 'var(--accent-color)';
-                option.style.transform = 'translateX(5px)';
+                option.style.background = 'var(--bg-tertiary)';
             }
         });
 
         option.addEventListener('mouseleave', () => {
-            if (state.category !== option.dataset.category) {
+            const isSelected = state.selectedTypes.some(t => t.type === option.dataset.type);
+            if (!isSelected) {
                 option.style.borderColor = 'var(--border-color)';
-                option.style.transform = 'translateX(0)';
+                option.style.background = 'var(--bg-primary)';
             }
         });
     });
@@ -361,7 +501,24 @@ function setupWizardHandlers(wizard, state, assets, onSave, modal, isEditing) {
     const backBtn = wizard.querySelector('#back-btn');
     if (backBtn) {
         backBtn.addEventListener('click', () => {
-            state.currentStep--;
+            if (state.currentStep === 2 && state.currentTypeIndex > 0) {
+                // Go back to previous asset in multi-add
+                state.currentTypeIndex--;
+                const prevCompleted = state.completedAssets.pop();
+                if (prevCompleted) {
+                    state.assetData = prevCompleted.asset;
+                    state.category = prevCompleted.category;
+                }
+            } else if (state.currentStep === 3) {
+                // From review, go back to last asset form
+                state.currentStep = 2;
+            } else {
+                // Go back to type selection
+                state.currentStep = 1;
+                state.currentTypeIndex = 0;
+                state.assetData = {};
+                state.category = null;
+            }
             renderWizardStep(wizard, state, assets, onSave, modal, isEditing);
         });
     }
@@ -371,10 +528,16 @@ function setupWizardHandlers(wizard, state, assets, onSave, modal, isEditing) {
     if (nextBtn) {
         nextBtn.addEventListener('click', () => {
             if (state.currentStep === 1) {
-                if (!state.category) {
-                    alert('Please select a category');
+                // Multi-select mode
+                if (state.selectedTypes.length === 0) {
+                    alert('Please select at least one asset type');
                     return;
                 }
+                // Set up first selected type
+                state.currentTypeIndex = 0;
+                const firstType = state.selectedTypes[0];
+                state.assetData = { type: firstType.type };
+                state.category = firstType.category;
                 state.currentStep++;
             } else if (state.currentStep === 2) {
                 // Validate and extract form data
@@ -383,11 +546,25 @@ function setupWizardHandlers(wizard, state, assets, onSave, modal, isEditing) {
                     form.reportValidity();
                     return;
                 }
-                state.assetData = extractFormData(form, state.category);
-                state.assetData.id = state.assetData.id || generateId();
-                state.assetData.created_at = state.assetData.created_at || new Date().toISOString();
-                state.assetData.updated_at = new Date().toISOString();
-                state.currentStep++;
+                const currentAsset = extractFormData(form, state.category);
+                currentAsset.id = currentAsset.id || generateId();
+                currentAsset.created_at = currentAsset.created_at || new Date().toISOString();
+                currentAsset.updated_at = new Date().toISOString();
+
+                // Check if there are more types to add
+                if (state.currentTypeIndex < state.selectedTypes.length - 1) {
+                    // Save current asset and move to next type
+                    state.completedAssets.push({ asset: currentAsset, category: state.category });
+                    state.currentTypeIndex++;
+                    const nextType = state.selectedTypes[state.currentTypeIndex];
+                    state.assetData = { type: nextType.type };
+                    state.category = nextType.category;
+                    // Stay on step 2 for next asset
+                } else {
+                    // Last asset - move to review
+                    state.assetData = currentAsset;
+                    state.currentStep++;
+                }
             }
             renderWizardStep(wizard, state, assets, onSave, modal, isEditing);
         });
@@ -397,11 +574,18 @@ function setupWizardHandlers(wizard, state, assets, onSave, modal, isEditing) {
     const saveBtn = wizard.querySelector('#save-btn');
     if (saveBtn) {
         saveBtn.addEventListener('click', () => {
-            // Update or add asset
             if (isEditing && state.assetIndex !== null) {
+                // Editing single asset
                 assets[state.category][state.assetIndex] = state.assetData;
             } else {
-                assets[state.category].push(state.assetData);
+                // Add all completed assets
+                for (const { asset, category } of state.completedAssets) {
+                    assets[category].push(asset);
+                }
+                // Add the last/current asset
+                if (state.assetData.name) {
+                    assets[state.category].push(state.assetData);
+                }
             }
 
             // Call save callback
