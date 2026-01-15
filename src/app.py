@@ -8,6 +8,8 @@ from src.routes.analysis import analysis_bp
 from src.routes.scenarios import scenarios_bp
 from src.routes.action_items import action_items_bp
 from src.routes.ai_services import ai_services_bp
+from src.routes.skills import skills_bp
+from src.routes.reports import reports_bp
 import os
 import logging
 from logging.handlers import RotatingFileHandler
@@ -30,6 +32,8 @@ def create_app(config_name='development'):
     app.register_blueprint(scenarios_bp)
     app.register_blueprint(action_items_bp)
     app.register_blueprint(ai_services_bp)
+    app.register_blueprint(skills_bp)
+    app.register_blueprint(reports_bp)
 
     # Configure logging
     if not app.debug:

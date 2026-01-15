@@ -27,7 +27,10 @@ def sync_legacy_arrays(data: dict) -> dict:
             'name': account.get('name', ''),
             'account': account.get('type', ''),
             'value': account.get('value', 0),
-            'cost_basis': account.get('cost_basis', 0)
+            'cost_basis': account.get('cost_basis', 0),
+            'stock_pct': account.get('stock_pct', 0.6),
+            'bond_pct': account.get('bond_pct', 0.4),
+            'cash_pct': account.get('cash_pct', 0.0)
         })
 
     for account in assets.get('taxable_accounts', []):
@@ -35,7 +38,10 @@ def sync_legacy_arrays(data: dict) -> dict:
             'name': account.get('name', ''),
             'account': account.get('type', ''),
             'value': account.get('value', 0),
-            'cost_basis': account.get('cost_basis', 0)
+            'cost_basis': account.get('cost_basis', 0),
+            'stock_pct': account.get('stock_pct', 0.6),
+            'bond_pct': account.get('bond_pct', 0.4),
+            'cash_pct': account.get('cash_pct', 0.0)
         })
 
     data['investment_types'] = investment_types
@@ -86,6 +92,9 @@ def assets_to_csv(assets: dict) -> str:
         'start_date',
         'inflation_adjusted',
         'description',
+        'stock_pct',
+        'bond_pct',
+        'cash_pct',
         'additional_data'
     ])
 
@@ -105,6 +114,9 @@ def assets_to_csv(assets: dict) -> str:
             '',  # start_date
             '',  # inflation_adjusted
             '',  # description
+            account.get('stock_pct', 0.6),
+            account.get('bond_pct', 0.4),
+            account.get('cash_pct', 0.0),
             ''   # additional_data
         ])
 
@@ -124,6 +136,9 @@ def assets_to_csv(assets: dict) -> str:
             '',  # start_date
             '',  # inflation_adjusted
             '',  # description
+            account.get('stock_pct', 0.6),
+            account.get('bond_pct', 0.4),
+            account.get('cash_pct', 0.0),
             ''   # additional_data
         ])
 
@@ -232,6 +247,9 @@ def csv_to_assets(csv_content: str) -> dict:
                     'account_number': row.get('account_number', '').strip(),
                     'value': float(row.get('value', 0) or 0),
                     'cost_basis': float(row.get('cost_basis', 0) or 0),
+                    'stock_pct': float(row.get('stock_pct', 0.6) or 0.6),
+                    'bond_pct': float(row.get('bond_pct', 0.4) or 0.4),
+                    'cash_pct': float(row.get('cash_pct', 0.0) or 0),
                     'created_at': timestamp,
                     'updated_at': timestamp
                 })
@@ -244,6 +262,9 @@ def csv_to_assets(csv_content: str) -> dict:
                     'account_number': row.get('account_number', '').strip(),
                     'value': float(row.get('value', 0) or 0),
                     'cost_basis': float(row.get('cost_basis', 0) or 0),
+                    'stock_pct': float(row.get('stock_pct', 0.6) or 0.6),
+                    'bond_pct': float(row.get('bond_pct', 0.4) or 0.4),
+                    'cash_pct': float(row.get('cash_pct', 0.0) or 0),
                     'created_at': timestamp,
                     'updated_at': timestamp
                 })

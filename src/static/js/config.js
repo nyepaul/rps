@@ -24,6 +24,7 @@ export const API_ENDPOINTS = {
     ANALYSIS_RUN: '/api/analysis',
     ANALYSIS_SS: '/api/analysis/social-security',
     ANALYSIS_ROTH: '/api/analysis/roth-conversion',
+    ANALYSIS_REBALANCE: '/api/analysis/rebalance',
 
     // Scenarios
     SCENARIOS_LIST: '/api/scenarios',
@@ -38,6 +39,15 @@ export const API_ENDPOINTS = {
     ACTION_ITEM_CREATE: '/api/action-items',
     ACTION_ITEM_UPDATE: (id) => `/api/action-item/${id}`,
     ACTION_ITEM_DELETE: (id) => `/api/action-item/${id}`,
+
+    // Skills (Educational Content)
+    SKILLS_LIST: '/api/skills',
+    SKILL_GET: (filename) => `/api/skills/${encodeURIComponent(filename)}`,
+
+    // Reports
+    REPORT_ANALYSIS: '/api/reports/analysis',
+    REPORT_PORTFOLIO: '/api/reports/portfolio',
+    REPORT_ACTION_PLAN: '/api/reports/action-plan',
 };
 
 // Application Settings

@@ -3,6 +3,64 @@
  */
 
 import { store } from '../../state/store.js';
+import { API_ENDPOINTS } from '../../config.js';
+import { showError, showSuccess } from '../../utils/dom.js';
+
+// Generate PDF report
+async function generatePdf(reportType, profileName, buttonId) {
+    const button = document.getElementById(buttonId);
+    const originalText = button.textContent;
+
+    try {
+        // Update button state
+        button.disabled = true;
+        button.innerHTML = `
+            <span class="pdf-spinner"></span>
+            Generating...
+        `;
+
+        const endpoint = API_ENDPOINTS[`REPORT_${reportType.toUpperCase()}`];
+        if (!endpoint) {
+            throw new Error('Unknown report type');
+        }
+
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({ profile_name: profileName })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to generate PDF');
+        }
+
+        // Get the PDF blob
+        const blob = await response.blob();
+
+        // Create download link
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${profileName}_${reportType}_report.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        showSuccess(`${reportType.charAt(0).toUpperCase() + reportType.slice(1)} report downloaded successfully!`);
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        showError(error.message || 'Failed to generate PDF');
+    } finally {
+        // Restore button state
+        button.disabled = false;
+        button.textContent = originalText;
+    }
+}
 
 export function renderSummaryTab(container) {
     const profile = store.get('currentProfile');
@@ -35,56 +93,121 @@ export function renderSummaryTab(container) {
                     <div style="font-size: 64px; margin-bottom: 20px;">📊</div>
                     <h2 style="font-size: 28px; margin-bottom: 15px;">Comprehensive Reports</h2>
                     <p style="color: var(--text-secondary); max-width: 600px; margin: 0 auto;">
-                        Generate detailed PDF reports with charts, analysis, and recommendations for your retirement plan.
+                        Generate detailed PDF reports with analysis, portfolio summaries, and action plans for your retirement plan.
                     </p>
                 </div>
 
                 <div style="display: grid; gap: 20px; margin-bottom: 30px;">
                     <div style="background: var(--bg-primary); padding: 25px; border-radius: 8px; border: 2px solid var(--border-color);">
-                        <h3 style="font-size: 20px; margin-bottom: 10px;">📈 Analysis Report</h3>
-                        <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                            Monte Carlo simulation results, success rates, and statistical analysis
-                        </p>
-                        <button onclick="alert('PDF generation coming soon!')" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
-                            Generate PDF
-                        </button>
+                        <div style="display: flex; align-items: flex-start; gap: 15px;">
+                            <div style="font-size: 32px;">📈</div>
+                            <div style="flex: 1;">
+                                <h3 style="font-size: 20px; margin-bottom: 10px;">Analysis Report</h3>
+                                <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                                    Monte Carlo simulation results, success rates, scenario comparisons, and statistical analysis of your retirement projections.
+                                </p>
+                                <button id="btn-analysis-pdf" class="pdf-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                        <polyline points="7 10 12 15 17 10"/>
+                                        <line x1="12" y1="15" x2="12" y2="3"/>
+                                    </svg>
+                                    Download PDF
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <div style="background: var(--bg-primary); padding: 25px; border-radius: 8px; border: 2px solid var(--border-color);">
-                        <h3 style="font-size: 20px; margin-bottom: 10px;">💼 Portfolio Summary</h3>
-                        <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                            Current assets, allocation, and projected growth over time
-                        </p>
-                        <button onclick="alert('PDF generation coming soon!')" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
-                            Generate PDF
-                        </button>
+                        <div style="display: flex; align-items: flex-start; gap: 15px;">
+                            <div style="font-size: 32px;">💼</div>
+                            <div style="flex: 1;">
+                                <h3 style="font-size: 20px; margin-bottom: 10px;">Portfolio Summary</h3>
+                                <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                                    Current assets breakdown, account allocations, retirement accounts, taxable accounts, and financial overview.
+                                </p>
+                                <button id="btn-portfolio-pdf" class="pdf-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                        <polyline points="7 10 12 15 17 10"/>
+                                        <line x1="12" y1="15" x2="12" y2="3"/>
+                                    </svg>
+                                    Download PDF
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <div style="background: var(--bg-primary); padding: 25px; border-radius: 8px; border: 2px solid var(--border-color);">
-                        <h3 style="font-size: 20px; margin-bottom: 10px;">✅ Action Plan</h3>
-                        <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                            Prioritized recommendations and next steps for optimizing your retirement
-                        </p>
-                        <button onclick="alert('PDF generation coming soon!')" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
-                            Generate PDF
-                        </button>
+                        <div style="display: flex; align-items: flex-start; gap: 15px;">
+                            <div style="font-size: 32px;">✅</div>
+                            <div style="flex: 1;">
+                                <h3 style="font-size: 20px; margin-bottom: 10px;">Action Plan</h3>
+                                <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                                    Prioritized action items, recommendations, and next steps for optimizing your retirement plan.
+                                </p>
+                                <button id="btn-action-plan-pdf" class="pdf-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                        <polyline points="7 10 12 15 17 10"/>
+                                        <line x1="12" y1="15" x2="12" y2="3"/>
+                                    </svg>
+                                    Download PDF
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div style="text-align: center; padding: 20px; background: var(--info-bg); border-radius: 8px;">
+                <div style="text-align: center; padding: 20px; background: var(--bg-tertiary); border-radius: 8px;">
                     <p style="color: var(--text-secondary); margin-bottom: 15px;">
-                        PDF report generation is coming soon! In the meantime, you can:
+                        Want to see your data in other formats?
                     </p>
-                    <div style="display: flex; gap: 10px; justify-content: center;">
-                        <button onclick="window.app.showTab('analysis')" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
-                            View Analysis
+                    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                        <button onclick="window.app.showTab('analysis')" style="padding: 10px 20px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
+                            View Interactive Analysis
                         </button>
-                        <button onclick="window.app.showTab('actions')" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-radius: 6px; cursor: pointer;">
-                            View Action Items
+                        <button onclick="window.app.showTab('actions')" style="padding: 10px 20px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
+                            Manage Action Items
                         </button>
                     </div>
                 </div>
             </div>
         </div>
+
+        <style>
+            .pdf-btn:hover {
+                background: var(--accent-hover) !important;
+            }
+            .pdf-btn:disabled {
+                opacity: 0.7;
+                cursor: not-allowed !important;
+            }
+            .pdf-spinner {
+                display: inline-block;
+                width: 14px;
+                height: 14px;
+                border: 2px solid rgba(255,255,255,0.3);
+                border-top-color: white;
+                border-radius: 50%;
+                animation: pdf-spin 0.8s linear infinite;
+            }
+            @keyframes pdf-spin {
+                to { transform: rotate(360deg); }
+            }
+        </style>
     `;
+
+    // Attach event listeners
+    document.getElementById('btn-analysis-pdf').addEventListener('click', () => {
+        generatePdf('analysis', profile.name, 'btn-analysis-pdf');
+    });
+
+    document.getElementById('btn-portfolio-pdf').addEventListener('click', () => {
+        generatePdf('portfolio', profile.name, 'btn-portfolio-pdf');
+    });
+
+    document.getElementById('btn-action-plan-pdf').addEventListener('click', () => {
+        generatePdf('action_plan', profile.name, 'btn-action-plan-pdf');
+    });
 }

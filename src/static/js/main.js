@@ -393,7 +393,9 @@ function openSettings() {
         const marketProfile = document.getElementById('market-profile-setting').value;
         localStorage.setItem(STORAGE_KEYS.MARKET_PROFILE, marketProfile);
 
-        alert('Settings saved successfully!');
+        import('./utils/dom.js').then(({ showSuccess }) => {
+            showSuccess('Settings saved successfully!');
+        });
         modal.remove();
     });
 

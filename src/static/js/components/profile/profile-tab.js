@@ -58,16 +58,19 @@ export function renderProfileTab(container) {
                             <input type="date" id="retirement_date" name="retirement_date" value="${profile.retirement_date || ''}">
                         </div>
                         <div class="form-group">
-                            <label for="current_age">Current Age</label>
-                            <input type="number" id="current_age" name="current_age" value="${person.current_age || ''}" min="0" max="120">
+                            <label for="current_age">Current Age <span class="calc-badge">calculated</span></label>
+                            <input type="number" id="current_age" name="current_age" value="${person.current_age || ''}" min="0" max="120" class="calculated-field" readonly>
+                            <small>Based on birth date</small>
                         </div>
                         <div class="form-group">
-                            <label for="retirement_age">Retirement Age</label>
-                            <input type="number" id="retirement_age" name="retirement_age" value="${person.retirement_age || ''}" min="0" max="120">
+                            <label for="retirement_age">Retirement Age <span class="calc-badge">calculated</span></label>
+                            <input type="number" id="retirement_age" name="retirement_age" value="${person.retirement_age || ''}" min="0" max="120" class="calculated-field" readonly>
+                            <small>Based on birth &amp; retirement dates</small>
                         </div>
                         <div class="form-group">
                             <label for="life_expectancy">Life Expectancy</label>
-                            <input type="number" id="life_expectancy" name="life_expectancy" value="${person.life_expectancy || ''}" min="0" max="120">
+                            <input type="number" id="life_expectancy" name="life_expectancy" value="${person.life_expectancy || 95}" min="0" max="120">
+                            <small>Default: 95 years</small>
                         </div>
                     </div>
                 </div>
@@ -91,16 +94,19 @@ export function renderProfileTab(container) {
                             <input type="date" id="spouse_retirement_date" name="spouse_retirement_date" value="${spouse.retirement_date || ''}">
                         </div>
                         <div class="form-group">
-                            <label for="spouse_current_age">Current Age</label>
-                            <input type="number" id="spouse_current_age" name="spouse_current_age" value="${spouse.current_age || ''}" min="0" max="120">
+                            <label for="spouse_current_age">Current Age <span class="calc-badge">calculated</span></label>
+                            <input type="number" id="spouse_current_age" name="spouse_current_age" value="${spouse.current_age || ''}" min="0" max="120" class="calculated-field" readonly>
+                            <small>Based on birth date</small>
                         </div>
                         <div class="form-group">
-                            <label for="spouse_retirement_age">Retirement Age</label>
-                            <input type="number" id="spouse_retirement_age" name="spouse_retirement_age" value="${spouse.retirement_age || ''}" min="0" max="120">
+                            <label for="spouse_retirement_age">Retirement Age <span class="calc-badge">calculated</span></label>
+                            <input type="number" id="spouse_retirement_age" name="spouse_retirement_age" value="${spouse.retirement_age || ''}" min="0" max="120" class="calculated-field" readonly>
+                            <small>Based on birth &amp; retirement dates</small>
                         </div>
                         <div class="form-group">
                             <label for="spouse_life_expectancy">Life Expectancy</label>
-                            <input type="number" id="spouse_life_expectancy" name="spouse_life_expectancy" value="${spouse.life_expectancy || ''}" min="0" max="120">
+                            <input type="number" id="spouse_life_expectancy" name="spouse_life_expectancy" value="${spouse.life_expectancy || 95}" min="0" max="120">
+                            <small>Default: 95 years</small>
                         </div>
                     </div>
                 </div>
@@ -200,6 +206,27 @@ export function renderProfileTab(container) {
             }
             #cancel-btn:hover {
                 background: var(--bg-quaternary);
+            }
+            .calc-badge {
+                display: inline-block;
+                font-size: 10px;
+                font-weight: 500;
+                text-transform: uppercase;
+                background: var(--accent-color);
+                color: white;
+                padding: 2px 6px;
+                border-radius: 4px;
+                margin-left: 8px;
+                vertical-align: middle;
+            }
+            .calculated-field {
+                background: var(--bg-tertiary) !important;
+                color: var(--accent-color) !important;
+                font-weight: 600;
+                cursor: default;
+            }
+            .calculated-field:focus {
+                border-color: var(--border-color) !important;
             }
         </style>
     `;

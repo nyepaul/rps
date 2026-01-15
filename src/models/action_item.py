@@ -78,11 +78,11 @@ class ActionItem:
                 cursor.execute('''
                     INSERT INTO action_items
                     (user_id, profile_id, category, description, priority, status,
-                     due_date, action_data, action_data_iv, subtasks, subtasks_iv, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     due_date, action_data, action_data_iv, subtasks, subtasks_iv, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (self.user_id, self.profile_id, self.category, self.description,
                       self.priority, self.status, self.due_date, self.action_data, self.action_data_iv,
-                      self.subtasks, self.subtasks_iv, self.created_at))
+                      self.subtasks, self.subtasks_iv, self.created_at, self.updated_at))
                 self.id = cursor.lastrowid
             else:
                 cursor.execute('''

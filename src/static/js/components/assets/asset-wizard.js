@@ -5,6 +5,7 @@
 import { store } from '../../state/store.js';
 import { generateFormFields, extractFormData, getAssetTypeLabel } from './asset-form-fields.js';
 import { formatCurrency } from '../../utils/formatters.js';
+import { showError } from '../../utils/dom.js';
 
 const CATEGORIES = {
     retirement_accounts: { label: 'Retirement Accounts', icon: '🏦', description: '401(k), IRA, Roth IRA, etc.' },
@@ -97,7 +98,7 @@ function getCategoryForType(accountType) {
 export function showAssetWizard(preselectedCategory = null, existingAsset = null, onSave = null, assetIndex = null) {
     const profile = store.get('currentProfile');
     if (!profile) {
-        alert('No profile selected');
+        showError('No profile selected');
         return;
     }
 
@@ -530,7 +531,7 @@ function setupWizardHandlers(wizard, state, assets, onSave, modal, isEditing) {
             if (state.currentStep === 1) {
                 // Multi-select mode
                 if (state.selectedTypes.length === 0) {
-                    alert('Please select at least one asset type');
+                    showError('Please select at least one asset type');
                     return;
                 }
                 // Set up first selected type

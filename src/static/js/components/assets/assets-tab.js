@@ -13,6 +13,7 @@ import { showSuccess, showError } from '../../utils/dom.js';
 
 export function renderAssetsTab(container) {
     const profile = store.get('currentProfile');
+    let currentFilter = 'total'; // Default filter
 
     if (!profile) {
         container.innerHTML = `
@@ -145,20 +146,70 @@ export function renderAssetsTab(container) {
         </div>
     `;
 
-    // Render summary cards
-    renderSummaryCards(assets, container.querySelector('#asset-summary'));
+    // Function to update the view
+    const updateView = () => {
+        const summaryContainer = container.querySelector('#asset-summary');
+        const listContainer = container.querySelector('#asset-categories');
 
-    // Render asset lists by category
-    renderAssetList(assets, container.querySelector('#asset-categories'));
+        // Render summary cards with current filter
+        renderSummaryCards(assets, summaryContainer, currentFilter);
 
-    // Set up event handlers
-    setupEventHandlers(container, profile, assets);
+        // Filter assets
+        const filteredAssets = filterAssets(assets, currentFilter);
+        
+        // Render asset list
+        renderAssetList(filteredAssets, listContainer);
+        
+        // Setup list handlers (edit/delete)
+        setupAssetListHandlers(container, profile, assets, updateView);
+    };
+
+    // Initial render
+    updateView();
+
+    // Set up other event handlers (financial form, buttons)
+    setupGeneralHandlers(container, profile, assets, updateView);
+
+    // Setup summary card click handler (delegation)
+    container.querySelector('#asset-summary').addEventListener('click', (e) => {
+        const card = e.target.closest('.summary-card');
+        if (card) {
+            currentFilter = card.dataset.filter;
+            updateView();
+        }
+    });
+}
+
+/**
+ * Filter assets based on selected category
+ */
+function filterAssets(assets, filterKey) {
+    if (filterKey === 'total') {
+        // Return everything except pensions (which are income, usually)
+        // Or should total net worth show everything?
+        // Let's exclude pensions from "Net Worth" view list if they are excluded from calculation
+        // But user might want to see them.
+        // Based on calculation: Net Worth = Retirement + Taxable + Real Estate + Other
+        const { pensions_annuities, ...netWorthAssets } = assets;
+        return netWorthAssets;
+    }
+    
+    if (filterKey === 'pensions_annuities') {
+        return { pensions_annuities: assets.pensions_annuities };
+    }
+
+    // specific category
+    if (assets[filterKey]) {
+        return { [filterKey]: assets[filterKey] };
+    }
+
+    return assets;
 }
 
 /**
  * Render summary cards showing totals
  */
-function renderSummaryCards(assets, container) {
+function renderSummaryCards(assets, container, selectedFilter) {
     const retirementTotal = calculateTotal(assets.retirement_accounts);
     const taxableTotal = calculateTotal(assets.taxable_accounts);
     const realEstateTotal = calculateTotal(assets.real_estate, 'value', 'current_value');
@@ -168,31 +219,56 @@ function renderSummaryCards(assets, container) {
     const netWorth = retirementTotal + taxableTotal + realEstateTotal + otherTotal;
 
     const cards = [
-        { label: 'Total Net Worth', value: netWorth, icon: '💎', highlight: true },
-        { label: 'Retirement Accounts', value: retirementTotal, icon: '🏦' },
-        { label: 'Taxable Accounts', value: taxableTotal, icon: '💰' },
-        { label: 'Real Estate', value: realEstateTotal, icon: '🏠' },
-        { label: 'Other Assets', value: otherTotal, icon: '📦' },
-        { label: 'Monthly Pension', value: pensionMonthly, icon: '💵', suffix: '/mo' }
+        { key: 'total', label: 'Total Net Worth', value: netWorth, icon: '💎' },
+        { key: 'retirement_accounts', label: 'Retirement Accounts', value: retirementTotal, icon: '🏦' },
+        { key: 'taxable_accounts', label: 'Taxable Accounts', value: taxableTotal, icon: '💰' },
+        { key: 'real_estate', label: 'Real Estate', value: realEstateTotal, icon: '🏠' },
+        { key: 'other_assets', label: 'Other Assets', value: otherTotal, icon: '📦' },
+        { key: 'pensions_annuities', label: 'Monthly Pension', value: pensionMonthly, icon: '💵', suffix: '/mo' }
     ];
 
     container.innerHTML = `
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-            ${cards.map(card => `
-                <div style="background: ${card.highlight ? 'linear-gradient(135deg, var(--accent-color) 0%, #764ba2 100%)' : 'var(--bg-secondary)'}; padding: 20px; border-radius: 12px; ${card.highlight ? 'box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);' : ''}">
+            ${cards.map(card => {
+                const isSelected = card.key === selectedFilter;
+                return `
+                <div class="summary-card" data-filter="${card.key}" style="
+                    background: ${isSelected ? 'linear-gradient(135deg, var(--accent-color) 0%, #764ba2 100%)' : 'var(--bg-secondary)'}; 
+                    padding: 20px; 
+                    border-radius: 12px; 
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    ${isSelected ? 'box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); transform: translateY(-2px);' : 'border: 1px solid transparent;'}
+                    ${!isSelected ? ':hover { border-color: var(--accent-color); transform: translateY(-2px); }' : ''}
+                ">
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
                         <span style="font-size: 24px;">${card.icon}</span>
-                        <div style="font-size: 14px; ${card.highlight ? 'color: rgba(255,255,255,0.9);' : 'color: var(--text-secondary);'} font-weight: 600;">
+                        <div style="font-size: 14px; ${isSelected ? 'color: rgba(255,255,255,0.9);' : 'color: var(--text-secondary);'} font-weight: 600;">
                             ${card.label}
                         </div>
                     </div>
-                    <div style="font-size: 28px; font-weight: 700; ${card.highlight ? 'color: white;' : 'color: var(--text-primary);'}">
+                    <div style="font-size: 28px; font-weight: 700; ${isSelected ? 'color: white;' : 'color: var(--text-primary);'}">
                         ${formatCurrency(card.value, 0)}${card.suffix || ''}
                     </div>
                 </div>
-            `).join('')}
+                `;
+            }).join('')}
         </div>
     `;
+    
+    // Add hover effect manually since inline styles with :hover pseudo-class don't work directly in style attribute
+    container.querySelectorAll('.summary-card').forEach(card => {
+        if (!card.style.background.includes('linear-gradient')) {
+            card.addEventListener('mouseenter', () => {
+                card.style.borderColor = 'var(--accent-color)';
+                card.style.transform = 'translateY(-2px)';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.borderColor = 'transparent';
+                card.style.transform = 'translateY(0)';
+            });
+        }
+    });
 }
 
 /**
@@ -206,9 +282,46 @@ function calculateTotal(items, field1 = 'value', field2 = null) {
 }
 
 /**
- * Setup event handlers
+ * Setup handlers for asset list items (Edit/Delete)
  */
-function setupEventHandlers(container, profile, assets) {
+function setupAssetListHandlers(container, profile, assets, refreshCallback) {
+    // Edit buttons
+    container.querySelectorAll('.edit-asset-btn').forEach(btn => {
+        // Clone to replace to remove old event listeners if any (though innerHTML replace handles it)
+        btn.addEventListener('click', (e) => {
+            const category = e.target.dataset.category;
+            const index = parseInt(e.target.dataset.index);
+            const asset = assets[category][index];
+
+            showAssetWizard(category, asset, async (updatedAssets) => {
+                await saveAssets(profile, updatedAssets);
+                if (refreshCallback) refreshCallback();
+            }, index);
+        });
+    });
+
+    // Delete buttons
+    container.querySelectorAll('.delete-asset-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const category = e.target.dataset.category;
+            const index = parseInt(e.target.dataset.index);
+            const asset = assets[category][index];
+
+            if (confirm(`Are you sure you want to delete "${asset.name}"?`)) {
+                // Remove asset from array
+                assets[category].splice(index, 1);
+                await saveAssets(profile, assets);
+                showSuccess(`Deleted "${asset.name}"`);
+                if (refreshCallback) refreshCallback();
+            }
+        });
+    });
+}
+
+/**
+ * Setup general event handlers (Financial Form, Top Buttons)
+ */
+function setupGeneralHandlers(container, profile, assets, refreshCallback) {
     // Financial form submission
     const financialForm = container.querySelector('#financial-form');
     if (financialForm) {
@@ -288,8 +401,9 @@ function setupEventHandlers(container, profile, assets) {
     const addAssetBtn = container.querySelector('#add-asset-btn');
     if (addAssetBtn) {
         addAssetBtn.addEventListener('click', () => {
-            showAssetWizard(null, null, (updatedAssets) => {
-                saveAssets(profile, updatedAssets);
+            showAssetWizard(null, null, async (updatedAssets) => {
+                await saveAssets(profile, updatedAssets);
+                if (refreshCallback) refreshCallback();
             });
         });
     }
@@ -298,8 +412,9 @@ function setupEventHandlers(container, profile, assets) {
     const aiImportBtn = container.querySelector('#ai-import-btn');
     if (aiImportBtn) {
         aiImportBtn.addEventListener('click', () => {
-            showAIUploadModal(assets, (updatedAssets) => {
-                saveAssets(profile, updatedAssets);
+            showAIUploadModal(assets, async (updatedAssets) => {
+                await saveAssets(profile, updatedAssets);
+                if (refreshCallback) refreshCallback();
             });
         });
     }
@@ -310,8 +425,9 @@ function setupEventHandlers(container, profile, assets) {
         csvExportBtn.addEventListener('click', async () => {
             try {
                 await exportAssetsCSV(profile.name);
+                showSuccess('Assets exported successfully!');
             } catch (error) {
-                alert(`Error exporting CSV: ${error.message}`);
+                showError(`Error exporting CSV: ${error.message}`);
             }
         });
     }
@@ -323,41 +439,15 @@ function setupEventHandlers(container, profile, assets) {
             try {
                 await importAssetsCSV(profile.name, (updatedProfile) => {
                     store.setState({ currentProfile: updatedProfile });
-                    window.app.showTab('assets'); // Refresh tab
+                    // Full refresh needed as profile object changed
+                    window.app.showTab('assets'); 
+                    showSuccess('Assets imported successfully!');
                 });
             } catch (error) {
-                alert(`Error importing CSV: ${error.message}`);
+                showError(`Error importing CSV: ${error.message}`);
             }
         });
     }
-
-    // Edit buttons
-    container.querySelectorAll('.edit-asset-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const category = e.target.dataset.category;
-            const index = parseInt(e.target.dataset.index);
-            const asset = assets[category][index];
-
-            showAssetWizard(category, asset, (updatedAssets) => {
-                saveAssets(profile, updatedAssets);
-            }, index);
-        });
-    });
-
-    // Delete buttons
-    container.querySelectorAll('.delete-asset-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const category = e.target.dataset.category;
-            const index = parseInt(e.target.dataset.index);
-            const asset = assets[category][index];
-
-            if (confirm(`Are you sure you want to delete "${asset.name}"?`)) {
-                // Remove asset from array
-                assets[category].splice(index, 1);
-                await saveAssets(profile, assets);
-            }
-        });
-    });
 }
 
 /**
@@ -376,11 +466,12 @@ async function saveAssets(profile, updatedAssets) {
 
         // Update store
         store.setState({ currentProfile: result.profile });
-
-        // Refresh tab
-        window.app.showTab('assets');
+        
+        // Note: View refresh is handled by the callback passed to showAssetWizard/etc
+        return true;
     } catch (error) {
         console.error('Error saving assets:', error);
-        alert(`Error saving assets: ${error.message}`);
+        showError(`Error saving assets: ${error.message}`);
+        return false;
     }
 }

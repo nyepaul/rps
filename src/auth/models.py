@@ -105,6 +105,12 @@ class User(UserMixin):
         with db.get_connection() as conn:
             conn.execute('UPDATE users SET last_login = ? WHERE id = ?', (self.last_login, self.id))
     
+    def update_password(self, new_password: str):
+        """Update the user's password."""
+        self.password_hash = User.hash_password(new_password)
+        self.save()
+
+    
     @staticmethod
     def create_user(username: str, email: str, password: str, is_admin: bool = False):
         """Create a new user."""

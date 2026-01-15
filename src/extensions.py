@@ -3,7 +3,6 @@ from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask_cors import CORS
 
 # Initialize extensions
 login_manager = LoginManager()
@@ -12,7 +11,6 @@ limiter = Limiter(
     key_func=get_remote_address,
     default_limits=["200 per day", "50 per hour"]
 )
-cors = CORS()
 
 
 def init_extensions(app):
@@ -29,7 +27,6 @@ def init_extensions(app):
     csrf.exempt('auth.session')
 
     limiter.init_app(app)
-    cors.init_app(app, origins=app.config.get('CORS_ORIGINS', '*'), supports_credentials=True)
 
     # User loader for Flask-Login
     from src.auth.models import User

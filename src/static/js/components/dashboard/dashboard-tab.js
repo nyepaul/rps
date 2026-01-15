@@ -3,7 +3,10 @@
  */
 
 import { store } from '../../state/store.js';
+import { scenariosAPI } from '../../api/scenarios.js';
+import { profilesAPI } from '../../api/profiles.js';
 import { formatCurrency, formatCompact } from '../../utils/formatters.js';
+import { showSuccess, showError, showLoading } from '../../utils/dom.js';
 
 export function renderDashboardTab(container) {
     const profile = store.get('currentProfile');
@@ -110,7 +113,7 @@ export function renderDashboardTab(container) {
             </div>
 
             <!-- Quick Actions -->
-            <div style="background: var(--bg-secondary); padding: 25px; border-radius: 12px;">
+            <div style="background: var(--bg-secondary); padding: 25px; border-radius: 12px; margin-bottom: 30px;">
                 <h2 style="font-size: 24px; margin-bottom: 20px;">Quick Actions</h2>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                     <button onclick="window.app.showTab('profile')" class="action-btn">
@@ -125,6 +128,29 @@ export function renderDashboardTab(container) {
                     <button onclick="window.app.showTab('actions')" class="action-btn">
                         ✅ View Action Items
                     </button>
+                </div>
+            </div>
+
+            <!-- Saved Scenarios -->
+            <div id="scenario-analysis-section" style="background: var(--bg-secondary); padding: 25px; border-radius: 12px;">
+                <h2 style="font-size: 24px; margin-bottom: 20px;">Saved Scenarios</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                    Select a scenario to view its projection and restore its data to your profile.
+                </p>
+                
+                <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 20px;">
+                    <select id="scenario-selector" style="flex: 1; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); font-size: 16px;">
+                        <option value="">Loading scenarios...</option>
+                    </select>
+                </div>
+
+                <div id="scenario-chart-container" style="display: none; background: var(--bg-primary); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-top: 20px;">
+                    <h3 id="chart-title" style="margin-top: 0; margin-bottom: 15px; font-size: 18px;"></h3>
+                    <div id="chart-loading" style="display: none; text-align: center; padding: 40px; color: var(--text-secondary);">
+                        <div style="font-size: 32px; margin-bottom: 10px;">⏳</div>
+                        Loading projection...
+                    </div>
+                    <canvas id="scenario-chart" style="max-height: 400px;"></canvas>
                 </div>
             </div>
         </div>
@@ -155,6 +181,299 @@ export function renderDashboardTab(container) {
                 background: var(--accent-hover);
                 transform: translateY(-2px);
             }
+            
+            /* Modal Styles */
+            .custom-modal-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                animation: fadeIn 0.2s;
+            }
+            .custom-modal {
+                background: var(--bg-secondary);
+                padding: 30px;
+                border-radius: 12px;
+                width: 90%;
+                max-width: 500px;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+                animation: slideUp 0.3s;
+            }
+            .modal-title {
+                font-size: 24px;
+                margin-bottom: 15px;
+                color: var(--text-primary);
+            }
+            .modal-body {
+                margin-bottom: 25px;
+                color: var(--text-secondary);
+                line-height: 1.6;
+            }
+            .modal-actions {
+                display: flex;
+                justify-content: flex-end;
+                gap: 15px;
+            }
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         </style>
     `;
+    loadAndRenderScenarios(profile);
+}
+
+let scenarioChart = null;
+
+function renderScenarioGraph(scenario) {
+    const container = document.getElementById('scenario-chart-container');
+    const canvas = document.getElementById('scenario-chart');
+    const title = document.getElementById('chart-title');
+    const loader = document.getElementById('chart-loading');
+    
+    if (!container || !canvas) return;
+
+    // Hide loader
+    if (loader) loader.style.display = 'none';
+    canvas.style.display = 'block';
+
+    if (!scenario) {
+        container.style.display = 'none';
+        return;
+    }
+
+    container.style.display = 'block';
+    if (title) title.textContent = `Projection: ${scenario.name}`;
+
+    const colors = ['#3498db', '#28a745', '#ffc107', '#dc3545'];
+    
+    // Extract data from scenario result
+    const timeline = scenario.results?.timeline || scenario.results?.monte_carlo?.yearly_results;
+    let labels = [];
+    let medianData = [];
+    
+    if (timeline && timeline.years) {
+        labels = timeline.years;
+        medianData = timeline.median || timeline.map(r => r.median_portfolio_value);
+    }
+
+    const datasets = [{
+        label: 'Median Portfolio Value',
+        data: medianData,
+        borderColor: colors[0],
+        backgroundColor: colors[0] + '20', // Transparent fill
+        fill: true,
+        tension: 0.2,
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 4
+    }];
+
+    const ctx = canvas.getContext('2d');
+
+    if (scenarioChart) {
+        scenarioChart.destroy();
+    }
+
+    scenarioChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#888', maxTicksLimit: 10 }
+                },
+                y: {
+                    grid: { color: 'rgba(128,128,128,0.1)' },
+                    ticks: {
+                        color: '#888',
+                        callback: (value) => formatCompact(value)
+                    }
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (context) => formatCurrency(context.parsed.y)
+                    }
+                }
+            }
+        }
+    });
+}
+
+async function loadAndRenderScenarios(currentProfile) {
+    const selector = document.getElementById('scenario-selector');
+    const chartContainer = document.getElementById('scenario-chart-container');
+    const chartLoader = document.getElementById('chart-loading');
+    const chartCanvas = document.getElementById('scenario-chart');
+    
+    if (!selector) return;
+
+    try {
+        const response = await scenariosAPI.list();
+        const scenarios = response.scenarios || [];
+        
+        if (scenarios.length === 0) {
+            selector.innerHTML = '<option value="" disabled selected>No saved scenarios found. Run an analysis to save one.</option>';
+            selector.disabled = true;
+            return;
+        }
+
+        // Clear and populate
+        selector.innerHTML = '<option value="" selected>Select a scenario to load...</option>';
+        scenarios.forEach(scenario => {
+            const option = document.createElement('option');
+            option.value = scenario.id;
+            option.textContent = scenario.name + (scenario.profile_name ? ` (${scenario.profile_name})` : '');
+            selector.appendChild(option);
+        });
+
+        // Event Listeners
+        selector.addEventListener('change', async () => {
+            const scenarioId = selector.value;
+            const hasSelection = !!scenarioId;
+            
+            if (!hasSelection) {
+                chartContainer.style.display = 'none';
+                return;
+            }
+
+            // 1. Auto-load graph preview
+            chartContainer.style.display = 'block';
+            if (chartLoader) chartLoader.style.display = 'block';
+            if (chartCanvas) chartCanvas.style.display = 'none';
+            document.getElementById('chart-title').textContent = 'Loading projection...';
+
+            try {
+                const res = await scenariosAPI.get(scenarioId);
+                const scenario = res.scenario;
+                renderScenarioGraph(scenario);
+
+                // 2. Trigger loading confirmation after a brief moment so they see the graph
+                setTimeout(() => {
+                    confirmLoadScenario(scenarioId, scenario.name, currentProfile);
+                }, 500);
+
+            } catch (err) {
+                console.error(err);
+                if (chartLoader) chartLoader.style.display = 'none';
+                showError('Failed to load scenario details');
+                chartContainer.style.display = 'none';
+            }
+        });
+
+    } catch (error) {
+        console.error('Error fetching scenarios:', error);
+        selector.innerHTML = '<option value="">Error loading scenarios</option>';
+    }
+}
+
+function confirmLoadScenario(scenarioId, scenarioName, currentProfile) {
+    // Create Modal
+    const modalOverlay = document.createElement('div');
+    modalOverlay.className = 'custom-modal-overlay';
+    
+    modalOverlay.innerHTML = `
+        <div class="custom-modal">
+            <h3 class="modal-title">Load Scenario?</h3>
+            <div class="modal-body">
+                <p>You are about to load <strong>"${scenarioName}"</strong>.</p>
+                <p style="color: var(--warning-color); background: rgba(255, 193, 7, 0.1); padding: 15px; border-radius: 8px; border: 1px solid var(--warning-color);">
+                    <strong>⚠️ Warning:</strong> This will overwrite your current profile data (assets, expenses, settings) with the data saved in this scenario. This action cannot be undone.
+                </p>
+                <p>Are you sure you want to proceed?</p>
+            </div>
+            <div class="modal-actions">
+                <button id="cancel-load" style="padding: 10px 20px; background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 6px; cursor: pointer;">Cancel</button>
+                <button id="confirm-load" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Load & Overwrite</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modalOverlay);
+    
+    const cancelBtn = modalOverlay.querySelector('#cancel-load');
+    const confirmBtn = modalOverlay.querySelector('#confirm-load');
+    
+    cancelBtn.onclick = () => modalOverlay.remove();
+    
+    confirmBtn.onclick = async () => {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Loading...';
+        
+        try {
+            await executeLoadScenario(scenarioId, currentProfile);
+            modalOverlay.remove();
+        } catch (error) {
+            modalOverlay.remove(); // Remove modal to show error toast
+            showError(`Failed to load scenario: ${error.message}`);
+        }
+    };
+}
+
+async function executeLoadScenario(scenarioId, currentProfile) {
+    // showLoading(document.body, 'Restoring scenario data...'); // Removed to prevent wiping body on error
+    
+    try {
+        // 1. Fetch scenario details
+        const res = await scenariosAPI.get(scenarioId);
+        const scenario = res.scenario;
+        
+        if (!scenario || !scenario.parameters) {
+            throw new Error('Scenario data is invalid or missing parameters.');
+        }
+
+        const snapshot = scenario.parameters.profile_snapshot;
+        
+        if (!snapshot) {
+            throw new Error('This scenario does not contain a profile snapshot to restore.');
+        }
+
+        // 2. Restore Profile Data
+        console.log('Restoring profile data...', snapshot);
+        await profilesAPI.update(currentProfile.name, { data: snapshot });
+        
+        // 3. Update active profile in store
+        // We fetch the updated profile to be sure we have the latest server state
+        const profileRes = await profilesAPI.get(currentProfile.name);
+        store.set('currentProfile', profileRes.profile);
+        
+        // 4. Restore Simulation Settings if present
+        if (scenario.parameters.simulations) {
+            localStorage.setItem('rps_simulations', scenario.parameters.simulations);
+        }
+
+        // 5. Success & Redirect
+        // Remove the loading overlay we added to body
+        const loader = document.querySelector('.loading-overlay'); // Assuming showLoading adds this class or similar structure, wait showLoading replaces content of container.
+        // Actually showLoading(document.body) replaces body content! That's dangerous if showLoading implementation is aggressive.
+        // Let's check showLoading implementation in dom.js again.
+        
+        // showLoading uses container.innerHTML = ...
+        // If I used document.body, I just wiped the app.
+        // GOOD CATCH. I should not use showLoading(document.body).
+        
+        // Instead, I should have a global loader or just reload the app.
+        // Since I wiped the body (if I did), I must reload.
+        
+        window.location.reload(); 
+        
+    } catch (error) {
+        console.error(error);
+        // If we wiped body, we are in trouble. 
+        // But wait, I haven't executed this yet.
+        throw error; 
+    }
 }

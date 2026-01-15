@@ -6,6 +6,7 @@
 import { store } from '../../state/store.js';
 import { showError, showSuccess, showLoading } from '../../utils/dom.js';
 import { formatCurrency, parseCurrency } from '../../utils/formatters.js';
+import { APP_CONFIG } from '../../config.js';
 
 let currentPeriod = 'current';
 let budgetData = null;
@@ -37,33 +38,39 @@ export function renderBudgetTab(container) {
 
     container.innerHTML = `
         <div style="max-width: 1400px; margin: 0 auto; padding: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <div>
-                    <h1 style="margin: 0; font-size: 24px;">💵 Budget Planning</h1>
-                    <p style="color: var(--text-secondary); margin: 4px 0 0 0; font-size: 13px;">
-                        Plan your current and future income/expenses
-                    </p>
-                </div>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <div id="period-toggle" style="display: flex; gap: 4px; background: var(--bg-secondary); padding: 3px; border-radius: 6px;">
-                        <button class="period-btn active" data-period="current" style="padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; transition: all 0.2s; font-size: 13px;">
-                            Current
-                        </button>
-                        <button class="period-btn" data-period="future" style="padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; transition: all 0.2s; font-size: 13px;">
-                            Future
-                        </button>
-                    </div>
-                    <button id="save-budget-btn" style="padding: 6px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
-                        Save
-                    </button>
-                </div>
+            <div style="margin-bottom: 12px;">
+                <h1 style="margin: 0; font-size: 24px;">💵 Budget Planning</h1>
+                <p style="color: var(--text-secondary); margin: 4px 0 0 0; font-size: 13px;">
+                    Plan your current and future income/expenses
+                </p>
             </div>
 
             <!-- Summary Cards -->
             <div id="budget-summary"></div>
 
+            <!-- Period Toggle - Above content sections -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin: 16px 0 12px 0; padding: 12px 16px; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-color);">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-weight: 600; color: var(--text-secondary); font-size: 13px;">Viewing:</span>
+                    <div id="period-toggle" style="display: flex; gap: 4px; background: var(--bg-primary); padding: 3px; border-radius: 6px;">
+                        <button class="period-btn active" data-period="current" style="padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; transition: all 0.2s; font-size: 14px;">
+                            Current
+                        </button>
+                        <button class="period-btn" data-period="future" style="padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; transition: all 0.2s; font-size: 14px;">
+                            Future
+                        </button>
+                    </div>
+                    <span id="period-context" style="color: var(--text-secondary); font-size: 12px; margin-left: 8px;">
+                        (Pre-retirement budget)
+                    </span>
+                </div>
+                <button id="save-budget-btn" style="padding: 8px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                    Save Budget
+                </button>
+            </div>
+
             <!-- Two Column Layout -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                 <div id="income-section"></div>
                 <div id="expense-section"></div>
             </div>
@@ -80,11 +87,27 @@ export function renderBudgetTab(container) {
 }
 
 /**
+ * Get historical average rate based on 60/40 allocation
+ */
+function getHistoricalAverageRate() {
+    const historical = APP_CONFIG.MARKET_PROFILES.historical;
+    if (!historical) return 0.04; // Fallback
+    
+    // Use moderate 60/40 allocation as standard baseline
+    const stockWeight = 0.60;
+    const bondWeight = 0.40;
+    
+    return (stockWeight * historical.stock_return_mean) + (bondWeight * historical.bond_return_mean);
+}
+
+/**
  * Get default budget structure
  */
 function getDefaultBudget() {
+    const historicalRate = getHistoricalAverageRate();
+    
     return {
-        version: '1.0',
+        version: '1.1',
         income: {
             current: {
                 employment: {
@@ -108,6 +131,10 @@ function getDefaultBudget() {
         expenses: {
             current: getDefaultExpenses(),
             future: getDefaultExpenses()
+        },
+        investment_config: {
+            current: { type: 'rate', value: historicalRate, strategy: 'constant' },
+            future: { type: 'rate', value: historicalRate, strategy: 'constant' }
         }
     };
 }
@@ -175,6 +202,24 @@ function calculateInvestmentIncome(period) {
     const profile = store.get('currentProfile');
     if (!profile || !profile.data?.assets) return 0;
 
+    const historicalRate = getHistoricalAverageRate();
+
+    // Initialize config if missing
+    if (!budgetData.investment_config) {
+        budgetData.investment_config = {
+            current: { type: 'rate', value: historicalRate },
+            future: { type: 'rate', value: historicalRate }
+        };
+    }
+
+    const config = budgetData.investment_config[period] || { type: 'rate', value: historicalRate };
+
+    // Fixed amount override
+    if (config.type === 'fixed') {
+        return config.value;
+    }
+
+    // Rate based calculation
     const assets = profile.data.assets;
     let totalInvestmentAssets = 0;
 
@@ -190,12 +235,7 @@ function calculateInvestmentIncome(period) {
         totalInvestmentAssets += account.value || 0;
     }
 
-    // Use different rates for current vs future
-    // Current: 4% (conservative while still working)
-    // Future: 3.5% (more conservative in retirement)
-    const incomeRate = period === 'current' ? 0.04 : 0.035;
-
-    return totalInvestmentAssets * incomeRate;
+    return totalInvestmentAssets * (config.value || 0);
 }
 
 /**
@@ -293,6 +333,20 @@ function renderIncomeSection(parentContainer) {
 
     // Calculate investment income from assets
     const calculatedInvestmentIncome = calculateInvestmentIncome(currentPeriod);
+    const config = (budgetData.investment_config && budgetData.investment_config[currentPeriod]) || { type: 'rate', value: 0.04, strategy: 'constant' };
+    
+    let configLabel = '';
+    if (config.type === 'fixed') {
+        configLabel = 'Fixed Amount Override';
+    } else {
+        const strategyNames = {
+            'constant': 'Constant',
+            'smile': 'Smile',
+            'decline': 'Decline'
+        };
+        const strategyLabel = strategyNames[config.strategy] || 'Constant';
+        configLabel = `${(config.value * 100).toFixed(1)}% of assets (${strategyLabel})`;
+    }
 
     // Show calculated investment income
     html += `
@@ -302,13 +356,16 @@ function renderIncomeSection(parentContainer) {
                     <span style="font-size: 14px;">📊</span>
                     Investment Income (Calculated)
                 </h3>
-                <span style="font-size: 11px; color: var(--success-color); font-weight: 600; background: var(--success-bg); padding: 2px 8px; border-radius: 3px;">AUTO</span>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    <span style="font-size: 11px; color: var(--success-color); font-weight: 600; background: var(--success-bg); padding: 2px 8px; border-radius: 3px;">AUTO</span>
+                    <button id="edit-investment-config-btn" style="padding: 2px 6px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px;">⚙️</button>
+                </div>
             </div>
             <div style="font-size: 13px; font-weight: 500;">
                 ${formatCurrency(calculatedInvestmentIncome)}/year
             </div>
             <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">
-                ${currentPeriod === 'current' ? '4%' : '3.5%'} of investment assets
+                ${configLabel}
             </div>
         </div>
     `;
@@ -347,6 +404,158 @@ function renderIncomeSection(parentContainer) {
 
     // Setup event listeners
     setupIncomeEventListeners();
+    
+    // Config button listener
+    const configBtn = container.querySelector('#edit-investment-config-btn');
+    if (configBtn) {
+        configBtn.addEventListener('click', () => {
+            showInvestmentConfigModal();
+        });
+    }
+}
+
+/**
+ * Show investment config modal
+ */
+function showInvestmentConfigModal() {
+    const historicalRate = getHistoricalAverageRate();
+    const config = (budgetData.investment_config && budgetData.investment_config[currentPeriod]) || { type: 'rate', value: historicalRate, strategy: 'constant' };
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    `;
+
+    modal.innerHTML = `
+        <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; max-width: 400px; width: 90%;">
+            <h2 style="margin: 0 0 15px 0; font-size: 18px;">Configure Investment Income</h2>
+            <p style="margin-bottom: 15px; font-size: 13px; color: var(--text-secondary);">
+                Configure how investment income is estimated for the <strong>${currentPeriod}</strong> period.
+            </p>
+            <form id="investment-config-form">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px;">Calculation Method</label>
+                    <div style="display: flex; gap: 10px;">
+                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px;">
+                            <input type="radio" name="config_type" value="rate" ${config.type === 'rate' ? 'checked' : ''}>
+                            Percentage of Assets
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px;">
+                            <input type="radio" name="config_type" value="fixed" ${config.type === 'fixed' ? 'checked' : ''}>
+                            Fixed Amount
+                        </label>
+                    </div>
+                </div>
+
+                <div id="rate-input-group" style="margin-bottom: 15px; ${config.type === 'rate' ? '' : 'display: none;'}">
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">Withdrawal/Yield Rate (%)</label>
+                        <input type="number" id="config-rate" value="${(config.type === 'rate' ? config.value * 100 : historicalRate * 100).toFixed(2)}" step="0.1" min="0" max="100"
+                               style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 13px;">
+                        <small style="color: var(--text-secondary); font-size: 11px;">Historical average: ${(historicalRate * 100).toFixed(1)}%</small>
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">Withdrawal Model</label>
+                        <select id="config-strategy" style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 13px;">
+                            <option value="constant" ${config.strategy === 'constant' ? 'selected' : ''}>Constant (Inflation Adjusted)</option>
+                            <option value="smile" ${config.strategy === 'smile' ? 'selected' : ''}>Retirement Smile (Variable)</option>
+                            <option value="decline" ${config.strategy === 'decline' ? 'selected' : ''}>Conservative Decline</option>
+                        </select>
+                        <small style="color: var(--text-secondary); font-size: 11px; display: block; margin-top: 2px;">
+                            Applies spending curve to this base rate
+                        </small>
+                    </div>
+                </div>
+
+                <div id="fixed-input-group" style="margin-bottom: 15px; ${config.type === 'fixed' ? '' : 'display: none;'}">
+                    <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">Annual Amount ($)</label>
+                    <input type="text" id="config-amount" value="${config.type === 'fixed' ? formatCurrency(config.value, 0) : ''}"
+                           style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 13px;">
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                    <button type="button" id="cancel-config-btn" style="padding: 6px 14px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 13px;">
+                        Cancel
+                    </button>
+                    <button type="submit" style="padding: 6px 14px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
+                        Update
+                    </button>
+                </div>
+            </form>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Toggle inputs based on type
+    const typeRadios = modal.querySelectorAll('input[name="config_type"]');
+    const rateGroup = modal.querySelector('#rate-input-group');
+    const fixedGroup = modal.querySelector('#fixed-input-group');
+
+    typeRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            if (e.target.value === 'rate') {
+                rateGroup.style.display = 'block';
+                fixedGroup.style.display = 'none';
+            } else {
+                rateGroup.style.display = 'none';
+                fixedGroup.style.display = 'block';
+            }
+        });
+    });
+
+    // Formatting for fixed amount
+    const amountInput = modal.querySelector('#config-amount');
+    amountInput.addEventListener('blur', (e) => {
+        const val = parseCurrency(e.target.value);
+        e.target.value = formatCurrency(val, 0);
+    });
+
+    // Close handlers
+    modal.querySelector('#cancel-config-btn').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+    // Submit handler
+    modal.querySelector('#investment-config-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const type = modal.querySelector('input[name="config_type"]:checked').value;
+        const strategy = modal.querySelector('#config-strategy').value;
+        let value = 0;
+
+        if (type === 'rate') {
+            value = parseFloat(modal.querySelector('#config-rate').value) / 100;
+        } else {
+            value = parseCurrency(modal.querySelector('#config-amount').value);
+        }
+
+        // Initialize config structure if needed
+        if (!budgetData.investment_config) {
+            budgetData.investment_config = {};
+        }
+
+        budgetData.investment_config[currentPeriod] = { type, value, strategy };
+
+        // Update view
+        const parentContainer = document.querySelector('.tab-content.active');
+        if (parentContainer) {
+            renderIncomeSection(parentContainer);
+            renderBudgetSummary(parentContainer);
+        }
+        
+        modal.remove();
+    });
 }
 
 /**
@@ -749,6 +958,14 @@ function setupBudgetEventHandlers(profile, container) {
                     b.style.color = 'var(--text-primary)';
                 }
             });
+
+            // Update context text
+            const contextSpan = container.querySelector('#period-context');
+            if (contextSpan) {
+                contextSpan.textContent = currentPeriod === 'current'
+                    ? '(Pre-retirement budget)'
+                    : '(Post-retirement budget)';
+            }
 
             // Re-render sections
             renderIncomeSection(container);
