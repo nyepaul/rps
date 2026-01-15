@@ -4,7 +4,7 @@
 
 import { store } from './state/store.js';
 import { apiClient } from './api/client.js';
-import { API_ENDPOINTS, STORAGE_KEYS } from './config.js';
+import { API_ENDPOINTS, STORAGE_KEYS, APP_CONFIG } from './config.js';
 
 /**
  * Initialize application
@@ -21,14 +21,44 @@ async function init() {
     // Set up settings button
     setupSettings();
 
-    // Load saved theme preference
+    // Load saved preferences
     loadThemePreference();
+    loadCompactModePreference();
 
-    // Show initial tab (welcome or last viewed)
-    const lastTab = localStorage.getItem(STORAGE_KEYS.LAST_TAB) || 'welcome';
-    showTab(lastTab);
+    // Try to load default profile
+    await loadDefaultProfileOnStartup();
+
+    // Show initial tab based on whether we have a profile loaded
+    const currentProfile = store.get('currentProfile');
+    let initialTab = localStorage.getItem(STORAGE_KEYS.LAST_TAB) || 'welcome';
+
+    // If we loaded a default profile, go to dashboard
+    if (currentProfile && initialTab === 'welcome') {
+        initialTab = 'dashboard';
+    }
+
+    showTab(initialTab);
 
     console.log('✅ Application initialized');
+}
+
+/**
+ * Load default profile on startup
+ */
+async function loadDefaultProfileOnStartup() {
+    const defaultProfileName = localStorage.getItem(STORAGE_KEYS.DEFAULT_PROFILE);
+    if (!defaultProfileName) return;
+
+    try {
+        const { profilesAPI } = await import('./api/profiles.js');
+        const data = await profilesAPI.get(defaultProfileName);
+        store.setState({ currentProfile: data.profile });
+        console.log('✅ Default profile loaded:', defaultProfileName);
+    } catch (error) {
+        // Default profile no longer exists, clear it
+        console.warn('⚠️ Default profile not found, clearing:', defaultProfileName);
+        localStorage.removeItem(STORAGE_KEYS.DEFAULT_PROFILE);
+    }
 }
 
 /**
@@ -143,6 +173,11 @@ async function loadTabComponent(tabName, container) {
             renderAssetsTab(tabContent);
             break;
         }
+        case 'budget': {
+            const { renderBudgetTab } = await import('./components/budget/budget-tab.js');
+            renderBudgetTab(tabContent);
+            break;
+        }
         case 'analysis': {
             const { renderAnalysisTab } = await import('./components/analysis/analysis-tab.js');
             renderAnalysisTab(tabContent);
@@ -201,6 +236,9 @@ function setupSettings() {
  * Open settings modal
  */
 function openSettings() {
+    const currentSimulations = localStorage.getItem(STORAGE_KEYS.SIMULATIONS) || APP_CONFIG.DEFAULT_SIMULATIONS;
+    const currentMarketProfile = localStorage.getItem(STORAGE_KEYS.MARKET_PROFILE) || 'historical';
+
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.style.cssText = `
@@ -217,23 +255,112 @@ function openSettings() {
     `;
 
     modal.innerHTML = `
-        <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; max-width: 500px; width: 90%;">
+        <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
             <h2 style="margin-bottom: 20px;">Settings</h2>
-            <div style="margin-bottom: 20px;">
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                    <input type="checkbox" id="dark-mode-toggle" ${document.body.classList.contains('dark-mode') ? 'checked' : ''}>
-                    <span>Dark Mode</span>
-                </label>
+
+            <!-- Appearance Settings -->
+            <div style="margin-bottom: 25px;">
+                <h3 style="font-size: 16px; margin-bottom: 12px; color: var(--text-secondary);">Appearance</h3>
+                <div style="margin-bottom: 10px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="dark-mode-toggle" ${document.body.classList.contains('dark-mode') ? 'checked' : ''}>
+                        <span>Dark Mode</span>
+                    </label>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="compact-mode-toggle" ${document.body.classList.contains('compact-mode') ? 'checked' : ''}>
+                        <span>Compact Mode</span>
+                    </label>
+                </div>
             </div>
-            <div style="margin-bottom: 20px;">
+
+            <!-- Analysis Settings -->
+            <div style="margin-bottom: 25px;">
+                <h3 style="font-size: 16px; margin-bottom: 12px; color: var(--text-secondary);">Monte Carlo Analysis</h3>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Default Number of Simulations</label>
+                    <input type="number" id="simulations-setting"
+                           value="${currentSimulations}"
+                           min="${APP_CONFIG.MIN_SIMULATIONS}"
+                           max="${APP_CONFIG.MAX_SIMULATIONS}"
+                           style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                    <small style="display: block; margin-top: 5px; color: var(--text-secondary);">
+                        Range: ${APP_CONFIG.MIN_SIMULATIONS.toLocaleString()} - ${APP_CONFIG.MAX_SIMULATIONS.toLocaleString()}. More simulations = more accurate (but slower)
+                    </small>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Market Assumptions Profile</label>
+                    <select id="market-profile-setting" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                        <optgroup label="📊 Base Scenarios">
+                            ${['historical', 'conservative', 'balanced', 'aggressive'].map(key => `
+                                <option value="${key}" ${currentMarketProfile === key ? 'selected' : ''}>
+                                    ${APP_CONFIG.MARKET_PROFILES[key].name}
+                                </option>
+                            `).join('')}
+                        </optgroup>
+                        <optgroup label="📉 Bear/Crisis Scenarios">
+                            ${['bear-market', 'recession', 'stagflation', 'crisis-2008'].map(key => `
+                                <option value="${key}" ${currentMarketProfile === key ? 'selected' : ''}>
+                                    ${APP_CONFIG.MARKET_PROFILES[key].name}
+                                </option>
+                            `).join('')}
+                        </optgroup>
+                        <optgroup label="📈 Bull/Optimistic Scenarios">
+                            ${['bull-market', 'post-covid', 'roaring-20s'].map(key => `
+                                <option value="${key}" ${currentMarketProfile === key ? 'selected' : ''}>
+                                    ${APP_CONFIG.MARKET_PROFILES[key].name}
+                                </option>
+                            `).join('')}
+                        </optgroup>
+                        <optgroup label="🎯 Historical Periods">
+                            ${['dotcom-boom', 'dotcom-bust', 'great-recession', 'decade-2010s'].map(key => `
+                                <option value="${key}" ${currentMarketProfile === key ? 'selected' : ''}>
+                                    ${APP_CONFIG.MARKET_PROFILES[key].name}
+                                </option>
+                            `).join('')}
+                        </optgroup>
+                        <optgroup label="🌍 Global & Alternative">
+                            ${['emerging', 'international', 'gold-hedge', 'real-estate'].map(key => `
+                                <option value="${key}" ${currentMarketProfile === key ? 'selected' : ''}>
+                                    ${APP_CONFIG.MARKET_PROFILES[key].name}
+                                </option>
+                            `).join('')}
+                        </optgroup>
+                        <optgroup label="💰 Income & Stability">
+                            ${['dividend', 'bonds-heavy'].map(key => `
+                                <option value="${key}" ${currentMarketProfile === key ? 'selected' : ''}>
+                                    ${APP_CONFIG.MARKET_PROFILES[key].name}
+                                </option>
+                            `).join('')}
+                        </optgroup>
+                        <optgroup label="🏭 Sector-Specific">
+                            ${['tech-heavy', 'healthcare', 'financials', 'energy'].map(key => `
+                                <option value="${key}" ${currentMarketProfile === key ? 'selected' : ''}>
+                                    ${APP_CONFIG.MARKET_PROFILES[key].name}
+                                </option>
+                            `).join('')}
+                        </optgroup>
+                    </select>
+                    <small id="market-profile-description" style="display: block; margin-top: 5px; color: var(--text-secondary);">
+                        ${APP_CONFIG.MARKET_PROFILES[currentMarketProfile]?.description || 'Select a market profile'}
+                    </small>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border-color);">
                 <button id="logout-btn" style="padding: 10px 20px; background: var(--danger-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
                     Logout
                 </button>
-            </div>
-            <div style="text-align: right;">
-                <button id="close-settings-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
-                    Close
-                </button>
+                <div style="display: flex; gap: 10px;">
+                    <button id="close-settings-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
+                        Cancel
+                    </button>
+                    <button id="save-settings-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                        Save Settings
+                    </button>
+                </div>
             </div>
         </div>
     `;
@@ -243,6 +370,31 @@ function openSettings() {
     // Set up event handlers
     document.getElementById('dark-mode-toggle').addEventListener('change', (e) => {
         toggleTheme(e.target.checked);
+    });
+
+    document.getElementById('compact-mode-toggle').addEventListener('change', (e) => {
+        toggleCompactMode(e.target.checked);
+    });
+
+    // Update market profile description on change
+    document.getElementById('market-profile-setting').addEventListener('change', (e) => {
+        const profile = APP_CONFIG.MARKET_PROFILES[e.target.value];
+        document.getElementById('market-profile-description').textContent = profile.description;
+    });
+
+    document.getElementById('save-settings-btn').addEventListener('click', () => {
+        // Save simulations setting
+        const simulations = parseInt(document.getElementById('simulations-setting').value);
+        if (simulations >= APP_CONFIG.MIN_SIMULATIONS && simulations <= APP_CONFIG.MAX_SIMULATIONS) {
+            localStorage.setItem(STORAGE_KEYS.SIMULATIONS, simulations);
+        }
+
+        // Save market profile
+        const marketProfile = document.getElementById('market-profile-setting').value;
+        localStorage.setItem(STORAGE_KEYS.MARKET_PROFILE, marketProfile);
+
+        alert('Settings saved successfully!');
+        modal.remove();
     });
 
     document.getElementById('logout-btn').addEventListener('click', async () => {
@@ -280,6 +432,29 @@ function loadThemePreference() {
     const theme = localStorage.getItem(STORAGE_KEYS.THEME);
     if (theme === 'dark') {
         document.body.classList.add('dark-mode');
+    }
+}
+
+/**
+ * Toggle compact mode
+ */
+function toggleCompactMode(isCompact) {
+    if (isCompact) {
+        document.body.classList.add('compact-mode');
+        localStorage.setItem(STORAGE_KEYS.COMPACT_MODE, 'true');
+    } else {
+        document.body.classList.remove('compact-mode');
+        localStorage.setItem(STORAGE_KEYS.COMPACT_MODE, 'false');
+    }
+}
+
+/**
+ * Load compact mode preference from localStorage
+ */
+function loadCompactModePreference() {
+    const compact = localStorage.getItem(STORAGE_KEYS.COMPACT_MODE);
+    if (compact === 'true') {
+        document.body.classList.add('compact-mode');
     }
 }
 
