@@ -4,7 +4,7 @@
 
 import { analysisAPI } from '../../api/analysis.js';
 import { store } from '../../state/store.js';
-import { showSuccess, showError, showLoading } from '../../utils/dom.js';
+import { showSuccess, showError, showErrorInContainer, showLoading } from '../../utils/dom.js';
 import { formatCurrency, formatPercent, formatCompact } from '../../utils/formatters.js';
 import { APP_CONFIG } from '../../config.js';
 
@@ -37,6 +37,17 @@ export function renderAnalysisTab(container) {
     const savedMarketProfile = localStorage.getItem('rps_market_profile') || 'historical';
     const marketProfile = APP_CONFIG.MARKET_PROFILES[savedMarketProfile];
 
+    // Group market profiles by category
+    const profileCategories = {
+        'Base Scenarios': ['historical', 'conservative', 'balanced', 'aggressive'],
+        'Bear & Crisis': ['bear-market', 'recession', 'stagflation', 'crisis-2008'],
+        'Bull & Optimistic': ['bull-market', 'post-covid', 'roaring-20s'],
+        'Historical Periods': ['dotcom-boom', 'dotcom-bust', 'great-recession', 'decade-2010s'],
+        'Global & Alternative': ['emerging', 'international', 'gold-hedge', 'real-estate'],
+        'Income & Stability': ['dividend', 'bonds-heavy'],
+        'Sector-Specific': ['tech-heavy', 'healthcare', 'financials', 'energy']
+    };
+
     container.innerHTML = `
         <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
             <h1 style="font-size: 36px; margin-bottom: 10px;">Retirement Analysis</h1>
@@ -46,30 +57,80 @@ export function renderAnalysisTab(container) {
 
             <!-- Analysis Configuration -->
             <div class="analysis-panel">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
-                    <div>
-                        <h2 style="font-size: 24px; margin: 0 0 5px 0;">Monte Carlo Simulation</h2>
-                        <p style="color: var(--text-secondary); margin: 0;">
-                            Market Assumptions: <strong>${marketProfile.name}</strong> - ${marketProfile.description}
-                        </p>
+                <h2 style="font-size: 24px; margin: 0 0 20px 0;">Monte Carlo Simulation</h2>
+
+                <!-- Market Assumptions Selector -->
+                <div style="margin-bottom: 25px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px;">
+                        Market Assumptions
+                    </label>
+                    <select id="market-profile-select" style="width: 100%; padding: 12px 15px; font-size: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer;">
+                        ${Object.entries(profileCategories).map(([category, keys]) => `
+                            <optgroup label="${category}">
+                                ${keys.filter(key => APP_CONFIG.MARKET_PROFILES[key]).map(key => {
+                                    const mp = APP_CONFIG.MARKET_PROFILES[key];
+                                    return `<option value="${key}" ${key === savedMarketProfile ? 'selected' : ''}>${mp.name}</option>`;
+                                }).join('')}
+                            </optgroup>
+                        `).join('')}
+                    </select>
+                    <div id="market-profile-description" style="margin-top: 10px; padding: 12px 15px; background: var(--bg-primary); border-radius: 8px; border: 1px solid var(--border-color);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-weight: 600; color: var(--text-primary);">${marketProfile.name}</span>
+                        </div>
+                        <p style="margin: 0 0 10px 0; color: var(--text-secondary); font-size: 14px;">${marketProfile.description}</p>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 13px;">
+                            <div>
+                                <span style="color: var(--text-secondary);">Stock Return:</span>
+                                <span style="color: var(--text-primary); font-weight: 500;"> ${(marketProfile.stock_return_mean * 100).toFixed(1)}%</span>
+                            </div>
+                            <div>
+                                <span style="color: var(--text-secondary);">Bond Return:</span>
+                                <span style="color: var(--text-primary); font-weight: 500;"> ${(marketProfile.bond_return_mean * 100).toFixed(1)}%</span>
+                            </div>
+                            <div>
+                                <span style="color: var(--text-secondary);">Inflation:</span>
+                                <span style="color: var(--text-primary); font-weight: 500;"> ${(marketProfile.inflation_mean * 100).toFixed(1)}%</span>
+                            </div>
+                        </div>
                     </div>
-                    <button onclick="document.getElementById('settings-btn').click()" style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 13px;">
-                        ⚙️ Change Settings
-                    </button>
                 </div>
 
+                <!-- Spending Model Selector -->
+                <div style="margin-bottom: 25px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px;">
+                        Spending Strategy (Retiree Behavior)
+                    </label>
+                    <select id="spending-model-select" style="width: 100%; padding: 12px 15px; font-size: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer;">
+                        <option value="constant_real">Constant Inflation-Adjusted (Default)</option>
+                        <option value="retirement_smile">Retirement Smile (Reality Planning)</option>
+                        <option value="conservative_decline">Conservative Decline (Slow-Go)</option>
+                    </select>
+                    <div id="spending-model-description" style="margin-top: 10px; padding: 12px 15px; background: var(--bg-primary); border-radius: 8px; border: 1px solid var(--border-color);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-weight: 600; color: var(--text-primary);">Constant Inflation-Adjusted</span>
+                        </div>
+                        <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">
+                            Maintains purchasing power throughout retirement. Spending increases exactly with inflation every year. Standard conservative assumption.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Simulations Selector -->
                 <div style="display: flex; gap: 20px; align-items: flex-end; margin-bottom: 20px;">
                     <div style="flex: 1;">
                         <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px;">
-                            Simulations: <span id="simulations-display">${parseInt(savedSimulations).toLocaleString()}</span>
+                            Number of Simulations
                         </label>
-                        <div style="background: var(--bg-primary); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
-                            <small style="color: var(--text-secondary); font-size: 12px;">
-                                💡 Tip: Adjust simulations and market assumptions in Settings (⚙️)
-                            </small>
-                        </div>
+                        <select id="simulations-select" style="width: 100%; padding: 12px 15px; font-size: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer;">
+                            <option value="1000" ${parseInt(savedSimulations) === 1000 ? 'selected' : ''}>1,000 (Fast)</option>
+                            <option value="5000" ${parseInt(savedSimulations) === 5000 ? 'selected' : ''}>5,000 (Quick)</option>
+                            <option value="10000" ${parseInt(savedSimulations) === 10000 ? 'selected' : ''}>10,000 (Standard)</option>
+                            <option value="25000" ${parseInt(savedSimulations) === 25000 ? 'selected' : ''}>25,000 (Detailed)</option>
+                            <option value="50000" ${parseInt(savedSimulations) === 50000 ? 'selected' : ''}>50,000 (Maximum)</option>
+                        </select>
                     </div>
-                    <button id="run-analysis-btn" class="primary-btn" style="padding: 12px 30px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600;">
+                    <button id="run-analysis-btn" class="primary-btn" style="padding: 12px 30px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; min-width: 150px;">
                         Run Analysis
                     </button>
                 </div>
@@ -134,17 +195,95 @@ export function renderAnalysisTab(container) {
 function setupAnalysisHandlers(container, profile) {
     const runBtn = container.querySelector('#run-analysis-btn');
     const resultsContainer = container.querySelector('#results-container');
+    const marketProfileSelect = container.querySelector('#market-profile-select');
+    const spendingModelSelect = container.querySelector('#spending-model-select');
+    const simulationsSelect = container.querySelector('#simulations-select');
+    const marketProfileDescription = container.querySelector('#market-profile-description');
+    const spendingModelDescription = container.querySelector('#spending-model-description');
 
     if (!runBtn || !resultsContainer) {
         console.error('Analysis form elements not found');
         return;
     }
 
+    // Spending Model Descriptions
+    const spendingDescriptions = {
+        'constant_real': {
+            title: 'Constant Inflation-Adjusted',
+            desc: 'Maintains purchasing power throughout retirement. Spending increases exactly with inflation every year. Standard conservative assumption.'
+        },
+        'retirement_smile': {
+            title: 'Retirement Smile (Reality Planning)',
+            desc: 'Models typical behavior: High spending in early retirement ("Go-Go" years), declining in mid-retirement ("Slow-Go"), and rising again in late retirement for healthcare ("No-Go").'
+        },
+        'conservative_decline': {
+            title: 'Conservative Decline',
+            desc: 'Assumes real spending decreases gradually as you age (1% per year after age 70), reflecting reduced activity levels.'
+        }
+    };
+
+    // Handle spending model change
+    if (spendingModelSelect) {
+        spendingModelSelect.addEventListener('change', () => {
+            const val = spendingModelSelect.value;
+            const info = spendingDescriptions[val];
+            if (spendingModelDescription && info) {
+                spendingModelDescription.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-weight: 600; color: var(--text-primary);">${info.title}</span>
+                    </div>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">${info.desc}</p>
+                `;
+            }
+        });
+    }
+
+    // Handle market profile change
+    if (marketProfileSelect) {
+        marketProfileSelect.addEventListener('change', () => {
+            const selectedKey = marketProfileSelect.value;
+            const selectedProfile = APP_CONFIG.MARKET_PROFILES[selectedKey];
+
+            // Save to localStorage
+            localStorage.setItem('rps_market_profile', selectedKey);
+
+            // Update description panel
+            if (marketProfileDescription && selectedProfile) {
+                marketProfileDescription.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-weight: 600; color: var(--text-primary);">${selectedProfile.name}</span>
+                    </div>
+                    <p style="margin: 0 0 10px 0; color: var(--text-secondary); font-size: 14px;">${selectedProfile.description}</p>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 13px;">
+                        <div>
+                            <span style="color: var(--text-secondary);">Stock Return:</span>
+                            <span style="color: var(--text-primary); font-weight: 500;"> ${(selectedProfile.stock_return_mean * 100).toFixed(1)}%</span>
+                        </div>
+                        <div>
+                            <span style="color: var(--text-secondary);">Bond Return:</span>
+                            <span style="color: var(--text-primary); font-weight: 500;"> ${(selectedProfile.bond_return_mean * 100).toFixed(1)}%</span>
+                        </div>
+                        <div>
+                            <span style="color: var(--text-secondary);">Inflation:</span>
+                            <span style="color: var(--text-primary); font-weight: 500;"> ${(selectedProfile.inflation_mean * 100).toFixed(1)}%</span>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+    }
+
+    // Handle simulations change
+    if (simulationsSelect) {
+        simulationsSelect.addEventListener('change', () => {
+            localStorage.setItem('rps_simulations', simulationsSelect.value);
+        });
+    }
+
     runBtn.addEventListener('click', async () => {
-        // Get settings from localStorage
-        const savedSimulations = localStorage.getItem('rps_simulations') || APP_CONFIG.DEFAULT_SIMULATIONS;
-        const savedMarketProfile = localStorage.getItem('rps_market_profile') || 'historical';
-        const simulations = parseInt(savedSimulations, 10);
+        // Get values from selectors
+        const simulations = parseInt(simulationsSelect?.value || localStorage.getItem('rps_simulations') || APP_CONFIG.DEFAULT_SIMULATIONS, 10);
+        const savedMarketProfile = marketProfileSelect?.value || localStorage.getItem('rps_market_profile') || 'historical';
 
         if (simulations < APP_CONFIG.MIN_SIMULATIONS || simulations > APP_CONFIG.MAX_SIMULATIONS) {
             alert(`Simulations must be between ${APP_CONFIG.MIN_SIMULATIONS} and ${APP_CONFIG.MAX_SIMULATIONS}`);
@@ -158,7 +297,10 @@ function setupAnalysisHandlers(container, profile) {
 
         try {
             const marketProfile = APP_CONFIG.MARKET_PROFILES[savedMarketProfile];
-            const result = await analysisAPI.runAnalysis(profile.name, simulations, marketProfile);
+            const spendingModel = spendingModelSelect?.value || 'constant_real';
+            
+            // Pass spending model to API
+            const result = await analysisAPI.runAnalysis(profile.name, simulations, marketProfile, spendingModel);
 
             // DEBUG: Log the response
             console.log('Analysis API Response:', JSON.stringify(result, null, 2));
@@ -174,7 +316,7 @@ function setupAnalysisHandlers(container, profile) {
 
         } catch (error) {
             console.error('Analysis error:', error);
-            showError(resultsContainer, `Failed to run analysis: ${error.message}`);
+            showErrorInContainer(resultsContainer, `Failed to run analysis: ${error.message}`);
         } finally {
             runBtn.disabled = false;
             runBtn.textContent = 'Run Analysis';
@@ -212,8 +354,11 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
             </p>
 
             <div class="stat-grid">
-                <div class="stat-item">
-                    <div class="stat-label">Success Rate</div>
+                <div class="stat-item" title="% of trials that didn't run out of cash">
+                    <div class="stat-label">
+                        Success Rate 
+                        <a href="https://www.investopedia.com/terms/m/montecarlosimulation.asp" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold; margin-left: 5px;" title="Learn more about Monte Carlo Success Rates">?</a>
+                    </div>
                     <div class="stat-value ${successClass}">
                         ${formatPercent(successRate, 1)}
                     </div>
@@ -222,42 +367,51 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
                     </small>
                 </div>
 
-                <div class="stat-item">
-                    <div class="stat-label">Median Final Balance</div>
+                <div class="stat-item" title="Half of trials ended with more than this, half with less">
+                    <div class="stat-label">
+                        Median Final Balance
+                        <a href="https://www.investopedia.com/terms/m/median.asp" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold; margin-left: 5px;" title="Learn more about Median">?</a>
+                    </div>
                     <div class="stat-value stat-info">
                         ${formatCurrency(data.median_final_balance || 0, 0)}
                     </div>
                 </div>
 
-                <div class="stat-item">
-                    <div class="stat-label">10th Percentile</div>
+                <div class="stat-item" title="Worst 10% of outcomes. Only 10% of trials performed worse than this (conservative)">
+                    <div class="stat-label">
+                        10th Percentile
+                        <a href="https://www.investopedia.com/terms/p/percentile.asp" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold; margin-left: 5px;" title="Learn more about Percentiles">?</a>
+                    </div>
                     <div class="stat-value">
                         ${formatCurrency(data.percentile_10 || 0, 0)}
                     </div>
-                    <small style="display: block; margin-top: 8px; color: var(--text-secondary);">
-                        Worst 10% of outcomes
-                    </small>
                 </div>
 
-                <div class="stat-item">
-                    <div class="stat-label">90th Percentile</div>
+                <div class="stat-item" title="Best 10% of outcomes. Only 10% of trials performed better than this (optimistic)">
+                    <div class="stat-label">
+                        90th Percentile
+                        <a href="https://www.investopedia.com/terms/p/percentile.asp" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold; margin-left: 5px;" title="Learn more about Percentiles">?</a>
+                    </div>
                     <div class="stat-value stat-success">
                         ${formatCurrency(data.percentile_90 || 0, 0)}
                     </div>
-                    <small style="display: block; margin-top: 8px; color: var(--text-secondary);">
-                        Best 10% of outcomes
-                    </small>
                 </div>
 
-                <div class="stat-item">
-                    <div class="stat-label">Expected Value</div>
+                <div class="stat-item" title="The average of all trial outcomes">
+                    <div class="stat-label">
+                        Expected Value
+                        <a href="https://www.investopedia.com/terms/e/expected-value.asp" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold; margin-left: 5px;" title="Learn more about Expected Value">?</a>
+                    </div>
                     <div class="stat-value">
                         ${formatCurrency(data.expected_value || 0, 0)}
                     </div>
                 </div>
 
-                <div class="stat-item">
-                    <div class="stat-label">Std Deviation</div>
+                <div class="stat-item" title="Measure of uncertainty; higher means more spread between outcomes">
+                    <div class="stat-label">
+                        Std Deviation
+                        <a href="https://www.investopedia.com/terms/s/standarddeviation.asp" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold; margin-left: 5px;" title="Learn more about Standard Deviation">?</a>
+                    </div>
                     <div class="stat-value">
                         ${formatCurrency(data.std_deviation || 0, 0)}
                     </div>
@@ -366,8 +520,11 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
                         </div>
 
                         <div class="stat-grid">
-                            <div class="stat-item">
-                                <div class="stat-label">Success Rate</div>
+                            <div class="stat-item" title="% of trials that didn't run out of cash">
+                                <div class="stat-label">
+                                    Success Rate
+                                    <a href="https://www.investopedia.com/terms/m/montecarlosimulation.asp" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold; margin-left: 5px;" title="Learn more about Monte Carlo Success Rates">?</a>
+                                </div>
                                 <div class="stat-value ${successClass}">
                                     ${formatPercent(successRate, 1)}
                                 </div>
@@ -376,42 +533,51 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
                                 </small>
                             </div>
 
-                            <div class="stat-item">
-                                <div class="stat-label">Median Final Balance</div>
+                            <div class="stat-item" title="Half of trials ended with more than this, half with less">
+                                <div class="stat-label">
+                                    Median Final Balance
+                                    <a href="https://www.investopedia.com/terms/m/median.asp" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold; margin-left: 5px;" title="Learn more about Median">?</a>
+                                </div>
                                 <div class="stat-value stat-info">
                                     ${formatCurrency(scenario.median_final_balance || 0, 0)}
                                 </div>
                             </div>
 
-                            <div class="stat-item">
-                                <div class="stat-label">10th Percentile</div>
+                            <div class="stat-item" title="Worst 10% of outcomes. Only 10% of trials performed worse than this (conservative)">
+                                <div class="stat-label">
+                                    10th Percentile
+                                    <a href="https://www.investopedia.com/terms/p/percentile.asp" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold; margin-left: 5px;" title="Learn more about Percentiles">?</a>
+                                </div>
                                 <div class="stat-value">
                                     ${formatCurrency(scenario.percentile_10 || 0, 0)}
                                 </div>
-                                <small style="display: block; margin-top: 8px; color: var(--text-secondary);">
-                                    Worst 10% of outcomes
-                                </small>
                             </div>
 
-                            <div class="stat-item">
-                                <div class="stat-label">90th Percentile</div>
+                            <div class="stat-item" title="Best 10% of outcomes. Only 10% of trials performed better than this (optimistic)">
+                                <div class="stat-label">
+                                    90th Percentile
+                                    <a href="https://www.investopedia.com/terms/p/percentile.asp" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold; margin-left: 5px;" title="Learn more about Percentiles">?</a>
+                                </div>
                                 <div class="stat-value stat-success">
                                     ${formatCurrency(scenario.percentile_90 || 0, 0)}
                                 </div>
-                                <small style="display: block; margin-top: 8px; color: var(--text-secondary);">
-                                    Best 10% of outcomes
-                                </small>
                             </div>
 
-                            <div class="stat-item">
-                                <div class="stat-label">Expected Value</div>
+                            <div class="stat-item" title="The average of all trial outcomes">
+                                <div class="stat-label">
+                                    Expected Value
+                                    <a href="https://www.investopedia.com/terms/e/expected-value.asp" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold; margin-left: 5px;" title="Learn more about Expected Value">?</a>
+                                </div>
                                 <div class="stat-value">
                                     ${formatCurrency(scenario.expected_value || 0, 0)}
                                 </div>
                             </div>
 
-                            <div class="stat-item">
-                                <div class="stat-label">Std Deviation</div>
+                            <div class="stat-item" title="Measure of uncertainty; higher means more spread between outcomes">
+                                <div class="stat-label">
+                                    Std Deviation
+                                    <a href="https://www.investopedia.com/terms/s/standarddeviation.asp" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold; margin-left: 5px;" title="Learn more about Standard Deviation">?</a>
+                                </div>
                                 <div class="stat-value">
                                     ${formatCurrency(scenario.std_deviation || 0, 0)}
                                 </div>
@@ -455,6 +621,9 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
             }).join('')}
 
             <div style="text-align: center; margin-top: 30px;">
+                 <button id="save-multi-scenario-btn" style="padding: 12px 24px; background: var(--success-color); color: white; border: none; border-radius: 6px; cursor: pointer; margin-right: 10px; font-weight: 600;">
+                    Save as Scenario
+                </button>
                 <button onclick="window.app.showTab('comparison')" class="secondary-btn" style="padding: 12px 24px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-radius: 6px; cursor: pointer; margin-right: 10px;">
                     Compare Scenarios
                 </button>
@@ -521,6 +690,9 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
             console.warn(`No timeline data for scenario ${key}`);
         }
     });
+
+    // Setup save handler for multi-scenario
+    setupMultiSaveScenarioHandler(container, profile);
 }
 
 function renderTimelineChart(timeline, canvasId = 'timeline-chart') {
@@ -656,7 +828,20 @@ async function setupSaveScenarioHandler(container, profile) {
             return;
         }
 
-        const defaultName = `${profile.name} - ${new Date().toLocaleDateString()}`;
+        const savedMarketProfileKey = localStorage.getItem('rps_market_profile') || 'historical';
+        const marketProfileName = APP_CONFIG.MARKET_PROFILES[savedMarketProfileKey]?.name || 'Historical';
+        
+        // Get spending model hint
+        const spendingModelSelect = container.querySelector('#spending-model-select');
+        const spendingModelKey = spendingModelSelect?.value || 'constant_real';
+        const spendingShortNames = {
+            'constant_real': 'Constant',
+            'retirement_smile': 'Smile',
+            'conservative_decline': 'Decline'
+        };
+        const spendingHint = spendingShortNames[spendingModelKey] || 'Custom';
+
+        const defaultName = `${profile.name} - ${marketProfileName} - ${spendingHint} - ${new Date().toLocaleDateString()}`;
         const scenarioName = prompt('Enter a name for this scenario:', defaultName);
 
         if (!scenarioName) return;
@@ -682,6 +867,61 @@ async function setupSaveScenarioHandler(container, profile) {
         } catch (error) {
             console.error('Save scenario error:', error);
             alert(`Failed to save scenario: ${error.message}`);
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save as Scenario';
+        }
+    });
+}
+
+async function setupMultiSaveScenarioHandler(container, profile) {
+    const saveBtn = container.querySelector('#save-multi-scenario-btn');
+    if (!saveBtn) return;
+
+    saveBtn.addEventListener('click', async () => {
+        if (!lastAnalysisResult) {
+            alert('No analysis results to save');
+            return;
+        }
+
+        const savedMarketProfileKey = localStorage.getItem('rps_market_profile') || 'historical';
+        const marketProfileName = APP_CONFIG.MARKET_PROFILES[savedMarketProfileKey]?.name || 'Historical';
+        
+        // Get spending model hint
+        const spendingModelSelect = container.querySelector('#spending-model-select');
+        const spendingModelKey = spendingModelSelect?.value || 'constant_real';
+        const spendingShortNames = {
+            'constant_real': 'Constant',
+            'retirement_smile': 'Smile',
+            'conservative_decline': 'Decline'
+        };
+        const spendingHint = spendingShortNames[spendingModelKey] || 'Custom';
+
+        const defaultName = `${profile.name} - ${marketProfileName} - ${spendingHint} - Multi - ${new Date().toLocaleDateString()}`;
+        const scenarioName = prompt('Enter a name for this multi-scenario analysis:', defaultName);
+
+        if (!scenarioName) return;
+
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+
+        try {
+            // Import scenarios API dynamically
+            const { scenariosAPI } = await import('../../api/scenarios.js');
+
+            await scenariosAPI.create(
+                scenarioName,
+                profile.name,
+                { simulations: lastSimulations, profile_snapshot: profile.data, multi_scenario: true },
+                lastAnalysisResult
+            );
+
+            showSuccess('Multi-scenario analysis saved successfully!');
+            saveBtn.textContent = 'Saved!';
+            saveBtn.style.background = 'var(--text-secondary)';
+
+        } catch (error) {
+            console.error('Save multi-scenario error:', error);
+            alert(`Failed to save multi-scenario: ${error.message}`);
             saveBtn.disabled = false;
             saveBtn.textContent = 'Save as Scenario';
         }

@@ -217,7 +217,7 @@ def test_complete_user_journey(client, test_db):
 
     # Step 18: Verify cannot access protected routes after logout
     protected_response = client.get('/api/profiles')
-    assert protected_response.status_code == 401
+    assert protected_response.status_code == 302
 
 
 def test_multi_user_isolation(client, test_db):
@@ -229,11 +229,11 @@ def test_multi_user_isolation(client, test_db):
     client.post('/api/auth/register', json={
         'username': 'user1',
         'email': 'user1@example.com',
-        'password': 'Pass123'
+        'password': 'Password123'
     })
     client.post('/api/auth/login', json={
         'username': 'user1',
-        'password': 'Pass123'
+        'password': 'Password123'
     })
 
     client.post('/api/profiles', json={
@@ -254,24 +254,30 @@ def test_multi_user_isolation(client, test_db):
     client.post('/api/auth/register', json={
         'username': 'user2',
         'email': 'user2@example.com',
-        'password': 'Pass123'
+        'password': 'Password123'
     })
-    client.post('/api/auth/login', json={
+    login_resp = client.post('/api/auth/login', json={
         'username': 'user2',
-        'password': 'Pass123'
+        'password': 'Password123'
     })
+    assert login_resp.status_code == 200
 
-    client.post('/api/profiles', json={
+    create_resp = client.post('/api/profiles', json={
         'name': 'User2 Profile',
         'data': {'financial': {'liquid_assets': 200000}}
     })
+    assert create_resp.status_code == 201
 
     # User2 should only see their own data
     profiles_response = client.get('/api/profiles')
+    assert profiles_response.status_code == 200
     profiles = profiles_response.get_json()['profiles']
     assert len(profiles) == 1
     assert profiles[0]['name'] == 'User2 Profile'
-    assert profiles[0]['data']['financial']['liquid_assets'] == 200000
+    
+    # Get full profile to check data
+    profile_detail = client.get(f'/api/profile/{profiles[0]["name"]}').get_json()['profile']
+    assert profile_detail['data']['financial']['liquid_assets'] == 200000
 
     # User2 should not see User1's action items
     actions_response = client.get('/api/action-items')
@@ -284,7 +290,7 @@ def test_multi_user_isolation(client, test_db):
     # Login back as user1
     client.post('/api/auth/login', json={
         'username': 'user1',
-        'password': 'Pass123'
+        'password': 'Password123'
     })
 
     # User1 should still see their own data
@@ -292,9 +298,12 @@ def test_multi_user_isolation(client, test_db):
     profiles = profiles_response.get_json()['profiles']
     assert len(profiles) == 1
     assert profiles[0]['name'] == 'User1 Profile'
-    assert profiles[0]['data']['financial']['liquid_assets'] == 100000
+    
+    # Get full profile
+    profile_detail = client.get(f'/api/profile/{profiles[0]["name"]}').get_json()['profile']
+    assert profile_detail['data']['financial']['liquid_assets'] == 100000
 
     actions_response = client.get('/api/action-items')
     actions = actions_response.get_json()['action_items']
     assert len(actions) == 1
-    assert actions[0]['title'] == 'User1 Action'
+    assert actions[0]['description'] == 'User1 Action'

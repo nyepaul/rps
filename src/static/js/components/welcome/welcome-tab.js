@@ -9,32 +9,32 @@ import { showLoading, showError, createElement, showSuccess } from '../../utils/
 
 export function renderWelcomeTab(container) {
     container.innerHTML = `
-        <div style="max-width: 900px; margin: 0 auto; padding: 20px 15px;">
-            <h1 style="font-size: 28px; margin-bottom: 10px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+        <div style="max-width: 900px; margin: 0 auto; padding: 10px;">
+            <h1 style="font-size: 28px; margin-bottom: 8px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
                 Welcome to Your Retirement Planning Tool
             </h1>
-            <p style="font-size: 14px; text-align: center; color: var(--text-secondary); margin-bottom: 25px;">
+            <p style="font-size: 14px; text-align: center; color: var(--text-secondary); margin-bottom: 20px;">
                 Plan your future with confidence. Let's get started!
             </p>
 
             <!-- Profiles Section -->
-            <div style="background: var(--bg-secondary); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div style="background: var(--bg-secondary); border-radius: 8px; padding: 15px; margin-bottom: 15px; border: 1px solid var(--border-color);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <h2 style="font-size: 20px; margin: 0;">Your Profiles</h2>
-                    <button id="create-profile-btn" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    <button id="create-profile-btn" style="padding: 6px 14px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px;">
                         + New Profile
                     </button>
                 </div>
                 <div id="profiles-container">
-                    <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                    <div style="text-align: center; padding: 15px; color: var(--text-secondary);">
                         Loading profiles...
                     </div>
                 </div>
             </div>
 
             <!-- Features Info -->
-            <div style="text-align: center; padding: 20px; background: var(--info-bg); border-radius: 8px;">
-                <h3 style="margin-bottom: 12px; font-size: 16px;">What You Can Do</h3>
+            <div style="text-align: center; padding: 15px; background: var(--info-bg); border-radius: 8px;">
+                <h3 style="margin-bottom: 10px; font-size: 16px;">What You Can Do</h3>
                 <ul style="text-align: left; display: inline-block; margin: 0; font-size: 13px;">
                     <li>Run Monte Carlo simulations with 10,000+ scenarios</li>
                     <li>Optimize Social Security claiming strategies</li>
@@ -160,6 +160,7 @@ function setupProfileHandlers(container, profiles) {
         btn.addEventListener('click', async (e) => {
             e.stopPropagation();
             const profileName = btn.dataset.profile;
+            
             if (confirm(`Delete profile "${profileName}"? This cannot be undone.`)) {
                 try {
                     await profilesAPI.delete(profileName);
@@ -175,7 +176,7 @@ function setupProfileHandlers(container, profiles) {
                     showSuccess(`Profile "${profileName}" deleted`);
                     loadProfiles(container);
                 } catch (error) {
-                    alert(`Error deleting profile: ${error.message}`);
+                    showError(`Error deleting profile: ${error.message}`);
                 }
             }
         });
@@ -240,7 +241,7 @@ function showCreateProfileModal(container) {
             modal.remove();
             window.app.showTab('profile');
         } catch (error) {
-            alert(`Error creating profile: ${error.message}`);
+            showError(`Error creating profile: ${error.message}`);
         }
     });
 }
@@ -303,7 +304,7 @@ function showEditProfileModal(container, profile) {
             showSuccess('Profile updated');
             loadProfiles(container);
         } catch (error) {
-            alert(`Error updating profile: ${error.message}`);
+            showError(`Error updating profile: ${error.message}`);
         }
     });
 }
@@ -350,7 +351,7 @@ async function loadProfile(profileName) {
         store.setState({ currentProfile: data.profile });
         window.app.showTab('dashboard');
     } catch (error) {
-        alert(`Error loading profile: ${error.message}`);
+        showError(`Error loading profile: ${error.message}`);
     }
 }
 

@@ -7,6 +7,7 @@ from src.models.profile import Profile
 from src.services.retirement_model import (
     Person, FinancialProfile, MarketAssumptions, RetirementModel
 )
+from src.services.rebalancing_service import RebalancingService
 
 analysis_bp = Blueprint('analysis', __name__, url_prefix='/api')
 
@@ -82,6 +83,7 @@ class AnalysisRequestSchema(BaseModel):
     profile_name: str
     simulations: Optional[int] = 10000
     market_profile: Optional[MarketProfileSchema] = None
+    spending_model: Optional[str] = 'constant_real'
 
     @validator('simulations')
     def validate_simulations(cls, v):
@@ -235,7 +237,8 @@ def run_analysis():
             scenario_result = model.monte_carlo_simulation(
                 years=years,
                 simulations=data.simulations,
-                assumptions=market_assumptions
+                assumptions=market_assumptions,
+                spending_model=data.spending_model
             )
             scenario_result['scenario_name'] = scenario_config['name']
             scenario_result['description'] = scenario_config['description']
@@ -386,6 +389,35 @@ def analyze_roth_conversion():
 
         # Analyze Roth conversion
         results = model.analyze_roth_conversion(conversion_amount)
+        results['profile_name'] = profile_name
+
+        return jsonify(results), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@analysis_bp.route('/analysis/rebalance', methods=['POST'])
+@login_required
+def analyze_rebalancing():
+    """Analyze current allocation and suggest rebalancing."""
+    try:
+        profile_name = request.json.get('profile_name')
+        target_allocation = request.json.get('target_allocation', {'stocks': 0.6, 'bonds': 0.4, 'cash': 0.0})
+
+        if not profile_name:
+            return jsonify({'error': 'profile_name is required'}), 400
+
+        # Get profile with ownership check
+        profile = Profile.get_by_name(profile_name, current_user.id)
+        if not profile:
+            return jsonify({'error': 'Profile not found'}), 404
+
+        profile_data = profile.data_dict
+        assets = profile_data.get('assets', {})
+        
+        service = RebalancingService(assets)
+        results = service.suggest_rebalancing(target_allocation)
         results['profile_name'] = profile_name
 
         return jsonify(results), 200

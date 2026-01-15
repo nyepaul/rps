@@ -3,7 +3,9 @@
  */
 
 import { store } from '../../state/store.js';
-import { formatCurrency } from '../../utils/formatters.js';
+import { formatCurrency, formatPercent } from '../../utils/formatters.js';
+import { showArticle } from '../learn/learn-tab.js';
+import { analysisAPI } from '../../api/analysis.js';
 
 export function renderAccountsTab(container) {
     const profile = store.get('currentProfile');
@@ -27,14 +29,22 @@ export function renderAccountsTab(container) {
     const data = profile.data || {};
     const assets = data.assets || {};
 
+    // Filter assets by withdrawal category
+    const taxableAccounts = assets.taxable_accounts || [];
+    const taxDeferredAccounts = (assets.retirement_accounts || []).filter(a => 
+        !a.type.includes('roth') && !a.name.toLowerCase().includes('roth')
+    );
+    const rothAccounts = (assets.retirement_accounts || []).filter(a => 
+        a.type.includes('roth') || a.name.toLowerCase().includes('roth')
+    );
+
     // Calculate totals from actual asset data
     const sumAssets = (arr) => (arr || []).reduce((sum, a) => sum + (a.value || a.current_value || 0), 0);
 
-    const liquidAssets = sumAssets(assets.taxable_accounts);
+    const liquidAssets = sumAssets(taxableAccounts);
     const retirementAssets = sumAssets(assets.retirement_accounts);
     const realEstateAssets = sumAssets(assets.real_estate);
     const otherAssets = sumAssets(assets.other_assets);
-    // Pensions are monthly income, not lump sum assets
     const totalAssets = liquidAssets + retirementAssets + realEstateAssets + otherAssets;
 
     container.innerHTML = `
@@ -48,24 +58,29 @@ export function renderAccountsTab(container) {
             <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; margin-bottom: 30px;">
                 <h2 style="font-size: 24px; margin-bottom: 20px;">Account Summary</h2>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
-                    <div class="account-card">
+                    <div class="account-card" data-category="liquid" style="cursor: pointer;">
                         <div class="account-icon">💵</div>
                         <div class="account-type">Liquid Assets</div>
                         <div class="account-balance">${formatCurrency(liquidAssets, 0)}</div>
                         <div class="account-desc">Checking, savings, taxable investments</div>
                     </div>
-                    <div class="account-card">
+                    <div class="account-card" data-category="retirement" style="cursor: pointer;">
                         <div class="account-icon">🏦</div>
                         <div class="account-type">Retirement Assets</div>
                         <div class="account-balance">${formatCurrency(retirementAssets, 0)}</div>
                         <div class="account-desc">401(k), IRA, Roth IRA accounts</div>
                     </div>
-                    <div class="account-card">
+                    <div class="account-card" data-category="total" style="cursor: pointer;">
                         <div class="account-icon">📊</div>
                         <div class="account-type">Total Assets</div>
                         <div class="account-balance">${formatCurrency(totalAssets, 0)}</div>
                         <div class="account-desc">Combined portfolio value</div>
                     </div>
+                </div>
+
+                <!-- Asset List Container -->
+                <div id="asset-list-container" style="margin-top: 30px; display: none; border-top: 1px solid var(--border-color); padding-top: 20px; animation: fadeIn 0.3s ease-in-out;">
+                    <!-- Content will be injected here -->
                 </div>
             </div>
 
@@ -73,67 +88,135 @@ export function renderAccountsTab(container) {
             <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; margin-bottom: 30px;">
                 <h2 style="font-size: 24px; margin-bottom: 20px;">Withdrawal Strategy</h2>
                 <p style="color: var(--text-secondary); margin-bottom: 25px;">
-                    Plan which accounts to withdraw from first to minimize taxes and maximize portfolio longevity.
+                    Plan which accounts to withdraw from first to minimize taxes and maximize portfolio longevity. Click each section to see constituent accounts.
                 </p>
 
                 <div style="display: grid; gap: 15px;">
-                    <div style="background: var(--bg-primary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--success-color);">
-                        <h3 style="margin-bottom: 10px;">1️⃣ Taxable Accounts First</h3>
+                    <!-- Taxable Section -->
+                    <div class="strategy-card" data-target="list-taxable" style="background: var(--bg-primary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--success-color); cursor: pointer; transition: transform 0.2s;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="margin-bottom: 10px;">1️⃣ Taxable Accounts First</h3>
+                            <span class="toggle-icon">▶</span>
+                        </div>
                         <p style="color: var(--text-secondary); font-size: 14px;">
                             Withdraw from taxable accounts early to allow tax-advantaged accounts to grow longer.
                         </p>
+                        <div id="list-taxable" style="display: none; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                            ${renderConstituentAccounts(taxableAccounts)}
+                        </div>
                     </div>
-                    <div style="background: var(--bg-primary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--info-color);">
-                        <h3 style="margin-bottom: 10px;">2️⃣ Tax-Deferred Accounts Second</h3>
+
+                    <!-- Tax-Deferred Section -->
+                    <div class="strategy-card" data-target="list-deferred" style="background: var(--bg-primary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--info-color); cursor: pointer; transition: transform 0.2s;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="margin-bottom: 10px;">2️⃣ Tax-Deferred Accounts Second</h3>
+                            <span class="toggle-icon">▶</span>
+                        </div>
                         <p style="color: var(--text-secondary); font-size: 14px;">
                             Traditional 401(k) and IRA withdrawals are taxed as ordinary income. Use after taxable accounts.
                         </p>
+                        <div id="list-deferred" style="display: none; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                            ${renderConstituentAccounts(taxDeferredAccounts)}
+                        </div>
                     </div>
-                    <div style="background: var(--bg-primary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-color);">
-                        <h3 style="margin-bottom: 10px;">3️⃣ Roth Accounts Last</h3>
+
+                    <!-- Roth Section -->
+                    <div class="strategy-card" data-target="list-roth" style="background: var(--bg-primary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-color); cursor: pointer; transition: transform 0.2s;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="margin-bottom: 10px;">3️⃣ Roth Accounts Last</h3>
+                            <span class="toggle-icon">▶</span>
+                        </div>
                         <p style="color: var(--text-secondary); font-size: 14px;">
                             Let Roth accounts grow tax-free as long as possible. These provide maximum flexibility.
                         </p>
+                        <div id="list-roth" style="display: none; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                            ${renderConstituentAccounts(rothAccounts)}
+                        </div>
                     </div>
                 </div>
 
                 <div style="margin-top: 25px; padding: 20px; background: var(--warning-bg); border-radius: 8px;">
                     <strong>⚠️ Important Considerations:</strong>
                     <ul style="margin: 10px 0; padding-left: 20px; color: var(--text-secondary);">
-                        <li>Required Minimum Distributions (RMDs) start at age 73</li>
-                        <li>Social Security benefits may be taxed depending on income</li>
-                        <li>Consider tax bracket management in each year</li>
-                        <li>Healthcare subsidies may be affected by income</li>
+                        <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Required Minimum Distributions (RMDs)" data-title="RMD Rules" style="cursor: pointer; color: var(--accent-color); text-decoration: underline; margin-bottom: 5px;">
+                            Required Minimum Distributions (RMDs) start at age 73
+                        </li>
+                        <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Social Security Taxation" data-title="Social Security Taxes" style="cursor: pointer; color: var(--accent-color); text-decoration: underline; margin-bottom: 5px;">
+                            Social Security benefits may be taxed depending on income
+                        </li>
+                        <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Federal Income Tax Brackets (2024)" data-title="Tax Bracket Management" style="cursor: pointer; color: var(--accent-color); text-decoration: underline; margin-bottom: 5px;">
+                            Consider tax bracket management in each year
+                        </li>
+                        <li class="learn-link" data-skill="healthcare-gap-SKILL.md" data-section="Bridging the Gap (Pre-65)" data-title="Healthcare Subsidies" style="cursor: pointer; color: var(--accent-color); text-decoration: underline;">
+                            Healthcare subsidies may be affected by income
+                        </li>
                     </ul>
                 </div>
             </div>
 
-            <!-- Account Details (Placeholder) -->
-            <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px;">
-                <h2 style="font-size: 24px; margin-bottom: 20px;">Detailed Account Management</h2>
-                <div style="text-align: center; padding: 40px;">
-                    <div style="font-size: 48px; margin-bottom: 20px;">🚧</div>
-                    <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                        Advanced account tracking and management features coming soon!
-                    </p>
-                    <p style="color: var(--text-light); font-size: 14px; margin-bottom: 20px;">
-                        Future features will include:
-                    </p>
-                    <ul style="text-align: left; display: inline-block; color: var(--text-secondary); font-size: 14px;">
-                        <li>Individual account tracking</li>
-                        <li>Asset allocation by account</li>
-                        <li>Tax-efficient rebalancing</li>
-                        <li>Withdrawal sequence optimization</li>
-                        <li>RMD calculations and tracking</li>
-                    </ul>
-                    <div style="margin-top: 30px;">
-                        <button onclick="window.app.showTab('profile')" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; margin-right: 10px;">
-                            Edit Profile Data
-                        </button>
-                        <button onclick="window.app.showTab('analysis')" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-radius: 6px; cursor: pointer;">
-                            Run Analysis
-                        </button>
+            <!-- Rebalancing and Asset Allocation -->
+            <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; margin-bottom: 30px;" id="rebalancing-section">
+                <h2 style="font-size: 24px; margin-bottom: 20px;">Asset Allocation & Rebalancing</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 25px;">
+                    Analyze your current aggregate allocation across all accounts and get tax-efficient rebalancing suggestions.
+                </p>
+                
+                <div style="background: var(--bg-primary); padding: 25px; border-radius: 8px; margin-bottom: 25px; border: 1px solid var(--border-color);">
+                    <h3 style="font-size: 18px; margin-bottom: 15px;">Set Target Allocation</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px;">
+                        <div class="form-group">
+                            <label>Stocks (%)</label>
+                            <input type="number" id="target-stocks" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" value="60" min="0" max="100">
+                        </div>
+                        <div class="form-group">
+                            <label>Bonds (%)</label>
+                            <input type="number" id="target-bonds" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" value="40" min="0" max="100">
+                        </div>
+                        <div class="form-group">
+                            <label>Cash (%)</label>
+                            <input type="number" id="target-cash" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" value="0" min="0" max="100">
+                        </div>
                     </div>
+                    <button id="run-rebalancing" style="margin-top: 20px; padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        Analyze Allocation
+                    </button>
+                </div>
+
+                <div id="rebalancing-results" style="display: none; animation: fadeIn 0.3s ease-in-out;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
+                        <div>
+                            <h3 style="font-size: 18px; margin-bottom: 15px;">Current vs. Target</h3>
+                            <div style="overflow-x: auto;">
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr style="text-align: left; color: var(--text-secondary); font-size: 13px; border-bottom: 1px solid var(--border-color);">
+                                            <th style="padding: 10px;">Asset Class</th>
+                                            <th style="padding: 10px;">Current</th>
+                                            <th style="padding: 10px;">Target</th>
+                                            <th style="padding: 10px; text-align: right;">Diff ($)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="allocation-table-body">
+                                        <!-- Filled dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 style="font-size: 18px; margin-bottom: 15px;">Recommendations</h3>
+                            <ul id="rebalancing-recommendations" style="padding-left: 0; list-style: none;">
+                                <!-- Filled dynamically -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RMD Estimates -->
+            <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px;">
+                <h2 style="font-size: 24px; margin-bottom: 20px;">RMD Calculations & Tracking</h2>
+                <div id="rmd-content">
+                    <!-- Filled dynamically -->
                 </div>
             </div>
         </div>
@@ -173,6 +256,451 @@ export function renderAccountsTab(container) {
                 font-size: 13px;
                 color: var(--text-light);
             }
+            .rmd-info-box:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px var(--shadow);
+            }
         </style>
     `;
+
+    setupAccountCardInteractions(container, assets);
+    setupLearnLinks(container);
+    setupRebalancing(container, profile.name);
+    setupRMD(container, profile, assets);
+    setupWithdrawalStrategyToggles(container);
+}
+
+/**
+ * Render a simple list of accounts for the withdrawal strategy section
+ */
+function renderConstituentAccounts(accounts) {
+    if (!accounts || accounts.length === 0) {
+        return '<p style="font-size: 13px; color: var(--text-light); font-style: italic;">No accounts found in this category.</p>';
+    }
+
+    return `
+        <div style="display: grid; gap: 8px;">
+            ${accounts.map(acc => `
+                <div style="display: flex; justify-content: space-between; font-size: 14px; padding: 4px 0;">
+                    <span>${acc.name}</span>
+                    <span style="font-family: monospace; font-weight: 500;">${formatCurrency(acc.value, 0)}</span>
+                </div>
+            `).join('')}
+            <div style="border-top: 1px dashed var(--border-color); margin-top: 5px; padding-top: 5px; display: flex; justify-content: space-between; font-weight: bold; font-size: 14px;">
+                <span>Total</span>
+                <span>${formatCurrency(accounts.reduce((sum, a) => sum + (a.value || 0), 0), 0)}</span>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Set up click listeners for the withdrawal strategy cards
+ */
+function setupWithdrawalStrategyToggles(container) {
+    const cards = container.querySelectorAll('.strategy-card');
+    cards.forEach(card => {
+        card.addEventListener('click', (e) => {
+            const targetId = card.dataset.target;
+            const targetList = container.querySelector(`#${targetId}`);
+            const icon = card.querySelector('.toggle-icon');
+            
+            if (targetList.style.display === 'none') {
+                targetList.style.display = 'block';
+                icon.textContent = '▼';
+                icon.style.transform = 'rotate(0deg)';
+                card.style.transform = 'scale(1.01)';
+            } else {
+                targetList.style.display = 'none';
+                icon.textContent = '▶';
+                card.style.transform = 'scale(1)';
+            }
+        });
+    });
+}
+
+function setupRebalancing(container, profileName) {
+    const runBtn = container.querySelector('#run-rebalancing');
+    if (!runBtn) return;
+
+    runBtn.addEventListener('click', async () => {
+        const targetStocks = parseFloat(container.querySelector('#target-stocks').value) / 100;
+        const targetBonds = parseFloat(container.querySelector('#target-bonds').value) / 100;
+        const targetCash = parseFloat(container.querySelector('#target-cash').value) / 100;
+
+        const targetAllocation = {
+            stocks: targetStocks,
+            bonds: targetBonds,
+            cash: targetCash
+        };
+
+        try {
+            runBtn.disabled = true;
+            runBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Analyzing...';
+            
+            const data = await analysisAPI.analyzeRebalancing(profileName, targetAllocation);
+            
+            const tableBody = container.querySelector('#allocation-table-body');
+            const recsList = container.querySelector('#rebalancing-recommendations');
+            const resultsDiv = container.querySelector('#rebalancing-results');
+            
+            const { current_allocation, target_allocation, imbalance_dollars } = data;
+            
+            tableBody.innerHTML = `
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 10px;">Stocks</td>
+                    <td style="padding: 10px;">${formatPercent(current_allocation.stocks)}</td>
+                    <td style="padding: 10px;">${formatPercent(target_allocation.stocks)}</td>
+                    <td style="padding: 10px; text-align: right; color: ${imbalance_dollars.stocks < 0 ? 'var(--danger-color)' : 'var(--success-color)'}">
+                        ${formatCurrency(imbalance_dollars.stocks, 0)}
+                    </td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 10px;">Bonds</td>
+                    <td style="padding: 10px;">${formatPercent(current_allocation.bonds)}</td>
+                    <td style="padding: 10px;">${formatPercent(target_allocation.bonds)}</td>
+                    <td style="padding: 10px; text-align: right; color: ${imbalance_dollars.bonds < 0 ? 'var(--danger-color)' : 'var(--success-color)'}">
+                        ${formatCurrency(imbalance_dollars.bonds, 0)}
+                    </td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 10px;">Cash</td>
+                    <td style="padding: 10px;">${formatPercent(current_allocation.cash)}</td>
+                    <td style="padding: 10px;">${formatPercent(target_allocation.cash)}</td>
+                    <td style="padding: 10px; text-align: right; color: ${imbalance_dollars.cash < 0 ? 'var(--danger-color)' : 'var(--success-color)'}">
+                        ${formatCurrency(imbalance_dollars.cash, 0)}
+                    </td>
+                </tr>
+                <tr style="background: var(--bg-tertiary); font-weight: bold;">
+                    <td style="padding: 10px;">Total</td>
+                    <td colspan="3" style="padding: 10px; text-align: right;">${formatCurrency(data.total_value, 0)}</td>
+                </tr>
+            `;
+
+            recsList.innerHTML = data.recommendations.map(rec => `
+                <li style="padding: 10px; margin-bottom: 10px; background: var(--bg-primary); border-radius: 6px; border-left: 4px solid var(--accent-color);">
+                    ${rec}
+                </li>
+            `).join('');
+            
+            resultsDiv.style.display = 'block';
+        } catch (error) {
+            console.error('Rebalancing analysis failed:', error);
+            alert('Analysis failed. Please check your asset data.');
+        } finally {
+            runBtn.disabled = false;
+            runBtn.textContent = 'Analyze Allocation';
+        }
+    });
+}
+
+function setupRMD(container, profile, assets) {
+    const rmdContent = container.querySelector('#rmd-content');
+    if (!rmdContent) return;
+
+    const retirementAccounts = assets.retirement_accounts || [];
+    const preTaxAccounts = retirementAccounts.filter(a => 
+        !a.type.includes('roth') && !a.name.toLowerCase().includes('roth')
+    );
+
+    if (preTaxAccounts.length === 0) {
+        rmdContent.innerHTML = `
+            <p style="color: var(--text-secondary); font-style: italic;">No pre-tax retirement accounts found. RMDs do not apply to Roth accounts or taxable brokerage accounts.</p>
+        `;
+        return;
+    }
+
+    const birthDate = new Date(profile.birth_date || '1980-01-01');
+    const today = new Date();
+    const age = today.getFullYear() - birthDate.getFullYear();
+    const rmdFactor = getRMDFactor(age < 73 ? 73 : age);
+    const totalPreTax = preTaxAccounts.reduce((sum, a) => sum + (a.value || 0), 0);
+    const estimatedRMD = totalPreTax / rmdFactor;
+    
+    let rmdInfo = '';
+    if (age < 73) {
+        const yearsToRMD = 73 - age;
+        rmdInfo = `<p style="color: var(--text-secondary); margin-bottom: 20px;">
+            You are <strong>${age}</strong> years old. Your Required Minimum Distributions (RMDs) are estimated to start in <strong>${yearsToRMD}</strong> years (age 73).
+        </p>`;
+    } else {
+        rmdInfo = `<p style="color: var(--text-secondary); margin-bottom: 20px;">
+            You are <strong>${age}</strong> years old and subject to Required Minimum Distributions (RMDs).
+        </p>`;
+    }
+
+    rmdContent.innerHTML = `
+        ${rmdInfo}
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px;">
+            <div class="rmd-info-box" data-target="rmd-detail-assets" style="background: var(--bg-primary); padding: 20px; border-radius: 8px; text-align: center; cursor: pointer; border: 1px solid var(--border-color); transition: all 0.2s;">
+                <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Total Pre-Tax Assets</div>
+                <div style="font-size: 24px; font-weight: bold; color: var(--accent-color); margin-top: 5px;">${formatCurrency(totalPreTax, 0)}</div>
+                <div style="font-size: 11px; color: var(--text-light); margin-top: 5px;">Click for breakdown</div>
+            </div>
+            <div class="rmd-info-box" data-target="rmd-detail-calc" style="background: var(--bg-primary); padding: 20px; border-radius: 8px; text-align: center; cursor: pointer; border: 1px solid var(--border-color); transition: all 0.2s;">
+                <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Estimated Annual RMD</div>
+                <div style="font-size: 24px; font-weight: bold; color: var(--success-color); margin-top: 5px;">${formatCurrency(estimatedRMD, 0)}</div>
+                <div style="font-size: 11px; color: var(--text-light); margin-top: 5px;">Click for formula</div>
+            </div>
+            <div class="rmd-info-box" data-target="rmd-detail-factor" style="background: var(--bg-primary); padding: 20px; border-radius: 8px; text-align: center; cursor: pointer; border: 1px solid var(--border-color); transition: all 0.2s;">
+                <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">RMD Factor</div>
+                <div style="font-size: 24px; font-weight: bold; margin-top: 5px;">${rmdFactor}</div>
+                <div style="font-size: 11px; color: var(--text-light); margin-top: 5px;">Click for IRS table</div>
+            </div>
+        </div>
+
+        <!-- Detail Sections -->
+        <div id="rmd-detail-assets" class="rmd-detail-pane" style="display: none; background: var(--bg-tertiary); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--accent-color);">
+            <h4 style="margin-top: 0; margin-bottom: 10px;">Pre-Tax Asset Breakdown</h4>
+            <ul style="margin: 0; padding-left: 20px;">
+                ${preTaxAccounts.map(a => `<li>${a.name}: <strong>${formatCurrency(a.value, 0)}</strong></li>`).join('')}
+            </ul>
+        </div>
+
+        <div id="rmd-detail-calc" class="rmd-detail-pane" style="display: none; background: var(--bg-tertiary); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--success-color);">
+            <h4 style="margin-top: 0; margin-bottom: 10px;">RMD Calculation Formula</h4>
+            <div style="font-size: 14px;">
+                The IRS calculates your Required Minimum Distribution using the following formula:
+                <br><br>
+                <div style="background: var(--bg-primary); padding: 10px; border-radius: 4px; text-align: center; font-family: monospace;">
+                    Annual RMD = (Account Balance as of Dec 31) / (IRS Life Expectancy Factor)
+                </div>
+                <br>
+                In your case: <code>${formatCurrency(totalPreTax, 0)} / ${rmdFactor} = ${formatCurrency(estimatedRMD, 0)}</code>
+            </div>
+        </div>
+
+        <div id="rmd-detail-factor" class="rmd-detail-pane" style="display: none; background: var(--bg-tertiary); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border-color);">
+            <h4 style="margin-top: 0; margin-bottom: 10px;">IRS Uniform Lifetime Table (Snippet)</h4>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 12px; text-align: center;">
+                <div style="font-weight: bold; border-bottom: 1px solid var(--border-color);">Age</div>
+                <div style="font-weight: bold; border-bottom: 1px solid var(--border-color);">Factor</div>
+                <div style="font-weight: bold; border-bottom: 1px solid var(--border-color);">Age</div>
+                <div style="font-weight: bold; border-bottom: 1px solid var(--border-color);">Factor</div>
+                ${[73, 74, 75, 76, 77, 78, 79, 80].map(a => `
+                    <div style="${a === (age < 73 ? 73 : age) ? 'color: var(--accent-color); font-weight: bold;' : ''}">${a}</div>
+                    <div style="${a === (age < 73 ? 73 : age) ? 'color: var(--accent-color); font-weight: bold;' : ''}">${getRMDFactor(a)}</div>
+                `).join('')}
+            </div>
+        </div>
+
+        <h3 style="font-size: 18px; margin-bottom: 15px;">Eligible Accounts</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="text-align: left; color: var(--text-secondary); font-size: 13px; border-bottom: 1px solid var(--border-color);">
+                    <th style="padding: 10px;">Account Name</th>
+                    <th style="padding: 10px; text-align: right;">Balance</th>
+                    <th style="padding: 10px; text-align: right;">Est. RMD</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${preTaxAccounts.map(a => `
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 12px 10px;">${a.name}</td>
+                        <td style="padding: 12px 10px; text-align: right; font-family: monospace;">${formatCurrency(a.value, 0)}</td>
+                        <td style="padding: 12px 10px; text-align: right; font-family: monospace;">${formatCurrency(a.value / rmdFactor, 0)}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+
+        <h3 style="font-size: 18px; margin-top: 30px; margin-bottom: 15px;">5-Year Projection</h3>
+        <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 15px;">Estimated RMDs for the next 5 years, assuming a 5% annual growth rate on account balances.</p>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="text-align: left; color: var(--text-secondary); font-size: 13px; border-bottom: 1px solid var(--border-color);">
+                        <th style="padding: 10px;">Year</th>
+                        <th style="padding: 10px;">Age</th>
+                        <th style="padding: 10px; text-align: right;">Projected Balance</th>
+                        <th style="padding: 10px; text-align: right;">Projected RMD</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${[0, 1, 2, 3, 4].map(yearOffset => {
+                        const projAge = age + yearOffset;
+                        const projBalance = totalPreTax * Math.pow(1.05, yearOffset);
+                        const projFactor = getRMDFactor(projAge < 73 ? 73 : projAge);
+                        const projRMD = projBalance / projFactor;
+                        return `
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <td style="padding: 10px;">${today.getFullYear() + yearOffset}</td>
+                                <td style="padding: 10px;">${projAge}</td>
+                                <td style="padding: 10px; text-align: right; font-family: monospace;">${formatCurrency(projBalance, 0)}</td>
+                                <td style="padding: 10px; text-align: right; font-family: monospace; font-weight: 600; color: ${projAge >= 73 ? 'var(--success-color)' : 'var(--text-secondary)'}">
+                                    ${formatCurrency(projRMD, 0)}
+                                </td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    // Add click listeners to RMD info boxes
+    const boxes = rmdContent.querySelectorAll('.rmd-info-box');
+    boxes.forEach(box => {
+        box.addEventListener('click', () => {
+            const targetId = box.dataset.target;
+            const targetPane = rmdContent.querySelector(`#${targetId}`);
+            
+            // Check if already visible
+            const isVisible = targetPane.style.display === 'block';
+            
+            // Hide all panes first
+            rmdContent.querySelectorAll('.rmd-detail-pane').forEach(p => p.style.display = 'none');
+            boxes.forEach(b => {
+                b.style.borderColor = 'var(--border-color)';
+                b.style.backgroundColor = 'var(--bg-primary)';
+            });
+
+            if (!isVisible) {
+                targetPane.style.display = 'block';
+                box.style.borderColor = 'var(--accent-color)';
+                box.style.backgroundColor = 'var(--bg-tertiary)';
+            }
+        });
+
+        box.addEventListener('mouseenter', () => {
+            if (box.style.borderColor !== 'var(--accent-color)') {
+                box.style.borderColor = 'var(--text-light)';
+            }
+        });
+
+        box.addEventListener('mouseleave', () => {
+            if (box.style.borderColor !== 'var(--accent-color)') {
+                box.style.borderColor = 'var(--border-color)';
+            }
+        });
+    });
+}
+
+function getRMDFactor(age) {
+    const rmd_factors = {
+        73: 26.5, 74: 25.5, 75: 24.6, 76: 23.7, 77: 22.9,
+        78: 22.0, 79: 21.1, 80: 20.2, 81: 19.4, 82: 18.5,
+        83: 17.7, 84: 16.8, 85: 16.0, 86: 15.2, 87: 14.4,
+        88: 13.7, 89: 12.9, 90: 12.2
+    };
+    if (age < 73) return 26.5;
+    return rmd_factors[age] || 12.2;
+}
+
+function setupLearnLinks(container) {
+    container.querySelectorAll('.learn-link').forEach(link => {
+        link.addEventListener('click', () => {
+            const article = {
+                title: link.dataset.title,
+                skillFile: link.dataset.skill,
+                section: link.dataset.section
+            };
+            showArticle(article);
+        });
+    });
+}
+
+function setupAccountCardInteractions(container, assets) {
+    const cards = container.querySelectorAll('.account-card');
+    const listContainer = container.querySelector('#asset-list-container');
+    let activeCategory = null;
+
+    cards.forEach(card => {
+        card.addEventListener('click', () => {
+            const category = card.dataset.category;
+            
+            // If clicking the same category, collapse it
+            if (activeCategory === category) {
+                listContainer.style.display = 'none';
+                card.style.borderColor = 'var(--border-color)';
+                card.style.backgroundColor = 'var(--bg-primary)';
+                activeCategory = null;
+                return;
+            }
+
+            // Highlight selected card and reset others
+            cards.forEach(c => {
+                c.style.borderColor = 'var(--border-color)';
+                c.style.backgroundColor = 'var(--bg-primary)';
+            });
+            card.style.borderColor = 'var(--accent-color)';
+            card.style.backgroundColor = 'var(--bg-tertiary)';
+            
+            activeCategory = category;
+            let displayAssets = [];
+            let title = '';
+
+            if (category === 'liquid') {
+                displayAssets = assets.taxable_accounts || [];
+                title = 'Liquid Assets';
+            } else if (category === 'retirement') {
+                displayAssets = assets.retirement_accounts || [];
+                title = 'Retirement Assets';
+            } else if (category === 'total') {
+                displayAssets = [
+                    ...(assets.taxable_accounts || []), 
+                    ...(assets.retirement_accounts || []),
+                    ...(assets.real_estate || []),
+                    ...(assets.other_assets || [])
+                ];
+                title = 'All Assets';
+            }
+
+            renderAssetList(listContainer, title, displayAssets);
+        });
+    });
+}
+
+function renderAssetList(container, title, assetList) {
+    container.style.display = 'block';
+    
+    if (assetList.length === 0) {
+        container.innerHTML = `
+            <h3 style="margin-bottom: 15px; font-size: 18px;">${title}</h3>
+            <p style="color: var(--text-secondary); font-style: italic; padding: 10px;">No assets found in this category.</p>
+        `;
+        return;
+    }
+
+    const sortedAssets = [...assetList].sort((a, b) => (b.value || 0) - (a.value || 0));
+
+    container.innerHTML = `
+        <h3 style="margin-bottom: 15px; font-size: 18px; display: flex; justify-content: space-between; align-items: center;">
+            ${title}
+            <span style="font-size: 14px; font-weight: normal; color: var(--text-secondary);">
+                ${sortedAssets.length} item${sortedAssets.length !== 1 ? 's' : ''}
+            </span>
+        </h3>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="text-align: left; color: var(--text-secondary); font-size: 13px; border-bottom: 1px solid var(--border-color);">
+                        <th style="padding: 10px; font-weight: 600;">Asset Name</th>
+                        <th style="padding: 10px; font-weight: 600;">Type</th>
+                        <th style="padding: 10px; font-weight: 600;">Allocation (S/B/C)</th>
+                        <th style="padding: 10px; text-align: right; font-weight: 600;">Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${sortedAssets.map(asset => `
+                        <tr style="border-bottom: 1px solid var(--border-color); transition: background 0.2s;">
+                            <td style="padding: 12px 10px; font-weight: 500;">${asset.name}</td>
+                            <td style="padding: 12px 10px; color: var(--text-secondary); font-size: 14px;">${formatAssetType(asset.type)}</td>
+                            <td style="padding: 12px 10px; font-size: 12px; color: var(--text-light);">
+                                ${asset.stock_pct !== undefined ? `${Math.round(asset.stock_pct * 100)}/${Math.round(asset.bond_pct * 100)}/${Math.round(asset.cash_pct * 100)}` : 'N/A'}
+                            </td>
+                            <td style="padding: 12px 10px; text-align: right; font-weight: 500; font-family: monospace; font-size: 14px;">
+                                ${formatCurrency(asset.value || 0, 0)}
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+function formatAssetType(type) {
+    if (!type) return 'N/A';
+    return type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 }

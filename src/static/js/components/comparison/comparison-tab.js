@@ -147,6 +147,7 @@ function renderComparisonView(container, profile, scenarios) {
             .success-excellent { background: rgba(40, 167, 69, 0.2); color: var(--success-color); }
             .success-good { background: rgba(255, 193, 7, 0.2); color: var(--warning-color); }
             .success-poor { background: rgba(220, 53, 69, 0.2); color: var(--danger-color); }
+            .success-info { background: rgba(23, 162, 184, 0.2); color: var(--info-color); }
         </style>
     `;
 
@@ -155,16 +156,40 @@ function renderComparisonView(container, profile, scenarios) {
 
 function renderScenarioRow(scenario) {
     const results = scenario.results || {};
-    const successRate = results.success_rate || 0;
+    const isMultiScenario = results.scenarios && Object.keys(results.scenarios).length > 0;
 
-    let successClass = 'success-poor';
-    let successLabel = 'Poor';
-    if (successRate >= 0.9) {
-        successClass = 'success-excellent';
-        successLabel = 'Excellent';
-    } else if (successRate >= 0.75) {
-        successClass = 'success-good';
-        successLabel = 'Good';
+    let successRate, medianEnding, p5, p95, simulations, successClass, successLabel;
+
+    if (isMultiScenario) {
+        // For multi-scenarios, we can show stats for the 'moderate' case or an average
+        const moderateScenario = results.scenarios.moderate || Object.values(results.scenarios)[0];
+        successRate = moderateScenario.success_rate || 0;
+        medianEnding = moderateScenario.median_final_balance || 0;
+        p5 = moderateScenario.percentile_10 || moderateScenario.percentile_5 || 0;
+        p95 = moderateScenario.percentile_90 || moderateScenario.percentile_95 || 0;
+        simulations = results.simulations || scenario.parameters?.simulations || 10000;
+        successLabel = 'Multi-Scenario';
+    } else {
+        successRate = results.success_rate || 0;
+        medianEnding = results.median_final_balance || 0;
+        p5 = results.percentile_10 || results.percentile_5 || 0;
+        p95 = results.percentile_90 || results.percentile_95 || 0;
+        simulations = results.simulations || scenario.parameters?.simulations || 10000;
+    }
+
+    if (!isMultiScenario) {
+        if (successRate >= 0.9) {
+            successClass = 'success-excellent';
+            successLabel = 'Excellent';
+        } else if (successRate >= 0.75) {
+            successClass = 'success-good';
+            successLabel = 'Good';
+        } else {
+            successClass = 'success-poor';
+            successLabel = 'Poor';
+        }
+    } else {
+        successClass = 'success-info'; // A neutral color for multi-scenario
     }
 
     return `
@@ -175,22 +200,22 @@ function renderScenarioRow(scenario) {
             <td style="padding: 16px;">
                 <div style="font-weight: 600; color: var(--text-primary);">${scenario.name}</div>
                 <div style="font-size: 12px; color: var(--text-secondary);">
-                    ${(results.simulations || 10000).toLocaleString()} simulations
+                    ${isMultiScenario ? 'Multiple allocations' : `${simulations.toLocaleString()} simulations`}
                 </div>
             </td>
             <td style="padding: 16px; text-align: center;">
                 <span class="success-badge ${successClass}">
-                    ${formatPercent(successRate, 0)}
+                    ${isMultiScenario ? successLabel : formatPercent(successRate, 0)}
                 </span>
             </td>
             <td style="padding: 16px; text-align: right; font-weight: 500;">
-                ${formatCurrency(results.median_final_balance || 0, 0)}
+                ${formatCurrency(medianEnding, 0)}
             </td>
             <td style="padding: 16px; text-align: right; color: var(--text-secondary);">
-                ${formatCurrency(results.percentile_10 || results.percentile_5 || 0, 0)}
+                ${formatCurrency(p5, 0)}
             </td>
             <td style="padding: 16px; text-align: right; color: var(--success-color);">
-                ${formatCurrency(results.percentile_90 || results.percentile_95 || 0, 0)}
+                ${formatCurrency(p95, 0)}
             </td>
             <td style="padding: 16px; text-align: center; color: var(--text-secondary); font-size: 13px;">
                 ${formatDate(scenario.created_at)}
@@ -260,7 +285,7 @@ function setupComparisonHandlers(container, scenarios) {
             .filter(c => c.checked)
             .map(c => parseInt(c.value));
 
-        if (selectedIds.length < 2) {
+        if (selectedIds.length < 1) {
             chartSection.style.display = 'none';
             return;
         }
@@ -282,26 +307,54 @@ function renderComparisonChart(selectedIds, allScenarios) {
     const selectedScenarios = allScenarios.filter(s => selectedIds.includes(s.id));
     const colors = ['#3498db', '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6f42c1', '#fd7e14', '#20c997'];
 
-    // Build datasets from scenarios with timeline data
+    // Build datasets from scenarios
     const datasets = [];
     let labels = [];
+    let colorIndex = 0;
 
-    selectedScenarios.forEach((scenario, i) => {
-        const timeline = scenario.results?.timeline;
-        if (timeline && timeline.median) {
-            if (timeline.years && timeline.years.length > labels.length) {
-                labels = timeline.years;
+    selectedScenarios.forEach((scenario) => {
+        const isMultiScenario = scenario.results?.scenarios && Object.keys(scenario.results.scenarios).length > 0;
+
+        if (isMultiScenario) {
+            // For multi-scenarios, only show the 'moderate' median to avoid cluttering the comparison
+            const subScenarioKey = scenario.results.scenarios.moderate ? 'moderate' : Object.keys(scenario.results.scenarios)[0];
+            const subScenario = scenario.results.scenarios[subScenarioKey];
+            const timeline = subScenario.timeline;
+            
+            if (timeline && timeline.median) {
+                if (timeline.years && timeline.years.length > labels.length) {
+                    labels = timeline.years;
+                }
+                datasets.push({
+                    label: scenario.name,
+                    data: timeline.median.map(d => d),
+                    borderColor: colors[colorIndex % colors.length],
+                    backgroundColor: 'transparent',
+                    tension: 0.3,
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    pointHoverRadius: 4
+                });
+                colorIndex++;
             }
-            datasets.push({
-                label: scenario.name,
-                data: timeline.median,
-                borderColor: colors[i % colors.length],
-                backgroundColor: 'transparent',
-                tension: 0.3,
-                borderWidth: 2,
-                pointRadius: 0,
-                pointHoverRadius: 4
-            });
+        } else {
+            const timeline = scenario.results?.timeline;
+            if (timeline && timeline.median) {
+                if (timeline.years && timeline.years.length > labels.length) {
+                    labels = timeline.years;
+                }
+                datasets.push({
+                    label: scenario.name,
+                    data: timeline.median.map(d => d),
+                    borderColor: colors[colorIndex % colors.length],
+                    backgroundColor: 'transparent',
+                    tension: 0.3,
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    pointHoverRadius: 4
+                });
+                colorIndex++;
+            }
         }
     });
 

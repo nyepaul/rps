@@ -1,7 +1,7 @@
 """Action item routes for tasks and recommendations."""
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, root_validator
 from typing import Optional
 from src.models.action_item import ActionItem
 from src.models.profile import Profile
@@ -12,21 +12,33 @@ action_items_bp = Blueprint('action_items', __name__, url_prefix='/api')
 class ActionItemCreateSchema(BaseModel):
     """Schema for creating an action item."""
     profile_name: Optional[str] = None
+    title: Optional[str] = None
     category: Optional[str] = None
-    description: str
+    description: Optional[str] = None
     priority: Optional[str] = 'medium'
     status: Optional[str] = 'pending'
     due_date: Optional[str] = None
     action_data: Optional[dict] = None
     subtasks: Optional[list] = None
 
+    @root_validator(pre=True)
+    def check_title_or_description(cls, values):
+        title = values.get('title')
+        description = values.get('description')
+        
+        if not description and not title:
+            raise ValueError('Description or title is required')
+            
+        if not description and title:
+            values['description'] = title
+            
+        return values
+
     @validator('description')
     def validate_description(cls, v):
-        if not v or not v.strip():
-            raise ValueError('Description is required')
-        if len(v) > 500:
+        if v and len(v) > 500:
             raise ValueError('Description must be less than 500 characters')
-        return v.strip()
+        return v.strip() if v else v
 
     @validator('priority')
     def validate_priority(cls, v):

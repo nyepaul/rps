@@ -44,14 +44,42 @@ export function showLoading(container, message = 'Loading...') {
 }
 
 /**
- * Show error message
+ * Show error message in container
  */
-export function showError(container, message) {
+export function showErrorInContainer(container, message) {
     container.innerHTML = `
         <div style="background: var(--danger-bg); color: var(--danger-color); padding: 20px; border-radius: 8px; margin: 20px;">
             <strong>Error:</strong> ${message}
         </div>
     `;
+}
+
+/**
+ * Show error toast notification
+ */
+export function showError(message, duration = 4000) {
+    const toast = createElement('div', {
+        style: {
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            background: 'var(--danger-color, #dc3545)',
+            color: 'white',
+            padding: '15px 25px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+            zIndex: '10000',
+            animation: 'slideIn 0.3s ease-out',
+            maxWidth: '400px',
+        },
+    }, message);
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease-in';
+        setTimeout(() => toast.remove(), 300);
+    }, duration);
 }
 
 /**

@@ -60,10 +60,11 @@ export function renderAssetList(assets, container) {
             <table style="width: 100%; border-collapse: collapse;">
                 <thead>
                     <tr style="background: var(--bg-tertiary); border-bottom: 2px solid var(--border-color);">
-                        <th style="text-align: left; padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary);">Name</th>
-                        <th style="text-align: left; padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary);">Type</th>
-                        <th style="text-align: right; padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary);">Balance</th>
-                        <th style="text-align: center; padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary); width: 100px;">Actions</th>
+                        <th style="text-align: left; padding: 8px 12px; font-size: 12px; font-weight: 600; color: var(--text-secondary);">Name</th>
+                        <th style="text-align: left; padding: 8px 12px; font-size: 12px; font-weight: 600; color: var(--text-secondary);">Type</th>
+                        <th style="text-align: center; padding: 8px 12px; font-size: 12px; font-weight: 600; color: var(--text-secondary);">Allocation (S/B/C)</th>
+                        <th style="text-align: right; padding: 8px 12px; font-size: 12px; font-weight: 600; color: var(--text-secondary);">Balance</th>
+                        <th style="text-align: center; padding: 8px 12px; font-size: 12px; font-weight: 600; color: var(--text-secondary); width: 80px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -97,27 +98,34 @@ function renderAssetRow(asset) {
         valueDisplay = formatCurrency(asset.value || asset.current_value || 0, 0);
     }
 
+    const allocationDisplay = (asset.stock_pct !== undefined) 
+        ? `${Math.round(asset.stock_pct * 100)}/${Math.round(asset.bond_pct * 100)}/${Math.round(asset.cash_pct * 100)}`
+        : '—';
+
     return `
         <tr data-category="${asset.categoryKey}" data-index="${asset.index}" style="border-bottom: 1px solid var(--border-color); transition: background 0.2s;">
-            <td style="padding: 14px 16px;">
-                <div style="font-weight: 600; color: var(--text-primary);">${asset.name}</div>
-                ${asset.institution ? `<div style="font-size: 12px; color: var(--text-secondary);">${asset.institution}</div>` : ''}
+            <td style="padding: 8px 12px;">
+                <div style="font-weight: 600; color: var(--text-primary); font-size: 14px;">${asset.name}</div>
+                ${asset.institution ? `<div style="font-size: 11px; color: var(--text-secondary);">${asset.institution}</div>` : ''}
             </td>
-            <td style="padding: 14px 16px;">
-                <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--bg-primary); border-radius: 4px; font-size: 13px;">
+            <td style="padding: 8px 12px;">
+                <span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; background: var(--bg-primary); border-radius: 4px; font-size: 12px;">
                     <span>${asset.categoryIcon}</span>
                     <span>${typeLabel}</span>
                 </span>
             </td>
-            <td style="padding: 14px 16px; text-align: right;">
-                <span style="font-size: 16px; font-weight: 600; color: var(--accent-color);">${valueDisplay}</span>
+            <td style="padding: 8px 12px; text-align: center; font-size: 12px; color: var(--text-secondary);">
+                ${allocationDisplay}
             </td>
-            <td style="padding: 14px 16px; text-align: center;">
+            <td style="padding: 8px 12px; text-align: right;">
+                <span style="font-size: 14px; font-weight: 600; color: var(--accent-color);">${valueDisplay}</span>
+            </td>
+            <td style="padding: 8px 12px; text-align: center;">
                 <button class="edit-asset-btn" data-category="${asset.categoryKey}" data-index="${asset.index}"
-                    style="padding: 6px 12px; background: transparent; color: var(--text-secondary); border: none; cursor: pointer; font-size: 14px;"
+                    style="padding: 4px 8px; background: transparent; color: var(--text-secondary); border: none; cursor: pointer; font-size: 14px;"
                     title="Edit">✏️</button>
                 <button class="delete-asset-btn" data-category="${asset.categoryKey}" data-index="${asset.index}"
-                    style="padding: 6px 12px; background: transparent; color: var(--danger-color); border: none; cursor: pointer; font-size: 14px;"
+                    style="padding: 4px 8px; background: transparent; color: var(--danger-color); border: none; cursor: pointer; font-size: 14px;"
                     title="Delete">🗑️</button>
             </td>
         </tr>

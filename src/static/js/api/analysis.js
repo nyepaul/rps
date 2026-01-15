@@ -9,10 +9,11 @@ export const analysisAPI = {
     /**
      * Run Monte Carlo analysis
      */
-    async runAnalysis(profileName, simulations = 10000, marketProfile = null) {
+    async runAnalysis(profileName, simulations = 10000, marketProfile = null, spendingModel = 'constant_real') {
         const payload = {
             profile_name: profileName,
-            simulations
+            simulations,
+            spending_model: spendingModel
         };
 
         // Add market profile if provided
@@ -40,6 +41,16 @@ export const analysisAPI = {
             profile_name: profileName,
             conversion_amount: conversionAmount,
             conversion_age: conversionAge
+        });
+    },
+
+    /**
+     * Analyze rebalancing
+     */
+    async analyzeRebalancing(profileName, targetAllocation) {
+        return apiClient.post(API_ENDPOINTS.ANALYSIS_REBALANCE, {
+            profile_name: profileName,
+            target_allocation: targetAllocation
         });
     }
 };

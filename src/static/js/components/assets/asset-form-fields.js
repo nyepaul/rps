@@ -22,7 +22,10 @@ export const FIELD_DEFINITIONS = {
         { name: 'institution', label: 'Financial Institution', type: 'text', placeholder: 'e.g., Vanguard' },
         { name: 'account_number', label: 'Account Number (Last 4 digits)', type: 'text', maxlength: 4, placeholder: '****' },
         { name: 'value', label: 'Current Balance', type: 'currency', required: true, placeholder: '$0' },
-        { name: 'cost_basis', label: 'Cost Basis', type: 'currency', placeholder: '$0', help: 'For taxable accounts' }
+        { name: 'cost_basis', label: 'Cost Basis', type: 'currency', placeholder: '$0', help: 'For taxable accounts' },
+        { name: 'stock_pct', label: 'Stock Allocation (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '60' },
+        { name: 'bond_pct', label: 'Bond Allocation (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '40' },
+        { name: 'cash_pct', label: 'Cash Allocation (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '0' }
     ],
 
     taxable_accounts: [
@@ -39,7 +42,10 @@ export const FIELD_DEFINITIONS = {
         { name: 'institution', label: 'Financial Institution', type: 'text', placeholder: 'e.g., Fidelity' },
         { name: 'account_number', label: 'Account Number (Last 4 digits)', type: 'text', maxlength: 4, placeholder: '****' },
         { name: 'value', label: 'Current Balance', type: 'currency', required: true, placeholder: '$0' },
-        { name: 'cost_basis', label: 'Cost Basis', type: 'currency', placeholder: '$0', help: 'For calculating capital gains' }
+        { name: 'cost_basis', label: 'Cost Basis', type: 'currency', placeholder: '$0', help: 'For calculating capital gains' },
+        { name: 'stock_pct', label: 'Stock Allocation (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '60' },
+        { name: 'bond_pct', label: 'Bond Allocation (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '40' },
+        { name: 'cash_pct', label: 'Cash Allocation (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '0' }
     ],
 
     real_estate: [
@@ -132,7 +138,13 @@ export function generateFormFields(category, asset = {}, skipType = false) {
     }
 
     return fields.filter(field => !(skipType && field.name === 'type')).map(field => {
-        const value = asset[field.name] || '';
+        let value = asset[field.name] || '';
+        
+        // Convert decimals to percentages for display
+        if (field.type === 'number' && field.name.endsWith('_pct') && value !== '') {
+            value = Math.round(value * 100);
+        }
+
         const id = `asset-${field.name}`;
 
         let inputHTML = '';
@@ -165,8 +177,13 @@ export function generateFormFields(category, asset = {}, skipType = false) {
                 >${value}</textarea>
             `;
         } else {
-            // text, currency, date
+            // text, currency, date, number
             const inputType = field.type === 'currency' ? 'text' : field.type;
+            const extraAttrs = [];
+            if (field.min !== undefined) extraAttrs.push(`min="${field.min}"`);
+            if (field.max !== undefined) extraAttrs.push(`max="${field.max}"`);
+            if (field.step !== undefined) extraAttrs.push(`step="${field.step}"`);
+
             inputHTML = `
                 <input
                     type="${inputType}"
@@ -175,6 +192,7 @@ export function generateFormFields(category, asset = {}, skipType = false) {
                     value="${field.type === 'currency' && value ? formatCurrency(value, 0) : value}"
                     placeholder="${field.placeholder || ''}"
                     ${field.maxlength ? `maxlength="${field.maxlength}"` : ''}
+                    ${extraAttrs.join(' ')}
                     ${field.required ? 'required' : ''}
                 >
             `;
@@ -215,6 +233,14 @@ export function extractFormData(form, category) {
 
         if (field.type === 'currency') {
             data[field.name] = value ? parseCurrency(value) : 0;
+        } else if (field.type === 'number') {
+            // Convert percentages to decimals if it's an allocation field
+            const numValue = value ? parseFloat(value) : 0;
+            if (field.name.endsWith('_pct')) {
+                data[field.name] = numValue / 100;
+            } else {
+                data[field.name] = numValue;
+            }
         } else if (field.type === 'checkbox') {
             data[field.name] = form.querySelector(`[name="${field.name}"]`).checked;
         } else if (field.type === 'date') {

@@ -123,7 +123,6 @@ def test_db(test_db_dir, request):
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
                 profile_id INTEGER,
-                title TEXT NOT NULL,
                 description TEXT,
                 priority TEXT,
                 status TEXT,
@@ -132,8 +131,9 @@ def test_db(test_db_dir, request):
                 action_data TEXT,
                 action_data_iv TEXT,
                 subtasks TEXT,
+                subtasks_iv TEXT,
                 created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL,
+                updated_at TEXT,
                 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
                 FOREIGN KEY (profile_id) REFERENCES profile (id) ON DELETE CASCADE
             )
@@ -187,6 +187,7 @@ def app(test_db):
     app = create_app('testing')
     app.config['TESTING'] = True
     app.config['WTF_CSRF_ENABLED'] = False  # Disable CSRF for testing
+    app.config['RATELIMIT_ENABLED'] = False # Disable Rate Limiting for testing
     return app
 
 
