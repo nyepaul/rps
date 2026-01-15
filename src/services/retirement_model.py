@@ -164,30 +164,22 @@ class RetirementModel:
         # Result Storage
         all_paths = np.zeros((simulations, years))
         p1_birth_year = self.profile.person1.birth_date.year
-        retirement_year = self.profile.person1.retirement_date.year
+        p2_birth_year = self.profile.person2.birth_date.year
+        p1_retirement_year = self.profile.person1.retirement_date.year
+        p2_retirement_year = self.profile.person2.retirement_date.year
 
         # Pre-calculate Spending Multipliers based on Model
-        # spending_multipliers[year_idx]
         spending_multipliers = np.ones(years)
         if spending_model == 'retirement_smile':
-            # Bernicke's Reality Retirement Planning / "Smile" Curve
-            # High active spending -> Decline -> Late life health increase
             for i in range(years):
                 age = (self.current_year + i) - p1_birth_year
                 if age < 70:
                     spending_multipliers[i] = 1.0
                 elif 70 <= age < 80:
-                    # Gradual decline (Slow-Go)
-                    # ~2% real decline per year from 70 to 80 -> down to ~0.8
                     spending_multipliers[i] = 1.0 - ((age - 70) * 0.02)
-                else: # age >= 80
-                    # Increase for healthcare (No-Go / Care)
-                    # Base 0.8 + 2% per year
-                    base_80 = 0.8
-                    spending_multipliers[i] = base_80 + ((age - 80) * 0.02)
-                    # Cap at some reasonable limit (e.g., 1.5x) or let it grow
+                else: 
+                    spending_multipliers[i] = 0.8 + ((age - 80) * 0.02)
         elif spending_model == 'conservative_decline':
-            # Simple decline as people age (no health jump modeled)
             for i in range(years):
                 age = (self.current_year + i) - p1_birth_year
                 if age > 70:
@@ -197,19 +189,23 @@ class RetirementModel:
         for year_idx in range(years):
             simulation_year = self.current_year + year_idx
             p1_age = (self.current_year + year_idx) - p1_birth_year
-            p2_birth_year = self.profile.person2.birth_date.year
             p2_age = (self.current_year + year_idx) - p2_birth_year
+            
+            # Independent Retirement Tracking
+            p1_retired = simulation_year >= p1_retirement_year
+            p2_retired = simulation_year >= p2_retirement_year
             
             # A. Update CPI (except year 0)
             if year_idx > 0:
                 current_cpi *= (1 + inflation_rates[:, year_idx])
 
             # B. Calculate Income
-            # Vectorized income calculation
-            is_retired = simulation_year >= retirement_year
+            # Dynamic Social Security & Pensions
+            p1_ss = (self.profile.person1.social_security * 12) if p1_retired else 0
+            p2_ss = (self.profile.person2.social_security * 12) if p2_retired else 0
+            active_pension = base_pension if p1_retired else 0
             
-            # Base Income (SS + Pension)
-            total_income = (base_ss + base_pension) * current_cpi
+            total_income = (p1_ss + p2_ss + active_pension) * current_cpi
             
             # Additional Income Streams
             for stream in income_streams_data:
@@ -220,8 +216,7 @@ class RetirementModel:
                         total_income += stream['amount']
             
             if self.profile.budget:
-                base_budget_inc = self.calculate_budget_income(simulation_year, 1.0, is_retired)
-                total_income += base_budget_inc * current_cpi
+                total_income += self.calculate_budget_income(simulation_year, current_cpi, p1_retired, p2_retired)
 
             # C. Calculate Expenses
             current_housing_costs = np.zeros(simulations)
@@ -233,12 +228,14 @@ class RetirementModel:
             spending_mult = spending_multipliers[year_idx]
 
             if self.profile.budget:
-                base_budget_exp = self.calculate_budget_expenses(simulation_year, 1.0, is_retired, 0)
-                target_spending = (base_budget_exp * current_cpi * spending_mult) + current_housing_costs
+                target_spending = self.calculate_budget_expenses(simulation_year, current_cpi, p1_retired, p2_retired, current_housing_costs)
+                if spending_mult != 1.0:
+                    target_spending = ((target_spending - current_housing_costs) * spending_mult) + current_housing_costs
             else:
                 target_spending = (self.profile.target_annual_income * current_cpi * spending_mult) + current_housing_costs
 
             # D. Calculate Shortfall
+            shortfall = np.maximum(0, target_spending - total_income)
             shortfall = np.maximum(0, target_spending - total_income)
 
             # E. Home Sales Logic
@@ -519,71 +516,86 @@ class RetirementModel:
             return amount
         return amount  # Default to amount as-is
 
-    def calculate_budget_income(self, simulation_year: int, current_cpi: float, is_retired: bool) -> float:
-        """Calculate total income from budget categories for a given year"""
+    def calculate_budget_income(self, simulation_year: int, current_cpi: np.ndarray, p1_retired: bool, p2_retired: bool) -> np.ndarray:
+        """Calculate total income from budget categories for a given year (Vectorized)"""
         if not self.profile.budget:
-            return 0
+            return np.zeros_like(current_cpi)
 
         budget = self.profile.budget
         income_section = budget.get('income', {})
-        period = 'future' if is_retired else 'current'
+        
+        # Initialize result vector
+        total_income = np.zeros_like(current_cpi)
 
-        total_income = 0
+        # 1. Employment income - strictly tied to individual retirement status
+        current_employment = income_section.get('current', {}).get('employment', {})
+        if not p1_retired:
+            total_income += current_employment.get('primary_person', 0)
+        if not p2_retired:
+            total_income += current_employment.get('spouse', 0)
 
-        # Employment income (current only)
-        if period == 'current':
-            employment = income_section.get('current', {}).get('employment', {})
-            total_income += employment.get('primary_person', 0)
-            total_income += employment.get('spouse', 0)
-
-        # Other income categories (exclude investment_income to avoid double counting with portfolio returns)
+        # 2. Dynamic Income Streams (Pensions/SS handled in main loop, 
+        # but budget rental/other income is period-based)
+        period = 'future' if (p1_retired and p2_retired) else 'current'
+        
+        # Other income categories
         for category in ['rental_income', 'part_time_consulting', 'business_income', 'other_income']:
             items = income_section.get(period, {}).get(category, [])
             for item in items:
                 try:
-                    # Check if income is active this year
                     start_year = datetime.fromisoformat(item['start_date']).year
                     end_year = datetime.fromisoformat(item['end_date']).year if item.get('end_date') else 9999
 
                     if start_year <= simulation_year <= end_year:
                         amount = self._annual_amount(item['amount'], item.get('frequency', 'monthly'))
                         if item.get('inflation_adjusted', True):
-                            amount *= current_cpi
-                        total_income += amount
+                            total_income += amount * current_cpi
+                        else:
+                            total_income += amount
                 except:
-                    pass  # Skip invalid income items
+                    pass
 
         return total_income
 
-    def calculate_budget_expenses(self, simulation_year: int, current_cpi: float, is_retired: bool, housing_costs: float) -> float:
-        """Calculate total expenses from budget categories for a given year"""
+    def calculate_budget_expenses(self, simulation_year: int, current_cpi: np.ndarray, p1_retired: bool, p2_retired: bool, housing_costs: np.ndarray) -> np.ndarray:
+        """Calculate total expenses from budget categories for a given year (Vectorized)"""
         if not self.profile.budget:
-            return 0
+            return housing_costs
 
         budget = self.profile.budget
         expenses_section = budget.get('expenses', {})
-        period = 'future' if is_retired else 'current'
+        
+        # Blended Budget Logic: 
+        # Both working -> 100% current
+        # One retired -> 50% current / 50% future
+        # Both retired -> 100% future
+        retirement_weight = 0.0
+        if p1_retired: retirement_weight += 0.5
+        if p2_retired: retirement_weight += 0.5
+        
+        def get_period_expenses(period):
+            period_total = np.zeros_like(current_cpi)
+            for category in ['housing', 'transportation', 'food', 'healthcare',
+                            'insurance', 'discretionary', 'other']:
+                cat_data = expenses_section.get(period, {}).get(category, {})
+                amount = cat_data.get('amount', 0)
+                amount = self._annual_amount(amount, cat_data.get('frequency', 'monthly'))
 
-        total_expenses = 0
+                if category == 'housing' and np.any(housing_costs > 0):
+                    period_total += housing_costs
+                else:
+                    if cat_data.get('inflation_adjusted', True):
+                        period_total += amount * current_cpi
+                    else:
+                        period_total += amount
+            return period_total
 
-        for category in ['housing', 'transportation', 'food', 'healthcare',
-                        'insurance', 'discretionary', 'other']:
-            cat_data = expenses_section.get(period, {}).get(category, {})
-            amount = cat_data.get('amount', 0)
-            amount = self._annual_amount(amount, cat_data.get('frequency', 'monthly'))
-
-            if cat_data.get('inflation_adjusted', True):
-                amount *= current_cpi
-
-            total_expenses += amount
-
-        # Override housing with real estate costs if available
-        if housing_costs > 0:
-            # Subtract budget housing, add actual housing costs
-            housing_budget = expenses_section.get(period, {}).get('housing', {}).get('amount', 0)
-            housing_budget_annual = self._annual_amount(housing_budget, 'monthly')
-            if expenses_section.get(period, {}).get('housing', {}).get('inflation_adjusted', True):
-                housing_budget_annual *= current_cpi
-            total_expenses = total_expenses - housing_budget_annual + housing_costs
-
-        return total_expenses
+        if retirement_weight == 0:
+            return get_period_expenses('current')
+        elif retirement_weight == 1.0:
+            return get_period_expenses('future')
+        else:
+            # Weighted average of current and future budgets
+            current_exp = get_period_expenses('current')
+            future_exp = get_period_expenses('future')
+            return (current_exp * 0.5) + (future_exp * 0.5)

@@ -279,7 +279,18 @@ function renderScenarioGraph(scenario) {
         scenarioChart.destroy();
     }
 
-    scenarioChart = new Chart(ctx, {
+    // Check if Chart is available
+    const ChartConstructor = typeof Chart !== 'undefined' ? Chart : window.Chart;
+    
+    if (!ChartConstructor) {
+        console.error('Chart.js not found. Cannot render scenario graph.');
+        canvas.style.display = 'none';
+        loader.style.display = 'block';
+        loader.textContent = 'Chart library loading error';
+        return;
+    }
+
+    scenarioChart = new ChartConstructor(ctx, {
         type: 'line',
         data: {
             labels: labels,

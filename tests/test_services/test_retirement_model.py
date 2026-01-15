@@ -27,26 +27,42 @@ def test_rmd_calculation():
     rmd = model.calculate_rmd(76, 1000000)
     assert round(rmd) == 42194
 
-def test_monte_carlo_success_rate():
-    # Basic sanity test for monte carlo
-    p1 = Person("P1", datetime(1980, 1, 1), datetime(2045, 1, 1), 3000)
-    p2 = Person("P2", datetime(1980, 1, 1), datetime(2045, 1, 1), 3000)
+import numpy as np
+
+def test_monte_carlo_with_budget():
+    p1 = Person("P1", datetime(1980, 1, 1), datetime(2045, 1, 1), 0)
+    p2 = Person("P2", datetime(1980, 1, 1), datetime(2045, 1, 1), 0)
+    
+    # Budget with high expenses to ensure it's picked up
+    budget = {
+        'expenses': {
+            'current': {
+                'housing': {'amount': 5000, 'frequency': 'monthly', 'inflation_adjusted': True},
+                'food': {'amount': 1000, 'frequency': 'monthly', 'inflation_adjusted': True}
+            },
+            'future': {
+                'housing': {'amount': 3000, 'frequency': 'monthly', 'inflation_adjusted': True},
+                'food': {'amount': 800, 'frequency': 'monthly', 'inflation_adjusted': True}
+            }
+        }
+    }
     
     profile = FinancialProfile(
         person1=p1, person2=p2, children=[],
-        liquid_assets=1000000, traditional_ira=1000000, roth_ira=500000,
+        liquid_assets=100000, traditional_ira=0, roth_ira=0,
         pension_lump_sum=0, pension_annual=0,
-        annual_expenses=100000, target_annual_income=100000,
-        risk_tolerance="moderate", asset_allocation={"stocks": 0.6, "bonds": 0.4},
+        annual_expenses=0, target_annual_income=0, # Should be overridden by budget
+        risk_tolerance="moderate", asset_allocation={"stocks": 0.0, "bonds": 0.0}, # All cash
         future_expenses=[], investment_types=[
-            {'account': 'Liquid', 'value': 1000000, 'cost_basis': 1000000},
-            {'account': 'Traditional IRA', 'value': 1000000, 'cost_basis': 1000000},
-            {'account': 'Roth IRA', 'value': 500000, 'cost_basis': 500000}
-        ]
+            {'account': 'Checking', 'value': 100000, 'cost_basis': 100000}
+        ],
+        budget=budget
     )
     
     model = RetirementModel(profile)
-    result = model.monte_carlo_simulation(years=30, simulations=100)
+    # 6000/mo = 72000/year. 100k starting. 
+    # Should run out of money quickly.
+    result = model.monte_carlo_simulation(years=10, simulations=10)
     
-    assert result['success_rate'] > 0.9
-    assert result['median_final_balance'] > 0
+    assert result['success_rate'] < 0.5
+    assert result['starting_portfolio'] == 100000

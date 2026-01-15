@@ -69,7 +69,8 @@ export function renderAnalysisTab(container) {
                             <optgroup label="${category}">
                                 ${keys.filter(key => APP_CONFIG.MARKET_PROFILES[key]).map(key => {
                                     const mp = APP_CONFIG.MARKET_PROFILES[key];
-                                    return `<option value="${key}" ${key === savedMarketProfile ? 'selected' : ''}>${mp.name}</option>`;
+                                    const label = `${mp.name} (${(mp.stock_return_mean * 100).toFixed(1)}% / ${(mp.bond_return_mean * 100).toFixed(1)}% / ${(mp.inflation_mean * 100).toFixed(1)}%)`;
+                                    return `<option value="${key}" ${key === savedMarketProfile ? 'selected' : ''}>${label}</option>`;
                                 }).join('')}
                             </optgroup>
                         `).join('')}
@@ -77,20 +78,21 @@ export function renderAnalysisTab(container) {
                     <div id="market-profile-description" style="margin-top: 10px; padding: 12px 15px; background: var(--bg-primary); border-radius: 8px; border: 1px solid var(--border-color);">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                             <span style="font-weight: 600; color: var(--text-primary);">${marketProfile.name}</span>
+                            <small style="color: var(--accent-color); font-weight: 600;">CUSTOMIZABLE</small>
                         </div>
-                        <p style="margin: 0 0 10px 0; color: var(--text-secondary); font-size: 14px;">${marketProfile.description}</p>
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 13px;">
-                            <div>
-                                <span style="color: var(--text-secondary);">Stock Return:</span>
-                                <span style="color: var(--text-primary); font-weight: 500;"> ${(marketProfile.stock_return_mean * 100).toFixed(1)}%</span>
+                        <p style="margin: 0 0 15px 0; color: var(--text-secondary); font-size: 14px;">${marketProfile.description}</p>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; font-size: 13px;">
+                            <div class="form-group">
+                                <label style="font-size: 11px; margin-bottom: 4px; display: block;">Stock Return (%)</label>
+                                <input type="number" id="custom-stock-return" value="${(marketProfile.stock_return_mean * 100).toFixed(1)}" step="0.1" style="width: 100%; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
                             </div>
-                            <div>
-                                <span style="color: var(--text-secondary);">Bond Return:</span>
-                                <span style="color: var(--text-primary); font-weight: 500;"> ${(marketProfile.bond_return_mean * 100).toFixed(1)}%</span>
+                            <div class="form-group">
+                                <label style="font-size: 11px; margin-bottom: 4px; display: block;">Bond Return (%)</label>
+                                <input type="number" id="custom-bond-return" value="${(marketProfile.bond_return_mean * 100).toFixed(1)}" step="0.1" style="width: 100%; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
                             </div>
-                            <div>
-                                <span style="color: var(--text-secondary);">Inflation:</span>
-                                <span style="color: var(--text-primary); font-weight: 500;"> ${(marketProfile.inflation_mean * 100).toFixed(1)}%</span>
+                            <div class="form-group">
+                                <label style="font-size: 11px; margin-bottom: 4px; display: block;">Inflation (%)</label>
+                                <input type="number" id="custom-inflation" value="${(marketProfile.inflation_mean * 100).toFixed(1)}" step="0.1" style="width: 100%; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
                             </div>
                         </div>
                     </div>
@@ -252,20 +254,21 @@ function setupAnalysisHandlers(container, profile) {
                 marketProfileDescription.innerHTML = `
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <span style="font-weight: 600; color: var(--text-primary);">${selectedProfile.name}</span>
+                        <small style="color: var(--accent-color); font-weight: 600;">CUSTOMIZABLE</small>
                     </div>
-                    <p style="margin: 0 0 10px 0; color: var(--text-secondary); font-size: 14px;">${selectedProfile.description}</p>
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 13px;">
-                        <div>
-                            <span style="color: var(--text-secondary);">Stock Return:</span>
-                            <span style="color: var(--text-primary); font-weight: 500;"> ${(selectedProfile.stock_return_mean * 100).toFixed(1)}%</span>
+                    <p style="margin: 0 0 15px 0; color: var(--text-secondary); font-size: 14px;">${selectedProfile.description}</p>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; font-size: 13px;">
+                        <div class="form-group">
+                            <label style="font-size: 11px; margin-bottom: 4px; display: block;">Stock Return (%)</label>
+                            <input type="number" id="custom-stock-return" value="${(selectedProfile.stock_return_mean * 100).toFixed(1)}" step="0.1" style="width: 100%; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
                         </div>
-                        <div>
-                            <span style="color: var(--text-secondary);">Bond Return:</span>
-                            <span style="color: var(--text-primary); font-weight: 500;"> ${(selectedProfile.bond_return_mean * 100).toFixed(1)}%</span>
+                        <div class="form-group">
+                            <label style="font-size: 11px; margin-bottom: 4px; display: block;">Bond Return (%)</label>
+                            <input type="number" id="custom-bond-return" value="${(selectedProfile.bond_return_mean * 100).toFixed(1)}" step="0.1" style="width: 100%; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
                         </div>
-                        <div>
-                            <span style="color: var(--text-secondary);">Inflation:</span>
-                            <span style="color: var(--text-primary); font-weight: 500;"> ${(selectedProfile.inflation_mean * 100).toFixed(1)}%</span>
+                        <div class="form-group">
+                            <label style="font-size: 11px; margin-bottom: 4px; display: block;">Inflation (%)</label>
+                            <input type="number" id="custom-inflation" value="${(selectedProfile.inflation_mean * 100).toFixed(1)}" step="0.1" style="width: 100%; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
                         </div>
                     </div>
                 `;
@@ -296,7 +299,17 @@ function setupAnalysisHandlers(container, profile) {
         showLoading(resultsContainer, `Running ${simulations.toLocaleString()} simulations...`);
 
         try {
-            const marketProfile = APP_CONFIG.MARKET_PROFILES[savedMarketProfile];
+            const selectedKey = marketProfileSelect?.value || localStorage.getItem('rps_market_profile') || 'historical';
+            const templateProfile = APP_CONFIG.MARKET_PROFILES[selectedKey];
+            
+            // Create custom market profile from inputs
+            const marketProfile = {
+                ...templateProfile,
+                stock_return_mean: parseFloat(container.querySelector('#custom-stock-return').value) / 100,
+                bond_return_mean: parseFloat(container.querySelector('#custom-bond-return').value) / 100,
+                inflation_mean: parseFloat(container.querySelector('#custom-inflation').value) / 100
+            };
+
             const spendingModel = spendingModelSelect?.value || 'constant_real';
             
             // Pass spending model to API
@@ -723,6 +736,15 @@ function renderTimelineChart(timeline, canvasId = 'timeline-chart') {
     const accentColor = style.getPropertyValue('--accent-color').trim() || '#3498db';
     const textSecondary = style.getPropertyValue('--text-secondary').trim() || '#666';
 
+    // Highlight specific milestones: 0, 5, 10, 15, 20, 30, 40 years
+    const milestones = [0, 5, 10, 15, 20, 30, 40];
+    const pointRadii = (timeline.years || []).map((year, index) => {
+        return milestones.includes(index) ? 6 : 0;
+    });
+    const pointHoverRadii = (timeline.years || []).map((year, index) => {
+        return milestones.includes(index) ? 8 : 4;
+    });
+
     timelineChartInstances[canvasId] = new Chart(ctx, {
         type: 'line',
         data: {
@@ -746,8 +768,11 @@ function renderTimelineChart(timeline, canvasId = 'timeline-chart') {
                     backgroundColor: 'transparent',
                     borderWidth: 3,
                     tension: 0.3,
-                    pointRadius: 0,
-                    pointHoverRadius: 4
+                    pointRadius: pointRadii,
+                    pointHoverRadius: pointHoverRadii,
+                    pointBackgroundColor: accentColor,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
                 },
                 {
                     label: '5th Percentile (Conservative)',
@@ -788,6 +813,38 @@ function renderTimelineChart(timeline, canvasId = 'timeline-chart') {
                     }
                 }
             },
+            // Custom plugin to draw labels for milestones
+            plugins: [{
+                id: 'milestoneLabels',
+                afterDatasetsDraw(chart) {
+                    const {ctx, data} = chart;
+                    const dataset = data.datasets[1]; // Median dataset
+                    const milestones = [0, 5, 10, 15, 20, 30, 40];
+                    
+                    ctx.save();
+                    ctx.font = 'bold 11px sans-serif';
+                    ctx.textAlign = 'center';
+                    
+                    milestones.forEach(index => {
+                        const meta = chart.getDatasetMeta(1);
+                        const point = meta.data[index];
+                        
+                        if (point && !point.skip) {
+                            const val = formatCurrency(dataset.data[index], 0);
+                            
+                            // Draw small background for text readability
+                            const textWidth = ctx.measureText(val).width;
+                            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                            ctx.fillRect(point.x - (textWidth/2) - 4, point.y - 28, textWidth + 8, 16);
+                            
+                            // Draw text
+                            ctx.fillStyle = accentColor;
+                            ctx.fillText(val, point.x, point.y - 16);
+                        }
+                    });
+                    ctx.restore();
+                }
+            }],
             scales: {
                 y: {
                     beginAtZero: true,
