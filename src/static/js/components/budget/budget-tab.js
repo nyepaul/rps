@@ -618,12 +618,9 @@ function renderIncomeItem(item, category, index) {
     const amount = annualAmount(item.amount || 0, item.frequency || 'monthly');
     return `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: var(--bg-primary); border-radius: 4px; border: 1px solid var(--border-color);">
-            <div style="flex: 1; min-width: 0;">
-                <div style="font-weight: 500; margin-bottom: 2px; font-size: 13px;">${item.name || 'Unnamed'}</div>
-                <div style="font-size: 11px; color: var(--text-secondary);">
-                    ${formatCurrency(item.amount || 0)}/${item.frequency || 'monthly'}
-                    (${formatCurrency(amount)}/yr)
-                </div>
+            <div style="display: flex; align-items: center; gap: 8px; flex: 1; font-size: 13px;">
+                <span style="font-weight: 500;">${item.name || 'Unnamed'}</span>
+                <span style="color: var(--text-secondary);">${formatCurrency(item.amount || 0)}/${item.frequency || 'monthly'} (${formatCurrency(amount)}/yr)</span>
             </div>
             <div style="display: flex; gap: 4px;">
                 <button class="edit-income-btn" data-category="${category}" data-index="${index}" style="padding: 4px 8px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px;">
@@ -918,14 +915,12 @@ function renderExpenseSection(parentContainer) {
         }
 
         html += `
-            <div class="expense-row" data-category="${cat.key}" style="padding: 8px 10px; background: var(--bg-primary); border-radius: 4px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--accent-color)'" onmouseout="this.style.background='var(--bg-primary)'; this.style.borderColor='var(--border-color)'">
-                <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+            <div class="expense-row" data-category="${cat.key}" style="padding: 6px 10px; background: var(--bg-primary); border-radius: 4px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--accent-color)'" onmouseout="this.style.background='var(--bg-primary)'; this.style.borderColor='var(--border-color)'">
+                <div style="display: flex; align-items: center; gap: 8px; flex: 1; font-size: 13px;">
                     <span style="font-size: 16px;">${cat.icon}</span>
-                    <div style="flex: 1;">
-                        <div style="font-weight: 500; font-size: 13px; margin-bottom: 2px;">${cat.label}</div>
-                        <div style="font-size: 11px; color: var(--text-secondary);">${formatCurrency(expense.amount || 0)}/${expense.frequency || 'monthly'} (${formatCurrency(annual)}/yr)</div>
-                        ${dateInfo ? `<div style="font-size: 10px; margin-top: 2px;">${dateInfo}</div>` : ''}
-                    </div>
+                    <span style="font-weight: 500;">${cat.label}</span>
+                    <span style="color: var(--text-secondary);">${formatCurrency(expense.amount || 0)}/${expense.frequency || 'monthly'} (${formatCurrency(annual)}/yr)</span>
+                    ${dateInfo ? `<span style="font-size: 11px; margin-left: 4px;">${dateInfo}</span>` : ''}
                 </div>
                 <span style="font-size: 11px; color: var(--text-secondary);">✏️</span>
             </div>

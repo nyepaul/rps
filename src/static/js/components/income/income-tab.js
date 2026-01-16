@@ -104,30 +104,30 @@ function renderIncomeStreamsList(container, incomeStreams) {
     });
 
     listContainer.innerHTML = `
-        <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-                <tr style="background: var(--bg-tertiary); border-bottom: 2px solid var(--border-color);">
-                    <th style="text-align: left; padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary);">Name</th>
-                    <th style="text-align: right; padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary);">Amount/Month</th>
-                    <th style="text-align: center; padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary);">Start Date</th>
-                    <th style="text-align: center; padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary);">End Date</th>
-                    <th style="text-align: center; padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary); width: 80px;">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
+        <div style="padding: 12px;">
+            <div style="display: flex; flex-direction: column; gap: 6px;">
                 ${sortedStreams.map((stream, index) => renderIncomeStreamRow(stream, index)).join('')}
-            </tbody>
-        </table>
+            </div>
+        </div>
     `;
 
     // Setup row click handlers (edit on click)
     listContainer.querySelectorAll('.income-row').forEach(row => {
         row.addEventListener('click', (e) => {
-            // Don't trigger if clicking delete button
-            if (e.target.classList.contains('delete-income-stream-btn') || e.target.closest('.delete-income-stream-btn')) {
+            // Don't trigger if clicking action buttons
+            if (e.target.closest('.edit-income-stream-btn') || e.target.closest('.delete-income-stream-btn')) {
                 return;
             }
             const index = parseInt(row.dataset.index);
+            showIncomeStreamModal(container, store.get('currentProfile'), index, incomeStreams);
+        });
+    });
+
+    // Setup edit handlers
+    listContainer.querySelectorAll('.edit-income-stream-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const index = parseInt(btn.dataset.index);
             showIncomeStreamModal(container, store.get('currentProfile'), index, incomeStreams);
         });
     });
@@ -147,35 +147,51 @@ function renderIncomeStreamsList(container, incomeStreams) {
 }
 
 /**
- * Render income stream table row
+ * Render income stream row
  */
 function renderIncomeStreamRow(stream, index) {
-    const startDate = stream.start_date ? new Date(stream.start_date).toLocaleDateString() : '—';
-    const endDate = stream.end_date ? new Date(stream.end_date).toLocaleDateString() : 'Ongoing';
+    // Format dates
+    const formatDate = (dateStr) => {
+        if (!dateStr) return null;
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    };
+
+    const startDate = formatDate(stream.start_date);
+    const endDate = formatDate(stream.end_date);
+
+    // Build date display
+    let dateInfo = '';
+    if (startDate && endDate) {
+        dateInfo = `📅 ${startDate} → ${endDate}`;
+    } else if (startDate) {
+        dateInfo = `📅 From ${startDate}`;
+    } else if (endDate) {
+        dateInfo = `📅 Until ${endDate}`;
+    } else {
+        dateInfo = '⏳ Ongoing';
+    }
+
+    const annual = stream.amount * 12;
 
     return `
-        <tr class="income-row" data-index="${index}" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;"
-            onmouseover="this.style.background='var(--bg-tertiary)'"
-            onmouseout="this.style.background='transparent'">
-            <td style="padding: 14px 16px;">
-                <div style="font-weight: 600; font-size: 14px; margin-bottom: 2px;">${stream.name}</div>
-                ${stream.description ? `<div style="font-size: 12px; color: var(--text-secondary);">${stream.description}</div>` : ''}
-            </td>
-            <td style="padding: 14px 16px; text-align: right;">
-                <div style="font-weight: 600; font-size: 14px; color: var(--accent-color);">${formatCurrency(stream.amount, 0)}</div>
-                <div style="font-size: 11px; color: var(--text-secondary);">${formatCurrency(stream.amount * 12, 0)}/yr</div>
-            </td>
-            <td style="padding: 14px 16px; text-align: center; font-size: 13px;">${startDate}</td>
-            <td style="padding: 14px 16px; text-align: center; font-size: 13px;">${endDate}</td>
-            <td style="padding: 14px 16px; text-align: center;">
+        <div class="income-row" data-index="${index}" style="padding: 6px 10px; background: var(--bg-primary); border-radius: 4px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--accent-color)'" onmouseout="this.style.background='var(--bg-primary)'; this.style.borderColor='var(--border-color)'">
+            <div style="display: flex; align-items: center; gap: 8px; flex: 1; font-size: 13px;">
+                <span style="font-size: 16px;">💰</span>
+                <span style="font-weight: 600;">${stream.name}</span>
+                ${stream.description ? `<span style="color: var(--text-secondary); font-size: 12px;">${stream.description}</span>` : ''}
+                <span style="color: var(--text-secondary);">${formatCurrency(stream.amount, 0)}/monthly (${formatCurrency(annual, 0)}/yr)</span>
+                <span style="font-size: 11px; color: var(--text-secondary);">${dateInfo}</span>
+            </div>
+            <div style="display: flex; gap: 4px; margin-left: 8px;">
+                <button class="edit-income-stream-btn" data-index="${index}"
+                    style="padding: 4px 8px; background: transparent; color: var(--text-secondary); border: none; cursor: pointer; font-size: 14px;"
+                    title="Edit">✏️</button>
                 <button class="delete-income-stream-btn" data-index="${index}"
-                    style="padding: 4px 8px; background: transparent; color: var(--danger-color); border: 1px solid var(--danger-color); border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; transition: all 0.2s;"
-                    onmouseover="this.style.background='var(--danger-color)'; this.style.color='white'"
-                    onmouseout="this.style.background='transparent'; this.style.color='var(--danger-color)'">
-                    Delete
-                </button>
-            </td>
-        </tr>
+                    style="padding: 4px 8px; background: transparent; color: var(--danger-color); border: none; cursor: pointer; font-size: 14px;"
+                    title="Delete">🗑️</button>
+            </div>
+        </div>
     `;
 }
 
