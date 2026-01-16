@@ -225,31 +225,45 @@ function displayActionItems(container, items, filter) {
         return;
     }
 
-    listContainer.innerHTML = filteredItems.map(item => `
-        <div class="action-item ${item.status === 'completed' ? 'completed' : ''}" data-id="${item.id}">
-            <input
-                type="checkbox"
-                class="action-checkbox"
-                data-id="${item.id}"
-                ${item.status === 'completed' ? 'checked' : ''}
-            >
-            <div class="action-content">
-                <div class="action-title">${item.title || 'Untitled Action'}</div>
-                ${item.description ? `
-                    <div class="action-description">${item.description}</div>
-                ` : ''}
-                <div class="action-meta">
-                    <span>Priority: ${getPriorityLabel(item.priority)}</span>
-                    ${item.due_date ? `<span>Due: ${formatDate(item.due_date)}</span>` : ''}
-                    ${item.created_at ? `<span>Created: ${formatDate(item.created_at)}</span>` : ''}
+    listContainer.innerHTML = filteredItems.map(item => {
+        // Smart title selection: use title, or first line of description, or "Untitled Action"
+        let displayTitle = item.title;
+        let displayDescription = item.description;
+
+        if (!displayTitle && displayDescription) {
+            // Use description as title if no title exists
+            displayTitle = displayDescription;
+            displayDescription = ''; // Don't show description separately
+        } else if (!displayTitle) {
+            displayTitle = 'Untitled Action';
+        }
+
+        return `
+            <div class="action-item ${item.status === 'completed' ? 'completed' : ''}" data-id="${item.id}">
+                <input
+                    type="checkbox"
+                    class="action-checkbox"
+                    data-id="${item.id}"
+                    ${item.status === 'completed' ? 'checked' : ''}
+                >
+                <div class="action-content">
+                    <div class="action-title">${displayTitle}</div>
+                    ${displayDescription ? `
+                        <div class="action-description">${displayDescription}</div>
+                    ` : ''}
+                    <div class="action-meta">
+                        <span>Priority: ${getPriorityLabel(item.priority)}</span>
+                        ${item.due_date ? `<span>Due: ${formatDate(item.due_date)}</span>` : ''}
+                        ${item.created_at ? `<span>Created: ${formatDate(item.created_at)}</span>` : ''}
+                    </div>
+                </div>
+                <div class="action-actions">
+                    <button class="action-btn btn-edit" data-id="${item.id}">Edit</button>
+                    <button class="action-btn btn-delete" data-id="${item.id}">Delete</button>
                 </div>
             </div>
-            <div class="action-actions">
-                <button class="action-btn btn-edit" data-id="${item.id}">Edit</button>
-                <button class="action-btn btn-delete" data-id="${item.id}">Delete</button>
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 
     // Add event listeners
     listContainer.querySelectorAll('.action-checkbox').forEach(checkbox => {
