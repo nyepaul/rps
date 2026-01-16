@@ -16,65 +16,72 @@ def create_styles():
     """Create custom paragraph styles."""
     styles = getSampleStyleSheet()
 
-    styles.add(ParagraphStyle(
-        name='ReportTitle',
+    # Helper function to add or update style
+    def add_style(name, **kwargs):
+        if name in styles:
+            # Style exists, don't add again
+            return
+        styles.add(ParagraphStyle(name=name, **kwargs))
+
+    add_style(
+        'ReportTitle',
         parent=styles['Heading1'],
         fontSize=24,
         spaceAfter=30,
         alignment=TA_CENTER,
         textColor=colors.HexColor('#2c3e50')
-    ))
+    )
 
-    styles.add(ParagraphStyle(
-        name='SectionTitle',
+    add_style(
+        'SectionTitle',
         parent=styles['Heading2'],
         fontSize=16,
         spaceBefore=20,
         spaceAfter=10,
         textColor=colors.HexColor('#3498db')
-    ))
+    )
 
-    styles.add(ParagraphStyle(
-        name='SubSection',
+    add_style(
+        'SubSection',
         parent=styles['Heading3'],
         fontSize=13,
         spaceBefore=15,
         spaceAfter=8,
         textColor=colors.HexColor('#34495e')
-    ))
+    )
 
-    styles.add(ParagraphStyle(
-        name='BodyText',
+    add_style(
+        'ReportBody',  # Renamed to avoid conflict with default BodyText
         parent=styles['Normal'],
         fontSize=10,
         spaceAfter=8,
         leading=14
-    ))
+    )
 
-    styles.add(ParagraphStyle(
-        name='SmallText',
+    add_style(
+        'SmallText',
         parent=styles['Normal'],
         fontSize=8,
         textColor=colors.HexColor('#7f8c8d')
-    ))
+    )
 
-    styles.add(ParagraphStyle(
-        name='Highlight',
+    add_style(
+        'Highlight',
         parent=styles['Normal'],
         fontSize=12,
         textColor=colors.HexColor('#27ae60'),
         spaceBefore=5,
         spaceAfter=5
-    ))
+    )
 
-    styles.add(ParagraphStyle(
-        name='Warning',
+    add_style(
+        'Warning',
         parent=styles['Normal'],
         fontSize=11,
         textColor=colors.HexColor('#e74c3c'),
         spaceBefore=5,
         spaceAfter=5
-    ))
+    )
 
     return styles
 
@@ -99,7 +106,7 @@ def create_header(profile_name, report_type):
     elements = []
 
     elements.append(Paragraph(f"{report_type}", styles['ReportTitle']))
-    elements.append(Paragraph(f"Profile: {profile_name}", styles['BodyText']))
+    elements.append(Paragraph(f"Profile: {profile_name}", styles['ReportBody']))
     elements.append(Paragraph(
         f"Generated: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}",
         styles['SmallText']
@@ -142,7 +149,7 @@ def generate_analysis_report(profile_data, analysis_results):
         elements.append(Paragraph(summary_text, styles['Highlight']))
     elif success_rate >= 75:
         summary_text = f"Your retirement plan shows a <b>{format_percent(success_rate)}</b> success rate under moderate market conditions. This is a good result, though some adjustments could improve your chances further."
-        elements.append(Paragraph(summary_text, styles['BodyText']))
+        elements.append(Paragraph(summary_text, styles['ReportBody']))
     else:
         summary_text = f"Your retirement plan shows a <b>{format_percent(success_rate)}</b> success rate under moderate market conditions. Consider adjusting your spending, savings, or retirement date to improve this outlook."
         elements.append(Paragraph(summary_text, styles['Warning']))
@@ -181,7 +188,7 @@ def generate_analysis_report(profile_data, analysis_results):
     elements.append(Paragraph("Scenario Analysis", styles['SectionTitle']))
     elements.append(Paragraph(
         "Results across different asset allocation strategies:",
-        styles['BodyText']
+        styles['ReportBody']
     ))
 
     scenario_data = [
@@ -225,7 +232,7 @@ def generate_analysis_report(profile_data, analysis_results):
     ]
 
     for text in interpretations:
-        elements.append(Paragraph(text, styles['BodyText']))
+        elements.append(Paragraph(text, styles['ReportBody']))
 
     elements.append(Spacer(1, 15))
 
@@ -253,7 +260,7 @@ def generate_analysis_report(profile_data, analysis_results):
         ]
 
     for rec in recommendations:
-        elements.append(Paragraph(f"• {rec}", styles['BodyText']))
+        elements.append(Paragraph(f"• {rec}", styles['ReportBody']))
 
     # Disclaimer
     elements.append(Spacer(1, 30))
@@ -452,7 +459,7 @@ def generate_action_plan_report(profile_data, action_items):
     summary_text += f"<b>{len(pending)}</b> pending, "
     summary_text += f"<b>{len(in_progress)}</b> in progress, "
     summary_text += f"<b>{len(completed)}</b> completed."
-    elements.append(Paragraph(summary_text, styles['BodyText']))
+    elements.append(Paragraph(summary_text, styles['ReportBody']))
     elements.append(Spacer(1, 15))
 
     # Priority items (Pending and In Progress)
@@ -505,7 +512,7 @@ def generate_action_plan_report(profile_data, action_items):
             # Show description separately if it exists and is different from title
             description = item.get('description', '')
             if description and description != title_text:
-                elements.append(Paragraph(description, styles['BodyText']))
+                elements.append(Paragraph(description, styles['ReportBody']))
 
             elements.append(Paragraph(
                 f"Priority: {item.get('priority', 'medium').title()} | "
@@ -546,7 +553,7 @@ def generate_action_plan_report(profile_data, action_items):
         elements.append(Paragraph(
             "No action items have been created yet. Use the AI Advisor feature to get "
             "personalized recommendations for your retirement plan.",
-            styles['BodyText']
+            styles['ReportBody']
         ))
 
     # Disclaimer
