@@ -218,9 +218,9 @@ function calculateMonthlyCashFlow(profile, months) {
         let expenses = 0;
         if (budget.expenses && budget.expenses.current) {
             // Calculate total monthly expenses from all categories
-            const categories = ['housing', 'utilities', 'transportation', 'food', 'healthcare', 'insurance',
-                              'entertainment', 'personal_care', 'clothing', 'childcare_education',
-                              'charitable_giving', 'subscriptions', 'pet_care', 'debt_payments',
+            const categories = ['housing', 'utilities', 'transportation', 'food', 'dining_out', 'healthcare', 'insurance',
+                              'travel', 'entertainment', 'personal_care', 'clothing', 'gifts', 'childcare_education',
+                              'charitable_giving', 'subscriptions', 'pet_care', 'home_maintenance', 'debt_payments',
                               'taxes', 'discretionary', 'other'];
             categories.forEach(category => {
                 const cat = budget.expenses.current[category] || {};

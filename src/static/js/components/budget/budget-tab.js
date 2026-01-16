@@ -155,13 +155,17 @@ function getDefaultExpenses() {
         food: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
         healthcare: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
         insurance: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
+        travel: { amount: 0, frequency: 'annual', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
         entertainment: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
+        dining_out: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
         personal_care: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
         clothing: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
+        gifts: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
         childcare_education: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
         charitable_giving: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
         subscriptions: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
         pet_care: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
+        home_maintenance: { amount: 0, frequency: 'annual', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
         debt_payments: { amount: 0, frequency: 'monthly', inflation_adjusted: false, subcategories: {}, start_date: null, end_date: null, ongoing: true },
         taxes: { amount: 0, frequency: 'annual', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
         discretionary: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
@@ -279,9 +283,9 @@ function calculateTotalExpenses(period, asOfDate = null) {
     const today = asOfDate || new Date();
 
     const categories = ['housing', 'utilities', 'transportation', 'food', 'healthcare', 'insurance',
-                       'entertainment', 'personal_care', 'clothing', 'childcare_education',
-                       'charitable_giving', 'subscriptions', 'pet_care', 'debt_payments',
-                       'taxes', 'discretionary', 'other'];
+                       'travel', 'entertainment', 'dining_out', 'personal_care', 'clothing', 'gifts',
+                       'childcare_education', 'charitable_giving', 'subscriptions', 'pet_care',
+                       'home_maintenance', 'debt_payments', 'taxes', 'discretionary', 'other'];
 
     for (const category of categories) {
         const cat = expenses[category] || {};
@@ -857,20 +861,24 @@ function renderExpenseSection(parentContainer) {
         { key: 'housing', label: 'Housing', icon: '🏠', description: 'Mortgage, rent, HOA fees' },
         { key: 'utilities', label: 'Utilities', icon: '💡', description: 'Electric, gas, water, internet' },
         { key: 'transportation', label: 'Transportation', icon: '🚗', description: 'Car payment, gas, maintenance' },
-        { key: 'food', label: 'Food', icon: '🍽️', description: 'Groceries, dining out' },
+        { key: 'food', label: 'Food', icon: '🍽️', description: 'Groceries' },
+        { key: 'dining_out', label: 'Dining Out', icon: '🍴', description: 'Restaurants, takeout, delivery' },
         { key: 'healthcare', label: 'Healthcare', icon: '🏥', description: 'Medical, dental, prescriptions' },
         { key: 'insurance', label: 'Insurance', icon: '🛡️', description: 'Health, life, home, auto' },
-        { key: 'entertainment', label: 'Entertainment', icon: '🎬', description: 'Movies, hobbies, activities' },
+        { key: 'travel', label: 'Travel & Vacation', icon: '✈️', description: 'Flights, hotels, vacation expenses' },
+        { key: 'entertainment', label: 'Entertainment', icon: '🎬', description: 'Movies, concerts, hobbies, activities' },
         { key: 'personal_care', label: 'Personal Care', icon: '💇', description: 'Hair, gym, spa' },
         { key: 'clothing', label: 'Clothing', icon: '👕', description: 'Clothes, shoes, accessories' },
+        { key: 'gifts', label: 'Gifts & Occasions', icon: '🎁', description: 'Birthdays, holidays, weddings' },
         { key: 'childcare_education', label: 'Childcare & Education', icon: '🎓', description: 'Daycare, tuition, supplies' },
         { key: 'charitable_giving', label: 'Charitable Giving', icon: '💝', description: 'Donations, tithing' },
         { key: 'subscriptions', label: 'Subscriptions', icon: '📱', description: 'Streaming, apps, memberships' },
         { key: 'pet_care', label: 'Pet Care', icon: '🐾', description: 'Food, vet, grooming' },
+        { key: 'home_maintenance', label: 'Home Maintenance', icon: '🔧', description: 'Repairs, landscaping, improvements' },
         { key: 'debt_payments', label: 'Debt Payments', icon: '💳', description: 'Credit cards, loans (non-mortgage)' },
         { key: 'taxes', label: 'Taxes', icon: '📋', description: 'Property tax, estimated tax payments' },
-        { key: 'discretionary', label: 'Discretionary', icon: '🎉', description: 'Shopping, travel, misc' },
-        { key: 'other', label: 'Other', icon: '📌' }
+        { key: 'discretionary', label: 'Discretionary', icon: '🎉', description: 'Shopping, misc spending' },
+        { key: 'other', label: 'Other', icon: '📌', description: 'Miscellaneous expenses' }
     ];
 
     let html = `
@@ -956,15 +964,19 @@ function showExpenseEditorModal(parentContainer, category) {
         utilities: 'Utilities',
         transportation: 'Transportation',
         food: 'Food',
+        dining_out: 'Dining Out',
         healthcare: 'Healthcare',
         insurance: 'Insurance',
+        travel: 'Travel & Vacation',
         entertainment: 'Entertainment',
         personal_care: 'Personal Care',
         clothing: 'Clothing',
+        gifts: 'Gifts & Occasions',
         childcare_education: 'Childcare & Education',
         charitable_giving: 'Charitable Giving',
         subscriptions: 'Subscriptions',
         pet_care: 'Pet Care',
+        home_maintenance: 'Home Maintenance',
         debt_payments: 'Debt Payments',
         taxes: 'Taxes',
         discretionary: 'Discretionary',
