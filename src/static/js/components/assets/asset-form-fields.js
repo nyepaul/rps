@@ -170,8 +170,9 @@ export const ASSET_TYPE_LABELS = {
  * @param {string} category - Asset category
  * @param {object} asset - Existing asset data
  * @param {boolean} skipType - Skip the type field (when already selected in wizard)
+ * @param {Array} customTypeOptions - Custom options for type field (for cross-category editing)
  */
-export function generateFormFields(category, asset = {}, skipType = false) {
+export function generateFormFields(category, asset = {}, skipType = false, customTypeOptions = null) {
     const fields = FIELD_DEFINITIONS[category];
     if (!fields) {
         throw new Error(`Unknown asset category: ${category}`);
@@ -226,10 +227,13 @@ export function generateFormFields(category, asset = {}, skipType = false) {
         let inputHTML = '';
 
         if (field.type === 'select') {
+            // Use custom options for type field if provided (cross-category editing)
+            const options = (field.name === 'type' && customTypeOptions) ? customTypeOptions : field.options;
+
             inputHTML = `
                 <select id="${id}" name="${field.name}" ${isRequired ? 'required' : ''}>
-                    ${field.options.map(opt => `
-                        <option value="${opt.value}" ${displayValue === opt.value ? 'selected' : ''}>
+                    ${options.map(opt => `
+                        <option value="${opt.value}" ${displayValue === opt.value ? 'selected' : ''} ${opt.disabled ? 'disabled' : ''}>
                             ${opt.label}
                         </option>
                     `).join('')}

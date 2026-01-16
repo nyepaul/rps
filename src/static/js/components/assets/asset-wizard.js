@@ -88,6 +88,23 @@ function getCategoryForType(accountType) {
     return 'other_assets';
 }
 
+// Get all account type options for cross-category editing
+function getAllAccountTypeOptions() {
+    const options = [{ value: '', label: '-- Select Type --' }];
+
+    for (const [groupKey, group] of Object.entries(ACCOUNT_TYPES)) {
+        // Add group header
+        options.push({ value: '', label: `--- ${group.label} ---`, disabled: true });
+
+        // Add types in this group
+        for (const type of group.types) {
+            options.push({ value: type.value, label: type.label });
+        }
+    }
+
+    return options;
+}
+
 /**
  * Show asset wizard modal
  * @param {string|null} preselectedCategory - Category to jump to (null for category selection)
@@ -348,7 +365,7 @@ function renderStep2AssetForm(state) {
             </div>
             <form id="asset-form" style="display: grid; gap: 20px;">
                 ${state.isEditing ? '' : `<input type="hidden" name="type" value="${state.assetData.type}">`}
-                ${generateFormFields(state.category, state.assetData, !state.isEditing)}
+                ${generateFormFields(state.category, state.assetData, !state.isEditing, state.isEditing ? getAllAccountTypeOptions() : null)}
             </form>
         </div>
     `;
@@ -501,16 +518,41 @@ function setupWizardHandlers(wizard, state, assets, onSave, modal, isEditing) {
     const typeSelect = wizard.querySelector('select[name="type"]');
     if (typeSelect) {
         typeSelect.addEventListener('change', (e) => {
+            const newType = e.target.value;
+
             // Save current form data before re-rendering
             const form = wizard.querySelector('#asset-form');
             if (form) {
                 const formData = extractFormData(form, state.category);
                 state.assetData = {
                     ...state.assetData,
-                    ...formData
+                    ...formData,
+                    type: newType  // Update type
                 };
             }
-            // Re-render to show/hide fields based on new type
+
+            // Check if category needs to change based on new type
+            const newCategory = getCategoryForType(newType);
+            if (newCategory && newCategory !== state.category) {
+                console.log(`Category change detected: ${state.category} -> ${newCategory}`);
+
+                // If editing and category changed, we need to handle moving the asset
+                if (isEditing && state.assetIndex !== null) {
+                    // Remove from old category
+                    assets[state.category].splice(state.assetIndex, 1);
+
+                    // Update state to new category
+                    state.category = newCategory;
+
+                    // Asset will be added to new category on save
+                    state.assetIndex = null; // No longer editing in old category
+                } else {
+                    // Just update category for new assets
+                    state.category = newCategory;
+                }
+            }
+
+            // Re-render to show/hide fields based on new type and category
             renderWizardStep(wizard, state, assets, onSave, modal, isEditing);
         });
     }
@@ -620,9 +662,16 @@ function setupWizardHandlers(wizard, state, assets, onSave, modal, isEditing) {
     const saveBtn = wizard.querySelector('#save-btn');
     if (saveBtn) {
         saveBtn.addEventListener('click', () => {
-            if (isEditing && state.assetIndex !== null) {
+            if (isEditing) {
                 // Editing single asset
-                assets[state.category][state.assetIndex] = state.assetData;
+                // If assetIndex is null, it means category changed and asset was removed from old category
+                // Just add to new category
+                if (state.assetIndex !== null) {
+                    assets[state.category][state.assetIndex] = state.assetData;
+                } else {
+                    // Category changed, add to new category
+                    assets[state.category].push(state.assetData);
+                }
             } else {
                 // Add all completed assets
                 for (const { asset, category } of state.completedAssets) {
