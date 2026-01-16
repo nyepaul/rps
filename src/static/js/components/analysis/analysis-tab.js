@@ -198,6 +198,9 @@ export function renderAnalysisTab(container) {
             .stat-warning { color: var(--warning-color); }
             .stat-danger { color: var(--danger-color); }
             .stat-info { color: var(--info-color); }
+            .reset-zoom-btn:hover, #reset-zoom-btn:hover {
+                background: var(--border-color) !important;
+            }
         </style>
     `;
 
@@ -553,10 +556,17 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
 
         <!-- Timeline Chart -->
         <div class="result-card">
-            <h3 style="font-size: 20px; margin-bottom: 15px;">Portfolio Projection Timeline</h3>
-            <p style="color: var(--text-secondary); margin-bottom: 15px;">
-                Year-by-year portfolio value through retirement
-            </p>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <h3 style="font-size: 20px; margin: 0;">Portfolio Projection Timeline</h3>
+                    <p style="color: var(--text-secondary); margin: 5px 0 0 0; font-size: 14px;">
+                        Scroll to zoom • Click and drag to pan
+                    </p>
+                </div>
+                <button id="reset-zoom-btn" style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 14px;">
+                    Reset Zoom
+                </button>
+            </div>
             <div style="position: relative; height: 350px;">
                 <canvas id="timeline-chart"></canvas>
             </div>
@@ -599,7 +609,15 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
 
     // Render timeline chart if data available
     if (data.timeline) {
-        renderStandardTimelineChart(data.timeline, 'timeline-chart', timelineChartInstances, { container });
+        const chart = renderStandardTimelineChart(data.timeline, 'timeline-chart', timelineChartInstances, { container });
+
+        // Set up reset zoom handler
+        const resetBtn = container.querySelector('#reset-zoom-btn');
+        if (resetBtn && chart) {
+            resetBtn.addEventListener('click', () => {
+                chart.resetZoom();
+            });
+        }
     }
 
     // Set up save scenario handler
@@ -737,10 +755,17 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
 
                         <!-- Timeline Chart for this scenario -->
                         <div style="margin-top: 30px;">
-                            <h3 style="font-size: 20px; margin-bottom: 15px;">Portfolio Projection Timeline</h3>
-                            <p style="color: var(--text-secondary); margin-bottom: 15px;">
-                                Year-by-year portfolio value through retirement
-                            </p>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                                <div>
+                                    <h3 style="font-size: 20px; margin: 0;">Portfolio Projection Timeline</h3>
+                                    <p style="color: var(--text-secondary); margin: 5px 0 0 0; font-size: 14px;">
+                                        Scroll to zoom • Click and drag to pan
+                                    </p>
+                                </div>
+                                <button class="reset-zoom-btn" data-chart="timeline-chart-${key}" style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 14px;">
+                                    Reset Zoom
+                                </button>
+                            </div>
                             <div style="position: relative; height: 350px;">
                                 <canvas id="timeline-chart-${key}"></canvas>
                             </div>
@@ -832,8 +857,16 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
         if (scenario && scenario.timeline) {
             console.log(`Calling renderStandardTimelineChart for ${key}`);
             try {
-                renderStandardTimelineChart(scenario.timeline, `timeline-chart-${key}`, timelineChartInstances, { container });
+                const chart = renderStandardTimelineChart(scenario.timeline, `timeline-chart-${key}`, timelineChartInstances, { container });
                 console.log(`Successfully rendered chart for ${key}`);
+
+                // Set up reset zoom handler for this chart
+                const resetBtn = container.querySelector(`.reset-zoom-btn[data-chart="timeline-chart-${key}"]`);
+                if (resetBtn && chart) {
+                    resetBtn.addEventListener('click', () => {
+                        chart.resetZoom();
+                    });
+                }
             } catch (error) {
                 console.error(`Error rendering chart for ${key}:`, error);
             }
