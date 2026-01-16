@@ -127,7 +127,7 @@ def run_analysis():
             name=profile.name or 'Primary',
             birth_date=datetime.fromisoformat(birth_date_str) if birth_date_str else datetime(1980, 1, 1),
             retirement_date=datetime.fromisoformat(retirement_date_str) if retirement_date_str else datetime(2045, 1, 1),
-            social_security=financial_data.get('social_security_benefit', 0)  # Already monthly
+            social_security=financial_data.get('social_security_benefit') or 0  # Already monthly
         )
 
         # Create person2 (spouse) if spouse data exists
@@ -138,7 +138,7 @@ def run_analysis():
             name=spouse_data.get('name', 'Spouse'),
             birth_date=datetime.fromisoformat(spouse_birth) if spouse_birth else datetime(1980, 1, 1),
             retirement_date=datetime.fromisoformat(spouse_retire) if spouse_retire else datetime(2045, 1, 1),
-            social_security=spouse_data.get('social_security_benefit', 0) if spouse_data.get('social_security_benefit') else 0  # Already monthly
+            social_security=spouse_data.get('social_security_benefit') or 0  # Already monthly
         )
 
         # Get assets from profile and transform to investment_types format
@@ -166,17 +166,24 @@ def run_analysis():
         print(f"===================\n")
 
         # Create financial profile matching the FinancialProfile dataclass
+        # Use 'or 0' pattern to handle None values from database
+        pension_benefit = financial_data.get('pension_benefit') or 0
+        annual_expenses = financial_data.get('annual_expenses') or 0
+        annual_income = financial_data.get('annual_income') or 0
+        liquid_assets_val = liquid_assets or financial_data.get('liquid_assets') or 0
+        retirement_assets_val = traditional_ira or financial_data.get('retirement_assets') or 0
+
         financial_profile = FinancialProfile(
             person1=person1,
             person2=person2,
             children=children_data,
-            liquid_assets=liquid_assets or financial_data.get('liquid_assets', 0),
-            traditional_ira=traditional_ira or financial_data.get('retirement_assets', 0),
-            roth_ira=roth_ira,
+            liquid_assets=liquid_assets_val,
+            traditional_ira=retirement_assets_val,
+            roth_ira=roth_ira or 0,
             pension_lump_sum=0,
-            pension_annual=financial_data.get('pension_benefit', 0) * 12,  # Convert monthly to annual
-            annual_expenses=financial_data.get('annual_expenses', 0),
-            target_annual_income=financial_data.get('annual_income', 0),
+            pension_annual=pension_benefit * 12,  # Convert monthly to annual
+            annual_expenses=annual_expenses,
+            target_annual_income=annual_income,
             risk_tolerance='moderate',
             asset_allocation={'stocks': 0.6, 'bonds': 0.4},
             future_expenses=[],
