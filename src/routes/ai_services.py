@@ -148,10 +148,9 @@ def advisor_chat():
 
         # Try models with fallback for rate limits
         models_to_try = [
-            'gemini-1.5-flash-8b',      # Fastest, most available
-            'gemini-1.5-flash',          # Standard flash model
+            'gemini-1.5-flash',          # Standard flash model (most reliable)
             'gemini-1.5-pro',            # Higher quality
-            'gemini-2.0-flash-exp'       # Experimental (may hit limits)
+            'gemini-2.0-flash-exp'       # Experimental (may hit limits first)
         ]
 
         last_error = None
