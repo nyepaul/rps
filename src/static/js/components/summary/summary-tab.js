@@ -7,8 +7,9 @@ import { API_ENDPOINTS } from '../../config.js';
 import { showError, showSuccess } from '../../utils/dom.js';
 
 // Generate PDF report
-async function generatePdf(reportType, profileName, buttonId) {
-    const button = document.getElementById(buttonId);
+async function generatePdf(container, reportType, profileName, buttonSelector) {
+    const button = container.querySelector(buttonSelector);
+    if (!button) return;
     const originalText = button.textContent;
 
     try {
@@ -199,15 +200,24 @@ export function renderSummaryTab(container) {
     `;
 
     // Attach event listeners
-    document.getElementById('btn-analysis-pdf').addEventListener('click', () => {
-        generatePdf('analysis', profile.name, 'btn-analysis-pdf');
-    });
+    const analysisBtn = container.querySelector('#btn-analysis-pdf');
+    if (analysisBtn) {
+        analysisBtn.addEventListener('click', () => {
+            generatePdf(container, 'analysis', profile.name, '#btn-analysis-pdf');
+        });
+    }
 
-    document.getElementById('btn-portfolio-pdf').addEventListener('click', () => {
-        generatePdf('portfolio', profile.name, 'btn-portfolio-pdf');
-    });
+    const portfolioBtn = container.querySelector('#btn-portfolio-pdf');
+    if (portfolioBtn) {
+        portfolioBtn.addEventListener('click', () => {
+            generatePdf(container, 'portfolio', profile.name, '#btn-portfolio-pdf');
+        });
+    }
 
-    document.getElementById('btn-action-plan-pdf').addEventListener('click', () => {
-        generatePdf('action_plan', profile.name, 'btn-action-plan-pdf');
-    });
+    const actionPlanBtn = container.querySelector('#btn-action-plan-pdf');
+    if (actionPlanBtn) {
+        actionPlanBtn.addEventListener('click', () => {
+            generatePdf(container, 'action_plan', profile.name, '#btn-action-plan-pdf');
+        });
+    }
 }

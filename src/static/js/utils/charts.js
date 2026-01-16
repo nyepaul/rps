@@ -8,12 +8,32 @@ import { formatCurrency, formatCompact } from './formatters.js';
  * Renders a standardized retirement timeline chart
  * 
  * @param {Object} timeline - Data containing years, p5, median, p95 arrays
- * @param {string} canvasId - DOM ID of the canvas element
+ * @param {string|HTMLElement} canvasOrId - DOM ID of the canvas element or the element itself
  * @param {Object} existingInstances - Object to track and destroy previous chart instances
- * @param {Object} options - Optional overrides (e.g. { showMilestones: true })
+ * @param {Object} options - Optional overrides (e.g. { container: parentNode })
  */
-export function renderStandardTimelineChart(timeline, canvasId, existingInstances = {}, options = {}) {
-    const ctx = document.getElementById(canvasId);
+export function renderStandardTimelineChart(timeline, canvasOrId, existingInstances = {}, options = {}) {
+    let canvas;
+    let canvasId;
+
+    if (typeof canvasOrId === 'string') {
+        canvasId = canvasOrId;
+        if (options.container) {
+            canvas = options.container.querySelector('#' + canvasId);
+        } else {
+            canvas = document.getElementById(canvasId);
+        }
+    } else {
+        canvas = canvasOrId;
+        canvasId = canvas.id || 'unknown-chart';
+    }
+
+    if (!canvas) {
+        console.warn('Canvas element not found for chart:', canvasOrId);
+        return null;
+    }
+
+    const ctx = canvas.getContext('2d');
     if (!ctx) return null;
 
     // 1. Destroy existing instance if provided

@@ -46,12 +46,15 @@ class ScenarioUpdateSchema(BaseModel):
 @login_required
 def list_scenarios():
     """List all scenarios for the current user."""
+    from flask import current_app
     try:
         scenarios = Scenario.list_by_user(current_user.id)
+        current_app.logger.info(f"Listed {len(scenarios)} scenarios for user {current_user.id} ({current_user.username})")
         return jsonify({
             'scenarios': [s.to_dict() for s in scenarios]
         }), 200
     except Exception as e:
+        current_app.logger.error(f"Error listing scenarios for user {current_user.id}: {e}")
         return jsonify({'error': str(e)}), 500
 
 

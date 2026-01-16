@@ -289,13 +289,13 @@ function setupComparisonHandlers(container, scenarios) {
         }
 
         chartSection.style.display = 'block';
-        renderComparisonChart(selectedIds, allScenarios);
+        renderComparisonChart(container, selectedIds, allScenarios);
     }
 }
 
-function renderComparisonChart(selectedIds, allScenarios) {
+function renderComparisonChart(container, selectedIds, allScenarios) {
     const canvasId = 'comparison-chart';
-    const ctx = document.getElementById(canvasId);
+    const ctx = container.querySelector('#' + canvasId);
     if (!ctx) return;
 
     // Destroy existing chart

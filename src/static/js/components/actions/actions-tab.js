@@ -140,13 +140,14 @@ export function renderActionsTab(container) {
     `;
 
     // Load action items and set up handlers
-    loadActionItems(profile);
-    setupActionsHandlers(profile);
+    loadActionItems(container, profile);
+    setupActionsHandlers(container, profile);
 }
 
-async function loadActionItems(profile) {
-    const container = document.getElementById('action-items-container');
-    showLoading(container, 'Loading action items...');
+async function loadActionItems(container, profile) {
+    const listContainer = container.querySelector('#action-items-container');
+    if (!listContainer) return;
+    showLoading(listContainer, 'Loading action items...');
 
     try {
         const data = await actionItemsAPI.list(profile.name);
@@ -157,12 +158,16 @@ async function loadActionItems(profile) {
         const pendingCount = items.filter(item => item.status !== 'completed').length;
         const completedCount = items.filter(item => item.status === 'completed').length;
 
-        document.getElementById('count-all').textContent = allCount;
-        document.getElementById('count-pending').textContent = pendingCount;
-        document.getElementById('count-completed').textContent = completedCount;
+        const countAll = container.querySelector('#count-all');
+        const countPending = container.querySelector('#count-pending');
+        const countCompleted = container.querySelector('#count-completed');
+
+        if (countAll) countAll.textContent = allCount;
+        if (countPending) countPending.textContent = pendingCount;
+        if (countCompleted) countCompleted.textContent = completedCount;
 
         if (items.length === 0) {
-            container.innerHTML = `
+            listContainer.innerHTML = `
                 <div style="text-align: center; padding: 60px 20px; background: var(--bg-secondary); border-radius: 12px;">
                     <div style="font-size: 64px; margin-bottom: 20px;">📝</div>
                     <h2 style="margin-bottom: 15px;">No Action Items Yet</h2>
@@ -175,9 +180,12 @@ async function loadActionItems(profile) {
                 </div>
             `;
 
-            document.getElementById('add-first-action-btn').addEventListener('click', () => {
-                showAddActionItemModal(profile);
-            });
+            const addFirstBtn = listContainer.querySelector('#add-first-action-btn');
+            if (addFirstBtn) {
+                addFirstBtn.addEventListener('click', () => {
+                    showAddActionItemModal(container, profile);
+                });
+            }
             return;
         }
 
@@ -186,11 +194,14 @@ async function loadActionItems(profile) {
 
     } catch (error) {
         console.error('Error loading action items:', error);
-        showError(container, error.message);
+        showError(listContainer, error.message);
     }
 }
 
 function displayActionItems(container, items, filter) {
+    const listContainer = container.querySelector('#action-items-container');
+    if (!listContainer) return;
+
     let filteredItems = items;
 
     if (filter === 'pending') {
@@ -200,7 +211,7 @@ function displayActionItems(container, items, filter) {
     }
 
     if (filteredItems.length === 0) {
-        container.innerHTML = `
+        listContainer.innerHTML = `
             <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
                 No ${filter === 'all' ? '' : filter} action items found.
             </div>
@@ -208,7 +219,7 @@ function displayActionItems(container, items, filter) {
         return;
     }
 
-    container.innerHTML = filteredItems.map(item => `
+    listContainer.innerHTML = filteredItems.map(item => `
         <div class="action-item ${item.status === 'completed' ? 'completed' : ''}" data-id="${item.id}">
             <input
                 type="checkbox"
@@ -235,7 +246,7 @@ function displayActionItems(container, items, filter) {
     `).join('');
 
     // Add event listeners
-    container.querySelectorAll('.action-checkbox').forEach(checkbox => {
+    listContainer.querySelectorAll('.action-checkbox').forEach(checkbox => {
         checkbox.addEventListener('change', async (e) => {
             const id = e.target.dataset.id;
             const isChecked = e.target.checked;
@@ -251,7 +262,7 @@ function displayActionItems(container, items, filter) {
 
                 // Reload items
                 const profile = store.get('currentProfile');
-                loadActionItems(profile);
+                loadActionItems(container, profile);
 
             } catch (error) {
                 console.error('Error updating action item:', error);
@@ -261,7 +272,7 @@ function displayActionItems(container, items, filter) {
         });
     });
 
-    container.querySelectorAll('.btn-edit').forEach(btn => {
+    listContainer.querySelectorAll('.btn-edit').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const id = e.target.dataset.id;
             const item = items.find(i => i.id == id);
@@ -271,7 +282,7 @@ function displayActionItems(container, items, filter) {
         });
     });
 
-    container.querySelectorAll('.btn-delete').forEach(btn => {
+    listContainer.querySelectorAll('.btn-delete').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const id = e.target.dataset.id;
 
@@ -284,7 +295,7 @@ function displayActionItems(container, items, filter) {
                 showSuccess('Action item deleted.');
 
                 const profile = store.get('currentProfile');
-                loadActionItems(profile);
+                loadActionItems(container, profile);
 
             } catch (error) {
                 console.error('Error deleting action item:', error);
@@ -294,19 +305,22 @@ function displayActionItems(container, items, filter) {
     });
 }
 
-function setupActionsHandlers(profile) {
+function setupActionsHandlers(container, profile) {
     // Add action button
-    document.getElementById('add-action-btn').addEventListener('click', () => {
-        showAddActionItemModal(profile);
-    });
+    const addBtn = container.querySelector('#add-action-btn');
+    if (addBtn) {
+        addBtn.addEventListener('click', () => {
+            showAddActionItemModal(container, profile);
+        });
+    }
 
     // Filter tabs
-    document.querySelectorAll('.filter-tab').forEach(tab => {
+    container.querySelectorAll('.filter-tab').forEach(tab => {
         tab.addEventListener('click', async (e) => {
             const filter = e.target.dataset.filter;
 
             // Update active tab
-            document.querySelectorAll('.filter-tab').forEach(t => {
+            container.querySelectorAll('.filter-tab').forEach(t => {
                 t.classList.remove('active');
                 t.style.borderBottomColor = 'transparent';
                 t.style.color = 'var(--text-secondary)';
@@ -318,12 +332,12 @@ function setupActionsHandlers(profile) {
             // Load and filter items
             const data = await actionItemsAPI.list(profile.name);
             const items = data.action_items || [];
-            displayActionItems(document.getElementById('action-items-container'), items, filter);
+            displayActionItems(container, items, filter);
         });
     });
 }
 
-function showAddActionItemModal(profile) {
+function showAddActionItemModal(parentContainer, profile) {
     const modal = document.createElement('div');
     modal.style.cssText = `
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -375,33 +389,39 @@ function showAddActionItemModal(profile) {
         if (e.target === modal) modal.remove();
     });
 
-    document.getElementById('cancel-modal-btn').addEventListener('click', () => {
-        modal.remove();
-    });
-
-    document.getElementById('add-action-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-
-        const actionItemData = {
-            profile_name: profile.name,
-            title: formData.get('title'),
-            description: formData.get('description') || '',
-            priority: formData.get('priority'),
-            due_date: formData.get('due_date') || null,
-            status: 'pending'
-        };
-
-        try {
-            await actionItemsAPI.create(actionItemData);
-            showSuccess('Action item created!');
+    const cancelBtn = modal.querySelector('#cancel-modal-btn');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => {
             modal.remove();
-            loadActionItems(profile);
-        } catch (error) {
-            console.error('Error creating action item:', error);
-            alert(`Error creating action item: ${error.message}`);
-        }
-    });
+        });
+    }
+
+    const form = modal.querySelector('#add-action-form');
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+
+            const actionItemData = {
+                profile_name: profile.name,
+                title: formData.get('title'),
+                description: formData.get('description') || '',
+                priority: formData.get('priority'),
+                due_date: formData.get('due_date') || null,
+                status: 'pending'
+            };
+
+            try {
+                await actionItemsAPI.create(actionItemData);
+                showSuccess('Action item created!');
+                modal.remove();
+                loadActionItems(parentContainer, profile);
+            } catch (error) {
+                console.error('Error creating action item:', error);
+                alert(`Error creating action item: ${error.message}`);
+            }
+        });
+    }
 }
 
 function showEditActionItemModal(item) {

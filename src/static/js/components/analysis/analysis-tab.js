@@ -573,7 +573,7 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
 
     // Render timeline chart if data available
     if (data.timeline) {
-        renderTimelineChart(data.timeline);
+        renderStandardTimelineChart(data.timeline, 'timeline-chart', timelineChartInstances, { container });
     }
 
     // Set up save scenario handler
@@ -787,7 +787,7 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
         if (scenario && scenario.timeline) {
             console.log(`Calling renderStandardTimelineChart for ${key}`);
             try {
-                renderStandardTimelineChart(scenario.timeline, `timeline-chart-${key}`, timelineChartInstances);
+                renderStandardTimelineChart(scenario.timeline, `timeline-chart-${key}`, timelineChartInstances, { container });
                 console.log(`Successfully rendered chart for ${key}`);
             } catch (error) {
                 console.error(`Error rendering chart for ${key}:`, error);

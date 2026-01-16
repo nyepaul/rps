@@ -403,13 +403,13 @@ function renderIncomeSection(parentContainer) {
     container.innerHTML = html;
 
     // Setup event listeners
-    setupIncomeEventListeners();
+    setupIncomeEventListeners(container);
     
     // Config button listener
     const configBtn = container.querySelector('#edit-investment-config-btn');
     if (configBtn) {
         configBtn.addEventListener('click', () => {
-            showInvestmentConfigModal();
+            showInvestmentConfigModal(container);
         });
     }
 }
@@ -417,7 +417,7 @@ function renderIncomeSection(parentContainer) {
 /**
  * Show investment config modal
  */
-function showInvestmentConfigModal() {
+function showInvestmentConfigModal(parentContainer) {
     const historicalRate = getHistoricalAverageRate();
     const config = (budgetData.investment_config && budgetData.investment_config[currentPeriod]) || { type: 'rate', value: historicalRate, strategy: 'constant' };
     
@@ -548,11 +548,8 @@ function showInvestmentConfigModal() {
         budgetData.investment_config[currentPeriod] = { type, value, strategy };
 
         // Update view
-        const parentContainer = document.querySelector('.tab-content.active');
-        if (parentContainer) {
-            renderIncomeSection(parentContainer);
-            renderBudgetSummary(parentContainer);
-        }
+        renderIncomeSection(parentContainer);
+        renderBudgetSummary(parentContainer);
         
         modal.remove();
     });
@@ -587,19 +584,18 @@ function renderIncomeItem(item, category, index) {
 /**
  * Setup income event listeners
  */
-function setupIncomeEventListeners() {
+function setupIncomeEventListeners(container) {
     // Employment inputs (current period only)
     if (currentPeriod === 'current') {
-        const primaryInput = document.getElementById('employment-primary');
-        const spouseInput = document.getElementById('employment-spouse');
+        const primaryInput = container.querySelector('#employment-primary');
+        const spouseInput = container.querySelector('#employment-spouse');
 
         if (primaryInput) {
             primaryInput.addEventListener('blur', (e) => {
                 const value = parseCurrency(e.target.value);
                 budgetData.income.current.employment.primary_person = value;
                 e.target.value = formatCurrency(value);
-                const parentContainer = container.closest('.tab-content') || document.querySelector('.tab-content.active');
-                if (parentContainer) renderBudgetSummary(parentContainer);
+                renderBudgetSummary(container);
             });
         }
 
@@ -608,41 +604,37 @@ function setupIncomeEventListeners() {
                 const value = parseCurrency(e.target.value);
                 budgetData.income.current.employment.spouse = value;
                 e.target.value = formatCurrency(value);
-                const parentContainer = container.closest('.tab-content') || document.querySelector('.tab-content.active');
-                if (parentContainer) renderBudgetSummary(parentContainer);
+                renderBudgetSummary(container);
             });
         }
     }
 
     // Add income buttons
-    document.querySelectorAll('.add-income-btn').forEach(btn => {
+    container.querySelectorAll('.add-income-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const category = e.target.getAttribute('data-category');
-            showIncomeItemModal(category, null);
+            showIncomeItemModal(container, category, null);
         });
     });
 
     // Edit income buttons
-    document.querySelectorAll('.edit-income-btn').forEach(btn => {
+    container.querySelectorAll('.edit-income-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const category = e.target.getAttribute('data-category');
             const index = parseInt(e.target.getAttribute('data-index'));
-            showIncomeItemModal(category, index);
+            showIncomeItemModal(container, category, index);
         });
     });
 
     // Delete income buttons
-    document.querySelectorAll('.delete-income-btn').forEach(btn => {
+    container.querySelectorAll('.delete-income-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const category = e.target.getAttribute('data-category');
             const index = parseInt(e.target.getAttribute('data-index'));
             if (confirm('Are you sure you want to delete this income item?')) {
                 budgetData.income[currentPeriod][category].splice(index, 1);
-                const parentContainer = document.querySelector('.tab-content.active');
-                if (parentContainer) {
-                    renderIncomeSection(parentContainer);
-                    renderBudgetSummary(parentContainer);
-                }
+                renderIncomeSection(container);
+                renderBudgetSummary(container);
             }
         });
     });
@@ -651,7 +643,7 @@ function setupIncomeEventListeners() {
 /**
  * Show income item modal
  */
-function showIncomeItemModal(category, index) {
+function showIncomeItemModal(parentContainer, category, index) {
     const isEdit = index !== null;
     const item = isEdit ? budgetData.income[currentPeriod][category][index] : {
         name: '',
@@ -741,20 +733,20 @@ function showIncomeItemModal(category, index) {
     document.body.appendChild(modal);
 
     // Event handlers
-    document.getElementById('cancel-btn').addEventListener('click', () => modal.remove());
+    modal.querySelector('#cancel-btn').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
-    document.getElementById('income-item-form').addEventListener('submit', (e) => {
+    modal.querySelector('#income-item-form').addEventListener('submit', (e) => {
         e.preventDefault();
 
         const newItem = {
-            name: document.getElementById('income-name').value,
-            amount: parseFloat(document.getElementById('income-amount').value),
-            frequency: document.getElementById('income-frequency').value,
-            start_date: document.getElementById('income-start-date').value,
-            end_date: document.getElementById('income-end-date').value || null,
-            inflation_adjusted: document.getElementById('income-inflation').checked,
-            taxable: document.getElementById('income-taxable').checked
+            name: modal.querySelector('#income-name').value,
+            amount: parseFloat(modal.querySelector('#income-amount').value),
+            frequency: modal.querySelector('#income-frequency').value,
+            start_date: modal.querySelector('#income-start-date').value,
+            end_date: modal.querySelector('#income-end-date').value || null,
+            inflation_adjusted: modal.querySelector('#income-inflation').checked,
+            taxable: modal.querySelector('#income-taxable').checked
         };
 
         if (isEdit) {
@@ -766,11 +758,8 @@ function showIncomeItemModal(category, index) {
             budgetData.income[currentPeriod][category].push(newItem);
         }
 
-        const parentContainer = document.querySelector('.tab-content.active');
-        if (parentContainer) {
-            renderIncomeSection(parentContainer);
-            renderBudgetSummary(parentContainer);
-        }
+        renderIncomeSection(parentContainer);
+        renderBudgetSummary(parentContainer);
         modal.remove();
     });
 }
@@ -829,17 +818,17 @@ function renderExpenseSection(parentContainer) {
     container.innerHTML = html;
 
     // Setup event listeners
-    setupExpenseEventListeners();
+    setupExpenseEventListeners(parentContainer);
 }
 
 /**
  * Setup expense event listeners
  */
-function setupExpenseEventListeners() {
-    document.querySelectorAll('.edit-expense-btn').forEach(btn => {
+function setupExpenseEventListeners(container) {
+    container.querySelectorAll('.edit-expense-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const category = e.target.getAttribute('data-category');
-            showExpenseEditorModal(category);
+            showExpenseEditorModal(container, category);
         });
     });
 }
@@ -847,7 +836,7 @@ function setupExpenseEventListeners() {
 /**
  * Show expense editor modal
  */
-function showExpenseEditorModal(category) {
+function showExpenseEditorModal(parentContainer, category) {
     const categoryLabels = {
         housing: 'Housing',
         transportation: 'Transportation',
@@ -915,24 +904,21 @@ function showExpenseEditorModal(category) {
     document.body.appendChild(modal);
 
     // Event handlers
-    document.getElementById('cancel-btn').addEventListener('click', () => modal.remove());
+    modal.querySelector('#cancel-btn').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
-    document.getElementById('expense-form').addEventListener('submit', (e) => {
+    modal.querySelector('#expense-form').addEventListener('submit', (e) => {
         e.preventDefault();
 
         budgetData.expenses[currentPeriod][category] = {
-            amount: parseFloat(document.getElementById('expense-amount').value),
-            frequency: document.getElementById('expense-frequency').value,
-            inflation_adjusted: document.getElementById('expense-inflation').checked,
+            amount: parseFloat(modal.querySelector('#expense-amount').value),
+            frequency: modal.querySelector('#expense-frequency').value,
+            inflation_adjusted: modal.querySelector('#expense-inflation').checked,
             subcategories: expense.subcategories || {}
         };
 
-        const parentContainer = document.querySelector('.tab-content.active');
-        if (parentContainer) {
-            renderExpenseSection(parentContainer);
-            renderBudgetSummary(parentContainer);
-        }
+        renderExpenseSection(parentContainer);
+        renderBudgetSummary(parentContainer);
         modal.remove();
     });
 }

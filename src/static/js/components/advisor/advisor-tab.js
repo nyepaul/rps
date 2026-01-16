@@ -207,13 +207,15 @@ export function renderAdvisorTab(container) {
         </style>
     `;
 
-    setupAdvisorHandlers(profile);
+    setupAdvisorHandlers(container, profile);
 }
 
-function setupAdvisorHandlers(profile) {
-    const chatInput = document.getElementById('chat-input');
-    const sendBtn = document.getElementById('send-btn');
-    const chatContainer = document.getElementById('chat-container');
+function setupAdvisorHandlers(container, profile) {
+    const chatInput = container.querySelector('#chat-input');
+    const sendBtn = container.querySelector('#send-btn');
+    const chatContainer = container.querySelector('#chat-container');
+
+    if (!chatInput || !sendBtn || !chatContainer) return;
 
     // Send button click
     sendBtn.addEventListener('click', () => {
@@ -229,7 +231,7 @@ function setupAdvisorHandlers(profile) {
     });
 
     // Quick action buttons
-    document.querySelectorAll('.quick-action-btn[data-message]').forEach(btn => {
+    container.querySelectorAll('.quick-action-btn[data-message]').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const message = e.target.dataset.message;
             chatInput.value = message;
@@ -238,11 +240,14 @@ function setupAdvisorHandlers(profile) {
     });
 
     // Clear history button
-    document.getElementById('clear-history-btn').addEventListener('click', () => {
-        if (confirm('Clear all chat history? This cannot be undone.')) {
-            clearChat(chatContainer);
-        }
-    });
+    const clearBtn = container.querySelector('#clear-history-btn');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            if (confirm('Clear all chat history? This cannot be undone.')) {
+                clearChat(chatContainer);
+            }
+        });
+    }
 }
 
 async function sendMessage(profile, chatInput, chatContainer) {
@@ -327,7 +332,7 @@ function showTypingIndicator(container) {
 }
 
 function removeTypingIndicator(container, typingId) {
-    const typingDiv = document.getElementById(typingId);
+    const typingDiv = container.querySelector('#' + typingId);
     if (typingDiv) {
         typingDiv.remove();
     }

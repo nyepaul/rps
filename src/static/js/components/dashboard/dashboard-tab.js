@@ -225,29 +225,29 @@ export function renderDashboardTab(container) {
             @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         </style>
     `;
-    loadAndRenderScenarios(profile);
+    loadAndRenderScenarios(container, profile);
 }
 
 let dashboardChartInstances = {};
 
-function renderScenarioGraph(scenario) {
-    const container = document.getElementById('scenario-chart-container');
-    const canvas = document.getElementById('scenario-chart');
-    const title = document.getElementById('chart-title');
-    const loader = document.getElementById('chart-loading');
+function renderScenarioGraph(container, scenario) {
+    const chartSection = container.querySelector('#scenario-chart-container');
+    const canvas = container.querySelector('#scenario-chart');
+    const title = container.querySelector('#chart-title');
+    const loader = container.querySelector('#chart-loading');
     
-    if (!container || !canvas) return;
+    if (!chartSection || !canvas) return;
 
     // Hide loader
     if (loader) loader.style.display = 'none';
     canvas.style.display = 'block';
 
     if (!scenario) {
-        container.style.display = 'none';
+        chartSection.style.display = 'none';
         return;
     }
 
-    container.style.display = 'block';
+    chartSection.style.display = 'block';
     if (title) title.textContent = `Projection: ${scenario.name}`;
 
     // Extract timeline from scenario result
@@ -271,14 +271,14 @@ function renderScenarioGraph(scenario) {
         return;
     }
 
-    renderStandardTimelineChart(timeline, 'scenario-chart', dashboardChartInstances);
+    renderStandardTimelineChart(timeline, 'scenario-chart', dashboardChartInstances, { container });
 }
 
-async function loadAndRenderScenarios(currentProfile) {
-    const selector = document.getElementById('scenario-selector');
-    const chartContainer = document.getElementById('scenario-chart-container');
-    const chartLoader = document.getElementById('chart-loading');
-    const chartCanvas = document.getElementById('scenario-chart');
+async function loadAndRenderScenarios(container, currentProfile) {
+    const selector = container.querySelector('#scenario-selector');
+    const chartContainer = container.querySelector('#scenario-chart-container');
+    const chartLoader = container.querySelector('#chart-loading');
+    const chartCanvas = container.querySelector('#scenario-chart');
     
     if (!selector) return;
 
@@ -315,12 +315,12 @@ async function loadAndRenderScenarios(currentProfile) {
             chartContainer.style.display = 'block';
             if (chartLoader) chartLoader.style.display = 'block';
             if (chartCanvas) chartCanvas.style.display = 'none';
-            document.getElementById('chart-title').textContent = 'Loading projection...';
+            container.querySelector('#chart-title').textContent = 'Loading projection...';
 
             try {
                 const res = await scenariosAPI.get(scenarioId);
                 const scenario = res.scenario;
-                renderScenarioGraph(scenario);
+                renderScenarioGraph(container, scenario);
 
                 // 2. Trigger loading confirmation after a brief moment so they see the graph
                 setTimeout(() => {
