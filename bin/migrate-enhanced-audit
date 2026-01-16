@@ -1,0 +1,128 @@
+#!/usr/bin/env python3
+"""
+Apply enhanced audit log database migration.
+
+This script creates the enhanced_audit_log and audit_config tables
+and migrates any existing audit_log data to the new format.
+"""
+
+import sys
+import os
+import sqlite3
+
+# Database path
+DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'planning.db')
+
+
+def main():
+    print("=" * 60)
+    print("Enhanced Audit Log Migration")
+    print("=" * 60)
+    print()
+
+    if not os.path.exists(DB_PATH):
+        print(f"❌ Error: Database not found at {DB_PATH}")
+        sys.exit(1)
+
+    print(f"📁 Database: {DB_PATH}")
+    print()
+
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        # Check if enhanced_audit_log already exists
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='enhanced_audit_log'"
+        )
+        if cursor.fetchone():
+            print("ℹ️  Enhanced audit log table already exists")
+            response = input("Do you want to recreate it? This will DELETE all existing data (yes/no): ")
+            if response.lower() != 'yes':
+                print("Migration cancelled")
+                sys.exit(0)
+
+            cursor.execute('DROP TABLE IF EXISTS enhanced_audit_log')
+            print("✓ Dropped existing enhanced_audit_log table")
+
+        # Read and execute migration SQL
+        migration_path = os.path.join(os.path.dirname(__file__), '..', 'migrations', 'add_enhanced_audit_log.sql')
+
+        if not os.path.exists(migration_path):
+            print(f"❌ Error: Migration file not found at {migration_path}")
+            sys.exit(1)
+
+        print(f"📄 Reading migration from: {migration_path}")
+        print()
+
+        with open(migration_path, 'r') as f:
+            migration_sql = f.read()
+
+        # Execute migration
+        cursor.executescript(migration_sql)
+        conn.commit()
+
+        print("✓ Created enhanced_audit_log table")
+        print("✓ Created audit_config table")
+        print("✓ Added indexes")
+        print("✓ Inserted default configuration")
+        print()
+
+        # Check if old audit_log table exists
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='audit_log'"
+        )
+        if cursor.fetchone():
+            print("📊 Found existing audit_log table")
+
+            # Count existing records
+            cursor.execute('SELECT COUNT(*) FROM audit_log')
+            count = cursor.fetchone()[0]
+
+            if count > 0:
+                print(f"   {count} records found in old audit_log")
+                response = input("Do you want to migrate them to enhanced_audit_log? (yes/no): ")
+
+                if response.lower() == 'yes':
+                    # Migrate old audit log data
+                    cursor.execute('''
+                        INSERT INTO enhanced_audit_log
+                        (action, table_name, record_id, user_id, details, ip_address, user_agent, created_at)
+                        SELECT action, table_name, record_id, user_id, details, ip_address, user_agent, created_at
+                        FROM audit_log
+                    ''')
+                    conn.commit()
+                    print(f"✓ Migrated {count} records from old audit_log")
+                    print()
+
+                    response = input("Keep old audit_log table? (yes/no): ")
+                    if response.lower() == 'no':
+                        cursor.execute('DROP TABLE audit_log')
+                        conn.commit()
+                        print("✓ Dropped old audit_log table")
+            else:
+                print("   No records to migrate")
+
+        print()
+        print("=" * 60)
+        print("✅ Migration completed successfully!")
+        print("=" * 60)
+        print()
+        print("Next steps:")
+        print("1. Restart the application")
+        print("2. Promote a user to admin: ./bin/promote-admin <username>")
+        print("3. Access admin panel at: http://localhost:8080/ (Settings > Admin)")
+
+    except Exception as e:
+        print(f"\n❌ Migration failed: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+    finally:
+        if conn:
+            conn.close()
+
+
+if __name__ == '__main__':
+    main()

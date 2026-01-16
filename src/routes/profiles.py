@@ -6,6 +6,7 @@ from typing import Optional
 from datetime import datetime
 from src.models.profile import Profile
 from src.services.asset_service import assets_to_csv, csv_to_assets, merge_assets, sync_legacy_arrays
+from src.services.encryption_service import get_encryption_service
 
 profiles_bp = Blueprint('profiles', __name__, url_prefix='/api')
 
@@ -279,3 +280,183 @@ def import_assets_csv(name: str):
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+class APIKeySchema(BaseModel):
+    """Schema for API key management."""
+    claude_api_key: Optional[str] = None
+    gemini_api_key: Optional[str] = None
+
+    @validator('claude_api_key', 'gemini_api_key')
+    def validate_api_key(cls, v):
+        if v is not None:
+            v = v.strip()
+            if len(v) < 10:
+                raise ValueError('API key must be at least 10 characters')
+            if len(v) > 500:
+                raise ValueError('API key is too long')
+        return v
+
+
+@profiles_bp.route('/profiles/<name>/api-keys', methods=['GET'])
+@login_required
+def get_api_keys(name: str):
+    """Get API keys for a profile (returns masked versions for display)."""
+    try:
+        # Get profile with ownership check
+        profile = Profile.get_by_name(name, current_user.id)
+        if not profile:
+            return jsonify({'error': 'Profile not found'}), 404
+
+        # Get profile data
+        data_dict = profile.data_dict
+        api_keys = data_dict.get('api_keys', {})
+
+        # Return masked versions (last 4 characters only)
+        result = {}
+        if api_keys.get('claude_api_key'):
+            result['claude_api_key'] = api_keys['claude_api_key'][-4:]
+        if api_keys.get('gemini_api_key'):
+            result['gemini_api_key'] = api_keys['gemini_api_key'][-4:]
+
+        return jsonify(result), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@profiles_bp.route('/profiles/<name>/api-keys', methods=['POST'])
+@login_required
+def save_api_keys(name: str):
+    """Save encrypted API keys for a profile."""
+    try:
+        # Validate input
+        data = APIKeySchema(**request.json)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+    try:
+        # Get profile with ownership check
+        profile = Profile.get_by_name(name, current_user.id)
+        if not profile:
+            return jsonify({'error': 'Profile not found'}), 404
+
+        # Get current profile data
+        data_dict = profile.data_dict
+
+        # Initialize api_keys section if not present
+        if 'api_keys' not in data_dict:
+            data_dict['api_keys'] = {}
+
+        # Update API keys (they will be encrypted when profile.data is set)
+        if data.claude_api_key:
+            data_dict['api_keys']['claude_api_key'] = data.claude_api_key
+        if data.gemini_api_key:
+            data_dict['api_keys']['gemini_api_key'] = data.gemini_api_key
+
+        # Save profile (encryption happens automatically via the data property setter)
+        profile.data = data_dict
+        profile.save()
+
+        return jsonify({
+            'message': 'API keys saved successfully',
+            'encrypted': True
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@profiles_bp.route('/test-api-key', methods=['POST'])
+@login_required
+def test_api_key():
+    """Test an API key to verify it works."""
+    try:
+        data = request.json
+        provider = data.get('provider')
+        api_key = data.get('api_key')
+
+        if not provider or not api_key:
+            return jsonify({'error': 'Missing provider or api_key'}), 400
+
+        # Test based on provider
+        if provider == 'claude':
+            return test_claude_api_key(api_key)
+        elif provider == 'gemini':
+            return test_gemini_api_key(api_key)
+        else:
+            return jsonify({'error': f'Unknown provider: {provider}'}), 400
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+def test_claude_api_key(api_key: str):
+    """Test Claude API key with a simple request."""
+    try:
+        import requests
+
+        response = requests.post(
+            'https://api.anthropic.com/v1/messages',
+            headers={
+                'x-api-key': api_key,
+                'anthropic-version': '2023-06-01',
+                'content-type': 'application/json'
+            },
+            json={
+                'model': 'claude-3-5-haiku-20241022',
+                'max_tokens': 10,
+                'messages': [{'role': 'user', 'content': 'Hi'}]
+            },
+            timeout=10
+        )
+
+        if response.status_code == 200:
+            return jsonify({
+                'success': True,
+                'message': 'Claude API key is valid',
+                'model': 'claude-3-5-haiku-20241022'
+            }), 200
+        else:
+            error_detail = response.json().get('error', {}).get('message', 'Unknown error')
+            return jsonify({
+                'success': False,
+                'error': f'API Error: {error_detail}'
+            }), 400
+
+    except requests.Timeout:
+        return jsonify({'success': False, 'error': 'Request timed out'}), 408
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
+def test_gemini_api_key(api_key: str):
+    """Test Gemini API key with a simple request."""
+    try:
+        import requests
+
+        # Test with a simple models list request
+        response = requests.get(
+            f'https://generativelanguage.googleapis.com/v1beta/models?key={api_key}',
+            timeout=10
+        )
+
+        if response.status_code == 200:
+            models = response.json().get('models', [])
+            model_name = models[0]['name'] if models else 'gemini-pro'
+            return jsonify({
+                'success': True,
+                'message': 'Gemini API key is valid',
+                'model': model_name
+            }), 200
+        else:
+            error_detail = response.json().get('error', {}).get('message', 'Unknown error')
+            return jsonify({
+                'success': False,
+                'error': f'API Error: {error_detail}'
+            }), 400
+
+    except requests.Timeout:
+        return jsonify({'success': False, 'error': 'Request timed out'}), 408
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400

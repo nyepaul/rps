@@ -547,25 +547,36 @@ function setupWizardHandlers(wizard, state, assets, onSave, modal, isEditing) {
                 const firstType = state.selectedTypes[0];
                 state.assetData = { type: firstType.type };
                 state.category = firstType.category;
+                console.log('Moving to step 2 with:', { category: state.category, type: firstType.type });
                 state.currentStep++;
             } else if (state.currentStep === 2) {
                 // Validate and extract form data
                 const form = wizard.querySelector('#asset-form');
+                if (!form) {
+                    console.error('Form element not found!');
+                    showError('Form not found. Please try again.');
+                    return;
+                }
+
                 if (!form.checkValidity()) {
                     form.reportValidity();
                     return;
                 }
-                
+
                 // Merge form data with existing asset data to preserve hidden fields (id, created_at, etc)
                 const formData = extractFormData(form, state.category);
-                const currentAsset = { 
-                    ...state.assetData, 
+                console.log('Extracted form data:', formData);
+
+                const currentAsset = {
+                    ...state.assetData,
                     ...formData,
                     updated_at: new Date().toISOString()
                 };
-                
+
                 currentAsset.id = currentAsset.id || generateId();
                 currentAsset.created_at = currentAsset.created_at || new Date().toISOString();
+
+                console.log('Current asset after merging:', currentAsset);
 
                 // Check if there are more types to add
                 if (state.currentTypeIndex < state.selectedTypes.length - 1) {

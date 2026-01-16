@@ -40,11 +40,15 @@ export const FIELD_DEFINITIONS = {
         ]},
         { name: 'institution', label: 'Financial Institution', type: 'text', placeholder: 'e.g., Fidelity' },
         { name: 'account_number', label: 'Account Number (Last 4 digits)', type: 'text', maxlength: 4, placeholder: '****' },
-        { name: 'value', label: 'Current Balance', type: 'currency', required: true, placeholder: '$0' },
-        { name: 'cost_basis', label: 'Cost Basis', type: 'currency', placeholder: '$0', help: 'For calculating capital gains' },
-        { name: 'stock_pct', label: 'Stock Allocation (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '60' },
-        { name: 'bond_pct', label: 'Bond Allocation (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '40' },
-        { name: 'cash_pct', label: 'Cash Allocation (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '0' }
+        { name: 'principal', label: 'Principal Amount', type: 'currency', required: true, placeholder: '$0', showFor: ['cd'], help: 'Amount originally deposited' },
+        { name: 'interest_rate', label: 'Interest Rate (APY %)', type: 'number', min: 0, max: 20, step: 0.01, placeholder: '4.50', showFor: ['cd'] },
+        { name: 'maturity_date', label: 'Maturity Date', type: 'date', placeholder: 'YYYY-MM-DD', showFor: ['cd'] },
+        { name: 'term_months', label: 'Term (Months)', type: 'number', min: 1, max: 120, placeholder: '12', showFor: ['cd'], help: 'CD term length' },
+        { name: 'value', label: 'Current Balance', type: 'currency', required: true, placeholder: '$0', requiredFor: ['brokerage', 'savings', 'checking', 'cash', 'money_market'], help: 'Current value including accrued interest', helpFor: { 'cd': 'Current value including accrued interest (optional)' } },
+        { name: 'cost_basis', label: 'Cost Basis', type: 'currency', placeholder: '$0', showFor: ['brokerage'], help: 'For calculating capital gains' },
+        { name: 'stock_pct', label: 'Stock Allocation (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '60', showFor: ['brokerage'] },
+        { name: 'bond_pct', label: 'Bond Allocation (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '40', showFor: ['brokerage'] },
+        { name: 'cash_pct', label: 'Cash Allocation (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '0', showFor: ['brokerage'] }
     ],
 
     real_estate: [
@@ -57,11 +61,15 @@ export const FIELD_DEFINITIONS = {
             { value: 'land', label: 'Land' },
             { value: 'commercial', label: 'Commercial Property' }
         ]},
+        { name: 'address', label: 'Address', type: 'text', placeholder: 'Optional' },
         { name: 'value', label: 'Current Market Value', type: 'currency', required: true, placeholder: '$0' },
-        { name: 'purchase_price', label: 'Purchase Price', type: 'currency', placeholder: '$0' },
-        { name: 'mortgage_balance', label: 'Mortgage Balance', type: 'currency', placeholder: '$0' },
-        { name: 'annual_costs', label: 'Annual Costs', type: 'currency', placeholder: '$0', help: 'Property taxes, HOA, insurance, etc.' },
-        { name: 'address', label: 'Address', type: 'text', placeholder: 'Optional' }
+        { name: 'purchase_price', label: 'Purchase Price', type: 'currency', placeholder: '$0', help: 'Original purchase price (for cost basis)' },
+        { name: 'purchase_date', label: 'Purchase Date', type: 'date', placeholder: 'YYYY-MM-DD', hideFor: ['land'] },
+        { name: 'mortgage_balance', label: 'Mortgage Balance', type: 'currency', placeholder: '$0', hideFor: ['land'] },
+        { name: 'annual_rental_income', label: 'Annual Rental Income', type: 'currency', placeholder: '$0', showFor: ['rental_property', 'vacation_home', 'commercial'], help: 'Gross rental income per year' },
+        { name: 'annual_expenses', label: 'Annual Operating Expenses', type: 'currency', placeholder: '$0', showFor: ['rental_property', 'vacation_home', 'commercial'], help: 'Maintenance, repairs, management fees, utilities' },
+        { name: 'occupancy_rate', label: 'Occupancy Rate (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '95', showFor: ['rental_property', 'commercial'], help: 'Average occupancy percentage' },
+        { name: 'annual_costs', label: 'Annual Property Costs', type: 'currency', placeholder: '$0', help: 'Property taxes, HOA fees, insurance' }
     ],
 
     pensions_annuities: [
@@ -74,7 +82,16 @@ export const FIELD_DEFINITIONS = {
         { name: 'provider', label: 'Provider/Employer', type: 'text', placeholder: 'e.g., CalPERS' },
         { name: 'monthly_benefit', label: 'Monthly Benefit', type: 'currency', required: true, placeholder: '$0' },
         { name: 'start_date', label: 'Start Date', type: 'date', placeholder: 'YYYY-MM-DD' },
-        { name: 'inflation_adjusted', label: 'Inflation Adjusted', type: 'checkbox', help: 'Check if benefits increase with inflation' }
+        { name: 'start_age', label: 'Start Age', type: 'number', min: 50, max: 100, placeholder: '65', help: 'Age when benefits begin' },
+        { name: 'inflation_adjusted', label: 'Inflation Adjusted', type: 'checkbox', help: 'Check if benefits increase with inflation' },
+        { name: 'survivor_benefit_pct', label: 'Survivor Benefit (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '50', showFor: ['pension'], help: 'Percentage paid to survivor' },
+        { name: 'annuity_type', label: 'Annuity Type', type: 'select', showFor: ['annuity'], options: [
+            { value: '', label: '-- Select --' },
+            { value: 'fixed', label: 'Fixed' },
+            { value: 'variable', label: 'Variable' },
+            { value: 'indexed', label: 'Indexed' }
+        ]},
+        { name: 'current_value', label: 'Current Value', type: 'currency', placeholder: '$0', showFor: ['annuity'], help: 'Current account value if deferred' }
     ],
 
     other_assets: [
@@ -89,6 +106,30 @@ export const FIELD_DEFINITIONS = {
             { value: 'other', label: 'Other' }
         ]},
         { name: 'value', label: 'Estimated Value', type: 'currency', required: true, placeholder: '$0' },
+        { name: 'institution', label: 'Financial Institution', type: 'text', placeholder: 'e.g., Fidelity', showFor: ['hsa'] },
+        { name: 'stock_pct', label: 'Stock Allocation (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '60', showFor: ['hsa'] },
+        { name: 'bond_pct', label: 'Bond Allocation (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '40', showFor: ['hsa'] },
+        { name: 'cash_pct', label: 'Cash Allocation (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '0', showFor: ['hsa'] },
+        { name: 'ownership_pct', label: 'Ownership Percentage (%)', type: 'number', min: 0, max: 100, step: 0.1, placeholder: '25', showFor: ['business_interest'], help: 'Your ownership stake' },
+        { name: 'annual_income', label: 'Annual Income/Distributions', type: 'currency', placeholder: '$0', showFor: ['business_interest', 'trust'], help: 'Annual distributions or income received' },
+        { name: 'valuation_method', label: 'Valuation Method', type: 'select', showFor: ['business_interest'], options: [
+            { value: '', label: '-- Select --' },
+            { value: 'professional_appraisal', label: 'Professional Appraisal' },
+            { value: 'comparable_sales', label: 'Comparable Sales' },
+            { value: 'book_value', label: 'Book Value' },
+            { value: 'revenue_multiple', label: 'Revenue Multiple' },
+            { value: 'earnings_multiple', label: 'Earnings Multiple' }
+        ]},
+        { name: 'cost_basis', label: 'Cost Basis', type: 'currency', placeholder: '$0', showFor: ['cryptocurrency', 'collectible'], help: 'Original purchase price' },
+        { name: 'purchase_date', label: 'Purchase Date', type: 'date', placeholder: 'YYYY-MM-DD', showFor: ['cryptocurrency', 'collectible'] },
+        { name: 'trust_type', label: 'Trust Type', type: 'select', showFor: ['trust'], options: [
+            { value: '', label: '-- Select --' },
+            { value: 'revocable', label: 'Revocable Living Trust' },
+            { value: 'irrevocable', label: 'Irrevocable Trust' },
+            { value: 'charitable', label: 'Charitable Trust' },
+            { value: 'special_needs', label: 'Special Needs Trust' },
+            { value: 'other', label: 'Other' }
+        ]},
         { name: 'description', label: 'Description', type: 'textarea', placeholder: 'Optional details about this asset' }
     ]
 };
@@ -142,7 +183,17 @@ export function generateFormFields(category, asset = {}, skipType = false) {
     return fields.filter(field => {
         // Filter out fields that don't apply to the current type
         if (skipType && field.name === 'type') return false;
-        
+
+        // Check if field should be hidden for current type
+        if (field.hideFor && currentType && field.hideFor.includes(currentType)) {
+            return false;
+        }
+
+        // Check if field has showFor constraint and current type matches
+        if (field.showFor && currentType) {
+            if (!field.showFor.includes(currentType)) return false;
+        }
+
         if (isCashLike) {
             const nonCashFields = ['cost_basis', 'stock_pct', 'bond_pct', 'cash_pct'];
             if (nonCashFields.includes(field.name)) return false;
@@ -160,11 +211,23 @@ export function generateFormFields(category, asset = {}, skipType = false) {
 
         const id = `asset-${field.name}`;
 
+        // Determine if field is required for current type
+        let isRequired = field.required;
+        if (field.requiredFor && currentType) {
+            isRequired = field.requiredFor.includes(currentType);
+        }
+
+        // Get context-specific help text
+        let helpText = field.help;
+        if (field.helpFor && currentType && field.helpFor[currentType]) {
+            helpText = field.helpFor[currentType];
+        }
+
         let inputHTML = '';
 
         if (field.type === 'select') {
             inputHTML = `
-                <select id="${id}" name="${field.name}" ${field.required ? 'required' : ''}>
+                <select id="${id}" name="${field.name}" ${isRequired ? 'required' : ''}>
                     ${field.options.map(opt => `
                         <option value="${opt.value}" ${displayValue === opt.value ? 'selected' : ''}>
                             ${opt.label}
@@ -186,7 +249,7 @@ export function generateFormFields(category, asset = {}, skipType = false) {
                     name="${field.name}"
                     placeholder="${field.placeholder || ''}"
                     rows="3"
-                    ${field.required ? 'required' : ''}
+                    ${isRequired ? 'required' : ''}
                 >${displayValue}</textarea>
             `;
         } else {
@@ -206,7 +269,7 @@ export function generateFormFields(category, asset = {}, skipType = false) {
                     placeholder="${field.placeholder || ''}"
                     ${field.maxlength ? `maxlength="${field.maxlength}"` : ''}
                     ${extraAttrs.join(' ')}
-                    ${field.required ? 'required' : ''}
+                    ${isRequired ? 'required' : ''}
                 >
             `;
         }
@@ -216,7 +279,7 @@ export function generateFormFields(category, asset = {}, skipType = false) {
             return `
                 <div class="form-group">
                     ${inputHTML}
-                    ${field.help ? `<small>${field.help}</small>` : ''}
+                    ${helpText ? `<small>${helpText}</small>` : ''}
                 </div>
             `;
         }
@@ -224,10 +287,10 @@ export function generateFormFields(category, asset = {}, skipType = false) {
         return `
             <div class="form-group">
                 <label for="${id}">
-                    ${field.label}${field.required ? ' *' : ''}
+                    ${field.label}${isRequired ? ' *' : ''}
                 </label>
                 ${inputHTML}
-                ${field.help ? `<small>${field.help}</small>` : ''}
+                ${helpText ? `<small>${helpText}</small>` : ''}
             </div>
         `;
     }).join('');
@@ -241,13 +304,22 @@ export function extractFormData(form, category) {
     const data = {};
     const fields = FIELD_DEFINITIONS[category];
     const currentType = formData.get('type') || '';
-    const isCashLike = ['savings', 'checking', 'cash', 'cd', 'money_market'].includes(currentType);
+    const isCashLike = ['savings', 'checking', 'cash', 'money_market'].includes(currentType);
+    const isCD = currentType === 'cd';
 
     for (const field of fields) {
+        // Skip fields that don't apply to current type
+        if (field.showFor && currentType && !field.showFor.includes(currentType)) {
+            continue;
+        }
+        if (field.hideFor && currentType && field.hideFor.includes(currentType)) {
+            continue;
+        }
+
         let value = formData.get(field.name);
 
         // Handle hidden fields for cash-like assets
-        if (value === null && isCashLike) {
+        if (value === null && isCashLike && !isCD) {
             if (field.name === 'cash_pct') {
                 data.cash_pct = 1.0;
                 continue;
@@ -259,7 +331,13 @@ export function extractFormData(form, category) {
         }
 
         if (field.type === 'currency') {
-            data[field.name] = value ? parseCurrency(value) : 0;
+            const parsedValue = value ? parseCurrency(value) : 0;
+            data[field.name] = parsedValue;
+
+            // For CDs, if value is not provided but principal is, use principal as value
+            if (isCD && field.name === 'value' && parsedValue === 0 && data.principal) {
+                data[field.name] = data.principal;
+            }
         } else if (field.type === 'number') {
             // Convert percentages to decimals if it's an allocation field
             const numValue = value ? parseFloat(value) : 0;
@@ -269,7 +347,8 @@ export function extractFormData(form, category) {
                 data[field.name] = numValue;
             }
         } else if (field.type === 'checkbox') {
-            data[field.name] = form.querySelector(`[name="${field.name}"]`).checked;
+            const checkbox = form.querySelector(`[name="${field.name}"]`);
+            data[field.name] = checkbox ? checkbox.checked : false;
         } else if (field.type === 'date') {
             data[field.name] = value || null;
         } else {

@@ -1,45 +1,133 @@
 /**
- * Dashboard tab component
+ * Dashboard tab component - Profile Management
+ * Shows all available profiles with selection, info, and deletion options
  */
 
 import { store } from '../../state/store.js';
-import { scenariosAPI } from '../../api/scenarios.js';
 import { profilesAPI } from '../../api/profiles.js';
 import { formatCurrency, formatCompact } from '../../utils/formatters.js';
-import { showSuccess, showError, showLoading } from '../../utils/dom.js';
-import { renderStandardTimelineChart } from '../../utils/charts.js';
+import { showSuccess, showError } from '../../utils/dom.js';
+import { STORAGE_KEYS } from '../../config.js';
+import { calculateNetWorth, calculateLiquidAssets, calculateRetirementAssets, calculateRealEstateEquity, calculateTotalDebts } from '../../utils/financial-calculations.js';
 
-export function renderDashboardTab(container) {
-    const profile = store.get('currentProfile');
+export async function renderDashboardTab(container) {
+    const currentUser = store.get('currentUser');
+    const currentProfile = store.get('currentProfile');
 
-    if (!profile) {
+    // Show loading state
+    container.innerHTML = `
+        <div style="text-align: center; padding: 60px;">
+            <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
+            <div>Loading profiles...</div>
+        </div>
+    `;
+
+    try {
+        // Fetch all profiles for the current user
+        const result = await profilesAPI.list();
+        const profiles = result.profiles || [];
+
+        renderProfileDashboard(container, profiles, currentProfile, currentUser);
+    } catch (error) {
+        console.error('Error loading profiles:', error);
         container.innerHTML = `
-            <div style="text-align: center; padding: 60px 20px;">
-                <div style="font-size: 64px; margin-bottom: 20px;">📊</div>
-                <h2 style="margin-bottom: 15px;">No Profile Selected</h2>
-                <p style="color: var(--text-secondary); margin-bottom: 30px;">
-                    Please create or select a profile to view your dashboard.
+            <div style="text-align: center; padding: 60px;">
+                <div style="font-size: 48px; margin-bottom: 20px; color: var(--danger-color);">⚠️</div>
+                <h2 style="margin-bottom: 10px;">Error Loading Profiles</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                    ${error.message || 'Could not load your profiles'}
                 </p>
-                <button onclick="window.app.showTab('welcome')" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
-                    Go to Welcome
+                <button onclick="window.location.reload()" style="padding: 10px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                    Retry
                 </button>
             </div>
         `;
-        return;
     }
+}
 
+/**
+ * Render the profile dashboard
+ */
+function renderProfileDashboard(container, profiles, currentProfile, currentUser) {
+    const hasProfiles = profiles && profiles.length > 0;
+
+    container.innerHTML = `
+        <div style="max-width: 1400px; margin: 0 auto; padding: 20px;">
+            <!-- Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px;">
+                <div>
+                    <h1 style="font-size: 32px; margin-bottom: 8px;">📊 Profile Dashboard</h1>
+                    <p style="color: var(--text-secondary); margin: 0; font-size: 14px;">
+                        Welcome, <strong>${currentUser?.username || 'User'}</strong>! Manage your financial planning profiles below.
+                    </p>
+                </div>
+                <button id="create-profile-btn" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    + Create New Profile
+                </button>
+            </div>
+
+            ${currentProfile ? `
+            <!-- Current Profile Banner -->
+            <div style="background: linear-gradient(135deg, var(--accent-color), var(--info-color)); padding: 20px 24px; border-radius: 12px; margin-bottom: 30px; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                    <div>
+                        <div style="font-size: 14px; opacity: 0.9; margin-bottom: 4px;">Currently Active Profile</div>
+                        <div style="font-size: 24px; font-weight: 700;">${currentProfile.name}</div>
+                    </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button onclick="window.app.showTab('profile')" style="padding: 8px 16px; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; color: white; cursor: pointer; font-size: 14px;">
+                            Edit Profile
+                        </button>
+                        <button onclick="window.app.showTab('assets')" style="padding: 8px 16px; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; color: white; cursor: pointer; font-size: 14px;">
+                            View Assets
+                        </button>
+                    </div>
+                </div>
+            </div>
+            ` : ''}
+
+            ${hasProfiles ? `
+            <!-- Profiles Grid -->
+            <div>
+                <h2 style="font-size: 20px; margin-bottom: 20px; color: var(--text-primary);">
+                    Your Profiles <span style="color: var(--text-secondary); font-weight: normal; font-size: 16px;">(${profiles.length})</span>
+                </h2>
+                <div id="profiles-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;">
+                    ${profiles.map(profile => renderProfileCard(profile, currentProfile)).join('')}
+                </div>
+            </div>
+            ` : `
+            <!-- No Profiles State -->
+            <div style="text-align: center; padding: 80px 20px; background: var(--bg-secondary); border-radius: 12px; border: 2px dashed var(--border-color);">
+                <div style="font-size: 64px; margin-bottom: 20px; opacity: 0.5;">📁</div>
+                <h2 style="margin-bottom: 15px; font-size: 24px;">No Profiles Yet</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 30px; font-size: 16px; max-width: 500px; margin-left: auto; margin-right: auto;">
+                    Create your first financial planning profile to start modeling your retirement, tracking assets, and planning your future.
+                </p>
+                <button onclick="document.getElementById('create-profile-btn').click()" style="padding: 14px 28px; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600;">
+                    Create Your First Profile
+                </button>
+            </div>
+            `}
+        </div>
+    `;
+
+    setupDashboardHandlers(container, profiles);
+}
+
+/**
+ * Render a profile card
+ */
+function renderProfileCard(profile, currentProfile) {
+    const isActive = currentProfile && currentProfile.name === profile.name;
     const data = profile.data || {};
     const financial = data.financial || {};
     const assets = data.assets || {};
 
-    // Calculate totals from actual asset data
-    const sumAssets = (arr) => (arr || []).reduce((sum, a) => sum + (a.value || a.current_value || 0), 0);
-    const liquidAssets = sumAssets(assets.taxable_accounts);
-    const retirementAssets = sumAssets(assets.retirement_accounts);
-    const realEstateAssets = sumAssets(assets.real_estate);
-    const totalAssets = liquidAssets + retirementAssets + realEstateAssets + sumAssets(assets.other_assets);
+    // Calculate net worth (assets - debts)
+    const { netWorth, totalAssets, totalDebts } = calculateNetWorth(assets);
 
-    // Calculate ages from dates
+    // Calculate age
     const calcAge = (dateStr) => {
         if (!dateStr) return null;
         const birth = new Date(dateStr);
@@ -49,392 +137,397 @@ export function renderDashboardTab(container) {
         if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
         return age;
     };
-    const currentAge = calcAge(profile.birth_date);
-    const retirementAge = profile.retirement_date ? calcAge(profile.birth_date) + Math.round((new Date(profile.retirement_date) - new Date()) / (365.25 * 24 * 60 * 60 * 1000)) : null;
+    const currentAge = profile.birth_date ? calcAge(profile.birth_date) : null;
 
-    container.innerHTML = `
-        <div style="max-width: 1200px; margin: 0 auto;">
-            <h1 style="font-size: 36px; margin-bottom: 10px;">Dashboard</h1>
-            <p style="color: var(--text-secondary); margin-bottom: 30px;">
-                Profile: <strong>${profile.name}</strong>
-            </p>
+    // Format last updated
+    const lastUpdated = profile.updated_at ? new Date(profile.updated_at).toLocaleDateString() : 'Unknown';
 
-            <!-- Quick Stats Grid -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 40px;">
-                <div class="stat-card">
-                    <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Liquid Assets</div>
-                    <div style="font-size: 32px; font-weight: bold; color: var(--success-color);">
-                        ${liquidAssets > 0 ? formatCompact(liquidAssets) : 'Not set'}
-                    </div>
+    return `
+        <div class="profile-card" data-profile-name="${profile.name}" style="
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid ${isActive ? 'var(--accent-color)' : 'var(--border-color)'};
+            transition: all 0.2s;
+            position: relative;
+            box-shadow: ${isActive ? '0 4px 16px rgba(0,0,0,0.15)' : '0 2px 8px rgba(0,0,0,0.05)'};
+        ">
+            ${isActive ? `
+            <div style="position: absolute; top: 12px; right: 12px; background: var(--accent-color); color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;">
+                ACTIVE
+            </div>
+            ` : ''}
+
+            <!-- Profile Header -->
+            <div style="margin-bottom: 16px;">
+                <h3 style="font-size: 20px; margin-bottom: 4px; font-weight: 700; color: var(--text-primary);">${profile.name}</h3>
+                <div style="font-size: 12px; color: var(--text-secondary);">Updated ${lastUpdated}</div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div style="display: grid; gap: 12px; margin-bottom: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bg-primary); border-radius: 6px;">
+                    <span style="font-size: 13px; color: var(--text-secondary);">Net Worth</span>
+                    <span style="font-size: 16px; font-weight: 600; color: var(--success-color);">
+                        ${netWorth > 0 ? formatCompact(netWorth) : netWorth < 0 ? '-' + formatCompact(Math.abs(netWorth)) : 'Not set'}
+                    </span>
                 </div>
-
-                <div class="stat-card">
-                    <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Retirement Assets</div>
-                    <div style="font-size: 32px; font-weight: bold; color: var(--info-color);">
-                        ${retirementAssets > 0 ? formatCompact(retirementAssets) : 'Not set'}
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Annual Income</div>
-                    <div style="font-size: 32px; font-weight: bold; color: var(--accent-color);">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bg-primary); border-radius: 6px;">
+                    <span style="font-size: 13px; color: var(--text-secondary);">Annual Income</span>
+                    <span style="font-size: 16px; font-weight: 600; color: var(--info-color);">
                         ${financial.annual_income ? formatCompact(financial.annual_income) : 'Not set'}
-                    </div>
+                    </span>
                 </div>
-
-                <div class="stat-card">
-                    <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Annual Expenses</div>
-                    <div style="font-size: 32px; font-weight: bold; color: var(--warning-color);">
-                        ${financial.annual_expenses ? formatCompact(financial.annual_expenses) : 'Not set'}
-                    </div>
+                ${currentAge ? `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bg-primary); border-radius: 6px;">
+                    <span style="font-size: 13px; color: var(--text-secondary);">Current Age</span>
+                    <span style="font-size: 16px; font-weight: 600;">${currentAge}</span>
                 </div>
+                ` : ''}
             </div>
 
-            <!-- Profile Summary -->
-            <div style="background: var(--bg-secondary); padding: 25px; border-radius: 12px; margin-bottom: 30px;">
-                <h2 style="font-size: 24px; margin-bottom: 20px;">Profile Summary</h2>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
-                    <div>
-                        <div style="color: var(--text-secondary); margin-bottom: 5px;">Current Age</div>
-                        <div style="font-size: 20px; font-weight: 600;">${currentAge || 'Not set'}</div>
-                    </div>
-                    <div>
-                        <div style="color: var(--text-secondary); margin-bottom: 5px;">Retirement Date</div>
-                        <div style="font-size: 20px; font-weight: 600;">${profile.retirement_date ? new Date(profile.retirement_date).toLocaleDateString() : 'Not set'}</div>
-                    </div>
-                    <div>
-                        <div style="color: var(--text-secondary); margin-bottom: 5px;">Total Assets</div>
-                        <div style="font-size: 20px; font-weight: 600;">${totalAssets > 0 ? formatCompact(totalAssets) : 'Not set'}</div>
-                    </div>
-                    <div>
-                        <div style="color: var(--text-secondary); margin-bottom: 5px;">Social Security</div>
-                        <div style="font-size: 20px; font-weight: 600;">${financial.social_security_benefit ? formatCurrency(financial.social_security_benefit) + '/mo' : 'Not set'}</div>
-                    </div>
-                </div>
+            <!-- Action Buttons -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                ${!isActive ? `
+                <button class="load-profile-btn" data-profile-name="${profile.name}" style="
+                    padding: 10px;
+                    background: var(--accent-color);
+                    color: white;
+                    border: none;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    font-weight: 600;
+                    transition: all 0.2s;
+                ">
+                    Load
+                </button>
+                ` : `
+                <button disabled style="
+                    padding: 10px;
+                    background: var(--bg-tertiary);
+                    color: var(--text-secondary);
+                    border: none;
+                    border-radius: 6px;
+                    cursor: not-allowed;
+                    font-size: 14px;
+                    font-weight: 600;
+                ">
+                    Active
+                </button>
+                `}
+                <button class="view-info-btn" data-profile-name="${profile.name}" style="
+                    padding: 10px;
+                    background: var(--bg-tertiary);
+                    color: var(--text-primary);
+                    border: 1px solid var(--border-color);
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    font-weight: 600;
+                    transition: all 0.2s;
+                ">
+                    Info
+                </button>
             </div>
 
-            <!-- Quick Actions -->
-            <div style="background: var(--bg-secondary); padding: 25px; border-radius: 12px; margin-bottom: 30px;">
-                <h2 style="font-size: 24px; margin-bottom: 20px;">Quick Actions</h2>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                    <button onclick="window.app.showTab('profile')" class="action-btn">
-                        ✏️ Edit Profile
-                    </button>
-                    <button onclick="window.app.showTab('advisor')" class="action-btn" style="background: var(--info-color);">
-                        🤖 AI Advisor: Complete Profile
-                    </button>
-                    <button onclick="window.app.showTab('analysis')" class="action-btn">
-                        📊 Run Analysis
-                    </button>
-                    <button onclick="window.app.showTab('actions')" class="action-btn">
-                        ✅ View Action Items
-                    </button>
-                </div>
-            </div>
-
-            <!-- Saved Scenarios -->
-            <div id="scenario-analysis-section" style="background: var(--bg-secondary); padding: 25px; border-radius: 12px;">
-                <h2 style="font-size: 24px; margin-bottom: 20px;">Saved Scenarios</h2>
-                <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                    Select a scenario to view its projection and restore its data to your profile.
-                </p>
-                
-                <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 20px;">
-                    <select id="scenario-selector" style="flex: 1; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); font-size: 16px;">
-                        <option value="">Loading scenarios...</option>
-                    </select>
-                </div>
-
-                <div id="scenario-chart-container" style="display: none; background: var(--bg-primary); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-top: 20px;">
-                    <h3 id="chart-title" style="margin-top: 0; margin-bottom: 15px; font-size: 18px;"></h3>
-                    <div id="chart-loading" style="display: none; text-align: center; padding: 40px; color: var(--text-secondary);">
-                        <div style="font-size: 32px; margin-bottom: 10px;">⏳</div>
-                        Loading projection...
-                    </div>
-                    <canvas id="scenario-chart" style="max-height: 400px;"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <style>
-            .stat-card {
-                background: var(--bg-secondary);
-                padding: 20px;
-                border-radius: 12px;
-                border: 1px solid var(--border-color);
-                transition: transform 0.2s, box-shadow 0.2s;
-            }
-            .stat-card:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px var(--shadow);
-            }
-            .action-btn {
-                padding: 15px;
-                background: var(--accent-color);
-                color: white;
-                border: none;
-                border-radius: 8px;
+            <!-- Delete Button (Small, bottom right) -->
+            <button class="delete-profile-btn" data-profile-name="${profile.name}" style="
+                position: absolute;
+                bottom: 12px;
+                right: 12px;
+                padding: 6px 10px;
+                background: transparent;
+                color: var(--danger-color);
+                border: 1px solid var(--danger-color);
+                border-radius: 4px;
                 cursor: pointer;
-                font-size: 16px;
+                font-size: 11px;
+                font-weight: 600;
                 transition: all 0.2s;
-            }
-            .action-btn:hover {
-                background: var(--accent-hover);
-                transform: translateY(-2px);
-            }
-            
-            /* Modal Styles */
-            .custom-modal-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0, 0, 0, 0.7);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 10000;
-                animation: fadeIn 0.2s;
-            }
-            .custom-modal {
-                background: var(--bg-secondary);
-                padding: 30px;
-                border-radius: 12px;
-                width: 90%;
-                max-width: 500px;
-                box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-                animation: slideUp 0.3s;
-            }
-            .modal-title {
-                font-size: 24px;
-                margin-bottom: 15px;
-                color: var(--text-primary);
-            }
-            .modal-body {
-                margin-bottom: 25px;
-                color: var(--text-secondary);
-                line-height: 1.6;
-            }
-            .modal-actions {
-                display: flex;
-                justify-content: flex-end;
-                gap: 15px;
-            }
-            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-            @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        </style>
+                opacity: 0.7;
+            " onmouseover="this.style.opacity='1'; this.style.background='var(--danger-color)'; this.style.color='white'" onmouseout="this.style.opacity='0.7'; this.style.background='transparent'; this.style.color='var(--danger-color)'">
+                Delete
+            </button>
+        </div>
     `;
-    loadAndRenderScenarios(container, profile);
 }
 
-let dashboardChartInstances = {};
-
-function renderScenarioGraph(container, scenario) {
-    const chartSection = container.querySelector('#scenario-chart-container');
-    const canvas = container.querySelector('#scenario-chart');
-    const title = container.querySelector('#chart-title');
-    const loader = container.querySelector('#chart-loading');
-    
-    if (!chartSection || !canvas) return;
-
-    // Hide loader
-    if (loader) loader.style.display = 'none';
-    canvas.style.display = 'block';
-
-    if (!scenario) {
-        chartSection.style.display = 'none';
-        return;
+/**
+ * Setup dashboard event handlers
+ */
+function setupDashboardHandlers(container, profiles) {
+    // Create Profile Button
+    const createBtn = container.querySelector('#create-profile-btn');
+    if (createBtn) {
+        createBtn.addEventListener('click', () => {
+            window.app.showTab('welcome');
+        });
     }
 
-    chartSection.style.display = 'block';
-    if (title) title.textContent = `Projection: ${scenario.name}`;
+    // Load Profile Buttons
+    container.querySelectorAll('.load-profile-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const profileName = btn.dataset.profileName;
+            await loadProfile(profileName, container);
+        });
+    });
 
-    // Extract timeline from scenario result
-    const results = scenario.results || {};
-    const isMultiScenario = results.scenarios && Object.keys(results.scenarios).length > 0;
-    
-    let timeline = null;
-    if (isMultiScenario) {
-        // Use moderate scenario for dashboard preview
-        const subScenario = results.scenarios.moderate || Object.values(results.scenarios)[0];
-        timeline = subScenario.timeline;
-    } else {
-        timeline = results.timeline;
-    }
+    // View Info Buttons
+    container.querySelectorAll('.view-info-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const profileName = btn.dataset.profileName;
+            const profile = profiles.find(p => p.name === profileName);
+            if (profile) {
+                showProfileInfoModal(profile);
+            }
+        });
+    });
 
-    if (!timeline) {
-        console.warn('No timeline data for scenario preview');
-        canvas.style.display = 'none';
-        loader.style.display = 'block';
-        loader.textContent = 'No timeline data available';
-        return;
-    }
-
-    renderStandardTimelineChart(timeline, 'scenario-chart', dashboardChartInstances, { container });
+    // Delete Profile Buttons
+    container.querySelectorAll('.delete-profile-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const profileName = btn.dataset.profileName;
+            await deleteProfile(profileName, container);
+        });
+    });
 }
 
-async function loadAndRenderScenarios(container, currentProfile) {
-    const selector = container.querySelector('#scenario-selector');
-    const chartContainer = container.querySelector('#scenario-chart-container');
-    const chartLoader = container.querySelector('#chart-loading');
-    const chartCanvas = container.querySelector('#scenario-chart');
-    
-    if (!selector) return;
+/**
+ * Load a profile
+ */
+async function loadProfile(profileName, container) {
+    try {
+        const result = await profilesAPI.get(profileName);
+        store.setState({ currentProfile: result.profile });
+
+        // Set as default profile
+        localStorage.setItem(STORAGE_KEYS.DEFAULT_PROFILE, profileName);
+
+        showSuccess(`Profile "${profileName}" loaded successfully!`);
+
+        // Refresh dashboard
+        await renderDashboardTab(container);
+    } catch (error) {
+        console.error('Error loading profile:', error);
+        showError(`Failed to load profile: ${error.message}`);
+    }
+}
+
+/**
+ * Delete a profile
+ */
+async function deleteProfile(profileName, container) {
+    const currentProfile = store.get('currentProfile');
+    const isActive = currentProfile && currentProfile.name === profileName;
+
+    const confirmMsg = isActive
+        ? `Are you sure you want to delete the ACTIVE profile "${profileName}"?\n\nThis will permanently delete all data and cannot be undone.`
+        : `Are you sure you want to delete profile "${profileName}"?\n\nThis action cannot be undone.`;
+
+    if (!confirm(confirmMsg)) {
+        return;
+    }
 
     try {
-        const response = await scenariosAPI.list();
-        const scenarios = response.scenarios || [];
-        
-        if (scenarios.length === 0) {
-            selector.innerHTML = '<option value="" disabled selected>No saved scenarios found. Run an analysis to save one.</option>';
-            selector.disabled = true;
-            return;
+        await profilesAPI.delete(profileName);
+        showSuccess(`Profile "${profileName}" deleted successfully!`);
+
+        // If deleted profile was active, clear it
+        if (isActive) {
+            store.setState({ currentProfile: null });
+            localStorage.removeItem(STORAGE_KEYS.DEFAULT_PROFILE);
         }
 
-        // Clear and populate
-        selector.innerHTML = '<option value="" selected>Select a scenario to load...</option>';
-        scenarios.forEach(scenario => {
-            const option = document.createElement('option');
-            option.value = scenario.id;
-            option.textContent = scenario.name + (scenario.profile_name ? ` (${scenario.profile_name})` : '');
-            selector.appendChild(option);
-        });
-
-        // Event Listeners
-        selector.addEventListener('change', async () => {
-            const scenarioId = selector.value;
-            const hasSelection = !!scenarioId;
-            
-            if (!hasSelection) {
-                chartContainer.style.display = 'none';
-                return;
-            }
-
-            // 1. Auto-load graph preview
-            chartContainer.style.display = 'block';
-            if (chartLoader) chartLoader.style.display = 'block';
-            if (chartCanvas) chartCanvas.style.display = 'none';
-            container.querySelector('#chart-title').textContent = 'Loading projection...';
-
-            try {
-                const res = await scenariosAPI.get(scenarioId);
-                const scenario = res.scenario;
-                renderScenarioGraph(container, scenario);
-
-                // 2. Trigger loading confirmation after a brief moment so they see the graph
-                setTimeout(() => {
-                    confirmLoadScenario(scenarioId, scenario.name, currentProfile);
-                }, 500);
-
-            } catch (err) {
-                console.error(err);
-                if (chartLoader) chartLoader.style.display = 'none';
-                showError('Failed to load scenario details');
-                chartContainer.style.display = 'none';
-            }
-        });
-
+        // Refresh dashboard
+        await renderDashboardTab(container);
     } catch (error) {
-        console.error('Error fetching scenarios:', error);
-        selector.innerHTML = '<option value="">Error loading scenarios</option>';
+        console.error('Error deleting profile:', error);
+        showError(`Failed to delete profile: ${error.message}`);
     }
 }
 
-function confirmLoadScenario(scenarioId, scenarioName, currentProfile) {
-    // Create Modal
-    const modalOverlay = document.createElement('div');
-    modalOverlay.className = 'custom-modal-overlay';
-    
-    modalOverlay.innerHTML = `
-        <div class="custom-modal">
-            <h3 class="modal-title">Load Scenario?</h3>
-            <div class="modal-body">
-                <p>You are about to load <strong>"${scenarioName}"</strong>.</p>
-                <p style="color: var(--warning-color); background: rgba(255, 193, 7, 0.1); padding: 15px; border-radius: 8px; border: 1px solid var(--warning-color);">
-                    <strong>⚠️ Warning:</strong> This will overwrite your current profile data (assets, expenses, settings) with the data saved in this scenario. This action cannot be undone.
-                </p>
-                <p>Are you sure you want to proceed?</p>
+/**
+ * Show profile info modal
+ */
+function showProfileInfoModal(profile) {
+    const data = profile.data || {};
+    const financial = data.financial || {};
+    const assets = data.assets || {};
+    const spouse = data.spouse || {};
+    const children = data.children || [];
+
+    // Calculate net worth and breakdown
+    const { netWorth, totalAssets, totalDebts, breakdown } = calculateNetWorth(assets);
+    const retirementTotal = breakdown.retirementAssets;
+    const taxableTotal = breakdown.taxableAssets;
+    const realEstateEquity = breakdown.realEstateAssets; // This is already equity (value - mortgage)
+    const realEstateGross = breakdown.realEstateGross;
+    const mortgageDebts = breakdown.mortgageDebts;
+    const otherTotal = breakdown.otherAssets;
+
+    // Calculate age
+    const calcAge = (dateStr) => {
+        if (!dateStr) return null;
+        const birth = new Date(dateStr);
+        const today = new Date();
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+        return age;
+    };
+    const currentAge = profile.birth_date ? calcAge(profile.birth_date) : null;
+
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 20px;
+    `;
+
+    modal.innerHTML = `
+        <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; max-width: 700px; width: 100%; max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 24px;">
+                <div>
+                    <h2 style="margin: 0 0 8px 0; font-size: 28px;">${profile.name}</h2>
+                    <div style="font-size: 13px; color: var(--text-secondary);">
+                        Created: ${new Date(profile.created_at).toLocaleDateString()} •
+                        Updated: ${new Date(profile.updated_at).toLocaleDateString()}
+                    </div>
+                </div>
+                <button id="close-modal-btn" style="padding: 8px 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 14px;">
+                    Close
+                </button>
             </div>
-            <div class="modal-actions">
-                <button id="cancel-load" style="padding: 10px 20px; background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 6px; cursor: pointer;">Cancel</button>
-                <button id="confirm-load" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Load & Overwrite</button>
+
+            <!-- Personal Info -->
+            <div style="margin-bottom: 24px;">
+                <h3 style="font-size: 18px; margin-bottom: 12px; color: var(--accent-color);">Personal Information</h3>
+                <div style="background: var(--bg-primary); padding: 16px; border-radius: 8px;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
+                        ${profile.birth_date ? `
+                        <div>
+                            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Birth Date</div>
+                            <div style="font-size: 14px; font-weight: 500;">${new Date(profile.birth_date).toLocaleDateString()}</div>
+                        </div>
+                        ` : ''}
+                        ${currentAge ? `
+                        <div>
+                            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Current Age</div>
+                            <div style="font-size: 14px; font-weight: 500;">${currentAge}</div>
+                        </div>
+                        ` : ''}
+                        ${profile.retirement_date ? `
+                        <div>
+                            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Retirement Date</div>
+                            <div style="font-size: 14px; font-weight: 500;">${new Date(profile.retirement_date).toLocaleDateString()}</div>
+                        </div>
+                        ` : ''}
+                        ${spouse.name ? `
+                        <div>
+                            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Spouse</div>
+                            <div style="font-size: 14px; font-weight: 500;">${spouse.name}</div>
+                        </div>
+                        ` : ''}
+                        ${children.length > 0 ? `
+                        <div>
+                            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Children</div>
+                            <div style="font-size: 14px; font-weight: 500;">${children.length}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Financial Summary -->
+            <div style="margin-bottom: 24px;">
+                <h3 style="font-size: 18px; margin-bottom: 12px; color: var(--accent-color);">Financial Summary</h3>
+                <div style="background: var(--bg-primary); padding: 16px; border-radius: 8px;">
+                    <div style="display: grid; gap: 12px;">
+                        <div style="display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+                            <span style="font-size: 14px; color: var(--text-secondary);">Annual Income</span>
+                            <span style="font-size: 16px; font-weight: 600;">${financial.annual_income ? formatCurrency(financial.annual_income, 0) : 'Not set'}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+                            <span style="font-size: 14px; color: var(--text-secondary);">Annual Expenses</span>
+                            <span style="font-size: 16px; font-weight: 600;">${financial.annual_expenses ? formatCurrency(financial.annual_expenses, 0) : 'Not set'}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="font-size: 14px; color: var(--text-secondary);">Annual Savings</span>
+                            <span style="font-size: 16px; font-weight: 600; color: ${(financial.annual_income - financial.annual_expenses) > 0 ? 'var(--success-color)' : 'var(--danger-color)'};">
+                                ${(financial.annual_income && financial.annual_expenses) ? formatCurrency(financial.annual_income - financial.annual_expenses, 0) : 'N/A'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assets & Debts Summary -->
+            <div>
+                <h3 style="font-size: 18px; margin-bottom: 12px; color: var(--accent-color);">Assets & Net Worth</h3>
+                <div style="background: var(--bg-primary); padding: 16px; border-radius: 8px;">
+                    <div style="display: grid; gap: 12px;">
+                        <!-- Assets -->
+                        <div style="display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+                            <span style="font-size: 14px; color: var(--text-secondary);">Retirement Accounts</span>
+                            <span style="font-size: 16px; font-weight: 600;">${formatCurrency(retirementTotal, 0)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+                            <span style="font-size: 14px; color: var(--text-secondary);">Taxable Accounts</span>
+                            <span style="font-size: 16px; font-weight: 600;">${formatCurrency(taxableTotal, 0)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+                            <span style="font-size: 14px; color: var(--text-secondary);">Real Estate (Market Value)</span>
+                            <span style="font-size: 16px; font-weight: 600;">${formatCurrency(realEstateGross, 0)}</span>
+                        </div>
+                        ${mortgageDebts > 0 ? `
+                        <div style="display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+                            <span style="font-size: 14px; color: var(--text-secondary); padding-left: 16px;">• Mortgage Balances</span>
+                            <span style="font-size: 16px; font-weight: 600; color: var(--danger-color);">-${formatCurrency(mortgageDebts, 0)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+                            <span style="font-size: 14px; color: var(--text-secondary); padding-left: 16px; font-weight: 600;">= Real Estate Equity</span>
+                            <span style="font-size: 16px; font-weight: 600;">${formatCurrency(realEstateEquity, 0)}</span>
+                        </div>
+                        ` : ''}
+                        <div style="display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+                            <span style="font-size: 14px; color: var(--text-secondary);">Other Assets</span>
+                            <span style="font-size: 16px; font-weight: 600;">${formatCurrency(otherTotal, 0)}</span>
+                        </div>
+
+                        <!-- Totals -->
+                        <div style="display: flex; justify-content: space-between; padding-top: 8px; padding-bottom: 12px; border-bottom: 2px solid var(--border-color);">
+                            <span style="font-size: 15px; font-weight: 600;">Total Assets</span>
+                            <span style="font-size: 16px; font-weight: 600;">${formatCurrency(totalAssets, 0)}</span>
+                        </div>
+                        ${totalDebts > 0 ? `
+                        <div style="display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 2px solid var(--border-color);">
+                            <span style="font-size: 15px; font-weight: 600;">Total Debts</span>
+                            <span style="font-size: 16px; font-weight: 600; color: var(--danger-color);">-${formatCurrency(totalDebts, 0)}</span>
+                        </div>
+                        ` : ''}
+                        <div style="display: flex; justify-content: space-between; padding-top: 12px;">
+                            <span style="font-size: 17px; font-weight: 700;">Net Worth</span>
+                            <span style="font-size: 20px; font-weight: 700; color: var(--success-color);">${formatCurrency(netWorth, 0)}</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     `;
-    
-    document.body.appendChild(modalOverlay);
-    
-    const cancelBtn = modalOverlay.querySelector('#cancel-load');
-    const confirmBtn = modalOverlay.querySelector('#confirm-load');
-    
-    cancelBtn.onclick = () => modalOverlay.remove();
-    
-    confirmBtn.onclick = async () => {
-        confirmBtn.disabled = true;
-        confirmBtn.textContent = 'Loading...';
-        
-        try {
-            await executeLoadScenario(scenarioId, currentProfile);
-            modalOverlay.remove();
-        } catch (error) {
-            modalOverlay.remove(); // Remove modal to show error toast
-            showError(`Failed to load scenario: ${error.message}`);
-        }
-    };
-}
 
-async function executeLoadScenario(scenarioId, currentProfile) {
-    // showLoading(document.body, 'Restoring scenario data...'); // Removed to prevent wiping body on error
-    
-    try {
-        // 1. Fetch scenario details
-        const res = await scenariosAPI.get(scenarioId);
-        const scenario = res.scenario;
-        
-        if (!scenario || !scenario.parameters) {
-            throw new Error('Scenario data is invalid or missing parameters.');
-        }
+    document.body.appendChild(modal);
 
-        const snapshot = scenario.parameters.profile_snapshot;
-        
-        if (!snapshot) {
-            throw new Error('This scenario does not contain a profile snapshot to restore.');
-        }
-
-        // 2. Restore Profile Data
-        console.log('Restoring profile data...', snapshot);
-        await profilesAPI.update(currentProfile.name, { data: snapshot });
-        
-        // 3. Update active profile in store
-        // We fetch the updated profile to be sure we have the latest server state
-        const profileRes = await profilesAPI.get(currentProfile.name);
-        store.set('currentProfile', profileRes.profile);
-        
-        // 4. Restore Simulation Settings if present
-        if (scenario.parameters.simulations) {
-            localStorage.setItem('rps_simulations', scenario.parameters.simulations);
-        }
-
-        // 5. Success & Redirect
-        // Remove the loading overlay we added to body
-        const loader = document.querySelector('.loading-overlay'); // Assuming showLoading adds this class or similar structure, wait showLoading replaces content of container.
-        // Actually showLoading(document.body) replaces body content! That's dangerous if showLoading implementation is aggressive.
-        // Let's check showLoading implementation in dom.js again.
-        
-        // showLoading uses container.innerHTML = ...
-        // If I used document.body, I just wiped the app.
-        // GOOD CATCH. I should not use showLoading(document.body).
-        
-        // Instead, I should have a global loader or just reload the app.
-        // Since I wiped the body (if I did), I must reload.
-        
-        window.location.reload(); 
-        
-    } catch (error) {
-        console.error(error);
-        // If we wiped body, we are in trouble. 
-        // But wait, I haven't executed this yet.
-        throw error; 
-    }
+    // Close button
+    modal.querySelector('#close-modal-btn').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 }
