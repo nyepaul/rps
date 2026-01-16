@@ -149,13 +149,23 @@ function getDefaultBudget() {
 
 function getDefaultExpenses() {
     return {
-        housing: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {} },
-        transportation: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {} },
-        food: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {} },
-        healthcare: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {} },
-        insurance: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {} },
-        discretionary: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {} },
-        other: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {} }
+        housing: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
+        utilities: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
+        transportation: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
+        food: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
+        healthcare: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
+        insurance: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
+        entertainment: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
+        personal_care: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
+        clothing: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
+        childcare_education: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
+        charitable_giving: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
+        subscriptions: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
+        pet_care: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
+        debt_payments: { amount: 0, frequency: 'monthly', inflation_adjusted: false, subcategories: {}, start_date: null, end_date: null, ongoing: true },
+        taxes: { amount: 0, frequency: 'annual', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
+        discretionary: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
+        other: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true }
     };
 }
 
@@ -265,7 +275,10 @@ function calculateTotalExpenses(period) {
     let total = 0;
     const expenses = budgetData.expenses[period];
 
-    const categories = ['housing', 'transportation', 'food', 'healthcare', 'insurance', 'discretionary', 'other'];
+    const categories = ['housing', 'utilities', 'transportation', 'food', 'healthcare', 'insurance',
+                       'entertainment', 'personal_care', 'clothing', 'childcare_education',
+                       'charitable_giving', 'subscriptions', 'pet_care', 'debt_payments',
+                       'taxes', 'discretionary', 'other'];
     for (const category of categories) {
         const cat = expenses[category] || {};
         const amount = cat.amount || 0;
@@ -798,12 +811,22 @@ function renderExpenseSection(parentContainer) {
     const expenses = budgetData.expenses[currentPeriod];
 
     const categories = [
-        { key: 'housing', label: 'Housing', icon: '🏠' },
-        { key: 'transportation', label: 'Transportation', icon: '🚗' },
-        { key: 'food', label: 'Food', icon: '🍽️' },
-        { key: 'healthcare', label: 'Healthcare', icon: '🏥' },
-        { key: 'insurance', label: 'Insurance', icon: '🛡️' },
-        { key: 'discretionary', label: 'Discretionary', icon: '🎉' },
+        { key: 'housing', label: 'Housing', icon: '🏠', description: 'Mortgage, rent, HOA fees' },
+        { key: 'utilities', label: 'Utilities', icon: '💡', description: 'Electric, gas, water, internet' },
+        { key: 'transportation', label: 'Transportation', icon: '🚗', description: 'Car payment, gas, maintenance' },
+        { key: 'food', label: 'Food', icon: '🍽️', description: 'Groceries, dining out' },
+        { key: 'healthcare', label: 'Healthcare', icon: '🏥', description: 'Medical, dental, prescriptions' },
+        { key: 'insurance', label: 'Insurance', icon: '🛡️', description: 'Health, life, home, auto' },
+        { key: 'entertainment', label: 'Entertainment', icon: '🎬', description: 'Movies, hobbies, activities' },
+        { key: 'personal_care', label: 'Personal Care', icon: '💇', description: 'Hair, gym, spa' },
+        { key: 'clothing', label: 'Clothing', icon: '👕', description: 'Clothes, shoes, accessories' },
+        { key: 'childcare_education', label: 'Childcare & Education', icon: '🎓', description: 'Daycare, tuition, supplies' },
+        { key: 'charitable_giving', label: 'Charitable Giving', icon: '💝', description: 'Donations, tithing' },
+        { key: 'subscriptions', label: 'Subscriptions', icon: '📱', description: 'Streaming, apps, memberships' },
+        { key: 'pet_care', label: 'Pet Care', icon: '🐾', description: 'Food, vet, grooming' },
+        { key: 'debt_payments', label: 'Debt Payments', icon: '💳', description: 'Credit cards, loans (non-mortgage)' },
+        { key: 'taxes', label: 'Taxes', icon: '📋', description: 'Property tax, estimated tax payments' },
+        { key: 'discretionary', label: 'Discretionary', icon: '🎉', description: 'Shopping, travel, misc' },
         { key: 'other', label: 'Other', icon: '📌' }
     ];
 
@@ -863,15 +886,32 @@ function setupExpenseEventListeners(container) {
 function showExpenseEditorModal(parentContainer, category) {
     const categoryLabels = {
         housing: 'Housing',
+        utilities: 'Utilities',
         transportation: 'Transportation',
         food: 'Food',
         healthcare: 'Healthcare',
         insurance: 'Insurance',
+        entertainment: 'Entertainment',
+        personal_care: 'Personal Care',
+        clothing: 'Clothing',
+        childcare_education: 'Childcare & Education',
+        charitable_giving: 'Charitable Giving',
+        subscriptions: 'Subscriptions',
+        pet_care: 'Pet Care',
+        debt_payments: 'Debt Payments',
+        taxes: 'Taxes',
         discretionary: 'Discretionary',
         other: 'Other'
     };
 
-    const expense = budgetData.expenses[currentPeriod][category] || { amount: 0, frequency: 'monthly', inflation_adjusted: true };
+    const expense = budgetData.expenses[currentPeriod][category] || {
+        amount: 0,
+        frequency: 'monthly',
+        inflation_adjusted: true,
+        start_date: null,
+        end_date: null,
+        ongoing: true
+    };
 
     const modal = document.createElement('div');
     modal.className = 'modal';
@@ -889,7 +929,7 @@ function showExpenseEditorModal(parentContainer, category) {
     `;
 
     modal.innerHTML = `
-        <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; max-width: 400px; width: 90%;">
+        <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; max-width: 500px; width: 90%;">
             <h2 style="margin: 0 0 15px 0; font-size: 18px;">Edit ${categoryLabels[category]}</h2>
             <form id="expense-form">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
@@ -907,11 +947,29 @@ function showExpenseEditorModal(parentContainer, category) {
                         </select>
                     </div>
                 </div>
-                <div style="margin-bottom: 15px;">
+                <div style="margin-bottom: 10px;">
                     <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
                         <input type="checkbox" id="expense-inflation" ${expense.inflation_adjusted ? 'checked' : ''}>
                         <span>Adjust for inflation</span>
                     </label>
+                </div>
+                <div style="margin-bottom: 10px; padding: 10px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; margin-bottom: 8px;">
+                        <input type="checkbox" id="expense-ongoing" ${expense.ongoing !== false ? 'checked' : ''}>
+                        <span>⏳ Ongoing expense (no end date)</span>
+                    </label>
+                    <div id="date-fields" style="display: ${expense.ongoing !== false ? 'none' : 'grid'}; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 12px; color: var(--text-secondary);">Start Date</label>
+                            <input type="date" id="expense-start-date" value="${expense.start_date || ''}"
+                                   style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 12px; color: var(--text-secondary);">End Date</label>
+                            <input type="date" id="expense-end-date" value="${expense.end_date || ''}"
+                                   style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
+                        </div>
+                    </div>
                 </div>
                 <div style="display: flex; justify-content: flex-end; gap: 8px;">
                     <button type="button" id="cancel-btn" style="padding: 6px 14px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 13px;">
@@ -934,6 +992,13 @@ function showExpenseEditorModal(parentContainer, category) {
         amountInput.select();
     }, 100);
 
+    // Toggle date fields based on ongoing checkbox
+    const ongoingCheckbox = modal.querySelector('#expense-ongoing');
+    const dateFields = modal.querySelector('#date-fields');
+    ongoingCheckbox.addEventListener('change', () => {
+        dateFields.style.display = ongoingCheckbox.checked ? 'none' : 'grid';
+    });
+
     // Event handlers
     modal.querySelector('#cancel-btn').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
@@ -941,10 +1006,17 @@ function showExpenseEditorModal(parentContainer, category) {
     modal.querySelector('#expense-form').addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        const ongoing = modal.querySelector('#expense-ongoing').checked;
+        const startDate = modal.querySelector('#expense-start-date').value || null;
+        const endDate = modal.querySelector('#expense-end-date').value || null;
+
         budgetData.expenses[currentPeriod][category] = {
             amount: parseFloat(modal.querySelector('#expense-amount').value),
             frequency: modal.querySelector('#expense-frequency').value,
             inflation_adjusted: modal.querySelector('#expense-inflation').checked,
+            ongoing: ongoing,
+            start_date: ongoing ? null : startDate,
+            end_date: ongoing ? null : endDate,
             subcategories: expense.subcategories || {}
         };
 
