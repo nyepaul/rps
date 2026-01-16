@@ -883,8 +883,31 @@ function renderExpenseSection(parentContainer) {
     `;
 
     for (const cat of categories) {
-        const expense = expenses[cat.key] || { amount: 0, frequency: 'monthly' };
+        const expense = expenses[cat.key] || { amount: 0, frequency: 'monthly', ongoing: true };
         const annual = annualAmount(expense.amount || 0, expense.frequency || 'monthly');
+
+        // Format date range display
+        let dateInfo = '';
+        if (expense.ongoing !== false) {
+            dateInfo = '<span style="color: var(--success-color);">⏳ Ongoing</span>';
+        } else if (expense.start_date || expense.end_date) {
+            const formatDate = (dateStr) => {
+                if (!dateStr) return '—';
+                const d = new Date(dateStr);
+                return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+            };
+
+            const start = formatDate(expense.start_date);
+            const end = formatDate(expense.end_date);
+
+            if (expense.start_date && expense.end_date) {
+                dateInfo = `<span style="color: var(--warning-color);">📅 ${start} → ${end}</span>`;
+            } else if (expense.start_date) {
+                dateInfo = `<span style="color: var(--info-color);">📅 From ${start}</span>`;
+            } else if (expense.end_date) {
+                dateInfo = `<span style="color: var(--info-color);">📅 Until ${end}</span>`;
+            }
+        }
 
         html += `
             <div class="expense-row" data-category="${cat.key}" style="padding: 8px 10px; background: var(--bg-primary); border-radius: 4px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--accent-color)'" onmouseout="this.style.background='var(--bg-primary)'; this.style.borderColor='var(--border-color)'">
@@ -893,6 +916,7 @@ function renderExpenseSection(parentContainer) {
                     <div style="flex: 1;">
                         <div style="font-weight: 500; font-size: 13px; margin-bottom: 2px;">${cat.label}</div>
                         <div style="font-size: 11px; color: var(--text-secondary);">${formatCurrency(expense.amount || 0)}/${expense.frequency || 'monthly'} (${formatCurrency(annual)}/yr)</div>
+                        ${dateInfo ? `<div style="font-size: 10px; margin-top: 2px;">${dateInfo}</div>` : ''}
                     </div>
                 </div>
                 <span style="font-size: 11px; color: var(--text-secondary);">✏️</span>
