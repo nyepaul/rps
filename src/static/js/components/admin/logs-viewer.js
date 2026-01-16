@@ -117,7 +117,7 @@ async function loadStatistics(container) {
     const statsContainer = container.querySelector('#logs-statistics');
 
     try {
-        const response = await apiClient.get('/admin/logs/statistics?days=30');
+        const response = await apiClient.get('/api/admin/logs/statistics?days=30');
         const stats = response.statistics;
 
         statsContainer.innerHTML = `
@@ -204,7 +204,7 @@ async function loadLogs(container, offset = 0) {
         }
 
         // Fetch logs
-        const response = await apiClient.get(`/admin/logs?${params.toString()}`);
+        const response = await apiClient.get(`/api/admin/logs?${params.toString()}`);
         const logs = response.logs;
         const total = response.total;
         const limit = response.limit;

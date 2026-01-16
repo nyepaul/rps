@@ -1,6 +1,6 @@
 """Enhanced audit logging service with comprehensive data collection."""
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from flask import request, has_request_context, session
 from flask_login import current_user
@@ -479,7 +479,7 @@ class EnhancedAuditLogger:
     def get_statistics(days: int = 30):
         """Get audit log statistics for the admin dashboard."""
         cutoff_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        cutoff_date = cutoff_date.replace(day=cutoff_date.day - days).isoformat()
+        cutoff_date = (cutoff_date - timedelta(days=days)).isoformat()
 
         stats = {}
 

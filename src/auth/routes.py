@@ -151,8 +151,8 @@ def login():
     # Update last login
     user.update_last_login()
 
-    # Log user in
-    login_user(user, remember=True)
+    # Log user in (remember=False to allow easy switching between users)
+    login_user(user, remember=False)
 
     return jsonify({
         'message': 'Login successful',
@@ -168,13 +168,25 @@ def login():
 @auth_bp.route('/logout', methods=['POST'])
 def logout():
     """Log out the current user and clear encryption key."""
+    from flask import make_response
+
+    # Clear session data
     session.pop('user_dek', None)
+    session.clear()
+
+    # Logout user (clears Flask-Login session and remember me cookie)
     logout_user()
-    return jsonify({'message': 'Logout successful'}), 200
+
+    # Create response and explicitly clear remember me cookie
+    response = make_response(jsonify({'message': 'Logout successful'}), 200)
+    response.set_cookie('remember_token', '', expires=0, path='/')
+    response.set_cookie('session', '', expires=0, path='/')
+
+    return response
 
 
 @auth_bp.route('/session', methods=['GET'])
-def session():
+def check_session():
     """Check if user is authenticated."""
     if current_user.is_authenticated:
         return jsonify({

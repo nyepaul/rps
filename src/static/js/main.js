@@ -21,6 +21,9 @@ async function init() {
     // Set up settings button
     setupSettings();
 
+    // Set up logout button
+    setupLogout();
+
     // Load saved preferences
     loadThemePreference();
     loadCompactModePreference();
@@ -247,6 +250,20 @@ function setupSettings() {
     const settingsBtn = document.getElementById('settings-btn');
     if (settingsBtn) {
         settingsBtn.addEventListener('click', openSettings);
+    }
+}
+
+/**
+ * Set up logout button
+ */
+function setupLogout() {
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            if (confirm('Are you sure you want to logout?')) {
+                await logout();
+            }
+        });
     }
 }
 
@@ -538,11 +555,15 @@ function loadCompactModePreference() {
 async function logout() {
     try {
         await apiClient.post(API_ENDPOINTS.AUTH_LOGOUT);
-        window.location.href = '/login';
     } catch (error) {
         console.error('❌ Logout failed:', error);
-        // Redirect anyway
-        window.location.href = '/login';
+    } finally {
+        // Clear all local storage
+        localStorage.clear();
+        sessionStorage.clear();
+
+        // Force hard redirect to login (no cache)
+        window.location.replace('/login?t=' + Date.now());
     }
 }
 

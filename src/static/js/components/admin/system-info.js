@@ -17,7 +17,7 @@ export async function renderSystemInfo(container) {
     `;
 
     try {
-        const response = await apiClient.get('/admin/system/info');
+        const response = await apiClient.get('/api/admin/system/info');
         const info = response.system_info;
 
         container.innerHTML = `

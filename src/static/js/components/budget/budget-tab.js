@@ -1,6 +1,6 @@
 /**
- * Budget Tab Component
- * Manages current and future income/expense budgets
+ * Expense Tab Component
+ * Manages current and future expenses (income handled on Income tab)
  */
 
 import { store } from '../../state/store.js';
@@ -12,7 +12,7 @@ let currentPeriod = 'current';
 let budgetData = null;
 
 /**
- * Render Budget Tab
+ * Render Expense Tab
  */
 export function renderBudgetTab(container) {
     const profile = store.get('currentProfile');
@@ -23,7 +23,7 @@ export function renderBudgetTab(container) {
                 <div style="font-size: 48px; margin-bottom: 20px;">📊</div>
                 <h2 style="margin-bottom: 10px;">No Profile Selected</h2>
                 <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                    Please create or select a profile to manage your budget.
+                    Please create or select a profile to manage your expenses.
                 </p>
                 <button onclick="window.app.showTab('welcome')" style="padding: 10px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
                     Go to Welcome
@@ -51,9 +51,9 @@ export function renderBudgetTab(container) {
     container.innerHTML = `
         <div style="max-width: 1400px; margin: 0 auto; padding: 12px;">
             <div style="margin-bottom: 12px;">
-                <h1 style="margin: 0; font-size: 24px;">💵 Budget Planning</h1>
+                <h1 style="margin: 0; font-size: 24px;">💵 Expense Planning</h1>
                 <p style="color: var(--text-secondary); margin: 4px 0 0 0; font-size: 13px;">
-                    Plan your current and future income/expenses
+                    Plan your current and future expenses (Income managed on Income tab)
                 </p>
             </div>
 
@@ -73,25 +73,21 @@ export function renderBudgetTab(container) {
                         </button>
                     </div>
                     <span id="period-context" style="color: var(--text-secondary); font-size: 12px; margin-left: 8px;">
-                        (Pre-retirement budget)
+                        (Pre-retirement expenses)
                     </span>
                 </div>
                 <button id="save-budget-btn" style="padding: 8px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
-                    Save Budget
+                    Save Expenses
                 </button>
             </div>
 
-            <!-- Two Column Layout -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                <div id="income-section"></div>
-                <div id="expense-section"></div>
-            </div>
+            <!-- Expense Section Only -->
+            <div id="expense-section"></div>
         </div>
     `;
 
     // Render sections
     renderBudgetSummary(container);
-    renderIncomeSection(container);
     renderExpenseSection(container);
 
     // Setup event handlers
@@ -164,45 +160,27 @@ function getDefaultExpenses() {
 }
 
 /**
- * Render Budget Summary Cards
+ * Render Expense Summary Cards
  */
 function renderBudgetSummary(container) {
     const summaryContainer = container.querySelector('#budget-summary');
 
-    const currentIncome = calculateTotalIncome('current');
-    const futureIncome = calculateTotalIncome('future');
     const currentExpenses = calculateTotalExpenses('current');
     const futureExpenses = calculateTotalExpenses('future');
 
-    const currentCashFlow = currentIncome - currentExpenses;
-    const futureCashFlow = futureIncome - futureExpenses;
-
     summaryContainer.innerHTML = `
-        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 12px;">
-            <div style="background: var(--bg-secondary); padding: 10px; border-radius: 6px; border-left: 3px solid #10b981;">
-                <div style="color: var(--text-secondary); font-size: 11px; margin-bottom: 4px;">Current Income</div>
-                <div style="font-size: 16px; font-weight: 600;">${formatCurrency(currentIncome)}</div>
-            </div>
-            <div style="background: var(--bg-secondary); padding: 10px; border-radius: 6px; border-left: 3px solid #3b82f6;">
-                <div style="color: var(--text-secondary); font-size: 11px; margin-bottom: 4px;">Future Income</div>
-                <div style="font-size: 16px; font-weight: 600;">${formatCurrency(futureIncome)}</div>
-            </div>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px;">
             <div style="background: var(--bg-secondary); padding: 10px; border-radius: 6px; border-left: 3px solid #ef4444;">
-                <div style="color: var(--text-secondary); font-size: 11px; margin-bottom: 4px;">Current Expenses</div>
-                <div style="font-size: 16px; font-weight: 600;">${formatCurrency(currentExpenses)}</div>
+                <div style="color: var(--text-secondary); font-size: 11px; margin-bottom: 4px;">Current Expenses (Pre-Retirement)</div>
+                <div style="font-size: 18px; font-weight: 600;">${formatCurrency(currentExpenses)}/year</div>
             </div>
             <div style="background: var(--bg-secondary); padding: 10px; border-radius: 6px; border-left: 3px solid #f59e0b;">
-                <div style="color: var(--text-secondary); font-size: 11px; margin-bottom: 4px;">Future Expenses</div>
-                <div style="font-size: 16px; font-weight: 600;">${formatCurrency(futureExpenses)}</div>
+                <div style="color: var(--text-secondary); font-size: 11px; margin-bottom: 4px;">Future Expenses (Post-Retirement)</div>
+                <div style="font-size: 18px; font-weight: 600;">${formatCurrency(futureExpenses)}/year</div>
             </div>
-            <div style="background: var(--bg-secondary); padding: 10px; border-radius: 6px; border-left: 3px solid ${currentCashFlow >= 0 ? '#10b981' : '#ef4444'};">
-                <div style="color: var(--text-secondary); font-size: 11px; margin-bottom: 4px;">Current Cash Flow</div>
-                <div style="font-size: 16px; font-weight: 600;">${formatCurrency(currentCashFlow)}</div>
-            </div>
-            <div style="background: var(--bg-secondary); padding: 10px; border-radius: 6px; border-left: 3px solid ${futureCashFlow >= 0 ? '#10b981' : '#ef4444'};">
-                <div style="color: var(--text-secondary); font-size: 11px; margin-bottom: 4px;">Future Cash Flow</div>
-                <div style="font-size: 16px; font-weight: 600;">${formatCurrency(futureCashFlow)}</div>
-            </div>
+        </div>
+        <div style="background: var(--info-bg); padding: 8px 12px; border-radius: 6px; font-size: 12px; color: var(--info-color); margin-bottom: 12px; border-left: 3px solid var(--info-color);">
+            <strong>ℹ️ Note:</strong> Income sources are managed on the <strong>Income</strong> tab. This tab focuses on expense planning only.
         </div>
     `;
 }
@@ -843,7 +821,7 @@ function renderExpenseSection(parentContainer) {
         const annual = annualAmount(expense.amount || 0, expense.frequency || 'monthly');
 
         html += `
-            <div style="padding: 8px 10px; background: var(--bg-primary); border-radius: 4px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+            <div class="expense-row" data-category="${cat.key}" style="padding: 8px 10px; background: var(--bg-primary); border-radius: 4px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--accent-color)'" onmouseout="this.style.background='var(--bg-primary)'; this.style.borderColor='var(--border-color)'">
                 <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
                     <span style="font-size: 16px;">${cat.icon}</span>
                     <div style="flex: 1;">
@@ -851,9 +829,7 @@ function renderExpenseSection(parentContainer) {
                         <div style="font-size: 11px; color: var(--text-secondary);">${formatCurrency(expense.amount || 0)}/${expense.frequency || 'monthly'} (${formatCurrency(annual)}/yr)</div>
                     </div>
                 </div>
-                <button class="edit-expense-btn" data-category="${cat.key}" style="padding: 4px 10px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">
-                    Edit
-                </button>
+                <span style="font-size: 11px; color: var(--text-secondary);">✏️</span>
             </div>
         `;
     }
@@ -873,9 +849,9 @@ function renderExpenseSection(parentContainer) {
  * Setup expense event listeners
  */
 function setupExpenseEventListeners(container) {
-    container.querySelectorAll('.edit-expense-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const category = e.target.getAttribute('data-category');
+    container.querySelectorAll('.expense-row').forEach(row => {
+        row.addEventListener('click', (e) => {
+            const category = row.getAttribute('data-category');
             showExpenseEditorModal(container, category);
         });
     });
@@ -951,6 +927,13 @@ function showExpenseEditorModal(parentContainer, category) {
 
     document.body.appendChild(modal);
 
+    // Focus the amount field and select its content
+    const amountInput = modal.querySelector('#expense-amount');
+    setTimeout(() => {
+        amountInput.focus();
+        amountInput.select();
+    }, 100);
+
     // Event handlers
     modal.querySelector('#cancel-btn').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
@@ -978,7 +961,7 @@ function showExpenseEditorModal(parentContainer, category) {
 }
 
 /**
- * Setup budget event handlers
+ * Setup expense event handlers
  */
 function setupBudgetEventHandlers(profile, container) {
     // Period toggle
@@ -1003,12 +986,11 @@ function setupBudgetEventHandlers(profile, container) {
             const contextSpan = container.querySelector('#period-context');
             if (contextSpan) {
                 contextSpan.textContent = currentPeriod === 'current'
-                    ? '(Pre-retirement budget)'
-                    : '(Post-retirement budget)';
+                    ? '(Pre-retirement expenses)'
+                    : '(Post-retirement expenses)';
             }
 
             // Re-render sections
-            renderIncomeSection(container);
             renderExpenseSection(container);
         });
     });
@@ -1065,14 +1047,14 @@ async function saveBudget(profile, container) {
         store.setState({ currentProfile: result.profile });
 
         // Show success message
-        showSuccess('Budget saved successfully!');
+        showSuccess('Expenses saved successfully!');
 
         // Update the budget data reference
         budgetData = result.profile.data.budget;
 
     } catch (error) {
         console.error('Error saving budget:', error);
-        showError('Failed to save budget: ' + error.message);
+        showError('Failed to save expenses: ' + error.message);
         throw error; // Re-throw so callers know it failed
     } finally {
         if (saveBtn && originalText) {

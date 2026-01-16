@@ -17,7 +17,7 @@ export async function renderUserManagement(container) {
     `;
 
     try {
-        const response = await apiClient.get('/admin/users');
+        const response = await apiClient.get('/api/admin/users');
         const users = response.users;
 
         container.innerHTML = `

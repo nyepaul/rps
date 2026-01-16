@@ -17,7 +17,7 @@ export async function renderConfigEditor(container) {
     `;
 
     try {
-        const response = await apiClient.get('/admin/config');
+        const response = await apiClient.get('/api/admin/config');
         const config = response.config;
 
         container.innerHTML = `
@@ -192,7 +192,7 @@ async function saveConfiguration(container) {
         });
 
         // Save to API
-        await apiClient.put('/admin/config', config);
+        await apiClient.put('/api/admin/config', config);
 
         statusElement.textContent = '✅ Saved successfully';
         statusElement.style.color = 'var(--success-color)';

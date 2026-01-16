@@ -391,7 +391,7 @@ def get_system_info():
         stats['total_profiles'] = result['count'] if result else 0
 
         # Count scenarios
-        result = db.execute_one('SELECT COUNT(*) as count FROM scenario')
+        result = db.execute_one('SELECT COUNT(*) as count FROM scenarios')
         stats['total_scenarios'] = result['count'] if result else 0
 
         # Count audit logs
