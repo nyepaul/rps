@@ -114,6 +114,36 @@ function setupEventHandlers(container, profile) {
 }
 
 /**
+ * Check if an expense is active on a given date
+ */
+function isExpenseActiveOnDate(expense, checkDate) {
+    // If ongoing or no date constraints, it's always active
+    if (expense.ongoing !== false || (!expense.start_date && !expense.end_date)) {
+        return true;
+    }
+
+    const check = checkDate.getTime();
+
+    // Check start date
+    if (expense.start_date) {
+        const start = new Date(expense.start_date).getTime();
+        if (check < start) {
+            return false; // Before start date
+        }
+    }
+
+    // Check end date
+    if (expense.end_date) {
+        const end = new Date(expense.end_date).getTime();
+        if (check > end) {
+            return false; // After end date
+        }
+    }
+
+    return true;
+}
+
+/**
  * Calculate monthly cash flow data with portfolio growth projection
  */
 function calculateMonthlyCashFlow(profile, months) {
@@ -188,9 +218,18 @@ function calculateMonthlyCashFlow(profile, months) {
         let expenses = 0;
         if (budget.expenses && budget.expenses.current) {
             // Calculate total monthly expenses from all categories
-            const categories = ['housing', 'transportation', 'food', 'healthcare', 'insurance', 'discretionary', 'other'];
+            const categories = ['housing', 'utilities', 'transportation', 'food', 'healthcare', 'insurance',
+                              'entertainment', 'personal_care', 'clothing', 'childcare_education',
+                              'charitable_giving', 'subscriptions', 'pet_care', 'debt_payments',
+                              'taxes', 'discretionary', 'other'];
             categories.forEach(category => {
                 const cat = budget.expenses.current[category] || {};
+
+                // Check if expense is active on this date
+                if (!isExpenseActiveOnDate(cat, currentDate)) {
+                    return; // Skip inactive expenses
+                }
+
                 const amount = cat.amount || 0;
                 const frequency = cat.frequency || 'monthly';
 

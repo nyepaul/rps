@@ -270,23 +270,66 @@ function calculateTotalIncome(period) {
 
 /**
  * Calculate total expenses for a period
+ * @param {string} period - 'current' or 'future'
+ * @param {Date} asOfDate - Optional date to calculate expenses as of (for date-range filtering)
  */
-function calculateTotalExpenses(period) {
+function calculateTotalExpenses(period, asOfDate = null) {
     let total = 0;
     const expenses = budgetData.expenses[period];
+    const today = asOfDate || new Date();
 
     const categories = ['housing', 'utilities', 'transportation', 'food', 'healthcare', 'insurance',
                        'entertainment', 'personal_care', 'clothing', 'childcare_education',
                        'charitable_giving', 'subscriptions', 'pet_care', 'debt_payments',
                        'taxes', 'discretionary', 'other'];
+
     for (const category of categories) {
         const cat = expenses[category] || {};
+
+        // Check if expense is active based on date range
+        if (!isExpenseActive(cat, today)) {
+            continue; // Skip inactive expenses
+        }
+
         const amount = cat.amount || 0;
         const frequency = cat.frequency || 'monthly';
         total += annualAmount(amount, frequency);
     }
 
     return total;
+}
+
+/**
+ * Check if an expense is active on a given date
+ * @param {object} expense - Expense object with start_date, end_date, ongoing fields
+ * @param {Date} checkDate - Date to check against
+ * @returns {boolean} - True if expense is active on this date
+ */
+function isExpenseActive(expense, checkDate) {
+    // If ongoing or no date constraints, it's always active
+    if (expense.ongoing !== false || (!expense.start_date && !expense.end_date)) {
+        return true;
+    }
+
+    const check = checkDate.getTime();
+
+    // Check start date
+    if (expense.start_date) {
+        const start = new Date(expense.start_date).getTime();
+        if (check < start) {
+            return false; // Before start date
+        }
+    }
+
+    // Check end date
+    if (expense.end_date) {
+        const end = new Date(expense.end_date).getTime();
+        if (check > end) {
+            return false; // After end date
+        }
+    }
+
+    return true;
 }
 
 /**
