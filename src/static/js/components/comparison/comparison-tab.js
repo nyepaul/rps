@@ -6,8 +6,9 @@ import { store } from '../../state/store.js';
 import { scenariosAPI } from '../../api/scenarios.js';
 import { formatCurrency, formatPercent, formatDate, formatCompact } from '../../utils/formatters.js';
 import { showLoading, showError, showSuccess } from '../../utils/dom.js';
+import { renderStandardTimelineChart } from '../../utils/charts.js';
 
-let comparisonChartInstance = null;
+let comparisonChartInstances = {};
 
 export async function renderComparisonTab(container) {
     const profile = store.get('currentProfile');
@@ -293,12 +294,14 @@ function setupComparisonHandlers(container, scenarios) {
 }
 
 function renderComparisonChart(selectedIds, allScenarios) {
-    const ctx = document.getElementById('comparison-chart');
+    const canvasId = 'comparison-chart';
+    const ctx = document.getElementById(canvasId);
     if (!ctx) return;
 
     // Destroy existing chart
-    if (comparisonChartInstance) {
-        comparisonChartInstance.destroy();
+    if (comparisonChartInstances[canvasId]) {
+        comparisonChartInstances[canvasId].destroy();
+        delete comparisonChartInstances[canvasId];
     }
 
     const selectedScenarios = allScenarios.filter(s => selectedIds.includes(s.id));
@@ -308,59 +311,52 @@ function renderComparisonChart(selectedIds, allScenarios) {
     const datasets = [];
     let labels = [];
     let colorIndex = 0;
+    const milestones = [0, 5, 10, 15, 20, 30, 40];
 
     selectedScenarios.forEach((scenario) => {
-        const isMultiScenario = scenario.results?.scenarios && Object.keys(scenario.results.scenarios).length > 0;
-
+        const results = scenario.results || {};
+        const isMultiScenario = results.scenarios && Object.keys(results.scenarios).length > 0;
+        
+        let timeline = null;
         if (isMultiScenario) {
-            // For multi-scenarios, only show the 'moderate' median to avoid cluttering the comparison
-            const subScenarioKey = scenario.results.scenarios.moderate ? 'moderate' : Object.keys(scenario.results.scenarios)[0];
-            const subScenario = scenario.results.scenarios[subScenarioKey];
-            const timeline = subScenario.timeline;
-            
-            if (timeline && timeline.median) {
-                if (timeline.years && timeline.years.length > labels.length) {
-                    labels = timeline.years;
-                }
-                datasets.push({
-                    label: scenario.name,
-                    data: timeline.median.map(d => d),
-                    borderColor: colors[colorIndex % colors.length],
-                    backgroundColor: 'transparent',
-                    tension: 0.3,
-                    borderWidth: 2,
-                    pointRadius: 0,
-                    pointHoverRadius: 4
-                });
-                colorIndex++;
-            }
+            const subScenario = results.scenarios.moderate || Object.values(results.scenarios)[0];
+            timeline = subScenario.timeline;
         } else {
-            const timeline = scenario.results?.timeline;
-            if (timeline && timeline.median) {
-                if (timeline.years && timeline.years.length > labels.length) {
-                    labels = timeline.years;
-                }
-                datasets.push({
-                    label: scenario.name,
-                    data: timeline.median.map(d => d),
-                    borderColor: colors[colorIndex % colors.length],
-                    backgroundColor: 'transparent',
-                    tension: 0.3,
-                    borderWidth: 2,
-                    pointRadius: 0,
-                    pointHoverRadius: 4
-                });
-                colorIndex++;
+            timeline = results.timeline;
+        }
+        
+        if (timeline && timeline.median) {
+            if (timeline.years && timeline.years.length > labels.length) {
+                labels = timeline.years;
             }
+            
+            const color = colors[colorIndex % colors.length];
+            datasets.push({
+                label: scenario.name,
+                data: timeline.median.map(d => d),
+                borderColor: color,
+                backgroundColor: 'transparent',
+                tension: 0.3,
+                borderWidth: 3,
+                pointRadius: (timeline.years || []).map((_, idx) => milestones.includes(indexToYearOffset(idx, timeline)) ? 5 : 0),
+                pointHoverRadius: 6,
+                pointBackgroundColor: color,
+                pointBorderColor: '#fff',
+                pointBorderWidth: 1
+            });
+            colorIndex++;
         }
     });
 
+    function indexToYearOffset(idx, timeline) {
+        // Simplified for standard milestone check
+        return idx;
+    }
+
     if (datasets.length === 0) {
-        // No timeline data available, show message
         ctx.parentElement.innerHTML = `
             <div style="text-align: center; padding: 60px; color: var(--text-secondary);">
                 <p>Timeline data not available for selected scenarios.</p>
-                <p style="font-size: 13px;">Run new analyses to generate timeline projections.</p>
             </div>
         `;
         return;
@@ -368,37 +364,18 @@ function renderComparisonChart(selectedIds, allScenarios) {
 
     const style = getComputedStyle(document.body);
     const textSecondary = style.getPropertyValue('--text-secondary').trim() || '#666';
+    const ChartConstructor = typeof Chart !== 'undefined' ? Chart : window.Chart;
 
-    comparisonChartInstance = new Chart(ctx, {
+    comparisonChartInstances[canvasId] = new ChartConstructor(ctx, {
         type: 'line',
         data: { labels, datasets },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                intersect: false,
-                mode: 'index'
-            },
+            responsive: true, maintainAspectRatio: false,
+            interaction: { intersect: false, mode: 'index' },
             plugins: {
-                legend: {
-                    position: 'top',
-                    labels: {
-                        color: textSecondary,
-                        usePointStyle: true,
-                        padding: 15
-                    }
-                },
-                title: {
-                    display: true,
-                    text: 'Median Portfolio Value Over Time',
-                    color: textSecondary,
-                    font: { size: 14 }
-                },
+                legend: { position: 'top', labels: { color: textSecondary, usePointStyle: true, padding: 15 } },
                 tooltip: {
                     backgroundColor: 'rgba(0,0,0,0.8)',
-                    titleColor: '#fff',
-                    bodyColor: '#fff',
-                    padding: 12,
                     callbacks: {
                         label: (context) => `${context.dataset.label}: ${formatCurrency(context.raw, 0)}`
                     }
@@ -408,22 +385,12 @@ function renderComparisonChart(selectedIds, allScenarios) {
                 y: {
                     beginAtZero: true,
                     grid: { color: 'rgba(128,128,128,0.1)' },
-                    ticks: {
-                        color: textSecondary,
-                        callback: (value) => formatCompact(value)
-                    }
+                    ticks: { color: textSecondary, callback: (value) => formatCompact(value) }
                 },
                 x: {
                     grid: { display: false },
-                    ticks: {
-                        color: textSecondary,
-                        maxTicksLimit: 15
-                    },
-                    title: {
-                        display: true,
-                        text: 'Year',
-                        color: textSecondary
-                    }
+                    ticks: { color: textSecondary, maxTicksLimit: 15 },
+                    title: { display: true, text: 'Year', color: textSecondary }
                 }
             }
         }

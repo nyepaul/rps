@@ -7,6 +7,7 @@ import { scenariosAPI } from '../../api/scenarios.js';
 import { profilesAPI } from '../../api/profiles.js';
 import { formatCurrency, formatCompact } from '../../utils/formatters.js';
 import { showSuccess, showError, showLoading } from '../../utils/dom.js';
+import { renderStandardTimelineChart } from '../../utils/charts.js';
 
 export function renderDashboardTab(container) {
     const profile = store.get('currentProfile');
@@ -227,7 +228,7 @@ export function renderDashboardTab(container) {
     loadAndRenderScenarios(profile);
 }
 
-let scenarioChart = null;
+let dashboardChartInstances = {};
 
 function renderScenarioGraph(scenario) {
     const container = document.getElementById('scenario-chart-container');
@@ -249,79 +250,28 @@ function renderScenarioGraph(scenario) {
     container.style.display = 'block';
     if (title) title.textContent = `Projection: ${scenario.name}`;
 
-    const colors = ['#3498db', '#28a745', '#ffc107', '#dc3545'];
+    // Extract timeline from scenario result
+    const results = scenario.results || {};
+    const isMultiScenario = results.scenarios && Object.keys(results.scenarios).length > 0;
     
-    // Extract data from scenario result
-    const timeline = scenario.results?.timeline || scenario.results?.monte_carlo?.yearly_results;
-    let labels = [];
-    let medianData = [];
-    
-    if (timeline && timeline.years) {
-        labels = timeline.years;
-        medianData = timeline.median || timeline.map(r => r.median_portfolio_value);
+    let timeline = null;
+    if (isMultiScenario) {
+        // Use moderate scenario for dashboard preview
+        const subScenario = results.scenarios.moderate || Object.values(results.scenarios)[0];
+        timeline = subScenario.timeline;
+    } else {
+        timeline = results.timeline;
     }
 
-    const datasets = [{
-        label: 'Median Portfolio Value',
-        data: medianData,
-        borderColor: colors[0],
-        backgroundColor: colors[0] + '20', // Transparent fill
-        fill: true,
-        tension: 0.2,
-        borderWidth: 2,
-        pointRadius: 0,
-        pointHoverRadius: 4
-    }];
-
-    const ctx = canvas.getContext('2d');
-
-    if (scenarioChart) {
-        scenarioChart.destroy();
-    }
-
-    // Check if Chart is available
-    const ChartConstructor = typeof Chart !== 'undefined' ? Chart : window.Chart;
-    
-    if (!ChartConstructor) {
-        console.error('Chart.js not found. Cannot render scenario graph.');
+    if (!timeline) {
+        console.warn('No timeline data for scenario preview');
         canvas.style.display = 'none';
         loader.style.display = 'block';
-        loader.textContent = 'Chart library loading error';
+        loader.textContent = 'No timeline data available';
         return;
     }
 
-    scenarioChart = new ChartConstructor(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: datasets
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: {
-                    grid: { display: false },
-                    ticks: { color: '#888', maxTicksLimit: 10 }
-                },
-                y: {
-                    grid: { color: 'rgba(128,128,128,0.1)' },
-                    ticks: {
-                        color: '#888',
-                        callback: (value) => formatCompact(value)
-                    }
-                }
-            },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: (context) => formatCurrency(context.parsed.y)
-                    }
-                }
-            }
-        }
-    });
+    renderStandardTimelineChart(timeline, 'scenario-chart', dashboardChartInstances);
 }
 
 async function loadAndRenderScenarios(currentProfile) {

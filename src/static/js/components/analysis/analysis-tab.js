@@ -6,6 +6,7 @@ import { analysisAPI } from '../../api/analysis.js';
 import { store } from '../../state/store.js';
 import { showSuccess, showError, showErrorInContainer, showLoading } from '../../utils/dom.js';
 import { formatCurrency, formatPercent, formatCompact } from '../../utils/formatters.js';
+import { renderStandardTimelineChart } from '../../utils/charts.js';
 import { APP_CONFIG } from '../../config.js';
 
 // Store last analysis result for saving as scenario
@@ -784,9 +785,9 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
             });
         }
         if (scenario && scenario.timeline) {
-            console.log(`Calling renderTimelineChart for ${key}`);
+            console.log(`Calling renderStandardTimelineChart for ${key}`);
             try {
-                renderTimelineChart(scenario.timeline, `timeline-chart-${key}`);
+                renderStandardTimelineChart(scenario.timeline, `timeline-chart-${key}`, timelineChartInstances);
                 console.log(`Successfully rendered chart for ${key}`);
             } catch (error) {
                 console.error(`Error rendering chart for ${key}:`, error);
@@ -798,173 +799,6 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
 
     // Setup save handler for multi-scenario
     setupMultiSaveScenarioHandler(container, profile);
-}
-
-function renderTimelineChart(timeline, canvasId = 'timeline-chart') {
-    console.log(`renderTimelineChart called for ${canvasId}`);
-    const ctx = document.getElementById(canvasId);
-    if (!ctx) {
-        console.error(`Canvas element not found: ${canvasId}`);
-        return;
-    }
-    console.log('Canvas element found:', ctx);
-
-    // Check if Chart.js is available
-    if (typeof Chart === 'undefined') {
-        console.error('Chart.js is not loaded!');
-        return;
-    }
-
-    // Destroy existing chart instance for this canvas
-    if (timelineChartInstances[canvasId]) {
-        timelineChartInstances[canvasId].destroy();
-        delete timelineChartInstances[canvasId];
-    }
-
-    // Get colors from CSS variables
-    const style = getComputedStyle(document.body);
-    const successColor = style.getPropertyValue('--success-color').trim() || '#28a745';
-    const dangerColor = style.getPropertyValue('--danger-color').trim() || '#dc3545';
-    const accentColor = style.getPropertyValue('--accent-color').trim() || '#3498db';
-    const textSecondary = style.getPropertyValue('--text-secondary').trim() || '#666';
-
-    // Highlight specific milestones: 0, 5, 10, 15, 20, 30, 40 years
-    const milestones = [0, 5, 10, 15, 20, 30, 40];
-    const pointRadii = (timeline.years || []).map((year, index) => {
-        return milestones.includes(index) ? 6 : 0;
-    });
-    const pointHoverRadii = (timeline.years || []).map((year, index) => {
-        return milestones.includes(index) ? 8 : 4;
-    });
-
-    timelineChartInstances[canvasId] = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: timeline.years || [],
-            datasets: [
-                {
-                    label: '95th Percentile (Optimistic)',
-                    data: timeline.p95 || [],
-                    borderColor: successColor,
-                    backgroundColor: successColor + '20',
-                    fill: '+1',
-                    tension: 0.3,
-                    borderWidth: 2,
-                    pointRadius: 0,
-                    pointHoverRadius: 4
-                },
-                {
-                    label: 'Median',
-                    data: timeline.median || [],
-                    borderColor: accentColor,
-                    backgroundColor: 'transparent',
-                    borderWidth: 3,
-                    tension: 0.3,
-                    pointRadius: pointRadii,
-                    pointHoverRadius: pointHoverRadii,
-                    pointBackgroundColor: accentColor,
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2
-                },
-                {
-                    label: '5th Percentile (Conservative)',
-                    data: timeline.p5 || [],
-                    borderColor: dangerColor,
-                    backgroundColor: dangerColor + '20',
-                    fill: '-1',
-                    tension: 0.3,
-                    borderWidth: 2,
-                    pointRadius: 0,
-                    pointHoverRadius: 4
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                intersect: false,
-                mode: 'index'
-            },
-            plugins: {
-                legend: {
-                    position: 'top',
-                    labels: {
-                        color: textSecondary,
-                        usePointStyle: true,
-                        padding: 15
-                    }
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(0,0,0,0.8)',
-                    titleColor: '#fff',
-                    bodyColor: '#fff',
-                    padding: 12,
-                    callbacks: {
-                        label: (context) => `${context.dataset.label}: ${formatCurrency(context.raw, 0)}`
-                    }
-                }
-            },
-            // Custom plugin to draw labels for milestones
-            plugins: [{
-                id: 'milestoneLabels',
-                afterDatasetsDraw(chart) {
-                    const {ctx, data} = chart;
-                    const dataset = data.datasets[1]; // Median dataset
-                    const milestones = [0, 5, 10, 15, 20, 30, 40];
-                    
-                    ctx.save();
-                    ctx.font = 'bold 11px sans-serif';
-                    ctx.textAlign = 'center';
-                    
-                    milestones.forEach(index => {
-                        const meta = chart.getDatasetMeta(1);
-                        const point = meta.data[index];
-                        
-                        if (point && !point.skip) {
-                            const val = formatCurrency(dataset.data[index], 0);
-                            
-                            // Draw small background for text readability
-                            const textWidth = ctx.measureText(val).width;
-                            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                            ctx.fillRect(point.x - (textWidth/2) - 4, point.y - 28, textWidth + 8, 16);
-                            
-                            // Draw text
-                            ctx.fillStyle = accentColor;
-                            ctx.fillText(val, point.x, point.y - 16);
-                        }
-                    });
-                    ctx.restore();
-                }
-            }],
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: 'rgba(128,128,128,0.1)'
-                    },
-                    ticks: {
-                        color: textSecondary,
-                        callback: (value) => formatCompact(value)
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        color: textSecondary,
-                        maxTicksLimit: 15
-                    },
-                    title: {
-                        display: true,
-                        text: 'Year',
-                        color: textSecondary
-                    }
-                }
-            }
-        }
-    });
 }
 
 async function setupSaveScenarioHandler(container, profile) {
