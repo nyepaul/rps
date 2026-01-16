@@ -74,13 +74,30 @@ export function renderAssetList(assets, container) {
         </div>
     `;
 
-    // Add hover effects
+    // Add hover effects and click-to-edit functionality
     container.querySelectorAll('tbody tr').forEach(row => {
+        // Set cursor to pointer to indicate clickability
+        row.style.cursor = 'pointer';
+
         row.addEventListener('mouseenter', () => {
             row.style.background = 'var(--bg-tertiary)';
         });
         row.addEventListener('mouseleave', () => {
             row.style.background = 'transparent';
+        });
+
+        // Click on row to edit (but not when clicking action buttons)
+        row.addEventListener('click', (e) => {
+            // Don't trigger if clicking on action buttons
+            if (e.target.closest('.edit-asset-btn') || e.target.closest('.delete-asset-btn')) {
+                return;
+            }
+
+            // Trigger the edit button click
+            const editBtn = row.querySelector('.edit-asset-btn');
+            if (editBtn) {
+                editBtn.click();
+            }
         });
     });
 }
