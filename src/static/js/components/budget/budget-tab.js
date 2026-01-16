@@ -48,6 +48,11 @@ export function renderBudgetTab(container) {
         if (!Array.isArray(budgetData.income.future[cat])) budgetData.income.future[cat] = [];
     });
 
+    // Initialize college expenses based on children
+    if (!budgetData.college_expenses) {
+        budgetData.college_expenses = initializeCollegeExpenses(profile.data?.children || []);
+    }
+
     container.innerHTML = `
         <div style="max-width: 1400px; margin: 0 auto; padding: 12px;">
             <div style="margin-bottom: 12px;">
@@ -81,13 +86,17 @@ export function renderBudgetTab(container) {
                 </button>
             </div>
 
-            <!-- Expense Section Only -->
+            <!-- College Expenses Section -->
+            <div id="college-expenses-section"></div>
+
+            <!-- Expense Section -->
             <div id="expense-section"></div>
         </div>
     `;
 
     // Render sections
     renderBudgetSummary(container);
+    renderCollegeExpensesSection(container);
     renderExpenseSection(container);
 
     // Setup event handlers
@@ -171,6 +180,255 @@ function getDefaultExpenses() {
         discretionary: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
         other: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true }
     };
+}
+
+/**
+ * Initialize college expenses for children
+ */
+function initializeCollegeExpenses(children) {
+    const currentYear = new Date().getFullYear();
+    const collegeExpenses = [];
+
+    for (const child of children) {
+        if (!child.birth_year) continue;
+
+        const age = currentYear - child.birth_year;
+        const collegeStartYear = child.birth_year + 18;
+        const collegeEndYear = child.birth_year + 21;
+
+        // Only add if they haven't finished college yet (< 22 years old)
+        if (age < 22) {
+            collegeExpenses.push({
+                child_name: child.name || 'Child',
+                birth_year: child.birth_year,
+                start_year: collegeStartYear,
+                end_year: collegeEndYear,
+                annual_cost: 30000, // Default $30k/year
+                enabled: true
+            });
+        }
+    }
+
+    return collegeExpenses;
+}
+
+/**
+ * Render College Expenses Section
+ */
+function renderCollegeExpensesSection(parentContainer) {
+    const container = parentContainer.querySelector('#college-expenses-section');
+    const profile = store.get('currentProfile');
+    const children = profile.data?.children || [];
+
+    // Update college expenses if children changed
+    if (!budgetData.college_expenses) {
+        budgetData.college_expenses = initializeCollegeExpenses(children);
+    }
+
+    const collegeExpenses = budgetData.college_expenses || [];
+
+    // Hide section if no children or no college expenses
+    if (children.length === 0 || collegeExpenses.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    const currentYear = new Date().getFullYear();
+
+    let html = `
+        <div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h2 style="margin: 0; display: flex; align-items: center; gap: 8px; font-size: 16px;">
+                    <span style="font-size: 18px;">🎓</span>
+                    College Expenses
+                </h2>
+                <button id="sync-children-btn" style="padding: 4px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;" title="Sync with children in profile">
+                    🔄 Sync Children
+                </button>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+    `;
+
+    for (let i = 0; i < collegeExpenses.length; i++) {
+        const expense = collegeExpenses[i];
+        const age = currentYear - expense.birth_year;
+        const yearsUntilCollege = expense.start_year - currentYear;
+        const totalCost = expense.annual_cost * 4;
+
+        let statusText = '';
+        if (yearsUntilCollege > 0) {
+            statusText = `📅 Starts in ${yearsUntilCollege} year${yearsUntilCollege > 1 ? 's' : ''} (${expense.start_year})`;
+        } else if (currentYear <= expense.end_year) {
+            statusText = `<span style="color: var(--warning-color);">📚 Currently in college (${expense.start_year}-${expense.end_year})</span>`;
+        } else {
+            statusText = `<span style="color: var(--text-secondary);">✅ Completed (${expense.start_year}-${expense.end_year})</span>`;
+        }
+
+        html += `
+            <div class="college-expense-row" data-index="${i}" style="padding: 6px 10px; background: var(--bg-primary); border-radius: 4px; border: 1px solid ${expense.enabled ? 'var(--border-color)' : 'var(--text-secondary)'}; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; ${expense.enabled ? '' : 'opacity: 0.6;'}" onmouseover="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--accent-color)'" onmouseout="this.style.background='var(--bg-primary)'; this.style.borderColor='${expense.enabled ? 'var(--border-color)' : 'var(--text-secondary)'}'">
+                <div style="display: flex; align-items: center; gap: 8px; flex: 1; font-size: 13px;">
+                    <span style="font-size: 16px;">🎓</span>
+                    <span style="font-weight: 600;">${expense.child_name}</span>
+                    <span style="color: var(--text-secondary);">Age ${age}</span>
+                    <span style="color: var(--text-secondary);">${formatCurrency(expense.annual_cost, 0)}/year × 4 years = ${formatCurrency(totalCost, 0)}</span>
+                    <span style="font-size: 11px; margin-left: 4px;">${statusText}</span>
+                    ${!expense.enabled ? '<span style="color: var(--danger-color); font-size: 11px; font-weight: 600;">DISABLED</span>' : ''}
+                </div>
+                <span style="font-size: 11px; color: var(--text-secondary);">✏️</span>
+            </div>
+        `;
+    }
+
+    html += `
+            </div>
+            <div style="margin-top: 8px; padding: 8px; background: var(--info-bg); border-radius: 4px; font-size: 11px; color: var(--info-color);">
+                <strong>ℹ️ Tip:</strong> College expenses are automatically calculated based on children in your profile. Typical ages: 18-21. Click to customize costs.
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+
+    // Setup event listeners
+    container.querySelectorAll('.college-expense-row').forEach(row => {
+        row.addEventListener('click', (e) => {
+            const index = parseInt(row.getAttribute('data-index'));
+            showCollegeExpenseModal(parentContainer, index);
+        });
+    });
+
+    // Sync button
+    const syncBtn = container.querySelector('#sync-children-btn');
+    if (syncBtn) {
+        syncBtn.addEventListener('click', () => {
+            budgetData.college_expenses = initializeCollegeExpenses(children);
+            renderCollegeExpensesSection(parentContainer);
+            renderBudgetSummary(parentContainer);
+        });
+    }
+}
+
+/**
+ * Show college expense editor modal
+ */
+function showCollegeExpenseModal(parentContainer, index) {
+    const expense = budgetData.college_expenses[index];
+
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    `;
+
+    modal.innerHTML = `
+        <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; max-width: 500px; width: 90%;">
+            <h2 style="margin: 0 0 15px 0; font-size: 18px;">Edit College Expense - ${expense.child_name}</h2>
+            <form id="college-expense-form">
+                <div style="margin-bottom: 10px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; margin-bottom: 8px;">
+                        <input type="checkbox" id="expense-enabled" ${expense.enabled ? 'checked' : ''}>
+                        <span style="font-weight: 600;">Include in expense calculations</span>
+                    </label>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">Annual College Cost</label>
+                    <input type="number" id="college-annual-cost" value="${expense.annual_cost}" min="0" step="1000" required
+                           style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 13px;">
+                    <small style="color: var(--text-secondary); font-size: 11px;">Total 4-year cost: ${formatCurrency(expense.annual_cost * 4, 0)}</small>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">Start Year</label>
+                        <input type="number" id="college-start-year" value="${expense.start_year}" min="2000" max="2100" required
+                               style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 13px;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">End Year</label>
+                        <input type="number" id="college-end-year" value="${expense.end_year}" min="2000" max="2100" required
+                               style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 13px;">
+                    </div>
+                </div>
+                <div style="background: var(--info-bg); padding: 8px; border-radius: 4px; margin-bottom: 15px; font-size: 11px; color: var(--info-color);">
+                    <strong>Note:</strong> College expenses are spread annually from ${expense.start_year} to ${expense.end_year}
+                </div>
+                <div style="display: flex; justify-content: space-between; gap: 8px;">
+                    <button type="button" id="delete-college-btn" style="padding: 6px 14px; background: var(--danger-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
+                        Delete
+                    </button>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" id="cancel-btn" style="padding: 6px 14px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 13px;">
+                            Cancel
+                        </button>
+                        <button type="submit" style="padding: 6px 14px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
+                            Update
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Update total cost display when annual cost changes
+    const annualCostInput = modal.querySelector('#college-annual-cost');
+    annualCostInput.addEventListener('input', (e) => {
+        const totalCost = parseFloat(e.target.value || 0) * 4;
+        const smallTag = modal.querySelector('small');
+        if (smallTag) {
+            smallTag.textContent = `Total 4-year cost: ${formatCurrency(totalCost, 0)}`;
+        }
+    });
+
+    // Event handlers
+    modal.querySelector('#cancel-btn').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+    // Delete button
+    modal.querySelector('#delete-college-btn').addEventListener('click', async () => {
+        if (confirm(`Remove college expense for ${expense.child_name}?`)) {
+            budgetData.college_expenses.splice(index, 1);
+            modal.remove();
+            renderCollegeExpensesSection(parentContainer);
+            renderBudgetSummary(parentContainer);
+
+            const profile = store.get('currentProfile');
+            if (profile) {
+                await saveBudget(profile, parentContainer);
+            }
+        }
+    });
+
+    modal.querySelector('#college-expense-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        budgetData.college_expenses[index] = {
+            ...expense,
+            annual_cost: parseFloat(modal.querySelector('#college-annual-cost').value),
+            start_year: parseInt(modal.querySelector('#college-start-year').value),
+            end_year: parseInt(modal.querySelector('#college-end-year').value),
+            enabled: modal.querySelector('#expense-enabled').checked
+        };
+
+        // Auto-save to backend
+        modal.remove();
+        renderCollegeExpensesSection(parentContainer);
+        renderBudgetSummary(parentContainer);
+
+        const profile = store.get('currentProfile');
+        if (profile) {
+            await saveBudget(profile, parentContainer);
+        }
+    });
 }
 
 /**
@@ -281,6 +539,7 @@ function calculateTotalExpenses(period, asOfDate = null) {
     let total = 0;
     const expenses = budgetData.expenses[period];
     const today = asOfDate || new Date();
+    const currentYear = today.getFullYear();
 
     const categories = ['housing', 'utilities', 'transportation', 'food', 'healthcare', 'insurance',
                        'travel', 'entertainment', 'dining_out', 'personal_care', 'clothing', 'gifts',
@@ -298,6 +557,17 @@ function calculateTotalExpenses(period, asOfDate = null) {
         const amount = cat.amount || 0;
         const frequency = cat.frequency || 'monthly';
         total += annualAmount(amount, frequency);
+    }
+
+    // Add college expenses for the current year
+    const collegeExpenses = budgetData.college_expenses || [];
+    for (const expense of collegeExpenses) {
+        if (!expense.enabled) continue;
+
+        // Check if this year is within the college period
+        if (currentYear >= expense.start_year && currentYear <= expense.end_year) {
+            total += expense.annual_cost;
+        }
     }
 
     return total;
