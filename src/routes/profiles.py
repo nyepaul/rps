@@ -396,33 +396,52 @@ def test_claude_api_key(api_key: str):
     try:
         import requests
 
-        response = requests.post(
-            'https://api.anthropic.com/v1/messages',
-            headers={
-                'x-api-key': api_key,
-                'anthropic-version': '2023-06-01',
-                'content-type': 'application/json'
-            },
-            json={
-                'model': 'claude-3-5-haiku-20241022',
-                'max_tokens': 10,
-                'messages': [{'role': 'user', 'content': 'Hi'}]
-            },
-            timeout=10
-        )
+        # Try latest Claude models
+        models_to_try = [
+            'claude-opus-4-5-20251101',      # Claude Opus 4.5 (Nov 2025) - most capable
+            'claude-sonnet-4-5-20250929',    # Claude Sonnet 4.5 (Sep 2025) - excellent balance
+            'claude-sonnet-4-20250514',      # Claude Sonnet 4 (May 2025) - fallback
+            'claude-sonnet-3-5-20241022',    # Claude Sonnet 3.5 (Oct 2024) - legacy fallback
+            'claude-3-5-haiku-20241022'      # Claude Haiku 3.5 (fastest, for quick tests)
+        ]
 
-        if response.status_code == 200:
-            return jsonify({
-                'success': True,
-                'message': 'Claude API key is valid',
-                'model': 'claude-3-5-haiku-20241022'
-            }), 200
-        else:
-            error_detail = response.json().get('error', {}).get('message', 'Unknown error')
-            return jsonify({
-                'success': False,
-                'error': f'API Error: {error_detail}'
-            }), 400
+        last_error = None
+        for model in models_to_try:
+            try:
+                response = requests.post(
+                    'https://api.anthropic.com/v1/messages',
+                    headers={
+                        'x-api-key': api_key,
+                        'anthropic-version': '2023-06-01',
+                        'content-type': 'application/json'
+                    },
+                    json={
+                        'model': model,
+                        'max_tokens': 10,
+                        'messages': [{'role': 'user', 'content': 'Hi'}]
+                    },
+                    timeout=10
+                )
+
+                if response.status_code == 200:
+                    return jsonify({
+                        'success': True,
+                        'message': f'Claude API key is valid (tested with {model})',
+                        'model': model
+                    }), 200
+                else:
+                    last_error = response.json().get('error', {}).get('message', 'Unknown error')
+                    # Try next model
+                    continue
+            except Exception as e:
+                last_error = str(e)
+                continue
+
+        # All models failed
+        return jsonify({
+            'success': False,
+            'error': f'API Error: {last_error or "All models failed"}'
+        }), 400
 
     except requests.Timeout:
         return jsonify({'success': False, 'error': 'Request timed out'}), 408

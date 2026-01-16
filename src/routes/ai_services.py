@@ -11,21 +11,26 @@ ai_services_bp = Blueprint('ai_services', __name__, url_prefix='/api')
 
 
 def call_gemini_with_fallback(prompt, api_key, image_data=None):
-    """Calls Gemini with a prioritized list of models and fallback logic."""
-    from google import genai
+    """Calls Gemini with a prioritized list of models and fallback logic using REST API."""
+    import requests
 
+    # Use full model resource names for v1 API - latest models first
     models = [
-        'gemini-2.0-flash-exp',
-        'gemini-1.5-flash',
-        'gemini-1.5-pro'
+        'models/gemini-3-flash-preview',         # Latest Gemini 3 Flash (Dec 2025) - balanced speed & intelligence
+        'models/gemini-2.5-pro',                 # Gemini 2.5 Pro - best reasoning for complex analysis
+        'models/gemini-2.5-flash',               # Gemini 2.5 Flash - stable production, best price-performance
+        'models/gemini-2.0-flash-exp',           # Gemini 2.0 experimental (fallback)
+        'models/gemini-1.5-flash-latest',        # Legacy stable 1.5 flash (fallback)
+        'models/gemini-1.5-pro-latest'           # Legacy stable 1.5 pro (fallback)
     ]
 
     last_error = None
-    client = genai.Client(api_key=api_key)
 
     for model_name in models:
         try:
             print(f"Attempting Gemini model: {model_name}")
+
+            # Build request based on whether we have image data
             if image_data:
                 # Image extraction case
                 if isinstance(image_data, str):
@@ -33,23 +38,67 @@ def call_gemini_with_fallback(prompt, api_key, image_data=None):
                 else:
                     image_bytes = image_data
 
-                # Create image for Gemini
-                image = Image.open(BytesIO(image_bytes))
-                response = client.models.generate_content(
-                    model=model_name,
-                    contents=[prompt, image]
-                )
-            else:
-                # Text generation case
-                response = client.models.generate_content(
-                    model=model_name,
-                    contents=prompt
-                )
+                # Convert image to base64 for API
+                image_b64 = base64.b64encode(image_bytes).decode('utf-8')
 
-            return response.text
+                # Determine MIME type
+                mime_type = 'image/png'
+                try:
+                    img = Image.open(BytesIO(image_bytes))
+                    if img.format == 'JPEG':
+                        mime_type = 'image/jpeg'
+                    elif img.format == 'PNG':
+                        mime_type = 'image/png'
+                    elif img.format == 'WEBP':
+                        mime_type = 'image/webp'
+                except:
+                    pass
+
+                payload = {
+                    'contents': [{
+                        'parts': [
+                            {'text': prompt},
+                            {
+                                'inline_data': {
+                                    'mime_type': mime_type,
+                                    'data': image_b64
+                                }
+                            }
+                        ]
+                    }]
+                }
+            else:
+                # Text-only case
+                payload = {
+                    'contents': [{
+                        'parts': [{'text': prompt}]
+                    }]
+                }
+
+            # Call Gemini REST API v1 (stable)
+            # Model name should already include 'models/' prefix in the path
+            url = f'https://generativelanguage.googleapis.com/v1/{model_name}:generateContent?key={api_key}'
+
+            response = requests.post(url, json=payload, timeout=60)
+
+            if response.status_code == 200:
+                result = response.json()
+                if 'candidates' in result and len(result['candidates']) > 0:
+                    text = result['candidates'][0]['content']['parts'][0]['text']
+                    print(f"Success with model: {model_name}")
+                    return text
+                else:
+                    raise Exception(f"No candidates in response: {result}")
+            else:
+                error_detail = response.json() if response.text else {'error': response.text}
+                raise Exception(f"{response.status_code} {error_detail}")
+
         except Exception as e:
             last_error = e
-            print(f"Model {model_name} failed: {str(e)}")
+            error_str = str(e)
+            print(f"Model {model_name} failed: {error_str}")
+
+            # Continue trying other models
             continue
 
     # If all models failed
@@ -72,18 +121,21 @@ def advisor_chat():
     if not profile_name or not user_message:
         return jsonify({'error': 'profile_name and message are required'}), 400
 
-    # Get API key
-    api_key = os.environ.get('GEMINI_API_KEY')
-    if not api_key:
-        return jsonify({
-            'error': 'Missing GEMINI_API_KEY environment variable. Please run ./bin/setup-api-keys'
-        }), 400
-
     try:
         # Get profile with ownership check
         profile = Profile.get_by_name(profile_name, current_user.id)
         if not profile:
             return jsonify({'error': 'Profile not found'}), 404
+
+        # Get API key from profile
+        data_dict = profile.data_dict
+        api_keys = data_dict.get('api_keys', {})
+        api_key = api_keys.get('gemini_api_key')
+
+        if not api_key:
+            return jsonify({
+                'error': 'Gemini API key not configured. Please configure in Settings.'
+            }), 400
 
         # Get conversation history
         history = Conversation.list_by_profile(current_user.id, profile.id)
@@ -146,11 +198,14 @@ def advisor_chat():
         # Add current user message
         contents.append(types.Content(role='user', parts=[types.Part(text=user_message)]))
 
-        # Try models with fallback for rate limits
+        # Try models with fallback for rate limits - latest models first
         models_to_try = [
-            'gemini-1.5-flash',          # Standard flash model (most reliable)
-            'gemini-1.5-pro',            # Higher quality
-            'gemini-2.0-flash-exp'       # Experimental (may hit limits first)
+            'models/gemini-3-flash-preview',         # Latest Gemini 3 Flash (Dec 2025) - balanced speed & intelligence
+            'models/gemini-2.5-pro',                 # Gemini 2.5 Pro - best reasoning for complex analysis
+            'models/gemini-2.5-flash',               # Gemini 2.5 Flash - stable production, best price-performance
+            'models/gemini-2.0-flash-exp',           # Gemini 2.0 experimental (fallback)
+            'models/gemini-1.5-flash-latest',        # Legacy stable 1.5 flash (fallback)
+            'models/gemini-1.5-pro-latest'           # Legacy stable 1.5 pro (fallback)
         ]
 
         last_error = None
@@ -232,6 +287,10 @@ def clear_advisor_history(profile_id: int):
     Conversation.delete_by_profile(current_user.id, profile_id)
     return jsonify({'message': 'History cleared'}), 200
 
+
+@ai_services_bp.route('/extract-assets', methods=['POST'])
+@login_required
+def extract_assets():
     """Extract assets from an uploaded image using AI."""
     print("Received extract-assets request")
 
@@ -239,22 +298,36 @@ def clear_advisor_history(profile_id: int):
     image_b64 = data.get('image')
     provider = data.get('llm_provider', 'gemini')
     existing_assets = data.get('existing_assets', [])
+    profile_name = data.get('profile_name')
 
     print(f"Provider: {provider}, Image data length: {len(image_b64) if image_b64 else 0}")
 
-    # Get API key from environment
-    if provider == 'gemini':
-        api_key = os.environ.get('GEMINI_API_KEY')
-    else:
-        api_key = os.environ.get('ANTHROPIC_API_KEY')
-
-    if not api_key:
-        return jsonify({
-            'error': f'Missing {provider.upper()}_API_KEY environment variable. Please run ./bin/setup-api-keys'
-        }), 400
-
     if not image_b64:
         return jsonify({'error': 'No image data provided'}), 400
+
+    if not profile_name:
+        return jsonify({'error': 'No profile_name provided'}), 400
+
+    # Get API key from profile
+    try:
+        profile = Profile.get_by_name(profile_name, current_user.id)
+        if not profile:
+            return jsonify({'error': 'Profile not found'}), 404
+
+        data_dict = profile.data_dict
+        api_keys = data_dict.get('api_keys', {})
+
+        if provider == 'gemini':
+            api_key = api_keys.get('gemini_api_key')
+            if not api_key:
+                return jsonify({'error': 'Gemini API key not configured. Please configure in Settings.'}), 400
+        else:
+            api_key = api_keys.get('claude_api_key')
+            if not api_key:
+                return jsonify({'error': 'Claude API key not configured. Please configure in Settings.'}), 400
+
+    except Exception as e:
+        return jsonify({'error': f'Error loading API key: {str(e)}'}), 500
 
     try:
         # Decode base64 image
@@ -331,10 +404,132 @@ def clear_advisor_history(profile_id: int):
                     'raw_response': text_response[:500]
                 }), 500
         else:
-            # Claude support (future)
+            # Claude support with vision models
+            import requests
+
+            # Latest Claude models with vision support
+            claude_models = [
+                'claude-opus-4-5-20251101',      # Claude Opus 4.5 (Nov 2025) - most capable, best for complex analysis
+                'claude-sonnet-4-5-20250929',    # Claude Sonnet 4.5 (Sep 2025) - excellent balance of speed & quality
+                'claude-sonnet-4-20250514',      # Claude Sonnet 4 (May 2025) - fallback
+                'claude-sonnet-3-5-20241022'     # Claude Sonnet 3.5 (Oct 2024) - legacy fallback
+            ]
+
+            last_error = None
+            for model in claude_models:
+                try:
+                    print(f"Attempting Claude model: {model}")
+
+                    # Convert image to base64 if needed
+                    if isinstance(image_bytes, bytes):
+                        image_b64 = base64.b64encode(image_bytes).decode('utf-8')
+                    else:
+                        image_b64 = image_bytes
+
+                    # Determine MIME type
+                    mime_type = 'image/png'
+                    try:
+                        img = Image.open(BytesIO(base64.b64decode(image_b64)))
+                        if img.format == 'JPEG':
+                            mime_type = 'image/jpeg'
+                        elif img.format == 'PNG':
+                            mime_type = 'image/png'
+                        elif img.format == 'WEBP':
+                            mime_type = 'image/webp'
+                    except:
+                        pass
+
+                    response = requests.post(
+                        'https://api.anthropic.com/v1/messages',
+                        headers={
+                            'x-api-key': api_key,
+                            'anthropic-version': '2023-06-01',
+                            'content-type': 'application/json'
+                        },
+                        json={
+                            'model': model,
+                            'max_tokens': 4096,
+                            'messages': [{
+                                'role': 'user',
+                                'content': [
+                                    {
+                                        'type': 'image',
+                                        'source': {
+                                            'type': 'base64',
+                                            'media_type': mime_type,
+                                            'data': image_b64
+                                        }
+                                    },
+                                    {
+                                        'type': 'text',
+                                        'text': prompt
+                                    }
+                                ]
+                            }]
+                        },
+                        timeout=60
+                    )
+
+                    if response.status_code == 200:
+                        result = response.json()
+                        text_response = result['content'][0]['text']
+                        print(f"Success with Claude model: {model}")
+
+                        # Parse JSON response (same as Gemini)
+                        try:
+                            json_str = text_response.replace('```json', '').replace('```', '').strip()
+                            extracted_assets = json.loads(json_str)
+
+                            # Merge with existing assets (same logic as Gemini)
+                            merged_assets = []
+                            for extracted in extracted_assets:
+                                existing = next(
+                                    (a for a in existing_assets if a.get('name', '').lower() == extracted.get('name', '').lower()),
+                                    None
+                                )
+
+                                if existing:
+                                    merged = {
+                                        'name': extracted.get('name') or existing.get('name'),
+                                        'type': extracted.get('type') or existing.get('type', 'brokerage'),
+                                        'value': extracted.get('value') if extracted.get('value') is not None else existing.get('value', 0),
+                                        'cost_basis': extracted.get('cost_basis') if extracted.get('cost_basis') is not None else existing.get('cost_basis', 0),
+                                        'institution': extracted.get('institution') or existing.get('institution', '')
+                                    }
+                                else:
+                                    merged = {
+                                        'name': extracted.get('name', 'Unknown Asset'),
+                                        'type': extracted.get('type') or 'brokerage',
+                                        'value': extracted.get('value', 0),
+                                        'cost_basis': extracted.get('cost_basis', 0),
+                                        'institution': extracted.get('institution', '')
+                                    }
+
+                                merged_assets.append(merged)
+
+                            return jsonify({
+                                'assets': merged_assets,
+                                'status': 'success'
+                            }), 200
+
+                        except json.JSONDecodeError as e:
+                            return jsonify({
+                                'error': f'Failed to parse AI response as JSON: {str(e)}',
+                                'raw_response': text_response[:500]
+                            }), 500
+                    else:
+                        error_detail = response.json() if response.text else {'error': response.text}
+                        raise Exception(f"{response.status_code} {error_detail}")
+
+                except Exception as e:
+                    last_error = e
+                    print(f"Claude model {model} failed: {str(e)}")
+                    continue
+
+            # All Claude models failed
             return jsonify({
-                'error': 'Only Gemini is currently supported for image extraction. Set GEMINI_API_KEY.'
-            }), 400
+                'error': f'All Claude models failed. Last error: {str(last_error)}'
+            }), 500
 
     except Exception as e:
         print(f"Extract assets error: {str(e)}")

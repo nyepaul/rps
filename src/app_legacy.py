@@ -54,9 +54,11 @@ os.makedirs(BACKUP_DIR, exist_ok=True)
 def call_gemini_with_fallback(prompt, api_key, image_data=None):
     """Calls Gemini with a prioritized list of models and fallback logic."""
     models = [
-        'gemini-2.0-flash-exp',
-        'gemini-1.5-flash',
-        'gemini-1.5-pro'
+        'gemini-3-flash-preview',    # Latest Gemini 3 Flash (Dec 2025)
+        'gemini-2.5-pro',             # Gemini 2.5 Pro - best reasoning
+        'gemini-2.5-flash',           # Gemini 2.5 Flash - stable production
+        'gemini-2.0-flash-exp',       # Legacy fallback
+        'gemini-1.5-flash'            # Legacy fallback
     ]
     last_error = None
     client = genai.Client(api_key=api_key)
@@ -94,9 +96,10 @@ def call_gemini_with_fallback(prompt, api_key, image_data=None):
 def call_claude_with_fallback(prompt, api_key, system_prompt=None, history=None):
     """Calls Claude with a prioritized list of models and fallback logic."""
     models = [
-        'claude-3-5-sonnet-latest',
-        'claude-3-5-haiku-latest',
-        'claude-3-opus-latest'
+        'claude-opus-4-5-20251101',      # Claude Opus 4.5 (Nov 2025) - most capable
+        'claude-sonnet-4-5-20250929',    # Claude Sonnet 4.5 (Sep 2025) - excellent balance
+        'claude-sonnet-4-20250514',      # Claude Sonnet 4 (May 2025) - fallback
+        'claude-sonnet-3-5-20241022'     # Claude Sonnet 3.5 (Oct 2024) - legacy fallback
     ]
     last_error = None
     client = anthropic.Anthropic(api_key=api_key)
