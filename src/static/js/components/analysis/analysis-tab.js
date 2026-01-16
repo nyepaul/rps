@@ -57,7 +57,17 @@ export function renderAnalysisTab(container) {
 
             <!-- Analysis Configuration -->
             <div class="analysis-panel">
-                <h2 style="font-size: 24px; margin: 0 0 20px 0;">Monte Carlo Simulation</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="font-size: 24px; margin: 0;">Monte Carlo Simulation</h2>
+                    
+                    <!-- Scenario Loader -->
+                    <div id="scenario-loader-container" style="display: flex; gap: 10px; align-items: center;">
+                        <span style="font-size: 13px; color: var(--text-secondary); font-weight: 600;">Load Saved:</span>
+                        <select id="saved-scenario-select" style="padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); font-size: 13px; min-width: 200px;">
+                            <option value="">-- Select Scenario --</option>
+                        </select>
+                    </div>
+                </div>
 
                 <!-- Market Assumptions Selector -->
                 <div style="margin-bottom: 25px;">
@@ -192,6 +202,88 @@ export function renderAnalysisTab(container) {
 
     // Set up event handlers
     setupAnalysisHandlers(container, profile);
+    setupScenarioLoader(container, profile);
+}
+
+import { scenariosAPI } from '../../api/scenarios.js';
+
+async function setupScenarioLoader(container, profile) {
+    const selector = container.querySelector('#saved-scenario-select');
+    if (!selector) return;
+
+    try {
+        const response = await scenariosAPI.list();
+        const scenarios = response.scenarios || [];
+        
+        // Filter scenarios for this profile (optional, but cleaner)
+        const profileScenarios = scenarios.filter(s => s.profile_name === profile.name || !s.profile_name);
+
+        if (profileScenarios.length === 0) {
+            selector.innerHTML = '<option value="">No saved scenarios</option>';
+            selector.disabled = true;
+            return;
+        }
+
+        profileScenarios.forEach(scenario => {
+            const option = document.createElement('option');
+            option.value = scenario.id;
+            option.textContent = scenario.name;
+            selector.appendChild(option);
+        });
+
+        selector.addEventListener('change', async () => {
+            const scenarioId = selector.value;
+            if (!scenarioId) return;
+
+            try {
+                showLoading(container.querySelector('#results-container'), 'Restoring scenario data...');
+                
+                const res = await scenariosAPI.get(scenarioId);
+                const scenario = res.scenario;
+
+                if (!scenario) throw new Error('Scenario not found');
+
+                // 1. Update UI Inputs from parameters
+                if (scenario.parameters) {
+                    const params = scenario.parameters;
+                    
+                    // Update Simulations
+                    if (params.simulations) {
+                        const simSelect = container.querySelector('#simulations-select');
+                        if (simSelect) simSelect.value = params.simulations;
+                        localStorage.setItem('rps_simulations', params.simulations);
+                    }
+
+                    // Update Market Profile if saved in name or params
+                    // (Realistically we'd need to save the key in params, for now we just show the results)
+                }
+
+                // 2. Display the saved results immediately
+                if (scenario.results) {
+                    lastAnalysisResult = scenario.results;
+                    lastSimulations = scenario.parameters?.simulations || 10000;
+                    
+                    const resultsContainer = container.querySelector('#results-container');
+                    
+                    // Check if it's a multi-scenario (v2) or single (v1)
+                    if (scenario.results.scenarios) {
+                        displayMultiScenarioResults(resultsContainer, scenario.results, profile, lastSimulations);
+                    } else {
+                        displaySingleScenarioResults(resultsContainer, scenario.results, profile, lastSimulations);
+                    }
+                    
+                    showSuccess(`Loaded scenario: ${scenario.name}`);
+                }
+
+            } catch (err) {
+                console.error(err);
+                showErrorInContainer(container.querySelector('#results-container'), `Failed to load scenario: ${err.message}`);
+            }
+        });
+
+    } catch (error) {
+        console.error('Error fetching scenarios:', error);
+    }
 }
 
 function setupAnalysisHandlers(container, profile) {

@@ -87,7 +87,9 @@ function renderComparisonView(container, profile, scenarios) {
                                     <input type="checkbox" id="select-all-scenarios" title="Select all for comparison">
                                 </th>
                                 <th style="padding: 16px; text-align: left; font-weight: 600; font-size: 13px; color: var(--text-secondary);">SCENARIO</th>
-                                <th style="padding: 16px; text-align: center; font-weight: 600; font-size: 13px; color: var(--text-secondary);">SUCCESS RATE</th>
+                                <th style="padding: 16px; text-align: center; font-weight: 600; font-size: 13px; color: var(--text-secondary);" title="The statistical probability that your portfolio remains above zero through the end of retirement (based on 10,000+ Monte Carlo trials).">
+                                    SUCCESS RATE ⓘ
+                                </th>
                                 <th style="padding: 16px; text-align: right; font-weight: 600; font-size: 13px; color: var(--text-secondary);">MEDIAN ENDING</th>
                                 <th style="padding: 16px; text-align: right; font-weight: 600; font-size: 13px; color: var(--text-secondary);">5TH PERCENTILE</th>
                                 <th style="padding: 16px; text-align: right; font-weight: 600; font-size: 13px; color: var(--text-secondary);">95TH PERCENTILE</th>
@@ -158,17 +160,16 @@ function renderScenarioRow(scenario) {
     const results = scenario.results || {};
     const isMultiScenario = results.scenarios && Object.keys(results.scenarios).length > 0;
 
-    let successRate, medianEnding, p5, p95, simulations, successClass, successLabel;
+    let successRate, medianEnding, p5, p95, simulations;
 
     if (isMultiScenario) {
-        // For multi-scenarios, we can show stats for the 'moderate' case or an average
+        // For multi-scenarios, show stats for the 'moderate' case as the representative baseline
         const moderateScenario = results.scenarios.moderate || Object.values(results.scenarios)[0];
         successRate = moderateScenario.success_rate || 0;
         medianEnding = moderateScenario.median_final_balance || 0;
         p5 = moderateScenario.percentile_10 || moderateScenario.percentile_5 || 0;
         p95 = moderateScenario.percentile_90 || moderateScenario.percentile_95 || 0;
         simulations = results.simulations || scenario.parameters?.simulations || 10000;
-        successLabel = 'Multi-Scenario';
     } else {
         successRate = results.success_rate || 0;
         medianEnding = results.median_final_balance || 0;
@@ -177,19 +178,15 @@ function renderScenarioRow(scenario) {
         simulations = results.simulations || scenario.parameters?.simulations || 10000;
     }
 
-    if (!isMultiScenario) {
-        if (successRate >= 0.9) {
-            successClass = 'success-excellent';
-            successLabel = 'Excellent';
-        } else if (successRate >= 0.75) {
-            successClass = 'success-good';
-            successLabel = 'Good';
-        } else {
-            successClass = 'success-poor';
-            successLabel = 'Poor';
-        }
-    } else {
-        successClass = 'success-info'; // A neutral color for multi-scenario
+    // Determine status class and label based on success rate
+    let successClass = 'success-poor';
+    let successStatus = 'Needs Attention';
+    if (successRate >= 0.9) {
+        successClass = 'success-excellent';
+        successStatus = 'Excellent';
+    } else if (successRate >= 0.75) {
+        successClass = 'success-good';
+        successStatus = 'Good';
     }
 
     return `
@@ -200,12 +197,12 @@ function renderScenarioRow(scenario) {
             <td style="padding: 16px;">
                 <div style="font-weight: 600; color: var(--text-primary);">${scenario.name}</div>
                 <div style="font-size: 12px; color: var(--text-secondary);">
-                    ${isMultiScenario ? 'Multiple allocations' : `${simulations.toLocaleString()} simulations`}
+                    ${isMultiScenario ? 'Multiple allocations (showing Moderate)' : `${simulations.toLocaleString()} simulations`}
                 </div>
             </td>
             <td style="padding: 16px; text-align: center;">
-                <span class="success-badge ${successClass}">
-                    ${isMultiScenario ? successLabel : formatPercent(successRate, 0)}
+                <span class="success-badge ${successClass}" title="${successStatus}${isMultiScenario ? ' - Baseline Moderate Case' : ''}">
+                    ${formatPercent(successRate, 0)}
                 </span>
             </td>
             <td style="padding: 16px; text-align: right; font-weight: 500;">
