@@ -342,7 +342,19 @@ function setupActionsHandlers(container, profile) {
                 loadActionItems(container, profile);
             } catch (error) {
                 console.error('Error generating action items:', error);
-                showError('Failed to generate recommendations.');
+                const errorMsg = error.message || 'Failed to generate recommendations.';
+
+                // Check if this is an API key error
+                if (errorMsg.includes('API_KEY') || errorMsg.includes('api-keys') || errorMsg.includes('setup-api-keys')) {
+                    showError(errorMsg + ' Opening API settings...');
+                    setTimeout(() => {
+                        if (window.app && window.app.openSettings) {
+                            window.app.openSettings('api-keys');
+                        }
+                    }, 800);
+                } else {
+                    showError(errorMsg);
+                }
             } finally {
                 generateBtn.innerHTML = '💡 Generate Recommendations';
                 generateBtn.disabled = false;

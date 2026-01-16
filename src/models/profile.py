@@ -17,12 +17,29 @@ class Profile:
         self.name = name
         self.birth_date = birth_date
         self.retirement_date = retirement_date
-        self.data = data  # Encrypted ciphertext (base64)
+        self._data = data  # Encrypted ciphertext (base64)
         self.data_iv = data_iv  # Initialization vector (base64)
         self._decrypted_data = None  # Cache for decrypted data
         self.updated_at = updated_at or datetime.now().isoformat()
         self.created_at = created_at or datetime.now().isoformat()
-    
+
+    @property
+    def data(self):
+        """Get encrypted data (for backward compatibility)."""
+        return self._data
+
+    @data.setter
+    def data(self, value):
+        """Set data - can be dict or encrypted string."""
+        if isinstance(value, dict):
+            # Cache dict for encryption on save
+            self._decrypted_data = value
+            self._data = None
+        else:
+            # Already encrypted
+            self._data = value
+            self._decrypted_data = None
+
     @property
     def data_dict(self):
         """Get data as dictionary (decrypts if encrypted)."""
@@ -30,24 +47,24 @@ class Profile:
         if self._decrypted_data is not None:
             return self._decrypted_data
 
-        # If we have both data and data_iv, it's encrypted
-        if self.data and self.data_iv:
+        # If we have both _data and data_iv, it's encrypted
+        if self._data and self.data_iv:
             try:
-                self._decrypted_data = decrypt_dict(self.data, self.data_iv)
+                self._decrypted_data = decrypt_dict(self._data, self.data_iv)
                 return self._decrypted_data or {}
             except Exception:
                 # Decryption failed, might be plain JSON (for backward compatibility)
                 pass
 
         # Fallback: treat as plain JSON
-        if isinstance(self.data, str):
+        if isinstance(self._data, str):
             try:
-                self._decrypted_data = json.loads(self.data)
+                self._decrypted_data = json.loads(self._data)
                 return self._decrypted_data
             except json.JSONDecodeError:
                 return {}
 
-        return self.data or {}
+        return self._data or {}
 
     @data_dict.setter
     def data_dict(self, value):
@@ -81,10 +98,14 @@ class Profile:
     def list_by_user(user_id: int):
         """List all profiles for a user."""
         rows = db.execute(
-            'SELECT id, name, updated_at FROM profile WHERE user_id = ? ORDER BY updated_at DESC',
+            'SELECT * FROM profile WHERE user_id = ? ORDER BY updated_at DESC',
             (user_id,)
         )
-        return [dict(row) for row in rows]
+        profiles = []
+        for row in rows:
+            profile = Profile(**dict(row))
+            profiles.append(profile.to_dict())
+        return profiles
     
     def save(self):
         """Save or update profile (encrypts data and logs action)."""
@@ -96,12 +117,12 @@ class Profile:
             # Encrypt data if we have decrypted data cached
             if self._decrypted_data is not None:
                 encrypted_data, data_iv = encrypt_dict(self._decrypted_data)
-                self.data = encrypted_data
+                self._data = encrypted_data
                 self.data_iv = data_iv
-            elif isinstance(self.data, dict):
+            elif isinstance(self._data, dict):
                 # Data is a plain dict, encrypt it
-                encrypted_data, data_iv = encrypt_dict(self.data)
-                self.data = encrypted_data
+                encrypted_data, data_iv = encrypt_dict(self._data)
+                self._data = encrypted_data
                 self.data_iv = data_iv
             # Otherwise, data is already encrypted (or plain JSON from old records)
 
@@ -111,7 +132,7 @@ class Profile:
                     INSERT INTO profile (user_id, name, birth_date, retirement_date, data, data_iv, created_at, updated_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (self.user_id, self.name, self.birth_date, self.retirement_date,
-                      self.data, self.data_iv, self.created_at, self.updated_at))
+                      self._data, self.data_iv, self.created_at, self.updated_at))
                 self.id = cursor.lastrowid
                 # Log creation
                 log_create('profile', self.id, self.user_id, f'Created profile: {self.name}')
@@ -121,7 +142,7 @@ class Profile:
                     UPDATE profile
                     SET name = ?, birth_date = ?, retirement_date = ?, data = ?, data_iv = ?, updated_at = ?
                     WHERE id = ? AND user_id = ?
-                ''', (self.name, self.birth_date, self.retirement_date, self.data, self.data_iv,
+                ''', (self.name, self.birth_date, self.retirement_date, self._data, self.data_iv,
                       datetime.now().isoformat(), self.id, self.user_id))
                 # Log update
                 log_update('profile', self.id, self.user_id, f'Updated profile: {self.name}')

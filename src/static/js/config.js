@@ -339,7 +339,8 @@ export const STORAGE_KEYS = {
     CURRENT_PROFILE: 'current_profile',
     DEFAULT_PROFILE: 'default_profile',
     THEME: 'theme_preference',
-    COMPACT_MODE: 'compact_mode',
+    COMPACT_MODE: 'compact_mode', // Legacy - kept for backwards compatibility
+    DISPLAY_DENSITY: 'display_density', // New: 'compact', 'normal', or 'comfortable'
     LAST_TAB: 'last_active_tab',
     USER_SETTINGS: 'user_settings',
     SIMULATIONS: 'rps_simulations',
