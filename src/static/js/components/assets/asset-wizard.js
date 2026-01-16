@@ -124,6 +124,7 @@ export function showAssetWizard(preselectedCategory = null, existingAsset = null
         category: preselectedCategory || (existingAsset ? getCategoryForAsset(existingAsset, assets) : null),
         assetData: existingAsset ? { ...existingAsset } : {},
         assetIndex: assetIndex,
+        isEditing: isEditing,  // Store edit mode state
         // Multi-select support
         selectedTypes: [],  // Array of {type, category} for multi-add
         currentTypeIndex: 0, // Which selected type we're editing
@@ -346,8 +347,8 @@ function renderStep2AssetForm(state) {
                 </div>
             </div>
             <form id="asset-form" style="display: grid; gap: 20px;">
-                <input type="hidden" name="type" value="${state.assetData.type}">
-                ${generateFormFields(state.category, state.assetData, true)}
+                ${state.isEditing ? '' : `<input type="hidden" name="type" value="${state.assetData.type}">`}
+                ${generateFormFields(state.category, state.assetData, !state.isEditing)}
             </form>
         </div>
     `;
@@ -495,6 +496,24 @@ function setupWizardHandlers(wizard, state, assets, onSave, modal, isEditing) {
             }
         });
     });
+
+    // Type dropdown change handler (for edit mode)
+    const typeSelect = wizard.querySelector('select[name="type"]');
+    if (typeSelect) {
+        typeSelect.addEventListener('change', (e) => {
+            // Save current form data before re-rendering
+            const form = wizard.querySelector('#asset-form');
+            if (form) {
+                const formData = extractFormData(form, state.category);
+                state.assetData = {
+                    ...state.assetData,
+                    ...formData
+                };
+            }
+            // Re-render to show/hide fields based on new type
+            renderWizardStep(wizard, state, assets, onSave, modal, isEditing);
+        });
+    }
 
     // Cancel button
     const cancelBtn = wizard.querySelector('#cancel-btn');
