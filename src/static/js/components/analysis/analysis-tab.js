@@ -452,12 +452,32 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
     if (successRate >= 0.9) successClass = 'stat-success';
     else if (successRate >= 0.75) successClass = 'stat-warning';
 
+    // Get the analysis result data (might be wrapped in lastAnalysisResult)
+    const totalAssets = lastAnalysisResult?.total_assets || data.total_assets || 0;
+    const yearsProjected = lastAnalysisResult?.years_projected || data.years_projected || 0;
+
     container.innerHTML = `
         <div class="result-card">
             <h2 style="font-size: 24px; margin-bottom: 10px;">Simulation Results</h2>
             <p style="color: var(--text-secondary); margin-bottom: 20px;">
                 Based on ${(data.simulations || simulations || 10000).toLocaleString()} Monte Carlo simulations
             </p>
+            ${totalAssets > 0 ? `
+                <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--accent-color);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Starting Portfolio Balance</div>
+                            <div style="font-size: 28px; font-weight: bold; color: var(--accent-color);">${formatCurrency(totalAssets, 0)}</div>
+                        </div>
+                        ${yearsProjected > 0 ? `
+                            <div>
+                                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Years Projected</div>
+                                <div style="font-size: 28px; font-weight: bold; color: var(--text-primary);">${yearsProjected}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            ` : ''}
 
             <div class="stat-grid">
                 <div class="stat-item" title="% of trials that didn't run out of cash">
@@ -588,9 +608,22 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
         <div class="result-card">
             <h2 style="font-size: 24px; margin-bottom: 10px;">Multi-Scenario Analysis</h2>
             <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                Based on ${(data.simulations || simulations).toLocaleString()} Monte Carlo simulations per scenario<br>
-                Total Assets: <strong>${formatCurrency(data.total_assets || 0, 0)}</strong> projected over <strong>${data.years_projected}</strong> years
+                Based on ${(data.simulations || simulations).toLocaleString()} Monte Carlo simulations per scenario
             </p>
+
+            <!-- Starting Balance Highlight -->
+            <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--accent-color);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                    <div>
+                        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Starting Portfolio Balance</div>
+                        <div style="font-size: 28px; font-weight: bold; color: var(--accent-color);">${formatCurrency(data.total_assets || 0, 0)}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Years Projected</div>
+                        <div style="font-size: 28px; font-weight: bold; color: var(--text-primary);">${data.years_projected}</div>
+                    </div>
+                </div>
+            </div>
 
             <!-- Scenario Tabs -->
             <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">
