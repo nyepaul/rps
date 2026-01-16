@@ -49,12 +49,7 @@ export function renderStandardTimelineChart(timeline, canvasOrId, existingInstan
     const accentColor = style.getPropertyValue('--accent-color').trim() || '#3498db';
     const textSecondary = style.getPropertyValue('--text-secondary').trim() || '#666';
 
-    // 3. Setup milestones (0, 5, 10, 15, 20, 30, 40 years)
-    const milestones = [0, 5, 10, 15, 20, 30, 40];
-    const pointRadii = (timeline.years || []).map((_, index) => milestones.includes(index) ? 6 : 0);
-    const pointHoverRadii = (timeline.years || []).map((_, index) => milestones.includes(index) ? 8 : 4);
-
-    // 4. Handle Multi-Scenario vs Single
+    // 3. Handle Multi-Scenario vs Single
     // If timeline is from a multi-scenario result, it might be nested
     const years = timeline.years || [];
     const p95 = timeline.p95 || [];
@@ -91,11 +86,8 @@ export function renderStandardTimelineChart(timeline, canvasOrId, existingInstan
                     backgroundColor: 'transparent',
                     borderWidth: 3,
                     tension: 0.3,
-                    pointRadius: pointRadii,
-                    pointHoverRadius: pointHoverRadii,
-                    pointBackgroundColor: accentColor,
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2
+                    pointRadius: 0,
+                    pointHoverRadius: 4
                 },
                 {
                     label: '5th Percentile (Conservative)',
@@ -147,33 +139,7 @@ export function renderStandardTimelineChart(timeline, canvasOrId, existingInstan
                     title: { display: true, text: 'Year', color: textSecondary }
                 }
             }
-        },
-        plugins: [{
-            id: 'milestoneLabels',
-            afterDatasetsDraw(chart) {
-                const {ctx, data} = chart;
-                const dataset = data.datasets[1]; // Median
-                
-                ctx.save();
-                ctx.font = 'bold 11px sans-serif';
-                ctx.textAlign = 'center';
-                
-                milestones.forEach(index => {
-                    const meta = chart.getDatasetMeta(1);
-                    const point = meta.data[index];
-                    
-                    if (point && !point.skip) {
-                        const val = formatCurrency(dataset.data[index], 0);
-                        const textWidth = ctx.measureText(val).width;
-                        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                        ctx.fillRect(point.x - (textWidth/2) - 4, point.y - 28, textWidth + 8, 16);
-                        ctx.fillStyle = accentColor;
-                        ctx.fillText(val, point.x, point.y - 16);
-                    }
-                });
-                ctx.restore();
-            }
-        }]
+        }
     });
 
     if (existingInstances) {
