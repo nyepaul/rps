@@ -116,7 +116,7 @@ def advisor_chat():
         Provide professional, clear, and actionable advice. Always include a disclaimer that you are an AI and the user should consult with a human professional for final decisions.
         """
 
-        # Call Gemini
+        # Call Gemini with fallback models
         from google import genai
         from google.genai import types
 
@@ -146,15 +146,46 @@ def advisor_chat():
         # Add current user message
         contents.append(types.Content(role='user', parts=[types.Part(text=user_message)]))
 
-        # Generate response
-        response = client.models.generate_content(
-            model='gemini-2.0-flash-exp',
-            contents=contents,
-            config=types.GenerateContentConfig(
-                system_instruction=system_prompt,
-                temperature=0.7
-            )
-        )
+        # Try models with fallback for rate limits
+        models_to_try = [
+            'gemini-1.5-flash-8b',      # Fastest, most available
+            'gemini-1.5-flash',          # Standard flash model
+            'gemini-1.5-pro',            # Higher quality
+            'gemini-2.0-flash-exp'       # Experimental (may hit limits)
+        ]
+
+        last_error = None
+        response = None
+
+        for model_name in models_to_try:
+            try:
+                print(f"Attempting Gemini model: {model_name}")
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=contents,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_prompt,
+                        temperature=0.7
+                    )
+                )
+                print(f"Success with model: {model_name}")
+                break  # Success, exit loop
+            except Exception as e:
+                error_str = str(e)
+                print(f"Model {model_name} failed: {error_str}")
+                last_error = e
+
+                # If it's a rate limit error, try next model immediately
+                if '429' in error_str or 'RESOURCE_EXHAUSTED' in error_str or 'quota' in error_str.lower():
+                    print(f"Rate limit hit for {model_name}, trying next model...")
+                    continue
+                else:
+                    # For other errors, re-raise immediately
+                    raise e
+
+        if response is None:
+            # All models failed
+            raise Exception(f"All Gemini models failed or rate limited. Last error: {str(last_error)}")
         
         assistant_text = response.text
 
