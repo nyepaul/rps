@@ -112,20 +112,16 @@ def advisor_chat():
 
         system_prompt = f"""You are an expert financial advisor specializing in retirement planning, tax optimization, and estate planning.
         {context}
-        
+
         Provide professional, clear, and actionable advice. Always include a disclaimer that you are an AI and the user should consult with a human professional for final decisions.
         """
 
-        # Format history for Gemini
-        gemini_history = []
-        for msg in history:
-            role = 'user' if msg.role == 'user' else 'model'
-            gemini_history.append({'role': role, 'parts': [msg.to_dict()['content']]})
-
         # Call Gemini
         from google import genai
+        from google.genai import types
+
         client = genai.Client(api_key=api_key)
-        
+
         # Save user message
         user_msg = Conversation(
             user_id=current_user.id,
@@ -135,11 +131,29 @@ def advisor_chat():
         )
         user_msg.save()
 
+        # Format history for Gemini using proper Content objects
+        contents = []
+        try:
+            for msg in history:
+                role = 'user' if msg.role == 'user' else 'model'
+                msg_content = msg.to_dict().get('content', '')
+                if msg_content:  # Only add non-empty messages
+                    contents.append(types.Content(role=role, parts=[types.Part(text=msg_content)]))
+        except Exception as e:
+            print(f"Warning: Error loading conversation history: {e}. Starting fresh conversation.")
+            contents = []
+
+        # Add current user message
+        contents.append(types.Content(role='user', parts=[types.Part(text=user_message)]))
+
         # Generate response
         response = client.models.generate_content(
             model='gemini-2.0-flash-exp',
-            contents=gemini_history + [{'role': 'user', 'parts': [user_message]}],
-            config={'system_instruction': system_prompt}
+            contents=contents,
+            config=types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                temperature=0.7
+            )
         )
         
         assistant_text = response.text
