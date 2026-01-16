@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+"""
+Create the permanent admin account.
+
+Creates user "admin" with admin privileges.
+"""
+
+import sys
+import os
+
+# Add parent directory and src to path
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, parent_dir)
+sys.path.insert(0, os.path.join(parent_dir, 'src'))
+
+from src.auth.models import User
+from src.services.encryption_service import EncryptionService
+import base64
+
+
+def main():
+    username = "admin"
+    email = "admin@retirement-planning.local"
+    password = "***REMOVED***"
+
+    print("=" * 60)
+    print("Creating Permanent Admin Account")
+    print("=" * 60)
+    print()
+
+    # Check if admin user already exists
+    existing_user = User.get_by_username(username)
+
+    if existing_user:
+        print(f"ℹ️  User 'admin' already exists (ID: {existing_user.id})")
+        print()
+
+        # Update to ensure admin privileges
+        if not existing_user.is_admin:
+            print("Promoting existing user to admin...")
+            existing_user._is_admin = True
+            existing_user.save()
+            print("✅ Existing user promoted to admin")
+        else:
+            print("✅ User already has admin privileges")
+
+        print()
+        print("User details:")
+        print(f"  ID: {existing_user.id}")
+        print(f"  Username: {existing_user.username}")
+        print(f"  Email: {existing_user.email}")
+        print(f"  Is Admin: {existing_user.is_admin}")
+        print(f"  Is Active: {existing_user.is_active}")
+        print(f"  Created: {existing_user.created_at}")
+        return
+
+    # Generate user-specific encryption key (DEK)
+    dek = EncryptionService.generate_dek()
+    kek = EncryptionService.get_kek_from_password(password)
+
+    # Encrypt DEK with KEK derived from password
+    temp_service = EncryptionService(key=kek)
+    encrypted_dek, dek_iv = temp_service.encrypt(base64.b64encode(dek).decode('utf-8'))
+
+    # Create admin user
+    user = User(
+        id=None,
+        username=username,
+        email=email,
+        password_hash=User.hash_password(password),
+        is_active=True,
+        is_admin=True,  # Admin from creation
+        encrypted_dek=encrypted_dek,
+        dek_iv=dek_iv
+    )
+
+    user.save()
+
+    print(f"✅ Admin account created successfully!")
+    print()
+    print("Account details:")
+    print(f"  Username: {username}")
+    print(f"  Password: {password}")
+    print(f"  Email: {email}")
+    print(f"  User ID: {user.id}")
+    print(f"  Is Admin: {user.is_admin}")
+    print()
+    print("=" * 60)
+    print("You can now login with these credentials")
+    print("=" * 60)
+
+
+if __name__ == '__main__':
+    main()

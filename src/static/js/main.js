@@ -70,6 +70,14 @@ async function checkAuth() {
         if (data.authenticated) {
             store.setState({ currentUser: data.user });
             console.log('✅ User authenticated:', data.user.username);
+
+            // Show admin tab if user is admin
+            if (data.user.is_admin) {
+                const adminTab = document.querySelector('.admin-only-tab');
+                if (adminTab) {
+                    adminTab.style.display = 'inline-block';
+                }
+            }
         } else {
             // Redirect to login if not authenticated
             window.location.href = '/login';
@@ -173,6 +181,11 @@ async function loadTabComponent(tabName, container) {
             renderAssetsTab(tabContent);
             break;
         }
+        case 'income': {
+            const { renderIncomeTab } = await import('./components/income/income-tab.js');
+            renderIncomeTab(tabContent);
+            break;
+        }
         case 'budget': {
             const { renderBudgetTab } = await import('./components/budget/budget-tab.js');
             renderBudgetTab(tabContent);
@@ -213,6 +226,11 @@ async function loadTabComponent(tabName, container) {
             renderLearnTab(tabContent);
             break;
         }
+        case 'admin': {
+            const { renderAdminTab } = await import('./components/admin/admin-tab.js');
+            renderAdminTab(tabContent);
+            break;
+        }
         default:
             throw new Error(`Unknown tab: ${tabName}`);
     }
@@ -235,7 +253,7 @@ function setupSettings() {
 /**
  * Open settings modal
  */
-function openSettings() {
+async function openSettings() {
     const currentSimulations = localStorage.getItem(STORAGE_KEYS.SIMULATIONS) || APP_CONFIG.DEFAULT_SIMULATIONS;
     const currentMarketProfile = localStorage.getItem(STORAGE_KEYS.MARKET_PROFILE) || 'historical';
 
@@ -255,8 +273,24 @@ function openSettings() {
     `;
 
     modal.innerHTML = `
-        <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
-            <h2 style="margin-bottom: 20px;">Settings</h2>
+        <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0;">Settings</h2>
+                <span style="font-size: 12px; color: var(--text-light);">v${APP_CONFIG.VERSION}</span>
+            </div>
+
+            <!-- Settings Tabs -->
+            <div style="display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 2px solid var(--border-color);">
+                <button class="settings-tab active" data-settings-tab="general" style="padding: 10px 20px; background: transparent; border: none; border-bottom: 3px solid var(--accent-color); cursor: pointer; font-weight: 600; color: var(--accent-color); transition: all 0.2s;">
+                    General
+                </button>
+                <button class="settings-tab" data-settings-tab="api-keys" style="padding: 10px 20px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s;">
+                    🔐 API Keys
+                </button>
+            </div>
+
+            <!-- General Settings Tab -->
+            <div id="settings-general" class="settings-tab-content" style="display: block;">
 
             <!-- Appearance Settings -->
             <div style="margin-bottom: 25px;">
@@ -348,6 +382,12 @@ function openSettings() {
                     </small>
                 </div>
             </div>
+            </div>
+
+            <!-- API Keys Tab -->
+            <div id="settings-api-keys" class="settings-tab-content" style="display: none;">
+                <div id="api-keys-content">Loading...</div>
+            </div>
 
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border-color);">
                 <button id="logout-btn" style="padding: 10px 20px; background: var(--danger-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
@@ -355,7 +395,7 @@ function openSettings() {
                 </button>
                 <div style="display: flex; gap: 10px;">
                     <button id="close-settings-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
-                        Cancel
+                        Close
                     </button>
                     <button id="save-settings-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
                         Save Settings
@@ -366,6 +406,38 @@ function openSettings() {
     `;
 
     document.body.appendChild(modal);
+
+    // Setup tab switching
+    const tabButtons = modal.querySelectorAll('.settings-tab');
+    tabButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabName = btn.getAttribute('data-settings-tab');
+
+            // Update active tab button
+            tabButtons.forEach(b => {
+                if (b === btn) {
+                    b.classList.add('active');
+                    b.style.borderBottomColor = 'var(--accent-color)';
+                    b.style.color = 'var(--accent-color)';
+                } else {
+                    b.classList.remove('active');
+                    b.style.borderBottomColor = 'transparent';
+                    b.style.color = 'var(--text-secondary)';
+                }
+            });
+
+            // Show/hide content
+            modal.querySelectorAll('.settings-tab-content').forEach(content => {
+                content.style.display = 'none';
+            });
+            modal.querySelector(`#settings-${tabName}`).style.display = 'block';
+        });
+    });
+
+    // Load API Keys content
+    const { renderAPIKeysSettings } = await import('./components/settings/api-keys-settings.js');
+    const apiKeysContent = modal.querySelector('#api-keys-content');
+    await renderAPIKeysSettings(apiKeysContent);
 
     // Set up event handlers
     document.getElementById('dark-mode-toggle').addEventListener('change', (e) => {

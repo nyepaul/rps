@@ -36,6 +36,18 @@ export function renderBudgetTab(container) {
     // Initialize budget data
     budgetData = profile.data?.budget || getDefaultBudget();
 
+    // Ensure all income categories exist for both periods
+    if (!budgetData.income) budgetData.income = {};
+    if (!budgetData.income.current) budgetData.income.current = {};
+    if (!budgetData.income.future) budgetData.income.future = {};
+
+    // Ensure all arrays exist
+    const categories = ['rental_income', 'part_time_consulting', 'business_income', 'investment_income', 'other_income'];
+    categories.forEach(cat => {
+        if (!Array.isArray(budgetData.income.current[cat])) budgetData.income.current[cat] = [];
+        if (!Array.isArray(budgetData.income.future[cat])) budgetData.income.future[cat] = [];
+    });
+
     container.innerHTML = `
         <div style="max-width: 1400px; margin: 0 auto; padding: 12px;">
             <div style="margin-bottom: 12px;">
@@ -302,6 +314,10 @@ function renderIncomeSection(parentContainer) {
     const container = parentContainer.querySelector('#income-section');
     const income = budgetData.income[currentPeriod];
 
+    // Check if spouse exists in profile
+    const profile = store.get('currentProfile');
+    const hasSpouse = profile?.data?.spouse?.name ? true : false;
+
     let html = `
         <div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">
             <h2 style="margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px; font-size: 16px;">
@@ -315,17 +331,19 @@ function renderIncomeSection(parentContainer) {
         html += `
             <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
                 <h3 style="font-size: 13px; margin-bottom: 8px; color: var(--text-secondary); font-weight: 600;">Employment Income</h3>
-                <div style="display: grid; gap: 8px;">
+                <div style="display: grid; grid-template-columns: ${hasSpouse ? '1fr 1fr' : '1fr'}; gap: 8px;">
                     <div>
                         <label style="display: block; font-size: 12px; margin-bottom: 3px;">Primary Salary</label>
                         <input type="text" id="employment-primary" value="${formatCurrency(income.employment?.primary_person || 0)}"
                                style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 13px;">
                     </div>
+                    ${hasSpouse ? `
                     <div>
                         <label style="display: block; font-size: 12px; margin-bottom: 3px;">Spouse Salary</label>
                         <input type="text" id="employment-spouse" value="${formatCurrency(income.employment?.spouse || 0)}"
                                style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 13px;">
                     </div>
+                    ` : ''}
                 </div>
             </div>
         `;
@@ -402,8 +420,8 @@ function renderIncomeSection(parentContainer) {
     html += `</div>`;
     container.innerHTML = html;
 
-    // Setup event listeners
-    setupIncomeEventListeners(container);
+    // Setup event listeners (pass parent container, not income section)
+    setupIncomeEventListeners(parentContainer);
     
     // Config button listener
     const configBtn = container.querySelector('#edit-investment-config-btn');
@@ -584,18 +602,21 @@ function renderIncomeItem(item, category, index) {
 /**
  * Setup income event listeners
  */
-function setupIncomeEventListeners(container) {
+function setupIncomeEventListeners(parentContainer) {
+    const incomeSection = parentContainer.querySelector('#income-section');
+    if (!incomeSection) return;
+
     // Employment inputs (current period only)
     if (currentPeriod === 'current') {
-        const primaryInput = container.querySelector('#employment-primary');
-        const spouseInput = container.querySelector('#employment-spouse');
+        const primaryInput = incomeSection.querySelector('#employment-primary');
+        const spouseInput = incomeSection.querySelector('#employment-spouse');
 
         if (primaryInput) {
             primaryInput.addEventListener('blur', (e) => {
                 const value = parseCurrency(e.target.value);
                 budgetData.income.current.employment.primary_person = value;
                 e.target.value = formatCurrency(value);
-                renderBudgetSummary(container);
+                renderBudgetSummary(parentContainer);
             });
         }
 
@@ -604,37 +625,58 @@ function setupIncomeEventListeners(container) {
                 const value = parseCurrency(e.target.value);
                 budgetData.income.current.employment.spouse = value;
                 e.target.value = formatCurrency(value);
-                renderBudgetSummary(container);
+                renderBudgetSummary(parentContainer);
             });
         }
     }
 
     // Add income buttons
-    container.querySelectorAll('.add-income-btn').forEach(btn => {
+    incomeSection.querySelectorAll('.add-income-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const category = e.target.getAttribute('data-category');
-            showIncomeItemModal(container, category, null);
+            showIncomeItemModal(parentContainer, category, null);
         });
     });
 
     // Edit income buttons
-    container.querySelectorAll('.edit-income-btn').forEach(btn => {
+    incomeSection.querySelectorAll('.edit-income-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const category = e.target.getAttribute('data-category');
             const index = parseInt(e.target.getAttribute('data-index'));
-            showIncomeItemModal(container, category, index);
+            showIncomeItemModal(parentContainer, category, index);
         });
     });
 
     // Delete income buttons
-    container.querySelectorAll('.delete-income-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+    incomeSection.querySelectorAll('.delete-income-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
             const category = e.target.getAttribute('data-category');
             const index = parseInt(e.target.getAttribute('data-index'));
+
+            console.log('Delete clicked:', { category, index, currentPeriod });
+
             if (confirm('Are you sure you want to delete this income item?')) {
+                console.log('Before delete:', budgetData.income[currentPeriod][category]);
                 budgetData.income[currentPeriod][category].splice(index, 1);
-                renderIncomeSection(container);
-                renderBudgetSummary(container);
+                console.log('After delete:', budgetData.income[currentPeriod][category]);
+
+                renderIncomeSection(parentContainer);
+                renderBudgetSummary(parentContainer);
+
+                // Auto-save to backend
+                const profile = store.get('currentProfile');
+                if (profile) {
+                    try {
+                        await saveBudget(profile, parentContainer);
+                        console.log('Delete saved successfully');
+                    } catch (error) {
+                        console.error('Error saving after delete:', error);
+                        showError('Failed to save changes: ' + error.message);
+                    }
+                }
             }
         });
     });
@@ -736,7 +778,7 @@ function showIncomeItemModal(parentContainer, category, index) {
     modal.querySelector('#cancel-btn').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
-    modal.querySelector('#income-item-form').addEventListener('submit', (e) => {
+    modal.querySelector('#income-item-form').addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const newItem = {
@@ -758,9 +800,15 @@ function showIncomeItemModal(parentContainer, category, index) {
             budgetData.income[currentPeriod][category].push(newItem);
         }
 
+        // Auto-save to backend
+        modal.remove();
         renderIncomeSection(parentContainer);
         renderBudgetSummary(parentContainer);
-        modal.remove();
+
+        const profile = store.get('currentProfile');
+        if (profile) {
+            await saveBudget(profile, parentContainer);
+        }
     });
 }
 
@@ -907,7 +955,7 @@ function showExpenseEditorModal(parentContainer, category) {
     modal.querySelector('#cancel-btn').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
-    modal.querySelector('#expense-form').addEventListener('submit', (e) => {
+    modal.querySelector('#expense-form').addEventListener('submit', async (e) => {
         e.preventDefault();
 
         budgetData.expenses[currentPeriod][category] = {
@@ -917,9 +965,15 @@ function showExpenseEditorModal(parentContainer, category) {
             subcategories: expense.subcategories || {}
         };
 
+        // Auto-save to backend
+        modal.remove();
         renderExpenseSection(parentContainer);
         renderBudgetSummary(parentContainer);
-        modal.remove();
+
+        const profile = store.get('currentProfile');
+        if (profile) {
+            await saveBudget(profile, parentContainer);
+        }
     });
 }
 
@@ -981,11 +1035,13 @@ function setupBudgetEventHandlers(profile, container) {
  */
 async function saveBudget(profile, container) {
     const saveBtn = container.querySelector('#save-budget-btn');
-    const originalText = saveBtn.textContent;
+    const originalText = saveBtn ? saveBtn.textContent : null;
 
     try {
-        saveBtn.disabled = true;
-        saveBtn.textContent = 'Saving...';
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+        }
 
         // Import profiles API
         const { profilesAPI } = await import('../../api/profiles.js');
@@ -996,8 +1052,14 @@ async function saveBudget(profile, container) {
             budget: budgetData
         };
 
+        console.log('Saving budget data:', JSON.parse(JSON.stringify(budgetData)));
+        console.log('Future part_time_consulting before save:', budgetData.income.future.part_time_consulting);
+
         // Save to backend
         const result = await profilesAPI.update(profile.name, { data: updatedData });
+
+        console.log('Received from server:', result.profile.data.budget);
+        console.log('Future part_time_consulting after save:', result.profile.data.budget.income.future.part_time_consulting);
 
         // Update store
         store.setState({ currentProfile: result.profile });
@@ -1011,8 +1073,11 @@ async function saveBudget(profile, container) {
     } catch (error) {
         console.error('Error saving budget:', error);
         showError('Failed to save budget: ' + error.message);
+        throw error; // Re-throw so callers know it failed
     } finally {
-        saveBtn.disabled = false;
-        saveBtn.textContent = originalText;
+        if (saveBtn && originalText) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = originalText;
+        }
     }
 }

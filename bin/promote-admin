@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+"""
+Script to promote a user to admin or demote from admin.
+
+Usage:
+    ./bin/promote-admin <username> [--demote]
+
+Examples:
+    ./bin/promote-admin john        # Promote john to admin
+    ./bin/promote-admin john --demote  # Remove admin privileges from john
+"""
+
+import sys
+import os
+
+# Add src to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+
+from auth.models import User
+from services.enhanced_audit_logger import enhanced_audit_logger
+
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: ./bin/promote-admin <username> [--demote]")
+        print()
+        print("Examples:")
+        print("  ./bin/promote-admin john        # Promote john to admin")
+        print("  ./bin/promote-admin john --demote  # Remove admin privileges")
+        sys.exit(1)
+
+    username = sys.argv[1]
+    demote = '--demote' in sys.argv
+
+    # Get user
+    user = User.get_by_username(username)
+
+    if not user:
+        print(f"❌ Error: User '{username}' not found")
+        sys.exit(1)
+
+    if demote:
+        if not user.is_admin:
+            print(f"ℹ️  User '{username}' is not an admin")
+            sys.exit(0)
+
+        # Demote user
+        user._is_admin = False
+        user.save()
+
+        # Log the action
+        enhanced_audit_logger.log(
+            action='ADMIN_DEMOTED',
+            table_name='users',
+            record_id=user.id,
+            details=f'User {username} demoted from admin',
+            status_code=200
+        )
+
+        print(f"✅ User '{username}' has been demoted from admin")
+    else:
+        if user.is_admin:
+            print(f"ℹ️  User '{username}' is already an admin")
+            sys.exit(0)
+
+        # Promote user
+        user._is_admin = True
+        user.save()
+
+        # Log the action
+        enhanced_audit_logger.log(
+            action='ADMIN_PROMOTED',
+            table_name='users',
+            record_id=user.id,
+            details=f'User {username} promoted to admin',
+            status_code=200
+        )
+
+        print(f"✅ User '{username}' has been promoted to admin")
+
+    # Show user info
+    print()
+    print("User details:")
+    print(f"  ID: {user.id}")
+    print(f"  Username: {user.username}")
+    print(f"  Email: {user.email}")
+    print(f"  Is Admin: {user.is_admin}")
+    print(f"  Is Active: {user.is_active}")
+    print(f"  Created: {user.created_at}")
+    print(f"  Last Login: {user.last_login or 'Never'}")
+
+
+if __name__ == '__main__':
+    main()
