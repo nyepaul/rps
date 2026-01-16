@@ -1,7 +1,7 @@
 # Code Review Assessment - Retirement Planning System
 **Date**: 2026-01-13
 **Reviewer**: Claude Code (PAI)
-**Codebase**: pan-rps (Personal Retirement Planning System)
+**Codebase**: panrps (Personal Retirement Planning System)
 
 ## Executive Summary
 

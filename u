@@ -1,0 +1,14 @@
+  cd /home/paul/src                                                                                                                                                   
+  mv pan-rps panrps                                                                                                                                                   
+  cd panrps                                                                                                                                                           
+  # 2. If you have a GitHub remote, update the repository name on GitHub first:                                                                                       
+  #    - Go to GitHub repo Settings → General → Repository name                                                                                                       
+  #    - Change from "pan-rps" to "panrps"                                                                                                                            
+  # 3. Update your local git remote URL                                                                                                                               
+  git remote set-url origin https://github.com/nyepaul/panrps.git                                                                                               
+                                                                                                                                                                      
+  # Or if using SSH:                                                                                                                                                  
+  git remote set-url origin git@github.com:nyepaul/panrps.git                                                                                                   
+                                                                                                                                                                      
+  # 4. Verify the change                                                                                                                                              
+  git remote -v  

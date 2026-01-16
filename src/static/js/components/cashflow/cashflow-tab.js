@@ -5,6 +5,7 @@
 
 import { store } from '../../state/store.js';
 import { formatCurrency } from '../../utils/formatters.js';
+import { scenariosAPI } from '../../api/scenarios.js';
 
 export function renderCashFlowTab(container) {
     const profile = store.get('currentProfile');
@@ -41,7 +42,7 @@ export function renderCashFlowTab(container) {
             <div style="margin-bottom: 20px;">
                 <h1 style="font-size: 28px; margin-bottom: 8px;">💸 Cash Flow</h1>
                 <p style="color: var(--text-secondary); margin: 0; font-size: 14px;">
-                    Visualize money coming in and going out over time. Investment withdrawals follow the tax-efficient strategy (Taxable → Tax-Deferred → Roth).
+                    Visualize money coming in and going out over time. Investment withdrawals follow the tax-efficient strategy (Taxable → Tax-Deferred → Roth). Select a scenario to compare your projected portfolio with Monte Carlo simulation results.
                 </p>
             </div>
 
@@ -68,6 +69,12 @@ export function renderCashFlowTab(container) {
                         <option value="annual" selected>Annual</option>
                     </select>
                 </div>
+                <div>
+                    <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">Scenario (Monte Carlo)</label>
+                    <select id="scenario-select" style="padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: 14px; min-width: 200px;">
+                        <option value="">None</option>
+                    </select>
+                </div>
                 <button id="refresh-chart" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; margin-top: 20px;">
                     Refresh
                 </button>
@@ -92,6 +99,40 @@ export function renderCashFlowTab(container) {
     // Initialize chart and data with default: 20 years (240 months), annual view
     renderCashFlowChart(container, profile, 240, 'annual');
     setupEventHandlers(container, profile);
+
+    // Load scenarios for the dropdown
+    loadScenarios(container, profile);
+}
+
+/**
+ * Load scenarios for the dropdown
+ */
+async function loadScenarios(container, profile) {
+    try {
+        const response = await scenariosAPI.list();
+        const scenarios = response.scenarios || [];
+
+        // Filter scenarios for current profile
+        const profileScenarios = scenarios.filter(s =>
+            s.profile_id === profile.id || s.name.includes(profile.name)
+        );
+
+        const scenarioSelect = container.querySelector('#scenario-select');
+        if (scenarioSelect) {
+            // Clear existing options except "None"
+            scenarioSelect.innerHTML = '<option value="">None</option>';
+
+            // Add scenario options
+            profileScenarios.forEach(scenario => {
+                const option = document.createElement('option');
+                option.value = scenario.id;
+                option.textContent = scenario.name;
+                scenarioSelect.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Failed to load scenarios:', error);
+    }
 }
 
 /**
@@ -100,16 +141,34 @@ export function renderCashFlowTab(container) {
 function setupEventHandlers(container, profile) {
     const timePeriodSelect = container.querySelector('#time-period');
     const viewTypeSelect = container.querySelector('#view-type');
+    const scenarioSelect = container.querySelector('#scenario-select');
     const refreshBtn = container.querySelector('#refresh-chart');
 
-    const refresh = () => {
+    const refresh = async () => {
         const months = parseInt(timePeriodSelect.value);
         const viewType = viewTypeSelect.value;
-        renderCashFlowChart(container, profile, months, viewType);
+        const scenarioId = scenarioSelect.value;
+
+        // Load scenario data if selected
+        let scenarioData = null;
+        if (scenarioId) {
+            try {
+                const response = await scenariosAPI.get(scenarioId);
+                scenarioData = response.scenario;
+                console.log('Loaded scenario data:', scenarioData);
+                console.log('Scenario results:', scenarioData?.results);
+                console.log('Timeline:', scenarioData?.results?.timeline);
+            } catch (error) {
+                console.error('Failed to load scenario:', error);
+            }
+        }
+
+        renderCashFlowChart(container, profile, months, viewType, scenarioData);
     };
 
     timePeriodSelect.addEventListener('change', refresh);
     viewTypeSelect.addEventListener('change', refresh);
+    scenarioSelect.addEventListener('change', refresh);
     refreshBtn.addEventListener('click', refresh);
 }
 
@@ -336,6 +395,39 @@ function calculatePortfolioByType(assets) {
 }
 
 /**
+ * Map scenario timeline data to chart data format
+ */
+function mapScenarioToChartData(timeline, chartData, viewType) {
+    if (!timeline || !timeline.years || !timeline.median) {
+        return null;
+    }
+
+    const scenarioYears = timeline.years;
+    const scenarioMedian = timeline.median;
+
+    // Create a map of year to median value
+    const yearToMedian = {};
+    scenarioYears.forEach((year, index) => {
+        yearToMedian[year] = scenarioMedian[index];
+    });
+
+    // Map to chart data labels
+    const mappedData = chartData.map(dataPoint => {
+        if (viewType === 'annual') {
+            // For annual view, match by year
+            const year = parseInt(dataPoint.label);
+            return yearToMedian[year] !== undefined ? yearToMedian[year] : null;
+        } else {
+            // For monthly view, extract year from label and use that year's value
+            const year = dataPoint.date ? dataPoint.date.getFullYear() : null;
+            return year && yearToMedian[year] !== undefined ? yearToMedian[year] : null;
+        }
+    });
+
+    return mappedData;
+}
+
+/**
  * Aggregate monthly data to annual
  */
 function aggregateToAnnual(monthlyData) {
@@ -380,9 +472,44 @@ function aggregateToAnnual(monthlyData) {
 /**
  * Render cash flow chart
  */
-function renderCashFlowChart(container, profile, months, viewType) {
+function renderCashFlowChart(container, profile, months, viewType, scenarioData = null) {
     const monthlyData = calculateMonthlyCashFlow(profile, months);
     const chartData = viewType === 'annual' ? aggregateToAnnual(monthlyData) : monthlyData;
+
+    // Process scenario data if available
+    let scenarioMedianData = null;
+    if (scenarioData && scenarioData.results) {
+        console.log('Processing scenario data...');
+        console.log('Full scenario results:', scenarioData.results);
+
+        // Check if it's a multi-scenario result (has scenarios object)
+        if (scenarioData.results.scenarios) {
+            console.log('Multi-scenario detected');
+            // For multi-scenario, use the 'base' scenario or the first scenario
+            const scenarios = scenarioData.results.scenarios;
+            const scenarioKeys = Object.keys(scenarios);
+            const selectedKey = scenarios['base'] ? 'base' : scenarioKeys[0];
+
+            if (selectedKey && scenarios[selectedKey]?.timeline) {
+                console.log(`Using scenario: ${selectedKey}`);
+                scenarioMedianData = mapScenarioToChartData(scenarios[selectedKey].timeline, chartData, viewType);
+            }
+        }
+        // Check if it's a single scenario result (direct timeline)
+        else if (scenarioData.results.timeline) {
+            console.log('Single scenario detected');
+            scenarioMedianData = mapScenarioToChartData(scenarioData.results.timeline, chartData, viewType);
+        }
+        // Check if results is the timeline data itself (backward compatibility)
+        else if (scenarioData.results.years && scenarioData.results.median) {
+            console.log('Direct timeline data detected');
+            scenarioMedianData = mapScenarioToChartData(scenarioData.results, chartData, viewType);
+        }
+
+        console.log('Mapped scenario data:', scenarioMedianData);
+    } else {
+        console.log('No scenario data available');
+    }
 
     // Update summary cards
     renderSummaryCards(container, chartData);
@@ -405,70 +532,91 @@ function renderCashFlowChart(container, profile, months, viewType) {
         window.cashFlowChart.destroy();
     }
 
+    // Build datasets array
+    const datasets = [
+        {
+            label: 'Work Income',
+            data: chartData.map(d => d.workIncome),
+            backgroundColor: 'rgba(46, 213, 115, 0.8)',
+            borderColor: 'rgba(46, 213, 115, 1)',
+            borderWidth: 1,
+            stack: 'income'
+        },
+        {
+            label: 'Retirement Benefits (SS/Pension)',
+            data: chartData.map(d => d.retirementBenefits),
+            backgroundColor: 'rgba(52, 152, 219, 0.8)',
+            borderColor: 'rgba(52, 152, 219, 1)',
+            borderWidth: 1,
+            stack: 'income'
+        },
+        {
+            label: 'Investment Withdrawals',
+            data: chartData.map(d => d.investmentIncome),
+            backgroundColor: 'rgba(155, 89, 182, 0.8)',
+            borderColor: 'rgba(155, 89, 182, 1)',
+            borderWidth: 1,
+            stack: 'income'
+        },
+        {
+            label: 'Expenses',
+            data: chartData.map(d => -d.expenses), // Negative for visual
+            backgroundColor: 'rgba(255, 107, 107, 0.7)',
+            borderColor: 'rgba(255, 107, 107, 1)',
+            borderWidth: 1
+        },
+        {
+            label: 'Net Cash Flow',
+            data: chartData.map(d => d.netCashFlow),
+            type: 'line',
+            borderColor: 'rgba(241, 196, 15, 1)',
+            backgroundColor: 'rgba(241, 196, 15, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            yAxisID: 'y'
+        },
+        {
+            label: 'Portfolio Balance',
+            data: chartData.map(d => d.portfolioValue),
+            type: 'line',
+            borderColor: 'rgba(52, 211, 153, 1)',
+            backgroundColor: 'rgba(52, 211, 153, 0.1)',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            fill: false,
+            tension: 0.4,
+            pointRadius: 2,
+            pointHoverRadius: 4,
+            yAxisID: 'y1'
+        }
+    ];
+
+    // Add scenario median data if available
+    if (scenarioMedianData) {
+        datasets.push({
+            label: 'Scenario Median Portfolio (MC)',
+            data: scenarioMedianData,
+            type: 'line',
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.1)',
+            borderWidth: 3,
+            borderDash: [10, 5],
+            fill: false,
+            tension: 0.4,
+            pointRadius: 2,
+            pointHoverRadius: 5,
+            yAxisID: 'y1'
+        });
+    }
+
     window.cashFlowChart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: chartData.map(d => d.label),
-            datasets: [
-                {
-                    label: 'Work Income',
-                    data: chartData.map(d => d.workIncome),
-                    backgroundColor: 'rgba(46, 213, 115, 0.8)',
-                    borderColor: 'rgba(46, 213, 115, 1)',
-                    borderWidth: 1,
-                    stack: 'income'
-                },
-                {
-                    label: 'Retirement Benefits (SS/Pension)',
-                    data: chartData.map(d => d.retirementBenefits),
-                    backgroundColor: 'rgba(52, 152, 219, 0.8)',
-                    borderColor: 'rgba(52, 152, 219, 1)',
-                    borderWidth: 1,
-                    stack: 'income'
-                },
-                {
-                    label: 'Investment Withdrawals',
-                    data: chartData.map(d => d.investmentIncome),
-                    backgroundColor: 'rgba(155, 89, 182, 0.8)',
-                    borderColor: 'rgba(155, 89, 182, 1)',
-                    borderWidth: 1,
-                    stack: 'income'
-                },
-                {
-                    label: 'Expenses',
-                    data: chartData.map(d => -d.expenses), // Negative for visual
-                    backgroundColor: 'rgba(255, 107, 107, 0.7)',
-                    borderColor: 'rgba(255, 107, 107, 1)',
-                    borderWidth: 1
-                },
-                {
-                    label: 'Net Cash Flow',
-                    data: chartData.map(d => d.netCashFlow),
-                    type: 'line',
-                    borderColor: 'rgba(241, 196, 15, 1)',
-                    backgroundColor: 'rgba(241, 196, 15, 0.1)',
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 3,
-                    pointHoverRadius: 5,
-                    yAxisID: 'y'
-                },
-                {
-                    label: 'Portfolio Balance',
-                    data: chartData.map(d => d.portfolioValue),
-                    type: 'line',
-                    borderColor: 'rgba(52, 211, 153, 1)',
-                    backgroundColor: 'rgba(52, 211, 153, 0.1)',
-                    borderWidth: 2,
-                    borderDash: [5, 5],
-                    fill: false,
-                    tension: 0.4,
-                    pointRadius: 2,
-                    pointHoverRadius: 4,
-                    yAxisID: 'y1'
-                }
-            ]
+            datasets: datasets
         },
         options: {
             responsive: true,

@@ -31,14 +31,8 @@ async function init() {
     // Try to load default profile
     await loadDefaultProfileOnStartup();
 
-    // Show initial tab based on whether we have a profile loaded
-    const currentProfile = store.get('currentProfile');
+    // Show initial tab - always start with welcome as landing page
     let initialTab = localStorage.getItem(STORAGE_KEYS.LAST_TAB) || 'welcome';
-
-    // If we loaded a default profile, go to dashboard
-    if (currentProfile && initialTab === 'welcome') {
-        initialTab = 'dashboard';
-    }
 
     showTab(initialTab);
 

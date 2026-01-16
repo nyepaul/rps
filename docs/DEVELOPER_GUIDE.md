@@ -1,4 +1,4 @@
-# PAN-RPS Developer Guide
+# panRPS Developer Guide
 
 **Technical implementation details for the Welcome Screen, Wizard, Learn Hub, and Progression System**
 
@@ -27,7 +27,7 @@
 ## Project Structure
 
 ```
-pan-rps/
+panrps/
 ├── src/
 │   ├── app.py                    # Flask backend
 │   └── static/
@@ -936,7 +936,7 @@ describe('Progression System', () => {
 
 ```bash
 # Setup
-cd /Users/paul/src/pan-rps
+cd /Users/paul/src/panrps
 uv venv
 uv pip install -r requirements.txt
 
@@ -984,8 +984,8 @@ CMD ["python3", "src/app.py"]
 
 ```bash
 # Build and run
-docker build -t pan-rps .
-docker run -p 8080:8080 -v $(pwd)/data:/app/data pan-rps
+docker build -t panrps .
+docker run -p 8080:8080 -v $(pwd)/data:/app/data panrps
 ```
 
 ---
@@ -1144,7 +1144,7 @@ if not file_path.startswith(skills_dir):
 **Problem:** Skills files not loading in Learn tab
 
 **Solutions:**
-1. Verify skills directory exists: `/Users/paul/src/pan-rps/skills/`
+1. Verify skills directory exists: `/Users/paul/src/panrps/skills/`
 2. Check file names match exactly (case-sensitive)
 3. Verify Flask server is running on port 8080
 4. Check backend logs for errors
@@ -1280,7 +1280,7 @@ Brief description of changes
 ### Community
 - GitHub Issues: Bug reports and feature requests
 - Developer Slack: (if applicable)
-- Stack Overflow: `pan-rps` tag
+- Stack Overflow: `panrps` tag
 
 ---
 

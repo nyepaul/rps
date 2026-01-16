@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Retirement & Wealth Planning System (PAN-RPS) is designed with security-first principles, implementing multiple layers of protection for sensitive financial data. This document outlines the security architecture, encryption mechanisms, and data protection strategies employed throughout the system.
+The Retirement & Wealth Planning System (panRPS) is designed with security-first principles, implementing multiple layers of protection for sensitive financial data. This document outlines the security architecture, encryption mechanisms, and data protection strategies employed throughout the system.
 
 ## Table of Contents
 

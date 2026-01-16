@@ -297,18 +297,18 @@ These will be addressed in v2.0.1.
 
 ## 🔗 Links
 
-- **GitHub Repository**: https://github.com/nyepaul/pan-rps
-- **v1.0.0 Tag**: https://github.com/nyepaul/pan-rps/releases/tag/v1.0.0
-- **v2.0.0 Tag**: https://github.com/nyepaul/pan-rps/releases/tag/v2.0.0
-- **Compare v1 vs v2**: https://github.com/nyepaul/pan-rps/compare/v1.0.0...v2.0.0
+- **GitHub Repository**: https://github.com/nyepaul/panrps
+- **v1.0.0 Tag**: https://github.com/nyepaul/panrps/releases/tag/v1.0.0
+- **v2.0.0 Tag**: https://github.com/nyepaul/panrps/releases/tag/v2.0.0
+- **Compare v1 vs v2**: https://github.com/nyepaul/panrps/compare/v1.0.0...v2.0.0
 
 ---
 
 ## 💬 Feedback & Support
 
-- **Issues**: https://github.com/nyepaul/pan-rps/issues
-- **Discussions**: https://github.com/nyepaul/pan-rps/discussions
+- **Issues**: https://github.com/nyepaul/panrps/issues
+- **Discussions**: https://github.com/nyepaul/panrps/discussions
 
 ---
 
-**Full Changelog**: https://github.com/nyepaul/pan-rps/compare/v1.0.0...v2.0.0
+**Full Changelog**: https://github.com/nyepaul/panrps/compare/v1.0.0...v2.0.0

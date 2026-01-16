@@ -1,6 +1,6 @@
 # Documentation Index
 
-Welcome to the pan-rps documentation. This directory contains comprehensive guides for using, understanding, and maintaining the Retirement Planning System.
+Welcome to the panrps documentation. This directory contains comprehensive guides for using, understanding, and maintaining the Retirement Planning System.
 
 ## Quick Navigation
 
@@ -29,7 +29,7 @@ Welcome to the pan-rps documentation. This directory contains comprehensive guid
 This project follows a modern, state-of-the-art layout:
 
 \`\`\`
-pan-rps/
+panrps/
 ├── bin/                      # Executable scripts
 │   ├── start                 # Start the application
 │   ├── manage                # Management commands

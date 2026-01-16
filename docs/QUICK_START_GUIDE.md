@@ -1,15 +1,15 @@
-# PAN-RPS Quick Start Guide
+# panRPS Quick Start Guide
 
 **Get started with your retirement planning in 5 minutes!**
 
 ---
 
-## 🚀 First Time Using PAN-RPS?
+## 🚀 First Time Using panRPS?
 
 ### Step 1: Start the Application
 
 ```bash
-cd /Users/paul/src/pan-rps
+cd /Users/paul/src/panrps
 source .venv/bin/activate
 python3 src/app.py
 ```
@@ -234,7 +234,7 @@ Try running analysis on this profile to see how the system works!
 ### "Cannot connect to server"
 **Solution:** Make sure Flask is running:
 ```bash
-cd /Users/paul/src/pan-rps
+cd /Users/paul/src/panrps
 source .venv/bin/activate
 python3 src/app.py
 ```
@@ -279,7 +279,7 @@ python3 src/app.py
 
 ```bash
 # Backup profiles database
-cp /Users/paul/src/pan-rps/data/profiles.db ~/backup/profiles-$(date +%Y%m%d).db
+cp /Users/paul/src/panrps/data/profiles.db ~/backup/profiles-$(date +%Y%m%d).db
 ```
 
 ---
