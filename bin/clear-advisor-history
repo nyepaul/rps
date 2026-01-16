@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+"""
+Clear AI Advisor conversation history for all users or a specific user.
+
+This is useful if conversations become corrupted or after API format changes.
+"""
+
+import sys
+import os
+
+# Add parent directory and src to path
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, parent_dir)
+sys.path.insert(0, os.path.join(parent_dir, 'src'))
+
+from src.database.connection import get_connection
+
+
+def clear_all_conversations():
+    """Clear all AI advisor conversations."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute('SELECT COUNT(*) FROM conversation')
+        count = cursor.fetchone()[0]
+
+        if count == 0:
+            print("No conversations found.")
+            return
+
+        print(f"Found {count} conversation messages.")
+        response = input(f"Are you sure you want to delete all {count} messages? (yes/no): ")
+
+        if response.lower() == 'yes':
+            cursor.execute('DELETE FROM conversation')
+            conn.commit()
+            print(f"✅ Deleted all {count} conversation messages.")
+        else:
+            print("❌ Cancelled.")
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def clear_user_conversations(user_id: int):
+    """Clear conversations for a specific user."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute('SELECT COUNT(*) FROM conversation WHERE user_id = ?', (user_id,))
+        count = cursor.fetchone()[0]
+
+        if count == 0:
+            print(f"No conversations found for user ID {user_id}.")
+            return
+
+        print(f"Found {count} conversation messages for user ID {user_id}.")
+        response = input(f"Are you sure you want to delete these {count} messages? (yes/no): ")
+
+        if response.lower() == 'yes':
+            cursor.execute('DELETE FROM conversation WHERE user_id = ?', (user_id,))
+            conn.commit()
+            print(f"✅ Deleted {count} conversation messages for user ID {user_id}.")
+        else:
+            print("❌ Cancelled.")
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage:")
+        print("  ./bin/clear-advisor-history all          # Clear all conversations")
+        print("  ./bin/clear-advisor-history user <id>    # Clear conversations for specific user")
+        sys.exit(1)
+
+    command = sys.argv[1]
+
+    if command == 'all':
+        clear_all_conversations()
+    elif command == 'user' and len(sys.argv) >= 3:
+        user_id = int(sys.argv[2])
+        clear_user_conversations(user_id)
+    else:
+        print("Invalid command. Use 'all' or 'user <id>'")
+        sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()
