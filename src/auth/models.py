@@ -9,7 +9,7 @@ class User(UserMixin):
     """User model for authentication."""
 
     def __init__(self, id, username, email, password_hash, is_active=True, is_admin=False,
-                 created_at=None, last_login=None, updated_at=None):
+                 created_at=None, last_login=None, updated_at=None, encrypted_dek=None, dek_iv=None):
         self.id = id
         self.username = username
         self.email = email
@@ -19,6 +19,8 @@ class User(UserMixin):
         self.created_at = created_at or datetime.now().isoformat()
         self.updated_at = updated_at or datetime.now().isoformat()
         self.last_login = last_login
+        self.encrypted_dek = encrypted_dek
+        self.dek_iv = dek_iv
 
     @property
     def is_active(self):
@@ -79,24 +81,25 @@ class User(UserMixin):
             if self.id is None:
                 # Insert new user
                 cursor.execute('''
-                    INSERT INTO users (username, email, password_hash, is_active, is_admin, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO users (username, email, password_hash, is_active, is_admin, created_at, updated_at, encrypted_dek, dek_iv)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (self.username, self.email, self.password_hash,
                       1 if self._is_active else 0,
                       1 if self._is_admin else 0,
-                      self.created_at, self.updated_at))
+                      self.created_at, self.updated_at,
+                      self.encrypted_dek, self.dek_iv))
                 self.id = cursor.lastrowid
             else:
                 # Update existing user
                 cursor.execute('''
                     UPDATE users
                     SET username = ?, email = ?, password_hash = ?, is_active = ?,
-                        is_admin = ?, last_login = ?
+                        is_admin = ?, last_login = ?, encrypted_dek = ?, dek_iv = ?
                     WHERE id = ?
                 ''', (self.username, self.email, self.password_hash,
                       1 if self._is_active else 0,
                       1 if self._is_admin else 0,
-                      self.last_login, self.id))
+                      self.last_login, self.encrypted_dek, self.dek_iv, self.id))
         return self
     
     def update_last_login(self):
@@ -108,11 +111,12 @@ class User(UserMixin):
     def update_password(self, new_password: str):
         """Update the user's password."""
         self.password_hash = User.hash_password(new_password)
+        # Note: In a full implementation, we'd also re-encrypt the DEK here
         self.save()
 
     
     @staticmethod
-    def create_user(username: str, email: str, password: str, is_admin: bool = False):
+    def create_user(username: str, email: str, password: str, is_admin: bool = False, encrypted_dek=None, dek_iv=None):
         """Create a new user."""
         password_hash = User.hash_password(password)
         user = User(
@@ -121,7 +125,9 @@ class User(UserMixin):
             email=email,
             password_hash=password_hash,
             is_active=True,
-            is_admin=is_admin
+            is_admin=is_admin,
+            encrypted_dek=encrypted_dek,
+            dek_iv=dek_iv
         )
         return user.save()
     

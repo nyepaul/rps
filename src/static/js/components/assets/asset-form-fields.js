@@ -22,7 +22,6 @@ export const FIELD_DEFINITIONS = {
         { name: 'institution', label: 'Financial Institution', type: 'text', placeholder: 'e.g., Vanguard' },
         { name: 'account_number', label: 'Account Number (Last 4 digits)', type: 'text', maxlength: 4, placeholder: '****' },
         { name: 'value', label: 'Current Balance', type: 'currency', required: true, placeholder: '$0' },
-        { name: 'cost_basis', label: 'Cost Basis', type: 'currency', placeholder: '$0', help: 'For taxable accounts' },
         { name: 'stock_pct', label: 'Stock Allocation (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '60' },
         { name: 'bond_pct', label: 'Bond Allocation (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '40' },
         { name: 'cash_pct', label: 'Cash Allocation (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '0' }
@@ -137,12 +136,26 @@ export function generateFormFields(category, asset = {}, skipType = false) {
         throw new Error(`Unknown asset category: ${category}`);
     }
 
-    return fields.filter(field => !(skipType && field.name === 'type')).map(field => {
-        let value = asset[field.name] || '';
+    const currentType = asset.type || '';
+    const isCashLike = ['savings', 'checking', 'cash', 'cd', 'money_market'].includes(currentType);
+
+    return fields.filter(field => {
+        // Filter out fields that don't apply to the current type
+        if (skipType && field.name === 'type') return false;
+        
+        if (isCashLike) {
+            const nonCashFields = ['cost_basis', 'stock_pct', 'bond_pct', 'cash_pct'];
+            if (nonCashFields.includes(field.name)) return false;
+        }
+
+        return true;
+    }).map(field => {
+        let rawValue = asset[field.name];
+        let displayValue = (rawValue !== undefined && rawValue !== null) ? rawValue : '';
         
         // Convert decimals to percentages for display
-        if (field.type === 'number' && field.name.endsWith('_pct') && value !== '') {
-            value = Math.round(value * 100);
+        if (field.type === 'number' && field.name.endsWith('_pct') && displayValue !== '') {
+            displayValue = Math.round(Number(displayValue) * 100);
         }
 
         const id = `asset-${field.name}`;
@@ -153,7 +166,7 @@ export function generateFormFields(category, asset = {}, skipType = false) {
             inputHTML = `
                 <select id="${id}" name="${field.name}" ${field.required ? 'required' : ''}>
                     ${field.options.map(opt => `
-                        <option value="${opt.value}" ${value === opt.value ? 'selected' : ''}>
+                        <option value="${opt.value}" ${displayValue === opt.value ? 'selected' : ''}>
                             ${opt.label}
                         </option>
                     `).join('')}
@@ -162,7 +175,7 @@ export function generateFormFields(category, asset = {}, skipType = false) {
         } else if (field.type === 'checkbox') {
             inputHTML = `
                 <label style="display: flex; align-items: center; gap: 10px;">
-                    <input type="checkbox" id="${id}" name="${field.name}" ${value ? 'checked' : ''}>
+                    <input type="checkbox" id="${id}" name="${field.name}" ${displayValue ? 'checked' : ''}>
                     <span>${field.label}</span>
                 </label>
             `;
@@ -174,7 +187,7 @@ export function generateFormFields(category, asset = {}, skipType = false) {
                     placeholder="${field.placeholder || ''}"
                     rows="3"
                     ${field.required ? 'required' : ''}
-                >${value}</textarea>
+                >${displayValue}</textarea>
             `;
         } else {
             // text, currency, date, number
@@ -189,7 +202,7 @@ export function generateFormFields(category, asset = {}, skipType = false) {
                     type="${inputType}"
                     id="${id}"
                     name="${field.name}"
-                    value="${field.type === 'currency' && value ? formatCurrency(value, 0) : value}"
+                    value="${field.type === 'currency' && displayValue !== '' ? formatCurrency(displayValue, 0) : displayValue}"
                     placeholder="${field.placeholder || ''}"
                     ${field.maxlength ? `maxlength="${field.maxlength}"` : ''}
                     ${extraAttrs.join(' ')}
@@ -227,9 +240,23 @@ export function extractFormData(form, category) {
     const formData = new FormData(form);
     const data = {};
     const fields = FIELD_DEFINITIONS[category];
+    const currentType = formData.get('type') || '';
+    const isCashLike = ['savings', 'checking', 'cash', 'cd', 'money_market'].includes(currentType);
 
     for (const field of fields) {
         let value = formData.get(field.name);
+
+        // Handle hidden fields for cash-like assets
+        if (value === null && isCashLike) {
+            if (field.name === 'cash_pct') {
+                data.cash_pct = 1.0;
+                continue;
+            }
+            if (['stock_pct', 'bond_pct', 'cost_basis'].includes(field.name)) {
+                data[field.name] = 0;
+                continue;
+            }
+        }
 
         if (field.type === 'currency') {
             data[field.name] = value ? parseCurrency(value) : 0;

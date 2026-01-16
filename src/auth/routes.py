@@ -42,10 +42,17 @@ class LoginSchema(BaseModel):
     password: str
 
 
+from flask import Blueprint, request, jsonify, session
+from flask_login import login_user, logout_user, current_user
+from src.auth.models import User
+from src.extensions import limiter
+from src.services.encryption_service import EncryptionService
+import base64
+
 @auth_bp.route('/register', methods=['POST'])
 @limiter.limit("5 per hour")
 def register():
-    """Register a new user."""
+    """Register a new user and initialize their encryption key."""
     try:
         data = RegisterSchema(**request.json)
     except Exception as e:
@@ -59,15 +66,30 @@ def register():
     if User.get_by_email(data.email):
         return jsonify({'error': 'Email already exists'}), 400
 
+    # Generate user-specific encryption key (DEK)
+    dek = EncryptionService.generate_dek()
+    kek = EncryptionService.get_kek_from_password(data.password)
+    
+    # Encrypt DEK with KEK derived from password
+    temp_service = EncryptionService(key=kek)
+    encrypted_dek, dek_iv = temp_service.encrypt(base64.b64encode(dek).decode('utf-8'))
+
     # Create user
-    user = User.create_user(
+    user = User(
+        id=None,
         username=data.username,
         email=data.email,
-        password=data.password
+        password_hash=User.hash_password(data.password),
+        encrypted_dek=encrypted_dek,
+        dek_iv=dek_iv
     )
+    user.save()
 
     # Log user in
     login_user(user)
+    
+    # Store decrypted DEK in session (base64)
+    session['user_dek'] = base64.b64encode(dek).decode('utf-8')
 
     return jsonify({
         'message': 'Registration successful',
@@ -83,7 +105,7 @@ def register():
 @auth_bp.route('/login', methods=['POST'])
 @limiter.limit("10 per minute")
 def login():
-    """Log in a user."""
+    """Log in a user and decrypt their encryption key."""
     try:
         data = LoginSchema(**request.json)
     except Exception as e:
@@ -99,6 +121,32 @@ def login():
     # Check if user is active
     if not user.is_active:
         return jsonify({'error': 'Account is disabled'}), 401
+
+    # Decrypt user's DEK or generate one for old users
+    if user.encrypted_dek and user.dek_iv:
+        try:
+            kek = EncryptionService.get_kek_from_password(data.password)
+            temp_service = EncryptionService(key=kek)
+            dek_b64 = temp_service.decrypt(user.encrypted_dek, user.dek_iv)
+            session['user_dek'] = dek_b64
+        except Exception as e:
+            print(f"Failed to decrypt DEK: {e}")
+    else:
+        # Auto-migrate: User doesn't have a DEK yet, generate one now
+        try:
+            dek = EncryptionService.generate_dek()
+            kek = EncryptionService.get_kek_from_password(data.password)
+            temp_service = EncryptionService(key=kek)
+            encrypted_dek, dek_iv = temp_service.encrypt(base64.b64encode(dek).decode('utf-8'))
+            
+            user.encrypted_dek = encrypted_dek
+            user.dek_iv = dek_iv
+            user.save()
+            
+            session['user_dek'] = base64.b64encode(dek).decode('utf-8')
+            print(f"Auto-migrated user {user.username} to individual encryption key")
+        except Exception as e:
+            print(f"Failed to auto-migrate user key: {e}")
 
     # Update last login
     user.update_last_login()
@@ -119,7 +167,8 @@ def login():
 
 @auth_bp.route('/logout', methods=['POST'])
 def logout():
-    """Log out the current user."""
+    """Log out the current user and clear encryption key."""
+    session.pop('user_dek', None)
     logout_user()
     return jsonify({'message': 'Logout successful'}), 200
 

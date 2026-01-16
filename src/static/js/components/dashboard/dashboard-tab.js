@@ -120,11 +120,11 @@ export function renderDashboardTab(container) {
                     <button onclick="window.app.showTab('profile')" class="action-btn">
                         ✏️ Edit Profile
                     </button>
+                    <button onclick="window.app.showTab('advisor')" class="action-btn" style="background: var(--info-color);">
+                        🤖 AI Advisor: Complete Profile
+                    </button>
                     <button onclick="window.app.showTab('analysis')" class="action-btn">
                         📊 Run Analysis
-                    </button>
-                    <button onclick="window.app.showTab('comparison')" class="action-btn">
-                        🔄 Compare Scenarios
                     </button>
                     <button onclick="window.app.showTab('actions')" class="action-btn">
                         ✅ View Action Items

@@ -9,6 +9,8 @@ import json
 from typing import Tuple, Optional
 
 
+from flask import session
+
 class EncryptionService:
     """Service for encrypting and decrypting sensitive data using AES-256-GCM."""
 
@@ -22,19 +24,38 @@ class EncryptionService:
         if key is None:
             # Get key from environment or use default (change in production!)
             key_material = os.environ.get('ENCRYPTION_KEY', 'default-key-change-in-production')
-
-            # Derive a proper 32-byte key using PBKDF2HMAC
-            kdf = PBKDF2HMAC(
-                algorithm=hashes.SHA256(),
-                length=32,
-                salt=b'retirement-planning-salt',  # Fixed salt for consistency
-                iterations=100000,
-                backend=default_backend()
-            )
-            key = kdf.derive(key_material.encode('utf-8'))
+            key = self._derive_key(key_material)
 
         self.key = key
         self.aesgcm = AESGCM(key)
+
+    def _derive_key(self, key_material: str, salt: bytes = b'retirement-planning-salt') -> bytes:
+        """Derive a 32-byte key from material."""
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=salt,
+            iterations=100000,
+            backend=default_backend()
+        )
+        return kdf.derive(key_material.encode('utf-8') if isinstance(key_material, str) else key_material)
+
+    @staticmethod
+    def generate_dek() -> bytes:
+        """Generate a random 32-byte Data Encryption Key."""
+        return os.urandom(32)
+
+    @staticmethod
+    def get_kek_from_password(password: str, salt: bytes = b'user-kek-salt') -> bytes:
+        """Derive a Key Encryption Key (KEK) from a user password."""
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=salt,
+            iterations=100000,
+            backend=default_backend()
+        )
+        return kdf.derive(password.encode('utf-8'))
 
     def encrypt(self, plaintext: str) -> Tuple[str, str]:
         """
@@ -164,7 +185,18 @@ _encryption_service = None
 
 
 def get_encryption_service() -> EncryptionService:
-    """Get or create the global encryption service instance."""
+    """Get or create the global encryption service instance.
+    Prefers user-specific DEK from session if available."""
+    try:
+        # Try to get user DEK from session
+        user_dek_b64 = session.get('user_dek')
+        if user_dek_b64:
+            user_dek = base64.b64decode(user_dek_b64)
+            return EncryptionService(key=user_dek)
+    except Exception:
+        # Session might not be available or dek invalid
+        pass
+
     global _encryption_service
     if _encryption_service is None:
         _encryption_service = EncryptionService()
@@ -173,30 +205,56 @@ def get_encryption_service() -> EncryptionService:
 
 # Convenience functions
 def encrypt(plaintext: str) -> Tuple[str, str]:
-    """Encrypt plaintext using global service."""
+    """Encrypt plaintext using global or session-based service."""
     return get_encryption_service().encrypt(plaintext)
 
 
 def decrypt(ciphertext: str, iv: str) -> Optional[str]:
-    """Decrypt ciphertext using global service."""
-    return get_encryption_service().decrypt(ciphertext, iv)
+    """Decrypt ciphertext using global or session-based service.
+    Attempts session-based first, then falls back to global if session-based fails."""
+    service = get_encryption_service()
+    try:
+        return service.decrypt(ciphertext, iv)
+    except Exception:
+        # If decryption failed and we were using a user key, try fallback to global
+        if 'user_dek' in session:
+            global _encryption_service
+            if _encryption_service is None:
+                _encryption_service = EncryptionService()
+            try:
+                return _encryption_service.decrypt(ciphertext, iv)
+            except Exception:
+                pass
+        raise
 
 
 def encrypt_dict(data: dict) -> Tuple[str, str]:
-    """Encrypt dictionary using global service."""
+    """Encrypt dictionary using global or session-based service."""
     return get_encryption_service().encrypt_dict(data)
 
 
 def decrypt_dict(ciphertext: str, iv: str) -> Optional[dict]:
-    """Decrypt dictionary using global service."""
-    return get_encryption_service().decrypt_dict(ciphertext, iv)
+    """Decrypt dictionary using global or session-based service."""
+    if not ciphertext or not iv:
+        return None
+    
+    plaintext = decrypt(ciphertext, iv)
+    if plaintext:
+        return json.loads(plaintext)
+    return None
 
 
 def encrypt_list(data: list) -> Tuple[str, str]:
-    """Encrypt list using global service."""
+    """Encrypt list using global or session-based service."""
     return get_encryption_service().encrypt_list(data)
 
 
 def decrypt_list(ciphertext: str, iv: str) -> Optional[list]:
-    """Decrypt list using global service."""
-    return get_encryption_service().decrypt_list(ciphertext, iv)
+    """Decrypt list using global or session-based service."""
+    if not ciphertext or not iv:
+        return None
+    
+    plaintext = decrypt(ciphertext, iv)
+    if plaintext:
+        return json.loads(plaintext)
+    return None

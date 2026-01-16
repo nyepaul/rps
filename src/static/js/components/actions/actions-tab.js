@@ -4,6 +4,7 @@
 
 import { actionItemsAPI } from '../../api/action-items.js';
 import { store } from '../../state/store.js';
+import { apiClient } from '../../api/client.js';
 import { showSuccess, showError, showLoading } from '../../utils/dom.js';
 import { formatDate } from '../../utils/formatters.js';
 
@@ -35,9 +36,14 @@ export function renderActionsTab(container) {
                         Profile: <strong>${profile.name}</strong>
                     </p>
                 </div>
-                <button id="add-action-btn" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
-                    + Add Action Item
-                </button>
+                <div style="display: flex; gap: 10px;">
+                    <button id="generate-actions-btn" style="padding: 12px 24px; background: var(--info-bg); color: var(--info-color); border: 1px solid var(--info-color); border-radius: 6px; cursor: pointer; font-size: 16px;">
+                        💡 Generate Recommendations
+                    </button>
+                    <button id="add-action-btn" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                        + Add Action Item
+                    </button>
+                </div>
             </div>
 
             <!-- Filter Tabs -->
@@ -274,7 +280,7 @@ function displayActionItems(container, items, filter) {
 
     listContainer.querySelectorAll('.btn-edit').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const id = e.target.dataset.id;
+            const id = btn.dataset.id;
             const item = items.find(i => i.id == id);
             if (item) {
                 showEditActionItemModal(item);
@@ -284,7 +290,7 @@ function displayActionItems(container, items, filter) {
 
     listContainer.querySelectorAll('.btn-delete').forEach(btn => {
         btn.addEventListener('click', async (e) => {
-            const id = e.target.dataset.id;
+            const id = btn.dataset.id;
 
             if (!confirm('Are you sure you want to delete this action item?')) {
                 return;
@@ -306,6 +312,29 @@ function displayActionItems(container, items, filter) {
 }
 
 function setupActionsHandlers(container, profile) {
+    // Generate actions button
+    const generateBtn = container.querySelector('#generate-actions-btn');
+    if (generateBtn) {
+        generateBtn.addEventListener('click', async () => {
+            showLoading(generateBtn, 'Generating...');
+            generateBtn.disabled = true;
+
+            try {
+                const response = await apiClient.post('/api/action-items/generate', {
+                    profile_name: profile.name
+                });
+                showSuccess('Recommendations generated based on your profile!');
+                loadActionItems(container, profile);
+            } catch (error) {
+                console.error('Error generating action items:', error);
+                showError('Failed to generate recommendations.');
+            } finally {
+                generateBtn.innerHTML = '💡 Generate Recommendations';
+                generateBtn.disabled = false;
+            }
+        });
+    }
+
     // Add action button
     const addBtn = container.querySelector('#add-action-btn');
     if (addBtn) {
@@ -317,7 +346,7 @@ function setupActionsHandlers(container, profile) {
     // Filter tabs
     container.querySelectorAll('.filter-tab').forEach(tab => {
         tab.addEventListener('click', async (e) => {
-            const filter = e.target.dataset.filter;
+            const filter = tab.dataset.filter;
 
             // Update active tab
             container.querySelectorAll('.filter-tab').forEach(t => {

@@ -4,6 +4,7 @@
 
 import { advisorAPI } from '../../api/advisor.js';
 import { store } from '../../state/store.js';
+import { apiClient } from '../../api/client.js';
 import { showSuccess, showError } from '../../utils/dom.js';
 
 let currentConversationId = null;
@@ -82,11 +83,8 @@ export function renderAdvisorTab(container) {
                 <button class="quick-action-btn" data-message="What should I do to improve my retirement readiness?">
                     💡 Improvement Tips
                 </button>
-                <button class="quick-action-btn" data-message="When should I claim Social Security?">
-                    📅 Social Security Timing
-                </button>
-                <button class="quick-action-btn" data-message="Should I do a Roth conversion?">
-                    💰 Roth Conversion
+                <button id="troubleshoot-btn" class="quick-action-btn" style="background: var(--info-bg); color: var(--info-color);">
+                    🔧 Troubleshoot Advisor
                 </button>
                 <button id="clear-history-btn" class="quick-action-btn" style="background: var(--danger-bg); color: var(--danger-color);">
                     🗑️ Clear Chat
@@ -217,6 +215,14 @@ function setupAdvisorHandlers(container, profile) {
 
     if (!chatInput || !sendBtn || !chatContainer) return;
 
+    // Troubleshoot button
+    const troubleshootBtn = container.querySelector('#troubleshoot-btn');
+    if (troubleshootBtn) {
+        troubleshootBtn.addEventListener('click', () => {
+            import('./advisor-wizard.js').then(m => m.showAdvisorWizard());
+        });
+    }
+
     // Send button click
     sendBtn.addEventListener('click', () => {
         sendMessage(profile, chatInput, chatContainer);
@@ -233,7 +239,7 @@ function setupAdvisorHandlers(container, profile) {
     // Quick action buttons
     container.querySelectorAll('.quick-action-btn[data-message]').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const message = e.target.dataset.message;
+            const message = btn.dataset.message;
             chatInput.value = message;
             sendMessage(profile, chatInput, chatContainer);
         });
@@ -284,11 +290,17 @@ async function sendMessage(profile, chatInput, chatContainer) {
     } catch (error) {
         console.error('Chat error:', error);
         removeTypingIndicator(chatContainer, typingId);
-        addMessage(chatContainer, 'assistant', `Sorry, I encountered an error: ${error.message}`);
+        
+        const errorMsg = `Sorry, I encountered an error: ${error.message}. <br><br>
+            <button onclick="import('./advisor-wizard.js').then(m => m.showAdvisorWizard())" style="padding: 5px 10px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 13px;">
+                🔧 Run Fix Wizard
+            </button>`;
+        
+        addMessage(chatContainer, 'assistant', errorMsg, true);
     }
 }
 
-function addMessage(container, role, text) {
+function addMessage(container, role, text, isHtml = false) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${role}-message`;
 
@@ -298,7 +310,7 @@ function addMessage(container, role, text) {
     messageDiv.innerHTML = `
         <div class="message-avatar">${avatar}</div>
         <div class="message-content">
-            <div class="message-text">${escapeHtml(text)}</div>
+            <div class="message-text">${isHtml ? text : escapeHtml(text)}</div>
             <div class="message-time">${time}</div>
         </div>
     `;

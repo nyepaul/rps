@@ -424,7 +424,7 @@ function setupRemoveChildButtons(container) {
     const removeButtons = container.querySelectorAll('.remove-child-btn');
     removeButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const index = e.target.dataset.index;
+            const index = btn.dataset.index;
             const childItem = container.querySelector(`.child-item[data-index="${index}"]`);
             if (childItem && confirm('Remove this child from the profile?')) {
                 childItem.remove();

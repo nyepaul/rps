@@ -86,6 +86,35 @@ class ActionItemUpdateSchema(BaseModel):
         return v
 
 
+from src.services.action_item_service import ActionItemService
+
+@action_items_bp.route('/action-items/generate', methods=['POST'])
+@login_required
+def generate_action_items():
+    """Generate automated action items for a profile."""
+    try:
+        profile_name = request.json.get('profile_name')
+        if not profile_name:
+            return jsonify({'error': 'profile_name is required'}), 400
+
+        profile = Profile.get_by_name(profile_name, current_user.id)
+        if not profile:
+            return jsonify({'error': 'Profile not found'}), 404
+
+        # Generate and sync items
+        ActionItemService.sync_generated_items(current_user.id, profile)
+        
+        # Get all items (new and existing)
+        action_items = ActionItem.list_by_user(current_user.id, profile.id)
+
+        return jsonify({
+            'message': 'Action items generated successfully',
+            'action_items': [item.to_dict() for item in action_items]
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @action_items_bp.route('/action-items', methods=['GET'])
 @login_required
 def list_action_items():

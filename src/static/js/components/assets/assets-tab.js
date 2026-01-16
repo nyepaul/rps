@@ -148,26 +148,37 @@ export function renderAssetsTab(container) {
 
     // Function to update the view
     const updateView = () => {
+        // Always get fresh data from store to avoid stale closures
+        const latestProfile = store.get('currentProfile');
+        const latestAssets = latestProfile.data?.assets || {
+            retirement_accounts: [],
+            taxable_accounts: [],
+            real_estate: [],
+            pensions_annuities: [],
+            other_assets: []
+        };
+
         const summaryContainer = container.querySelector('#asset-summary');
         const listContainer = container.querySelector('#asset-categories');
 
         // Render summary cards with current filter
-        renderSummaryCards(assets, summaryContainer, currentFilter);
+        renderSummaryCards(latestAssets, summaryContainer, currentFilter);
 
         // Filter assets
-        const filteredAssets = filterAssets(assets, currentFilter);
+        const filteredAssets = filterAssets(latestAssets, currentFilter);
         
         // Render asset list
         renderAssetList(filteredAssets, listContainer);
         
         // Setup list handlers (edit/delete)
-        setupAssetListHandlers(container, profile, assets, updateView);
+        setupAssetListHandlers(container, latestProfile, latestAssets, updateView);
     };
 
     // Initial render
     updateView();
 
     // Set up other event handlers (financial form, buttons)
+    // Initial call uses captured assets/profile but updateView within them will refresh
     setupGeneralHandlers(container, profile, assets, updateView);
 
     // Setup summary card click handler (delegation)
@@ -287,10 +298,9 @@ function calculateTotal(items, field1 = 'value', field2 = null) {
 function setupAssetListHandlers(container, profile, assets, refreshCallback) {
     // Edit buttons
     container.querySelectorAll('.edit-asset-btn').forEach(btn => {
-        // Clone to replace to remove old event listeners if any (though innerHTML replace handles it)
         btn.addEventListener('click', (e) => {
-            const category = e.target.dataset.category;
-            const index = parseInt(e.target.dataset.index);
+            const category = btn.dataset.category;
+            const index = parseInt(btn.dataset.index);
             const asset = assets[category][index];
 
             showAssetWizard(category, asset, async (updatedAssets) => {
@@ -303,8 +313,8 @@ function setupAssetListHandlers(container, profile, assets, refreshCallback) {
     // Delete buttons
     container.querySelectorAll('.delete-asset-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
-            const category = e.target.dataset.category;
-            const index = parseInt(e.target.dataset.index);
+            const category = btn.dataset.category;
+            const index = parseInt(btn.dataset.index);
             const asset = assets[category][index];
 
             if (confirm(`Are you sure you want to delete "${asset.name}"?`)) {

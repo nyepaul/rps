@@ -102,13 +102,21 @@ export function showAssetWizard(preselectedCategory = null, existingAsset = null
         return;
     }
 
-    const assets = profile.data?.assets || {
+    const assets = {
         retirement_accounts: [],
         taxable_accounts: [],
         real_estate: [],
         pensions_annuities: [],
-        other_assets: []
+        other_assets: [],
+        ...(profile.data?.assets || {})
     };
+
+    // Ensure nested arrays exist even if they were null or missing in profile.data.assets
+    if (!Array.isArray(assets.retirement_accounts)) assets.retirement_accounts = [];
+    if (!Array.isArray(assets.taxable_accounts)) assets.taxable_accounts = [];
+    if (!Array.isArray(assets.real_estate)) assets.real_estate = [];
+    if (!Array.isArray(assets.pensions_annuities)) assets.pensions_annuities = [];
+    if (!Array.isArray(assets.other_assets)) assets.other_assets = [];
 
     const isEditing = existingAsset !== null;
     const wizardState = {
@@ -513,8 +521,8 @@ function setupWizardHandlers(wizard, state, assets, onSave, modal, isEditing) {
             } else if (state.currentStep === 3) {
                 // From review, go back to last asset form
                 state.currentStep = 2;
-            } else {
-                // Go back to type selection
+            } else if (!isEditing) {
+                // Go back to type selection (only if adding new)
                 state.currentStep = 1;
                 state.currentTypeIndex = 0;
                 state.assetData = {};
@@ -547,10 +555,17 @@ function setupWizardHandlers(wizard, state, assets, onSave, modal, isEditing) {
                     form.reportValidity();
                     return;
                 }
-                const currentAsset = extractFormData(form, state.category);
+                
+                // Merge form data with existing asset data to preserve hidden fields (id, created_at, etc)
+                const formData = extractFormData(form, state.category);
+                const currentAsset = { 
+                    ...state.assetData, 
+                    ...formData,
+                    updated_at: new Date().toISOString()
+                };
+                
                 currentAsset.id = currentAsset.id || generateId();
                 currentAsset.created_at = currentAsset.created_at || new Date().toISOString();
-                currentAsset.updated_at = new Date().toISOString();
 
                 // Check if there are more types to add
                 if (state.currentTypeIndex < state.selectedTypes.length - 1) {
