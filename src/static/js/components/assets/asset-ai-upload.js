@@ -8,8 +8,9 @@ import { apiClient } from '../../api/client.js';
  * Show AI upload modal
  * @param {object} existingAssets - Current assets to avoid duplicates
  * @param {function} onSuccess - Callback with updated assets
+ * @param {object} profile - Current profile (optional, will try to get from store if not provided)
  */
-export function showAIUploadModal(existingAssets, onSuccess) {
+export function showAIUploadModal(existingAssets, onSuccess, profile = null) {
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.style.cssText = `
@@ -265,13 +266,20 @@ export function showAIUploadModal(existingAssets, onSuccess) {
         processing.style.display = 'block';
 
         try {
+            // Get profile from parameter or store
+            const currentProfile = profile || (await import('../../state/store.js')).store.get('currentProfile');
+            if (!currentProfile) {
+                throw new Error('No profile selected. Please select a profile first.');
+            }
+
             // Remove data:image prefix if present
             const base64Data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
 
-            const response = await apiClient.post('/extract-assets', {
+            const response = await apiClient.post('/api/extract-assets', {
                 image: base64Data,
                 llm_provider: provider,
-                existing_assets: flattenAssets(existingAssets)
+                existing_assets: flattenAssets(existingAssets),
+                profile_name: currentProfile.name
             });
 
             if (response.status === 'success' && response.assets && response.assets.length > 0) {
@@ -285,7 +293,22 @@ export function showAIUploadModal(existingAssets, onSuccess) {
             }
         } catch (error) {
             console.error('Extraction error:', error);
-            showError(error.message || 'Failed to extract assets. Please try again.');
+            const errorMsg = error.message || 'Failed to extract assets. Please try again.';
+
+            // Check if this is an API key error
+            if (errorMsg.includes('API_KEY') || errorMsg.includes('api-keys') || errorMsg.includes('setup-api-keys')) {
+                showError(errorMsg + ' Opening API settings...');
+
+                // Open API settings directly
+                setTimeout(() => {
+                    if (window.app && window.app.openSettings) {
+                        window.app.openSettings('api-keys');
+                    }
+                }, 800);
+            } else {
+                showError(errorMsg);
+            }
+
             processing.style.display = 'none';
             imagePreview.style.display = 'block';
             providerSelection.style.display = 'block';

@@ -278,7 +278,7 @@ function setupGeneralHandlers(container, profile, assets, refreshCallback) {
             showAIUploadModal(assets, async (updatedAssets) => {
                 await saveAssets(profile, updatedAssets);
                 if (refreshCallback) refreshCallback();
-            });
+            }, profile);
         });
     }
 

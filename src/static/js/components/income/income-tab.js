@@ -38,196 +38,27 @@ export function renderIncomeTab(container) {
     container.innerHTML = `
         <div style="max-width: 1400px; margin: 0 auto; padding: 20px;">
             <!-- Header -->
-            <div style="margin-bottom: 20px;">
-                <h1 style="font-size: 28px; margin-bottom: 8px;">💰 Income Planning</h1>
-                <p style="color: var(--text-secondary); margin: 0; font-size: 14px;">
-                    Model your current income, retirement benefits, and future income streams
-                </p>
-            </div>
-
-            <!-- Financial Summary Section -->
-            <div id="financial-summary" style="background: var(--bg-secondary); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-                <h2 style="font-size: 20px; margin-bottom: 15px; border-bottom: 2px solid var(--accent-color); padding-bottom: 8px;">
-                    📊 Financial Summary
-                </h2>
-                <form id="financial-form">
-                    <!-- Household Income/Expenses -->
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px;">
-                        <div class="form-group">
-                            <label for="annual_income" style="font-weight: 600; margin-bottom: 5px; display: block; font-size: 14px;">Annual Household Income</label>
-                            <input type="text" id="annual_income" name="annual_income" value="${financial.annual_income ? formatCurrency(financial.annual_income, 0) : ''}" placeholder="$0" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: 14px;">
-                            <small style="color: var(--text-secondary); font-size: 12px;">Current annual gross income</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="annual_expenses" style="font-weight: 600; margin-bottom: 5px; display: block; font-size: 14px;">Annual Household Expenses</label>
-                            <input type="text" id="annual_expenses" name="annual_expenses" value="${financial.annual_expenses ? formatCurrency(financial.annual_expenses, 0) : ''}" placeholder="$0" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: 14px;">
-                            <small style="color: var(--text-secondary); font-size: 12px;">Current annual spending</small>
-                        </div>
-                    </div>
-
-                    <!-- Retirement Benefits by Person -->
-                    <h3 style="font-size: 16px; margin-bottom: 15px; color: var(--text-secondary);">Retirement Benefits</h3>
-                    <div style="display: grid; grid-template-columns: ${hasSpouse ? '1fr 1fr' : '1fr'}; gap: 20px;">
-                        <!-- Primary Person Benefits -->
-                        <div style="background: var(--bg-primary); padding: 18px; border-radius: 8px; border: 1px solid var(--border-color);">
-                            <h4 style="font-size: 14px; margin-bottom: 12px; font-weight: 600;">${primaryName}'s Benefits</h4>
-                            <div style="display: grid; gap: 15px;">
-                                <div class="form-group">
-                                    <label for="social_security_benefit" style="font-weight: 500; margin-bottom: 5px; display: block; font-size: 13px;">Social Security (monthly)</label>
-                                    <input type="text" id="social_security_benefit" name="social_security_benefit" value="${financial.social_security_benefit ? formatCurrency(financial.social_security_benefit, 0) : ''}" placeholder="$0" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
-                                    <small style="color: var(--text-secondary); font-size: 11px;">Estimated monthly benefit at FRA</small>
-                                </div>
-                                <div class="form-group">
-                                    <label for="pension_benefit" style="font-weight: 500; margin-bottom: 5px; display: block; font-size: 13px;">Pension (monthly)</label>
-                                    <input type="text" id="pension_benefit" name="pension_benefit" value="${financial.pension_benefit ? formatCurrency(financial.pension_benefit, 0) : ''}" placeholder="$0" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
-                                    <small style="color: var(--text-secondary); font-size: 11px;">Monthly pension amount</small>
-                                </div>
-                            </div>
-                        </div>
-
-                        ${hasSpouse ? `
-                        <!-- Spouse Benefits -->
-                        <div style="background: var(--bg-primary); padding: 18px; border-radius: 8px; border: 1px solid var(--border-color);">
-                            <h4 style="font-size: 14px; margin-bottom: 12px; font-weight: 600;">${spouseName}'s Benefits</h4>
-                            <div style="display: grid; gap: 15px;">
-                                <div class="form-group">
-                                    <label for="spouse_social_security" style="font-weight: 500; margin-bottom: 5px; display: block; font-size: 13px;">Social Security (monthly)</label>
-                                    <input type="text" id="spouse_social_security" name="spouse_social_security" value="${spouse.social_security_benefit ? formatCurrency(spouse.social_security_benefit, 0) : ''}" placeholder="$0" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
-                                    <small style="color: var(--text-secondary); font-size: 11px;">Estimated monthly benefit at FRA</small>
-                                </div>
-                                <div class="form-group">
-                                    <label for="spouse_pension" style="font-weight: 500; margin-bottom: 5px; display: block; font-size: 13px;">Pension (monthly)</label>
-                                    <input type="text" id="spouse_pension" name="spouse_pension" value="${spouse.pension_benefit ? formatCurrency(spouse.pension_benefit, 0) : ''}" placeholder="$0" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
-                                    <small style="color: var(--text-secondary); font-size: 11px;">Monthly pension amount</small>
-                                </div>
-                            </div>
-                        </div>
-                        ` : ''}
-                    </div>
-
-                    <div style="margin-top: 20px; text-align: right;">
-                        <button type="submit" id="save-financial-btn" style="padding: 10px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
-                            Save Financial Info
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Income Streams Section -->
-            <div style="background: var(--bg-secondary); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h2 style="font-size: 20px; margin: 0; border-bottom: 2px solid var(--accent-color); padding-bottom: 8px;">
-                        💵 Income Streams
-                    </h2>
-                    <button id="add-income-stream-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
-                        + Add Income Stream
-                    </button>
-                </div>
-                <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 13px;">
-                    Model employment, consulting, rental income, and other income sources with specific start and end dates
-                </p>
-                <div id="income-streams-list"></div>
-            </div>
-
-            <!-- Investment Income Section -->
-            <div style="background: var(--bg-secondary); padding: 20px; border-radius: 12px;">
-                <h2 style="font-size: 20px; margin-bottom: 15px; border-bottom: 2px solid var(--accent-color); padding-bottom: 8px;">
-                    📈 Investment Income
-                </h2>
-                <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 13px;">
-                    Investment income is calculated based on your assets and configured in the Budget tab
-                </p>
-                <div id="investment-income-summary" style="background: var(--bg-primary); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
-                    <p style="margin: 0; color: var(--text-secondary); font-size: 13px;">
-                        Configure investment income settings in the <strong>Budget</strong> tab to see projections here.
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div>
+                    <h1 style="font-size: 28px; margin: 0 0 8px 0;">💰 Income Streams</h1>
+                    <p style="color: var(--text-secondary); margin: 0; font-size: 14px;">
+                        Track current and future income with start and end dates
                     </p>
                 </div>
+                <button id="add-income-stream-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
+                    + Add Income
+                </button>
+            </div>
+
+            <!-- Income Streams Table -->
+            <div style="background: var(--bg-secondary); border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                <div id="income-streams-list"></div>
             </div>
         </div>
     `;
 
     // Setup event handlers
-    setupFinancialFormHandlers(container, profile);
     setupIncomeStreamsHandlers(container, profile, incomeStreams);
-}
-
-/**
- * Setup financial form handlers
- */
-function setupFinancialFormHandlers(container, profile) {
-    const financialForm = container.querySelector('#financial-form');
-    if (!financialForm) return;
-
-    // Add currency formatting on blur
-    const currencyFields = ['annual_income', 'annual_expenses', 'social_security_benefit',
-                           'pension_benefit', 'spouse_social_security', 'spouse_pension'];
-    currencyFields.forEach(fieldName => {
-        const field = container.querySelector(`#${fieldName}`);
-        if (field) {
-            field.addEventListener('blur', (e) => {
-                const value = parseCurrency(e.target.value);
-                if (value > 0) {
-                    e.target.value = formatCurrency(value, 0);
-                }
-            });
-        }
-    });
-
-    financialForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const saveBtn = container.querySelector('#save-financial-btn');
-        saveBtn.disabled = true;
-        saveBtn.textContent = 'Saving...';
-
-        try {
-            const formData = new FormData(financialForm);
-            const financial = {};
-
-            // Primary person financial fields
-            const primaryFields = ['annual_income', 'annual_expenses', 'social_security_benefit', 'pension_benefit'];
-            primaryFields.forEach(field => {
-                const value = formData.get(field);
-                if (value) {
-                    financial[field] = parseCurrency(value);
-                }
-            });
-
-            // Spouse financial fields
-            const spouseUpdates = {};
-            const spouseSS = formData.get('spouse_social_security');
-            if (spouseSS) {
-                spouseUpdates.social_security_benefit = parseCurrency(spouseSS);
-            }
-            const spousePension = formData.get('spouse_pension');
-            if (spousePension) {
-                spouseUpdates.pension_benefit = parseCurrency(spousePension);
-            }
-
-            const updatedData = {
-                ...profile.data,
-                financial: {
-                    ...(profile.data?.financial || {}),
-                    ...financial
-                },
-                spouse: {
-                    ...(profile.data?.spouse || {}),
-                    ...spouseUpdates
-                }
-            };
-
-            const result = await profilesAPI.update(profile.name, { data: updatedData });
-            store.setState({ currentProfile: result.profile });
-            showSuccess('Financial information saved!');
-
-            saveBtn.disabled = false;
-            saveBtn.textContent = 'Save Financial Info';
-        } catch (error) {
-            console.error('Error saving financial info:', error);
-            showError('Failed to save: ' + error.message);
-            saveBtn.disabled = false;
-            saveBtn.textContent = 'Save Financial Info';
-        }
-    });
 }
 
 /**
@@ -254,11 +85,11 @@ function renderIncomeStreamsList(container, incomeStreams) {
 
     if (incomeStreams.length === 0) {
         listContainer.innerHTML = `
-            <div style="text-align: center; padding: 40px; background: var(--bg-primary); border-radius: 8px; border: 1px dashed var(--border-color);">
+            <div style="text-align: center; padding: 60px 20px;">
                 <div style="font-size: 48px; margin-bottom: 15px; opacity: 0.5;">💼</div>
-                <h3 style="margin-bottom: 8px; color: var(--text-primary);">No Income Streams</h3>
+                <h3 style="margin-bottom: 8px; color: var(--text-primary);">No Income Streams Yet</h3>
                 <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;">
-                    Click "Add Income Stream" to model employment, consulting, rental income, and more
+                    Click "Add Income" to track your income sources
                 </p>
             </div>
         `;
@@ -273,21 +104,38 @@ function renderIncomeStreamsList(container, incomeStreams) {
     });
 
     listContainer.innerHTML = `
-        <div style="display: grid; gap: 12px;">
-            ${sortedStreams.map((stream, index) => renderIncomeStreamCard(stream, index)).join('')}
-        </div>
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: var(--bg-tertiary); border-bottom: 2px solid var(--border-color);">
+                    <th style="text-align: left; padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary);">Name</th>
+                    <th style="text-align: right; padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary);">Amount/Month</th>
+                    <th style="text-align: center; padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary);">Start Date</th>
+                    <th style="text-align: center; padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary);">End Date</th>
+                    <th style="text-align: center; padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary); width: 80px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${sortedStreams.map((stream, index) => renderIncomeStreamRow(stream, index)).join('')}
+            </tbody>
+        </table>
     `;
 
-    // Setup edit/delete handlers
-    listContainer.querySelectorAll('.edit-income-stream-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const index = parseInt(btn.dataset.index);
+    // Setup row click handlers (edit on click)
+    listContainer.querySelectorAll('.income-row').forEach(row => {
+        row.addEventListener('click', (e) => {
+            // Don't trigger if clicking delete button
+            if (e.target.classList.contains('delete-income-stream-btn') || e.target.closest('.delete-income-stream-btn')) {
+                return;
+            }
+            const index = parseInt(row.dataset.index);
             showIncomeStreamModal(container, store.get('currentProfile'), index, incomeStreams);
         });
     });
 
+    // Setup delete handlers
     listContainer.querySelectorAll('.delete-income-stream-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation(); // Prevent row click
             const index = parseInt(btn.dataset.index);
             const stream = incomeStreams[index];
 
@@ -299,43 +147,35 @@ function renderIncomeStreamsList(container, incomeStreams) {
 }
 
 /**
- * Render income stream card
+ * Render income stream table row
  */
-function renderIncomeStreamCard(stream, index) {
-    const annualAmount = stream.amount * 12; // Assuming monthly
-    const startDate = stream.start_date ? new Date(stream.start_date).toLocaleDateString() : 'Not set';
+function renderIncomeStreamRow(stream, index) {
+    const startDate = stream.start_date ? new Date(stream.start_date).toLocaleDateString() : '—';
     const endDate = stream.end_date ? new Date(stream.end_date).toLocaleDateString() : 'Ongoing';
 
     return `
-        <div style="background: var(--bg-primary); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: start;">
-            <div style="flex: 1;">
-                <h4 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600;">${stream.name}</h4>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 8px;">
-                    <div>
-                        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 2px;">Amount</div>
-                        <div style="font-size: 14px; font-weight: 600; color: var(--accent-color);">${formatCurrency(stream.amount, 0)}/mo</div>
-                        <div style="font-size: 12px; color: var(--text-secondary);">${formatCurrency(annualAmount, 0)}/yr</div>
-                    </div>
-                    <div>
-                        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 2px;">Start Date</div>
-                        <div style="font-size: 13px;">${startDate}</div>
-                    </div>
-                    <div>
-                        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 2px;">End Date</div>
-                        <div style="font-size: 13px;">${endDate}</div>
-                    </div>
-                </div>
-                ${stream.description ? `<p style="margin: 8px 0 0 0; font-size: 13px; color: var(--text-secondary);">${stream.description}</p>` : ''}
-            </div>
-            <div style="display: flex; gap: 8px; margin-left: 16px;">
-                <button class="edit-income-stream-btn" data-index="${index}" style="padding: 6px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 13px;">
-                    Edit
-                </button>
-                <button class="delete-income-stream-btn" data-index="${index}" style="padding: 6px 12px; background: var(--danger-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
+        <tr class="income-row" data-index="${index}" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;"
+            onmouseover="this.style.background='var(--bg-tertiary)'"
+            onmouseout="this.style.background='transparent'">
+            <td style="padding: 14px 16px;">
+                <div style="font-weight: 600; font-size: 14px; margin-bottom: 2px;">${stream.name}</div>
+                ${stream.description ? `<div style="font-size: 12px; color: var(--text-secondary);">${stream.description}</div>` : ''}
+            </td>
+            <td style="padding: 14px 16px; text-align: right;">
+                <div style="font-weight: 600; font-size: 14px; color: var(--accent-color);">${formatCurrency(stream.amount, 0)}</div>
+                <div style="font-size: 11px; color: var(--text-secondary);">${formatCurrency(stream.amount * 12, 0)}/yr</div>
+            </td>
+            <td style="padding: 14px 16px; text-align: center; font-size: 13px;">${startDate}</td>
+            <td style="padding: 14px 16px; text-align: center; font-size: 13px;">${endDate}</td>
+            <td style="padding: 14px 16px; text-align: center;">
+                <button class="delete-income-stream-btn" data-index="${index}"
+                    style="padding: 4px 8px; background: transparent; color: var(--danger-color); border: 1px solid var(--danger-color); border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; transition: all 0.2s;"
+                    onmouseover="this.style.background='var(--danger-color)'; this.style.color='white'"
+                    onmouseout="this.style.background='transparent'; this.style.color='var(--danger-color)'">
                     Delete
                 </button>
-            </div>
-        </div>
+            </td>
+        </tr>
     `;
 }
 

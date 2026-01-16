@@ -194,6 +194,11 @@ async function loadTabComponent(tabName, container) {
             renderBudgetTab(tabContent);
             break;
         }
+        case 'cashflow': {
+            const { renderCashFlowTab } = await import('./components/cashflow/cashflow-tab.js');
+            renderCashFlowTab(tabContent);
+            break;
+        }
         case 'analysis': {
             const { renderAnalysisTab } = await import('./components/analysis/analysis-tab.js');
             renderAnalysisTab(tabContent);
@@ -269,8 +274,9 @@ function setupLogout() {
 
 /**
  * Open settings modal
+ * @param {string} defaultTab - The tab to open by default ('general' or 'api-keys')
  */
-async function openSettings() {
+async function openSettings(defaultTab = 'general') {
     const currentSimulations = localStorage.getItem(STORAGE_KEYS.SIMULATIONS) || APP_CONFIG.DEFAULT_SIMULATIONS;
     const currentMarketProfile = localStorage.getItem(STORAGE_KEYS.MARKET_PROFILE) || 'historical';
 
@@ -312,17 +318,37 @@ async function openSettings() {
             <!-- Appearance Settings -->
             <div style="margin-bottom: 25px;">
                 <h3 style="font-size: 16px; margin-bottom: 12px; color: var(--text-secondary);">Appearance</h3>
-                <div style="margin-bottom: 10px;">
+                <div style="margin-bottom: 15px;">
                     <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
                         <input type="checkbox" id="dark-mode-toggle" ${document.body.classList.contains('dark-mode') ? 'checked' : ''}>
                         <span>Dark Mode</span>
                     </label>
                 </div>
                 <div style="margin-bottom: 10px;">
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                        <input type="checkbox" id="compact-mode-toggle" ${document.body.classList.contains('compact-mode') ? 'checked' : ''}>
-                        <span>Compact Mode</span>
-                    </label>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Display Density</label>
+                    <div style="display: flex; flex-direction: column; gap: 8px; margin-left: 10px;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="radio" name="display-density" value="compact" ${document.body.classList.contains('compact-mode') ? 'checked' : ''}>
+                            <div>
+                                <div style="font-weight: 500;">Compact</div>
+                                <div style="font-size: 12px; color: var(--text-secondary);">Minimal spacing, dense layout - fits more on screen</div>
+                            </div>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="radio" name="display-density" value="normal" ${!document.body.classList.contains('compact-mode') && !document.body.classList.contains('comfortable-mode') ? 'checked' : ''}>
+                            <div>
+                                <div style="font-weight: 500;">Normal</div>
+                                <div style="font-size: 12px; color: var(--text-secondary);">Balanced spacing and readability (default)</div>
+                            </div>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="radio" name="display-density" value="comfortable" ${document.body.classList.contains('comfortable-mode') ? 'checked' : ''}>
+                            <div>
+                                <div style="font-weight: 500;">Comfortable</div>
+                                <div style="font-size: 12px; color: var(--text-secondary);">Spacious layout, generous padding - easier on the eyes</div>
+                            </div>
+                        </label>
+                    </div>
                 </div>
             </div>
 
@@ -456,13 +482,24 @@ async function openSettings() {
     const apiKeysContent = modal.querySelector('#api-keys-content');
     await renderAPIKeysSettings(apiKeysContent);
 
+    // Activate the default tab
+    if (defaultTab === 'api-keys') {
+        const apiKeysBtn = modal.querySelector('[data-settings-tab="api-keys"]');
+        if (apiKeysBtn) {
+            apiKeysBtn.click();
+        }
+    }
+
     // Set up event handlers
     document.getElementById('dark-mode-toggle').addEventListener('change', (e) => {
         toggleTheme(e.target.checked);
     });
 
-    document.getElementById('compact-mode-toggle').addEventListener('change', (e) => {
-        toggleCompactMode(e.target.checked);
+    // Display density radio buttons
+    modal.querySelectorAll('input[name="display-density"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            setDisplayDensity(e.target.value);
+        });
     });
 
     // Update market profile description on change
@@ -527,25 +564,46 @@ function loadThemePreference() {
 }
 
 /**
- * Toggle compact mode
+ * Set display density (compact, normal, or comfortable)
  */
-function toggleCompactMode(isCompact) {
-    if (isCompact) {
+function setDisplayDensity(density) {
+    // Remove all density classes
+    document.body.classList.remove('compact-mode', 'comfortable-mode');
+
+    // Add the selected density class
+    if (density === 'compact') {
         document.body.classList.add('compact-mode');
-        localStorage.setItem(STORAGE_KEYS.COMPACT_MODE, 'true');
-    } else {
-        document.body.classList.remove('compact-mode');
-        localStorage.setItem(STORAGE_KEYS.COMPACT_MODE, 'false');
+    } else if (density === 'comfortable') {
+        document.body.classList.add('comfortable-mode');
     }
+    // normal mode has no class
+
+    // Save to localStorage
+    localStorage.setItem(STORAGE_KEYS.DISPLAY_DENSITY, density);
 }
 
 /**
- * Load compact mode preference from localStorage
+ * Toggle compact mode (legacy function for backwards compatibility)
+ */
+function toggleCompactMode(isCompact) {
+    setDisplayDensity(isCompact ? 'compact' : 'normal');
+}
+
+/**
+ * Load display density preference from localStorage
  */
 function loadCompactModePreference() {
-    const compact = localStorage.getItem(STORAGE_KEYS.COMPACT_MODE);
-    if (compact === 'true') {
-        document.body.classList.add('compact-mode');
+    const density = localStorage.getItem(STORAGE_KEYS.DISPLAY_DENSITY);
+
+    if (density) {
+        // New system: density can be 'compact', 'normal', or 'comfortable'
+        setDisplayDensity(density);
+    } else {
+        // Legacy fallback: check old compact mode setting
+        const compact = localStorage.getItem(STORAGE_KEYS.COMPACT_MODE);
+        if (compact === 'true') {
+            setDisplayDensity('compact');
+        }
     }
 }
 
@@ -575,4 +633,4 @@ if (document.readyState === 'loading') {
 }
 
 // Export for debugging
-window.app = { store, apiClient, showTab };
+window.app = { store, apiClient, showTab, openSettings };

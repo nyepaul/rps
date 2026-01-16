@@ -290,13 +290,23 @@ async function sendMessage(profile, chatInput, chatContainer) {
     } catch (error) {
         console.error('Chat error:', error);
         removeTypingIndicator(chatContainer, typingId);
-        
-        const errorMsg = `Sorry, I encountered an error: ${error.message}. <br><br>
-            <button onclick="import('./advisor-wizard.js').then(m => m.showAdvisorWizard())" style="padding: 5px 10px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 13px;">
-                🔧 Run Fix Wizard
-            </button>`;
-        
-        addMessage(chatContainer, 'assistant', errorMsg, true);
+
+        const errorMessage = error.message || 'Unknown error';
+
+        // Check if this is an API key error
+        if (errorMessage.includes('API_KEY') || errorMessage.includes('api-keys') || errorMessage.includes('setup-api-keys')) {
+            const errorMsg = `Sorry, API key not configured. ${errorMessage}<br><br>
+                <button onclick="window.app.openSettings('api-keys')" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                    🔐 Configure API Keys
+                </button>`;
+            addMessage(chatContainer, 'assistant', errorMsg, true);
+        } else {
+            const errorMsg = `Sorry, I encountered an error: ${errorMessage}. <br><br>
+                <button onclick="import('./advisor-wizard.js').then(m => m.showAdvisorWizard())" style="padding: 5px 10px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 13px;">
+                    🔧 Run Fix Wizard
+                </button>`;
+            addMessage(chatContainer, 'assistant', errorMsg, true);
+        }
     }
 }
 

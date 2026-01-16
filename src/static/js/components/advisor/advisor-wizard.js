@@ -102,7 +102,12 @@ function runStep2(profile) {
             <p>Based on our check, here is what you should do:</p>
             <div style="margin: 20px 0; padding: 15px; border-radius: 8px; background: var(--bg-primary);">
                 <ul style="padding-left: 20px;">
-                    <li style="margin-bottom: 10px;">Ensure <strong>GEMINI_API_KEY</strong> is set in your environment. Run <code>./bin/setup-api-keys</code> to fix this.</li>
+                    <li style="margin-bottom: 10px;">
+                        <strong>API Key:</strong> Configure your Gemini API key
+                        <button onclick="window.app.openSettings('api-keys'); document.querySelector('.modal-overlay').remove();" style="margin-left: 10px; padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                            🔐 Configure API Keys
+                        </button>
+                    </li>
                     <li style="margin-bottom: 10px;">Complete your <a href="#" onclick="window.app.showTab('profile'); return false;">Profile</a> and <a href="#" onclick="window.app.showTab('assets'); return false;">Assets</a> sections.</li>
                     <li style="margin-bottom: 10px;">Try refreshing the page if the AI Advisor is still unresponsive.</li>
                 </ul>
