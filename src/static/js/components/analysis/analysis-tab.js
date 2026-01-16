@@ -466,8 +466,14 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
                 <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--accent-color);">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
                         <div>
-                            <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Starting Portfolio Balance</div>
+                            <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                                Investment Portfolio
+                                <span style="cursor: help; margin-left: 5px;" title="Retirement + Taxable accounts only. Real estate handled separately with costs and sale proceeds.">ℹ️</span>
+                            </div>
                             <div style="font-size: 28px; font-weight: bold; color: var(--accent-color);">${formatCurrency(totalAssets, 0)}</div>
+                            <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; font-style: italic;">
+                                Retirement + Taxable accounts (Real estate tracked separately)
+                            </div>
                         </div>
                         ${yearsProjected > 0 ? `
                             <div>
@@ -615,8 +621,14 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
             <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--accent-color);">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
                     <div>
-                        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Starting Portfolio Balance</div>
+                        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                            Investment Portfolio
+                            <span style="cursor: help; margin-left: 5px;" title="Retirement + Taxable accounts only. Real estate handled separately with costs and sale proceeds.">ℹ️</span>
+                        </div>
                         <div style="font-size: 28px; font-weight: bold; color: var(--accent-color);">${formatCurrency(data.total_assets || 0, 0)}</div>
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; font-style: italic;">
+                            Retirement + Taxable accounts (Real estate tracked separately)
+                        </div>
                     </div>
                     <div>
                         <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Years Projected</div>
