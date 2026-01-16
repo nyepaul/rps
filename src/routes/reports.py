@@ -242,7 +242,8 @@ def generate_action_plan():
         action_items = ActionItem.get_by_profile(profile.id, current_user.id)
         action_items_list = [
             {
-                'description': item.description,
+                'title': item.title or item.description or 'Untitled Action',
+                'description': item.description if item.title else '',
                 'status': item.status,
                 'priority': item.priority,
                 'due_date': item.due_date,

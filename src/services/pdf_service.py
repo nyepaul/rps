@@ -464,12 +464,14 @@ def generate_action_plan_report(profile_data, action_items):
         priority_order = {'high': 0, 'medium': 1, 'low': 2}
         active_items.sort(key=lambda x: priority_order.get(x.get('priority', 'medium'), 1))
 
-        priority_data = [['Priority', 'Status', 'Description', 'Due Date']]
+        priority_data = [['Priority', 'Status', 'Action Item', 'Due Date']]
         for item in active_items:
+            # Use title if available, otherwise use description
+            action_text = item.get('title') or item.get('description', 'Untitled Action')
             priority_data.append([
                 item.get('priority', 'medium').title(),
                 item.get('status', 'pending').replace('_', ' ').title(),
-                item.get('description', '')[:50] + ('...' if len(item.get('description', '')) > 50 else ''),
+                action_text[:50] + ('...' if len(action_text) > 50 else ''),
                 item.get('due_date', 'Not set') or 'Not set'
             ])
 
@@ -493,10 +495,18 @@ def generate_action_plan_report(profile_data, action_items):
         elements.append(Paragraph("Detailed Action Items", styles['SectionTitle']))
 
         for i, item in enumerate(active_items, 1):
+            # Use title for the heading
+            title_text = item.get('title') or item.get('description', 'Untitled Action')
             elements.append(Paragraph(
-                f"{i}. {item.get('description', 'No description')}",
+                f"{i}. {title_text}",
                 styles['SubSection']
             ))
+
+            # Show description separately if it exists and is different from title
+            description = item.get('description', '')
+            if description and description != title_text:
+                elements.append(Paragraph(description, styles['BodyText']))
+
             elements.append(Paragraph(
                 f"Priority: {item.get('priority', 'medium').title()} | "
                 f"Status: {item.get('status', 'pending').replace('_', ' ').title()} | "
@@ -509,10 +519,12 @@ def generate_action_plan_report(profile_data, action_items):
     if completed:
         elements.append(Paragraph("Completed Items", styles['SectionTitle']))
 
-        completed_data = [['Description', 'Completed']]
+        completed_data = [['Action Item', 'Completed']]
         for item in completed[-10:]:  # Show last 10 completed
+            # Use title if available, otherwise use description
+            action_text = item.get('title') or item.get('description', 'Untitled Action')
             completed_data.append([
-                item.get('description', '')[:60] + ('...' if len(item.get('description', '')) > 60 else ''),
+                action_text[:60] + ('...' if len(action_text) > 60 else ''),
                 item.get('updated_at', 'Unknown')[:10] if item.get('updated_at') else 'Unknown'
             ])
 
