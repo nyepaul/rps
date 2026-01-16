@@ -19,5 +19,8 @@ cryptography>=42.0.0
 pydantic>=2.5.0
 email-validator>=2.1.0
 
+# Audit Logging
+user-agents>=2.2.0
+
 # Database
 alembic>=1.13.0

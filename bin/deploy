@@ -102,6 +102,7 @@ User=www-data
 Group=www-data
 WorkingDirectory=$TARGET_DIR
 Environment="PATH=$TARGET_DIR/venv/bin"
+Environment="MPLCONFIGDIR=$TARGET_DIR/.config/matplotlib"
 ExecStart=$TARGET_DIR/venv/bin/python $TARGET_DIR/run_server.py
 Restart=always
 RestartSec=10
