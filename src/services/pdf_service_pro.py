@@ -361,6 +361,7 @@ def generate_professional_analysis_report(profile_data, analysis_results):
 
     styles = create_professional_styles()
     elements = []
+    temp_files = []  # Track temp files to delete after PDF is built
 
     # Cover page
     profile_name = profile_data.get('name', 'Unnamed Profile')
@@ -483,11 +484,11 @@ def generate_professional_analysis_report(profile_data, analysis_results):
     # Create and embed success rate chart
     with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
         chart_path = tmp.name
+        temp_files.append(chart_path)  # Track for later cleanup
         create_chart_success_rates(scenarios, chart_path)
 
         img = Image(chart_path, width=6*inch, height=3*inch)
         elements.append(img)
-        os.unlink(chart_path)
 
     elements.append(Spacer(1, 10))
 
@@ -553,11 +554,11 @@ def generate_professional_analysis_report(profile_data, analysis_results):
     # Create and embed portfolio projection chart
     with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
         chart_path = tmp.name
+        temp_files.append(chart_path)  # Track for later cleanup
         create_chart_portfolio_projection(scenarios, chart_path)
 
         img = Image(chart_path, width=6.5*inch, height=4*inch)
         elements.append(img)
-        os.unlink(chart_path)
 
     elements.append(Spacer(1, 10))
 
@@ -575,11 +576,11 @@ def generate_professional_analysis_report(profile_data, analysis_results):
     # Create probability distribution chart
     with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
         chart_path = tmp.name
+        temp_files.append(chart_path)  # Track for later cleanup
         create_chart_probability_distribution(moderate, chart_path)
 
         img = Image(chart_path, width=6.5*inch, height=3.5*inch)
         elements.append(img)
-        os.unlink(chart_path)
 
     elements.append(Spacer(1, 10))
 
@@ -680,5 +681,14 @@ def generate_professional_analysis_report(profile_data, analysis_results):
 
     # Build PDF
     doc.build(elements)
+
+    # Clean up temporary chart files
+    for temp_file in temp_files:
+        try:
+            if os.path.exists(temp_file):
+                os.unlink(temp_file)
+        except Exception as e:
+            print(f"Warning: Could not delete temp file {temp_file}: {e}")
+
     buffer.seek(0)
     return buffer
