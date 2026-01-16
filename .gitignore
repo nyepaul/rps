@@ -3,6 +3,11 @@ logs/
 *.log
 *.log.*
 
+# Environment
+.env
+.env.local
+.env.production
+
 # Python
 __pycache__/
 *.pyc
