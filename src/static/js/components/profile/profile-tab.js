@@ -33,15 +33,15 @@ export function renderProfileTab(container) {
 
     container.innerHTML = `
         <div style="max-width: 1000px; margin: 0 auto; padding: 20px;">
-            <h1 style="font-size: 36px; margin-bottom: 10px;">Edit Profile</h1>
-            <p style="color: var(--text-secondary); margin-bottom: 30px;">
+            <h1 style="font-size: 28px; margin-bottom: 5px;">Edit Profile</h1>
+            <p style="color: var(--text-secondary); margin-bottom: 15px;">
                 Update your retirement planning information
             </p>
 
             <form id="profile-form">
                 <!-- My Details -->
                 <div class="form-section">
-                    <h2 style="font-size: 24px; margin-bottom: 20px; border-bottom: 2px solid var(--accent-color); padding-bottom: 10px;">
+                    <h2 style="font-size: 20px; margin-bottom: 12px; border-bottom: 2px solid var(--accent-color); padding-bottom: 6px;">
                         My Details
                     </h2>
                     <div class="form-grid">
@@ -77,7 +77,7 @@ export function renderProfileTab(container) {
 
                 <!-- Spouse Details -->
                 <div class="form-section">
-                    <h2 style="font-size: 24px; margin-bottom: 20px; border-bottom: 2px solid var(--accent-color); padding-bottom: 10px;">
+                    <h2 style="font-size: 20px; margin-bottom: 12px; border-bottom: 2px solid var(--accent-color); padding-bottom: 6px;">
                         Spouse Details
                     </h2>
                     <div class="form-grid">
@@ -113,8 +113,8 @@ export function renderProfileTab(container) {
 
                 <!-- Children -->
                 <div class="form-section">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h2 style="font-size: 24px; border-bottom: 2px solid var(--accent-color); padding-bottom: 10px; margin: 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h2 style="font-size: 20px; border-bottom: 2px solid var(--accent-color); padding-bottom: 6px; margin: 0;">
                             Children
                         </h2>
                         <button type="button" id="add-child-btn" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">
@@ -124,9 +124,9 @@ export function renderProfileTab(container) {
                     <div id="children-list">
                         ${children.length === 0 ? '<p style="color: var(--text-secondary); font-style: italic;">No children added. Click "Add Child" to include dependent information.</p>' : ''}
                         ${children.map((child, index) => `
-                            <div class="child-item" data-index="${index}" style="background: var(--bg-primary); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                    <h3 style="font-size: 18px; margin: 0;">Child ${index + 1}</h3>
+                            <div class="child-item" data-index="${index}" style="background: var(--bg-primary); padding: 12px; border-radius: 8px; margin-bottom: 10px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <h3 style="font-size: 16px; margin: 0;">Child ${index + 1}</h3>
                                     <button type="button" class="remove-child-btn" data-index="${index}" style="padding: 4px 12px; background: var(--danger-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
                                         Remove
                                     </button>
@@ -151,11 +151,11 @@ export function renderProfileTab(container) {
                 </div>
 
                 <!-- Action Buttons -->
-                <div style="display: flex; gap: 15px; margin-top: 40px; justify-content: flex-end;">
-                    <button type="button" id="cancel-btn" style="padding: 12px 30px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <div style="display: flex; gap: 12px; margin-top: 20px; justify-content: flex-end;">
+                    <button type="button" id="cancel-btn" style="padding: 10px 24px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-radius: 6px; cursor: pointer; font-size: 15px;">
                         Cancel
                     </button>
-                    <button type="submit" id="save-btn" style="padding: 12px 30px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                    <button type="submit" id="save-btn" style="padding: 10px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 15px;">
                         Save Changes
                     </button>
                 </div>
@@ -165,14 +165,14 @@ export function renderProfileTab(container) {
         <style>
             .form-section {
                 background: var(--bg-secondary);
-                padding: 30px;
-                border-radius: 12px;
-                margin-bottom: 30px;
+                padding: 18px;
+                border-radius: 10px;
+                margin-bottom: 15px;
             }
             .form-grid {
                 display: grid;
                 grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                gap: 20px;
+                gap: 12px;
             }
             .form-group {
                 display: flex;
@@ -180,16 +180,16 @@ export function renderProfileTab(container) {
             }
             .form-group label {
                 font-weight: 600;
-                margin-bottom: 8px;
+                margin-bottom: 5px;
                 color: var(--text-primary);
             }
             .form-group input {
-                padding: 12px;
+                padding: 9px 12px;
                 border: 1px solid var(--border-color);
                 border-radius: 6px;
                 background: var(--bg-primary);
                 color: var(--text-primary);
-                font-size: 16px;
+                font-size: 15px;
                 transition: border-color 0.2s;
             }
             .form-group input:focus {
@@ -197,9 +197,9 @@ export function renderProfileTab(container) {
                 border-color: var(--accent-color);
             }
             .form-group small {
-                margin-top: 5px;
+                margin-top: 3px;
                 color: var(--text-secondary);
-                font-size: 13px;
+                font-size: 12px;
             }
             #save-btn:hover {
                 background: var(--accent-hover);
@@ -387,9 +387,9 @@ function addChildToForm(container) {
     }
 
     const childHtml = `
-        <div class="child-item" data-index="${newIndex}" style="background: var(--bg-primary); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <h3 style="font-size: 18px; margin: 0;">Child ${newIndex + 1}</h3>
+        <div class="child-item" data-index="${newIndex}" style="background: var(--bg-primary); padding: 12px; border-radius: 8px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <h3 style="font-size: 16px; margin: 0;">Child ${newIndex + 1}</h3>
                 <button type="button" class="remove-child-btn" data-index="${newIndex}" style="padding: 4px 12px; background: var(--danger-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
                     Remove
                 </button>
