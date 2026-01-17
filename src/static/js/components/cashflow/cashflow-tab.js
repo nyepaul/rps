@@ -42,9 +42,9 @@ export function renderCashFlowTab(container) {
     const currentYear = today.getFullYear();
     const currentMonth = today.getMonth();
 
-    // Calculate months to life expectancy (assume age 90)
+    // Calculate months to life expectancy from profile
     const birthDate = profile.birth_date ? new Date(profile.birth_date) : null;
-    const lifeExpectancyAge = 90; // Default life expectancy
+    const lifeExpectancyAge = data.person?.life_expectancy || 95; // Get from profile, default 95
     let monthsToLifeExpectancy = 360; // Default fallback
 
     if (birthDate) {
@@ -77,7 +77,7 @@ export function renderCashFlowTab(container) {
                         <option value="240">Next 20 years</option>
                         <option value="300">Next 25 years</option>
                         <option value="360">Next 30 years</option>
-                        <option value="life" selected>Through Life Expectancy (Age 90)</option>
+                        <option value="life" selected>Through Life Expectancy (Age ${lifeExpectancyAge})</option>
                     </select>
                 </div>
                 <div>
@@ -118,8 +118,8 @@ export function renderCashFlowTab(container) {
     `;
 
     // Initialize chart and data with default: through life expectancy, annual view
-    renderCashFlowChart(container, profile, monthsToLifeExpectancy, 'annual', null, monthsToLifeExpectancy);
-    setupEventHandlers(container, profile, monthsToLifeExpectancy);
+    renderCashFlowChart(container, profile, monthsToLifeExpectancy, 'annual', null, monthsToLifeExpectancy, lifeExpectancyAge);
+    setupEventHandlers(container, profile, monthsToLifeExpectancy, lifeExpectancyAge);
 
     // Load scenarios for the dropdown
     loadScenarios(container, profile);
@@ -159,7 +159,7 @@ async function loadScenarios(container, profile) {
 /**
  * Setup event handlers
  */
-function setupEventHandlers(container, profile, monthsToLifeExpectancy) {
+function setupEventHandlers(container, profile, monthsToLifeExpectancy, lifeExpectancyAge) {
     const timePeriodSelect = container.querySelector('#time-period');
     const viewTypeSelect = container.querySelector('#view-type');
     const scenarioSelect = container.querySelector('#scenario-select');
@@ -186,7 +186,7 @@ function setupEventHandlers(container, profile, monthsToLifeExpectancy) {
             }
         }
 
-        renderCashFlowChart(container, profile, months, viewType, scenarioData, monthsToLifeExpectancy);
+        renderCashFlowChart(container, profile, months, viewType, scenarioData, monthsToLifeExpectancy, lifeExpectancyAge);
     };
 
     timePeriodSelect.addEventListener('change', refresh);
@@ -654,7 +654,7 @@ function aggregateToAnnual(monthlyData) {
 /**
  * Render cash flow chart
  */
-function renderCashFlowChart(container, profile, months, viewType, scenarioData = null, monthsToLifeExpectancy = 360) {
+function renderCashFlowChart(container, profile, months, viewType, scenarioData = null, monthsToLifeExpectancy = 360, lifeExpectancyAge = 95) {
     const monthlyData = calculateMonthlyCashFlow(profile, months);
     const chartData = viewType === 'annual' ? aggregateToAnnual(monthlyData) : monthlyData;
 
@@ -810,7 +810,7 @@ function renderCashFlowChart(container, profile, months, viewType, scenarioData 
             plugins: {
                 title: {
                     display: true,
-                    text: `Cash Flow Projection (${viewType === 'annual' ? 'Annual' : 'Monthly'}) - ${Math.floor(months / 12)} years through age 90 - Scroll or +/- to zoom, drag to pan`,
+                    text: `Cash Flow Projection (${viewType === 'annual' ? 'Annual' : 'Monthly'}) - ${Math.floor(months / 12)} years through age ${lifeExpectancyAge} - Scroll or +/- to zoom, drag to pan`,
                     font: {
                         size: 18,
                         weight: 'bold'
