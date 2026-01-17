@@ -427,7 +427,7 @@ async function openSettings(defaultTab = 'general') {
             </div>
 
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border-color);">
-                <button id="settings-logout-btn" style="padding: 10px 20px; background: var(--danger-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                <button id="settings-logout-btn" class="settings-modal-logout" style="padding: 10px 20px; background: var(--danger-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
                     Logout
                 </button>
                 <div style="display: flex; gap: 10px;">
@@ -443,6 +443,24 @@ async function openSettings(defaultTab = 'general') {
     `;
 
     document.body.appendChild(modal);
+
+    // Setup logout button IMMEDIATELY after appending to DOM
+    const logoutBtn = modal.querySelector('#settings-logout-btn');
+    console.log('Settings modal logout button:', logoutBtn); // Debug log
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Logout button clicked in settings'); // Debug log
+            if (confirm('Are you sure you want to logout?')) {
+                modal.remove();
+                await logout();
+            }
+        });
+        console.log('Logout event listener attached successfully'); // Debug log
+    } else {
+        console.error('CRITICAL: Logout button not found in settings modal!');
+    }
 
     // Setup tab switching
     const tabButtons = modal.querySelectorAll('.settings-tab');
@@ -518,18 +536,6 @@ async function openSettings(defaultTab = 'general') {
         });
         modal.remove();
     });
-
-    const logoutBtn = modal.querySelector('#settings-logout-btn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', async () => {
-            if (confirm('Are you sure you want to logout?')) {
-                modal.remove();
-                await logout();
-            }
-        });
-    } else {
-        console.error('Logout button not found in settings modal');
-    }
 
     modal.querySelector('#close-settings-btn').addEventListener('click', () => {
         modal.remove();
