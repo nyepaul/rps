@@ -25,13 +25,25 @@ class RebalancingService:
 
             total_value += value
 
-            # Convert percentages to decimals if they're stored as whole numbers (0-100)
-            # Check if values look like percentages (>1) and convert to decimal (0-1)
-            stock_pct = float(account.get('stock_pct', 60))
-            bond_pct = float(account.get('bond_pct', 40))
-            cash_pct = float(account.get('cash_pct', 0))
+            # Get allocation percentages
+            stock_pct = account.get('stock_pct')
+            bond_pct = account.get('bond_pct')
+            cash_pct = account.get('cash_pct')
 
-            # If any percentage is > 1, assume they're stored as whole numbers and convert
+            # Convert to float, treating None/empty string as 0
+            stock_pct = float(stock_pct) if stock_pct not in (None, '') else 0.0
+            bond_pct = float(bond_pct) if bond_pct not in (None, '') else 0.0
+            cash_pct = float(cash_pct) if cash_pct not in (None, '') else 0.0
+
+            # If total allocation is near zero (< 1%), assume not set and use defaults
+            total_alloc = stock_pct + bond_pct + cash_pct
+            if total_alloc < 1.0:
+                # No allocations set, use reasonable defaults (60/40/0 split)
+                stock_pct = 60.0
+                bond_pct = 40.0
+                cash_pct = 0.0
+
+            # Convert percentages to decimals if they're stored as whole numbers (0-100)
             if stock_pct > 1 or bond_pct > 1 or cash_pct > 1:
                 stock_pct /= 100.0
                 bond_pct /= 100.0
