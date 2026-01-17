@@ -94,11 +94,17 @@ export function renderAssetsTab(container) {
 
         // Filter assets
         const filteredAssets = filterAssets(latestAssets, currentFilter);
-        
-        // Render asset list
-        renderAssetList(filteredAssets, listContainer);
-        
-        // Setup list handlers (edit/delete)
+
+        // Create save callback for inline editing
+        const saveCallback = async (updatedAssets) => {
+            await saveAssets(latestProfile, updatedAssets);
+            updateView();
+        };
+
+        // Render asset list with save callback for inline editing
+        renderAssetList(filteredAssets, listContainer, saveCallback);
+
+        // Setup list handlers (edit/delete) - keeping old edit button for fallback
         setupAssetListHandlers(container, latestProfile, latestAssets, updateView);
     };
 

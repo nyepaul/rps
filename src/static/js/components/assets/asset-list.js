@@ -4,11 +4,12 @@
 
 import { formatCurrency } from '../../utils/formatters.js';
 import { getAssetTypeLabel } from './asset-form-fields.js';
+import { makeRowEditable } from './inline-editor.js';
 
 /**
  * Render all assets in a simple flat list
  */
-export function renderAssetList(assets, container) {
+export function renderAssetList(assets, container, onSaveCallback) {
     // Collect all assets into a flat array with their category info
     const allAssets = [];
 
@@ -63,20 +64,48 @@ export function renderAssetList(assets, container) {
         </div>
     `;
 
-    // Add click-to-edit functionality
-    container.querySelectorAll('.asset-row').forEach(row => {
-        // Click on row to edit (but not when clicking action buttons)
+    // Add click-to-edit functionality - inline editing
+    container.querySelectorAll('.asset-row').forEach((row, idx) => {
+        const asset = allAssets[idx];
+
+        // Click on row to edit inline (but not when clicking action buttons)
         row.addEventListener('click', (e) => {
-            // Don't trigger if clicking on action buttons
-            if (e.target.closest('.edit-asset-btn') || e.target.closest('.delete-asset-btn')) {
+            // Don't trigger if clicking on action buttons or if already in edit mode
+            if (e.target.closest('.edit-asset-btn') ||
+                e.target.closest('.delete-asset-btn') ||
+                row.classList.contains('editing')) {
                 return;
             }
 
-            // Trigger the edit button click
-            const editBtn = row.querySelector('.edit-asset-btn');
-            if (editBtn) {
-                editBtn.click();
-            }
+            // Mark as editing
+            row.classList.add('editing');
+
+            // Make row editable inline
+            makeRowEditable(
+                row,
+                asset,
+                asset.categoryKey,
+                asset.index,
+                async (updatedAsset, category, index) => {
+                    // Update the asset in the assets object
+                    assets[category][index] = updatedAsset;
+
+                    // Call save callback if provided
+                    if (onSaveCallback) {
+                        await onSaveCallback(assets);
+                    }
+
+                    // Remove editing class
+                    row.classList.remove('editing');
+
+                    // Re-render the list
+                    renderAssetList(assets, container, onSaveCallback);
+                },
+                () => {
+                    // Cancel callback
+                    row.classList.remove('editing');
+                }
+            );
         });
     });
 }
