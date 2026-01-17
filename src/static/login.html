@@ -144,6 +144,9 @@
                 <label for="loginPassword">Password</label>
                 <input type="password" id="loginPassword" required autocomplete="current-password">
             </div>
+            <div style="text-align: right; margin-bottom: 15px;">
+                <a href="#" id="forgotPasswordLink" style="color: #667eea; text-decoration: none; font-size: 14px;">Forgot Password?</a>
+            </div>
             <button type="submit" id="loginBtn">Login</button>
         </form>
         
@@ -165,10 +168,35 @@
             </div>
             <button type="submit" id="registerBtn">Register</button>
         </form>
-        
+
+        <!-- Password Reset Request Form -->
+        <form id="resetRequestForm" class="hidden">
+            <div class="form-group">
+                <label for="resetEmail">Email Address</label>
+                <input type="email" id="resetEmail" required autocomplete="email">
+                <small>Enter the email address associated with your account</small>
+            </div>
+            <button type="submit" id="resetRequestBtn">Send Reset Link</button>
+        </form>
+
+        <!-- Password Reset Form -->
+        <form id="resetPasswordForm" class="hidden">
+            <div class="form-group">
+                <label for="newPassword">New Password</label>
+                <input type="password" id="newPassword" required autocomplete="new-password">
+                <small>Min 8 characters, with uppercase, lowercase, and number</small>
+            </div>
+            <div class="form-group">
+                <label for="confirmPassword">Confirm New Password</label>
+                <input type="password" id="confirmPassword" required autocomplete="new-password">
+            </div>
+            <button type="submit" id="resetPasswordBtn">Reset Password</button>
+        </form>
+
         <div class="toggle-form">
             <span id="toggleText">Don't have an account? </span>
             <a href="#" id="toggleLink">Register</a>
+            <span id="backToLoginLink" class="hidden"> | <a href="#" id="backToLogin">Back to Login</a></span>
         </div>
     </div>
     
@@ -176,31 +204,74 @@
         const API_URL = '/api';
         const loginForm = document.getElementById('loginForm');
         const registerForm = document.getElementById('registerForm');
+        const resetRequestForm = document.getElementById('resetRequestForm');
+        const resetPasswordForm = document.getElementById('resetPasswordForm');
         const toggleLink = document.getElementById('toggleLink');
         const toggleText = document.getElementById('toggleText');
+        const backToLoginLink = document.getElementById('backToLoginLink');
         const messageDiv = document.getElementById('message');
-        let isLoginMode = true;
+        let currentMode = 'login'; // 'login', 'register', 'resetRequest', 'resetPassword'
+        let resetToken = null;
         
         // Toggle between login and register
         toggleLink.addEventListener('click', (e) => {
             e.preventDefault();
-            isLoginMode = !isLoginMode;
-            
-            if (isLoginMode) {
+            if (currentMode === 'login') {
+                showMode('register');
+            } else {
+                showMode('login');
+            }
+        });
+
+        // Forgot password link
+        document.getElementById('forgotPasswordLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            showMode('resetRequest');
+        });
+
+        // Back to login link
+        document.getElementById('backToLogin').addEventListener('click', (e) => {
+            e.preventDefault();
+            showMode('login');
+        });
+
+        function showMode(mode) {
+            currentMode = mode;
+            clearMessage();
+
+            // Hide all forms
+            loginForm.classList.add('hidden');
+            registerForm.classList.add('hidden');
+            resetRequestForm.classList.add('hidden');
+            resetPasswordForm.classList.add('hidden');
+
+            // Show appropriate form
+            if (mode === 'login') {
                 loginForm.classList.remove('hidden');
-                registerForm.classList.add('hidden');
                 toggleText.textContent = "Don't have an account? ";
                 toggleLink.textContent = "Register";
+                backToLoginLink.classList.add('hidden');
                 document.querySelector('h1').textContent = "Welcome Back";
-            } else {
-                loginForm.classList.add('hidden');
+            } else if (mode === 'register') {
                 registerForm.classList.remove('hidden');
                 toggleText.textContent = "Already have an account? ";
                 toggleLink.textContent = "Login";
+                backToLoginLink.classList.add('hidden');
                 document.querySelector('h1').textContent = "Create Account";
+            } else if (mode === 'resetRequest') {
+                resetRequestForm.classList.remove('hidden');
+                toggleText.textContent = "";
+                toggleLink.classList.add('hidden');
+                backToLoginLink.classList.remove('hidden');
+                document.querySelector('h1').textContent = "Reset Password";
+            } else if (mode === 'resetPassword') {
+                resetPasswordForm.classList.remove('hidden');
+                toggleText.textContent = "";
+                toggleLink.classList.add('hidden');
+                backToLoginLink.classList.remove('hidden');
+                document.querySelector('h1').textContent = "Set New Password";
             }
-            clearMessage();
-        });
+        }
         
         // Login
         loginForm.addEventListener('submit', async (e) => {
@@ -273,14 +344,120 @@
             }
         });
         
+        // Password Reset Request
+        resetRequestForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearMessage();
+
+            const email = document.getElementById('resetEmail').value;
+            const btn = document.getElementById('resetRequestBtn');
+
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+
+            try {
+                const response = await fetch(`${API_URL}/auth/password-reset/request`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (data.development_mode && data.token) {
+                        // Development mode - show token
+                        resetToken = data.token;
+                        showMessage(`Reset token: <strong>${data.token}</strong><br>Token expires in 1 hour. Click "Continue" to reset your password.`, 'success');
+                        btn.textContent = 'Continue';
+                        btn.onclick = (e) => {
+                            e.preventDefault();
+                            showMode('resetPassword');
+                        };
+                    } else {
+                        showMessage(data.message || 'Reset link sent to your email.', 'success');
+                    }
+                } else {
+                    showMessage(data.error || 'Failed to send reset link', 'error');
+                }
+            } catch (error) {
+                showMessage('Network error. Please try again.', 'error');
+            } finally {
+                if (!resetToken) {
+                    btn.disabled = false;
+                    btn.textContent = 'Send Reset Link';
+                }
+            }
+        });
+
+        // Password Reset
+        resetPasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearMessage();
+
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const btn = document.getElementById('resetPasswordBtn');
+
+            // Validate passwords match
+            if (newPassword !== confirmPassword) {
+                showMessage('Passwords do not match', 'error');
+                return;
+            }
+
+            // Get token from URL or from development mode
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = resetToken || urlParams.get('token');
+
+            if (!token) {
+                showMessage('Invalid or missing reset token', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Resetting password...';
+
+            try {
+                const response = await fetch(`${API_URL}/auth/password-reset/reset`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, password: newPassword })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage(data.message || 'Password reset successful! Redirecting to login...', 'success');
+                    setTimeout(() => {
+                        resetToken = null;
+                        showMode('login');
+                        document.getElementById('resetPasswordForm').reset();
+                    }, 2000);
+                } else {
+                    showMessage(data.error || 'Password reset failed', 'error');
+                }
+            } catch (error) {
+                showMessage('Network error. Please try again.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Reset Password';
+            }
+        });
+
         function showMessage(text, type) {
             messageDiv.innerHTML = `<div class="${type}">${text}</div>`;
         }
-        
+
         function clearMessage() {
             messageDiv.innerHTML = '';
         }
-        
+
+        // Check for reset token in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('token')) {
+            showMode('resetPassword');
+        }
+
         // Check if already logged in
         fetch(`${API_URL}/auth/session`)
             .then(res => res.json())

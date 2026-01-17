@@ -1,6 +1,7 @@
 """User authentication model."""
 import bcrypt
-from datetime import datetime
+import secrets
+from datetime import datetime, timedelta
 from flask_login import UserMixin
 from src.database.connection import db
 
@@ -9,7 +10,8 @@ class User(UserMixin):
     """User model for authentication."""
 
     def __init__(self, id, username, email, password_hash, is_active=True, is_admin=False,
-                 created_at=None, last_login=None, updated_at=None, encrypted_dek=None, dek_iv=None):
+                 created_at=None, last_login=None, updated_at=None, encrypted_dek=None, dek_iv=None,
+                 reset_token=None, reset_token_expires=None):
         self.id = id
         self.username = username
         self.email = email
@@ -21,6 +23,8 @@ class User(UserMixin):
         self.last_login = last_login
         self.encrypted_dek = encrypted_dek
         self.dek_iv = dek_iv
+        self.reset_token = reset_token
+        self.reset_token_expires = reset_token_expires
 
     @property
     def is_active(self):
@@ -111,8 +115,77 @@ class User(UserMixin):
     def update_password(self, new_password: str):
         """Update the user's password."""
         self.password_hash = User.hash_password(new_password)
+        # Clear any reset tokens
+        self.reset_token = None
+        self.reset_token_expires = None
         # Note: In a full implementation, we'd also re-encrypt the DEK here
         self.save()
+
+    def generate_reset_token(self, expiry_hours=1):
+        """Generate a secure password reset token.
+
+        Args:
+            expiry_hours: Number of hours until token expires (default 1 hour)
+
+        Returns:
+            str: The generated reset token
+        """
+        # Generate a secure random token (32 bytes = 64 hex characters)
+        token = secrets.token_urlsafe(32)
+        self.reset_token = token
+        self.reset_token_expires = (datetime.now() + timedelta(hours=expiry_hours)).isoformat()
+
+        with db.get_connection() as conn:
+            conn.execute('''
+                UPDATE users
+                SET reset_token = ?, reset_token_expires = ?
+                WHERE id = ?
+            ''', (self.reset_token, self.reset_token_expires, self.id))
+
+        return token
+
+    def is_reset_token_valid(self, token):
+        """Check if a reset token is valid and not expired.
+
+        Args:
+            token: The token to validate
+
+        Returns:
+            bool: True if token is valid and not expired
+        """
+        if not self.reset_token or not self.reset_token_expires:
+            return False
+
+        if self.reset_token != token:
+            return False
+
+        # Check if token has expired
+        expiry_time = datetime.fromisoformat(self.reset_token_expires)
+        if datetime.now() > expiry_time:
+            return False
+
+        return True
+
+    @staticmethod
+    def get_by_reset_token(token):
+        """Get user by valid reset token.
+
+        Args:
+            token: The reset token to look up
+
+        Returns:
+            User or None: The user if token is valid, None otherwise
+        """
+        row = db.execute_one(
+            'SELECT * FROM users WHERE reset_token = ?',
+            (token,)
+        )
+        if row:
+            user = User(**dict(row))
+            # Validate token hasn't expired
+            if user.is_reset_token_valid(token):
+                return user
+        return None
 
     
     @staticmethod

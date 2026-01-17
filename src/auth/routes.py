@@ -199,3 +199,115 @@ def check_session():
             }
         }), 200
     return jsonify({'authenticated': False}), 200
+
+
+class PasswordResetRequestSchema(BaseModel):
+    """Password reset request validation schema."""
+    email: EmailStr
+
+
+class PasswordResetSchema(BaseModel):
+    """Password reset validation schema."""
+    token: str
+    password: str
+
+    @validator('password')
+    def validate_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters')
+        if not re.search(r'[A-Z]', v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not re.search(r'[a-z]', v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        if not re.search(r'[0-9]', v):
+            raise ValueError('Password must contain at least one number')
+        return v
+
+
+@auth_bp.route('/password-reset/request', methods=['POST'])
+@limiter.limit("3 per hour")
+def request_password_reset():
+    """Request a password reset token.
+
+    NOTE: Email sending is not configured yet. In development, the token
+    is returned in the response. In production, this should send an email.
+    """
+    try:
+        data = PasswordResetRequestSchema(**request.json)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+    # Get user by email
+    user = User.get_by_email(data.email)
+
+    # For security, always return success even if user doesn't exist
+    # This prevents email enumeration attacks
+    if not user:
+        return jsonify({
+            'message': 'If an account exists with that email, a password reset link has been sent.',
+            'development_mode': True,
+            'token': None
+        }), 200
+
+    # Generate reset token
+    token = user.generate_reset_token(expiry_hours=1)
+
+    # TODO: Send email with reset link
+    # For now, return token in response (DEVELOPMENT MODE ONLY)
+    # In production, this should send an email and NOT return the token
+
+    return jsonify({
+        'message': 'If an account exists with that email, a password reset link has been sent.',
+        'development_mode': True,
+        'token': token,
+        'email': data.email,
+        'note': 'Email not configured. Use this token to reset password. Token expires in 1 hour.'
+    }), 200
+
+
+@auth_bp.route('/password-reset/reset', methods=['POST'])
+@limiter.limit("5 per hour")
+def reset_password():
+    """Reset password using a valid reset token."""
+    try:
+        data = PasswordResetSchema(**request.json)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+    # Get user by token
+    user = User.get_by_reset_token(data.token)
+
+    if not user:
+        return jsonify({'error': 'Invalid or expired reset token'}), 400
+
+    # Update password
+    user.update_password(data.password)
+
+    return jsonify({
+        'message': 'Password successfully reset. You can now log in with your new password.'
+    }), 200
+
+
+@auth_bp.route('/password-reset/validate-token', methods=['POST'])
+@limiter.limit("10 per minute")
+def validate_reset_token():
+    """Validate a password reset token without resetting the password."""
+    try:
+        token = request.json.get('token')
+        if not token:
+            return jsonify({'error': 'Token is required'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+    user = User.get_by_reset_token(token)
+
+    if user:
+        return jsonify({
+            'valid': True,
+            'email': user.email
+        }), 200
+    else:
+        return jsonify({
+            'valid': False,
+            'error': 'Invalid or expired token'
+        }), 400
