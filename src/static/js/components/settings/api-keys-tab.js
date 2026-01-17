@@ -150,6 +150,20 @@ export function renderAPIKeysTab(container) {
                 <h2 style="font-size: 18px; margin-bottom: 20px;">🛡️ Security & System Information</h2>
 
                 <div style="display: grid; gap: 20px;">
+                    <!-- Version Information -->
+                    <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px; border: 2px solid var(--accent-color);">
+                        <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                            ℹ️ Version Information
+                        </h3>
+                        <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.6; margin: 0;">
+                            <strong>System:</strong> Retirement Planning System (RPS)<br>
+                            <strong>Version:</strong> 2.0.0<br>
+                            <strong>Authored by:</strong> pan<br>
+                            <strong>Co-Authored by:</strong> Claude (Anthropic AI)<br>
+                            <strong>Updated:</strong> January 2026
+                        </p>
+                    </div>
+
                     <!-- Encryption -->
                     <div>
                         <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
