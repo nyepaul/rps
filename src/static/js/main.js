@@ -427,7 +427,7 @@ async function openSettings(defaultTab = 'general') {
             </div>
 
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border-color);">
-                <button id="logout-btn" style="padding: 10px 20px; background: var(--danger-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                <button id="settings-logout-btn" style="padding: 10px 20px; background: var(--danger-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
                     Logout
                 </button>
                 <div style="display: flex; gap: 10px;">
@@ -519,7 +519,7 @@ async function openSettings(defaultTab = 'general') {
         modal.remove();
     });
 
-    modal.querySelector('#logout-btn').addEventListener('click', async () => {
+    document.getElementById('settings-logout-btn').addEventListener('click', async () => {
         if (confirm('Are you sure you want to logout?')) {
             modal.remove();
             await logout();
