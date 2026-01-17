@@ -1,11 +1,19 @@
+#!/usr/bin/env python3
+"""
+Create or update demo user in production database.
+
+Usage:
+  python scripts/create_demo_user_prod.py [password]
+
+If no password is provided, you will be prompted to enter one.
+"""
+
 import sqlite3
 import bcrypt
 from datetime import datetime
 import os
 import sys
-
-# Ensure we can import from src if needed, though we just need standard libs + bcrypt
-# bcrypt is installed in the target venv
+import getpass
 
 db_path = '/var/www/rps.pan2.app/data/planning.db'
 
@@ -14,11 +22,25 @@ def create_or_update_user():
         print(f"Database not found at {db_path}")
         return False
 
+    # Get password from command line or prompt securely
+    if len(sys.argv) > 1:
+        password = sys.argv[1]
+    else:
+        password = getpass.getpass("Enter demo user password: ")
+        confirm_password = getpass.getpass("Confirm demo user password: ")
+
+        if password != confirm_password:
+            print("❌ Passwords do not match!")
+            sys.exit(1)
+
+        if len(password) < 8:
+            print("❌ Password must be at least 8 characters!")
+            sys.exit(1)
+
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
     username = 'demo'
-    password = '***REMOVED***'
     email = 'demo@example.com'
     
     try:
