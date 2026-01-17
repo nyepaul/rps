@@ -15,6 +15,12 @@ let lastSimulations = null;
 let timelineChartInstances = {}; // Changed to object to store multiple chart instances
 
 export function renderAnalysisTab(container) {
+    // Clean up previous keyboard handler if exists
+    if (container._analysisKeyboardHandler) {
+        document.removeEventListener('keydown', container._analysisKeyboardHandler);
+        container._analysisKeyboardHandler = null;
+    }
+
     const profile = store.get('currentProfile');
 
     if (!profile) {
@@ -560,7 +566,7 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
                 <div>
                     <h3 style="font-size: 20px; margin: 0;">Portfolio Projection Timeline</h3>
                     <p style="color: var(--text-secondary); margin: 5px 0 0 0; font-size: 14px;">
-                        Scroll to zoom • Click and drag to pan
+                        Scroll or +/- to zoom • Click and drag to pan
                     </p>
                 </div>
                 <button id="reset-zoom-btn" style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 14px;">
@@ -618,6 +624,26 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
                 chart.resetZoom();
             });
         }
+
+        // Handle keyboard zoom controls (+ and -)
+        const keyboardZoomHandler = (e) => {
+            if (!chart) return;
+
+            // Check if + or = key (zoom in)
+            if (e.key === '+' || e.key === '=') {
+                e.preventDefault();
+                chart.zoom(1.1);
+            }
+            // Check if - or _ key (zoom out)
+            else if (e.key === '-' || e.key === '_') {
+                e.preventDefault();
+                chart.zoom(0.9);
+            }
+        };
+
+        // Add keyboard listener
+        document.addEventListener('keydown', keyboardZoomHandler);
+        container._analysisKeyboardHandler = keyboardZoomHandler;
     }
 
     // Set up save scenario handler
@@ -759,7 +785,7 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
                                 <div>
                                     <h3 style="font-size: 20px; margin: 0;">Portfolio Projection Timeline</h3>
                                     <p style="color: var(--text-secondary); margin: 5px 0 0 0; font-size: 14px;">
-                                        Scroll to zoom • Click and drag to pan
+                                        Scroll or +/- to zoom • Click and drag to pan
                                     </p>
                                 </div>
                                 <button class="reset-zoom-btn" data-chart="timeline-chart-${key}" style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 14px;">
@@ -866,6 +892,36 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
                     resetBtn.addEventListener('click', () => {
                         chart.resetZoom();
                     });
+                }
+
+                // Handle keyboard zoom controls for multi-scenario charts (+ and -)
+                // Note: For multi-scenario, we add handlers for each chart, but only one will be active at a time
+                // The container._analysisKeyboardHandler will be overwritten by the last chart
+                const keyboardZoomHandler = (e) => {
+                    if (!chart) return;
+
+                    // Check if + or = key (zoom in)
+                    if (e.key === '+' || e.key === '=') {
+                        e.preventDefault();
+                        // Zoom all visible charts
+                        Object.values(timelineChartInstances).forEach(c => {
+                            if (c) c.zoom(1.1);
+                        });
+                    }
+                    // Check if - or _ key (zoom out)
+                    else if (e.key === '-' || e.key === '_') {
+                        e.preventDefault();
+                        // Zoom all visible charts
+                        Object.values(timelineChartInstances).forEach(c => {
+                            if (c) c.zoom(0.9);
+                        });
+                    }
+                };
+
+                // Only set up keyboard handler once for all multi-scenario charts
+                if (!container._analysisKeyboardHandler) {
+                    document.addEventListener('keydown', keyboardZoomHandler);
+                    container._analysisKeyboardHandler = keyboardZoomHandler;
                 }
             } catch (error) {
                 console.error(`Error rendering chart for ${key}:`, error);
