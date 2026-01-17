@@ -302,6 +302,7 @@ export function renderLearnTab(container) {
                 border-radius: 8px;
                 border: 2px solid var(--border-color);
                 transition: all 0.2s;
+                cursor: pointer;
             }
             .article-card:hover {
                 border-color: var(--accent-color);
@@ -498,10 +499,11 @@ export function renderLearnTab(container) {
         </style>
     `;
 
-    // Add event listeners to buttons
-    document.querySelectorAll('.learn-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const articleData = e.target.dataset.article;
+    // Add event listeners to article cards
+    document.querySelectorAll('.article-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+            const btn = card.querySelector('.learn-btn');
+            const articleData = btn.dataset.article;
             if (articleData) {
                 const article = JSON.parse(articleData);
                 showArticle(article);
