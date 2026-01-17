@@ -68,12 +68,9 @@ export function renderAssetList(assets, container, onSaveCallback) {
     container.querySelectorAll('.asset-row').forEach((row, idx) => {
         const asset = allAssets[idx];
 
-        // Click on row to edit inline (but not when clicking action buttons)
-        row.addEventListener('click', (e) => {
-            // Don't trigger if clicking on action buttons or if already in edit mode
-            if (e.target.closest('.edit-asset-btn') ||
-                e.target.closest('.delete-asset-btn') ||
-                row.classList.contains('editing')) {
+        const startEditing = () => {
+            // Don't start if already editing
+            if (row.classList.contains('editing')) {
                 return;
             }
 
@@ -100,7 +97,26 @@ export function renderAssetList(assets, container, onSaveCallback) {
                     row.classList.remove('editing');
                 }
             );
+        };
+
+        // Click on row to edit inline
+        row.addEventListener('click', (e) => {
+            // Don't trigger if clicking on delete button or if already in edit mode
+            if (e.target.closest('.delete-asset-btn')) {
+                return;
+            }
+
+            startEditing();
         });
+
+        // Also attach to edit button specifically
+        const editBtn = row.querySelector('.edit-asset-btn');
+        if (editBtn) {
+            editBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                startEditing();
+            });
+        }
     });
 }
 

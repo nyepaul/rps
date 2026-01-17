@@ -233,19 +233,7 @@ function calculateTotal(items, field1 = 'value', field2 = null) {
  * Setup handlers for asset list items (Edit/Delete)
  */
 function setupAssetListHandlers(container, profile, assets, refreshCallback) {
-    // Edit buttons
-    container.querySelectorAll('.edit-asset-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const category = btn.dataset.category;
-            const index = parseInt(btn.dataset.index);
-            const asset = assets[category][index];
-
-            showAssetWizard(category, asset, async (updatedAssets) => {
-                await saveAssets(profile, updatedAssets);
-                if (refreshCallback) refreshCallback();
-            }, index);
-        });
-    });
+    // Edit buttons are now handled in asset-list.js for inline editing
 
     // Delete buttons
     container.querySelectorAll('.delete-asset-btn').forEach(btn => {
