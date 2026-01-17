@@ -145,34 +145,68 @@ function renderAssetRow(asset) {
         valueDisplay = formatCurrency(asset.value || asset.current_value || 0, 0);
     }
 
-    // Build compact description
-    const descParts = [];
+    // Build attributes list to show horizontally
+    const attributes = [];
 
+    // Institution
     if (asset.institution) {
-        descParts.push(asset.institution);
+        attributes.push({ label: 'Institution', value: asset.institution });
     }
 
-    // Add key details inline
-    if (asset.categoryKey === 'real_estate' && asset.address) {
-        descParts.push(asset.address);
+    // For retirement/taxable accounts, show allocations
+    if (asset.categoryKey === 'retirement_accounts' || asset.categoryKey === 'taxable_accounts') {
+        if (asset.stock_pct !== undefined && asset.stock_pct !== null) {
+            attributes.push({ label: 'Stocks', value: `${asset.stock_pct}%` });
+        }
+        if (asset.bond_pct !== undefined && asset.bond_pct !== null) {
+            attributes.push({ label: 'Bonds', value: `${asset.bond_pct}%` });
+        }
+        if (asset.cash_pct !== undefined && asset.cash_pct !== null && asset.cash_pct > 0) {
+            attributes.push({ label: 'Cash', value: `${asset.cash_pct}%` });
+        }
+        if (asset.account_number) {
+            attributes.push({ label: 'Acct', value: `****${asset.account_number}` });
+        }
     }
+
+    // Real estate attributes
+    if (asset.categoryKey === 'real_estate') {
+        if (asset.address) {
+            attributes.push({ label: 'Address', value: asset.address });
+        }
+        if (asset.rental_income) {
+            attributes.push({ label: 'Rent', value: formatCurrency(asset.rental_income, 0) + '/mo' });
+        }
+    }
+
+    // Pension/annuity attributes
     if (asset.categoryKey === 'pensions_annuities') {
-        if (asset.provider) descParts.push(asset.provider);
-        if (asset.start_age) descParts.push(`Age ${asset.start_age}`);
+        if (asset.provider) {
+            attributes.push({ label: 'Provider', value: asset.provider });
+        }
+        if (asset.start_age) {
+            attributes.push({ label: 'Start Age', value: asset.start_age });
+        }
     }
 
-    const description = descParts.length > 0 ? descParts.join(' • ') : '';
+    const attributesHTML = attributes.map(attr =>
+        `<span style="color: var(--text-secondary); font-size: 12px;">
+            <span style="font-weight: 600;">${attr.label}:</span> ${attr.value}
+        </span>`
+    ).join('<span style="color: var(--border-color); margin: 0 4px;">•</span>');
 
     return `
-        <div class="asset-row" data-category="${asset.categoryKey}" data-index="${asset.index}" style="padding: 6px 10px; background: var(--bg-primary); border-radius: 4px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--accent-color)'" onmouseout="this.style.background='var(--bg-primary)'; this.style.borderColor='var(--border-color)'">
-            <div style="display: flex; align-items: center; gap: 8px; flex: 1; font-size: 13px;">
-                <span style="font-size: 16px;">${asset.categoryIcon}</span>
-                <span style="font-weight: 600;">${asset.name}</span>
-                <span style="color: var(--text-secondary);">${typeLabel}</span>
-                ${description ? `<span style="color: var(--text-secondary); font-size: 12px;">${description}</span>` : ''}
-                <span style="color: var(--accent-color); font-weight: 600; margin-left: auto;">${valueDisplay}</span>
+        <div class="asset-row" data-category="${asset.categoryKey}" data-index="${asset.index}" style="padding: 8px 12px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; gap: 12px;" onmouseover="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--accent-color)'" onmouseout="this.style.background='var(--bg-primary)'; this.style.borderColor='var(--border-color)'">
+            <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+                    <span style="font-size: 16px;">${asset.categoryIcon}</span>
+                    <span style="font-weight: 600;">${asset.name}</span>
+                    <span style="color: var(--text-secondary);">${typeLabel}</span>
+                    <span style="color: var(--accent-color); font-weight: 600; margin-left: auto;">${valueDisplay}</span>
+                </div>
+                ${attributesHTML ? `<div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-left: 24px;">${attributesHTML}</div>` : ''}
             </div>
-            <div style="display: flex; gap: 4px; margin-left: 8px;">
+            <div style="display: flex; gap: 4px;">
                 <button class="edit-asset-btn" data-category="${asset.categoryKey}" data-index="${asset.index}"
                     style="padding: 4px 8px; background: transparent; color: var(--text-secondary); border: none; cursor: pointer; font-size: 14px;"
                     title="Edit">✏️</button>
