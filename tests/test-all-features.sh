@@ -3,7 +3,7 @@
 # Comprehensive Test Script for Retirement Planning System
 # Covers all API endpoints and features
 
-BASE_URL="http://127.0.0.1:8080"
+BASE_URL="http://127.0.0.1:5137"
 TIMESTAMP=$(date +%s)
 TEST_PROFILE="TestProfile_$TIMESTAMP"
 

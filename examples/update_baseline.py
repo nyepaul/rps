@@ -4,7 +4,7 @@ import urllib.error
 import sys
 
 # Configuration
-API_URL = "http://127.0.0.1:8080/api/profile/Baseline"
+API_URL = "http://127.0.0.1:5137/api/profile/Baseline"
 
 # 1. Define the Data
 # ------------------

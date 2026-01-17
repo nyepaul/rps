@@ -11,7 +11,7 @@ export function renderWelcomeTab(container) {
     container.innerHTML = `
         <div style="max-width: 900px; margin: 0 auto; padding: 10px;">
             <h1 style="font-size: 28px; margin-bottom: 8px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                panRPS
+                RPS
             </h1>
             <p style="font-size: 14px; text-align: center; color: var(--text-secondary); margin-bottom: 20px;">
                 Plan your future with confidence. Let's get started!

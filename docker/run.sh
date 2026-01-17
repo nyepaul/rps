@@ -10,11 +10,11 @@ docker build -f docker/Dockerfile -t retirement-planning .
 
 docker run -d \
     --name retirement-planner \
-    -p 8080:8080 \
+    -p 5137:5137 \
     -v "$PROJECT_DIR/data":/app/data \
     retirement-planning
 
-echo "Application started on http://127.0.0.1:8080"
+echo "Application started on http://127.0.0.1:5137"
 echo ""
 echo "To stop: docker stop retirement-planner"
 echo "To view logs: docker logs -f retirement-planner"

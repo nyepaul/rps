@@ -13,7 +13,7 @@ pip install -q -r requirements.txt
 
 mkdir -p ../data
 
-echo "Starting application on http://127.0.0.1:8080"
+echo "Starting application on http://127.0.0.1:5137"
 echo ""
 echo "Press Ctrl+C to stop"
 echo ""

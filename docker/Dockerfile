@@ -18,6 +18,6 @@ RUN mkdir -p /app/data
 
 WORKDIR /app/src
 
-EXPOSE 8080
+EXPOSE 5137
 
 CMD ["python", "app.py"]

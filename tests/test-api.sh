@@ -2,7 +2,7 @@
 
 # API Testing Script for Retirement Planning System
 
-BASE_URL="http://127.0.0.1:8080"
+BASE_URL="http://127.0.0.1:5137"
 
 echo "==================================================="
 echo "  Retirement Planning System - API Tests"
@@ -140,5 +140,5 @@ echo "  All Tests Complete!"
 echo "==================================================="
 echo ""
 echo "Access the web interface at:"
-echo "  http://127.0.0.1:8080"
+echo "  http://127.0.0.1:5137"
 echo ""

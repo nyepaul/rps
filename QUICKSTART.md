@@ -12,10 +12,10 @@
 ```bash
 ./bin/start
 ```
-*Wait for the message: "Access the application at: http://127.0.0.1:8080"*
+*Wait for the message: "Access the application at: http://127.0.0.1:5137"*
 
 ### Step 2: Load Your Profile
-1. Open **[http://127.0.0.1:8080](http://127.0.0.1:8080)** in your browser.
+1. Open **[http://127.0.0.1:5137](http://127.0.0.1:5137)** in your browser.
 2. Go to the **Profile & Data** tab.
 3. Select **"Initial"** from the profile list and click **Load**.
 

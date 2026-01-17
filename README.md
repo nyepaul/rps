@@ -46,7 +46,7 @@ This system provides a private, interactive environment to:
    ```bash
    ./bin/start
    ```
-3. **Open Browser**: Navigate to [http://127.0.0.1:8080](http://127.0.0.1:8080)
+3. **Open Browser**: Navigate to [http://127.0.0.1:5137](http://127.0.0.1:5137)
 4. **Load Data**: Go to **Profile & Data**, select your profile, and click **Load**.
 5. **Iterate**: Use the **Dashboard** sandbox to test "What If" scenarios.
 
