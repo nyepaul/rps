@@ -194,10 +194,10 @@ function initializeCollegeExpenses(children) {
 
         const age = currentYear - child.birth_year;
         const collegeStartYear = child.birth_year + 18;
-        const collegeEndYear = child.birth_year + 21;
+        const collegeEndYear = child.birth_year + 22;  // Default to 5 years (age 18-22)
 
-        // Only add if they haven't finished college yet (< 22 years old)
-        if (age < 22) {
+        // Only add if they haven't finished college yet (< 23 years old)
+        if (age < 23) {
             collegeExpenses.push({
                 child_name: child.name || 'Child',
                 birth_year: child.birth_year,
@@ -281,7 +281,7 @@ function renderCollegeExpensesSection(parentContainer) {
     html += `
             </div>
             <div style="margin-top: 8px; padding: 8px; background: var(--info-bg); border-radius: 4px; font-size: 11px; color: var(--info-color);">
-                <strong>ℹ️ Tip:</strong> College expenses are automatically calculated based on children in your profile. Typical ages: 18-21. Click to customize costs.
+                <strong>ℹ️ Tip:</strong> College expenses are automatically initialized based on children in your profile. Click any entry to customize the annual cost and years.
             </div>
         </div>
     `;
