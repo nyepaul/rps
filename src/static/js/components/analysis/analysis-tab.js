@@ -65,8 +65,13 @@ export function renderAnalysisTab(container) {
             <!-- Analysis Configuration -->
             <div class="analysis-panel">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2 style="font-size: 24px; margin: 0;">Monte Carlo Simulation</h2>
-                    
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <h2 style="font-size: 24px; margin: 0;">Monte Carlo Simulation</h2>
+                        <button id="show-calculation-info" style="padding: 6px 12px; background: var(--info-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;" title="Learn about the calculations">
+                            <span>ℹ️</span> How It Works
+                        </button>
+                    </div>
+
                     <!-- Scenario Loader -->
                     <div id="scenario-loader-container" style="display: flex; gap: 10px; align-items: center;">
                         <span style="font-size: 13px; color: var(--text-secondary); font-weight: 600;">Load Saved:</span>
@@ -304,10 +309,18 @@ function setupAnalysisHandlers(container, profile) {
     const simulationsSelect = container.querySelector('#simulations-select');
     const marketProfileDescription = container.querySelector('#market-profile-description');
     const spendingModelDescription = container.querySelector('#spending-model-description');
+    const showCalcInfoBtn = container.querySelector('#show-calculation-info');
 
     if (!runBtn || !resultsContainer) {
         console.error('Analysis form elements not found');
         return;
+    }
+
+    // Show calculation explanation modal
+    if (showCalcInfoBtn) {
+        showCalcInfoBtn.addEventListener('click', () => {
+            showCalculationExplanationModal();
+        });
     }
 
     // Spending Model Descriptions
@@ -1042,5 +1055,136 @@ async function setupMultiSaveScenarioHandler(container, profile) {
             saveBtn.disabled = false;
             saveBtn.textContent = 'Save as Scenario';
         }
+    });
+}
+
+/**
+ * Show modal explaining Monte Carlo simulation calculations
+ */
+function showCalculationExplanationModal() {
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 10000; padding: 20px;';
+
+    modal.innerHTML = `
+        <div style="background: var(--bg-primary); border-radius: 12px; max-width: 800px; max-height: 90vh; overflow-y: auto; padding: 30px; position: relative;">
+            <button id="close-calc-modal" style="position: absolute; top: 15px; right: 15px; background: var(--bg-tertiary); border: none; color: var(--text-primary); font-size: 24px; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">×</button>
+
+            <h2 style="font-size: 28px; margin-bottom: 20px; color: var(--accent-color);">📊 How Monte Carlo Simulation Works</h2>
+
+            <div style="line-height: 1.8; color: var(--text-primary);">
+                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">What is Monte Carlo Simulation?</h3>
+                <p style="margin-bottom: 15px; color: var(--text-secondary);">
+                    Monte Carlo simulation runs thousands of different scenarios to understand the range of possible retirement outcomes.
+                    Instead of using a single assumed rate of return, it simulates realistic market volatility and randomness.
+                </p>
+
+                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">The Calculation Process</h3>
+
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                    <h4 style="font-size: 16px; margin-bottom: 10px; color: var(--accent-color);">1. Initial Portfolio Setup</h4>
+                    <p style="margin: 0; color: var(--text-secondary);">
+                        • Combines all your assets: taxable accounts, IRAs, 401(k)s, Roth accounts<br>
+                        • Includes home equity and pension values<br>
+                        • Tracks cost basis for tax calculations
+                    </p>
+                </div>
+
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                    <h4 style="font-size: 16px; margin-bottom: 10px; color: var(--accent-color);">2. Pre-Retirement Years</h4>
+                    <p style="margin: 0; color: var(--text-secondary);">
+                        • <strong>Income:</strong> Salary covers living expenses<br>
+                        • <strong>Savings:</strong> Surplus income → retirement accounts (401k, IRA)<br>
+                        • <strong>Employer Match:</strong> Added to pre-tax accounts<br>
+                        • <strong>Growth:</strong> All accounts grow with market returns
+                    </p>
+                </div>
+
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                    <h4 style="font-size: 16px; margin-bottom: 10px; color: var(--accent-color);">3. Retirement Years</h4>
+                    <p style="margin: 0; color: var(--text-secondary);">
+                        • <strong>Income:</strong> Social Security + Pensions<br>
+                        • <strong>Expenses:</strong> Living costs (adjusted for inflation)<br>
+                        • <strong>Shortfall:</strong> When expenses > income, withdraw from portfolio<br>
+                        • <strong>Growth:</strong> Remaining portfolio continues to grow
+                    </p>
+                </div>
+
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                    <h4 style="font-size: 16px; margin-bottom: 10px; color: var(--accent-color);">4. Tax-Optimized Withdrawals</h4>
+                    <p style="margin: 0; color: var(--text-secondary);">
+                        <strong>Withdrawal Order (most efficient):</strong><br>
+                        1. Taxable accounts (only capital gains tax on growth)<br>
+                        2. Pre-tax accounts (Traditional IRA/401k - ordinary income tax)<br>
+                        3. Roth accounts (tax-free, preserve as long as possible)
+                    </p>
+                </div>
+
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                    <h4 style="font-size: 16px; margin-bottom: 10px; color: var(--accent-color);">5. Market Returns (Randomized Each Year)</h4>
+                    <p style="margin: 0; color: var(--text-secondary);">
+                        • Stock returns vary based on selected market profile<br>
+                        • Bond returns provide stability<br>
+                        • Inflation adjusts expenses each year<br>
+                        • Each simulation has different random sequence of returns
+                    </p>
+                </div>
+
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                    <h4 style="font-size: 16px; margin-bottom: 10px; color: var(--accent-color);">6. Additional Factors</h4>
+                    <p style="margin: 0; color: var(--text-secondary);">
+                        • <strong>RMDs:</strong> Required Minimum Distributions at age 73<br>
+                        • <strong>Home Sales:</strong> Proceeds added to portfolio<br>
+                        • <strong>Healthcare Costs:</strong> Modeled in spending patterns<br>
+                        • <strong>Longevity:</strong> Projects through your life expectancy
+                    </p>
+                </div>
+
+                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">Understanding Results</h3>
+
+                <div style="background: linear-gradient(135deg, var(--success-color), #26d07c); padding: 15px; border-radius: 8px; margin-bottom: 10px; color: white;">
+                    <strong>Success Rate:</strong> Percentage of simulations where portfolio lasts through life expectancy
+                </div>
+
+                <div style="background: linear-gradient(135deg, var(--info-color), #5faee3); padding: 15px; border-radius: 8px; margin-bottom: 10px; color: white;">
+                    <strong>Median Balance:</strong> The middle outcome - half do better, half worse
+                </div>
+
+                <div style="background: linear-gradient(135deg, var(--warning-color), #f39c12); padding: 15px; border-radius: 8px; margin-bottom: 10px; color: white;">
+                    <strong>10th Percentile:</strong> The "bad luck" scenario - only 10% do worse
+                </div>
+
+                <div style="background: linear-gradient(135deg, #9b59b6, #8e44ad); padding: 15px; border-radius: 8px; margin-bottom: 15px; color: white;">
+                    <strong>90th Percentile:</strong> The "good luck" scenario - only 10% do better
+                </div>
+
+                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">Why Run Multiple Simulations?</h3>
+                <p style="margin-bottom: 15px; color: var(--text-secondary);">
+                    Markets don't give you average returns every year. One simulation might hit a bear market early (worst case),
+                    another might see strong growth (best case). Running 10,000 simulations shows you the full spectrum of
+                    what could happen based on historical market patterns.
+                </p>
+
+                <div style="background: var(--accent-color); padding: 15px; border-radius: 8px; margin-top: 20px; color: white;">
+                    <strong>💡 Pro Tip:</strong> A 85-90%+ success rate is generally considered a robust retirement plan.
+                    100% is often too conservative (leaves money on the table), while below 70% suggests adjustments are needed.
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button id="close-calc-modal-btn" style="padding: 12px 30px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                    Got It!
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Close handlers
+    const closeModal = () => modal.remove();
+    modal.querySelector('#close-calc-modal').addEventListener('click', closeModal);
+    modal.querySelector('#close-calc-modal-btn').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
     });
 }
