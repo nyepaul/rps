@@ -47,6 +47,7 @@ export function renderStandardTimelineChart(timeline, canvasOrId, existingInstan
     const successColor = style.getPropertyValue('--success-color').trim() || '#28a745';
     const dangerColor = style.getPropertyValue('--danger-color').trim() || '#dc3545';
     const accentColor = style.getPropertyValue('--accent-color').trim() || '#3498db';
+    const textPrimary = style.getPropertyValue('--text-primary').trim() || '#212529';
     const textSecondary = style.getPropertyValue('--text-secondary').trim() || '#666';
 
     // 3. Handle Multi-Scenario vs Single
@@ -112,13 +113,28 @@ export function renderStandardTimelineChart(timeline, canvasOrId, existingInstan
             plugins: {
                 legend: {
                     position: 'top',
-                    labels: { color: textSecondary, usePointStyle: true, padding: 15 }
+                    labels: {
+                        color: textPrimary,
+                        usePointStyle: true,
+                        padding: 15,
+                        font: {
+                            size: 14,
+                            weight: '600'
+                        }
+                    }
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    backgroundColor: 'rgba(0,0,0,0.9)',
                     titleColor: '#fff',
                     bodyColor: '#fff',
                     padding: 12,
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
                     callbacks: {
                         label: (context) => `${context.dataset.label}: ${formatCurrency(context.raw, 0)}`
                     }
@@ -147,16 +163,35 @@ export function renderStandardTimelineChart(timeline, canvasOrId, existingInstan
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: { color: 'rgba(128,128,128,0.1)' },
+                    grid: { color: 'rgba(128,128,128,0.2)' },
                     ticks: {
-                        color: textSecondary,
+                        color: textPrimary,
+                        font: {
+                            size: 13,
+                            weight: '500'
+                        },
                         callback: (value) => formatCompact(value)
                     }
                 },
                 x: {
                     grid: { display: false },
-                    ticks: { color: textSecondary, maxTicksLimit: 15 },
-                    title: { display: true, text: 'Year', color: textSecondary }
+                    ticks: {
+                        color: textPrimary,
+                        maxTicksLimit: 15,
+                        font: {
+                            size: 13,
+                            weight: '500'
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Year',
+                        color: textPrimary,
+                        font: {
+                            size: 14,
+                            weight: '600'
+                        }
+                    }
                 }
             }
         }
