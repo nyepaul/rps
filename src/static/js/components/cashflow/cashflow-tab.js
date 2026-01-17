@@ -670,13 +670,35 @@ function renderCashFlowChart(container, profile, months, viewType, scenarioData 
                 title: {
                     display: true,
                     text: `Cash Flow Projection (${viewType === 'annual' ? 'Annual' : 'Monthly'}) - Scroll or +/- to zoom, drag to pan`,
-                    font: { size: 16 }
+                    font: {
+                        size: 18,
+                        weight: 'bold'
+                    },
+                    color: getComputedStyle(document.body).getPropertyValue('--text-primary').trim()
                 },
                 legend: {
                     display: true,
-                    position: 'top'
+                    position: 'top',
+                    labels: {
+                        font: {
+                            size: 14,
+                            weight: '600'
+                        },
+                        color: getComputedStyle(document.body).getPropertyValue('--text-primary').trim(),
+                        padding: 15,
+                        usePointStyle: true
+                    }
                 },
                 tooltip: {
+                    backgroundColor: 'rgba(0,0,0,0.9)',
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    padding: 12,
                     callbacks: {
                         label: function(context) {
                             let label = context.dataset.label || '';
@@ -721,15 +743,25 @@ function renderCashFlowChart(container, profile, months, viewType, scenarioData 
                     beginAtZero: true,
                     title: {
                         display: true,
-                        text: 'Annual Cash Flow'
+                        text: 'Annual Cash Flow',
+                        font: {
+                            size: 14,
+                            weight: '600'
+                        },
+                        color: getComputedStyle(document.body).getPropertyValue('--text-primary').trim()
                     },
                     ticks: {
+                        font: {
+                            size: 13,
+                            weight: '500'
+                        },
+                        color: getComputedStyle(document.body).getPropertyValue('--text-primary').trim(),
                         callback: function(value) {
                             return formatCurrency(Math.abs(value), 0);
                         }
                     },
                     grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
+                        color: 'rgba(128, 128, 128, 0.2)'
                     }
                 },
                 y1: {
@@ -738,9 +770,19 @@ function renderCashFlowChart(container, profile, months, viewType, scenarioData 
                     position: 'right',
                     title: {
                         display: true,
-                        text: 'Portfolio Balance'
+                        text: 'Portfolio Balance',
+                        font: {
+                            size: 14,
+                            weight: '600'
+                        },
+                        color: getComputedStyle(document.body).getPropertyValue('--text-primary').trim()
                     },
                     ticks: {
+                        font: {
+                            size: 13,
+                            weight: '500'
+                        },
+                        color: getComputedStyle(document.body).getPropertyValue('--text-primary').trim(),
                         callback: function(value) {
                             return formatCurrency(value, 0);
                         }
@@ -750,6 +792,13 @@ function renderCashFlowChart(container, profile, months, viewType, scenarioData 
                     }
                 },
                 x: {
+                    ticks: {
+                        font: {
+                            size: 13,
+                            weight: '500'
+                        },
+                        color: getComputedStyle(document.body).getPropertyValue('--text-primary').trim()
+                    },
                     grid: {
                         display: false
                     }

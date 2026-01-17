@@ -412,6 +412,7 @@ function renderComparisonChart(container, selectedIds, allScenarios) {
     }
 
     const style = getComputedStyle(document.body);
+    const textPrimary = style.getPropertyValue('--text-primary').trim() || '#212529';
     const textSecondary = style.getPropertyValue('--text-secondary').trim() || '#666';
     const ChartConstructor = typeof Chart !== 'undefined' ? Chart : window.Chart;
 
@@ -422,9 +423,28 @@ function renderComparisonChart(container, selectedIds, allScenarios) {
             responsive: true, maintainAspectRatio: false,
             interaction: { intersect: false, mode: 'index' },
             plugins: {
-                legend: { position: 'top', labels: { color: textSecondary, usePointStyle: true, padding: 15 } },
+                legend: {
+                    position: 'top',
+                    labels: {
+                        color: textPrimary,
+                        usePointStyle: true,
+                        padding: 15,
+                        font: {
+                            size: 14,
+                            weight: '600'
+                        }
+                    }
+                },
                 tooltip: {
-                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    backgroundColor: 'rgba(0,0,0,0.9)',
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    padding: 12,
                     callbacks: {
                         label: (context) => `${context.dataset.label}: ${formatCurrency(context.raw, 0)}`
                     }
@@ -460,13 +480,35 @@ function renderComparisonChart(container, selectedIds, allScenarios) {
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: { color: 'rgba(128,128,128,0.1)' },
-                    ticks: { color: textSecondary, callback: (value) => formatCompact(value) }
+                    grid: { color: 'rgba(128,128,128,0.2)' },
+                    ticks: {
+                        color: textPrimary,
+                        font: {
+                            size: 13,
+                            weight: '500'
+                        },
+                        callback: (value) => formatCompact(value)
+                    }
                 },
                 x: {
                     grid: { display: false },
-                    ticks: { color: textSecondary, maxTicksLimit: 15 },
-                    title: { display: true, text: 'Year', color: textSecondary }
+                    ticks: {
+                        color: textPrimary,
+                        maxTicksLimit: 15,
+                        font: {
+                            size: 13,
+                            weight: '500'
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Year',
+                        color: textPrimary,
+                        font: {
+                            size: 14,
+                            weight: '600'
+                        }
+                    }
                 }
             }
         }
