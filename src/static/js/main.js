@@ -426,41 +426,18 @@ async function openSettings(defaultTab = 'general') {
                 <div id="api-keys-content">Loading...</div>
             </div>
 
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border-color);">
-                <button id="settings-logout-btn" class="settings-modal-logout" style="padding: 10px 20px; background: var(--danger-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
-                    Logout
+            <div style="display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+                <button id="close-settings-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
+                    Close
                 </button>
-                <div style="display: flex; gap: 10px;">
-                    <button id="close-settings-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
-                        Close
-                    </button>
-                    <button id="save-settings-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
-                        Save Settings
-                    </button>
-                </div>
+                <button id="save-settings-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                    Save Settings
+                </button>
             </div>
         </div>
     `;
 
     document.body.appendChild(modal);
-
-    // Setup logout button IMMEDIATELY after appending to DOM
-    const logoutBtn = modal.querySelector('#settings-logout-btn');
-    console.log('Settings modal logout button:', logoutBtn); // Debug log
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('Logout button clicked in settings'); // Debug log
-            if (confirm('Are you sure you want to logout?')) {
-                modal.remove();
-                await logout();
-            }
-        });
-        console.log('Logout event listener attached successfully'); // Debug log
-    } else {
-        console.error('CRITICAL: Logout button not found in settings modal!');
-    }
 
     // Setup tab switching
     const tabButtons = modal.querySelectorAll('.settings-tab');
