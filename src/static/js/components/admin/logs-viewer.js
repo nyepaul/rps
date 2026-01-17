@@ -292,7 +292,9 @@ function renderLogRow(log) {
                     ${log.action}
                 </span>
             </td>
-            <td style="padding: 12px; font-size: 12px;">${log.user_id || 'Anonymous'}</td>
+            <td style="padding: 12px; font-size: 12px;">
+                ${log.username ? log.username : (log.user_id ? `User ${log.user_id}` : 'Anonymous')}
+            </td>
             <td style="padding: 12px; font-size: 12px;">
                 <div>${log.ip_address || 'N/A'}</div>
                 <div style="font-size: 10px; color: var(--text-secondary);">${location}</div>

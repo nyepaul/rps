@@ -363,8 +363,15 @@ class EnhancedAuditLogger:
         config = AuditConfig.get_config()
         display_config = config.get('display', {})
 
-        # Build query
-        query = 'SELECT * FROM enhanced_audit_log WHERE 1=1'
+        # Build query with JOIN to get username
+        query = '''
+            SELECT
+                eal.*,
+                u.username
+            FROM enhanced_audit_log eal
+            LEFT JOIN users u ON eal.user_id = u.id
+            WHERE 1=1
+        '''
         count_query = 'SELECT COUNT(*) as total FROM enhanced_audit_log WHERE 1=1'
         params = []
 
@@ -418,6 +425,7 @@ class EnhancedAuditLogger:
                 'table_name': log.get('table_name'),
                 'record_id': log.get('record_id'),
                 'user_id': log.get('user_id'),
+                'username': log.get('username'),  # Include username from JOIN
                 'created_at': log.get('created_at'),
                 'status_code': log.get('status_code'),
                 'error_message': log.get('error_message')
