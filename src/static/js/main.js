@@ -32,9 +32,8 @@ async function init() {
     await loadDefaultProfileOnStartup();
 
     // Show initial tab - always start with welcome as landing page
-    let initialTab = localStorage.getItem(STORAGE_KEYS.LAST_TAB) || 'welcome';
-
-    showTab(initialTab);
+    // Note: We always show Welcome on page load, regardless of previous session
+    showTab('welcome');
 
     console.log('✅ Application initialized');
 }
