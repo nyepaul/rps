@@ -107,10 +107,17 @@ function renderComparisonView(container, profile, scenarios) {
 
             <!-- Comparison Chart Section -->
             <div id="comparison-chart-section" style="display: none; background: var(--bg-secondary); padding: 25px; border-radius: 12px; margin-bottom: 30px;">
-                <h3 style="font-size: 20px; margin-bottom: 15px;">Portfolio Projection Comparison</h3>
-                <p style="color: var(--text-secondary); margin-bottom: 15px;">
-                    Select 2 or more scenarios above to compare their projections
-                </p>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <div>
+                        <h3 style="font-size: 20px; margin: 0;">Portfolio Projection Comparison</h3>
+                        <p style="color: var(--text-secondary); margin: 5px 0 0 0; font-size: 13px;">
+                            Scroll to zoom, drag to pan
+                        </p>
+                    </div>
+                    <button id="reset-comparison-zoom" style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 14px;">
+                        Reset Zoom
+                    </button>
+                </div>
                 <div style="position: relative; height: 400px;">
                     <canvas id="comparison-chart"></canvas>
                 </div>
@@ -233,6 +240,7 @@ function setupComparisonHandlers(container, scenarios) {
     const checkboxes = container.querySelectorAll('.scenario-checkbox');
     const selectAllCheckbox = container.querySelector('#select-all-scenarios');
     const chartSection = container.querySelector('#comparison-chart-section');
+    const resetZoomBtn = container.querySelector('#reset-comparison-zoom');
 
     // Handle select all
     if (selectAllCheckbox) {
@@ -256,6 +264,16 @@ function setupComparisonHandlers(container, scenarios) {
             }
         });
     });
+
+    // Handle reset zoom button
+    if (resetZoomBtn) {
+        resetZoomBtn.addEventListener('click', () => {
+            const chart = comparisonChartInstances['comparison-chart'];
+            if (chart) {
+                chart.resetZoom();
+            }
+        });
+    }
 
     // Handle delete buttons
     container.querySelectorAll('.delete-scenario-btn').forEach(btn => {
@@ -378,6 +396,33 @@ function renderComparisonChart(container, selectedIds, allScenarios) {
                     backgroundColor: 'rgba(0,0,0,0.8)',
                     callbacks: {
                         label: (context) => `${context.dataset.label}: ${formatCurrency(context.raw, 0)}`
+                    }
+                },
+                zoom: {
+                    pan: {
+                        enabled: true,
+                        mode: 'xy',
+                        modifierKey: null
+                    },
+                    zoom: {
+                        wheel: {
+                            enabled: true,
+                            speed: 0.1
+                        },
+                        pinch: {
+                            enabled: true
+                        },
+                        mode: 'xy'
+                    },
+                    limits: {
+                        x: {
+                            min: 'original',
+                            max: 'original'
+                        },
+                        y: {
+                            min: 'original',
+                            max: 'original'
+                        }
                     }
                 }
             },
