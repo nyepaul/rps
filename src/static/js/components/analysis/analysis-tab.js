@@ -958,20 +958,32 @@ async function setupSaveScenarioHandler(container, profile) {
             return;
         }
 
+        // Build comprehensive scenario name from simulation parameters
         const savedMarketProfileKey = localStorage.getItem('rps_market_profile') || 'historical';
-        const marketProfileName = APP_CONFIG.MARKET_PROFILES[savedMarketProfileKey]?.name || 'Historical';
-        
-        // Get spending model hint
+        const marketProfile = APP_CONFIG.MARKET_PROFILES[savedMarketProfileKey];
+        const marketProfileName = marketProfile?.name || 'Historical';
+
+        // Get spending model
         const spendingModelSelect = container.querySelector('#spending-model-select');
         const spendingModelKey = spendingModelSelect?.value || 'constant_real';
-        const spendingShortNames = {
-            'constant_real': 'Constant',
-            'retirement_smile': 'Smile',
-            'conservative_decline': 'Decline'
+        const spendingFullNames = {
+            'constant_real': 'Constant-Inflation-Adjusted',
+            'retirement_smile': 'Retirement-Smile',
+            'conservative_decline': 'Conservative-Decline'
         };
-        const spendingHint = spendingShortNames[spendingModelKey] || 'Custom';
+        const spendingName = spendingFullNames[spendingModelKey] || 'Custom';
 
-        const defaultName = `${profile.name} - ${marketProfileName} - ${spendingHint} - ${new Date().toLocaleDateString()}`;
+        // Get simulations count
+        const simulationsSelect = container.querySelector('#simulations-select');
+        const simCount = simulationsSelect?.value || lastSimulations || '10000';
+
+        // Get stock allocation
+        const stockAllocation = Math.round((marketProfile?.stock_allocation || 0.5) * 100);
+
+        // Build descriptive name with key parameters
+        const timestamp = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const defaultName = `${profile.name} | ${marketProfileName} (${stockAllocation}% stocks) | ${spendingName} | ${simCount} sims | ${timestamp}`;
+
         const scenarioName = prompt('Enter a name for this scenario:', defaultName);
 
         if (!scenarioName) return;
@@ -1013,20 +1025,32 @@ async function setupMultiSaveScenarioHandler(container, profile) {
             return;
         }
 
+        // Build comprehensive multi-scenario name from simulation parameters
         const savedMarketProfileKey = localStorage.getItem('rps_market_profile') || 'historical';
-        const marketProfileName = APP_CONFIG.MARKET_PROFILES[savedMarketProfileKey]?.name || 'Historical';
-        
-        // Get spending model hint
+        const marketProfile = APP_CONFIG.MARKET_PROFILES[savedMarketProfileKey];
+        const marketProfileName = marketProfile?.name || 'Historical';
+
+        // Get spending model
         const spendingModelSelect = container.querySelector('#spending-model-select');
         const spendingModelKey = spendingModelSelect?.value || 'constant_real';
-        const spendingShortNames = {
-            'constant_real': 'Constant',
-            'retirement_smile': 'Smile',
-            'conservative_decline': 'Decline'
+        const spendingFullNames = {
+            'constant_real': 'Constant-Inflation-Adjusted',
+            'retirement_smile': 'Retirement-Smile',
+            'conservative_decline': 'Conservative-Decline'
         };
-        const spendingHint = spendingShortNames[spendingModelKey] || 'Custom';
+        const spendingName = spendingFullNames[spendingModelKey] || 'Custom';
 
-        const defaultName = `${profile.name} - ${marketProfileName} - ${spendingHint} - Multi - ${new Date().toLocaleDateString()}`;
+        // Get simulations count
+        const simulationsSelect = container.querySelector('#simulations-select');
+        const simCount = simulationsSelect?.value || lastSimulations || '10000';
+
+        // Get stock allocation
+        const stockAllocation = Math.round((marketProfile?.stock_allocation || 0.5) * 100);
+
+        // Build descriptive name with key parameters
+        const timestamp = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const defaultName = `${profile.name} | Multi-Scenario | ${marketProfileName} (${stockAllocation}% stocks) | ${spendingName} | ${simCount} sims | ${timestamp}`;
+
         const scenarioName = prompt('Enter a name for this multi-scenario analysis:', defaultName);
 
         if (!scenarioName) return;
@@ -1106,6 +1130,19 @@ function showCalculationExplanationModal() {
                         • <strong>Expenses:</strong> Living costs (adjusted for inflation)<br>
                         • <strong>Shortfall:</strong> When expenses > income, withdraw from portfolio<br>
                         • <strong>Growth:</strong> Remaining portfolio continues to grow
+                    </p>
+                </div>
+
+                <div style="background: var(--info-color); padding: 20px; border-radius: 8px; margin-bottom: 15px; color: white;">
+                    <h4 style="font-size: 16px; margin-bottom: 10px; font-weight: bold;">💡 How Spending Strategy Works with Your Expenses</h4>
+                    <p style="margin: 0; line-height: 1.6;">
+                        <strong>Your actual expenses from the Expenses tab are used as the BASE.</strong><br><br>
+                        The spending strategy is then applied as a <strong>MULTIPLIER</strong> on top of those expenses:<br><br>
+                        • <strong>Constant Inflation-Adjusted:</strong> Multiplier = 1.0 (no change)<br>
+                        • <strong>Retirement Smile:</strong> Multiplier starts at 1.0, drops to 0.8 at age 80, then rises back for healthcare<br>
+                        • <strong>Conservative Decline:</strong> Multiplier gradually decreases 1% per year after age 70<br><br>
+                        <strong>Example:</strong> If your expenses are $80,000/year and you use Retirement Smile, at age 75 the multiplier might be 0.9, so modeled spending = $80,000 × 0.9 = $72,000.<br><br>
+                        <strong>Note:</strong> Housing costs remain constant regardless of spending strategy.
                     </p>
                 </div>
 

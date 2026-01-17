@@ -255,11 +255,18 @@ class RetirementModel:
             current_housing_costs *= current_cpi
             spending_mult = spending_multipliers[year_idx]
 
+            # Calculate expenses based on profile data
+            # Spending strategy (constant_real, retirement_smile, conservative_decline) acts as a MULTIPLIER
+            # on actual expenses (excluding housing which remains constant)
             if self.profile.budget:
+                # Use actual expenses from Budget/Expenses tab
                 target_spending = self.calculate_budget_expenses(simulation_year, current_cpi, p1_retired, p2_retired, current_housing_costs)
+                # Apply spending multiplier to non-housing expenses
+                # This models how spending patterns change (e.g., less travel when older, more healthcare)
                 if spending_mult != 1.0:
                     target_spending = ((target_spending - current_housing_costs) * spending_mult) + current_housing_costs
             else:
+                # Fallback to simple target income approach
                 target_spending = (self.profile.target_annual_income * current_cpi * spending_mult) + current_housing_costs
 
             # D. Calculate Shortfall/Surplus
