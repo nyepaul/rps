@@ -500,13 +500,15 @@ export function renderLearnTab(container) {
     `;
 
     // Add event listeners to article cards
-    document.querySelectorAll('.article-card').forEach(card => {
+    container.querySelectorAll('.article-card').forEach(card => {
         card.addEventListener('click', (e) => {
             const btn = card.querySelector('.learn-btn');
-            const articleData = btn.dataset.article;
-            if (articleData) {
-                const article = JSON.parse(articleData);
-                showArticle(article);
+            if (btn) {
+                const articleData = btn.dataset.article;
+                if (articleData) {
+                    const article = JSON.parse(articleData);
+                    showArticle(article);
+                }
             }
         });
     });
