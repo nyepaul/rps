@@ -51,7 +51,7 @@ The `bin/manage` script provides a unified interface for common tasks:
 
 1.  **Navigate to project root:**
     ```bash
-    cd panrps
+    cd rps
     ```
 
 2.  **Install Dependencies:**

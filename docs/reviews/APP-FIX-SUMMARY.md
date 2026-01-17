@@ -19,7 +19,7 @@ The HTML file was trying to connect to the Flask backend at `http://127.0.0.1:80
 
 **Step 1: Start the server**
 
-    cd panrps
+    cd rps
     ./start.sh
 
 **Step 2: Open browser**
@@ -68,7 +68,7 @@ Installing dependencies...
 
 ## Quick Start Checklist
 
-- [ ] `cd panrps`
+- [ ] `cd rps`
 - [ ] `chmod +x start.sh` (first time only)
 - [ ] `./start.sh`
 - [ ] Open browser to http://127.0.0.1:8080
@@ -92,12 +92,12 @@ These are now obsolete:
 
 If `./start.sh` doesn't work:
 
-    cd panrps
+    cd rps
     ./manage.sh start
 
 Or manually:
 
-    cd panrps/webapp
+    cd rps/webapp
     python3 -m venv venv
     source venv/bin/activate
     pip install flask flask-cors sqlalchemy numpy pandas

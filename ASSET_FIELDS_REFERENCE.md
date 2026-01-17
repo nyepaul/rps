@@ -1,6 +1,6 @@
 # Asset Type Field Reference
 
-This document describes which fields are prompted for each asset type in the panRPS system.
+This document describes which fields are prompted for each asset type in the RPS system.
 
 ## Retirement Accounts
 All retirement account types collect the same information:
