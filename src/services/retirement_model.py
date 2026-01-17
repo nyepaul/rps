@@ -523,7 +523,7 @@ class RetirementModel:
 
         budget = self.profile.budget
         income_section = budget.get('income', {})
-        
+
         # Initialize result vector
         total_income = np.zeros_like(current_cpi)
 
@@ -534,26 +534,45 @@ class RetirementModel:
         if not p2_retired:
             total_income += current_employment.get('spouse', 0)
 
-        # 2. Dynamic Income Streams (Pensions/SS handled in main loop, 
-        # but budget rental/other income is period-based)
-        period = 'future' if (p1_retired and p2_retired) else 'current'
-        
-        # Other income categories
-        for category in ['rental_income', 'part_time_consulting', 'business_income', 'other_income']:
-            items = income_section.get(period, {}).get(category, [])
-            for item in items:
-                try:
-                    start_year = datetime.fromisoformat(item['start_date']).year
-                    end_year = datetime.fromisoformat(item['end_date']).year if item.get('end_date') else 9999
+        # 2. Dynamic Income Streams with Blended Logic
+        # Blended Budget Logic (matching expense logic):
+        # Both working -> 100% current
+        # One retired -> 50% current / 50% future
+        # Both retired -> 100% future
+        retirement_weight = 0.0
+        if p1_retired: retirement_weight += 0.5
+        if p2_retired: retirement_weight += 0.5
 
-                    if start_year <= simulation_year <= end_year:
-                        amount = self._annual_amount(item['amount'], item.get('frequency', 'monthly'))
-                        if item.get('inflation_adjusted', True):
-                            total_income += amount * current_cpi
-                        else:
-                            total_income += amount
-                except:
-                    pass
+        def get_period_income(period):
+            period_total = np.zeros_like(current_cpi)
+            # Other income categories
+            for category in ['rental_income', 'part_time_consulting', 'business_income', 'other_income']:
+                items = income_section.get(period, {}).get(category, [])
+                for item in items:
+                    try:
+                        start_year = datetime.fromisoformat(item['start_date']).year
+                        end_year = datetime.fromisoformat(item['end_date']).year if item.get('end_date') else 9999
+
+                        if start_year <= simulation_year <= end_year:
+                            amount = self._annual_amount(item['amount'], item.get('frequency', 'monthly'))
+                            if item.get('inflation_adjusted', True):
+                                period_total += amount * current_cpi
+                            else:
+                                period_total += amount
+                    except:
+                        pass
+            return period_total
+
+        # Apply blended logic to other income streams
+        if retirement_weight == 0:
+            total_income += get_period_income('current')
+        elif retirement_weight == 1.0:
+            total_income += get_period_income('future')
+        else:
+            # Transition period (one retired) - blend 50/50
+            current_inc = get_period_income('current')
+            future_inc = get_period_income('future')
+            total_income += (current_inc * 0.5) + (future_inc * 0.5)
 
         return total_income
 

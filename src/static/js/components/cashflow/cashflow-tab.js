@@ -244,6 +244,86 @@ function isExpenseActiveOnDate(expense, checkDate) {
 }
 
 /**
+ * Calculate total monthly expenses for a specific period (current or future)
+ */
+function calculatePeriodExpenses(budget, period, currentDate) {
+    let expenses = 0;
+
+    if (!budget.expenses || !budget.expenses[period]) {
+        return expenses;
+    }
+
+    // All expense categories
+    const categories = ['housing', 'utilities', 'transportation', 'food', 'dining_out', 'healthcare', 'insurance',
+                      'travel', 'entertainment', 'personal_care', 'clothing', 'gifts', 'childcare_education',
+                      'charitable_giving', 'subscriptions', 'pet_care', 'home_maintenance', 'debt_payments',
+                      'taxes', 'discretionary', 'other'];
+
+    categories.forEach(category => {
+        const cat = budget.expenses[period][category] || {};
+
+        // Check if expense is active on this date
+        if (!isExpenseActiveOnDate(cat, currentDate)) {
+            return; // Skip inactive expenses
+        }
+
+        const amount = cat.amount || 0;
+        const frequency = cat.frequency || 'monthly';
+
+        // Convert to monthly
+        if (frequency === 'monthly') {
+            expenses += amount;
+        } else if (frequency === 'quarterly') {
+            expenses += amount / 3;
+        } else if (frequency === 'annual') {
+            expenses += amount / 12;
+        }
+    });
+
+    return expenses;
+}
+
+/**
+ * Calculate total monthly income from budget categories for a specific period (current or future)
+ */
+function calculatePeriodIncome(budget, period, currentDate) {
+    let income = 0;
+
+    if (!budget.income || !budget.income[period]) {
+        return income;
+    }
+
+    // Income categories that can have multiple items with start/end dates
+    const categories = ['rental_income', 'part_time_consulting', 'business_income', 'other_income'];
+
+    categories.forEach(category => {
+        const items = budget.income[period][category] || [];
+        if (!Array.isArray(items)) return;
+
+        items.forEach(item => {
+            // Check if this income item is active on this date
+            if (!isExpenseActiveOnDate(item, currentDate)) {
+                return; // Skip inactive income
+            }
+
+            const amount = item.amount || 0;
+            const frequency = item.frequency || 'monthly';
+
+            // Convert to monthly
+            if (frequency === 'monthly') {
+                income += amount;
+            } else if (frequency === 'quarterly') {
+                income += amount / 3;
+            } else if (frequency === 'annual') {
+                income += amount / 12;
+            }
+        });
+    });
+
+    return income;
+}
+
+/**
  * Calculate monthly cash flow data with portfolio growth projection
  */
 function calculateMonthlyCashFlow(profile, months) {
@@ -283,7 +363,7 @@ function calculateMonthlyCashFlow(profile, months) {
         // Check if retired
         const isRetired = retirementDate && currentDate >= retirementDate;
 
-        // Calculate work income for this month
+        // Calculate work income for this month (from income_streams)
         let workIncome = 0;
         incomeStreams.forEach(stream => {
             const streamStart = stream.start_date ? new Date(stream.start_date) : null;
@@ -298,60 +378,108 @@ function calculateMonthlyCashFlow(profile, months) {
             }
         });
 
-        // Calculate retirement benefits (Social Security, Pension)
-        let retirementBenefits = 0;
-        if (isRetired) {
-            // Social Security (monthly)
-            retirementBenefits += financial.social_security_benefit || 0;
-            // Spouse Social Security
-            if (data.spouse && data.spouse.social_security_benefit) {
-                retirementBenefits += data.spouse.social_security_benefit;
-            }
-            // Pensions (monthly)
-            retirementBenefits += financial.pension_benefit || 0;
-            if (data.spouse && data.spouse.pension_benefit) {
-                retirementBenefits += data.spouse.pension_benefit;
+        // Calculate additional income from budget with retirement blending
+        // (rental, consulting, business, other income)
+        let budgetIncome = 0;
+        if (budget.income && (budget.income.current || budget.income.future)) {
+            // Determine retirement status for both people
+            const person1Retired = retirementDate && currentDate >= retirementDate;
+            const spouseRetirementDate = data.spouse?.retirement_date ? new Date(data.spouse.retirement_date) : null;
+            const person2Retired = spouseRetirementDate && currentDate >= spouseRetirementDate;
+
+            // Calculate retirement weight
+            let retirementWeight = 0.0;
+            if (person1Retired) retirementWeight += 0.5;
+            if (person2Retired) retirementWeight += 0.5;
+
+            // Calculate budget income based on retirement status
+            if (retirementWeight === 0) {
+                // Both working - use current income
+                budgetIncome = calculatePeriodIncome(budget, 'current', currentDate);
+            } else if (retirementWeight === 1.0) {
+                // Both retired - use future income
+                budgetIncome = calculatePeriodIncome(budget, 'future', currentDate);
+            } else {
+                // Transition period (one retired) - blend 50/50
+                const currentIncome = calculatePeriodIncome(budget, 'current', currentDate);
+                const futureIncome = calculatePeriodIncome(budget, 'future', currentDate);
+                budgetIncome = (currentIncome * 0.5) + (futureIncome * 0.5);
             }
         }
 
-        // Get expenses from budget
+        // Calculate retirement benefits (Social Security, Pension)
+        // Each person's benefits start when they retire individually
+        let retirementBenefits = 0;
+
+        // Person 1 benefits (start at their retirement date)
+        if (isRetired) {
+            retirementBenefits += financial.social_security_benefit || 0;
+            retirementBenefits += financial.pension_benefit || 0;
+        }
+
+        // Person 2 (spouse) benefits (start at their retirement date)
+        if (data.spouse) {
+            const spouseRetirementDate = data.spouse.retirement_date ? new Date(data.spouse.retirement_date) : null;
+            const spouseIsRetired = spouseRetirementDate && currentDate >= spouseRetirementDate;
+
+            if (spouseIsRetired) {
+                retirementBenefits += data.spouse.social_security_benefit || 0;
+                retirementBenefits += data.spouse.pension_benefit || 0;
+            }
+        }
+
+        // Get expenses from budget with retirement blending
+        // Blended Budget Logic (matching backend retirement_model.py):
+        // Both working -> 100% current
+        // One retired -> 50% current / 50% future
+        // Both retired -> 100% future
         let expenses = 0;
-        if (budget.expenses && budget.expenses.current) {
-            // Calculate total monthly expenses from all categories
-            const categories = ['housing', 'utilities', 'transportation', 'food', 'dining_out', 'healthcare', 'insurance',
-                              'travel', 'entertainment', 'personal_care', 'clothing', 'gifts', 'childcare_education',
-                              'charitable_giving', 'subscriptions', 'pet_care', 'home_maintenance', 'debt_payments',
-                              'taxes', 'discretionary', 'other'];
-            categories.forEach(category => {
-                const cat = budget.expenses.current[category] || {};
 
-                // Check if expense is active on this date
-                if (!isExpenseActiveOnDate(cat, currentDate)) {
-                    return; // Skip inactive expenses
-                }
+        if (budget.expenses && (budget.expenses.current || budget.expenses.future)) {
+            // Determine retirement status for both people
+            const person1Retired = retirementDate && currentDate >= retirementDate;
 
-                const amount = cat.amount || 0;
-                const frequency = cat.frequency || 'monthly';
+            // Check if there's a spouse and their retirement date
+            const spouseRetirementDate = data.spouse?.retirement_date ? new Date(data.spouse.retirement_date) : null;
+            const person2Retired = spouseRetirementDate && currentDate >= spouseRetirementDate;
 
-                // Convert to monthly
-                if (frequency === 'monthly') {
-                    expenses += amount;
-                } else if (frequency === 'quarterly') {
-                    expenses += amount / 3;
-                } else if (frequency === 'annual') {
-                    expenses += amount / 12;
-                }
-            });
+            // Calculate retirement weight
+            let retirementWeight = 0.0;
+            if (person1Retired) retirementWeight += 0.5;
+            if (person2Retired) retirementWeight += 0.5;
+
+            // Calculate expenses based on retirement status
+            if (retirementWeight === 0) {
+                // Both working - use current expenses
+                expenses = calculatePeriodExpenses(budget, 'current', currentDate);
+            } else if (retirementWeight === 1.0) {
+                // Both retired - use future expenses
+                expenses = calculatePeriodExpenses(budget, 'future', currentDate);
+            } else {
+                // Transition period (one retired) - blend 50/50
+                const currentExpenses = calculatePeriodExpenses(budget, 'current', currentDate);
+                const futureExpenses = calculatePeriodExpenses(budget, 'future', currentDate);
+                expenses = (currentExpenses * 0.5) + (futureExpenses * 0.5);
+            }
         } else if (financial.annual_expenses) {
             // Fallback to financial annual expenses
             expenses = financial.annual_expenses / 12;
         }
 
+        // Combine work income and budget income (rental, consulting, business, other)
+        const totalWorkIncome = workIncome + budgetIncome;
+
         // Calculate investment income needed
-        // After retirement, we withdraw to cover shortfall between expenses and other income
+        // After retirement (either person), we withdraw to cover shortfall between expenses and other income
         let investmentIncome = 0;
-        if (isRetired) {
-            const otherIncome = workIncome + retirementBenefits;
+
+        // Check if anyone is retired
+        const spouseRetirementDate = data.spouse?.retirement_date ? new Date(data.spouse.retirement_date) : null;
+        const spouseIsRetired = spouseRetirementDate && currentDate >= spouseRetirementDate;
+        const anyoneRetired = isRetired || spouseIsRetired;
+
+        if (anyoneRetired) {
+            const otherIncome = totalWorkIncome + retirementBenefits;
             const shortfall = expenses - otherIncome;
 
             // Only withdraw if there's a shortfall and we have portfolio
@@ -373,18 +501,18 @@ function calculateMonthlyCashFlow(profile, months) {
         }
 
         // Add savings to portfolio if positive cash flow before retirement
-        if (!isRetired && workIncome > expenses) {
-            const monthlySavings = workIncome - expenses;
+        if (!anyoneRetired && totalWorkIncome > expenses) {
+            const monthlySavings = totalWorkIncome - expenses;
             currentPortfolio += monthlySavings;
         }
 
-        const totalIncome = workIncome + retirementBenefits + investmentIncome;
+        const totalIncome = totalWorkIncome + retirementBenefits + investmentIncome;
         const netCashFlow = totalIncome - expenses;
 
         monthlyData.push({
             date: currentDate,
             label: monthLabel,
-            workIncome,
+            workIncome: totalWorkIncome,
             retirementBenefits,
             investmentIncome,
             totalIncome,
