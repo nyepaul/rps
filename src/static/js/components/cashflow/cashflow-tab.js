@@ -8,6 +8,12 @@ import { formatCurrency } from '../../utils/formatters.js';
 import { scenariosAPI } from '../../api/scenarios.js';
 
 export function renderCashFlowTab(container) {
+    // Clean up previous keyboard handler if exists
+    if (container._cashflowKeyboardHandler) {
+        document.removeEventListener('keydown', container._cashflowKeyboardHandler);
+        container._cashflowKeyboardHandler = null;
+    }
+
     const profile = store.get('currentProfile');
 
     if (!profile) {
@@ -183,6 +189,28 @@ function setupEventHandlers(container, profile) {
             }
         });
     }
+
+    // Handle keyboard zoom controls (+ and -)
+    const keyboardZoomHandler = (e) => {
+        if (!window.cashFlowChart) return;
+
+        // Check if + or = key (zoom in)
+        if (e.key === '+' || e.key === '=') {
+            e.preventDefault();
+            window.cashFlowChart.zoom(1.1);
+        }
+        // Check if - or _ key (zoom out)
+        else if (e.key === '-' || e.key === '_') {
+            e.preventDefault();
+            window.cashFlowChart.zoom(0.9);
+        }
+    };
+
+    // Add keyboard listener
+    document.addEventListener('keydown', keyboardZoomHandler);
+
+    // Store handler reference for cleanup
+    container._cashflowKeyboardHandler = keyboardZoomHandler;
 }
 
 /**
@@ -641,7 +669,7 @@ function renderCashFlowChart(container, profile, months, viewType, scenarioData 
             plugins: {
                 title: {
                     display: true,
-                    text: `Cash Flow Projection (${viewType === 'annual' ? 'Annual' : 'Monthly'}) - Scroll to zoom, drag to pan`,
+                    text: `Cash Flow Projection (${viewType === 'annual' ? 'Annual' : 'Monthly'}) - Scroll or +/- to zoom, drag to pan`,
                     font: { size: 16 }
                 },
                 legend: {

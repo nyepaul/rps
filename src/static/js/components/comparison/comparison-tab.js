@@ -11,6 +11,12 @@ import { renderStandardTimelineChart } from '../../utils/charts.js';
 let comparisonChartInstances = {};
 
 export async function renderComparisonTab(container) {
+    // Clean up previous keyboard handler if exists
+    if (container._comparisonKeyboardHandler) {
+        document.removeEventListener('keydown', container._comparisonKeyboardHandler);
+        container._comparisonKeyboardHandler = null;
+    }
+
     const profile = store.get('currentProfile');
 
     if (!profile) {
@@ -111,7 +117,7 @@ function renderComparisonView(container, profile, scenarios) {
                     <div>
                         <h3 style="font-size: 20px; margin: 0;">Portfolio Projection Comparison</h3>
                         <p style="color: var(--text-secondary); margin: 5px 0 0 0; font-size: 13px;">
-                            Scroll to zoom, drag to pan
+                            Scroll or +/- keys to zoom, drag to pan
                         </p>
                     </div>
                     <button id="reset-comparison-zoom" style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 14px;">
@@ -273,6 +279,31 @@ function setupComparisonHandlers(container, scenarios) {
                 chart.resetZoom();
             }
         });
+    }
+
+    // Handle keyboard zoom controls (+ and -)
+    const keyboardZoomHandler = (e) => {
+        const chart = comparisonChartInstances['comparison-chart'];
+        if (!chart || !chartSection || chartSection.style.display === 'none') return;
+
+        // Check if + or = key (zoom in)
+        if (e.key === '+' || e.key === '=') {
+            e.preventDefault();
+            chart.zoom(1.1);
+        }
+        // Check if - or _ key (zoom out)
+        else if (e.key === '-' || e.key === '_') {
+            e.preventDefault();
+            chart.zoom(0.9);
+        }
+    };
+
+    // Add keyboard listener
+    document.addEventListener('keydown', keyboardZoomHandler);
+
+    // Store handler reference for cleanup
+    if (!container._comparisonKeyboardHandler) {
+        container._comparisonKeyboardHandler = keyboardZoomHandler;
     }
 
     // Handle delete buttons
