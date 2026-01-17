@@ -3,6 +3,7 @@
  */
 
 import { advisorAPI } from '../../api/advisor.js';
+import { actionItemsAPI } from '../../api/action-items.js';
 import { store } from '../../state/store.js';
 import { apiClient } from '../../api/client.js';
 import { showSuccess, showError } from '../../utils/dom.js';
@@ -176,6 +177,14 @@ export function renderAdvisorTab(container) {
                 opacity: 0.5;
                 cursor: not-allowed;
             }
+            .add-to-action-items-btn:hover {
+                opacity: 0.9;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            }
+            .add-to-action-items-btn:disabled {
+                cursor: not-allowed;
+            }
             .typing-indicator {
                 display: flex;
                 gap: 4px;
@@ -317,15 +326,34 @@ function addMessage(container, role, text, isHtml = false) {
     const avatar = role === 'user' ? '👤' : '🤖';
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+    // Add "Add to Action Items" button for assistant messages
+    const actionButton = role === 'assistant' && !isHtml ? `
+        <button class="add-to-action-items-btn" data-message="${escapeHtml(text).replace(/"/g, '&quot;')}"
+            style="margin-top: 10px; padding: 6px 12px; background: var(--success-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s;">
+            ✅ Add to Action Items
+        </button>
+    ` : '';
+
     messageDiv.innerHTML = `
         <div class="message-avatar">${avatar}</div>
         <div class="message-content">
             <div class="message-text">${isHtml ? text : escapeHtml(text)}</div>
+            ${actionButton}
             <div class="message-time">${time}</div>
         </div>
     `;
 
     container.appendChild(messageDiv);
+
+    // Add event listener for action button
+    if (role === 'assistant' && !isHtml) {
+        const btn = messageDiv.querySelector('.add-to-action-items-btn');
+        if (btn) {
+            btn.addEventListener('click', async () => {
+                await addRecommendationToActionItems(text, btn);
+            });
+        }
+    }
 
     // Scroll to bottom
     container.scrollTop = container.scrollHeight;
@@ -371,6 +399,94 @@ function clearChat(container) {
 
     currentConversationId = null;
     showSuccess('Chat history cleared.');
+}
+
+async function addRecommendationToActionItems(text, button) {
+    const profile = store.get('currentProfile');
+
+    if (!profile) {
+        showError('No profile selected');
+        return;
+    }
+
+    try {
+        // Disable button and show loading state
+        button.disabled = true;
+        button.style.opacity = '0.5';
+        button.textContent = 'Adding...';
+
+        // Parse the recommendation text into actionable items
+        // Look for bullet points, numbered lists, or sentences with action verbs
+        const lines = text.split('\n').filter(line => line.trim().length > 0);
+        const actionItems = [];
+
+        for (const line of lines) {
+            const trimmed = line.trim();
+
+            // Check if line looks like an action item (starts with -, *, number, or contains action verbs)
+            const isActionItem =
+                trimmed.match(/^[-*•]\s/) || // Bullet point
+                trimmed.match(/^\d+[\.)]\s/) || // Numbered list
+                trimmed.match(/\b(consider|review|analyze|optimize|delay|claim|convert|increase|decrease|adjust|plan|evaluate|compare|research|consult|implement|calculate|estimate|maximize|minimize)\b/i); // Action verbs
+
+            if (isActionItem && trimmed.length > 10 && trimmed.length < 300) {
+                // Clean up the text
+                const cleanText = trimmed
+                    .replace(/^[-*•]\s*/, '') // Remove bullet
+                    .replace(/^\d+[\.)]\s*/, '') // Remove numbering
+                    .trim();
+
+                if (cleanText) {
+                    actionItems.push(cleanText);
+                }
+            }
+        }
+
+        // If no specific action items found, create one from the entire recommendation
+        if (actionItems.length === 0) {
+            actionItems.push(text.substring(0, 250) + (text.length > 250 ? '...' : ''));
+        }
+
+        // Create action items
+        let createdCount = 0;
+        for (const itemText of actionItems.slice(0, 10)) { // Limit to 10 items
+            const actionItemData = {
+                profile_name: profile.name,
+                title: itemText.length > 100 ? itemText.substring(0, 97) + '...' : itemText,
+                description: itemText,
+                category: 'advisor_recommendation',
+                priority: 'medium',
+                status: 'pending',
+                source: 'ai_advisor'
+            };
+
+            await actionItemsAPI.create(actionItemData);
+            createdCount++;
+        }
+
+        // Update button to show success
+        button.style.background = 'var(--success-color)';
+        button.textContent = `✓ Added ${createdCount} item${createdCount > 1 ? 's' : ''}`;
+
+        showSuccess(`${createdCount} action item${createdCount > 1 ? 's' : ''} added! View them in the Action Items tab.`);
+
+        // Re-enable button after a delay
+        setTimeout(() => {
+            button.disabled = false;
+            button.style.opacity = '1';
+            button.textContent = '✅ Add to Action Items';
+            button.style.background = 'var(--success-color)';
+        }, 3000);
+
+    } catch (error) {
+        console.error('Error adding recommendation to action items:', error);
+        showError(`Failed to add to action items: ${error.message}`);
+
+        // Reset button
+        button.disabled = false;
+        button.style.opacity = '1';
+        button.textContent = '✅ Add to Action Items';
+    }
 }
 
 function escapeHtml(text) {
