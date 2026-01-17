@@ -1,6 +1,6 @@
-# Retirement & Wealth Planning System
+# Retirement & Wealth Planning System (RPS)
 
-A professional-grade, local-first financial planning environment designed for complex retirement scenario modeling, tax optimization, and wealth transfer.
+A comprehensive, local-first financial planning application designed for retirement scenario modeling, tax optimization, and estate planning.
 
 ## Overview
 

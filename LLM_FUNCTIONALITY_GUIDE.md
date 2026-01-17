@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Retirement & Wealth Planning System (panRPS) is designed to function both **with** and **without** LLM (Large Language Model) API access. This document explains the differences in functionality and how the application adapts to the availability of LLM services.
+The Retirement & Wealth Planning System (RPS) is designed to function both **with** and **without** LLM (Large Language Model) API access. This document explains the differences in functionality and how the application adapts to the availability of LLM services.
 
 ---
 

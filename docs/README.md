@@ -1,6 +1,6 @@
 # Documentation Index
 
-Welcome to the panrps documentation. This directory contains comprehensive guides for using, understanding, and maintaining the Retirement Planning System.
+Welcome to the rps documentation. This directory contains comprehensive guides for using, understanding, and maintaining the Retirement Planning System.
 
 ## Quick Navigation
 
@@ -28,8 +28,8 @@ Welcome to the panrps documentation. This directory contains comprehensive guide
 
 This project follows a modern, state-of-the-art layout:
 
-\`\`\`
-panrps/
+```
+rps/
 ├── bin/                      # Executable scripts
 │   ├── start                 # Start the application
 │   ├── manage                # Management commands
@@ -44,11 +44,11 @@ panrps/
 ├── skills/                   # AI domain knowledge
 ├── data/                     # SQLite database
 └── logs/                     # Application logs
-\`\`\`
+```
 
 ## Common Commands
 
-\`\`\`bash
+```bash
 # Start the application
 ./bin/start
 
@@ -60,7 +60,7 @@ panrps/
 # Testing
 ./tests/test-api.sh            # Run basic API tests
 ./tests/test-all-features.sh   # Run comprehensive test suite
-\`\`\`
+```
 
 ## Need Help?
 

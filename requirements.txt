@@ -24,3 +24,6 @@ user-agents>=2.2.0
 
 # Database
 alembic>=1.13.0
+
+# Production Server
+gunicorn>=21.2.0

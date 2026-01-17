@@ -1,5 +1,5 @@
 #!/bin/bash
-# Deploy panRPS to /var/www/panrps.pan2.app/
+# Deploy RPS to /var/www/rps.pan2.app/
 # This script copies the application to the Apache web directory and sets up configuration
 
 set -e  # Exit on error
@@ -11,13 +11,13 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 # Configuration
-SOURCE_DIR="/home/paul/src/panrps"
-TARGET_DIR="/var/www/panrps.pan2.app"
+SOURCE_DIR="/home/paul/src/rps"
+TARGET_DIR="/var/www/rps.pan2.app"
 APACHE_CONFIG_SOURCE="${SOURCE_DIR}/apache2/panrps.pan2.app.conf"
-APACHE_CONFIG_TARGET="/etc/apache2/sites-available/panrps.pan2.app.conf"
-SERVICE_NAME="panrps"
+APACHE_CONFIG_TARGET="/etc/apache2/sites-available/rps.pan2.app.conf"
+SERVICE_NAME="rps"
 
-echo -e "${GREEN}=== panRPS Deployment Script ===${NC}"
+echo -e "${GREEN}=== RPS Deployment Script ===${NC}"
 echo ""
 
 # Check if running as root or with sudo
@@ -60,7 +60,9 @@ mkdir -p "$TARGET_DIR/logs"
 
 # Set up Python virtual environment
 echo -e "${YELLOW}Setting up Python virtual environment...${NC}"
-if [ ! -d "$TARGET_DIR/venv" ]; then
+if [ ! -f "$TARGET_DIR/venv/bin/pip" ] || ! "$TARGET_DIR/venv/bin/pip" --version > /dev/null 2>&1; then
+    echo -e "${YELLOW}Creating (or recreating broken) virtual environment...${NC}"
+    rm -rf "$TARGET_DIR/venv"
     python3 -m venv "$TARGET_DIR/venv"
 fi
 
@@ -86,14 +88,14 @@ echo -e "${YELLOW}Enabling Apache modules...${NC}"
 a2enmod proxy proxy_http headers || true
 
 # Enable site
-echo -e "${YELLOW}Enabling panRPS site...${NC}"
-a2ensite panrps.pan2.app.conf
+echo -e "${YELLOW}Enabling RPS site...${NC}"
+a2ensite rps.pan2.app.conf
 
 # Create systemd service file
 echo -e "${YELLOW}Creating systemd service...${NC}"
 cat > "/etc/systemd/system/${SERVICE_NAME}.service" << EOF
 [Unit]
-Description=panRPS - Retirement and Wealth Planning System
+Description=RPS - Retirement and Wealth Planning System
 After=network.target
 
 [Service]
@@ -103,11 +105,12 @@ Group=www-data
 WorkingDirectory=$TARGET_DIR
 Environment="PATH=$TARGET_DIR/venv/bin"
 Environment="MPLCONFIGDIR=$TARGET_DIR/.config/matplotlib"
-ExecStart=$TARGET_DIR/venv/bin/python $TARGET_DIR/run_server.py
+Environment="FLASK_ENV=production"
+ExecStart=$TARGET_DIR/venv/bin/gunicorn -w 4 -b 127.0.0.1:5137 --access-logfile - --error-logfile - "src.app:create_app('production')"
 Restart=always
 RestartSec=10
-StandardOutput=append:$TARGET_DIR/logs/panrps.log
-StandardError=append:$TARGET_DIR/logs/panrps-error.log
+StandardOutput=append:$TARGET_DIR/logs/rps.log
+StandardError=append:$TARGET_DIR/logs/rps-error.log
 
 [Install]
 WantedBy=multi-user.target
@@ -118,7 +121,7 @@ echo -e "${YELLOW}Reloading systemd...${NC}"
 systemctl daemon-reload
 
 # Enable and start the service
-echo -e "${YELLOW}Enabling and starting panRPS service...${NC}"
+echo -e "${YELLOW}Enabling and starting RPS service...${NC}"
 systemctl enable "$SERVICE_NAME"
 systemctl restart "$SERVICE_NAME"
 
@@ -151,7 +154,7 @@ echo ""
 echo "Access the application:"
 echo "  - Direct to Flask:  http://localhost:5137"
 echo "  - Via Apache:       http://localhost:8087"
-echo "  - External:         https://panrps.pan2.app (via Cloudflare Tunnel)"
+echo "  - External:         https://rps.pan2.app (via Cloudflare Tunnel)"
 echo ""
 echo -e "${YELLOW}IMPORTANT:${NC} Configure Cloudflare Tunnel to point to http://localhost:8087"
 echo ""
@@ -159,4 +162,4 @@ echo "Useful commands:"
 echo "  sudo systemctl status $SERVICE_NAME    # Check service status"
 echo "  sudo systemctl restart $SERVICE_NAME   # Restart service"
 echo "  sudo journalctl -u $SERVICE_NAME -f    # View logs"
-echo "  tail -f $TARGET_DIR/logs/panrps.log    # View application logs"
+echo "  tail -f $TARGET_DIR/logs/rps.log    # View application logs"

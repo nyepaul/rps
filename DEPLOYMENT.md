@@ -1,12 +1,12 @@
-# Deployment Guide for panRPS
+# Deployment Guide for RPS
 
-This guide covers deploying panRPS to Apache2 with Cloudflare Tunnel.
+This guide covers deploying RPS to Apache2 with Cloudflare Tunnel.
 
 ## Prerequisites
 
 - Apache2 installed with mod_proxy and mod_proxy_http enabled
 - Python 3.8+ installed
-- Cloudflare Tunnel configured for panrps.pan2.app
+- Cloudflare Tunnel configured for rps.pan2.app
 - Root/sudo access
 
 ## Quick Deployment
@@ -18,12 +18,12 @@ python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().d
 
 2. **Run the deployment script**:
 ```bash
-cd ~/src/panrps
+cd ~/src/rps
 sudo ./bin/deploy
 ```
 
 This will:
-- Copy the application to `/var/www/panrps.pan2.app/`
+- Copy the application to `/var/www/rps.pan2.app/`
 - Install Python dependencies in a virtual environment
 - Configure Apache2 with proxy settings
 - Create and start a systemd service
@@ -31,14 +31,14 @@ This will:
 
 3. **Configure Environment Variables**:
 ```bash
-sudo cp /var/www/panrps.pan2.app/.env.production.example /var/www/panrps.pan2.app/.env
-sudo nano /var/www/panrps.pan2.app/.env
+sudo cp /var/www/rps.pan2.app/.env.production.example /var/www/rps.pan2.app/.env
+sudo nano /var/www/rps.pan2.app/.env
 ```
 
 Set the following:
 - `SECRET_KEY` - Random secret for Flask sessions (generate a long random string)
 - `ENCRYPTION_KEY` - From step 1 (REQUIRED for data encryption at rest)
-- `CORS_ORIGINS` - Set to `https://panrps.pan2.app` for production
+- `CORS_ORIGINS` - Set to `https://rps.pan2.app` for production
 
 **Note**: API keys for AI services (Gemini/Claude) are NOT configured here. Each user provides their own API keys through the Settings page in the application. The keys are encrypted using AES-256-GCM and stored per-user in the Profile database record.
 
@@ -52,7 +52,7 @@ sudo systemctl restart panrps
 The deployment uses:
 - **Flask App**: Runs on localhost:5137 (managed by systemd)
 - **Apache2**: Listens on port 8087 and proxies to Flask on 5137
-- **Cloudflare Tunnel**: Routes external traffic from https://panrps.pan2.app to Apache on localhost:8087
+- **Cloudflare Tunnel**: Routes external traffic from https://rps.pan2.app to Apache on localhost:8087
 
 ```
 [Cloudflare] -> [Apache2:8087] -> [Flask App:5137]
@@ -62,11 +62,11 @@ The deployment uses:
 
 ## Files and Directories
 
-- `/var/www/panrps.pan2.app/` - Application directory
+- `/var/www/rps.pan2.app/` - Application directory
 - `/etc/apache2/sites-available/panrps.pan2.app.conf` - Apache config
 - `/etc/systemd/system/panrps.service` - Systemd service
-- `/var/www/panrps.pan2.app/logs/` - Application logs
-- `/var/www/panrps.pan2.app/data/` - SQLite database
+- `/var/www/rps.pan2.app/logs/` - Application logs
+- `/var/www/rps.pan2.app/data/` - SQLite database
 
 ## Useful Commands
 
@@ -81,8 +81,8 @@ sudo journalctl -u panrps -f      # Follow service logs
 
 ### Application Logs
 ```bash
-tail -f /var/www/panrps.pan2.app/logs/panrps.log
-tail -f /var/www/panrps.pan2.app/logs/panrps-error.log
+tail -f /var/www/rps.pan2.app/logs/panrps.log
+tail -f /var/www/rps.pan2.app/logs/panrps-error.log
 ```
 
 ### Apache Management
@@ -96,23 +96,23 @@ tail -f /var/log/apache2/panrps-access.log
 ### Redeployment
 After making changes to the code:
 ```bash
-cd ~/src/panrps
+cd ~/src/rps
 sudo ./bin/deploy
 ```
 
 ## Database Management
 
-The SQLite database is located at `/var/www/panrps.pan2.app/data/planning.db`
+The SQLite database is located at `/var/www/rps.pan2.app/data/planning.db`
 
 ### Backup
 ```bash
-sudo -u www-data sqlite3 /var/www/panrps.pan2.app/data/planning.db ".backup /var/www/panrps.pan2.app/backups/backup-$(date +%Y%m%d-%H%M%S).db"
+sudo -u www-data sqlite3 /var/www/rps.pan2.app/data/planning.db ".backup /var/www/rps.pan2.app/backups/backup-$(date +%Y%m%d-%H%M%S).db"
 ```
 
 ### Migrations
 If database schema changes are needed:
 ```bash
-cd /var/www/panrps.pan2.app
+cd /var/www/rps.pan2.app
 sudo -u www-data ./venv/bin/alembic upgrade head
 ```
 
@@ -143,18 +143,18 @@ tail -50 /var/log/apache2/panrps-error.log
 
 ### Permission errors
 ```bash
-sudo chown -R www-data:www-data /var/www/panrps.pan2.app
-sudo chmod -R 755 /var/www/panrps.pan2.app
-sudo chmod -R 775 /var/www/panrps.pan2.app/data
-sudo chmod -R 775 /var/www/panrps.pan2.app/logs
+sudo chown -R www-data:www-data /var/www/rps.pan2.app
+sudo chmod -R 755 /var/www/rps.pan2.app
+sudo chmod -R 775 /var/www/rps.pan2.app/data
+sudo chmod -R 775 /var/www/rps.pan2.app/logs
 ```
 
 ### Database locked errors
 ```bash
 # Stop the service, check for stale locks
 sudo systemctl stop panrps
-sudo rm -f /var/www/panrps.pan2.app/data/*.db-shm
-sudo rm -f /var/www/panrps.pan2.app/data/*.db-wal
+sudo rm -f /var/www/rps.pan2.app/data/*.db-shm
+sudo rm -f /var/www/rps.pan2.app/data/*.db-wal
 sudo systemctl start panrps
 ```
 
@@ -162,16 +162,16 @@ sudo systemctl start panrps
 
 - **Direct to Flask**: http://localhost:5137
 - **Via Apache**: http://localhost:8087
-- **External**: https://panrps.pan2.app (via Cloudflare Tunnel)
+- **External**: https://rps.pan2.app (via Cloudflare Tunnel)
 
 ## Cloudflare Tunnel Configuration
 
-Configure your Cloudflare Tunnel to route traffic from `panrps.pan2.app` to `http://localhost:8087`.
+Configure your Cloudflare Tunnel to route traffic from `rps.pan2.app` to `http://localhost:8087`.
 
 Example tunnel configuration:
 ```yaml
 ingress:
-  - hostname: panrps.pan2.app
+  - hostname: rps.pan2.app
     service: http://localhost:8087
   - service: http_status:404
 ```
@@ -179,7 +179,7 @@ ingress:
 ## Updating
 
 1. Pull latest changes in development directory
-2. Run tests: `cd ~/src/panrps && pytest`
+2. Run tests: `cd ~/src/rps && pytest`
 3. Deploy: `sudo ./bin/deploy`
 
 The deployment script automatically:
