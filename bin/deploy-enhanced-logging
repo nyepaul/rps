@@ -1,0 +1,84 @@
+#!/bin/bash
+# Deploy Enhanced Audit Logging to Production
+
+set -e  # Exit on error
+
+echo "=========================================="
+echo "  Enhanced Logging Deployment"
+echo "=========================================="
+echo
+
+# Check if running as root or with sudo
+if [ "$EUID" -ne 0 ]; then
+    echo "This script must be run with sudo"
+    exit 1
+fi
+
+PROD_DIR="/var/www/rps.pan2.app"
+DEV_DIR="/home/paul/src/rps"
+
+echo "Step 1: Copying migration file..."
+cp "$DEV_DIR/migrations/versions/e7a4f8d9c1b2_add_enhanced_audit_logging.py" \
+   "$PROD_DIR/migrations/versions/"
+chown www-data:www-data "$PROD_DIR/migrations/versions/e7a4f8d9c1b2_add_enhanced_audit_logging.py"
+chmod 755 "$PROD_DIR/migrations/versions/e7a4f8d9c1b2_add_enhanced_audit_logging.py"
+echo "✓ Migration file copied"
+echo
+
+echo "Step 2: Copying updated auth routes..."
+cp "$DEV_DIR/src/auth/routes.py" "$PROD_DIR/src/auth/routes.py"
+chown www-data:www-data "$PROD_DIR/src/auth/routes.py"
+chmod 644 "$PROD_DIR/src/auth/routes.py"
+echo "✓ Auth routes updated"
+echo
+
+echo "Step 3: Running database migration..."
+cd "$PROD_DIR"
+sudo -u www-data ./venv/bin/python -m alembic upgrade head
+echo "✓ Migration completed"
+echo
+
+echo "Step 4: Restarting application..."
+systemctl restart rps
+sleep 3
+echo "✓ Application restarted"
+echo
+
+echo "Step 5: Verifying deployment..."
+# Check if tables exist
+TABLE_COUNT=$(sudo -u www-data sqlite3 "$PROD_DIR/data/planning.db" \
+  "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name IN ('enhanced_audit_log', 'audit_config');")
+
+if [ "$TABLE_COUNT" -eq 2 ]; then
+    echo "✓ Database tables created successfully"
+else
+    echo "⚠ Warning: Expected 2 new tables, found $TABLE_COUNT"
+fi
+
+# Check service status
+if systemctl is-active --quiet rps; then
+    echo "✓ Service is running"
+else
+    echo "✗ Service is NOT running"
+    systemctl status rps --no-pager
+    exit 1
+fi
+
+echo
+echo "=========================================="
+echo "  Deployment Complete!"
+echo "=========================================="
+echo
+echo "Enhanced audit logging is now active."
+echo "All login/logout/registration events will be tracked with:"
+echo "  - IP addresses"
+echo "  - Geolocation"
+echo "  - Device and browser information"
+echo "  - Timestamps"
+echo
+echo "View logs:"
+echo "  sqlite3 $PROD_DIR/data/planning.db \"SELECT * FROM enhanced_audit_log ORDER BY created_at DESC LIMIT 5;\""
+echo
+echo "Check service status:"
+echo "  systemctl status rps"
+echo

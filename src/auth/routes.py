@@ -3,8 +3,10 @@ from flask import Blueprint, request, jsonify
 from flask_login import login_user, logout_user, current_user
 from src.auth.models import User
 from src.extensions import limiter
+from src.services.enhanced_audit_logger import EnhancedAuditLogger
 from pydantic import BaseModel, EmailStr, validator
 import re
+import json
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 
@@ -85,9 +87,22 @@ def register():
     )
     user.save()
 
+    # Log the registration
+    EnhancedAuditLogger.log(
+        action='USER_REGISTER',
+        table_name='users',
+        record_id=user.id,
+        user_id=user.id,
+        details=json.dumps({
+            'username': user.username,
+            'email': user.email
+        }),
+        status_code=201
+    )
+
     # Log user in
     login_user(user)
-    
+
     # Store decrypted DEK in session (base64)
     session['user_dek'] = base64.b64encode(dek).decode('utf-8')
 
@@ -116,10 +131,34 @@ def login():
 
     # Check if user exists and password is correct
     if not user or not user.check_password(data.password):
+        # Log failed login attempt
+        EnhancedAuditLogger.log(
+            action='LOGIN_FAILED',
+            table_name='users',
+            user_id=user.id if user else None,
+            details=json.dumps({
+                'username': data.username,
+                'reason': 'Invalid credentials'
+            }),
+            status_code=401,
+            error_message='Invalid username or password'
+        )
         return jsonify({'error': 'Invalid username or password'}), 401
 
     # Check if user is active
     if not user.is_active:
+        # Log failed login attempt - disabled account
+        EnhancedAuditLogger.log(
+            action='LOGIN_FAILED',
+            table_name='users',
+            user_id=user.id,
+            details=json.dumps({
+                'username': data.username,
+                'reason': 'Account disabled'
+            }),
+            status_code=401,
+            error_message='Account is disabled'
+        )
         return jsonify({'error': 'Account is disabled'}), 401
 
     # Decrypt user's DEK or generate one for old users
@@ -154,6 +193,19 @@ def login():
     # Log user in (remember=False to allow easy switching between users)
     login_user(user, remember=False)
 
+    # Log successful login
+    EnhancedAuditLogger.log(
+        action='LOGIN_SUCCESS',
+        table_name='users',
+        record_id=user.id,
+        user_id=user.id,
+        details=json.dumps({
+            'username': user.username,
+            'email': user.email
+        }),
+        status_code=200
+    )
+
     return jsonify({
         'message': 'Login successful',
         'user': {
@@ -169,6 +221,23 @@ def login():
 def logout():
     """Log out the current user and clear encryption key."""
     from flask import make_response
+
+    # Get user info before logout
+    user_id = current_user.id if current_user.is_authenticated else None
+    username = current_user.username if current_user.is_authenticated else 'Unknown'
+
+    # Log the logout
+    if user_id:
+        EnhancedAuditLogger.log(
+            action='USER_LOGOUT',
+            table_name='users',
+            record_id=user_id,
+            user_id=user_id,
+            details=json.dumps({
+                'username': username
+            }),
+            status_code=200
+        )
 
     # Clear session data
     session.pop('user_dek', None)
