@@ -18,7 +18,7 @@ def init_extensions(app):
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Please log in to access this page.'
-    login_manager.session_protection = 'strong'  # Protect against session hijacking
+    login_manager.session_protection = 'basic'  # Basic session protection (user-agent only)
     login_manager.refresh_view = None  # Don't auto-refresh sessions
 
     csrf.init_app(app)
