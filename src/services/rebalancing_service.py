@@ -24,9 +24,22 @@ class RebalancingService:
                 continue
 
             total_value += value
-            allocation['stocks'] += value * float(account.get('stock_pct', 0.6))
-            allocation['bonds'] += value * float(account.get('bond_pct', 0.4))
-            allocation['cash'] += value * float(account.get('cash_pct', 0.0))
+
+            # Convert percentages to decimals if they're stored as whole numbers (0-100)
+            # Check if values look like percentages (>1) and convert to decimal (0-1)
+            stock_pct = float(account.get('stock_pct', 60))
+            bond_pct = float(account.get('bond_pct', 40))
+            cash_pct = float(account.get('cash_pct', 0))
+
+            # If any percentage is > 1, assume they're stored as whole numbers and convert
+            if stock_pct > 1 or bond_pct > 1 or cash_pct > 1:
+                stock_pct /= 100.0
+                bond_pct /= 100.0
+                cash_pct /= 100.0
+
+            allocation['stocks'] += value * stock_pct
+            allocation['bonds'] += value * bond_pct
+            allocation['cash'] += value * cash_pct
 
         if total_value > 0:
             for asset_class in allocation:
