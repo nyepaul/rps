@@ -253,8 +253,6 @@ function renderCollegeExpensesSection(parentContainer) {
         const expense = collegeExpenses[i];
         const age = currentYear - expense.birth_year;
         const yearsUntilCollege = expense.start_year - currentYear;
-        const totalYears = expense.end_year - expense.start_year + 1;
-        const totalCost = expense.annual_cost * totalYears;
 
         let statusText = '';
         if (yearsUntilCollege > 0) {
@@ -271,7 +269,7 @@ function renderCollegeExpensesSection(parentContainer) {
                     <span style="font-size: 16px;">🎓</span>
                     <span style="font-weight: 600;">${expense.child_name}</span>
                     <span style="color: var(--text-secondary);">Age ${age}</span>
-                    <span style="color: var(--text-secondary);">${formatCurrency(expense.annual_cost, 0)}/year × ${totalYears} years = ${formatCurrency(totalCost, 0)}</span>
+                    <span style="color: var(--text-secondary);">${formatCurrency(expense.annual_cost, 0)}/year</span>
                     <span style="font-size: 11px; margin-left: 4px;">${statusText}</span>
                     ${!expense.enabled ? '<span style="color: var(--danger-color); font-size: 11px; font-weight: 600;">DISABLED</span>' : ''}
                 </div>
@@ -344,7 +342,6 @@ function showCollegeExpenseModal(parentContainer, index) {
                     <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">Annual College Cost</label>
                     <input type="number" id="college-annual-cost" value="${expense.annual_cost}" min="0" step="1000" required
                            style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 13px;">
-                    <small id="total-cost-display" style="color: var(--text-secondary); font-size: 11px;">Total ${expense.end_year - expense.start_year + 1}-year cost: ${formatCurrency(expense.annual_cost * (expense.end_year - expense.start_year + 1), 0)}</small>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
                     <div>
@@ -379,28 +376,6 @@ function showCollegeExpenseModal(parentContainer, index) {
     `;
 
     document.body.appendChild(modal);
-
-    // Update total cost display when any relevant field changes
-    const annualCostInput = modal.querySelector('#college-annual-cost');
-    const startYearInput = modal.querySelector('#college-start-year');
-    const endYearInput = modal.querySelector('#college-end-year');
-    const totalCostDisplay = modal.querySelector('#total-cost-display');
-
-    const updateTotalCost = () => {
-        const annualCost = parseFloat(annualCostInput.value || 0);
-        const startYear = parseInt(startYearInput.value || 0);
-        const endYear = parseInt(endYearInput.value || 0);
-        const years = Math.max(1, endYear - startYear + 1);
-        const totalCost = annualCost * years;
-
-        if (totalCostDisplay) {
-            totalCostDisplay.textContent = `Total ${years}-year cost: ${formatCurrency(totalCost, 0)}`;
-        }
-    };
-
-    annualCostInput.addEventListener('input', updateTotalCost);
-    startYearInput.addEventListener('input', updateTotalCost);
-    endYearInput.addEventListener('input', updateTotalCost);
 
     // Event handlers
     modal.querySelector('#cancel-btn').addEventListener('click', () => modal.remove());
