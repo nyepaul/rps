@@ -87,19 +87,13 @@ export function renderAssetList(assets, container, onSaveCallback) {
                 asset.categoryKey,
                 asset.index,
                 async (updatedAsset, category, index) => {
-                    // Update the asset in the assets object
-                    assets[category][index] = updatedAsset;
-
-                    // Call save callback if provided
+                    // Call save callback if provided (parent updates the original assets and re-renders)
                     if (onSaveCallback) {
-                        await onSaveCallback(assets);
+                        await onSaveCallback(category, index, updatedAsset);
+                    } else {
+                        // Remove editing class if no callback
+                        row.classList.remove('editing');
                     }
-
-                    // Remove editing class
-                    row.classList.remove('editing');
-
-                    // Re-render the list
-                    renderAssetList(assets, container, onSaveCallback);
                 },
                 () => {
                     // Cancel callback
