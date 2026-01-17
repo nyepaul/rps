@@ -318,6 +318,10 @@ def create_cover_page(profile_name, report_type, styles):
         "<para align=center><i>Comprehensive Retirement Planning Analysis</i></para>",
         styles['SmallText']
     ))
+    elements.append(Paragraph(
+        "<para align=center><i>RPS - Authored by pan, Co-Authored by Claude (Anthropic AI)</i></para>",
+        styles['SmallText']
+    ))
 
     elements.append(PageBreak())
     return elements

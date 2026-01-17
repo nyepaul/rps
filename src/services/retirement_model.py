@@ -1,4 +1,8 @@
-"""Retirement planning business logic and financial modeling."""
+"""Retirement planning business logic and financial modeling.
+
+Authored by: pan
+Co-Authored by: Claude (Anthropic AI)
+"""
 import numpy as np
 from datetime import datetime
 from dataclasses import dataclass

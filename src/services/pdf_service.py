@@ -111,6 +111,10 @@ def create_header(profile_name, report_type):
         f"Generated: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}",
         styles['SmallText']
     ))
+    elements.append(Paragraph(
+        "<i>RPS - Authored by pan, Co-Authored by Claude (Anthropic AI)</i>",
+        styles['SmallText']
+    ))
     elements.append(Spacer(1, 20))
     elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#bdc3c7')))
     elements.append(Spacer(1, 20))

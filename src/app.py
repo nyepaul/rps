@@ -1,4 +1,8 @@
-"""Flask application factory."""
+"""Flask application factory.
+
+Authored by: pan
+Co-Authored by: Claude (Anthropic AI)
+"""
 from flask import Flask, send_from_directory
 from src.config import config
 from src.extensions import init_extensions
