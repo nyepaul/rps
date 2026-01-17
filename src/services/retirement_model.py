@@ -4,6 +4,17 @@ from datetime import datetime
 from dataclasses import dataclass
 from typing import List, Dict
 
+
+def safe_float(value, default=0.0):
+    """Safely convert a value to float, handling None and invalid values."""
+    if value is None:
+        return default
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return default
+
+
 @dataclass
 class Person:
     name: str
@@ -68,8 +79,8 @@ class RetirementModel:
         inv_types = self.profile.investment_types or []
         for inv in inv_types:
             acc = inv.get('account', 'Liquid')
-            val = float(inv.get('value', 0))
-            basis = float(inv.get('cost_basis', 0))
+            val = safe_float(inv.get('value', 0))
+            basis = safe_float(inv.get('cost_basis', 0))
             
             if acc in ['Checking', 'Savings']:
                 start_cash += val
@@ -116,7 +127,7 @@ class RetirementModel:
                 try:
                     start_year = datetime.fromisoformat(s['start_date']).year
                     income_streams_data.append({
-                        'amount': float(s['amount']),
+                        'amount': safe_float(s.get('amount', 0)),
                         'start_year': start_year,
                         'inflation_adjusted': s.get('inflation_adjusted', True)
                     })
@@ -128,15 +139,15 @@ class RetirementModel:
         home_props_state = []
         if self.profile.home_properties:
             for prop in self.profile.home_properties:
-                prop_val = float(prop.get('current_value', 0))
-                prop_mort = float(prop.get('mortgage_balance', 0))
+                prop_val = safe_float(prop.get('current_value', 0))
+                prop_mort = safe_float(prop.get('mortgage_balance', 0))
                 prop_costs = (
-                    float(prop.get('annual_property_tax', 0)) +
-                    float(prop.get('annual_insurance', 0)) +
-                    float(prop.get('annual_maintenance', 0)) +
-                    float(prop.get('annual_hoa', 0))
+                    safe_float(prop.get('annual_property_tax', 0)) +
+                    safe_float(prop.get('annual_insurance', 0)) +
+                    safe_float(prop.get('annual_maintenance', 0)) +
+                    safe_float(prop.get('annual_hoa', 0))
                 )
-                
+
                 sale_year = None
                 if prop.get('planned_sale_date'):
                     try:
@@ -147,11 +158,11 @@ class RetirementModel:
                     'values': np.full(simulations, prop_val),
                     'mortgages': np.full(simulations, prop_mort),
                     'annual_costs': np.full(simulations, prop_costs),
-                    'appreciation_rate': float(prop.get('appreciation_rate', assumptions.inflation_mean)),
+                    'appreciation_rate': safe_float(prop.get('appreciation_rate') or assumptions.inflation_mean),
                     'sale_year': sale_year,
-                    'purchase_price': float(prop.get('purchase_price', prop_val)),
+                    'purchase_price': safe_float(prop.get('purchase_price') or prop_val),
                     'property_type': prop.get('property_type', 'Primary Residence'),
-                    'replacement_cost': float(prop.get('replacement_value', 0)),
+                    'replacement_cost': safe_float(prop.get('replacement_value', 0)),
                     'is_sold': np.zeros(simulations, dtype=bool) # Track sold state
                 })
 
@@ -453,7 +464,7 @@ class RetirementModel:
                 try:
                     start_year = datetime.fromisoformat(s['start_date']).year
                     if start_year <= rmd_year:
-                        pension_annual += float(s['amount'])
+                        pension_annual += safe_float(s.get('amount', 0))
                 except: pass
         retirement_income = (self.profile.person1.social_security * 12 +
                            self.profile.person2.social_security * 12 +
