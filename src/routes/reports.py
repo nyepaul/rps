@@ -241,11 +241,11 @@ def generate_action_plan():
             return jsonify({'error': 'Profile not found'}), 404
 
         # Get action items for this profile
-        action_items = ActionItem.get_by_profile(profile.id, current_user.id)
+        action_items = ActionItem.list_by_user(current_user.id, profile.id)
         action_items_list = [
             {
-                'title': item.title or item.description or 'Untitled Action',
-                'description': item.description if item.title else '',
+                'title': item.description or 'Untitled Action',
+                'description': item.description or '',
                 'status': item.status,
                 'priority': item.priority,
                 'due_date': item.due_date,
