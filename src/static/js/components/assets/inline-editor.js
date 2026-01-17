@@ -3,7 +3,7 @@
  */
 
 import { formatCurrency } from '../../utils/formatters.js';
-import { ASSET_FORM_FIELDS } from './asset-form-fields.js';
+import { FIELD_DEFINITIONS } from './asset-form-fields.js';
 
 /**
  * Convert an asset row to inline edit mode
@@ -12,7 +12,7 @@ export function makeRowEditable(rowElement, asset, category, index, onSave, onCa
     const originalHTML = rowElement.innerHTML;
 
     // Get relevant fields for this asset type
-    const fields = ASSET_FORM_FIELDS[category] || [];
+    const fields = FIELD_DEFINITIONS[category] || [];
     const relevantFields = fields.filter(field => {
         // Show fields that are relevant for this asset type
         if (field.showFor && !field.showFor.includes(asset.type)) {
