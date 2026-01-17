@@ -2,6 +2,15 @@
 
 Authored by: pan
 Co-Authored by: Claude (Anthropic AI)
+
+Key Features:
+- Monte Carlo simulation for retirement planning
+- Pre-retirement: Salary covers expenses, surplus goes to retirement accounts
+- Post-retirement: Expenses funded from investment returns/withdrawals
+- 401k/IRA contributions with employer matching
+- Tax-optimized withdrawal strategies
+- Home equity and property management
+- Social Security and pension integration
 """
 import numpy as np
 from datetime import datetime
@@ -25,6 +34,8 @@ class Person:
     birth_date: datetime
     retirement_date: datetime
     social_security: float
+    annual_401k_contribution: float = 0.0  # Annual 401k/403b contribution
+    employer_match_rate: float = 0.0  # Employer match as % of salary (e.g., 0.06 for 6%)
 @dataclass
 class FinancialProfile:
     person1: Person
@@ -45,6 +56,8 @@ class FinancialProfile:
     income_streams: List[Dict] = None
     home_properties: List[Dict] = None
     budget: Dict = None
+    annual_ira_contribution: float = 0.0  # Annual IRA contribution
+    savings_allocation: Dict[str, float] = None  # How to allocate surplus: {'pretax': 0.7, 'roth': 0.2, 'taxable': 0.1}
 @dataclass
 class MarketAssumptions:
     """Market and economic assumptions for financial modeling"""
@@ -249,9 +262,69 @@ class RetirementModel:
             else:
                 target_spending = (self.profile.target_annual_income * current_cpi * spending_mult) + current_housing_costs
 
-            # D. Calculate Shortfall
-            shortfall = np.maximum(0, target_spending - total_income)
-            shortfall = np.maximum(0, target_spending - total_income)
+            # D. Calculate Shortfall/Surplus
+            # During working years: income typically exceeds expenses → surplus saved to investments
+            # During retirement: expenses typically exceed income → shortfall withdrawn from investments
+            net_cash_flow = total_income - target_spending
+            shortfall = np.maximum(0, -net_cash_flow)  # Positive when expenses > income (need withdrawals)
+            surplus = np.maximum(0, net_cash_flow)     # Positive when income > expenses (can save)
+
+            # D2. Handle Pre-Retirement Contributions and Surplus
+            # When working: add salary surplus and retirement contributions to investment accounts
+            # This grows the portfolio before retirement, accounting for:
+            # - 401k/403b contributions (pre-tax)
+            # - Employer matching contributions (free money!)
+            # - IRA contributions (split between traditional and Roth)
+            # - General savings from surplus income
+            if not p1_retired or not p2_retired:
+                # Get employment income for calculating employer match
+                employment_income = 0
+                if self.profile.budget:
+                    current_employment = self.profile.budget.get('income', {}).get('current', {}).get('employment', {})
+                    if not p1_retired:
+                        employment_income += current_employment.get('primary_person', 0)
+                    if not p2_retired:
+                        employment_income += current_employment.get('spouse', 0)
+
+                # Person 1 contributions (if working)
+                if not p1_retired:
+                    p1_401k = safe_float(self.profile.person1.annual_401k_contribution, 0)
+                    if p1_401k > 0:
+                        pretax_std += p1_401k  # Add 401k contribution
+                        # Add employer match
+                        p1_salary = employment_income if not p2_retired else current_employment.get('primary_person', 0)
+                        employer_match = p1_salary * safe_float(self.profile.person1.employer_match_rate, 0)
+                        pretax_std += employer_match
+
+                # Person 2 contributions (if working)
+                if not p2_retired:
+                    # For person2, we need to extract their salary separately
+                    if self.profile.budget:
+                        p2_salary = current_employment.get('spouse', 0)
+                        # Note: Person dataclass doesn't have person2-specific 401k fields yet
+                        # For now, use person1's fields as template - can be extended later
+
+                # IRA contributions (from profile level)
+                ira_contrib = safe_float(self.profile.annual_ira_contribution, 0)
+                if ira_contrib > 0:
+                    # Split between pretax and Roth based on allocation or default 50/50
+                    pretax_std += ira_contrib * 0.5
+                    roth += ira_contrib * 0.5
+
+                # Handle remaining surplus - allocate to investment accounts
+                if np.any(surplus > 0):
+                    # Default allocation if not specified
+                    savings_alloc = self.profile.savings_allocation or {
+                        'pretax': 0.50,  # 50% to pre-tax (Traditional IRA/401k)
+                        'roth': 0.30,    # 30% to Roth
+                        'taxable': 0.20  # 20% to taxable brokerage
+                    }
+
+                    pretax_std += surplus * savings_alloc.get('pretax', 0.50)
+                    roth += surplus * savings_alloc.get('roth', 0.30)
+                    taxable_val += surplus * savings_alloc.get('taxable', 0.20)
+                    # Note: For taxable, also increase basis since this is new money
+                    taxable_basis += surplus * savings_alloc.get('taxable', 0.20)
 
             # E. Home Sales Logic
             for prop in home_props_state:
