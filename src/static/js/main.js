@@ -485,7 +485,7 @@ async function openSettings(defaultTab = 'general') {
     }
 
     // Set up event handlers
-    document.getElementById('dark-mode-toggle').addEventListener('change', (e) => {
+    modal.querySelector('#dark-mode-toggle').addEventListener('change', (e) => {
         toggleTheme(e.target.checked);
     });
 
@@ -497,20 +497,20 @@ async function openSettings(defaultTab = 'general') {
     });
 
     // Update market profile description on change
-    document.getElementById('market-profile-setting').addEventListener('change', (e) => {
+    modal.querySelector('#market-profile-setting').addEventListener('change', (e) => {
         const profile = APP_CONFIG.MARKET_PROFILES[e.target.value];
-        document.getElementById('market-profile-description').textContent = profile.description;
+        modal.querySelector('#market-profile-description').textContent = profile.description;
     });
 
-    document.getElementById('save-settings-btn').addEventListener('click', () => {
+    modal.querySelector('#save-settings-btn').addEventListener('click', () => {
         // Save simulations setting
-        const simulations = parseInt(document.getElementById('simulations-setting').value);
+        const simulations = parseInt(modal.querySelector('#simulations-setting').value);
         if (simulations >= APP_CONFIG.MIN_SIMULATIONS && simulations <= APP_CONFIG.MAX_SIMULATIONS) {
             localStorage.setItem(STORAGE_KEYS.SIMULATIONS, simulations);
         }
 
         // Save market profile
-        const marketProfile = document.getElementById('market-profile-setting').value;
+        const marketProfile = modal.querySelector('#market-profile-setting').value;
         localStorage.setItem(STORAGE_KEYS.MARKET_PROFILE, marketProfile);
 
         import('./utils/dom.js').then(({ showSuccess }) => {
@@ -519,14 +519,19 @@ async function openSettings(defaultTab = 'general') {
         modal.remove();
     });
 
-    document.getElementById('settings-logout-btn').addEventListener('click', async () => {
-        if (confirm('Are you sure you want to logout?')) {
-            modal.remove();
-            await logout();
-        }
-    });
+    const logoutBtn = modal.querySelector('#settings-logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            if (confirm('Are you sure you want to logout?')) {
+                modal.remove();
+                await logout();
+            }
+        });
+    } else {
+        console.error('Logout button not found in settings modal');
+    }
 
-    document.getElementById('close-settings-btn').addEventListener('click', () => {
+    modal.querySelector('#close-settings-btn').addEventListener('click', () => {
         modal.remove();
     });
 
