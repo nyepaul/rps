@@ -519,8 +519,11 @@ async function openSettings(defaultTab = 'general') {
         modal.remove();
     });
 
-    document.getElementById('logout-btn').addEventListener('click', async () => {
-        await logout();
+    modal.querySelector('#logout-btn').addEventListener('click', async () => {
+        if (confirm('Are you sure you want to logout?')) {
+            modal.remove();
+            await logout();
+        }
     });
 
     document.getElementById('close-settings-btn').addEventListener('click', () => {
