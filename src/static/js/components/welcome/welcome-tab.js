@@ -10,12 +10,9 @@ import { showLoading, showError, createElement, showSuccess } from '../../utils/
 export function renderWelcomeTab(container) {
     container.innerHTML = `
         <div style="max-width: 900px; margin: 0 auto; padding: 10px;">
-            <h1 style="font-size: 28px; margin-bottom: 8px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            <h1 style="font-size: 28px; margin-bottom: 20px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
                 RPS
             </h1>
-            <p style="font-size: 14px; text-align: center; color: var(--text-secondary); margin-bottom: 20px;">
-                Plan your future with confidence. Let's get started!
-            </p>
 
             <!-- Profiles Section -->
             <div style="background: var(--bg-secondary); border-radius: 8px; padding: 15px; margin-bottom: 15px; border: 1px solid var(--border-color);">
