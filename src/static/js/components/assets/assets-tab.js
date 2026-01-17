@@ -96,8 +96,11 @@ export function renderAssetsTab(container) {
         const filteredAssets = filterAssets(latestAssets, currentFilter);
 
         // Create save callback for inline editing
-        const saveCallback = async (updatedAssets) => {
-            await saveAssets(latestProfile, updatedAssets);
+        // Pass a callback that receives category, index, and updatedAsset
+        const saveCallback = async (category, index, updatedAsset) => {
+            // Update the asset in the ORIGINAL assets object (not filtered)
+            latestAssets[category][index] = updatedAsset;
+            await saveAssets(latestProfile, latestAssets);
             updateView();
         };
 
