@@ -42,6 +42,17 @@ export function renderCashFlowTab(container) {
     const currentYear = today.getFullYear();
     const currentMonth = today.getMonth();
 
+    // Calculate months to life expectancy (assume age 90)
+    const birthDate = profile.birth_date ? new Date(profile.birth_date) : null;
+    const lifeExpectancyAge = 90; // Default life expectancy
+    let monthsToLifeExpectancy = 360; // Default fallback
+
+    if (birthDate) {
+        const currentAge = (today - birthDate) / (365.25 * 24 * 60 * 60 * 1000);
+        const yearsRemaining = Math.max(0, lifeExpectancyAge - currentAge);
+        monthsToLifeExpectancy = Math.ceil(yearsRemaining * 12);
+    }
+
     container.innerHTML = `
         <div style="max-width: 1400px; margin: 0 auto; padding: 20px;">
             <!-- Header -->
@@ -63,9 +74,10 @@ export function renderCashFlowTab(container) {
                         <option value="60">Next 5 years</option>
                         <option value="120">Next 10 years</option>
                         <option value="180">Next 15 years</option>
-                        <option value="240" selected>Next 20 years (Full Retirement)</option>
+                        <option value="240">Next 20 years</option>
                         <option value="300">Next 25 years</option>
-                        <option value="360">Next 30 years (Extended)</option>
+                        <option value="360">Next 30 years</option>
+                        <option value="life" selected>Through Life Expectancy (Age 90)</option>
                     </select>
                 </div>
                 <div>
@@ -105,9 +117,9 @@ export function renderCashFlowTab(container) {
         </div>
     `;
 
-    // Initialize chart and data with default: 20 years (240 months), annual view
-    renderCashFlowChart(container, profile, 240, 'annual');
-    setupEventHandlers(container, profile);
+    // Initialize chart and data with default: through life expectancy, annual view
+    renderCashFlowChart(container, profile, monthsToLifeExpectancy, 'annual', null, monthsToLifeExpectancy);
+    setupEventHandlers(container, profile, monthsToLifeExpectancy);
 
     // Load scenarios for the dropdown
     loadScenarios(container, profile);
@@ -147,7 +159,7 @@ async function loadScenarios(container, profile) {
 /**
  * Setup event handlers
  */
-function setupEventHandlers(container, profile) {
+function setupEventHandlers(container, profile, monthsToLifeExpectancy) {
     const timePeriodSelect = container.querySelector('#time-period');
     const viewTypeSelect = container.querySelector('#view-type');
     const scenarioSelect = container.querySelector('#scenario-select');
@@ -155,7 +167,8 @@ function setupEventHandlers(container, profile) {
     const resetZoomBtn = container.querySelector('#reset-zoom');
 
     const refresh = async () => {
-        const months = parseInt(timePeriodSelect.value);
+        const periodValue = timePeriodSelect.value;
+        const months = periodValue === 'life' ? monthsToLifeExpectancy : parseInt(periodValue);
         const viewType = viewTypeSelect.value;
         const scenarioId = scenarioSelect.value;
 
@@ -173,7 +186,7 @@ function setupEventHandlers(container, profile) {
             }
         }
 
-        renderCashFlowChart(container, profile, months, viewType, scenarioData);
+        renderCashFlowChart(container, profile, months, viewType, scenarioData, monthsToLifeExpectancy);
     };
 
     timePeriodSelect.addEventListener('change', refresh);
@@ -641,7 +654,7 @@ function aggregateToAnnual(monthlyData) {
 /**
  * Render cash flow chart
  */
-function renderCashFlowChart(container, profile, months, viewType, scenarioData = null) {
+function renderCashFlowChart(container, profile, months, viewType, scenarioData = null, monthsToLifeExpectancy = 360) {
     const monthlyData = calculateMonthlyCashFlow(profile, months);
     const chartData = viewType === 'annual' ? aggregateToAnnual(monthlyData) : monthlyData;
 
@@ -797,7 +810,7 @@ function renderCashFlowChart(container, profile, months, viewType, scenarioData 
             plugins: {
                 title: {
                     display: true,
-                    text: `Cash Flow Projection (${viewType === 'annual' ? 'Annual' : 'Monthly'}) - Scroll or +/- to zoom, drag to pan`,
+                    text: `Cash Flow Projection (${viewType === 'annual' ? 'Annual' : 'Monthly'}) - ${Math.floor(months / 12)} years through age 90 - Scroll or +/- to zoom, drag to pan`,
                     font: {
                         size: 18,
                         weight: 'bold'
