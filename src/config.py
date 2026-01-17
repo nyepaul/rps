@@ -35,9 +35,13 @@ class Config:
     DATA_DIR = DATA_DIR
 
     # Security
-    SESSION_COOKIE_SECURE = os.environ.get('FLASK_ENV') == 'production'
+    # Allow override via environment variable for mixed HTTP/HTTPS deployments
+    # Set SESSION_COOKIE_SECURE=false for local HTTP access on internal network
+    SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'true' if os.environ.get('FLASK_ENV') == 'production' else 'false').lower() == 'true'
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
+    # Set to None to allow cookies across different hostnames (IP, domain, local hostname)
+    SESSION_COOKIE_DOMAIN = os.environ.get('SESSION_COOKIE_DOMAIN', None)
     PERMANENT_SESSION_LIFETIME = 86400  # 24 hours
 
     # CSRF - Exempt API endpoints (REST API uses session auth + CORS)
@@ -67,13 +71,11 @@ class Config:
 class DevelopmentConfig(Config):
     """Development configuration."""
     DEBUG = True
-    SESSION_COOKIE_SECURE = False  # Allow HTTP in development
 
 
 class ProductionConfig(Config):
     """Production configuration."""
     DEBUG = False
-    SESSION_COOKIE_SECURE = True
 
     # Require encryption key in production
     @classmethod
@@ -87,7 +89,6 @@ class TestingConfig(Config):
     TESTING = True
     DEBUG = False
     WTF_CSRF_ENABLED = False
-    SESSION_COOKIE_SECURE = False
 
 
 config = {
