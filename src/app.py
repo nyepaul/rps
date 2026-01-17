@@ -55,6 +55,27 @@ def create_app(config_name='development'):
         app.logger.setLevel(logging.INFO)
         app.logger.info('Retirement Planning System startup')
 
+    # Security headers - prevent caching of sensitive data
+    @app.after_request
+    def set_security_headers(response):
+        """Add security headers to all responses."""
+        # Prevent caching of sensitive pages
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, private, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+
+        # Security headers
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+
+        # Content Security Policy (relaxed for inline scripts in development)
+        # TODO: Tighten CSP in production by moving inline scripts to separate files
+        response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'"
+
+        return response
+
     # Error handlers
     @app.errorhandler(500)
     def server_error(e):
