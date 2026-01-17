@@ -1,4 +1,4 @@
-# panRPS New Features Guide
+# RPS New Features Guide
 
 **Version:** 2.0
 **Date:** January 13, 2026
@@ -8,7 +8,7 @@
 
 ## Overview
 
-panRPS has been transformed from an expert-focused retirement planning tool into an accessible, guided application with comprehensive onboarding and educational content. These enhancements make retirement planning approachable for users at all experience levels while maintaining the powerful analytical capabilities.
+RPS has been transformed from an expert-focused retirement planning tool into an accessible, guided application with comprehensive onboarding and educational content. These enhancements make retirement planning approachable for users at all experience levels while maintaining the powerful analytical capabilities.
 
 ---
 
@@ -324,7 +324,7 @@ A gamification system that calculates profile completeness, assigns user levels,
 ### File Structure
 
 ```
-/Users/paul/src/panrps/
+/Users/paul/src/rps/
 ├── src/
 │   ├── app.py                      # Flask backend (skills endpoint added)
 │   └── static/
@@ -555,4 +555,4 @@ For issues, questions, or feature requests, please refer to the project reposito
 ---
 
 *Generated: January 13, 2026*
-*panRPS Enhancement Project*
+*RPS Enhancement Project*

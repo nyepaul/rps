@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 # Configuration
 SOURCE_DIR="/home/paul/src/rps"
 TARGET_DIR="/var/www/rps.pan2.app"
-APACHE_CONFIG_SOURCE="${SOURCE_DIR}/apache2/panrps.pan2.app.conf"
+APACHE_CONFIG_SOURCE="${SOURCE_DIR}/apache2/rps.pan2.app.conf"
 APACHE_CONFIG_TARGET="/etc/apache2/sites-available/rps.pan2.app.conf"
 SERVICE_NAME="rps"
 

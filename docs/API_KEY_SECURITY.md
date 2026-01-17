@@ -2,7 +2,7 @@
 
 ## Overview
 
-panRPS implements a **per-user, per-profile API key storage system** for AI services (Google Gemini and Anthropic Claude). This document explains how API keys are securely stored and managed.
+RPS implements a **per-user, per-profile API key storage system** for AI services (Google Gemini and Anthropic Claude). This document explains how API keys are securely stored and managed.
 
 ## Key Design Principles
 
@@ -153,7 +153,7 @@ def save_api_keys(name: str):
 
 ## Comparison to Environment Variable Approach
 
-| Aspect | Per-User Storage (panRPS) | Environment Variables |
+| Aspect | Per-User Storage (RPS) | Environment Variables |
 |--------|---------------------------|----------------------|
 | **User Privacy** | ✅ Each user owns their keys | ❌ Single shared key |
 | **Cost Control** | ✅ Users control their usage | ❌ Shared quota/billing |
@@ -198,8 +198,8 @@ The codebase includes `app_legacy.py` which used environment variables for API k
 
 2. **Secure Environment File**:
    ```bash
-   chmod 600 /var/www/panrps.pan2.app/.env
-   chown www-data:www-data /var/www/panrps.pan2.app/.env
+   chmod 600 /var/www/rps.pan2.app/.env
+   chown www-data:www-data /var/www/rps.pan2.app/.env
    ```
 
 3. **Never Commit Secrets**:

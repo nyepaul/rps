@@ -75,7 +75,7 @@ The following data was copied from paul's account to the demo account:
 If you need to recreate or update the demo account with fresh data from paul:
 
 ```bash
-cd ~/src/panrps
+cd ~/src/rps
 python3 scripts/create_demo_account.py
 ```
 
@@ -96,7 +96,7 @@ The script will:
 **To change the demo password:**
 
 ```bash
-cd ~/src/panrps
+cd ~/src/rps
 python3 -c "
 from src.models.user import User
 import bcrypt

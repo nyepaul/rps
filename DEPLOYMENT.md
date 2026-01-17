@@ -44,7 +44,7 @@ Set the following:
 
 4. **Restart the service**:
 ```bash
-sudo systemctl restart panrps
+sudo systemctl restart rps
 ```
 
 ## Architecture
@@ -63,8 +63,8 @@ The deployment uses:
 ## Files and Directories
 
 - `/var/www/rps.pan2.app/` - Application directory
-- `/etc/apache2/sites-available/panrps.pan2.app.conf` - Apache config
-- `/etc/systemd/system/panrps.service` - Systemd service
+- `/etc/apache2/sites-available/rps.pan2.app.conf` - Apache config
+- `/etc/systemd/system/rps.service` - Systemd service
 - `/var/www/rps.pan2.app/logs/` - Application logs
 - `/var/www/rps.pan2.app/data/` - SQLite database
 
@@ -72,25 +72,25 @@ The deployment uses:
 
 ### Service Management
 ```bash
-sudo systemctl status panrps      # Check service status
-sudo systemctl restart panrps     # Restart service
-sudo systemctl stop panrps        # Stop service
-sudo systemctl start panrps       # Start service
-sudo journalctl -u panrps -f      # Follow service logs
+sudo systemctl status rps      # Check service status
+sudo systemctl restart rps     # Restart service
+sudo systemctl stop rps        # Stop service
+sudo systemctl start rps       # Start service
+sudo journalctl -u rps -f      # Follow service logs
 ```
 
 ### Application Logs
 ```bash
-tail -f /var/www/rps.pan2.app/logs/panrps.log
-tail -f /var/www/rps.pan2.app/logs/panrps-error.log
+tail -f /var/www/rps.pan2.app/logs/rps.log
+tail -f /var/www/rps.pan2.app/logs/rps-error.log
 ```
 
 ### Apache Management
 ```bash
 sudo systemctl reload apache2     # Reload Apache config
 sudo apache2ctl configtest        # Test Apache config
-tail -f /var/log/apache2/panrps-error.log
-tail -f /var/log/apache2/panrps-access.log
+tail -f /var/log/apache2/rps-error.log
+tail -f /var/log/apache2/rps-access.log
 ```
 
 ### Redeployment
@@ -132,13 +132,13 @@ sudo -u www-data ./venv/bin/alembic upgrade head
 
 ### Service won't start
 ```bash
-sudo journalctl -u panrps -n 50 --no-pager
+sudo journalctl -u rps -n 50 --no-pager
 ```
 
 ### Apache errors
 ```bash
 sudo apache2ctl configtest
-tail -50 /var/log/apache2/panrps-error.log
+tail -50 /var/log/apache2/rps-error.log
 ```
 
 ### Permission errors
@@ -152,10 +152,10 @@ sudo chmod -R 775 /var/www/rps.pan2.app/logs
 ### Database locked errors
 ```bash
 # Stop the service, check for stale locks
-sudo systemctl stop panrps
+sudo systemctl stop rps
 sudo rm -f /var/www/rps.pan2.app/data/*.db-shm
 sudo rm -f /var/www/rps.pan2.app/data/*.db-wal
-sudo systemctl start panrps
+sudo systemctl start rps
 ```
 
 ## Accessing the Application
