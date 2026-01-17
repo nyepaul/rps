@@ -78,6 +78,9 @@ export function renderCashFlowTab(container) {
                 <button id="refresh-chart" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; margin-top: 20px;">
                     Refresh
                 </button>
+                <button id="reset-zoom" style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 14px; margin-top: 20px;">
+                    Reset Zoom
+                </button>
             </div>
 
             <!-- Chart -->
@@ -143,6 +146,7 @@ function setupEventHandlers(container, profile) {
     const viewTypeSelect = container.querySelector('#view-type');
     const scenarioSelect = container.querySelector('#scenario-select');
     const refreshBtn = container.querySelector('#refresh-chart');
+    const resetZoomBtn = container.querySelector('#reset-zoom');
 
     const refresh = async () => {
         const months = parseInt(timePeriodSelect.value);
@@ -170,6 +174,15 @@ function setupEventHandlers(container, profile) {
     viewTypeSelect.addEventListener('change', refresh);
     scenarioSelect.addEventListener('change', refresh);
     refreshBtn.addEventListener('click', refresh);
+
+    // Reset zoom button
+    if (resetZoomBtn) {
+        resetZoomBtn.addEventListener('click', () => {
+            if (window.cashFlowChart) {
+                window.cashFlowChart.resetZoom();
+            }
+        });
+    }
 }
 
 /**
@@ -628,7 +641,7 @@ function renderCashFlowChart(container, profile, months, viewType, scenarioData 
             plugins: {
                 title: {
                     display: true,
-                    text: `Cash Flow Projection (${viewType === 'annual' ? 'Annual' : 'Monthly'})`,
+                    text: `Cash Flow Projection (${viewType === 'annual' ? 'Annual' : 'Monthly'}) - Scroll to zoom, drag to pan`,
                     font: { size: 16 }
                 },
                 legend: {
@@ -645,6 +658,29 @@ function renderCashFlowChart(container, profile, months, viewType, scenarioData 
                             const value = Math.abs(context.parsed.y);
                             label += formatCurrency(value, 0);
                             return label;
+                        }
+                    }
+                },
+                zoom: {
+                    pan: {
+                        enabled: true,
+                        mode: 'x',
+                        modifierKey: null
+                    },
+                    zoom: {
+                        wheel: {
+                            enabled: true,
+                            speed: 0.1
+                        },
+                        pinch: {
+                            enabled: true
+                        },
+                        mode: 'x'
+                    },
+                    limits: {
+                        x: {
+                            min: 'original',
+                            max: 'original'
                         }
                     }
                 }
@@ -690,7 +726,9 @@ function renderCashFlowChart(container, profile, months, viewType, scenarioData 
                         display: false
                     }
                 }
-            }
+            },
+            barPercentage: 0.6,
+            categoryPercentage: 0.7
         }
     });
 }
