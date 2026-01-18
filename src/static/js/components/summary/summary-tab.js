@@ -6,11 +6,11 @@ import { store } from '../../state/store.js';
 import { API_ENDPOINTS } from '../../config.js';
 import { showError, showSuccess } from '../../utils/dom.js';
 
-// Generate PDF report
+// Generate PDF report for download
 async function generatePdf(container, reportType, profileName, buttonSelector) {
     const button = container.querySelector(buttonSelector);
     if (!button) return;
-    const originalText = button.textContent;
+    const originalText = button.innerHTML;
 
     try {
         // Update button state
@@ -52,14 +52,71 @@ async function generatePdf(container, reportType, profileName, buttonSelector) {
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
 
-        showSuccess(`${reportType.charAt(0).toUpperCase() + reportType.slice(1)} report downloaded successfully!`);
+        showSuccess(`${reportType.charAt(0).toUpperCase() + reportType.slice(1)} report saved successfully!`);
     } catch (error) {
         console.error('Error generating PDF:', error);
         showError(error.message || 'Failed to generate PDF');
     } finally {
         // Restore button state
         button.disabled = false;
-        button.textContent = originalText;
+        button.innerHTML = originalText;
+    }
+}
+
+// View PDF report in new tab
+async function viewPdf(container, reportType, profileName, buttonSelector) {
+    const button = container.querySelector(buttonSelector);
+    if (!button) return;
+    const originalText = button.innerHTML;
+
+    try {
+        // Update button state
+        button.disabled = true;
+        button.innerHTML = `
+            <span class="pdf-spinner"></span>
+            Generating...
+        `;
+
+        const endpoint = API_ENDPOINTS[`REPORT_${reportType.toUpperCase()}`];
+        if (!endpoint) {
+            throw new Error('Unknown report type');
+        }
+
+        // Add view=true parameter to endpoint
+        const viewEndpoint = endpoint + '?view=true';
+
+        const response = await fetch(viewEndpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({ profile_name: profileName })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to generate PDF');
+        }
+
+        // Get the PDF blob
+        const blob = await response.blob();
+
+        // Open in new tab
+        const url = window.URL.createObjectURL(blob);
+        window.open(url, '_blank');
+
+        // Clean up after a delay
+        setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+
+        showSuccess(`${reportType.charAt(0).toUpperCase() + reportType.slice(1)} report opened!`);
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        showError(error.message || 'Failed to generate PDF');
+    } finally {
+        // Restore button state
+        button.disabled = false;
+        button.innerHTML = originalText;
     }
 }
 
@@ -107,14 +164,14 @@ export function renderSummaryTab(container) {
                                 <p style="color: var(--text-secondary); margin-bottom: 10px; font-size: 12px;">
                                     Monte Carlo simulation results, success rates, scenario comparisons, and statistical analysis.
                                 </p>
-                                <button id="btn-analysis-pdf" class="pdf-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                        <polyline points="7 10 12 15 17 10"/>
-                                        <line x1="12" y1="15" x2="12" y2="3"/>
-                                    </svg>
-                                    Download PDF
-                                </button>
+                                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                    <button id="btn-analysis-view" class="pdf-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
+                                        👁️ View
+                                    </button>
+                                    <button id="btn-analysis-save" class="pdf-btn" style="padding: 6px 12px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
+                                        💾 Save
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -127,14 +184,14 @@ export function renderSummaryTab(container) {
                                 <p style="color: var(--text-secondary); margin-bottom: 10px; font-size: 12px;">
                                     Current assets breakdown, account allocations, retirement accounts, taxable accounts, and financial overview.
                                 </p>
-                                <button id="btn-portfolio-pdf" class="pdf-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                        <polyline points="7 10 12 15 17 10"/>
-                                        <line x1="12" y1="15" x2="12" y2="3"/>
-                                    </svg>
-                                    Download PDF
-                                </button>
+                                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                    <button id="btn-portfolio-view" class="pdf-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
+                                        👁️ View
+                                    </button>
+                                    <button id="btn-portfolio-save" class="pdf-btn" style="padding: 6px 12px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
+                                        💾 Save
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -147,14 +204,14 @@ export function renderSummaryTab(container) {
                                 <p style="color: var(--text-secondary); margin-bottom: 10px; font-size: 12px;">
                                     Prioritized action items, recommendations, and next steps for optimizing your retirement plan.
                                 </p>
-                                <button id="btn-action-plan-pdf" class="pdf-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                        <polyline points="7 10 12 15 17 10"/>
-                                        <line x1="12" y1="15" x2="12" y2="3"/>
-                                    </svg>
-                                    Download PDF
-                                </button>
+                                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                    <button id="btn-action-plan-view" class="pdf-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
+                                        👁️ View
+                                    </button>
+                                    <button id="btn-action-plan-save" class="pdf-btn" style="padding: 6px 12px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
+                                        💾 Save
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -199,25 +256,48 @@ export function renderSummaryTab(container) {
         </style>
     `;
 
-    // Attach event listeners
-    const analysisBtn = container.querySelector('#btn-analysis-pdf');
-    if (analysisBtn) {
-        analysisBtn.addEventListener('click', () => {
-            generatePdf(container, 'analysis', profile.name, '#btn-analysis-pdf');
+    // Attach event listeners for Analysis Report
+    const analysisViewBtn = container.querySelector('#btn-analysis-view');
+    if (analysisViewBtn) {
+        analysisViewBtn.addEventListener('click', () => {
+            viewPdf(container, 'analysis', profile.name, '#btn-analysis-view');
         });
     }
 
-    const portfolioBtn = container.querySelector('#btn-portfolio-pdf');
-    if (portfolioBtn) {
-        portfolioBtn.addEventListener('click', () => {
-            generatePdf(container, 'portfolio', profile.name, '#btn-portfolio-pdf');
+    const analysisSaveBtn = container.querySelector('#btn-analysis-save');
+    if (analysisSaveBtn) {
+        analysisSaveBtn.addEventListener('click', () => {
+            generatePdf(container, 'analysis', profile.name, '#btn-analysis-save');
         });
     }
 
-    const actionPlanBtn = container.querySelector('#btn-action-plan-pdf');
-    if (actionPlanBtn) {
-        actionPlanBtn.addEventListener('click', () => {
-            generatePdf(container, 'action_plan', profile.name, '#btn-action-plan-pdf');
+    // Attach event listeners for Portfolio Summary
+    const portfolioViewBtn = container.querySelector('#btn-portfolio-view');
+    if (portfolioViewBtn) {
+        portfolioViewBtn.addEventListener('click', () => {
+            viewPdf(container, 'portfolio', profile.name, '#btn-portfolio-view');
+        });
+    }
+
+    const portfolioSaveBtn = container.querySelector('#btn-portfolio-save');
+    if (portfolioSaveBtn) {
+        portfolioSaveBtn.addEventListener('click', () => {
+            generatePdf(container, 'portfolio', profile.name, '#btn-portfolio-save');
+        });
+    }
+
+    // Attach event listeners for Action Plan
+    const actionPlanViewBtn = container.querySelector('#btn-action-plan-view');
+    if (actionPlanViewBtn) {
+        actionPlanViewBtn.addEventListener('click', () => {
+            viewPdf(container, 'action_plan', profile.name, '#btn-action-plan-view');
+        });
+    }
+
+    const actionPlanSaveBtn = container.querySelector('#btn-action-plan-save');
+    if (actionPlanSaveBtn) {
+        actionPlanSaveBtn.addEventListener('click', () => {
+            generatePdf(container, 'action_plan', profile.name, '#btn-action-plan-save');
         });
     }
 }

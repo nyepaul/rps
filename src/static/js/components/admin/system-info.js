@@ -78,18 +78,30 @@ export async function renderSystemInfo(container) {
                 <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 25px; border-radius: 12px; color: white;">
                     <h3 style="margin: 0 0 15px 0; font-size: 18px;">📚 Documentation</h3>
                     <div style="display: grid; gap: 10px;">
-                        <a href="#" onclick="alert('Open SYSTEM_SECURITY_DOCUMENTATION.md'); return false;" style="display: block; padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px; color: white; text-decoration: none; transition: all 0.2s;">
-                            <div style="font-weight: 600; margin-bottom: 3px;">System Security Documentation</div>
-                            <div style="font-size: 12px; opacity: 0.9;">Complete security architecture and encryption details</div>
-                        </a>
-                        <a href="#" onclick="alert('Open USER_PROFILE_SCENARIO_RELATIONSHIP.md'); return false;" style="display: block; padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px; color: white; text-decoration: none; transition: all 0.2s;">
-                            <div style="font-weight: 600; margin-bottom: 3px;">User & Profile Relationship Guide</div>
-                            <div style="font-size: 12px; opacity: 0.9;">Data hierarchy and secure segregation</div>
-                        </a>
-                        <a href="#" onclick="alert('Open ASSET_FIELDS_REFERENCE.md'); return false;" style="display: block; padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px; color: white; text-decoration: none; transition: all 0.2s;">
-                            <div style="font-weight: 600; margin-bottom: 3px;">Asset Fields Reference</div>
-                            <div style="font-size: 12px; opacity: 0.9;">Complete asset type and field documentation</div>
-                        </a>
+                        <div style="padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+                            <div style="font-weight: 600; margin-bottom: 5px;">📄 System Security Documentation</div>
+                            <div style="font-size: 12px; opacity: 0.9; margin-bottom: 8px;">Complete security architecture and encryption details</div>
+                            <div style="display: flex; gap: 10px;">
+                                <a href="/api/admin/documentation/system-security" target="_blank" style="padding: 4px 12px; background: rgba(255,255,255,0.2); border-radius: 4px; color: white; text-decoration: none; font-size: 11px; font-weight: 600; transition: all 0.2s;">👁️ View</a>
+                                <a href="/api/admin/documentation/system-security?download=true" style="padding: 4px 12px; background: rgba(255,255,255,0.2); border-radius: 4px; color: white; text-decoration: none; font-size: 11px; font-weight: 600; transition: all 0.2s;">💾 Save</a>
+                            </div>
+                        </div>
+                        <div style="padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+                            <div style="font-weight: 600; margin-bottom: 5px;">📄 User & Profile Relationship Guide</div>
+                            <div style="font-size: 12px; opacity: 0.9; margin-bottom: 8px;">Data hierarchy and secure segregation</div>
+                            <div style="display: flex; gap: 10px;">
+                                <a href="/api/admin/documentation/user-profile-relationship" target="_blank" style="padding: 4px 12px; background: rgba(255,255,255,0.2); border-radius: 4px; color: white; text-decoration: none; font-size: 11px; font-weight: 600; transition: all 0.2s;">👁️ View</a>
+                                <a href="/api/admin/documentation/user-profile-relationship?download=true" style="padding: 4px 12px; background: rgba(255,255,255,0.2); border-radius: 4px; color: white; text-decoration: none; font-size: 11px; font-weight: 600; transition: all 0.2s;">💾 Save</a>
+                            </div>
+                        </div>
+                        <div style="padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+                            <div style="font-weight: 600; margin-bottom: 5px;">📄 Asset Fields Reference</div>
+                            <div style="font-size: 12px; opacity: 0.9; margin-bottom: 8px;">Complete asset type and field documentation</div>
+                            <div style="display: flex; gap: 10px;">
+                                <a href="/api/admin/documentation/asset-fields" target="_blank" style="padding: 4px 12px; background: rgba(255,255,255,0.2); border-radius: 4px; color: white; text-decoration: none; font-size: 11px; font-weight: 600; transition: all 0.2s;">👁️ View</a>
+                                <a href="/api/admin/documentation/asset-fields?download=true" style="padding: 4px 12px; background: rgba(255,255,255,0.2); border-radius: 4px; color: white; text-decoration: none; font-size: 11px; font-weight: 600; transition: all 0.2s;">💾 Save</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -1,7 +1,6 @@
 """Flask application factory.
 
 Authored by: pan
-Co-Authored by: Claude (Anthropic AI)
 """
 from flask import Flask, send_from_directory, jsonify
 from src.config import config

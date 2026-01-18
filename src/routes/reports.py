@@ -3,8 +3,8 @@ from flask import Blueprint, request, jsonify, send_file
 from flask_login import login_required, current_user
 from src.models.profile import Profile
 from src.models.action_item import ActionItem
-from src.services.pdf_service_pro import (
-    generate_professional_analysis_report as generate_analysis_report
+from src.services.pdf_service_elite import (
+    generate_elite_analysis_report as generate_analysis_report
 )
 from src.services.pdf_service import (
     generate_portfolio_report,
@@ -163,6 +163,9 @@ def generate_analysis():
         if not profile_name:
             return jsonify({'error': 'profile_name is required'}), 400
 
+        # Check if view mode is requested
+        view_mode = request.args.get('view', 'false').lower() == 'true'
+
         profile = Profile.get_by_name(profile_name, current_user.id)
         if not profile:
             return jsonify({'error': 'Profile not found'}), 404
@@ -179,10 +182,11 @@ def generate_analysis():
         # Generate PDF
         pdf_buffer = generate_analysis_report(profile_data, analysis_results)
 
+        # Return PDF for viewing or downloading
         return send_file(
             pdf_buffer,
             mimetype='application/pdf',
-            as_attachment=True,
+            as_attachment=not view_mode,
             download_name=f'{profile_name}_analysis_report.pdf'
         )
 
@@ -202,6 +206,9 @@ def generate_portfolio():
         if not profile_name:
             return jsonify({'error': 'profile_name is required'}), 400
 
+        # Check if view mode is requested
+        view_mode = request.args.get('view', 'false').lower() == 'true'
+
         profile = Profile.get_by_name(profile_name, current_user.id)
         if not profile:
             return jsonify({'error': 'Profile not found'}), 404
@@ -213,10 +220,11 @@ def generate_portfolio():
         # Generate PDF
         pdf_buffer = generate_portfolio_report(profile_data)
 
+        # Return PDF for viewing or downloading
         return send_file(
             pdf_buffer,
             mimetype='application/pdf',
-            as_attachment=True,
+            as_attachment=not view_mode,
             download_name=f'{profile_name}_portfolio_summary.pdf'
         )
 
@@ -235,6 +243,9 @@ def generate_action_plan():
         profile_name = request.json.get('profile_name')
         if not profile_name:
             return jsonify({'error': 'profile_name is required'}), 400
+
+        # Check if view mode is requested
+        view_mode = request.args.get('view', 'false').lower() == 'true'
 
         profile = Profile.get_by_name(profile_name, current_user.id)
         if not profile:
@@ -261,10 +272,11 @@ def generate_action_plan():
         # Generate PDF
         pdf_buffer = generate_action_plan_report(profile_data, action_items_list)
 
+        # Return PDF for viewing or downloading
         return send_file(
             pdf_buffer,
             mimetype='application/pdf',
-            as_attachment=True,
+            as_attachment=not view_mode,
             download_name=f'{profile_name}_action_plan.pdf'
         )
 

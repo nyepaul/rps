@@ -1,7 +1,6 @@
 """Retirement planning business logic and financial modeling.
 
 Authored by: pan
-Co-Authored by: Claude (Anthropic AI)
 
 Key Features:
 - Monte Carlo simulation for retirement planning

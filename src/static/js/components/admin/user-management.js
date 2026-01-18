@@ -114,6 +114,9 @@ function renderUserRow(user, currentUser) {
                             ${user.is_super_admin ? '⭐' : '⚪'}
                         </button>
                     ` : ''}
+                    <button class="reset-password-btn" data-user-id="${user.id}" data-username="${user.username}" style="padding: 4px 8px; background: #f59e0b; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;" title="Reset Password">
+                        🔑
+                    </button>
                     <button class="view-user-profiles-btn" data-user-id="${user.id}" style="padding: 4px 8px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;" title="View Profiles">
                         📁
                     </button>
@@ -173,6 +176,15 @@ function setupUserActionHandlers(container) {
                 await toggleUserSuperAdmin(userId, !isSuperAdmin);
                 await renderUserManagement(container);  // Refresh
             }
+        });
+    });
+
+    // Reset password
+    container.querySelectorAll('.reset-password-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const userId = parseInt(btn.getAttribute('data-user-id'));
+            const username = btn.getAttribute('data-username');
+            await resetUserPassword(userId, username);
         });
     });
 
@@ -262,6 +274,89 @@ async function toggleUserSuperAdmin(userId, isSuperAdmin) {
             showError('You cannot revoke your own super admin status');
         } else {
             showError(`Failed to update super admin status: ${error.message}`);
+        }
+    }
+}
+
+/**
+ * Reset user password (admin only)
+ */
+async function resetUserPassword(userId, username) {
+    try {
+        // First check if user has encrypted data
+        const usersResponse = await apiClient.get('/api/admin/users');
+        const user = usersResponse.users.find(u => u.id === userId);
+
+        // Warning about data loss
+        const hasWarning = user && user.encrypted_dek;
+        if (hasWarning) {
+            const confirmed = confirm(
+                `⚠️  CRITICAL WARNING ⚠️\n\n` +
+                `User "${username}" has encrypted data protected by their password.\n\n` +
+                `Resetting their password WITHOUT the old password will:\n` +
+                `• PERMANENTLY DELETE all their encrypted profile data\n` +
+                `• Make their financial data UNRECOVERABLE\n` +
+                `• This CANNOT be undone!\n\n` +
+                `Only proceed if:\n` +
+                `1. User has forgotten their password AND\n` +
+                `2. Data loss is acceptable AND\n` +
+                `3. You have explained this to the user\n\n` +
+                `Do you want to continue with password reset?`
+            );
+
+            if (!confirmed) {
+                showError('Password reset cancelled');
+                return;
+            }
+        }
+
+        // Prompt for new password
+        const newPassword = prompt(
+            `Reset password for user "${username}":\n\n` +
+            `Enter a new password (minimum 8 characters):`
+        );
+
+        if (!newPassword) {
+            return; // User cancelled
+        }
+
+        if (newPassword.length < 8) {
+            showError('Password must be at least 8 characters');
+            return;
+        }
+
+        // Confirm password
+        const confirmPassword = prompt(
+            `Confirm new password for "${username}":`
+        );
+
+        if (newPassword !== confirmPassword) {
+            showError('Passwords do not match');
+            return;
+        }
+
+        // Reset password
+        const response = await apiClient.put(`/api/admin/users/${userId}/password`, {
+            new_password: newPassword
+        });
+
+        let message = `Password reset successfully for user "${username}".\n\n` +
+            `⚠️  Make sure to securely communicate the new password to the user.`;
+
+        if (response.dek_lost) {
+            message += `\n\n🔴 IMPORTANT: User's encrypted data was PERMANENTLY DELETED because the old password was not available to re-encrypt it. The user will need to re-enter all their profile information.`;
+        }
+
+        showSuccess(message);
+
+    } catch (error) {
+        console.error('Failed to reset password:', error);
+
+        // Show specific error message
+        if (error.message.includes('at least 8 characters')) {
+            showError('Password must be at least 8 characters');
+        } else {
+            showError(`Failed to reset password: ${error.message}`);
         }
     }
 }

@@ -159,7 +159,6 @@ export function renderAPIKeysTab(container) {
                             <strong>System:</strong> Retirement Planning System (RPS)<br>
                             <strong>Version:</strong> 2.0.0<br>
                             <strong>Authored by:</strong> pan<br>
-                            <strong>Co-Authored by:</strong> Claude (Anthropic AI)<br>
                             <strong>Updated:</strong> January 2026
                         </p>
                     </div>

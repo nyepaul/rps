@@ -340,7 +340,11 @@ def request_password_reset():
 @auth_bp.route('/password-reset/reset', methods=['POST'])
 @limiter.limit("5 per hour")
 def reset_password():
-    """Reset password using a valid reset token."""
+    """Reset password using a valid reset token.
+
+    ⚠️ WARNING: Password reset without old password will permanently delete
+    encrypted data for users with password-based encryption enabled.
+    """
     try:
         data = PasswordResetSchema(**request.json)
     except Exception as e:
@@ -352,11 +356,29 @@ def reset_password():
     if not user:
         return jsonify({'error': 'Invalid or expired reset token'}), 400
 
-    # Update password
-    user.update_password(data.password)
+    # Force password reset (will lose encrypted data if user had DEK)
+    dek_was_lost = user.force_password_reset(data.password)
+
+    # Log the password reset
+    EnhancedAuditLogger.log(
+        action='PASSWORD_RESET',
+        table_name='users',
+        record_id=user.id,
+        user_id=user.id,
+        details=json.dumps({
+            'username': user.username,
+            'dek_lost': dek_was_lost
+        }),
+        status_code=200
+    )
+
+    response_message = 'Password successfully reset. You can now log in with your new password.'
+    if dek_was_lost:
+        response_message += ' Note: Encrypted data was lost because old password was not available.'
 
     return jsonify({
-        'message': 'Password successfully reset. You can now log in with your new password.'
+        'message': response_message,
+        'dek_lost': dek_was_lost
     }), 200
 
 
@@ -374,12 +396,93 @@ def validate_reset_token():
     user = User.get_by_reset_token(token)
 
     if user:
+        # Check if user will lose data
+        has_encrypted_data = bool(user.encrypted_dek and user.dek_iv)
+
         return jsonify({
             'valid': True,
-            'email': user.email
+            'email': user.email,
+            'has_encrypted_data': has_encrypted_data,
+            'warning': 'Resetting password will permanently delete all your encrypted data. This cannot be undone!' if has_encrypted_data else None
         }), 200
     else:
         return jsonify({
             'valid': False,
             'error': 'Invalid or expired token'
         }), 400
+
+
+class PasswordChangeSchema(BaseModel):
+    """Password change validation schema (requires old password)."""
+    old_password: str
+    new_password: str
+
+    @validator('new_password')
+    def validate_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters')
+        if not re.search(r'[A-Z]', v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not re.search(r'[a-z]', v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        if not re.search(r'[0-9]', v):
+            raise ValueError('Password must contain at least one number')
+        return v
+
+
+@auth_bp.route('/password/change', methods=['PUT'])
+@limiter.limit("5 per hour")
+def change_password():
+    """Change password for logged-in user (requires old password to re-encrypt data)."""
+    from flask_login import login_required
+
+    if not current_user.is_authenticated:
+        return jsonify({'error': 'Authentication required'}), 401
+
+    try:
+        data = PasswordChangeSchema(**request.json)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+    # Get fresh user from database
+    user = User.get_by_id(current_user.id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    try:
+        # Update password (will re-encrypt DEK if needed)
+        user.update_password(data.new_password, old_password=data.old_password)
+
+        # If user has DEK, update it in session
+        if user.encrypted_dek and user.dek_iv:
+            try:
+                kek = EncryptionService.get_kek_from_password(data.new_password)
+                temp_service = EncryptionService(key=kek)
+                dek_b64 = temp_service.decrypt(user.encrypted_dek, user.dek_iv)
+                session['user_dek'] = dek_b64
+            except Exception as e:
+                print(f"Failed to update DEK in session: {e}")
+
+        # Log the password change
+        EnhancedAuditLogger.log(
+            action='PASSWORD_CHANGE',
+            table_name='users',
+            record_id=user.id,
+            user_id=user.id,
+            details=json.dumps({
+                'username': user.username,
+                'dek_re_encrypted': bool(user.encrypted_dek)
+            }),
+            status_code=200
+        )
+
+        return jsonify({
+            'message': 'Password changed successfully',
+            'dek_re_encrypted': bool(user.encrypted_dek)
+        }), 200
+
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        print(f"Error changing password: {e}")
+        return jsonify({'error': f'Failed to change password: {str(e)}'}), 500

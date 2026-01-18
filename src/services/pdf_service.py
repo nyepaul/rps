@@ -112,7 +112,7 @@ def create_header(profile_name, report_type):
         styles['SmallText']
     ))
     elements.append(Paragraph(
-        "<i>RPS - Authored by pan, Co-Authored by Claude (Anthropic AI)</i>",
+        "<i>RPS - Authored by pan</i>",
         styles['SmallText']
     ))
     elements.append(Spacer(1, 20))

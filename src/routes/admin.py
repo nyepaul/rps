@@ -33,6 +33,17 @@ class UserUpdateSchema(BaseModel):
     is_admin: Optional[bool] = None
 
 
+class PasswordResetSchema(BaseModel):
+    """Schema for admin password reset."""
+    new_password: str
+
+    @validator('new_password')
+    def validate_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters')
+        return v
+
+
 @admin_bp.route('/logs', methods=['GET'])
 @login_required
 @admin_required
@@ -408,6 +419,61 @@ def update_user(user_id: int):
         return jsonify({'error': str(e)}), 400
 
 
+@admin_bp.route('/users/<int:user_id>/password', methods=['PUT'])
+@login_required
+@admin_required
+def reset_user_password(user_id: int):
+    """Reset a user's password (admin only).
+
+    ⚠️ WARNING: Admin password reset cannot re-encrypt user data because the old
+    password is not known. This will PERMANENTLY DELETE encrypted data for users
+    with password-based encryption enabled.
+    """
+    try:
+        # Validate input
+        data = PasswordResetSchema(**request.json)
+
+        # Get user
+        user = User.get_by_id(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        # Check if user has encrypted data that will be lost
+        has_encrypted_data = bool(user.encrypted_dek and user.dek_iv)
+
+        # Force password reset (will lose encrypted data if user had DEK)
+        dek_was_lost = user.force_password_reset(data.new_password)
+
+        # Log admin action
+        enhanced_audit_logger.log_admin_action(
+            action='RESET_USER_PASSWORD',
+            details={
+                'target_user_id': user_id,
+                'target_username': user.username,
+                'dek_lost': dek_was_lost,
+                'warning': 'Encrypted data lost - old password not available' if dek_was_lost else None
+            },
+            user_id=current_user.id
+        )
+
+        message = f'Password reset successfully for user: {user.username}'
+        if dek_was_lost:
+            message += '. ⚠️ WARNING: User\'s encrypted data is now PERMANENTLY INACCESSIBLE because the old password was not available to re-encrypt it.'
+
+        return jsonify({
+            'message': message,
+            'dek_lost': dek_was_lost,
+            'warning': 'User will lose access to all encrypted data' if dek_was_lost else None,
+            'user': {
+                'id': user.id,
+                'username': user.username
+            }
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
 @admin_bp.route('/users/<int:user_id>/super-admin', methods=['PUT'])
 @login_required
 @super_admin_required
@@ -643,4 +709,61 @@ def get_system_info():
         return jsonify({'system_info': stats}), 200
 
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/documentation/<doc_name>', methods=['GET'])
+@login_required
+@admin_required
+def get_documentation(doc_name: str):
+    """Serve documentation files for admin panel."""
+    try:
+        import os
+        from flask import send_file, request
+
+        # Whitelist of allowed documentation files
+        allowed_docs = {
+            'system-security': 'SYSTEM_SECURITY_DOCUMENTATION.md',
+            'user-profile-relationship': 'USER_PROFILE_SCENARIO_RELATIONSHIP.md',
+            'asset-fields': 'ASSET_FIELDS_REFERENCE.md'
+        }
+
+        if doc_name not in allowed_docs:
+            return jsonify({'error': 'Documentation not found'}), 404
+
+        # Get file path relative to project root
+        file_name = allowed_docs[doc_name]
+        file_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), file_name)
+
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'Documentation file not found'}), 404
+
+        # Check if download is requested
+        download = request.args.get('download', 'false').lower() == 'true'
+
+        # Log access
+        action = 'DOWNLOAD_DOCUMENTATION' if download else 'VIEW_DOCUMENTATION'
+        enhanced_audit_logger.log_admin_action(
+            action=action,
+            details={'document': file_name},
+            user_id=current_user.id
+        )
+
+        # Serve file for inline viewing or download
+        if download:
+            return send_file(
+                file_path,
+                mimetype='text/markdown',
+                as_attachment=True,
+                download_name=file_name
+            )
+        else:
+            return send_file(
+                file_path,
+                mimetype='text/plain',
+                as_attachment=False
+            )
+
+    except Exception as e:
+        print(f"Error serving documentation: {e}")
         return jsonify({'error': str(e)}), 500

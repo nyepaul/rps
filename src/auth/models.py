@@ -118,14 +118,88 @@ class User(UserMixin):
         with db.get_connection() as conn:
             conn.execute('UPDATE users SET last_login = ? WHERE id = ?', (self.last_login, self.id))
     
-    def update_password(self, new_password: str):
-        """Update the user's password."""
+    def update_password(self, new_password: str, old_password: str = None):
+        """Update the user's password and re-encrypt DEK.
+
+        Args:
+            new_password: The new password to set
+            old_password: The current password (required if user has encrypted DEK)
+
+        Raises:
+            ValueError: If old_password is required but not provided, or if old_password is incorrect
+        """
+        from src.services.encryption_service import EncryptionService
+        import base64
+
+        # If user has encrypted DEK, we must re-encrypt it with new password
+        if self.encrypted_dek and self.dek_iv:
+            if not old_password:
+                raise ValueError('Old password required to re-encrypt data encryption key')
+
+            # Verify old password is correct
+            if not self.check_password(old_password):
+                raise ValueError('Old password is incorrect')
+
+            try:
+                # Decrypt DEK with old password
+                old_kek = EncryptionService.get_kek_from_password(old_password)
+                temp_service = EncryptionService(key=old_kek)
+                dek_b64 = temp_service.decrypt(self.encrypted_dek, self.dek_iv)
+                dek = base64.b64decode(dek_b64)
+
+                # Re-encrypt DEK with new password
+                new_kek = EncryptionService.get_kek_from_password(new_password)
+                new_service = EncryptionService(key=new_kek)
+                new_encrypted_dek, new_dek_iv = new_service.encrypt(base64.b64encode(dek).decode('utf-8'))
+
+                # Update user's encrypted DEK
+                self.encrypted_dek = new_encrypted_dek
+                self.dek_iv = new_dek_iv
+
+            except Exception as e:
+                raise ValueError(f'Failed to re-encrypt data encryption key: {str(e)}')
+
+        # Update password hash
         self.password_hash = User.hash_password(new_password)
+
         # Clear any reset tokens
         self.reset_token = None
         self.reset_token_expires = None
-        # Note: In a full implementation, we'd also re-encrypt the DEK here
+
         self.save()
+
+    def force_password_reset(self, new_password: str):
+        """Force password reset WITHOUT re-encrypting DEK (admin use only).
+
+        ⚠️ WARNING: This will make encrypted data PERMANENTLY INACCESSIBLE!
+        Use only when:
+        - Admin needs to reset a forgotten password
+        - User cannot provide old password
+        - Data loss is acceptable
+
+        Args:
+            new_password: The new password to set
+
+        Returns:
+            bool: True if DEK was lost (had encrypted data), False otherwise
+        """
+        dek_was_lost = bool(self.encrypted_dek and self.dek_iv)
+
+        # Clear encrypted DEK - data is now inaccessible
+        if dek_was_lost:
+            self.encrypted_dek = None
+            self.dek_iv = None
+
+        # Update password hash
+        self.password_hash = User.hash_password(new_password)
+
+        # Clear any reset tokens
+        self.reset_token = None
+        self.reset_token_expires = None
+
+        self.save()
+
+        return dek_was_lost
 
     def generate_reset_token(self, expiry_hours=1):
         """Generate a secure password reset token.
