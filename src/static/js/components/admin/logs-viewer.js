@@ -396,6 +396,14 @@ function setupLogRowHandlers(container) {
         });
     });
 
+    // Row click to view details
+    container.querySelectorAll('.log-row').forEach(row => {
+        row.addEventListener('click', async () => {
+            const logId = row.getAttribute('data-log-id');
+            await showLogDetails(logId);
+        });
+    });
+
     // Row hover effect
     container.querySelectorAll('.log-row').forEach(row => {
         row.addEventListener('mouseenter', () => {
