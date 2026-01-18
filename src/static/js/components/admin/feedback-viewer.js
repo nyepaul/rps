@@ -177,8 +177,7 @@ async function showFeedbackDetails(feedback) {
                             ">
                                 ${content}
                             </div>
-                        ` : (
-                            contentLoadError ? `
+                        ` : contentLoadError ? `
                                 <div style="
                                     background: var(--danger-bg);
                                     padding: 16px;
@@ -198,8 +197,7 @@ async function showFeedbackDetails(feedback) {
                                 ">
                                     ⏳ Loading content...
                                 </div>
-                            `
-                        )}
+                            `}
                     </div>
                 ` : ''}
 
