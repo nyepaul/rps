@@ -309,7 +309,7 @@ export function renderProfileTab(container) {
             }
             .calculated-field {
                 background: var(--bg-tertiary) !important;
-                color: var(--accent-color) !important;
+                color: var(--text-primary) !important;
                 font-weight: 600;
                 cursor: default;
             }
