@@ -29,6 +29,9 @@ def init_extensions(app):
     csrf.exempt('auth.login')
     csrf.exempt('auth.logout')
     csrf.exempt('auth.session')
+    csrf.exempt('auth.request_password_reset')
+    csrf.exempt('auth.reset_password')
+    csrf.exempt('auth.validate_reset_token')
 
     limiter.init_app(app)
     mail.init_app(app)
