@@ -44,13 +44,13 @@ export function renderAssetsTab(container) {
         <div style="max-width: 1200px; margin: 0 auto;">
             <!-- Header -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-                <div>
+                <div style="min-width: 0; flex: 1;">
                     <h1 style="font-size: 24px; margin-bottom: 5px;">💰 Asset Management</h1>
                     <p style="color: var(--text-secondary); margin: 0; font-size: 13px;">
                         Manage your retirement accounts, real estate, and other assets
                     </p>
                 </div>
-                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <div style="display: flex; gap: 6px; flex-wrap: wrap; flex-shrink: 0;">
                     <button id="add-asset-btn" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s; font-size: 13px;">
                         + Add Asset
                     </button>

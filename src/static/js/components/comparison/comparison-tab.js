@@ -73,13 +73,13 @@ function renderComparisonView(container, profile, scenarios) {
     container.innerHTML = `
         <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-5);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-6); flex-wrap: wrap; gap: var(--space-4);">
-                <div>
+                <div style="min-width: 0; flex: 1;">
                     <h1 style="font-size: var(--font-3xl); margin-bottom: var(--space-1);">Scenario Comparison</h1>
                     <p style="color: var(--text-secondary);">
                         ${scenarios.length} saved scenario${scenarios.length !== 1 ? 's' : ''} for <strong>${profile.name}</strong>
                     </p>
                 </div>
-                <button onclick="window.app.showTab('analysis')" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                <button onclick="window.app.showTab('analysis')" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; flex-shrink: 0;">
                     + New Analysis
                 </button>
             </div>
