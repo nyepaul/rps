@@ -64,17 +64,17 @@ export function renderAnalysisTab(container) {
 
             <!-- Analysis Configuration -->
             <div class="analysis-panel">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <h2 style="font-size: 24px; margin: 0;">Monte Carlo Simulation</h2>
-                        <button id="show-calculation-info" style="padding: 6px 12px; background: var(--info-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;" title="Learn about the calculations">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; gap: 20px; flex-wrap: wrap;">
+                    <div>
+                        <h2 style="font-size: 24px; margin: 0 0 10px 0;">Monte Carlo Simulation</h2>
+                        <button id="show-calculation-info" style="padding: 6px 12px; background: var(--info-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;" title="Learn about the calculations">
                             <span>ℹ️</span> How It Works
                         </button>
                     </div>
 
                     <!-- Scenario Loader -->
-                    <div id="scenario-loader-container" style="display: flex; gap: 10px; align-items: center;">
-                        <span style="font-size: 13px; color: var(--text-secondary); font-weight: 600;">Load Saved:</span>
+                    <div id="scenario-loader-container" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <span style="font-size: 13px; color: var(--text-secondary); font-weight: 600; white-space: nowrap;">Load Saved:</span>
                         <select id="saved-scenario-select" style="padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); font-size: 13px; min-width: 200px;">
                             <option value="">-- Select Scenario --</option>
                         </select>
