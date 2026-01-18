@@ -79,8 +79,8 @@
             --bg-secondary: #0a0a0a;
             --bg-tertiary: #1a1a1a;
             --text-primary: #ffffff;
-            --text-secondary: #ffff00;
-            --text-light: #00ffff;
+            --text-secondary: #b0b0b0;
+            --text-light: #d0d0d0;
             --header-bg: #000000;
             --header-text: #ffffff;
             --accent-color: #1e90ff;
@@ -93,13 +93,13 @@
             --success-text: #7fff7f;
             --warning-text: #ffd700;
             --success-bg: #004400;
-            --warning-bg: #442200;
+            --warning-bg: #331800;
             --danger-bg: #440000;
             --info-bg: #002244;
             --info-color: #87ceeb;
             --card-gradient-1: #1e5090;
             --card-gradient-2: #1e4080;
-            --focus-outline: 3px solid #ffd700;
+            --focus-outline: 3px solid #4169e1;
         }
 
         * {
