@@ -76,9 +76,14 @@ def test_db(test_db_dir, request):
                 password_hash TEXT NOT NULL,
                 is_active BOOLEAN DEFAULT 1,
                 is_admin BOOLEAN DEFAULT 0,
+                is_super_admin BOOLEAN DEFAULT 0,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
-                last_login TEXT
+                last_login TEXT,
+                encrypted_dek TEXT,
+                dek_iv TEXT,
+                reset_token TEXT,
+                reset_token_expires TEXT
             )
         ''')
 

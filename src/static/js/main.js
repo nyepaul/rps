@@ -276,6 +276,11 @@ async function loadTabComponent(tabName, container) {
             renderLearnTab(tabContent);
             break;
         }
+        case 'tax': {
+            const { renderTaxTab } = await import('./components/tax/tax-tab.js');
+            renderTaxTab(tabContent);
+            break;
+        }
         case 'admin': {
             const { renderAdminTab } = await import('./components/admin/admin-tab.js');
             renderAdminTab(tabContent);

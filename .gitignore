@@ -13,6 +13,8 @@ __pycache__/
 *.pyc
 *.pyo
 src/venv/
+venv/
+.test_venv/
 *.egg-info/
 
 # Data (keep local only)
