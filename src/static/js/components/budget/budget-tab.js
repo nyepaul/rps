@@ -1124,12 +1124,20 @@ function setupIncomeEventListeners(parentContainer) {
  */
 function showIncomeItemModal(parentContainer, category, index) {
     const isEdit = index !== null;
+
+    // Get retirement date for pre-populating end date for current period income
+    const profile = store.get('currentProfile');
+    const retirementDate = profile?.retirement_date || '';
+
+    // Pre-populate end date with retirement date for current period income (if adding new item)
+    const defaultEndDate = (!isEdit && currentPeriod === 'current' && retirementDate) ? retirementDate : '';
+
     const item = isEdit ? budgetData.income[currentPeriod][category][index] : {
         name: '',
         amount: 0,
         frequency: 'monthly',
         start_date: new Date().toISOString().split('T')[0],
-        end_date: '',
+        end_date: defaultEndDate,
         inflation_adjusted: true,
         taxable: true
     };
@@ -1370,6 +1378,17 @@ function makeExpenseRowEditable(rowElement, category, expense, parentContainer) 
 
     const originalHTML = rowElement.innerHTML;
 
+    // Get retirement date for pre-populating end date for current period expenses
+    const profile = store.get('currentProfile');
+    const retirementDate = profile?.retirement_date || '';
+
+    // Pre-populate end date with retirement date for current period expenses
+    // if no end date is specified and ongoing is false
+    let defaultEndDate = expense.end_date || '';
+    if (currentPeriod === 'current' && !expense.end_date && expense.ongoing === false && retirementDate) {
+        defaultEndDate = retirementDate;
+    }
+
     rowElement.innerHTML = `
         <div style="padding: 10px 12px; background: var(--bg-tertiary); border-radius: 6px; border: 2px solid var(--accent-color);">
             <div style="margin-bottom: 6px; font-weight: 600; font-size: 13px; color: var(--accent-color);">
@@ -1404,7 +1423,7 @@ function makeExpenseRowEditable(rowElement, category, expense, parentContainer) 
                     <label style="display: block; font-size: 9px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;">
                         End Date
                     </label>
-                    <input type="date" name="end_date" value="${expense.end_date || ''}" ${expense.ongoing !== false ? 'disabled' : ''}
+                    <input type="date" name="end_date" value="${defaultEndDate}" ${expense.ongoing !== false ? 'disabled' : ''}
                            style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
                 </div>
                 <div style="grid-column: 1 / -1; display: flex; gap: 10px; flex-wrap: wrap;">
@@ -1441,6 +1460,11 @@ function makeExpenseRowEditable(rowElement, category, expense, parentContainer) 
         if (isOngoing) {
             startDateInput.value = '';
             endDateInput.value = '';
+        } else {
+            // When unchecking ongoing for current period, pre-populate end date with retirement date
+            if (currentPeriod === 'current' && retirementDate && !endDateInput.value) {
+                endDateInput.value = retirementDate;
+            }
         }
     });
 

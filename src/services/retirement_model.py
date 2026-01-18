@@ -611,6 +611,41 @@ class RetirementModel:
             return amount
         return amount  # Default to amount as-is
 
+    def _is_expense_active(self, expense_data: dict, simulation_year: int) -> bool:
+        """Check if an expense is active in the given simulation year"""
+        # If ongoing is True or not specified, expense is always active
+        ongoing = expense_data.get('ongoing', True)
+        if ongoing:
+            return True
+
+        # If not ongoing, check start and end dates
+        start_date = expense_data.get('start_date')
+        end_date = expense_data.get('end_date')
+
+        # Parse start year
+        start_year = None
+        if start_date:
+            try:
+                start_year = datetime.fromisoformat(start_date).year
+            except:
+                pass
+
+        # Parse end year
+        end_year = None
+        if end_date:
+            try:
+                end_year = datetime.fromisoformat(end_date).year
+            except:
+                pass
+
+        # Check if simulation year is within range
+        if start_year is not None and simulation_year < start_year:
+            return False
+        if end_year is not None and simulation_year > end_year:
+            return False
+
+        return True
+
     def calculate_budget_income(self, simulation_year: int, current_cpi: np.ndarray, p1_retired: bool, p2_retired: bool) -> np.ndarray:
         """Calculate total income from budget categories for a given year (Vectorized)"""
         if not self.profile.budget:
@@ -678,15 +713,15 @@ class RetirementModel:
 
         budget = self.profile.budget
         expenses_section = budget.get('expenses', {})
-        
-        # Blended Budget Logic: 
+
+        # Blended Budget Logic:
         # Both working -> 100% current
         # One retired -> 50% current / 50% future
         # Both retired -> 100% future
         retirement_weight = 0.0
         if p1_retired: retirement_weight += 0.5
         if p2_retired: retirement_weight += 0.5
-        
+
         def get_period_expenses(period):
             period_total = np.zeros_like(current_cpi)
             for category in ['housing', 'transportation', 'food', 'healthcare',
@@ -694,6 +729,10 @@ class RetirementModel:
                 cat_data = expenses_section.get(period, {}).get(category, {})
                 amount = cat_data.get('amount', 0)
                 amount = self._annual_amount(amount, cat_data.get('frequency', 'monthly'))
+
+                # Check if expense is active in this simulation year
+                if not self._is_expense_active(cat_data, simulation_year):
+                    continue
 
                 if category == 'housing' and np.any(housing_costs > 0):
                     period_total += housing_costs

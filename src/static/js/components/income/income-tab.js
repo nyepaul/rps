@@ -224,6 +224,17 @@ function renderIncomeStreamRow(stream, index) {
 function makeIncomeRowEditable(rowElement, stream, index, incomeStreams, parentContainer) {
     const originalHTML = rowElement.innerHTML;
 
+    // Get retirement date for pre-populating end date
+    const profile = store.get('currentProfile');
+    const retirementDate = profile?.retirement_date || '';
+
+    // Pre-populate end date with retirement date if no end date is specified
+    // (income typically ends at retirement)
+    let defaultEndDate = stream.end_date || '';
+    if (!stream.end_date && retirementDate) {
+        defaultEndDate = retirementDate;
+    }
+
     rowElement.innerHTML = `
         <div style="padding: 10px 12px; background: var(--bg-tertiary); border-radius: 6px; border: 2px solid var(--accent-color);">
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px 10px; margin-bottom: 10px;">
@@ -252,7 +263,7 @@ function makeIncomeRowEditable(rowElement, stream, index, incomeStreams, parentC
                     <label style="display: block; font-size: 9px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;">
                         End Date
                     </label>
-                    <input type="date" name="end_date" value="${stream.end_date || ''}"
+                    <input type="date" name="end_date" value="${defaultEndDate}"
                            style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
                 </div>
                 <div style="grid-column: 1 / -1;">
