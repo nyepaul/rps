@@ -261,16 +261,16 @@ export async function showArticle(article) {
 
 export function renderLearnTab(container) {
     container.innerHTML = `
-        <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
-            <h1 style="font-size: 36px; margin-bottom: 10px;">Learning Hub</h1>
-            <p style="color: var(--text-secondary); margin-bottom: 30px;">
+        <div style="max-width: 1200px; margin: 0 auto; padding: var(--space-5);">
+            <h1 style="font-size: var(--font-3xl); margin-bottom: var(--space-3);">Learning Hub</h1>
+            <p style="color: var(--text-secondary); margin-bottom: var(--space-6);">
                 Master retirement planning concepts and strategies
             </p>
 
-            <div style="display: grid; gap: 20px;">
+            <div style="display: grid; gap: var(--space-5);">
                 ${Object.entries(ARTICLES).map(([key, category]) => `
                     <div class="learn-section">
-                        <h2 style="font-size: 24px; margin-bottom: 20px;">${category.icon} ${category.section}</h2>
+                        <h2 style="font-size: var(--font-2xl); margin-bottom: var(--space-5);">${category.icon} ${category.section}</h2>
                         <div class="article-grid">
                             ${category.articles.map(article => `
                                 <div class="article-card" data-article-id="${article.id}">
@@ -288,17 +288,17 @@ export function renderLearnTab(container) {
         <style>
             .learn-section {
                 background: var(--bg-secondary);
-                padding: 30px;
+                padding: var(--space-6);
                 border-radius: 12px;
             }
             .article-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                gap: 20px;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: var(--space-5);
             }
             .article-card {
                 background: var(--bg-primary);
-                padding: 20px;
+                padding: var(--space-5);
                 border-radius: 8px;
                 border: 2px solid var(--border-color);
                 transition: all 0.2s;
@@ -310,24 +310,24 @@ export function renderLearnTab(container) {
                 box-shadow: 0 4px 12px var(--shadow);
             }
             .article-card h3 {
-                font-size: 18px;
-                margin-bottom: 10px;
+                font-size: var(--font-lg);
+                margin-bottom: var(--space-3);
                 color: var(--text-primary);
             }
             .article-card p {
                 color: var(--text-secondary);
-                margin-bottom: 15px;
+                margin-bottom: var(--space-4);
                 line-height: 1.5;
-                font-size: 14px;
+                font-size: var(--font-base);
             }
             .learn-btn {
-                padding: 8px 16px;
+                padding: var(--space-2) var(--space-4);
                 background: var(--accent-color);
                 color: white;
                 border: none;
                 border-radius: 6px;
                 cursor: pointer;
-                font-size: 14px;
+                font-size: var(--font-base);
                 transition: all 0.2s;
             }
             .learn-btn:hover {

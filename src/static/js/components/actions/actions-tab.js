@@ -13,13 +13,13 @@ export function renderActionsTab(container) {
 
     if (!profile) {
         container.innerHTML = `
-            <div style="text-align: center; padding: 60px 20px;">
-                <div style="font-size: 64px; margin-bottom: 20px;">✅</div>
-                <h2 style="margin-bottom: 15px;">No Profile Selected</h2>
-                <p style="color: var(--text-secondary); margin-bottom: 30px;">
+            <div style="text-align: center; padding: var(--space-8) var(--space-5);">
+                <div style="font-size: 64px; margin-bottom: var(--space-5);">✅</div>
+                <h2 style="margin-bottom: var(--space-4);">No Profile Selected</h2>
+                <p style="color: var(--text-secondary); margin-bottom: var(--space-6);">
                     Please create or select a profile to view action items.
                 </p>
-                <button onclick="window.app.showTab('welcome')" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <button onclick="window.app.showTab('welcome')" style="padding: var(--space-3) var(--space-6); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-md);">
                     Go to Welcome
                 </button>
             </div>
@@ -28,33 +28,33 @@ export function renderActionsTab(container) {
     }
 
     container.innerHTML = `
-        <div style="max-width: 1000px; margin: 0 auto; padding: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <div style="max-width: 1000px; margin: 0 auto; padding: var(--space-5);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-6); flex-wrap: wrap; gap: var(--space-4);">
                 <div>
-                    <h1 style="font-size: 36px; margin-bottom: 10px;">Action Items</h1>
+                    <h1 style="font-size: var(--font-3xl); margin-bottom: var(--space-3);">Action Items</h1>
                     <p style="color: var(--text-secondary);">
                         Profile: <strong>${profile.name}</strong>
                     </p>
                 </div>
-                <div style="display: flex; gap: 10px;">
-                    <button id="generate-actions-btn" style="padding: 12px 24px; background: var(--info-bg); color: var(--info-color); border: 1px solid var(--info-color); border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                    <button id="generate-actions-btn" style="padding: var(--space-3) var(--space-6); background: var(--info-bg); color: var(--info-color); border: 1px solid var(--info-color); border-radius: 6px; cursor: pointer; font-size: var(--font-md);">
                         💡 Generate Recommendations
                     </button>
-                    <button id="add-action-btn" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                    <button id="add-action-btn" style="padding: var(--space-3) var(--space-6); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-md);">
                         + Add Action Item
                     </button>
                 </div>
             </div>
 
             <!-- Filter Tabs -->
-            <div style="display: flex; gap: 10px; margin-bottom: 30px; border-bottom: 2px solid var(--border-color);">
-                <button class="filter-tab active" data-filter="all" style="padding: 12px 24px; background: none; border: none; cursor: pointer; font-size: 16px; font-weight: 600; border-bottom: 3px solid var(--accent-color); color: var(--accent-color);">
+            <div style="display: flex; gap: var(--space-3); margin-bottom: var(--space-6); border-bottom: 2px solid var(--border-color); flex-wrap: wrap;">
+                <button class="filter-tab active" data-filter="all" style="padding: var(--space-3) var(--space-6); background: none; border: none; cursor: pointer; font-size: var(--font-md); font-weight: 600; border-bottom: 3px solid var(--accent-color); color: var(--accent-color);">
                     All (<span id="count-all">0</span>)
                 </button>
-                <button class="filter-tab" data-filter="pending" style="padding: 12px 24px; background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-secondary); border-bottom: 3px solid transparent;">
+                <button class="filter-tab" data-filter="pending" style="padding: var(--space-3) var(--space-6); background: none; border: none; cursor: pointer; font-size: var(--font-md); color: var(--text-secondary); border-bottom: 3px solid transparent;">
                     To Do (<span id="count-pending">0</span>)
                 </button>
-                <button class="filter-tab" data-filter="completed" style="padding: 12px 24px; background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-secondary); border-bottom: 3px solid transparent;">
+                <button class="filter-tab" data-filter="completed" style="padding: var(--space-3) var(--space-6); background: none; border: none; cursor: pointer; font-size: var(--font-md); color: var(--text-secondary); border-bottom: 3px solid transparent;">
                     Completed (<span id="count-completed">0</span>)
                 </button>
             </div>
@@ -73,11 +73,11 @@ export function renderActionsTab(container) {
             }
             .action-item {
                 background: var(--bg-secondary);
-                padding: 20px;
+                padding: var(--space-5);
                 border-radius: 12px;
-                margin-bottom: 15px;
+                margin-bottom: var(--space-4);
                 display: flex;
-                gap: 15px;
+                gap: var(--space-4);
                 align-items: flex-start;
                 transition: all 0.2s;
                 border: 2px solid transparent;
