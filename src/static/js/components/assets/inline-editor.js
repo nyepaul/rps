@@ -85,9 +85,21 @@ export function makeRowEditable(rowElement, asset, category, index, onSave, onCa
 
     // Handle cancel
     const cancelBtn = rowElement.querySelector('.cancel-inline-edit');
-    cancelBtn.addEventListener('click', () => {
+    cancelBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         rowElement.innerHTML = originalHTML;
         if (onCancel) onCancel();
+    });
+
+    // Click anywhere except Save button to cancel
+    const editContainer = rowElement.querySelector('div');
+    editContainer.addEventListener('click', (e) => {
+        // Only close if not clicking on Save button or input fields
+        if (!e.target.closest('.save-inline-edit') && !e.target.closest('input, select, textarea, label')) {
+            e.stopPropagation();
+            rowElement.innerHTML = originalHTML;
+            if (onCancel) onCancel();
+        }
     });
 
     // Focus first input

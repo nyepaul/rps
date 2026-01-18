@@ -1338,9 +1338,21 @@ function makeExpenseRowEditable(rowElement, category, expense, parentContainer) 
 
     // Handle cancel
     const cancelBtn = rowElement.querySelector('.cancel-inline-edit');
-    cancelBtn.addEventListener('click', () => {
+    cancelBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         rowElement.innerHTML = originalHTML;
         rowElement.classList.remove('editing');
+    });
+
+    // Click anywhere except Save button to cancel
+    const editContainer = rowElement.querySelector('div');
+    editContainer.addEventListener('click', (e) => {
+        // Only close if not clicking on Save button or input fields
+        if (!e.target.closest('.save-inline-edit') && !e.target.closest('input, select, textarea, label')) {
+            e.stopPropagation();
+            rowElement.innerHTML = originalHTML;
+            rowElement.classList.remove('editing');
+        }
     });
 
     // Focus first input
