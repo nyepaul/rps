@@ -150,31 +150,6 @@ export function renderSetupChecklist() {
         </div>
     `;
 
-    // Add event listeners
-    const closeBtn = modal.querySelector('#close-setup-modal');
-    closeBtn.addEventListener('click', () => modal.remove());
-
-    // Close on background click
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.remove();
-        }
-    });
-
-    // Add click handlers for "Go to" buttons
-    modal.querySelectorAll('.go-to-tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const tab = btn.getAttribute('data-tab');
-            modal.remove();
-
-            // Trigger tab change
-            const tabButton = document.querySelector(`.tab[data-tab="${tab}"]`);
-            if (tabButton) {
-                tabButton.click();
-            }
-        });
-    });
-
     return modal;
 }
 
@@ -191,6 +166,45 @@ export function showSetupChecklist() {
     const modal = renderSetupChecklist();
     if (modal) {
         document.body.appendChild(modal);
+
+        // Add event listeners after modal is in DOM
+        // Close button handler
+        const closeBtn = modal.querySelector('#close-setup-modal');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                modal.remove();
+            });
+        } else {
+            console.error('Close button not found in setup modal');
+        }
+
+        // Add click handlers for "Go to" buttons
+        const goToButtons = modal.querySelectorAll('.go-to-tab-btn');
+        if (goToButtons.length > 0) {
+            goToButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const tab = btn.getAttribute('data-tab');
+                    modal.remove();
+
+                    // Trigger tab change
+                    const tabButton = document.querySelector(`.tab[data-tab="${tab}"]`);
+                    if (tabButton) {
+                        tabButton.click();
+                    }
+                });
+            });
+        }
+
+        // Close on background click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
     }
 }
 
