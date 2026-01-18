@@ -352,6 +352,7 @@ def update_super_admin_status(user_id: int):
     Grant or revoke super admin status (super admin only).
 
     Only super admins can grant/revoke super admin privileges.
+    When granting super admin status, the user is automatically promoted to admin as well.
     Super admins can view feedback content and manage other super admins.
 
     Request body:
@@ -371,26 +372,26 @@ def update_super_admin_status(user_id: int):
         if not user:
             return jsonify({'error': 'User not found'}), 404
 
-        # Debug logging
-        print(f"DEBUG: Fetched user {user.username} (id={user.id})")
-        print(f"DEBUG: user._is_admin = {user._is_admin}, type = {type(user._is_admin)}")
-        print(f"DEBUG: user.is_admin = {user.is_admin}, type = {type(user.is_admin)}")
-
-        # Require target user to be an admin first
-        if not user.is_admin:
-            return jsonify({'error': 'User must be an admin before becoming super admin'}), 400
-
         # Prevent self-demotion from super admin
         if user_id == current_user.id and not is_super_admin:
             return jsonify({'error': 'Cannot revoke your own super admin status'}), 400
 
         # Update super admin status
+        # When granting super admin, automatically promote to admin as well
         with db.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute(
-                'UPDATE users SET is_super_admin = ? WHERE id = ?',
-                (1 if is_super_admin else 0, user_id)
-            )
+            if is_super_admin:
+                # Granting super admin: also set is_admin=1
+                cursor.execute(
+                    'UPDATE users SET is_super_admin = ?, is_admin = ? WHERE id = ?',
+                    (1, 1, user_id)
+                )
+            else:
+                # Revoking super admin: only update is_super_admin
+                cursor.execute(
+                    'UPDATE users SET is_super_admin = ? WHERE id = ?',
+                    (0, user_id)
+                )
             conn.commit()
 
         # Log admin action

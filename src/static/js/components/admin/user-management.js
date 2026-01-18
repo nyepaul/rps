@@ -163,16 +163,13 @@ function setupUserActionHandlers(container) {
         btn.addEventListener('click', async () => {
             const userId = parseInt(btn.getAttribute('data-user-id'));
             const isSuperAdmin = btn.getAttribute('data-is-super-admin') === 'true';
-            const isAdmin = btn.getAttribute('data-is-admin') === 'true';
-
-            // Validation: user must be admin first
-            if (!isAdmin && !isSuperAdmin) {
-                showError('User must be an admin before becoming super admin');
-                return;
-            }
 
             const action = isSuperAdmin ? 'revoke super admin privileges from' : 'grant super admin privileges to';
-            if (confirm(`Are you sure you want to ${action} this user?`)) {
+            const message = isSuperAdmin
+                ? `Are you sure you want to ${action} this user?`
+                : `Are you sure you want to ${action} this user? (User will also be promoted to admin if needed)`;
+
+            if (confirm(message)) {
                 await toggleUserSuperAdmin(userId, !isSuperAdmin);
                 await renderUserManagement(container);  // Refresh
             }
@@ -251,15 +248,18 @@ async function toggleUserSuperAdmin(userId, isSuperAdmin) {
         await apiClient.put(`/api/admin/users/${userId}/super-admin`, {
             is_super_admin: isSuperAdmin
         });
-        showSuccess(`User ${isSuperAdmin ? 'granted super admin privileges' : 'revoked from super admin'} successfully`);
+        const message = isSuperAdmin
+            ? 'User granted super admin privileges successfully (and promoted to admin if needed)'
+            : 'User revoked from super admin successfully';
+        showSuccess(message);
     } catch (error) {
         console.error('Failed to update super admin status:', error);
 
         // Show specific error message
-        if (error.message.includes('must be an admin')) {
-            showError('User must be an admin before becoming super admin');
-        } else if (error.message.includes('Super admin privileges required')) {
+        if (error.message.includes('Super admin privileges required')) {
             showError('Only super admins can manage super admin status');
+        } else if (error.message.includes('Cannot revoke your own')) {
+            showError('You cannot revoke your own super admin status');
         } else {
             showError(`Failed to update super admin status: ${error.message}`);
         }
