@@ -169,7 +169,7 @@ export function showAssetWizard(preselectedCategory = null, existingAsset = null
     wizard.style.cssText = `
         background: var(--bg-secondary);
         border-radius: 12px;
-        max-width: 700px;
+        max-width: 900px;
         width: 100%;
         max-height: 90vh;
         overflow-y: auto;
@@ -363,7 +363,7 @@ function renderStep2AssetForm(state) {
                     <div style="font-size: 12px; color: var(--text-secondary);">Enter the details below</div>
                 </div>
             </div>
-            <form id="asset-form" style="display: grid; gap: 20px;">
+            <form id="asset-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
                 ${state.isEditing ? '' : `<input type="hidden" name="type" value="${state.assetData.type}">`}
                 ${generateFormFields(state.category, state.assetData, !state.isEditing, state.isEditing ? getAllAccountTypeOptions() : null)}
             </form>
