@@ -15,6 +15,7 @@ from src.routes.skills import skills_bp
 from src.routes.reports import reports_bp
 from src.routes.admin import admin_bp
 from src.routes.feedback import feedback_bp
+from src.routes.roadmap import roadmap_bp
 from src.__version__ import __version__, __release_date__, __release_notes__
 import os
 import logging
@@ -42,6 +43,7 @@ def create_app(config_name='development'):
     app.register_blueprint(reports_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(feedback_bp)
+    app.register_blueprint(roadmap_bp)
 
     # Configure logging
     if not app.debug:
