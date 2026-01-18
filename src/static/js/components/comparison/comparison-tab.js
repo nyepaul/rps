@@ -21,13 +21,13 @@ export async function renderComparisonTab(container) {
 
     if (!profile) {
         container.innerHTML = `
-            <div style="text-align: center; padding: 60px 20px;">
-                <div style="font-size: 64px; margin-bottom: 20px;">📊</div>
-                <h2 style="margin-bottom: 15px;">No Profile Selected</h2>
-                <p style="color: var(--text-secondary); margin-bottom: 30px;">
+            <div style="text-align: center; padding: var(--space-8) var(--space-5);">
+                <div style="font-size: 64px; margin-bottom: var(--space-5);">📊</div>
+                <h2 style="margin-bottom: var(--space-4);">No Profile Selected</h2>
+                <p style="color: var(--text-secondary); margin-bottom: var(--space-6);">
                     Please create or select a profile to compare scenarios.
                 </p>
-                <button onclick="window.app.showTab('welcome')" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <button onclick="window.app.showTab('welcome')" style="padding: var(--space-3) var(--space-6); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-md);">
                     Go to Welcome
                 </button>
             </div>
@@ -56,13 +56,13 @@ export async function renderComparisonTab(container) {
 
 function renderEmptyState(container, profile) {
     container.innerHTML = `
-        <div style="max-width: 800px; margin: 0 auto; padding: 40px; text-align: center;">
-            <div style="font-size: 64px; margin-bottom: 20px;">📊</div>
-            <h2 style="margin-bottom: 15px;">No Saved Scenarios</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 30px;">
+        <div style="max-width: 800px; margin: 0 auto; padding: var(--space-8); text-align: center;">
+            <div style="font-size: 64px; margin-bottom: var(--space-5);">📊</div>
+            <h2 style="margin-bottom: var(--space-4);">No Saved Scenarios</h2>
+            <p style="color: var(--text-secondary); margin-bottom: var(--space-6);">
                 Run an analysis and save it as a scenario to compare different strategies.
             </p>
-            <button onclick="window.app.showTab('analysis')" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+            <button onclick="window.app.showTab('analysis')" style="padding: var(--space-3) var(--space-6); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-md);">
                 Run Analysis
             </button>
         </div>
@@ -71,10 +71,10 @@ function renderEmptyState(container, profile) {
 
 function renderComparisonView(container, profile, scenarios) {
     container.innerHTML = `
-        <div style="max-width: 1400px; margin: 0 auto; padding: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px;">
+        <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-5);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-6); flex-wrap: wrap; gap: var(--space-4);">
                 <div>
-                    <h1 style="font-size: 28px; margin-bottom: 5px;">Scenario Comparison</h1>
+                    <h1 style="font-size: var(--font-3xl); margin-bottom: var(--space-1);">Scenario Comparison</h1>
                     <p style="color: var(--text-secondary);">
                         ${scenarios.length} saved scenario${scenarios.length !== 1 ? 's' : ''} for <strong>${profile.name}</strong>
                     </p>
