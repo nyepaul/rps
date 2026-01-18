@@ -48,16 +48,16 @@ export function renderAccountsTab(container) {
     const totalAssets = liquidAssets + retirementAssets + realEstateAssets + otherAssets;
 
     container.innerHTML = `
-        <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
-            <h1 style="font-size: 36px; margin-bottom: 10px;">Account Management</h1>
-            <p style="color: var(--text-secondary); margin-bottom: 30px;">
+        <div style="max-width: 1200px; margin: 0 auto; padding: var(--space-5);">
+            <h1 style="font-size: var(--font-3xl); margin-bottom: var(--space-3);">Account Management</h1>
+            <p style="color: var(--text-secondary); margin-bottom: var(--space-6);">
                 Profile: <strong>${profile.name}</strong>
             </p>
 
             <!-- Account Overview -->
-            <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; margin-bottom: 30px;">
-                <h2 style="font-size: 24px; margin-bottom: 20px;">Account Summary</h2>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+            <div style="background: var(--bg-secondary); padding: var(--space-6); border-radius: 12px; margin-bottom: var(--space-6);">
+                <h2 style="font-size: var(--font-2xl); margin-bottom: var(--space-5);">Account Summary</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-5);">
                     <div class="account-card" data-category="liquid" style="cursor: pointer;">
                         <div class="account-icon">💵</div>
                         <div class="account-type">Liquid Assets</div>
@@ -79,72 +79,72 @@ export function renderAccountsTab(container) {
                 </div>
 
                 <!-- Asset List Container -->
-                <div id="asset-list-container" style="margin-top: 30px; display: none; border-top: 1px solid var(--border-color); padding-top: 20px; animation: fadeIn 0.3s ease-in-out;">
+                <div id="asset-list-container" style="margin-top: var(--space-6); display: none; border-top: 1px solid var(--border-color); padding-top: var(--space-5); animation: fadeIn 0.3s ease-in-out;">
                     <!-- Content will be injected here -->
                 </div>
             </div>
 
             <!-- Withdrawal Strategy -->
-            <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; margin-bottom: 30px;">
-                <h2 style="font-size: 24px; margin-bottom: 20px;">Withdrawal Strategy</h2>
-                <p style="color: var(--text-secondary); margin-bottom: 25px;">
+            <div style="background: var(--bg-secondary); padding: var(--space-6); border-radius: 12px; margin-bottom: var(--space-6);">
+                <h2 style="font-size: var(--font-2xl); margin-bottom: var(--space-5);">Withdrawal Strategy</h2>
+                <p style="color: var(--text-secondary); margin-bottom: var(--space-5);">
                     Plan which accounts to withdraw from first to minimize taxes and maximize portfolio longevity. Click each section to see constituent accounts.
                 </p>
 
-                <div style="display: grid; gap: 15px;">
+                <div style="display: grid; gap: var(--space-4);">
                     <!-- Taxable Section -->
-                    <div class="strategy-card" data-target="list-taxable" style="background: var(--bg-primary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--success-color); cursor: pointer; transition: transform 0.2s;">
+                    <div class="strategy-card" data-target="list-taxable" style="background: var(--bg-primary); padding: var(--space-5); border-radius: 8px; border-left: 4px solid var(--success-color); cursor: pointer; transition: transform 0.2s;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <h3 style="margin-bottom: 10px;">1️⃣ Taxable Accounts First</h3>
+                            <h3 style="margin-bottom: var(--space-3);">1️⃣ Taxable Accounts First</h3>
                             <span class="toggle-icon">▶</span>
                         </div>
-                        <p style="color: var(--text-secondary); font-size: 14px;">
+                        <p style="color: var(--text-secondary); font-size: var(--font-base);">
                             Withdraw from taxable accounts early to allow tax-advantaged accounts to grow longer.
                         </p>
-                        <div id="list-taxable" style="display: none; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                        <div id="list-taxable" style="display: none; margin-top: var(--space-4); border-top: 1px solid var(--border-color); padding-top: var(--space-3);">
                             ${renderConstituentAccounts(taxableAccounts)}
                         </div>
                     </div>
 
                     <!-- Tax-Deferred Section -->
-                    <div class="strategy-card" data-target="list-deferred" style="background: var(--bg-primary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--info-color); cursor: pointer; transition: transform 0.2s;">
+                    <div class="strategy-card" data-target="list-deferred" style="background: var(--bg-primary); padding: var(--space-5); border-radius: 8px; border-left: 4px solid var(--info-color); cursor: pointer; transition: transform 0.2s;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <h3 style="margin-bottom: 10px;">2️⃣ Tax-Deferred Accounts Second</h3>
+                            <h3 style="margin-bottom: var(--space-3);">2️⃣ Tax-Deferred Accounts Second</h3>
                             <span class="toggle-icon">▶</span>
                         </div>
-                        <p style="color: var(--text-secondary); font-size: 14px;">
+                        <p style="color: var(--text-secondary); font-size: var(--font-base);">
                             Traditional 401(k) and IRA withdrawals are taxed as ordinary income. Use after taxable accounts.
                         </p>
-                        <div id="list-deferred" style="display: none; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                        <div id="list-deferred" style="display: none; margin-top: var(--space-4); border-top: 1px solid var(--border-color); padding-top: var(--space-3);">
                             ${renderConstituentAccounts(taxDeferredAccounts)}
                         </div>
                     </div>
 
                     <!-- Roth Section -->
-                    <div class="strategy-card" data-target="list-roth" style="background: var(--bg-primary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-color); cursor: pointer; transition: transform 0.2s;">
+                    <div class="strategy-card" data-target="list-roth" style="background: var(--bg-primary); padding: var(--space-5); border-radius: 8px; border-left: 4px solid var(--accent-color); cursor: pointer; transition: transform 0.2s;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <h3 style="margin-bottom: 10px;">3️⃣ Roth Accounts Last</h3>
+                            <h3 style="margin-bottom: var(--space-3);">3️⃣ Roth Accounts Last</h3>
                             <span class="toggle-icon">▶</span>
                         </div>
-                        <p style="color: var(--text-secondary); font-size: 14px;">
+                        <p style="color: var(--text-secondary); font-size: var(--font-base);">
                             Let Roth accounts grow tax-free as long as possible. These provide maximum flexibility.
                         </p>
-                        <div id="list-roth" style="display: none; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                        <div id="list-roth" style="display: none; margin-top: var(--space-4); border-top: 1px solid var(--border-color); padding-top: var(--space-3);">
                             ${renderConstituentAccounts(rothAccounts)}
                         </div>
                     </div>
                 </div>
 
-                <div style="margin-top: 25px; padding: 20px; background: var(--warning-bg); border-radius: 8px;">
+                <div style="margin-top: var(--space-5); padding: var(--space-5); background: var(--warning-bg); border-radius: 8px;">
                     <strong>⚠️ Important Considerations:</strong>
-                    <ul style="margin: 10px 0; padding-left: 20px; color: var(--text-secondary);">
-                        <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Required Minimum Distributions (RMDs)" data-title="RMD Rules" style="cursor: pointer; color: var(--accent-color); text-decoration: underline; margin-bottom: 5px;">
+                    <ul style="margin: var(--space-3) 0; padding-left: var(--space-5); color: var(--text-secondary);">
+                        <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Required Minimum Distributions (RMDs)" data-title="RMD Rules" style="cursor: pointer; color: var(--accent-color); text-decoration: underline; margin-bottom: var(--space-1);">
                             Required Minimum Distributions (RMDs) start at age 73
                         </li>
-                        <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Social Security Taxation" data-title="Social Security Taxes" style="cursor: pointer; color: var(--accent-color); text-decoration: underline; margin-bottom: 5px;">
+                        <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Social Security Taxation" data-title="Social Security Taxes" style="cursor: pointer; color: var(--accent-color); text-decoration: underline; margin-bottom: var(--space-1);">
                             Social Security benefits may be taxed depending on income
                         </li>
-                        <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Federal Income Tax Brackets (2024)" data-title="Tax Bracket Management" style="cursor: pointer; color: var(--accent-color); text-decoration: underline; margin-bottom: 5px;">
+                        <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Federal Income Tax Brackets (2024)" data-title="Tax Bracket Management" style="cursor: pointer; color: var(--accent-color); text-decoration: underline; margin-bottom: var(--space-1);">
                             Consider tax bracket management in each year
                         </li>
                         <li class="learn-link" data-skill="healthcare-gap-SKILL.md" data-section="Bridging the Gap (Pre-65)" data-title="Healthcare Subsidies" style="cursor: pointer; color: var(--accent-color); text-decoration: underline;">
@@ -155,15 +155,15 @@ export function renderAccountsTab(container) {
             </div>
 
             <!-- Rebalancing and Asset Allocation -->
-            <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; margin-bottom: 30px;" id="rebalancing-section">
-                <h2 style="font-size: 24px; margin-bottom: 20px;">Asset Allocation & Rebalancing</h2>
-                <p style="color: var(--text-secondary); margin-bottom: 25px;">
+            <div style="background: var(--bg-secondary); padding: var(--space-6); border-radius: 12px; margin-bottom: var(--space-6);" id="rebalancing-section">
+                <h2 style="font-size: var(--font-2xl); margin-bottom: var(--space-5);">Asset Allocation & Rebalancing</h2>
+                <p style="color: var(--text-secondary); margin-bottom: var(--space-5);">
                     Analyze your current aggregate allocation across all accounts and get tax-efficient rebalancing suggestions.
                 </p>
-                
-                <div style="background: var(--bg-primary); padding: 25px; border-radius: 8px; margin-bottom: 25px; border: 1px solid var(--border-color);">
-                    <h3 style="font-size: 18px; margin-bottom: 15px;">Set Target Allocation</h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px;">
+
+                <div style="background: var(--bg-primary); padding: var(--space-5); border-radius: 8px; margin-bottom: var(--space-5); border: 1px solid var(--border-color);">
+                    <h3 style="font-size: var(--font-lg); margin-bottom: var(--space-4);">Set Target Allocation</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-5);">
                         <div class="form-group">
                             <label>Stocks (%)</label>
                             <input type="number" id="target-stocks" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" value="60" min="0" max="100">
@@ -224,7 +224,7 @@ export function renderAccountsTab(container) {
         <style>
             .account-card {
                 background: var(--bg-primary);
-                padding: 25px;
+                padding: var(--space-5);
                 border-radius: 8px;
                 text-align: center;
                 border: 2px solid var(--border-color);
@@ -237,23 +237,23 @@ export function renderAccountsTab(container) {
             }
             .account-icon {
                 font-size: 48px;
-                margin-bottom: 15px;
+                margin-bottom: var(--space-4);
             }
             .account-type {
-                font-size: 14px;
+                font-size: var(--font-base);
                 color: var(--text-secondary);
-                margin-bottom: 10px;
+                margin-bottom: var(--space-3);
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
             }
             .account-balance {
-                font-size: 28px;
+                font-size: var(--font-3xl);
                 font-weight: bold;
                 color: var(--accent-color);
-                margin-bottom: 10px;
+                margin-bottom: var(--space-3);
             }
             .account-desc {
-                font-size: 13px;
+                font-size: var(--font-sm);
                 color: var(--text-light);
             }
             .rmd-info-box:hover {
@@ -275,18 +275,18 @@ export function renderAccountsTab(container) {
  */
 function renderConstituentAccounts(accounts) {
     if (!accounts || accounts.length === 0) {
-        return '<p style="font-size: 13px; color: var(--text-light); font-style: italic;">No accounts found in this category.</p>';
+        return '<p style="font-size: var(--font-sm); color: var(--text-light); font-style: italic;">No accounts found in this category.</p>';
     }
 
     return `
-        <div style="display: grid; gap: 8px;">
+        <div style="display: grid; gap: var(--space-2);">
             ${accounts.map(acc => `
-                <div style="display: flex; justify-content: space-between; font-size: 14px; padding: 4px 0;">
+                <div style="display: flex; justify-content: space-between; font-size: var(--font-base); padding: var(--space-1) 0;">
                     <span>${acc.name}</span>
                     <span style="font-family: monospace; font-weight: 500;">${formatCurrency(acc.value, 0)}</span>
                 </div>
             `).join('')}
-            <div style="border-top: 1px dashed var(--border-color); margin-top: 5px; padding-top: 5px; display: flex; justify-content: space-between; font-weight: bold; font-size: 14px;">
+            <div style="border-top: 1px dashed var(--border-color); margin-top: var(--space-1); padding-top: var(--space-1); display: flex; justify-content: space-between; font-weight: bold; font-size: var(--font-base);">
                 <span>Total</span>
                 <span>${formatCurrency(accounts.reduce((sum, a) => sum + (a.value || 0), 0), 0)}</span>
             </div>
