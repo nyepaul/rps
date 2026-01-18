@@ -28,7 +28,7 @@ export function makeRowEditable(rowElement, asset, category, index, onSave, onCa
     // Build inline edit form with optimized multi-column layout
     rowElement.innerHTML = `
         <div style="padding: 12px 15px; background: var(--bg-tertiary); border-radius: 8px; border: 2px solid var(--accent-color);">
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr)); gap: 10px 12px; margin-bottom: 12px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 12px; margin-bottom: 12px;">
                 ${relevantFields.map(field => renderInlineField(field, asset)).join('')}
             </div>
             <div style="display: flex; gap: 8px; justify-content: flex-end; padding-top: 8px; border-top: 1px solid var(--border-color);">
