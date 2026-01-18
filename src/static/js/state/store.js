@@ -12,6 +12,9 @@ class Store {
             actionItems: [],
             isLoading: false,
             currentTab: 'welcome',
+            appVersion: null,
+            appReleaseDate: null,
+            appReleaseNotes: null,
         };
         this.listeners = [];
     }

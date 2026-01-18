@@ -7,6 +7,7 @@ import { apiClient } from './api/client.js';
 import { API_ENDPOINTS, STORAGE_KEYS, APP_CONFIG } from './config.js';
 import { showSetupChecklist, updateSetupButton } from './components/setup/setup-checklist.js';
 import { showFeedbackModal } from './components/feedback/feedback-modal.js';
+import { showRoadmapViewer } from './components/roadmap/roadmap-viewer.js';
 
 /**
  * Initialize application
@@ -35,6 +36,9 @@ async function init() {
 
     // Set up feedback button
     setupFeedback();
+
+    // Set up roadmap link
+    setupRoadmapLink();
 
     // Set up settings button
     setupSettings();
@@ -65,6 +69,12 @@ async function init() {
 async function loadVersion() {
     try {
         const data = await apiClient.get('/api/version');
+        // Store version info in global state
+        store.setState({
+            appVersion: data.version,
+            appReleaseDate: data.release_date,
+            appReleaseNotes: data.release_notes
+        });
         const versionSpan = document.getElementById('app-version');
         if (versionSpan && data.version) {
             versionSpan.textContent = `v${data.version}`;
@@ -312,6 +322,19 @@ function setupFeedback() {
     if (feedbackBtn) {
         feedbackBtn.addEventListener('click', () => {
             showFeedbackModal();
+        });
+    }
+}
+
+/**
+ * Set up roadmap link
+ */
+function setupRoadmapLink() {
+    const roadmapLink = document.getElementById('view-roadmap-link');
+    if (roadmapLink) {
+        roadmapLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            showRoadmapViewer();
         });
     }
 }

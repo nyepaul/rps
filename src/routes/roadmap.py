@@ -17,7 +17,7 @@ def require_super_admin():
     """Check if current user is super admin."""
     if not current_user.is_authenticated:
         return jsonify({'error': 'Not authenticated'}), 401
-    if current_user.role != 'super_admin':
+    if not current_user.is_super_admin:
         return jsonify({'error': 'Super admin access required'}), 403
     return None
 
@@ -87,6 +87,68 @@ def get_roadmap():
 
     except Exception as e:
         logger.error(f"Error fetching roadmap: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@roadmap_bp.route('/api/roadmap/public', methods=['GET'])
+@login_required
+def get_public_roadmap():
+    """Get roadmap items for public viewing - any authenticated user can access."""
+    try:
+        with db.get_connection() as conn:
+            cursor = conn.cursor()
+
+            # Get all non-cancelled items, ordered by priority and phase
+            query = """
+                SELECT id, title, description, category, priority, phase, status,
+                       impact, effort, target_version, created_at
+                FROM feature_roadmap
+                WHERE status != 'cancelled'
+                ORDER BY
+                    CASE priority WHEN 'critical' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 END,
+                    CASE phase WHEN 'phase1' THEN 1 WHEN 'phase2' THEN 2 WHEN 'phase3' THEN 3 WHEN 'backlog' THEN 4 END,
+                    created_at DESC
+            """
+            cursor.execute(query)
+            rows = cursor.fetchall()
+
+            items = []
+            for row in rows:
+                items.append({
+                    'id': row[0],
+                    'title': row[1],
+                    'description': row[2],
+                    'category': row[3],
+                    'priority': row[4],
+                    'phase': row[5],
+                    'status': row[6],
+                    'impact': row[7],
+                    'effort': row[8],
+                    'target_version': row[9],
+                    'created_at': row[10]
+                })
+
+            # Get summary stats
+            cursor.execute("""
+                SELECT status, COUNT(*) FROM feature_roadmap
+                WHERE status != 'cancelled'
+                GROUP BY status
+            """)
+            status_counts = {row[0]: row[1] for row in cursor.fetchall()}
+
+        return jsonify({
+            'items': items,
+            'stats': {
+                'total': len(items),
+                'completed': status_counts.get('completed', 0),
+                'in_progress': status_counts.get('in_progress', 0),
+                'planned': status_counts.get('planned', 0)
+            },
+            'can_edit': current_user.is_super_admin
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error fetching public roadmap: {e}")
         return jsonify({'error': str(e)}), 500
 
 

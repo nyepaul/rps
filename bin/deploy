@@ -27,6 +27,14 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+# Pull latest code from git
+echo -e "${YELLOW}Pulling latest code from git...${NC}"
+cd "$SOURCE_DIR"
+sudo -u paul git pull || {
+    echo -e "${RED}Warning: git pull failed (may have local changes)${NC}"
+    echo -e "${YELLOW}Continuing with current local code...${NC}"
+}
+
 # Create target directory if it doesn't exist
 echo -e "${YELLOW}Creating target directory...${NC}"
 mkdir -p "$TARGET_DIR"
@@ -158,6 +166,15 @@ StandardError=append:$TARGET_DIR/logs/rps-error.log
 [Install]
 WantedBy=multi-user.target
 EOF
+
+# Validate application can start
+echo -e "${YELLOW}Validating application...${NC}"
+cd "$TARGET_DIR"
+if ! "$TARGET_DIR/venv/bin/python" -c "from src.app import create_app; create_app('production')" 2>&1; then
+    echo -e "${RED}Error: Application failed to load. Check for import errors.${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✓ Application validated successfully${NC}"
 
 # Reload systemd
 echo -e "${YELLOW}Reloading systemd...${NC}"

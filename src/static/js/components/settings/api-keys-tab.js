@@ -157,9 +157,9 @@ export function renderAPIKeysTab(container) {
                         </h3>
                         <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.6; margin: 0;">
                             <strong>System:</strong> Retirement Planning System (RPS)<br>
-                            <strong>Version:</strong> 2.0.0<br>
+                            <strong>Version:</strong> ${store.get('appVersion') || 'Loading...'}<br>
                             <strong>Authored by:</strong> pan<br>
-                            <strong>Updated:</strong> January 2026
+                            <strong>Released:</strong> ${store.get('appReleaseDate') || 'Loading...'}
                         </p>
                     </div>
 

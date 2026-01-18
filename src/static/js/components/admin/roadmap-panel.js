@@ -267,21 +267,197 @@ async function applyFilters(container) {
 }
 
 /**
- * Show add item modal
+ * Show add/edit item modal
  */
-function showAddItemModal(container) {
-    // This would open a modal with a form to add a new item
-    // For now, just show an alert
-    alert('Add item modal - TODO: Implement form');
+function showItemModal(container, item = null) {
+    const isEdit = !!item;
+    const modalId = 'roadmap-item-modal';
+
+    // Remove existing modal
+    const existing = document.getElementById(modalId);
+    if (existing) existing.remove();
+
+    const categories = [
+        'Healthcare & Medical', 'Tax Planning', 'Debt Management', 'Education Funding',
+        'Insurance Analysis', 'Social Security', 'Estate Planning', 'Business Owner',
+        'Investment Analysis', 'Life Events', 'Pension & Annuity', 'Real Estate',
+        'RMD Planning', 'Cash Flow', 'Scenario Modeling', 'Withdrawal Strategy',
+        'Family & Legacy', 'Retirement Lifestyle', 'Risk Analysis',
+        'Compliance & Documentation', 'Technical Improvements', 'UI/UX Enhancements'
+    ];
+
+    const modal = document.createElement('div');
+    modal.id = modalId;
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.6); display: flex; align-items: center;
+        justify-content: center; z-index: 10000; padding: 20px;
+    `;
+
+    modal.innerHTML = `
+        <div style="background: var(--bg-primary); border-radius: 12px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+            <div style="padding: 20px 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; font-size: 18px;">${isEdit ? '✏️ Edit' : '➕ Add'} Roadmap Item</h2>
+                <button id="close-item-modal" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">×</button>
+            </div>
+            <form id="roadmap-item-form" style="padding: 24px;">
+                <div style="display: grid; gap: 16px;">
+                    <div>
+                        <label style="display: block; font-weight: 600; margin-bottom: 6px;">Title *</label>
+                        <input type="text" name="title" required value="${item?.title || ''}" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 600; margin-bottom: 6px;">Description</label>
+                        <textarea name="description" rows="3" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; resize: vertical;">${item?.description || ''}</textarea>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div>
+                            <label style="display: block; font-weight: 600; margin-bottom: 6px;">Category *</label>
+                            <select name="category" required style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+                                <option value="">Select...</option>
+                                ${categories.map(c => `<option value="${c}" ${item?.category === c ? 'selected' : ''}>${c}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; font-weight: 600; margin-bottom: 6px;">Priority</label>
+                            <select name="priority" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+                                <option value="low" ${item?.priority === 'low' ? 'selected' : ''}>Low</option>
+                                <option value="medium" ${!item || item?.priority === 'medium' ? 'selected' : ''}>Medium</option>
+                                <option value="high" ${item?.priority === 'high' ? 'selected' : ''}>High</option>
+                                <option value="critical" ${item?.priority === 'critical' ? 'selected' : ''}>Critical</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div>
+                            <label style="display: block; font-weight: 600; margin-bottom: 6px;">Phase</label>
+                            <select name="phase" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+                                <option value="backlog" ${!item || item?.phase === 'backlog' ? 'selected' : ''}>Backlog</option>
+                                <option value="phase1" ${item?.phase === 'phase1' ? 'selected' : ''}>Phase 1</option>
+                                <option value="phase2" ${item?.phase === 'phase2' ? 'selected' : ''}>Phase 2</option>
+                                <option value="phase3" ${item?.phase === 'phase3' ? 'selected' : ''}>Phase 3</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; font-weight: 600; margin-bottom: 6px;">Status</label>
+                            <select name="status" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+                                <option value="planned" ${!item || item?.status === 'planned' ? 'selected' : ''}>Planned</option>
+                                <option value="in_progress" ${item?.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
+                                <option value="completed" ${item?.status === 'completed' ? 'selected' : ''}>Completed</option>
+                                <option value="on_hold" ${item?.status === 'on_hold' ? 'selected' : ''}>On Hold</option>
+                                <option value="cancelled" ${item?.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                        <div>
+                            <label style="display: block; font-weight: 600; margin-bottom: 6px;">Impact</label>
+                            <select name="impact" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+                                <option value="">Not set</option>
+                                <option value="low" ${item?.impact === 'low' ? 'selected' : ''}>Low</option>
+                                <option value="medium" ${item?.impact === 'medium' ? 'selected' : ''}>Medium</option>
+                                <option value="high" ${item?.impact === 'high' ? 'selected' : ''}>High</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; font-weight: 600; margin-bottom: 6px;">Effort</label>
+                            <select name="effort" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+                                <option value="">Not set</option>
+                                <option value="small" ${item?.effort === 'small' ? 'selected' : ''}>Small</option>
+                                <option value="medium" ${item?.effort === 'medium' ? 'selected' : ''}>Medium</option>
+                                <option value="large" ${item?.effort === 'large' ? 'selected' : ''}>Large</option>
+                                <option value="xl" ${item?.effort === 'xl' ? 'selected' : ''}>XL</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; font-weight: 600; margin-bottom: 6px;">Target Version</label>
+                            <input type="text" name="target_version" value="${item?.target_version || ''}" placeholder="e.g., 4.0.0" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+                        </div>
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 600; margin-bottom: 6px;">Notes</label>
+                        <textarea name="notes" rows="2" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; resize: vertical;">${item?.notes || ''}</textarea>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: ${isEdit ? 'space-between' : 'flex-end'}; margin-top: 24px; gap: 12px;">
+                    ${isEdit ? `<button type="button" id="delete-item-btn" style="padding: 10px 20px; background: var(--danger-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Delete</button>` : ''}
+                    <div style="display: flex; gap: 12px;">
+                        <button type="button" id="cancel-item-btn" style="padding: 10px 20px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">Cancel</button>
+                        <button type="submit" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">${isEdit ? 'Save Changes' : 'Add Item'}</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Close handlers
+    const closeModal = () => modal.remove();
+    modal.querySelector('#close-item-modal').addEventListener('click', closeModal);
+    modal.querySelector('#cancel-item-btn').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+    // Delete handler
+    if (isEdit) {
+        modal.querySelector('#delete-item-btn').addEventListener('click', async () => {
+            if (confirm('Are you sure you want to delete this roadmap item?')) {
+                try {
+                    await apiClient.delete(`/api/roadmap/${item.id}`);
+                    showSuccess(container, 'Item deleted');
+                    closeModal();
+                    await renderRoadmapPanel(container);
+                } catch (error) {
+                    showError(container, `Failed to delete: ${error.message}`);
+                }
+            }
+        });
+    }
+
+    // Form submit
+    modal.querySelector('#roadmap-item-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+
+        // Clean empty strings to null
+        Object.keys(data).forEach(key => {
+            if (data[key] === '') data[key] = null;
+        });
+
+        try {
+            if (isEdit) {
+                await apiClient.put(`/api/roadmap/${item.id}`, data);
+                showSuccess(container, 'Item updated');
+            } else {
+                await apiClient.post('/api/roadmap', data);
+                showSuccess(container, 'Item added');
+            }
+            closeModal();
+            await renderRoadmapPanel(container);
+        } catch (error) {
+            showError(container, `Failed to save: ${error.message}`);
+        }
+    });
 }
 
 /**
- * Show item details modal
+ * Show add item modal
  */
-function showItemDetailsModal(container, itemId) {
-    // This would open a modal with item details and edit options
-    // For now, just show an alert
-    alert(`Item details for ID ${itemId} - TODO: Implement details modal`);
+function showAddItemModal(container) {
+    showItemModal(container, null);
+}
+
+/**
+ * Show item details modal for editing
+ */
+async function showItemDetailsModal(container, itemId) {
+    try {
+        const response = await apiClient.get(`/api/roadmap/${itemId}`);
+        showItemModal(container, response.item);
+    } catch (error) {
+        showError(container, `Failed to load item: ${error.message}`);
+    }
 }
 
 export { renderRoadmapItems, setupRoadmapEventHandlers };
