@@ -75,6 +75,65 @@ function getStatusBadge(status) {
 }
 
 /**
+ * Get content HTML based on super admin status
+ */
+function getContentHtml(isSuperAdmin, content, contentLoadError) {
+    if (!isSuperAdmin) {
+        return '';
+    }
+
+    let contentDisplay = '';
+    if (content) {
+        contentDisplay = `
+            <div style="
+                background: var(--bg-tertiary);
+                padding: 16px;
+                border-radius: 8px;
+                border-left: 4px solid var(--accent-color);
+                white-space: pre-wrap;
+                word-wrap: break-word;
+            ">
+                ${content}
+            </div>
+        `;
+    } else if (contentLoadError) {
+        contentDisplay = `
+            <div style="
+                background: var(--danger-bg);
+                padding: 16px;
+                border-radius: 8px;
+                border-left: 4px solid var(--danger-color);
+                color: var(--danger-color);
+            ">
+                ⚠️ Error loading content
+            </div>
+        `;
+    } else {
+        contentDisplay = `
+            <div style="
+                background: var(--bg-tertiary);
+                padding: 16px;
+                border-radius: 8px;
+                text-align: center;
+                color: var(--text-secondary);
+            ">
+                ⏳ Loading content...
+            </div>
+        `;
+    }
+
+    return `
+        <!-- Feedback Content (Super Admin Only) -->
+        <div style="margin-bottom: 24px;">
+            <h3 style="font-size: 16px; font-weight: 600; margin: 0 0 8px 0; color: var(--text-primary);">
+                Content
+            </h3>
+            ${contentDisplay}
+        </div>
+    `;
+}
+
+/**
  * Render feedback details modal
  */
 async function showFeedbackDetails(feedback) {
@@ -160,46 +219,7 @@ async function showFeedbackDetails(feedback) {
 
             <!-- Content -->
             <div style="padding: 24px;">
-                ${isSuperAdmin ? `
-                    <!-- Feedback Content (Super Admin Only) -->
-                    <div style="margin-bottom: 24px;">
-                        <h3 style="font-size: 16px; font-weight: 600; margin: 0 0 8px 0; color: var(--text-primary);">
-                            Content
-                        </h3>
-                        ${content ? `
-                            <div style="
-                                background: var(--bg-tertiary);
-                                padding: 16px;
-                                border-radius: 8px;
-                                border-left: 4px solid var(--accent-color);
-                                white-space: pre-wrap;
-                                word-wrap: break-word;
-                            ">
-                                ${content}
-                            </div>
-                        ` : contentLoadError ? `
-                                <div style="
-                                    background: var(--danger-bg);
-                                    padding: 16px;
-                                    border-radius: 8px;
-                                    border-left: 4px solid var(--danger-color);
-                                    color: var(--danger-color);
-                                ">
-                                    ⚠️ Error loading content
-                                </div>
-                            ` : `
-                                <div style="
-                                    background: var(--bg-tertiary);
-                                    padding: 16px;
-                                    border-radius: 8px;
-                                    text-align: center;
-                                    color: var(--text-secondary);
-                                ">
-                                    ⏳ Loading content...
-                                </div>
-                            `}
-                    </div>
-                ` : ''}
+                ${getContentHtml(isSuperAdmin, content, contentLoadError)}
 
                 <!-- Metadata -->
                 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px;">
