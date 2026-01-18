@@ -1,5 +1,5 @@
 """RPS Version Information"""
 
-__version__ = "2.0.6"
+__version__ = "2.0.7"
 __release_date__ = "2026-01-18"
-__release_notes__ = "Added user deletion capability with cascade delete for admin users"
+__release_notes__ = "Removed user deletion, use deactivation instead for user management"
