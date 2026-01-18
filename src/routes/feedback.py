@@ -257,7 +257,7 @@ def get_all_feedback():
 
     # Execute query
     try:
-        rows = db.execute_all(query, params)
+        rows = db.execute(query, tuple(params))
 
         # Get total count
         count_query = 'SELECT COUNT(*) as count FROM feedback WHERE 1=1'
@@ -272,7 +272,7 @@ def get_all_feedback():
             count_query += ' AND user_id = ?'
             count_params.append(user_id)
 
-        total_count = db.execute_one(count_query, count_params)['count']
+        total_count = db.execute_one(count_query, tuple(count_params))['count']
 
         # Convert rows to list of dicts
         feedback_list = [dict(row) for row in rows]
@@ -437,7 +437,7 @@ def get_my_feedback():
     params.extend([limit, offset])
 
     try:
-        rows = db.execute_all(query, params)
+        rows = db.execute(query, tuple(params))
 
         # Get total count
         count_query = 'SELECT COUNT(*) as count FROM feedback WHERE user_id = ?'
@@ -449,7 +449,7 @@ def get_my_feedback():
             count_query += ' AND status = ?'
             count_params.append(status)
 
-        total_count = db.execute_one(count_query, count_params)['count']
+        total_count = db.execute_one(count_query, tuple(count_params))['count']
 
         feedback_list = [dict(row) for row in rows]
 
