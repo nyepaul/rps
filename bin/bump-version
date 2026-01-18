@@ -1,0 +1,30 @@
+#!/bin/bash
+# Bump version number for cache-busting during debugging
+
+if [ $# -eq 0 ]; then
+    echo "Usage: ./bin/bump-version <new_version> [release_notes]"
+    echo "Example: ./bin/bump-version 2.0.5 'Fixed scenario loading bug'"
+    exit 1
+fi
+
+NEW_VERSION=$1
+RELEASE_NOTES=${2:-"Bug fixes and improvements"}
+RELEASE_DATE=$(date +%Y-%m-%d)
+
+# Update __version__.py
+cat > src/__version__.py <<EOF
+"""RPS Version Information"""
+
+__version__ = "$NEW_VERSION"
+__release_date__ = "$RELEASE_DATE"
+__release_notes__ = "$RELEASE_NOTES"
+EOF
+
+# Update index.html cache-busting parameter
+sed -i "s|/js/main.js?v=.*\"|/js/main.js?v=$NEW_VERSION\"|g" src/static/index.html
+
+echo "✅ Version bumped to $NEW_VERSION"
+echo "📅 Release date: $RELEASE_DATE"
+echo "📝 Notes: $RELEASE_NOTES"
+echo ""
+echo "Don't forget to deploy: sudo ./bin/deploy"

@@ -71,12 +71,54 @@ echo -e "${YELLOW}Installing Python dependencies...${NC}"
 "$TARGET_DIR/venv/bin/pip" install --upgrade pip
 "$TARGET_DIR/venv/bin/pip" install -r "$TARGET_DIR/requirements.txt"
 
+# Run database migrations
+echo -e "${YELLOW}Running database migrations...${NC}"
+DB_FILE="$TARGET_DIR/data/planning.db"
+
+if [ -f "$DB_FILE" ]; then
+    # Backup database before migration
+    BACKUP_FILE="$TARGET_DIR/backups/planning_$(date +%Y%m%d_%H%M%S).db"
+    echo -e "${YELLOW}Creating database backup: $(basename $BACKUP_FILE)${NC}"
+    mkdir -p "$TARGET_DIR/backups"
+    cp "$DB_FILE" "$BACKUP_FILE"
+
+    # Run Alembic migrations
+    echo -e "${YELLOW}Checking for Alembic migrations...${NC}"
+    cd "$TARGET_DIR"
+    if [ -d "migrations" ]; then
+        # Run alembic upgrade
+        "$TARGET_DIR/venv/bin/alembic" upgrade head 2>&1 | grep -v "INFO" | grep -v "Running upgrade" || echo "  ✓ Database schema is up to date"
+    fi
+
+    # Run custom migration scripts if they exist
+    echo -e "${YELLOW}Checking for custom migration scripts...${NC}"
+    if [ -f "$TARGET_DIR/scripts/apply_feedback_migration.py" ]; then
+        echo "  Running feedback table migration..."
+        "$TARGET_DIR/venv/bin/python3" "$TARGET_DIR/scripts/apply_feedback_migration.py" 2>&1 | grep -E "✓|✗|Error" || true
+    fi
+
+    if [ -f "$TARGET_DIR/scripts/apply_feedback_content_migration.py" ]; then
+        echo "  Running feedback content separation migration..."
+        "$TARGET_DIR/venv/bin/python3" "$TARGET_DIR/scripts/apply_feedback_content_migration.py" 2>&1 | grep -E "✓|✗|Error" || true
+    fi
+
+    if [ -f "$TARGET_DIR/scripts/add_super_admin_flag.py" ]; then
+        echo "  Running super admin flag migration..."
+        "$TARGET_DIR/venv/bin/python3" "$TARGET_DIR/scripts/add_super_admin_flag.py" 2>&1 | grep -E "✓|✗|Error|already exists" || true
+    fi
+
+    echo -e "${GREEN}✓ Database migrations completed${NC}"
+else
+    echo -e "${YELLOW}Database does not exist yet - will be created on first run${NC}"
+fi
+
 # Set ownership to www-data
 echo -e "${YELLOW}Setting file ownership to www-data...${NC}"
 chown -R www-data:www-data "$TARGET_DIR"
 chmod -R 755 "$TARGET_DIR"
 chmod -R 775 "$TARGET_DIR/data"
 chmod -R 775 "$TARGET_DIR/logs"
+chmod -R 775 "$TARGET_DIR/backups" 2>/dev/null || mkdir -p "$TARGET_DIR/backups" && chmod -R 775 "$TARGET_DIR/backups"
 
 # Copy Apache configuration
 echo -e "${YELLOW}Installing Apache configuration...${NC}"

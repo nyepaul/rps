@@ -3,7 +3,7 @@
 Authored by: pan
 Co-Authored by: Claude (Anthropic AI)
 """
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, jsonify
 from src.config import config
 from src.extensions import init_extensions
 from src.auth.routes import auth_bp
@@ -16,6 +16,7 @@ from src.routes.skills import skills_bp
 from src.routes.reports import reports_bp
 from src.routes.admin import admin_bp
 from src.routes.feedback import feedback_bp
+from src.__version__ import __version__, __release_date__, __release_notes__
 import os
 import logging
 from logging.handlers import RotatingFileHandler
@@ -105,6 +106,15 @@ def create_app(config_name='development'):
     @app.route('/health')
     def health():
         return {'status': 'healthy'}, 200
+
+    @app.route('/api/version')
+    def version():
+        """Get application version information."""
+        return jsonify({
+            'version': __version__,
+            'release_date': __release_date__,
+            'release_notes': __release_notes__
+        }), 200
 
     return app
 

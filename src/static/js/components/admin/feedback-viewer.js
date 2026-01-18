@@ -173,7 +173,7 @@ async function showFeedbackDetails(feedback) {
     // Parse admin notes if it's JSON
     let systemInfo = null;
     if (feedback.admin_notes) {
-        try:
+        try {
             const parsed = JSON.parse(feedback.admin_notes);
             systemInfo = parsed.system_info;
         } catch (e) {

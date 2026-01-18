@@ -273,24 +273,33 @@ function calculatePeriodExpenses(budget, period, currentDate) {
                       'taxes', 'discretionary', 'other'];
 
     categories.forEach(category => {
-        const cat = budget.expenses[period][category] || {};
+        const catData = budget.expenses[period][category];
 
-        // Check if expense is active on this date
-        if (!isExpenseActiveOnDate(cat, currentDate)) {
-            return; // Skip inactive expenses
+        if (!catData) {
+            return; // Skip if no data for this category
         }
 
-        const amount = cat.amount || 0;
-        const frequency = cat.frequency || 'monthly';
+        // Handle both array format (multiple instances) and legacy single object format
+        const expenseItems = Array.isArray(catData) ? catData : [catData];
 
-        // Convert to monthly
-        if (frequency === 'monthly') {
-            expenses += amount;
-        } else if (frequency === 'quarterly') {
-            expenses += amount / 3;
-        } else if (frequency === 'annual') {
-            expenses += amount / 12;
-        }
+        expenseItems.forEach(expense => {
+            // Check if expense is active on this date
+            if (!isExpenseActiveOnDate(expense, currentDate)) {
+                return; // Skip inactive expenses
+            }
+
+            const amount = expense.amount || 0;
+            const frequency = expense.frequency || 'monthly';
+
+            // Convert to monthly
+            if (frequency === 'monthly') {
+                expenses += amount;
+            } else if (frequency === 'quarterly') {
+                expenses += amount / 3;
+            } else if (frequency === 'annual') {
+                expenses += amount / 12;
+            }
+        });
     });
 
     return expenses;
@@ -693,6 +702,23 @@ function renderCashFlowChart(container, profile, months, viewType, scenarioData 
         console.log('No scenario data available');
     }
 
+    // Merge scenario portfolio values into table data if available
+    let tableData = viewType === 'annual' ? chartData : monthlyData;
+    if (scenarioMedianData) {
+        console.log('Merging scenario data into table. First 5 years:');
+        console.log('Original portfolio values:', tableData.slice(0, 5).map(d => d.portfolioValue));
+        console.log('Scenario median values:', scenarioMedianData.slice(0, 5));
+
+        tableData = tableData.map((period, index) => ({
+            ...period,
+            portfolioValue: scenarioMedianData[index] !== null ? scenarioMedianData[index] : period.portfolioValue
+        }));
+
+        console.log('Merged portfolio values:', tableData.slice(0, 5).map(d => d.portfolioValue));
+    } else {
+        console.log('No scenario data available for table merge');
+    }
+
     // Update summary cards
     renderSummaryCards(container, chartData);
 
@@ -703,7 +729,7 @@ function renderCashFlowChart(container, profile, months, viewType, scenarioData 
     }
 
     // Update table
-    renderCashFlowTable(container, viewType === 'annual' ? chartData : monthlyData, viewType);
+    renderCashFlowTable(container, tableData, viewType);
 
     // Render chart
     const canvas = container.querySelector('#cashflow-chart');

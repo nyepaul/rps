@@ -14,6 +14,16 @@ import { showFeedbackModal } from './components/feedback/feedback-modal.js';
 async function init() {
     console.log('🚀 Retirement Planning System - Initializing...');
 
+    // Log version for debugging
+    try {
+        const versionData = await apiClient.get('/api/version');
+        console.log(`📦 RPS Version: ${versionData.version}`);
+        console.log(`📅 Release: ${versionData.release_date}`);
+        console.log(`📝 Notes: ${versionData.release_notes}`);
+    } catch (error) {
+        console.warn('Could not fetch version info');
+    }
+
     // Check authentication status
     await checkAuth();
 
@@ -39,11 +49,32 @@ async function init() {
     // Try to load default profile
     await loadDefaultProfileOnStartup();
 
+    // Load and display version
+    loadVersion();
+
     // Show initial tab - always start with welcome as landing page
     // Note: We always show Welcome on page load, regardless of previous session
     showTab('welcome');
 
     console.log('✅ Application initialized');
+}
+
+/**
+ * Load and display application version
+ */
+async function loadVersion() {
+    try {
+        const data = await apiClient.get('/api/version');
+        const versionSpan = document.getElementById('app-version');
+        if (versionSpan && data.version) {
+            versionSpan.textContent = `v${data.version}`;
+            versionSpan.title = `Released: ${data.release_date}\n${data.release_notes}`;
+            versionSpan.style.cursor = 'help';
+            versionSpan.style.textDecoration = 'underline dotted';
+        }
+    } catch (error) {
+        console.warn('Could not load version:', error);
+    }
 }
 
 /**
