@@ -19,13 +19,13 @@ export function renderBudgetTab(container) {
 
     if (!profile) {
         container.innerHTML = `
-            <div style="text-align: center; padding: 60px;">
-                <div style="font-size: 48px; margin-bottom: 20px;">📊</div>
-                <h2 style="margin-bottom: 10px;">No Profile Selected</h2>
-                <p style="color: var(--text-secondary); margin-bottom: 20px;">
+            <div style="text-align: center; padding: var(--space-8);">
+                <div style="font-size: 48px; margin-bottom: var(--space-5);">📊</div>
+                <h2 style="margin-bottom: var(--space-3);">No Profile Selected</h2>
+                <p style="color: var(--text-secondary); margin-bottom: var(--space-5);">
                     Please create or select a profile to manage your expenses.
                 </p>
-                <button onclick="window.app.showTab('welcome')" style="padding: 10px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <button onclick="window.app.showTab('welcome')" style="padding: var(--space-3) var(--space-6); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-md);">
                     Go to Welcome
                 </button>
             </div>

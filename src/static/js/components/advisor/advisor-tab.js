@@ -15,13 +15,13 @@ export function renderAdvisorTab(container) {
 
     if (!profile) {
         container.innerHTML = `
-            <div style="text-align: center; padding: 60px 20px;">
-                <div style="font-size: 64px; margin-bottom: 20px;">🤖</div>
-                <h2 style="margin-bottom: 15px;">No Profile Selected</h2>
-                <p style="color: var(--text-secondary); margin-bottom: 30px;">
+            <div style="text-align: center; padding: var(--space-8) var(--space-5);">
+                <div style="font-size: 64px; margin-bottom: var(--space-5);">🤖</div>
+                <h2 style="margin-bottom: var(--space-4);">No Profile Selected</h2>
+                <p style="color: var(--text-secondary); margin-bottom: var(--space-6);">
                     Please create or select a profile to chat with your AI advisor.
                 </p>
-                <button onclick="window.app.showTab('welcome')" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <button onclick="window.app.showTab('welcome')" style="padding: var(--space-3) var(--space-6); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-md);">
                     Go to Welcome
                 </button>
             </div>
