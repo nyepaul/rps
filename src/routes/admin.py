@@ -371,6 +371,11 @@ def update_super_admin_status(user_id: int):
         if not user:
             return jsonify({'error': 'User not found'}), 404
 
+        # Debug logging
+        print(f"DEBUG: Fetched user {user.username} (id={user.id})")
+        print(f"DEBUG: user._is_admin = {user._is_admin}, type = {type(user._is_admin)}")
+        print(f"DEBUG: user.is_admin = {user.is_admin}, type = {type(user.is_admin)}")
+
         # Require target user to be an admin first
         if not user.is_admin:
             return jsonify({'error': 'User must be an admin before becoming super admin'}), 400

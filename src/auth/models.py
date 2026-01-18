@@ -59,7 +59,9 @@ class User(UserMixin):
             (user_id,)
         )
         if row:
-            return User(**dict(row))
+            row_dict = dict(row)
+            print(f"DEBUG User.get_by_id({user_id}): row_dict['is_admin'] = {row_dict.get('is_admin')}, type = {type(row_dict.get('is_admin'))}")
+            return User(**row_dict)
         return None
     
     @staticmethod
