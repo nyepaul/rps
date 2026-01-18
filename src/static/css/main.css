@@ -151,6 +151,47 @@
             align-items: center;
         }
 
+        header .setup-btn {
+            background: linear-gradient(135deg, var(--success-color), #51cf66);
+            border: 1px solid var(--success-color);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        header .setup-btn:hover {
+            background: linear-gradient(135deg, #2b8a3e, #40c057);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(47, 158, 68, 0.3);
+        }
+
+        header .setup-btn:active {
+            transform: translateY(0);
+        }
+
+        header .setup-btn .setup-badge {
+            background: rgba(255, 255, 255, 0.3);
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        header .setup-btn.complete {
+            background: linear-gradient(135deg, #37b24d, #51cf66);
+        }
+
+        header .setup-btn.complete .setup-icon::after {
+            content: ' ✓';
+        }
+
         header .settings-btn {
             background: rgba(255,255,255,0.1);
             border: 1px solid rgba(255,255,255,0.2);

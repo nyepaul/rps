@@ -5,6 +5,7 @@
 import { store } from './state/store.js';
 import { apiClient } from './api/client.js';
 import { API_ENDPOINTS, STORAGE_KEYS, APP_CONFIG } from './config.js';
+import { showSetupChecklist, updateSetupButton } from './components/setup/setup-checklist.js';
 
 /**
  * Initialize application
@@ -17,6 +18,9 @@ async function init() {
 
     // Set up tab navigation
     setupTabNavigation();
+
+    // Set up setup button
+    setupSetupButton();
 
     // Set up settings button
     setupSettings();
@@ -263,6 +267,26 @@ function setupLogout() {
             }
         });
     }
+}
+
+/**
+ * Set up setup button
+ */
+function setupSetupButton() {
+    const setupBtn = document.getElementById('setup-btn');
+    if (setupBtn) {
+        setupBtn.addEventListener('click', () => {
+            showSetupChecklist();
+        });
+    }
+
+    // Update button status initially
+    updateSetupButton();
+
+    // Listen for profile changes and update button
+    store.subscribe((state) => {
+        updateSetupButton();
+    });
 }
 
 /**
