@@ -4,7 +4,7 @@
 
 import { formatCurrency } from '../../utils/formatters.js';
 import { getAssetTypeLabel } from './asset-form-fields.js';
-import { showAssetWizard } from './asset-wizard.js';
+import { makeRowEditable } from './inline-editor.js';
 
 /**
  * Render all assets in a simple flat list
@@ -64,30 +64,44 @@ export function renderAssetList(assets, container, onSaveCallback) {
         </div>
     `;
 
-    // Add click-to-edit functionality - modal editing
+    // Add click-to-edit functionality - inline editing with multi-column layout
     container.querySelectorAll('.asset-row').forEach((row, idx) => {
         const asset = allAssets[idx];
 
         const startEditing = () => {
-            // Open asset wizard modal for editing
-            showAssetWizard(
-                asset.categoryKey,  // preselected category
-                asset,              // existing asset to edit
-                async (updatedAssets) => {
-                    // Call save callback if provided (parent updates and re-renders)
+            // Don't start if already editing
+            if (row.classList.contains('editing')) {
+                return;
+            }
+
+            // Mark as editing
+            row.classList.add('editing');
+
+            // Make row editable inline with multi-column layout
+            makeRowEditable(
+                row,
+                asset,
+                asset.categoryKey,
+                asset.index,
+                async (updatedAsset, category, index) => {
+                    // Call save callback if provided (parent updates the original assets and re-renders)
                     if (onSaveCallback) {
-                        // Find the updated asset in the updated assets structure
-                        const updatedAsset = updatedAssets[asset.categoryKey][asset.index];
-                        await onSaveCallback(asset.categoryKey, asset.index, updatedAsset);
+                        await onSaveCallback(category, index, updatedAsset);
+                    } else {
+                        // Remove editing class if no callback
+                        row.classList.remove('editing');
                     }
                 },
-                asset.index        // asset index for editing
+                () => {
+                    // Cancel callback
+                    row.classList.remove('editing');
+                }
             );
         };
 
-        // Click on row to edit in modal
+        // Click on row to edit inline
         row.addEventListener('click', (e) => {
-            // Don't trigger if clicking on delete button
+            // Don't trigger if clicking on delete button or if already in edit mode
             if (e.target.closest('.delete-asset-btn')) {
                 return;
             }

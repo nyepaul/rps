@@ -224,44 +224,42 @@ function showIncomeStreamModal(parentContainer, profile, editIndex, incomeStream
     `;
 
     modal.innerHTML = `
-        <div style="background: var(--bg-secondary); padding: var(--space-6); border-radius: 12px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
-            <h2 style="margin: 0 0 var(--space-5) 0; font-size: var(--font-xl);">${isEdit ? 'Edit' : 'Add'} Income Stream</h2>
-            <form id="income-stream-form">
-                <div style="margin-bottom: var(--space-4);">
-                    <label style="display: block; margin-bottom: var(--space-2); font-weight: 500; font-size: var(--font-base);">Name *</label>
+        <div style="background: var(--bg-secondary); padding: var(--space-5); border-radius: 12px; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto;">
+            <h2 style="margin: 0 0 var(--space-4) 0; font-size: var(--font-xl);">${isEdit ? 'Edit' : 'Add'} Income Stream</h2>
+            <form id="income-stream-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-4);">
+                <div style="grid-column: 1 / -1;">
+                    <label style="display: block; margin-bottom: var(--space-2); font-weight: 500; font-size: var(--font-sm);">Name *</label>
                     <input type="text" id="stream-name" value="${stream.name}" required placeholder="e.g., Consulting Work, Rental Income"
-                           style="width: 100%; padding: var(--space-3); border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-base);">
+                           style="width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-base);">
                 </div>
-                <div style="margin-bottom: var(--space-4);">
-                    <label style="display: block; margin-bottom: var(--space-2); font-weight: 500; font-size: var(--font-base);">Monthly Amount *</label>
+                <div>
+                    <label style="display: block; margin-bottom: var(--space-2); font-weight: 500; font-size: var(--font-sm);">Monthly Amount *</label>
                     <input type="text" id="stream-amount" value="${stream.amount ? formatCurrency(stream.amount, 0) : ''}" required placeholder="$0"
-                           style="width: 100%; padding: var(--space-3); border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-base);">
-                    <small style="color: var(--text-secondary); font-size: var(--font-sm);">Average monthly income from this source</small>
+                           style="width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-base);">
+                    <small style="color: var(--text-secondary); font-size: var(--font-xs);">Average monthly income</small>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-4);">
-                    <div>
-                        <label style="display: block; margin-bottom: var(--space-2); font-weight: 500; font-size: var(--font-base);">Start Date</label>
-                        <input type="date" id="stream-start-date" value="${stream.start_date || ''}"
-                               style="width: 100%; padding: var(--space-3); border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-base);">
-                        <small style="color: var(--text-secondary); font-size: var(--font-sm);">When income begins</small>
-                    </div>
-                    <div>
-                        <label style="display: block; margin-bottom: var(--space-2); font-weight: 500; font-size: var(--font-base);">End Date</label>
-                        <input type="date" id="stream-end-date" value="${stream.end_date || ''}"
-                               style="width: 100%; padding: var(--space-3); border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-base);">
-                        <small style="color: var(--text-secondary); font-size: var(--font-sm);">Optional end date</small>
-                    </div>
+                <div>
+                    <label style="display: block; margin-bottom: var(--space-2); font-weight: 500; font-size: var(--font-sm);">Start Date</label>
+                    <input type="date" id="stream-start-date" value="${stream.start_date || ''}"
+                           style="width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-base);">
+                    <small style="color: var(--text-secondary); font-size: var(--font-xs);">When income begins</small>
                 </div>
-                <div style="margin-bottom: var(--space-5);">
-                    <label style="display: block; margin-bottom: var(--space-2); font-weight: 500; font-size: var(--font-base);">Description</label>
+                <div>
+                    <label style="display: block; margin-bottom: var(--space-2); font-weight: 500; font-size: var(--font-sm);">End Date</label>
+                    <input type="date" id="stream-end-date" value="${stream.end_date || ''}"
+                           style="width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-base);">
+                    <small style="color: var(--text-secondary); font-size: var(--font-xs);">Optional end date</small>
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <label style="display: block; margin-bottom: var(--space-2); font-weight: 500; font-size: var(--font-sm);">Description</label>
                     <textarea id="stream-description" placeholder="Optional notes about this income stream"
-                              style="width: 100%; padding: var(--space-3); border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-base); min-height: 80px;">${stream.description || ''}</textarea>
+                              style="width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-base); min-height: 60px;">${stream.description || ''}</textarea>
                 </div>
-                <div style="display: flex; justify-content: flex-end; gap: var(--space-3);">
-                    <button type="button" id="cancel-btn" style="padding: var(--space-3) var(--space-5); background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: var(--font-base);">
+                <div style="grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: var(--space-3); padding-top: var(--space-2); border-top: 1px solid var(--border-color);">
+                    <button type="button" id="cancel-btn" style="padding: var(--space-2) var(--space-4); background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: var(--font-sm);">
                         Cancel
                     </button>
-                    <button type="submit" style="padding: var(--space-3) var(--space-5); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-base); font-weight: 600;">
+                    <button type="submit" style="padding: var(--space-2) var(--space-4); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-sm); font-weight: 600;">
                         ${isEdit ? 'Save Changes' : 'Add Income Stream'}
                     </button>
                 </div>

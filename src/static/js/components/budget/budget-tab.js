@@ -329,44 +329,42 @@ function showCollegeExpenseModal(parentContainer, index) {
     `;
 
     modal.innerHTML = `
-        <div style="background: var(--bg-secondary); padding: var(--space-5); border-radius: 8px; max-width: 500px; width: 90%;">
-            <h2 style="margin: 0 0 var(--space-4) 0; font-size: var(--font-lg);">Edit College Expense - ${expense.child_name}</h2>
-            <form id="college-expense-form">
-                <div style="margin-bottom: var(--space-3);">
-                    <label style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer; font-size: var(--font-sm); margin-bottom: var(--space-2);">
+        <div style="background: var(--bg-secondary); padding: var(--space-4); border-radius: 8px; max-width: 650px; width: 90%;">
+            <h2 style="margin: 0 0 var(--space-3) 0; font-size: var(--font-lg);">Edit College Expense - ${expense.child_name}</h2>
+            <form id="college-expense-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-3);">
+                <div style="grid-column: 1 / -1;">
+                    <label style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer; font-size: var(--font-sm);">
                         <input type="checkbox" id="expense-enabled" ${expense.enabled ? 'checked' : ''}>
                         <span style="font-weight: 600;">Include in expense calculations</span>
                     </label>
                 </div>
-                <div style="margin-bottom: var(--space-3);">
-                    <label style="display: block; margin-bottom: var(--space-1); font-weight: 500; font-size: var(--font-sm);">Annual College Cost</label>
+                <div>
+                    <label style="display: block; margin-bottom: var(--space-1); font-weight: 500; font-size: var(--font-xs);">Annual College Cost</label>
                     <input type="number" id="college-annual-cost" value="${expense.annual_cost}" min="0" step="1000" required
                            style="width: 100%; padding: var(--space-2); border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-sm);">
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); margin-bottom: var(--space-3);">
-                    <div>
-                        <label style="display: block; margin-bottom: var(--space-1); font-weight: 500; font-size: var(--font-sm);">Start Year</label>
-                        <input type="number" id="college-start-year" value="${expense.start_year}" min="2000" max="2100" required
-                               style="width: 100%; padding: var(--space-2); border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-sm);">
-                    </div>
-                    <div>
-                        <label style="display: block; margin-bottom: var(--space-1); font-weight: 500; font-size: var(--font-sm);">End Year</label>
-                        <input type="number" id="college-end-year" value="${expense.end_year}" min="2000" max="2100" required
-                               style="width: 100%; padding: var(--space-2); border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-sm);">
-                    </div>
+                <div>
+                    <label style="display: block; margin-bottom: var(--space-1); font-weight: 500; font-size: var(--font-xs);">Start Year</label>
+                    <input type="number" id="college-start-year" value="${expense.start_year}" min="2000" max="2100" required
+                           style="width: 100%; padding: var(--space-2); border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-sm);">
                 </div>
-                <div style="background: var(--info-bg); padding: var(--space-2); border-radius: 4px; margin-bottom: var(--space-4); font-size: var(--font-xs); color: var(--info-color);">
+                <div>
+                    <label style="display: block; margin-bottom: var(--space-1); font-weight: 500; font-size: var(--font-xs);">End Year</label>
+                    <input type="number" id="college-end-year" value="${expense.end_year}" min="2000" max="2100" required
+                           style="width: 100%; padding: var(--space-2); border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-sm);">
+                </div>
+                <div style="grid-column: 1 / -1; background: var(--info-bg); padding: var(--space-2); border-radius: 4px; font-size: var(--font-xs); color: var(--info-color);">
                     <strong>Note:</strong> College expenses are spread annually from ${expense.start_year} to ${expense.end_year}
                 </div>
-                <div style="display: flex; justify-content: space-between; gap: var(--space-2); flex-wrap: wrap;">
-                    <button type="button" id="delete-college-btn" style="padding: var(--space-2) var(--space-4); background: var(--danger-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: var(--font-sm);">
+                <div style="grid-column: 1 / -1; display: flex; justify-content: space-between; gap: var(--space-2); padding-top: var(--space-2); border-top: 1px solid var(--border-color);">
+                    <button type="button" id="delete-college-btn" style="padding: var(--space-2) var(--space-3); background: var(--danger-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: var(--font-xs);">
                         Delete
                     </button>
                     <div style="display: flex; gap: var(--space-2);">
-                        <button type="button" id="cancel-btn" style="padding: var(--space-2) var(--space-4); background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: var(--font-sm);">
+                        <button type="button" id="cancel-btn" style="padding: var(--space-2) var(--space-3); background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: var(--font-xs);">
                             Cancel
                         </button>
-                        <button type="submit" style="padding: var(--space-2) var(--space-4); background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: var(--font-sm);">
+                        <button type="submit" style="padding: var(--space-2) var(--space-3); background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: var(--font-xs);">
                             Update
                         </button>
                     </div>
