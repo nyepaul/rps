@@ -140,7 +140,7 @@ function renderProfileCard(profile, currentProfile) {
     const lastUpdated = profile.updated_at ? new Date(profile.updated_at).toLocaleDateString() : 'Unknown';
 
     return `
-        <div class="profile-card" data-profile-name="${profile.name}" style="
+        <div class="profile-card ${isActive ? 'active-profile-card' : ''}" data-profile-name="${profile.name}" style="
             background: var(--bg-secondary);
             border-radius: 5px;
             padding: 10px;
@@ -148,6 +148,7 @@ function renderProfileCard(profile, currentProfile) {
             transition: all 0.2s;
             position: relative;
             box-shadow: ${isActive ? '0 1px 4px rgba(0,0,0,0.1)' : '0 1px 2px rgba(0,0,0,0.05)'};
+            ${isActive ? 'cursor: pointer;' : ''}
         ">
             ${isActive ? `<div style="position: absolute; top: 5px; right: 5px; background: var(--accent-color); color: white; padding: 2px 5px; border-radius: 8px; font-size: 8px; font-weight: 600;">ACTIVE</div>` : ''}
 
@@ -190,6 +191,9 @@ function renderProfileCard(profile, currentProfile) {
                     Active
                 </button>
                 `}
+                <button class="edit-profile-btn" data-profile-name="${profile.name}" style="flex: 1; padding: 5px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 3px; cursor: pointer; font-size: 10px; font-weight: 600;">
+                    Edit
+                </button>
                 <button class="view-info-btn" data-profile-name="${profile.name}" style="flex: 1; padding: 5px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 3px; cursor: pointer; font-size: 10px; font-weight: 600;">
                     Info
                 </button>
@@ -226,9 +230,19 @@ function setupDashboardHandlers(container, profiles) {
         });
     });
 
+    // Edit Profile Buttons
+    container.querySelectorAll('.edit-profile-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent card click
+            const profileName = btn.dataset.profileName;
+            editProfile(profileName);
+        });
+    });
+
     // View Info Buttons
     container.querySelectorAll('.view-info-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent card click
             const profileName = btn.dataset.profileName;
             const profile = profiles.find(p => p.name === profileName);
             if (profile) {
@@ -239,7 +253,8 @@ function setupDashboardHandlers(container, profiles) {
 
     // Clone Profile Buttons
     container.querySelectorAll('.clone-profile-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation(); // Prevent card click
             const profileName = btn.dataset.profileName;
             await cloneProfile(profileName, container);
         });
@@ -247,11 +262,37 @@ function setupDashboardHandlers(container, profiles) {
 
     // Delete Profile Buttons
     container.querySelectorAll('.delete-profile-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation(); // Prevent card click
             const profileName = btn.dataset.profileName;
             await deleteProfile(profileName, container);
         });
     });
+
+    // Active Profile Card Click (opens edit)
+    const activeProfileCard = container.querySelector('.active-profile-card');
+    if (activeProfileCard) {
+        activeProfileCard.addEventListener('click', (e) => {
+            // Only trigger if clicking the card itself, not buttons
+            if (e.target.classList.contains('profile-card') ||
+                e.target.classList.contains('active-profile-card') ||
+                e.target.closest('.profile-card') === activeProfileCard &&
+                !e.target.closest('button')) {
+                const profileName = activeProfileCard.dataset.profileName;
+                editProfile(profileName);
+            }
+        });
+
+        // Add hover effect
+        activeProfileCard.addEventListener('mouseenter', () => {
+            activeProfileCard.style.transform = 'translateY(-2px)';
+            activeProfileCard.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+        });
+        activeProfileCard.addEventListener('mouseleave', () => {
+            activeProfileCard.style.transform = '';
+            activeProfileCard.style.boxShadow = '0 1px 4px rgba(0,0,0,0.1)';
+        });
+    }
 }
 
 /**
@@ -273,6 +314,28 @@ async function loadProfile(profileName, container) {
     } catch (error) {
         console.error('Error loading profile:', error);
         showError(`Failed to load profile: ${error.message}`);
+    } finally {
+        hideSpinner();
+    }
+}
+
+/**
+ * Edit a profile
+ */
+async function editProfile(profileName) {
+    showSpinner(`Opening profile "${profileName}"...`);
+    try {
+        const result = await profilesAPI.get(profileName);
+        store.setState({ currentProfile: result.profile });
+
+        // Set as default profile
+        localStorage.setItem(STORAGE_KEYS.DEFAULT_PROFILE, profileName);
+
+        // Navigate to profile tab
+        window.app.showTab('profile');
+    } catch (error) {
+        console.error('Error loading profile for edit:', error);
+        showError(`Failed to open profile: ${error.message}`);
     } finally {
         hideSpinner();
     }
