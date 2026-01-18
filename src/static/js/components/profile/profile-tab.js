@@ -30,6 +30,7 @@ export function renderProfileTab(container) {
     const spouse = data.spouse || {};
     const children = data.children || [];
     const financial = data.financial || {};
+    const address = data.address || {};
 
     container.innerHTML = `
         <div style="max-width: 1000px; margin: 0 auto; padding: var(--space-5);">
@@ -71,6 +72,85 @@ export function renderProfileTab(container) {
                             <label for="life_expectancy">Life Expectancy</label>
                             <input type="number" id="life_expectancy" name="life_expectancy" value="${person.life_expectancy || 95}" min="0" max="120">
                             <small>Default: 95 years</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Address -->
+                <div class="form-section">
+                    <h2 style="font-size: var(--font-xl); margin-bottom: var(--space-3); border-bottom: 2px solid var(--accent-color); padding-bottom: var(--space-2);">
+                        Address & Location
+                    </h2>
+                    <div class="form-grid">
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label for="address_street">Street Address</label>
+                            <input type="text" id="address_street" name="address_street" value="${address.street || ''}" placeholder="123 Main St">
+                        </div>
+                        <div class="form-group">
+                            <label for="address_city">City</label>
+                            <input type="text" id="address_city" name="address_city" value="${address.city || ''}" placeholder="San Francisco">
+                        </div>
+                        <div class="form-group">
+                            <label for="address_state">State</label>
+                            <select id="address_state" name="address_state" style="padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-base);">
+                                <option value="">Select State</option>
+                                <option value="AL" ${address.state === 'AL' ? 'selected' : ''}>Alabama</option>
+                                <option value="AK" ${address.state === 'AK' ? 'selected' : ''}>Alaska</option>
+                                <option value="AZ" ${address.state === 'AZ' ? 'selected' : ''}>Arizona</option>
+                                <option value="AR" ${address.state === 'AR' ? 'selected' : ''}>Arkansas</option>
+                                <option value="CA" ${address.state === 'CA' ? 'selected' : ''}>California</option>
+                                <option value="CO" ${address.state === 'CO' ? 'selected' : ''}>Colorado</option>
+                                <option value="CT" ${address.state === 'CT' ? 'selected' : ''}>Connecticut</option>
+                                <option value="DE" ${address.state === 'DE' ? 'selected' : ''}>Delaware</option>
+                                <option value="FL" ${address.state === 'FL' ? 'selected' : ''}>Florida</option>
+                                <option value="GA" ${address.state === 'GA' ? 'selected' : ''}>Georgia</option>
+                                <option value="HI" ${address.state === 'HI' ? 'selected' : ''}>Hawaii</option>
+                                <option value="ID" ${address.state === 'ID' ? 'selected' : ''}>Idaho</option>
+                                <option value="IL" ${address.state === 'IL' ? 'selected' : ''}>Illinois</option>
+                                <option value="IN" ${address.state === 'IN' ? 'selected' : ''}>Indiana</option>
+                                <option value="IA" ${address.state === 'IA' ? 'selected' : ''}>Iowa</option>
+                                <option value="KS" ${address.state === 'KS' ? 'selected' : ''}>Kansas</option>
+                                <option value="KY" ${address.state === 'KY' ? 'selected' : ''}>Kentucky</option>
+                                <option value="LA" ${address.state === 'LA' ? 'selected' : ''}>Louisiana</option>
+                                <option value="ME" ${address.state === 'ME' ? 'selected' : ''}>Maine</option>
+                                <option value="MD" ${address.state === 'MD' ? 'selected' : ''}>Maryland</option>
+                                <option value="MA" ${address.state === 'MA' ? 'selected' : ''}>Massachusetts</option>
+                                <option value="MI" ${address.state === 'MI' ? 'selected' : ''}>Michigan</option>
+                                <option value="MN" ${address.state === 'MN' ? 'selected' : ''}>Minnesota</option>
+                                <option value="MS" ${address.state === 'MS' ? 'selected' : ''}>Mississippi</option>
+                                <option value="MO" ${address.state === 'MO' ? 'selected' : ''}>Missouri</option>
+                                <option value="MT" ${address.state === 'MT' ? 'selected' : ''}>Montana</option>
+                                <option value="NE" ${address.state === 'NE' ? 'selected' : ''}>Nebraska</option>
+                                <option value="NV" ${address.state === 'NV' ? 'selected' : ''}>Nevada</option>
+                                <option value="NH" ${address.state === 'NH' ? 'selected' : ''}>New Hampshire</option>
+                                <option value="NJ" ${address.state === 'NJ' ? 'selected' : ''}>New Jersey</option>
+                                <option value="NM" ${address.state === 'NM' ? 'selected' : ''}>New Mexico</option>
+                                <option value="NY" ${address.state === 'NY' ? 'selected' : ''}>New York</option>
+                                <option value="NC" ${address.state === 'NC' ? 'selected' : ''}>North Carolina</option>
+                                <option value="ND" ${address.state === 'ND' ? 'selected' : ''}>North Dakota</option>
+                                <option value="OH" ${address.state === 'OH' ? 'selected' : ''}>Ohio</option>
+                                <option value="OK" ${address.state === 'OK' ? 'selected' : ''}>Oklahoma</option>
+                                <option value="OR" ${address.state === 'OR' ? 'selected' : ''}>Oregon</option>
+                                <option value="PA" ${address.state === 'PA' ? 'selected' : ''}>Pennsylvania</option>
+                                <option value="RI" ${address.state === 'RI' ? 'selected' : ''}>Rhode Island</option>
+                                <option value="SC" ${address.state === 'SC' ? 'selected' : ''}>South Carolina</option>
+                                <option value="SD" ${address.state === 'SD' ? 'selected' : ''}>South Dakota</option>
+                                <option value="TN" ${address.state === 'TN' ? 'selected' : ''}>Tennessee</option>
+                                <option value="TX" ${address.state === 'TX' ? 'selected' : ''}>Texas</option>
+                                <option value="UT" ${address.state === 'UT' ? 'selected' : ''}>Utah</option>
+                                <option value="VT" ${address.state === 'VT' ? 'selected' : ''}>Vermont</option>
+                                <option value="VA" ${address.state === 'VA' ? 'selected' : ''}>Virginia</option>
+                                <option value="WA" ${address.state === 'WA' ? 'selected' : ''}>Washington</option>
+                                <option value="WV" ${address.state === 'WV' ? 'selected' : ''}>West Virginia</option>
+                                <option value="WI" ${address.state === 'WI' ? 'selected' : ''}>Wisconsin</option>
+                                <option value="WY" ${address.state === 'WY' ? 'selected' : ''}>Wyoming</option>
+                                <option value="DC" ${address.state === 'DC' ? 'selected' : ''}>District of Columbia</option>
+                            </select>
+                            <small>Used for state tax calculations</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="address_zip">ZIP Code</label>
+                            <input type="text" id="address_zip" name="address_zip" value="${address.zip || ''}" placeholder="94102" maxlength="10">
                         </div>
                     </div>
                 </div>
@@ -341,6 +421,18 @@ function setupProfileFormHandlers(container, profile) {
                 }
             });
 
+            // Parse address data
+            const address = {};
+            const addressStreet = formData.get('address_street');
+            const addressCity = formData.get('address_city');
+            const addressState = formData.get('address_state');
+            const addressZip = formData.get('address_zip');
+
+            if (addressStreet) address.street = addressStreet;
+            if (addressCity) address.city = addressCity;
+            if (addressState) address.state = addressState;
+            if (addressZip) address.zip = addressZip;
+
             // Build updated profile data
             const updatedProfile = {
                 name: formData.get('name'),
@@ -354,6 +446,7 @@ function setupProfileFormHandlers(container, profile) {
                     },
                     spouse: Object.keys(spouse).length > 0 ? spouse : {},
                     children: children,
+                    address: Object.keys(address).length > 0 ? address : {},
                     financial: profile.data?.financial || {}
                 }
             };

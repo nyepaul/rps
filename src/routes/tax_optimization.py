@@ -55,9 +55,11 @@ def analyze_taxes():
             return jsonify({'error': 'Profile data is empty'}), 400
 
         # Get tax settings from profile or request
+        # Priority: request param -> profile address -> tax_settings -> default
         tax_settings = profile_data.get('tax_settings', {})
+        address = profile_data.get('address', {})
         filing_status = data.filing_status or tax_settings.get('filing_status', 'mfj')
-        state = data.state or tax_settings.get('state', 'CA')
+        state = data.state or address.get('state') or tax_settings.get('state', 'CA')
 
         # Calculate age from birth date
         age = 65
@@ -123,6 +125,7 @@ def analyze_roth_conversion():
         financial = profile_data.get('financial', {})
         assets = profile_data.get('assets', {})
         tax_settings = profile_data.get('tax_settings', {})
+        address = profile_data.get('address', {})
 
         # Calculate current taxable income
         gross_income = financial.get('annual_income', 0) or 0
@@ -130,7 +133,7 @@ def analyze_roth_conversion():
         ss_benefit = (financial.get('social_security_benefit', 0) or 0) * 12
 
         filing_status = data.filing_status or tax_settings.get('filing_status', 'mfj')
-        state = data.state or tax_settings.get('state', 'CA')
+        state = data.state or address.get('state') or tax_settings.get('state', 'CA')
 
         # Create service
         service = TaxOptimizationService(
@@ -245,13 +248,14 @@ def get_tax_snapshot():
         # Get financial data
         financial = profile_data.get('financial', {})
         tax_settings = profile_data.get('tax_settings', {})
+        address = profile_data.get('address', {})
 
         gross_income = financial.get('annual_income', 0) or 0
         pension = (financial.get('pension_benefit', 0) or 0) * 12
         ss_benefit = (financial.get('social_security_benefit', 0) or 0) * 12
 
         filing_status = tax_settings.get('filing_status', 'mfj')
-        state = tax_settings.get('state', 'CA')
+        state = address.get('state') or tax_settings.get('state', 'CA')
 
         # Create service
         service = TaxOptimizationService(
@@ -295,8 +299,9 @@ def compare_states():
 
         # Get tax settings
         tax_settings = profile_data.get('tax_settings', {})
+        address = profile_data.get('address', {})
         filing_status = tax_settings.get('filing_status', 'mfj')
-        current_state = tax_settings.get('state', 'CA')
+        current_state = address.get('state') or tax_settings.get('state', 'CA')
 
         # Get taxable income
         financial = profile_data.get('financial', {})
