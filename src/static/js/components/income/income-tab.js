@@ -39,13 +39,13 @@ export function renderIncomeTab(container) {
         <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-5);">
             <!-- Header -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-5); flex-wrap: wrap; gap: var(--space-3);">
-                <div>
+                <div style="min-width: 0; flex: 1;">
                     <h1 style="font-size: var(--font-3xl); margin: 0 0 var(--space-2) 0;">💰 Income Streams</h1>
                     <p style="color: var(--text-secondary); margin: 0; font-size: var(--font-base);">
                         Track current and future income with start and end dates
                     </p>
                 </div>
-                <button id="add-income-stream-btn" style="padding: var(--space-3) var(--space-5); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: var(--font-base);">
+                <button id="add-income-stream-btn" style="padding: var(--space-3) var(--space-5); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: var(--font-base); flex-shrink: 0;">
                     + Add Income
                 </button>
             </div>

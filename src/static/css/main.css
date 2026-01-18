@@ -137,6 +137,12 @@
 
         header .header-content {
             flex: 1;
+            min-width: 0;
+        }
+
+        header .header-content h1 {
+            white-space: nowrap;
+            overflow: visible;
         }
 
         header .header-buttons {

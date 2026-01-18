@@ -55,10 +55,10 @@ function renderProfileDashboard(container, profiles, currentProfile, currentUser
         <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-5);">
             <!-- Header -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3); flex-wrap: wrap; gap: var(--space-2);">
-                <div>
+                <div style="min-width: 0; flex: 1;">
                     <h1 style="font-size: 18px; margin: 0;">📊 Profile Dashboard</h1>
                 </div>
-                <button id="create-profile-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                <button id="create-profile-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; flex-shrink: 0;">
                     + New
                 </button>
             </div>

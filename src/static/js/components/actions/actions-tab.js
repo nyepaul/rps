@@ -30,13 +30,13 @@ export function renderActionsTab(container) {
     container.innerHTML = `
         <div style="max-width: 1000px; margin: 0 auto; padding: var(--space-5);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-6); flex-wrap: wrap; gap: var(--space-4);">
-                <div>
+                <div style="min-width: 0; flex: 1;">
                     <h1 style="font-size: var(--font-3xl); margin-bottom: var(--space-3);">Action Items</h1>
                     <p style="color: var(--text-secondary);">
                         Profile: <strong>${profile.name}</strong>
                     </p>
                 </div>
-                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; flex-shrink: 0;">
                     <button id="generate-actions-btn" style="padding: var(--space-3) var(--space-6); background: var(--info-bg); color: var(--info-color); border: 1px solid var(--info-color); border-radius: 6px; cursor: pointer; font-size: var(--font-md);">
                         💡 Generate Recommendations
                     </button>
