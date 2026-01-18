@@ -194,6 +194,13 @@ systemctl status "$SERVICE_NAME" --no-pager | head -10
 echo ""
 echo -e "${GREEN}Deployment complete!${NC}"
 echo ""
+# Extract and display version
+if [ -f "$TARGET_DIR/src/__version__.py" ]; then
+    VERSION=$(grep '^__version__' "$TARGET_DIR/src/__version__.py" | cut -d'"' -f2)
+    RELEASE_DATE=$(grep '^__release_date__' "$TARGET_DIR/src/__version__.py" | cut -d'"' -f2)
+    echo -e "${GREEN}Version: $VERSION${NC} (Released: $RELEASE_DATE)"
+    echo ""
+fi
 echo "Access the application:"
 echo "  - Local network (IP):    http://192.168.87.50:8087"
 echo "  - Local network (hostname): http://nas:8087"
