@@ -622,13 +622,16 @@ class RetirementModel:
         start_date = expense_data.get('start_date')
         end_date = expense_data.get('end_date')
 
-        # Parse start year
+        # Parse start year (if blank, assume "today" - current year)
         start_year = None
         if start_date:
             try:
                 start_year = datetime.fromisoformat(start_date).year
             except:
                 pass
+        else:
+            # If no start date specified, assume current year (today)
+            start_year = datetime.now().year
 
         # Parse end year
         end_year = None

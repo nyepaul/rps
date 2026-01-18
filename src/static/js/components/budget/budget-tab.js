@@ -1125,18 +1125,40 @@ function setupIncomeEventListeners(parentContainer) {
 function showIncomeItemModal(parentContainer, category, index) {
     const isEdit = index !== null;
 
-    // Get retirement date for pre-populating end date for current period income
+    // Get profile data for calculating default dates
     const profile = store.get('currentProfile');
     const retirementDate = profile?.retirement_date || '';
 
-    // Pre-populate end date with retirement date for current period income (if adding new item)
-    const defaultEndDate = (!isEdit && currentPeriod === 'current' && retirementDate) ? retirementDate : '';
+    // Calculate life expectancy date (birth date + life expectancy years)
+    let lifeExpectancyDate = '';
+    if (profile?.birth_date && profile?.data?.person?.life_expectancy) {
+        const birthDate = new Date(profile.birth_date);
+        const lifeExpectancy = profile.data.person.life_expectancy;
+        const lifeExpectancyYear = birthDate.getFullYear() + lifeExpectancy;
+        lifeExpectancyDate = `${lifeExpectancyYear}-${String(birthDate.getMonth() + 1).padStart(2, '0')}-${String(birthDate.getDate()).padStart(2, '0')}`;
+    }
+
+    // Determine default start and end dates based on period
+    let defaultStartDate = new Date().toISOString().split('T')[0];
+    let defaultEndDate = '';
+
+    if (!isEdit) {
+        if (currentPeriod === 'current') {
+            // Current period: start today, end at retirement
+            defaultStartDate = new Date().toISOString().split('T')[0];
+            defaultEndDate = retirementDate;
+        } else {
+            // Future period: start at retirement, end at life expectancy
+            defaultStartDate = retirementDate;
+            defaultEndDate = lifeExpectancyDate;
+        }
+    }
 
     const item = isEdit ? budgetData.income[currentPeriod][category][index] : {
         name: '',
         amount: 0,
         frequency: 'monthly',
-        start_date: new Date().toISOString().split('T')[0],
+        start_date: defaultStartDate,
         end_date: defaultEndDate,
         inflation_adjusted: true,
         taxable: true
@@ -1378,15 +1400,33 @@ function makeExpenseRowEditable(rowElement, category, expense, parentContainer) 
 
     const originalHTML = rowElement.innerHTML;
 
-    // Get retirement date for pre-populating end date for current period expenses
+    // Get profile data for calculating default dates
     const profile = store.get('currentProfile');
     const retirementDate = profile?.retirement_date || '';
 
-    // Pre-populate end date with retirement date for current period expenses
-    // if no end date is specified and ongoing is false
+    // Calculate life expectancy date (birth date + life expectancy years)
+    let lifeExpectancyDate = '';
+    if (profile?.birth_date && profile?.data?.person?.life_expectancy) {
+        const birthDate = new Date(profile.birth_date);
+        const lifeExpectancy = profile.data.person.life_expectancy;
+        const lifeExpectancyYear = birthDate.getFullYear() + lifeExpectancy;
+        lifeExpectancyDate = `${lifeExpectancyYear}-${String(birthDate.getMonth() + 1).padStart(2, '0')}-${String(birthDate.getDate()).padStart(2, '0')}`;
+    }
+
+    // Determine default start and end dates based on period and ongoing status
+    let defaultStartDate = expense.start_date || '';
     let defaultEndDate = expense.end_date || '';
-    if (currentPeriod === 'current' && !expense.end_date && expense.ongoing === false && retirementDate) {
-        defaultEndDate = retirementDate;
+
+    if (expense.ongoing === false) {
+        if (currentPeriod === 'current') {
+            // Current period: start blank (assumes today), end at retirement
+            if (!expense.start_date) defaultStartDate = '';
+            if (!expense.end_date && retirementDate) defaultEndDate = retirementDate;
+        } else {
+            // Future period: start at retirement, end at life expectancy
+            if (!expense.start_date && retirementDate) defaultStartDate = retirementDate;
+            if (!expense.end_date && lifeExpectancyDate) defaultEndDate = lifeExpectancyDate;
+        }
     }
 
     rowElement.innerHTML = `
@@ -1416,7 +1456,7 @@ function makeExpenseRowEditable(rowElement, category, expense, parentContainer) 
                     <label style="display: block; font-size: 9px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;">
                         Start Date
                     </label>
-                    <input type="date" name="start_date" value="${expense.start_date || ''}" ${expense.ongoing !== false ? 'disabled' : ''}
+                    <input type="date" name="start_date" value="${defaultStartDate}" ${expense.ongoing !== false ? 'disabled' : ''}
                            style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
                 </div>
                 <div>
@@ -1461,9 +1501,15 @@ function makeExpenseRowEditable(rowElement, category, expense, parentContainer) 
             startDateInput.value = '';
             endDateInput.value = '';
         } else {
-            // When unchecking ongoing for current period, pre-populate end date with retirement date
-            if (currentPeriod === 'current' && retirementDate && !endDateInput.value) {
-                endDateInput.value = retirementDate;
+            // Apply period-specific defaults when unchecking ongoing
+            if (currentPeriod === 'current') {
+                // Current period: start blank (today), end at retirement
+                if (!startDateInput.value) startDateInput.value = '';
+                if (!endDateInput.value && retirementDate) endDateInput.value = retirementDate;
+            } else {
+                // Future period: start at retirement, end at life expectancy
+                if (!startDateInput.value && retirementDate) startDateInput.value = retirementDate;
+                if (!endDateInput.value && lifeExpectancyDate) endDateInput.value = lifeExpectancyDate;
             }
         }
     });
