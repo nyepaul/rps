@@ -49,7 +49,7 @@ export async function renderAdminTab(container) {
                 <button class="admin-subtab" data-subtab="feedback" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s;">
                     💬 Feedback
                 </button>
-                ${user.role === 'super_admin' ? `
+                ${user.is_super_admin ? `
                 <button class="admin-subtab" data-subtab="roadmap" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s;">
                     🗺️ Roadmap
                 </button>
