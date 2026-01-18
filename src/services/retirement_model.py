@@ -727,12 +727,11 @@ class RetirementModel:
 
         def get_period_expenses(period):
             period_total = np.zeros_like(current_cpi)
-            for category in ['housing', 'transportation', 'food', 'healthcare',
-                            'insurance', 'discretionary', 'other', 'utilities', 'dining_out',
-                            'travel', 'entertainment', 'personal_care', 'clothing', 'gifts',
-                            'childcare_education', 'charitable_giving', 'subscriptions', 'pet_care',
-                            'home_maintenance', 'debt_payments', 'taxes']:
-                cat_data = expenses_section.get(period, {}).get(category, {})
+            period_expenses = expenses_section.get(period, {})
+
+            # Iterate through all categories (including custom ones)
+            for category in period_expenses.keys():
+                cat_data = period_expenses.get(category, {})
 
                 # Handle both array (new format) and object (legacy format) structures
                 expense_items = []
