@@ -5,7 +5,7 @@ Manages product roadmap and feature planning - Super Admin only
 
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
-from src.database.connection import get_connection
+from src.database.connection import db
 from datetime import datetime
 import logging
 
@@ -37,53 +37,52 @@ def get_roadmap():
         phase = request.args.get('phase')
         status = request.args.get('status')
 
-        conn = get_connection()
-        cursor = conn.cursor()
+        with db.get_connection() as conn:
+            cursor = conn.cursor()
 
-        # Build query with optional filters
-        query = "SELECT * FROM feature_roadmap WHERE 1=1"
-        params = []
+            # Build query with optional filters
+            query = "SELECT * FROM feature_roadmap WHERE 1=1"
+            params = []
 
-        if category:
-            query += " AND category = ?"
-            params.append(category)
-        if priority:
-            query += " AND priority = ?"
-            params.append(priority)
-        if phase:
-            query += " AND phase = ?"
-            params.append(phase)
-        if status:
-            query += " AND status = ?"
-            params.append(status)
+            if category:
+                query += " AND category = ?"
+                params.append(category)
+            if priority:
+                query += " AND priority = ?"
+                params.append(priority)
+            if phase:
+                query += " AND phase = ?"
+                params.append(phase)
+            if status:
+                query += " AND status = ?"
+                params.append(status)
 
-        query += " ORDER BY CASE priority WHEN 'critical' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 END, created_at DESC"
+            query += " ORDER BY CASE priority WHEN 'critical' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 END, created_at DESC"
 
-        cursor.execute(query, params)
-        rows = cursor.fetchall()
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
 
-        items = []
-        for row in rows:
-            items.append({
-                'id': row[0],
-                'title': row[1],
-                'description': row[2],
-                'category': row[3],
-                'priority': row[4],
-                'phase': row[5],
-                'status': row[6],
-                'impact': row[7],
-                'effort': row[8],
-                'target_version': row[9],
-                'assigned_to': row[10],
-                'notes': row[11],
-                'related_items': row[12],
-                'created_at': row[13],
-                'updated_at': row[14],
-                'completed_at': row[15]
-            })
+            items = []
+            for row in rows:
+                items.append({
+                    'id': row[0],
+                    'title': row[1],
+                    'description': row[2],
+                    'category': row[3],
+                    'priority': row[4],
+                    'phase': row[5],
+                    'status': row[6],
+                    'impact': row[7],
+                    'effort': row[8],
+                    'target_version': row[9],
+                    'assigned_to': row[10],
+                    'notes': row[11],
+                    'related_items': row[12],
+                    'created_at': row[13],
+                    'updated_at': row[14],
+                    'completed_at': row[15]
+                })
 
-        conn.close()
         return jsonify({'items': items}), 200
 
     except Exception as e:
@@ -100,33 +99,32 @@ def get_roadmap_item(item_id):
         return auth_check
 
     try:
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM feature_roadmap WHERE id = ?", (item_id,))
-        row = cursor.fetchone()
-        conn.close()
+        with db.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM feature_roadmap WHERE id = ?", (item_id,))
+            row = cursor.fetchone()
 
-        if not row:
-            return jsonify({'error': 'Item not found'}), 404
+            if not row:
+                return jsonify({'error': 'Item not found'}), 404
 
-        item = {
-            'id': row[0],
-            'title': row[1],
-            'description': row[2],
-            'category': row[3],
-            'priority': row[4],
-            'phase': row[5],
-            'status': row[6],
-            'impact': row[7],
-            'effort': row[8],
-            'target_version': row[9],
-            'assigned_to': row[10],
-            'notes': row[11],
-            'related_items': row[12],
-            'created_at': row[13],
-            'updated_at': row[14],
-            'completed_at': row[15]
-        }
+            item = {
+                'id': row[0],
+                'title': row[1],
+                'description': row[2],
+                'category': row[3],
+                'priority': row[4],
+                'phase': row[5],
+                'status': row[6],
+                'impact': row[7],
+                'effort': row[8],
+                'target_version': row[9],
+                'assigned_to': row[10],
+                'notes': row[11],
+                'related_items': row[12],
+                'created_at': row[13],
+                'updated_at': row[14],
+                'completed_at': row[15]
+            }
 
         return jsonify({'item': item}), 200
 
@@ -152,32 +150,30 @@ def create_roadmap_item():
         if not data.get('category'):
             return jsonify({'error': 'Category is required'}), 400
 
-        conn = get_connection()
-        cursor = conn.cursor()
+        with db.get_connection() as conn:
+            cursor = conn.cursor()
 
-        cursor.execute('''
-            INSERT INTO feature_roadmap
-            (title, description, category, priority, phase, status, impact, effort,
-             target_version, assigned_to, notes, related_items)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            data.get('title'),
-            data.get('description'),
-            data.get('category'),
-            data.get('priority', 'medium'),
-            data.get('phase', 'backlog'),
-            data.get('status', 'planned'),
-            data.get('impact'),
-            data.get('effort'),
-            data.get('target_version'),
-            data.get('assigned_to'),
-            data.get('notes'),
-            data.get('related_items')
-        ))
+            cursor.execute('''
+                INSERT INTO feature_roadmap
+                (title, description, category, priority, phase, status, impact, effort,
+                 target_version, assigned_to, notes, related_items)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                data.get('title'),
+                data.get('description'),
+                data.get('category'),
+                data.get('priority', 'medium'),
+                data.get('phase', 'backlog'),
+                data.get('status', 'planned'),
+                data.get('impact'),
+                data.get('effort'),
+                data.get('target_version'),
+                data.get('assigned_to'),
+                data.get('notes'),
+                data.get('related_items')
+            ))
 
-        item_id = cursor.lastrowid
-        conn.commit()
-        conn.close()
+            item_id = cursor.lastrowid
 
         logger.info(f"Roadmap item created by {current_user.username}: {data.get('title')}")
         return jsonify({'id': item_id, 'message': 'Roadmap item created successfully'}), 201
@@ -198,56 +194,52 @@ def update_roadmap_item(item_id):
     try:
         data = request.get_json()
 
-        conn = get_connection()
-        cursor = conn.cursor()
+        with db.get_connection() as conn:
+            cursor = conn.cursor()
 
-        # Check if item exists
-        cursor.execute("SELECT id FROM feature_roadmap WHERE id = ?", (item_id,))
-        if not cursor.fetchone():
-            conn.close()
-            return jsonify({'error': 'Item not found'}), 404
+            # Check if item exists
+            cursor.execute("SELECT id FROM feature_roadmap WHERE id = ?", (item_id,))
+            if not cursor.fetchone():
+                return jsonify({'error': 'Item not found'}), 404
 
-        # Update item
-        completed_at = None
-        if data.get('status') == 'completed':
-            completed_at = datetime.now().isoformat()
+            # Update item
+            completed_at = None
+            if data.get('status') == 'completed':
+                completed_at = datetime.now().isoformat()
 
-        cursor.execute('''
-            UPDATE feature_roadmap
-            SET title = COALESCE(?, title),
-                description = COALESCE(?, description),
-                category = COALESCE(?, category),
-                priority = COALESCE(?, priority),
-                phase = COALESCE(?, phase),
-                status = COALESCE(?, status),
-                impact = COALESCE(?, impact),
-                effort = COALESCE(?, effort),
-                target_version = COALESCE(?, target_version),
-                assigned_to = COALESCE(?, assigned_to),
-                notes = COALESCE(?, notes),
-                related_items = COALESCE(?, related_items),
-                updated_at = CURRENT_TIMESTAMP,
-                completed_at = COALESCE(?, completed_at)
-            WHERE id = ?
-        ''', (
-            data.get('title'),
-            data.get('description'),
-            data.get('category'),
-            data.get('priority'),
-            data.get('phase'),
-            data.get('status'),
-            data.get('impact'),
-            data.get('effort'),
-            data.get('target_version'),
-            data.get('assigned_to'),
-            data.get('notes'),
-            data.get('related_items'),
-            completed_at,
-            item_id
-        ))
-
-        conn.commit()
-        conn.close()
+            cursor.execute('''
+                UPDATE feature_roadmap
+                SET title = COALESCE(?, title),
+                    description = COALESCE(?, description),
+                    category = COALESCE(?, category),
+                    priority = COALESCE(?, priority),
+                    phase = COALESCE(?, phase),
+                    status = COALESCE(?, status),
+                    impact = COALESCE(?, impact),
+                    effort = COALESCE(?, effort),
+                    target_version = COALESCE(?, target_version),
+                    assigned_to = COALESCE(?, assigned_to),
+                    notes = COALESCE(?, notes),
+                    related_items = COALESCE(?, related_items),
+                    updated_at = CURRENT_TIMESTAMP,
+                    completed_at = COALESCE(?, completed_at)
+                WHERE id = ?
+            ''', (
+                data.get('title'),
+                data.get('description'),
+                data.get('category'),
+                data.get('priority'),
+                data.get('phase'),
+                data.get('status'),
+                data.get('impact'),
+                data.get('effort'),
+                data.get('target_version'),
+                data.get('assigned_to'),
+                data.get('notes'),
+                data.get('related_items'),
+                completed_at,
+                item_id
+            ))
 
         logger.info(f"Roadmap item {item_id} updated by {current_user.username}")
         return jsonify({'message': 'Roadmap item updated successfully'}), 200
@@ -266,22 +258,19 @@ def delete_roadmap_item(item_id):
         return auth_check
 
     try:
-        conn = get_connection()
-        cursor = conn.cursor()
+        with db.get_connection() as conn:
+            cursor = conn.cursor()
 
-        # Check if item exists
-        cursor.execute("SELECT title FROM feature_roadmap WHERE id = ?", (item_id,))
-        row = cursor.fetchone()
-        if not row:
-            conn.close()
-            return jsonify({'error': 'Item not found'}), 404
+            # Check if item exists
+            cursor.execute("SELECT title FROM feature_roadmap WHERE id = ?", (item_id,))
+            row = cursor.fetchone()
+            if not row:
+                return jsonify({'error': 'Item not found'}), 404
 
-        title = row[0]
+            title = row[0]
 
-        # Delete item
-        cursor.execute("DELETE FROM feature_roadmap WHERE id = ?", (item_id,))
-        conn.commit()
-        conn.close()
+            # Delete item
+            cursor.execute("DELETE FROM feature_roadmap WHERE id = ?", (item_id,))
 
         logger.info(f"Roadmap item {item_id} ({title}) deleted by {current_user.username}")
         return jsonify({'message': 'Roadmap item deleted successfully'}), 200
@@ -300,51 +289,49 @@ def get_roadmap_stats():
         return auth_check
 
     try:
-        conn = get_connection()
-        cursor = conn.cursor()
+        with db.get_connection() as conn:
+            cursor = conn.cursor()
 
-        # Get counts by status
-        cursor.execute('''
-            SELECT
-                status,
-                COUNT(*) as count
-            FROM feature_roadmap
-            GROUP BY status
-        ''')
-        status_counts = {row[0]: row[1] for row in cursor.fetchall()}
+            # Get counts by status
+            cursor.execute('''
+                SELECT
+                    status,
+                    COUNT(*) as count
+                FROM feature_roadmap
+                GROUP BY status
+            ''')
+            status_counts = {row[0]: row[1] for row in cursor.fetchall()}
 
-        # Get counts by phase
-        cursor.execute('''
-            SELECT
-                phase,
-                COUNT(*) as count
-            FROM feature_roadmap
-            GROUP BY phase
-        ''')
-        phase_counts = {row[0]: row[1] for row in cursor.fetchall()}
+            # Get counts by phase
+            cursor.execute('''
+                SELECT
+                    phase,
+                    COUNT(*) as count
+                FROM feature_roadmap
+                GROUP BY phase
+            ''')
+            phase_counts = {row[0]: row[1] for row in cursor.fetchall()}
 
-        # Get counts by priority
-        cursor.execute('''
-            SELECT
-                priority,
-                COUNT(*) as count
-            FROM feature_roadmap
-            GROUP BY priority
-        ''')
-        priority_counts = {row[0]: row[1] for row in cursor.fetchall()}
+            # Get counts by priority
+            cursor.execute('''
+                SELECT
+                    priority,
+                    COUNT(*) as count
+                FROM feature_roadmap
+                GROUP BY priority
+            ''')
+            priority_counts = {row[0]: row[1] for row in cursor.fetchall()}
 
-        # Get counts by category
-        cursor.execute('''
-            SELECT
-                category,
-                COUNT(*) as count
-            FROM feature_roadmap
-            GROUP BY category
-            ORDER BY count DESC
-        ''')
-        category_counts = {row[0]: row[1] for row in cursor.fetchall()}
-
-        conn.close()
+            # Get counts by category
+            cursor.execute('''
+                SELECT
+                    category,
+                    COUNT(*) as count
+                FROM feature_roadmap
+                GROUP BY category
+                ORDER BY count DESC
+            ''')
+            category_counts = {row[0]: row[1] for row in cursor.fetchall()}
 
         return jsonify({
             'total': sum(status_counts.values()),
