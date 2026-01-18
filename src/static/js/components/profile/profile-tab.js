@@ -157,9 +157,16 @@ export function renderProfileTab(container) {
 
                 <!-- Spouse Details -->
                 <div class="form-section">
-                    <h2 style="font-size: var(--font-xl); margin-bottom: var(--space-3); border-bottom: 2px solid var(--accent-color); padding-bottom: var(--space-2);">
-                        Spouse Details
-                    </h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3);">
+                        <h2 style="font-size: var(--font-xl); border-bottom: 2px solid var(--accent-color); padding-bottom: var(--space-2); margin: 0;">
+                            Spouse Details
+                        </h2>
+                        ${spouse.name ? `
+                        <button type="button" id="clear-spouse-btn" style="padding: var(--space-2) var(--space-4); background: var(--danger-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-base);">
+                            Clear Spouse
+                        </button>
+                        ` : ''}
+                    </div>
                     <div class="form-grid">
                         <div class="form-group">
                             <label for="spouse_name">Name</label>
@@ -340,6 +347,16 @@ function setupProfileFormHandlers(container, profile) {
 
     // Remove child buttons
     setupRemoveChildButtons(container);
+
+    // Clear spouse button
+    const clearSpouseBtn = container.querySelector('#clear-spouse-btn');
+    if (clearSpouseBtn) {
+        clearSpouseBtn.addEventListener('click', () => {
+            if (confirm('Clear all spouse information? This will remove all spouse details from the profile.')) {
+                clearSpouseFields(container);
+            }
+        });
+    }
 
     // Cancel button
     cancelBtn.addEventListener('click', () => {
@@ -570,6 +587,24 @@ function reindexChildren(container) {
             }
         });
     });
+}
+
+/**
+ * Clear all spouse fields
+ */
+function clearSpouseFields(container) {
+    container.querySelector('#spouse_name').value = '';
+    container.querySelector('#spouse_birth_date').value = '';
+    container.querySelector('#spouse_retirement_date').value = '';
+    container.querySelector('#spouse_current_age').value = '';
+    container.querySelector('#spouse_retirement_age').value = '';
+    container.querySelector('#spouse_life_expectancy').value = '';
+
+    // Hide the clear button
+    const clearBtn = container.querySelector('#clear-spouse-btn');
+    if (clearBtn) {
+        clearBtn.style.display = 'none';
+    }
 }
 
 /**
