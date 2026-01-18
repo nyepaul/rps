@@ -11,13 +11,14 @@ class User(UserMixin):
 
     def __init__(self, id, username, email, password_hash, is_active=True, is_admin=False,
                  created_at=None, last_login=None, updated_at=None, encrypted_dek=None, dek_iv=None,
-                 reset_token=None, reset_token_expires=None):
+                 reset_token=None, reset_token_expires=None, is_super_admin=False):
         self.id = id
         self.username = username
         self.email = email
         self.password_hash = password_hash
         self._is_active = bool(is_active) if is_active is not None else True
         self._is_admin = bool(is_admin) if is_admin is not None else False
+        self._is_super_admin = bool(is_super_admin) if is_super_admin is not None else False
         self.created_at = created_at or datetime.now().isoformat()
         self.updated_at = updated_at or datetime.now().isoformat()
         self.last_login = last_login
@@ -35,7 +36,12 @@ class User(UserMixin):
     def is_admin(self):
         """Admin status property."""
         return self._is_admin
-    
+
+    @property
+    def is_super_admin(self):
+        """Super admin status property."""
+        return self._is_super_admin
+
     @staticmethod
     def hash_password(password: str) -> str:
         """Hash a password using bcrypt."""

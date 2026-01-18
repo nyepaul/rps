@@ -6,6 +6,7 @@ import { store } from './state/store.js';
 import { apiClient } from './api/client.js';
 import { API_ENDPOINTS, STORAGE_KEYS, APP_CONFIG } from './config.js';
 import { showSetupChecklist, updateSetupButton } from './components/setup/setup-checklist.js';
+import { showFeedbackModal } from './components/feedback/feedback-modal.js';
 
 /**
  * Initialize application
@@ -21,6 +22,9 @@ async function init() {
 
     // Set up setup button
     setupSetupButton();
+
+    // Set up feedback button
+    setupFeedback();
 
     // Set up settings button
     setupSettings();
@@ -265,6 +269,18 @@ function setupLogout() {
             if (confirm('Are you sure you want to logout?')) {
                 await logout();
             }
+        });
+    }
+}
+
+/**
+ * Set up feedback button
+ */
+function setupFeedback() {
+    const feedbackBtn = document.getElementById('feedback-btn');
+    if (feedbackBtn) {
+        feedbackBtn.addEventListener('click', () => {
+            showFeedbackModal();
         });
     }
 }

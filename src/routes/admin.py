@@ -4,6 +4,7 @@ from flask_login import login_required, current_user
 from pydantic import BaseModel, validator
 from typing import Optional, Dict, Any
 from src.auth.admin_required import admin_required
+from src.auth.super_admin_required import super_admin_required
 from src.services.enhanced_audit_logger import enhanced_audit_logger, AuditConfig
 from src.auth.models import User
 from datetime import datetime
@@ -274,7 +275,7 @@ def list_users():
     try:
         from src.database.connection import db
 
-        rows = db.execute('SELECT id, username, email, is_active, is_admin, created_at, last_login FROM users ORDER BY created_at DESC')
+        rows = db.execute('SELECT id, username, email, is_active, is_admin, is_super_admin, created_at, last_login FROM users ORDER BY created_at DESC')
         users = [dict(row) for row in rows]
 
         # Log admin action
@@ -341,6 +342,76 @@ def update_user(user_id: int):
 
     except Exception as e:
         return jsonify({'error': str(e)}), 400
+
+
+@admin_bp.route('/users/<int:user_id>/super-admin', methods=['PUT'])
+@login_required
+@super_admin_required
+def update_super_admin_status(user_id: int):
+    """
+    Grant or revoke super admin status (super admin only).
+
+    Only super admins can grant/revoke super admin privileges.
+    Super admins can view feedback content and manage other super admins.
+
+    Request body:
+        is_super_admin: boolean
+    """
+    try:
+        from src.database.connection import db
+
+        data = request.json
+        if 'is_super_admin' not in data:
+            return jsonify({'error': 'is_super_admin field required'}), 400
+
+        is_super_admin = bool(data['is_super_admin'])
+
+        # Get target user
+        user = User.get_by_id(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        # Require target user to be an admin first
+        if not user.is_admin:
+            return jsonify({'error': 'User must be an admin before becoming super admin'}), 400
+
+        # Prevent self-demotion from super admin
+        if user_id == current_user.id and not is_super_admin:
+            return jsonify({'error': 'Cannot revoke your own super admin status'}), 400
+
+        # Update super admin status
+        with db.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                'UPDATE users SET is_super_admin = ? WHERE id = ?',
+                (1 if is_super_admin else 0, user_id)
+            )
+            conn.commit()
+
+        # Log admin action
+        enhanced_audit_logger.log_admin_action(
+            action='UPDATE_SUPER_ADMIN',
+            details={
+                'target_user_id': user_id,
+                'target_username': user.username,
+                'is_super_admin': is_super_admin
+            },
+            user_id=current_user.id
+        )
+
+        return jsonify({
+            'success': True,
+            'message': f"User {'granted' if is_super_admin else 'revoked'} super admin privileges",
+            'user': {
+                'id': user_id,
+                'username': user.username,
+                'is_super_admin': is_super_admin
+            }
+        }), 200
+
+    except Exception as e:
+        print(f"Error updating super admin status: {e}")
+        return jsonify({'error': 'Failed to update super admin status'}), 500
 
 
 @admin_bp.route('/users/<int:user_id>/profiles', methods=['GET'])

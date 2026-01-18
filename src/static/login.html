@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Retirement Planning System</title>
+
+    <!-- Password Manager Site Identification -->
+    <meta name="application-name" content="Retirement Planning System - rps.pan2.app">
+    <meta property="og:site_name" content="rps.pan2.app">
+    <link rel="canonical" href="https://rps.pan2.app/login">
+
     <style>
         * {
             margin: 0;
@@ -135,14 +141,15 @@
         <div id="message"></div>
         
         <!-- Login Form -->
-        <form id="loginForm">
+        <form id="loginForm" action="https://rps.pan2.app/api/auth/login" method="post">
+            <input type="hidden" name="site" value="rps.pan2.app">
             <div class="form-group">
                 <label for="loginUsername">Username</label>
-                <input type="text" id="loginUsername" required autocomplete="username">
+                <input type="text" id="loginUsername" name="username" required autocomplete="username">
             </div>
             <div class="form-group">
                 <label for="loginPassword">Password</label>
-                <input type="password" id="loginPassword" required autocomplete="current-password">
+                <input type="password" id="loginPassword" name="password" required autocomplete="current-password">
             </div>
             <div style="text-align: right; margin-bottom: 15px;">
                 <a href="#" id="forgotPasswordLink" style="color: #667eea; text-decoration: none; font-size: 14px;">Forgot Password?</a>
@@ -151,19 +158,20 @@
         </form>
         
         <!-- Register Form -->
-        <form id="registerForm" class="hidden">
+        <form id="registerForm" class="hidden" action="https://rps.pan2.app/api/auth/register" method="post">
+            <input type="hidden" name="site" value="rps.pan2.app">
             <div class="form-group">
                 <label for="registerUsername">Username</label>
-                <input type="text" id="registerUsername" required autocomplete="username">
+                <input type="text" id="registerUsername" name="username" required autocomplete="username">
                 <small>3-50 characters, letters, numbers, hyphens, underscores only</small>
             </div>
             <div class="form-group">
                 <label for="registerEmail">Email</label>
-                <input type="email" id="registerEmail" required autocomplete="email">
+                <input type="email" id="registerEmail" name="email" required autocomplete="email">
             </div>
             <div class="form-group">
                 <label for="registerPassword">Password</label>
-                <input type="password" id="registerPassword" required autocomplete="new-password">
+                <input type="password" id="registerPassword" name="password" required autocomplete="new-password">
                 <small>Min 8 characters, with uppercase, lowercase, and number</small>
             </div>
             <button type="submit" id="registerBtn">Register</button>
@@ -201,6 +209,9 @@
     </div>
     
     <script>
+        // Explicitly set site identifier for password managers
+        window.location.hostname; // Force evaluation of full hostname
+
         const API_URL = '/api';
         const loginForm = document.getElementById('loginForm');
         const registerForm = document.getElementById('registerForm');

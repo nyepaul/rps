@@ -192,6 +192,31 @@
             content: ' ✓';
         }
 
+        header .feedback-btn {
+            background: linear-gradient(135deg, #1098ad, #15aabf);
+            border: 1px solid #1098ad;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        header .feedback-btn:hover {
+            background: linear-gradient(135deg, #0c7489, #1098ad);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(16, 152, 173, 0.3);
+        }
+
+        header .feedback-btn:active {
+            transform: translateY(0);
+        }
+
         header .settings-btn {
             background: rgba(255,255,255,0.1);
             border: 1px solid rgba(255,255,255,0.2);

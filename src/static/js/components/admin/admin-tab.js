@@ -8,6 +8,7 @@ import { renderLogsViewer } from './logs-viewer.js';
 import { renderConfigEditor } from './config-editor.js';
 import { renderUserManagement } from './user-management.js';
 import { renderSystemInfo } from './system-info.js';
+import { renderFeedbackViewer } from './feedback-viewer.js';
 
 /**
  * Render admin tab with sub-tabs
@@ -43,6 +44,9 @@ export async function renderAdminTab(container) {
             <div style="display: flex; gap: 10px; margin-bottom: 30px; border-bottom: 2px solid var(--border-color); padding-bottom: 0;">
                 <button class="admin-subtab active" data-subtab="logs" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid var(--accent-color); cursor: pointer; font-weight: 600; color: var(--accent-color); transition: all 0.2s;">
                     📋 Audit Logs
+                </button>
+                <button class="admin-subtab" data-subtab="feedback" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s;">
+                    💬 Feedback
                 </button>
                 <button class="admin-subtab" data-subtab="config" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s;">
                     ⚙️ Configuration
@@ -114,6 +118,9 @@ async function showSubTab(container, subtab) {
         switch (subtab) {
             case 'logs':
                 await renderLogsViewer(contentContainer);
+                break;
+            case 'feedback':
+                await renderFeedbackViewer(contentContainer);
                 break;
             case 'config':
                 await renderConfigEditor(contentContainer);
