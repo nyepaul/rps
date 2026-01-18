@@ -291,8 +291,18 @@ function renderCollegeExpensesSection(parentContainer) {
     // Setup event listeners
     container.querySelectorAll('.college-expense-row').forEach(row => {
         row.addEventListener('click', (e) => {
+            // If already editing, close the editor
+            if (row.classList.contains('editing')) {
+                const cancelBtn = row.querySelector('.cancel-inline-edit');
+                if (cancelBtn) cancelBtn.click();
+                row.classList.remove('editing');
+                return;
+            }
+
+            row.classList.add('editing');
             const index = parseInt(row.getAttribute('data-index'));
-            showCollegeExpenseModal(parentContainer, index);
+            const expense = budgetData.college_expenses[index];
+            makeCollegeExpenseRowEditable(row, expense, index, parentContainer);
         });
     });
 
@@ -305,6 +315,142 @@ function renderCollegeExpensesSection(parentContainer) {
             renderBudgetSummary(parentContainer);
         });
     }
+}
+
+/**
+ * Make college expense row editable inline
+ */
+function makeCollegeExpenseRowEditable(rowElement, expense, index, parentContainer) {
+    const currentYear = new Date().getFullYear();
+    const age = currentYear - expense.birth_year;
+    const originalHTML = rowElement.innerHTML;
+
+    rowElement.innerHTML = `
+        <div style="padding: 10px 12px; background: var(--bg-tertiary); border-radius: 6px; border: 2px solid var(--accent-color);">
+            <div style="margin-bottom: 6px; font-weight: 600; font-size: 13px; color: var(--accent-color);">
+                ${expense.child_name} (Age ${age})
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px 10px; margin-bottom: 10px;">
+                <div>
+                    <label style="display: block; font-size: 9px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;">
+                        Annual Cost
+                    </label>
+                    <input type="number" name="annual_cost" value="${expense.annual_cost}" min="0" step="1000"
+                           style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 9px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;">
+                        Start Year
+                    </label>
+                    <input type="number" name="start_year" value="${expense.start_year}" min="2000" max="2100"
+                           style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 9px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;">
+                        End Year
+                    </label>
+                    <input type="number" name="end_year" value="${expense.end_year}" min="2000" max="2100"
+                           style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
+                </div>
+                <div style="display: flex; align-items: flex-end;">
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 11px; font-weight: 600; padding: 4px 0;">
+                        <input type="checkbox" name="enabled" ${expense.enabled ? 'checked' : ''} style="width: 16px; height: 16px; cursor: pointer;">
+                        <span>Enabled</span>
+                    </label>
+                </div>
+            </div>
+            <div style="display: flex; gap: 6px; justify-content: space-between; padding-top: 6px; border-top: 1px solid var(--border-color);">
+                <button class="delete-college-expense" style="padding: 5px 12px; background: var(--danger-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
+                    Delete
+                </button>
+                <div style="display: flex; gap: 6px;">
+                    <button class="cancel-inline-edit" style="padding: 5px 12px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
+                        Cancel
+                    </button>
+                    <button class="save-inline-edit" style="padding: 5px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                        💾 Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Handle save
+    const saveBtn = rowElement.querySelector('.save-inline-edit');
+    saveBtn.addEventListener('click', async () => {
+        const updatedExpense = {
+            ...expense,
+            annual_cost: parseFloat(rowElement.querySelector('[name="annual_cost"]').value),
+            start_year: parseInt(rowElement.querySelector('[name="start_year"]').value),
+            end_year: parseInt(rowElement.querySelector('[name="end_year"]').value),
+            enabled: rowElement.querySelector('[name="enabled"]').checked
+        };
+
+        try {
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+
+            budgetData.college_expenses[index] = updatedExpense;
+
+            rowElement.classList.remove('editing');
+            renderCollegeExpensesSection(parentContainer);
+            renderBudgetSummary(parentContainer);
+
+            const profile = store.get('currentProfile');
+            if (profile) {
+                await saveBudget(profile, parentContainer);
+            }
+        } catch (error) {
+            alert('Failed to save: ' + error.message);
+            saveBtn.disabled = false;
+            saveBtn.textContent = '💾 Save';
+        }
+    });
+
+    // Handle cancel
+    const cancelBtn = rowElement.querySelector('.cancel-inline-edit');
+    cancelBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        rowElement.innerHTML = originalHTML;
+        rowElement.classList.remove('editing');
+    });
+
+    // Handle delete
+    const deleteBtn = rowElement.querySelector('.delete-college-expense');
+    deleteBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (confirm(`Remove college expense for ${expense.child_name}?`)) {
+            budgetData.college_expenses.splice(index, 1);
+            rowElement.classList.remove('editing');
+            renderCollegeExpensesSection(parentContainer);
+            renderBudgetSummary(parentContainer);
+
+            const profile = store.get('currentProfile');
+            if (profile) {
+                await saveBudget(profile, parentContainer);
+            }
+        }
+    });
+
+    // Click anywhere except Save button to cancel
+    const editContainer = rowElement.querySelector('div');
+    editContainer.addEventListener('click', (e) => {
+        // Only close if not clicking on Save button or input fields
+        if (!e.target.closest('.save-inline-edit') && !e.target.closest('.delete-college-expense') && !e.target.closest('input, select, textarea, label')) {
+            e.stopPropagation();
+            rowElement.innerHTML = originalHTML;
+            rowElement.classList.remove('editing');
+        }
+    });
+
+    // Focus first input
+    setTimeout(() => {
+        const firstInput = rowElement.querySelector('input[name="annual_cost"]');
+        if (firstInput) {
+            firstInput.focus();
+            firstInput.select();
+        }
+    }, 100);
 }
 
 /**
