@@ -181,6 +181,53 @@ def delete_profile(name: str):
         return jsonify({'error': str(e)}), 500
 
 
+@profiles_bp.route('/profile/<name>/clone', methods=['POST'])
+@login_required
+def clone_profile(name: str):
+    """Clone an existing profile (with ownership check)."""
+    try:
+        # Get source profile with ownership check
+        source_profile = Profile.get_by_name(name, current_user.id)
+        if not source_profile:
+            return jsonify({'error': 'Profile not found'}), 404
+
+        # Get new profile name from request body
+        new_name = request.json.get('new_name', f"{name} (Copy)")
+
+        # Validate new name
+        if not new_name or not new_name.strip():
+            return jsonify({'error': 'New profile name is required'}), 400
+
+        new_name = new_name.strip()
+        if len(new_name) > 100:
+            return jsonify({'error': 'Profile name must be less than 100 characters'}), 400
+
+        # Check if profile with new name already exists
+        existing = Profile.get_by_name(new_name, current_user.id)
+        if existing:
+            return jsonify({'error': 'Profile with this name already exists'}), 409
+
+        # Clone the profile data
+        cloned_data = source_profile.data_dict.copy() if source_profile.data_dict else {}
+
+        # Create new profile with cloned data
+        cloned_profile = Profile(
+            user_id=current_user.id,
+            name=new_name,
+            birth_date=source_profile.birth_date,
+            retirement_date=source_profile.retirement_date,
+            data=cloned_data
+        )
+        cloned_profile.save()
+
+        return jsonify({
+            'message': f'Profile cloned successfully as "{new_name}"',
+            'profile': cloned_profile.to_dict()
+        }), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @profiles_bp.route('/profile/<name>/assets/export', methods=['GET'])
 @login_required
 def export_assets_csv(name: str):

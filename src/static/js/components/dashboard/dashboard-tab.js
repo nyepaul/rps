@@ -180,7 +180,7 @@ function renderProfileCard(profile, currentProfile) {
             </div>
 
             <!-- Actions -->
-            <div style="display: flex; gap: 3px;">
+            <div style="display: flex; gap: 3px; margin-bottom: 5px;">
                 ${!isActive ? `
                 <button class="load-profile-btn" data-profile-name="${profile.name}" style="flex: 1; padding: 5px; background: var(--accent-color); color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px; font-weight: 600;">
                     Load
@@ -192,6 +192,11 @@ function renderProfileCard(profile, currentProfile) {
                 `}
                 <button class="view-info-btn" data-profile-name="${profile.name}" style="flex: 1; padding: 5px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 3px; cursor: pointer; font-size: 10px; font-weight: 600;">
                     Info
+                </button>
+            </div>
+            <div style="display: flex; gap: 3px;">
+                <button class="clone-profile-btn" data-profile-name="${profile.name}" style="flex: 1; padding: 5px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 3px; cursor: pointer; font-size: 10px; font-weight: 600;">
+                    Clone
                 </button>
                 <button class="delete-profile-btn" data-profile-name="${profile.name}" style="padding: 5px 7px; background: transparent; color: var(--danger-color); border: 1px solid var(--danger-color); border-radius: 3px; cursor: pointer; font-size: 10px; font-weight: 600; opacity: 0.7;" onmouseover="this.style.opacity='1'; this.style.background='var(--danger-color)'; this.style.color='white'" onmouseout="this.style.opacity='0.7'; this.style.background='transparent'; this.style.color='var(--danger-color)'">
                     ✕
@@ -232,6 +237,14 @@ function setupDashboardHandlers(container, profiles) {
         });
     });
 
+    // Clone Profile Buttons
+    container.querySelectorAll('.clone-profile-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const profileName = btn.dataset.profileName;
+            await cloneProfile(profileName, container);
+        });
+    });
+
     // Delete Profile Buttons
     container.querySelectorAll('.delete-profile-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
@@ -259,6 +272,36 @@ async function loadProfile(profileName, container) {
     } catch (error) {
         console.error('Error loading profile:', error);
         showError(`Failed to load profile: ${error.message}`);
+    }
+}
+
+/**
+ * Clone a profile
+ */
+async function cloneProfile(profileName, container) {
+    // Prompt for new profile name
+    const newName = prompt(`Enter a name for the cloned profile:`, `${profileName} (Copy)`);
+
+    // User cancelled
+    if (newName === null) {
+        return;
+    }
+
+    // Validate name
+    if (!newName || !newName.trim()) {
+        showError('Profile name cannot be empty');
+        return;
+    }
+
+    try {
+        const result = await profilesAPI.clone(profileName, newName.trim());
+        showSuccess(`Profile "${profileName}" cloned as "${newName.trim()}"!`);
+
+        // Refresh dashboard
+        await renderDashboardTab(container);
+    } catch (error) {
+        console.error('Error cloning profile:', error);
+        showError(`Failed to clone profile: ${error.message}`);
     }
 }
 

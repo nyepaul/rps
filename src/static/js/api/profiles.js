@@ -40,4 +40,11 @@ export const profilesAPI = {
     async delete(name) {
         return await apiClient.delete(API_ENDPOINTS.PROFILE_DELETE(name));
     },
+
+    /**
+     * Clone profile
+     */
+    async clone(name, newName) {
+        return await apiClient.post(`/api/profile/${encodeURIComponent(name)}/clone`, { new_name: newName });
+    },
 };
