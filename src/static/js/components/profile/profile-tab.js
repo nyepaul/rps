@@ -4,7 +4,7 @@
 
 import { profilesAPI } from '../../api/profiles.js';
 import { store } from '../../state/store.js';
-import { showSuccess, showError } from '../../utils/dom.js';
+import { showSuccess, showError, showSpinner, hideSpinner } from '../../utils/dom.js';
 
 export function renderProfileTab(container) {
     const profile = store.get('currentProfile');
@@ -373,6 +373,7 @@ function setupProfileFormHandlers(container, profile) {
         saveBtn.disabled = true;
         saveBtn.textContent = 'Saving...';
 
+        showSpinner('Saving profile...');
         try {
             // Collect form data
             const formData = new FormData(form);
@@ -477,6 +478,8 @@ function setupProfileFormHandlers(container, profile) {
             // Show success message
             showSuccess('Profile saved successfully!');
 
+            hideSpinner();
+
             // Navigate to dashboard
             setTimeout(() => {
                 window.app.showTab('dashboard');
@@ -484,7 +487,8 @@ function setupProfileFormHandlers(container, profile) {
 
         } catch (error) {
             console.error('Error saving profile:', error);
-            showError(document.querySelector('.form-section'), error.message);
+            hideSpinner();
+            showError(error.message);
             saveBtn.disabled = false;
             saveBtn.textContent = 'Save Changes';
         }

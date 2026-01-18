@@ -6,7 +6,7 @@
 import { store } from '../../state/store.js';
 import { profilesAPI } from '../../api/profiles.js';
 import { formatCurrency, formatCompact } from '../../utils/formatters.js';
-import { showSuccess, showError } from '../../utils/dom.js';
+import { showSuccess, showError, showSpinner, hideSpinner } from '../../utils/dom.js';
 import { STORAGE_KEYS } from '../../config.js';
 import { calculateNetWorth, calculateLiquidAssets, calculateRetirementAssets, calculateRealEstateEquity, calculateTotalDebts } from '../../utils/financial-calculations.js';
 
@@ -258,6 +258,7 @@ function setupDashboardHandlers(container, profiles) {
  * Load a profile
  */
 async function loadProfile(profileName, container) {
+    showSpinner(`Loading profile "${profileName}"...`);
     try {
         const result = await profilesAPI.get(profileName);
         store.setState({ currentProfile: result.profile });
@@ -272,6 +273,8 @@ async function loadProfile(profileName, container) {
     } catch (error) {
         console.error('Error loading profile:', error);
         showError(`Failed to load profile: ${error.message}`);
+    } finally {
+        hideSpinner();
     }
 }
 
@@ -293,6 +296,7 @@ async function cloneProfile(profileName, container) {
         return;
     }
 
+    showSpinner(`Cloning profile "${profileName}"...`);
     try {
         const result = await profilesAPI.clone(profileName, newName.trim());
         showSuccess(`Profile "${profileName}" cloned as "${newName.trim()}"!`);
@@ -302,6 +306,8 @@ async function cloneProfile(profileName, container) {
     } catch (error) {
         console.error('Error cloning profile:', error);
         showError(`Failed to clone profile: ${error.message}`);
+    } finally {
+        hideSpinner();
     }
 }
 
@@ -320,6 +326,7 @@ async function deleteProfile(profileName, container) {
         return;
     }
 
+    showSpinner(`Deleting profile "${profileName}"...`);
     try {
         await profilesAPI.delete(profileName);
         showSuccess(`Profile "${profileName}" deleted successfully!`);
@@ -335,6 +342,8 @@ async function deleteProfile(profileName, container) {
     } catch (error) {
         console.error('Error deleting profile:', error);
         showError(`Failed to delete profile: ${error.message}`);
+    } finally {
+        hideSpinner();
     }
 }
 
