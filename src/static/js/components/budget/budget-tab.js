@@ -1319,16 +1319,35 @@ function renderExpenseSection(parentContainer) {
         { key: 'other', label: 'Other', icon: '📌', description: 'Miscellaneous expenses' }
     ];
 
+    // Find custom categories (in expenses but not in standard list)
+    const standardKeys = categories.map(c => c.key);
+    const customCategories = Object.keys(expenses)
+        .filter(key => !standardKeys.includes(key) && expenses[key] && (Array.isArray(expenses[key]) ? expenses[key].length > 0 : expenses[key].amount !== undefined))
+        .map(key => ({
+            key,
+            label: key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
+            icon: '📝',
+            description: 'Custom category',
+            isCustom: true
+        }));
+
+    const allCategories = [...categories, ...customCategories];
+
     let html = `
         <div style="background: var(--bg-secondary); padding: var(--space-3); border-radius: 8px;">
-            <h2 style="margin: 0 0 var(--space-3) 0; display: flex; align-items: center; gap: var(--space-2); font-size: var(--font-md);">
-                <span style="font-size: var(--font-lg);">💳</span>
-                Expense Categories
-            </h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3);">
+                <h2 style="margin: 0; display: flex; align-items: center; gap: var(--space-2); font-size: var(--font-md);">
+                    <span style="font-size: var(--font-lg);">💳</span>
+                    Expense Categories
+                </h2>
+                <button id="add-custom-category-btn" style="padding: 6px 12px; background: var(--info-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: var(--font-xs); font-weight: 500;">
+                    + Custom Category
+                </button>
+            </div>
             <div style="display: flex; flex-direction: column; gap: var(--space-2);">
     `;
 
-    for (const cat of categories) {
+    for (const cat of allCategories) {
         const catData = expenses[cat.key];
 
         // Convert legacy single object to array format
@@ -1448,6 +1467,9 @@ function makeExpenseItemEditable(rowElement, category, index, expense, parentCon
         other: 'Other'
     };
 
+    // Get category label (use predefined or convert from key)
+    const categoryLabel = categoryLabels[category] || category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+
     const originalHTML = rowElement.innerHTML;
 
     // Get profile data for calculating default dates
@@ -1482,14 +1504,14 @@ function makeExpenseItemEditable(rowElement, category, index, expense, parentCon
     rowElement.innerHTML = `
         <div style="padding: 10px 12px; background: var(--bg-tertiary); border-radius: 6px; border: 2px solid var(--accent-color);">
             <div style="margin-bottom: 6px; font-weight: 600; font-size: 13px; color: var(--accent-color);">
-                ${categoryLabels[category]}
+                ${categoryLabel}
             </div>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px 10px; margin-bottom: 10px;">
                 <div style="grid-column: 1 / -1;">
                     <label style="display: block; font-size: 9px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;">
                         Description / Name
                     </label>
-                    <input type="text" name="name" value="${expense.name || ''}" placeholder="${categoryLabels[category]}"
+                    <input type="text" name="name" value="${expense.name || ''}" placeholder="${categoryLabel}"
                            style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
                 </div>
                 <div>
@@ -1657,6 +1679,14 @@ function makeExpenseItemEditable(rowElement, category, index, expense, parentCon
  * Setup expense event listeners
  */
 function setupExpenseEventListeners(container) {
+    // Add custom category button handler
+    const addCustomCategoryBtn = container.querySelector('#add-custom-category-btn');
+    if (addCustomCategoryBtn) {
+        addCustomCategoryBtn.addEventListener('click', () => {
+            addCustomExpenseCategory(container);
+        });
+    }
+
     // Add expense button handlers
     container.querySelectorAll('.add-expense-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -1712,6 +1742,34 @@ function setupExpenseEventListeners(container) {
             editExpenseItem(container, category, index);
         });
     });
+}
+
+/**
+ * Add a new custom expense category
+ */
+function addCustomExpenseCategory(parentContainer) {
+    const categoryName = prompt('Enter custom category name (e.g., "Boat Expenses", "RV Maintenance"):');
+    if (!categoryName || !categoryName.trim()) return;
+
+    // Convert to snake_case key
+    const categoryKey = categoryName.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+
+    // Check if category already exists
+    if (budgetData.expenses[currentPeriod][categoryKey]) {
+        alert('A category with this name already exists.');
+        return;
+    }
+
+    // Create empty array for the new category
+    budgetData.expenses[currentPeriod][categoryKey] = [];
+
+    // Re-render to show the new category
+    renderExpenseSection(parentContainer);
+
+    // Automatically add the first item
+    setTimeout(() => {
+        addExpenseItem(parentContainer, categoryKey);
+    }, 100);
 }
 
 /**
