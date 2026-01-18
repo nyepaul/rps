@@ -432,12 +432,21 @@ function makeCollegeExpenseRowEditable(rowElement, expense, index, parentContain
         }
     });
 
-    // Click anywhere except Save button to cancel
+    // Click outside to cancel (but not on inputs or buttons)
     const editContainer = rowElement.querySelector('div');
-    editContainer.addEventListener('click', (e) => {
-        // Only close if not clicking on Save button or input fields
-        if (!e.target.closest('.save-inline-edit') && !e.target.closest('.delete-college-expense') && !e.target.closest('input, select, textarea, label')) {
+
+    // Stop propagation on interactive elements to prevent closing
+    const interactiveElements = editContainer.querySelectorAll('input, select, textarea, button, label');
+    interactiveElements.forEach(elem => {
+        elem.addEventListener('click', (e) => {
             e.stopPropagation();
+        });
+    });
+
+    // Click on the container background (not interactive elements) to cancel
+    editContainer.addEventListener('click', (e) => {
+        // Only close if clicking directly on the container background
+        if (e.target === editContainer) {
             rowElement.innerHTML = originalHTML;
             rowElement.classList.remove('editing');
         }
@@ -1560,12 +1569,21 @@ function makeExpenseRowEditable(rowElement, category, expense, parentContainer) 
         rowElement.classList.remove('editing');
     });
 
-    // Click anywhere except Save button to cancel
+    // Click outside to cancel (but not on inputs or buttons)
     const editContainer = rowElement.querySelector('div');
-    editContainer.addEventListener('click', (e) => {
-        // Only close if not clicking on Save button or input fields
-        if (!e.target.closest('.save-inline-edit') && !e.target.closest('input, select, textarea, label')) {
+
+    // Stop propagation on interactive elements to prevent closing
+    const interactiveElements = editContainer.querySelectorAll('input, select, textarea, button, label');
+    interactiveElements.forEach(elem => {
+        elem.addEventListener('click', (e) => {
             e.stopPropagation();
+        });
+    });
+
+    // Click on the container background (not interactive elements) to cancel
+    editContainer.addEventListener('click', (e) => {
+        // Only close if clicking directly on the container background
+        if (e.target === editContainer) {
             rowElement.innerHTML = originalHTML;
             rowElement.classList.remove('editing');
         }
