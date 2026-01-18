@@ -68,9 +68,19 @@ export function renderAssetList(assets, container, onSaveCallback) {
     container.querySelectorAll('.asset-row').forEach((row, idx) => {
         const asset = allAssets[idx];
 
+        const cancelEditing = () => {
+            // Trigger cancel by clicking the cancel button if it exists
+            const cancelBtn = row.querySelector('.cancel-inline-edit');
+            if (cancelBtn) {
+                cancelBtn.click();
+            }
+            row.classList.remove('editing');
+        };
+
         const startEditing = () => {
-            // Don't start if already editing
+            // If already editing, close the editor instead
             if (row.classList.contains('editing')) {
+                cancelEditing();
                 return;
             }
 
@@ -101,7 +111,7 @@ export function renderAssetList(assets, container, onSaveCallback) {
 
         // Click on row to edit inline
         row.addEventListener('click', (e) => {
-            // Don't trigger if clicking on delete button or if already in edit mode
+            // Don't trigger if clicking on delete button
             if (e.target.closest('.delete-asset-btn')) {
                 return;
             }

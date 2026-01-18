@@ -1321,6 +1321,7 @@ function makeExpenseRowEditable(rowElement, category, expense, parentContainer) 
 
             budgetData.expenses[currentPeriod][category] = updatedExpense;
 
+            rowElement.classList.remove('editing');
             renderExpenseSection(parentContainer);
             renderBudgetSummary(parentContainer);
 
@@ -1339,6 +1340,7 @@ function makeExpenseRowEditable(rowElement, category, expense, parentContainer) 
     const cancelBtn = rowElement.querySelector('.cancel-inline-edit');
     cancelBtn.addEventListener('click', () => {
         rowElement.innerHTML = originalHTML;
+        rowElement.classList.remove('editing');
     });
 
     // Focus first input
@@ -1357,6 +1359,15 @@ function makeExpenseRowEditable(rowElement, category, expense, parentContainer) 
 function setupExpenseEventListeners(container) {
     container.querySelectorAll('.expense-row').forEach(row => {
         row.addEventListener('click', (e) => {
+            // If already editing, close the editor
+            if (row.classList.contains('editing')) {
+                const cancelBtn = row.querySelector('.cancel-inline-edit');
+                if (cancelBtn) cancelBtn.click();
+                row.classList.remove('editing');
+                return;
+            }
+
+            row.classList.add('editing');
             const category = row.getAttribute('data-category');
             const expense = budgetData.expenses[currentPeriod][category] || {
                 amount: 0,

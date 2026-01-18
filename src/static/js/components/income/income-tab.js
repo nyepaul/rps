@@ -118,6 +118,16 @@ function renderIncomeStreamsList(container, incomeStreams) {
             if (e.target.closest('.edit-income-stream-btn') || e.target.closest('.delete-income-stream-btn')) {
                 return;
             }
+
+            // If already editing, close the editor
+            if (row.classList.contains('editing')) {
+                const cancelBtn = row.querySelector('.cancel-inline-edit');
+                if (cancelBtn) cancelBtn.click();
+                row.classList.remove('editing');
+                return;
+            }
+
+            row.classList.add('editing');
             const index = parseInt(row.dataset.index);
             const stream = incomeStreams[index];
             makeIncomeRowEditable(row, stream, index, incomeStreams, container);
@@ -128,9 +138,19 @@ function renderIncomeStreamsList(container, incomeStreams) {
     listContainer.querySelectorAll('.edit-income-stream-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
+            const row = btn.closest('.income-row');
+
+            // If already editing, close the editor
+            if (row.classList.contains('editing')) {
+                const cancelBtn = row.querySelector('.cancel-inline-edit');
+                if (cancelBtn) cancelBtn.click();
+                row.classList.remove('editing');
+                return;
+            }
+
+            row.classList.add('editing');
             const index = parseInt(btn.dataset.index);
             const stream = incomeStreams[index];
-            const row = btn.closest('.income-row');
             makeIncomeRowEditable(row, stream, index, incomeStreams, container);
         });
     });
@@ -272,6 +292,7 @@ function makeIncomeRowEditable(rowElement, stream, index, incomeStreams, parentC
             incomeStreams[index] = updatedStream;
             const profile = store.get('currentProfile');
             await saveIncomeStreams(profile, incomeStreams);
+            rowElement.classList.remove('editing');
             renderIncomeStreamsList(parentContainer, incomeStreams);
             showSuccess('Income stream updated!');
         } catch (error) {
@@ -285,6 +306,7 @@ function makeIncomeRowEditable(rowElement, stream, index, incomeStreams, parentC
     const cancelBtn = rowElement.querySelector('.cancel-inline-edit');
     cancelBtn.addEventListener('click', () => {
         rowElement.innerHTML = originalHTML;
+        rowElement.classList.remove('editing');
     });
 
     // Focus first input
