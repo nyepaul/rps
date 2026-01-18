@@ -6,10 +6,21 @@ import { apiClient } from '../../api/client.js';
 import { showSuccess, showError } from '../../utils/dom.js';
 import { formatCurrency } from '../../utils/formatters.js';
 
+// Sort state
+let currentSort = {
+    column: 'created_at',
+    direction: 'desc'
+};
+
 /**
  * Render logs viewer with filtering and pagination
  */
 export async function renderLogsViewer(container) {
+    // Reset sort state when rendering
+    currentSort = {
+        column: 'created_at',
+        direction: 'desc'
+    };
     container.innerHTML = `
         <!-- Filters -->
         <div style="background: var(--bg-secondary); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
@@ -191,6 +202,8 @@ async function loadLogs(container, offset = 0) {
             ip_address: container.querySelector('#filter-ip').value || undefined,
             start_date: container.querySelector('#filter-start-date').value || undefined,
             end_date: container.querySelector('#filter-end-date').value || undefined,
+            sort_by: currentSort.column,
+            sort_direction: currentSort.direction,
             limit: 50,
             offset: offset
         };
@@ -226,12 +239,12 @@ async function loadLogs(container, offset = 0) {
             <table style="width: 100%; border-collapse: collapse;">
                 <thead>
                     <tr style="background: var(--bg-tertiary); border-bottom: 2px solid var(--border-color);">
-                        <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">Timestamp</th>
-                        <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">Action</th>
-                        <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">User</th>
-                        <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">IP / Location</th>
+                        ${renderSortableHeader('created_at', 'Timestamp', 'left')}
+                        ${renderSortableHeader('action', 'Action', 'left')}
+                        ${renderSortableHeader('user_id', 'User', 'left')}
+                        ${renderSortableHeader('ip_address', 'IP / Location', 'left')}
                         <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">Device</th>
-                        <th style="text-align: center; padding: 12px; font-size: 12px; font-weight: 600;">Status</th>
+                        ${renderSortableHeader('status_code', 'Status', 'center')}
                         <th style="text-align: center; padding: 12px; font-size: 12px; font-weight: 600;">Details</th>
                     </tr>
                 </thead>
@@ -249,6 +262,9 @@ async function loadLogs(container, offset = 0) {
         // Setup row click handlers for details
         setupLogRowHandlers(container);
 
+        // Setup sort handlers
+        setupSortHandlers(container);
+
     } catch (error) {
         console.error('Failed to load logs:', error);
         showError(`Failed to load logs: ${error.message}`);
@@ -260,6 +276,43 @@ async function loadLogs(container, offset = 0) {
             </div>
         `;
     }
+}
+
+/**
+ * Render a sortable table header
+ */
+function renderSortableHeader(column, label, align = 'left') {
+    const isActive = currentSort.column === column;
+    const arrow = isActive ? (currentSort.direction === 'asc' ? '↑' : '↓') : '⇅';
+    const arrowOpacity = isActive ? '1' : '0.3';
+
+    return `
+        <th class="sortable-header" data-column="${column}" style="text-align: ${align}; padding: 12px; font-size: 12px; font-weight: 600; cursor: pointer; user-select: none; transition: background 0.2s;" onmouseenter="this.style.background='var(--bg-primary)'" onmouseleave="this.style.background='transparent'">
+            ${label} <span style="opacity: ${arrowOpacity}; font-size: 10px; margin-left: 4px;">${arrow}</span>
+        </th>
+    `;
+}
+
+/**
+ * Setup sort handlers
+ */
+function setupSortHandlers(container) {
+    container.querySelectorAll('.sortable-header').forEach(header => {
+        header.addEventListener('click', () => {
+            const column = header.getAttribute('data-column');
+
+            // Toggle direction if clicking same column, otherwise default to desc
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'desc'; // Default to descending for new column
+            }
+
+            // Reload logs with new sort
+            loadLogs(container, 0);
+        });
+    });
 }
 
 /**
@@ -358,9 +411,178 @@ function setupLogRowHandlers(container) {
  * Show log details modal
  */
 async function showLogDetails(logId) {
-    // For now, just show alert - in production, create a proper modal
-    // You could fetch the full log details from the API if needed
-    alert(`Log details for log ID: ${logId}\n\nIn production, this would show a detailed modal with all log information.`);
+    try {
+        // Fetch full log details from API
+        const log = await apiClient.get(`/api/admin/logs/${logId}`);
+
+        // Create modal
+        const modal = document.createElement('div');
+        modal.className = 'log-details-modal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        `;
+
+        const timestamp = new Date(log.created_at).toLocaleString();
+        const actionColor = getActionColor(log.action);
+        const statusColor = log.status_code >= 400 ? 'var(--danger-color)' : 'var(--success-color)';
+
+        modal.innerHTML = `
+            <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 15px;">
+                    <h2 style="margin: 0; font-size: 20px;">📋 Audit Log Details</h2>
+                    <button class="close-modal-btn" style="background: transparent; border: none; font-size: 28px; cursor: pointer; color: var(--text-secondary); padding: 0; line-height: 1;">×</button>
+                </div>
+
+                <div style="display: grid; gap: 20px;">
+                    <!-- Basic Info -->
+                    <div>
+                        <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Basic Information</h3>
+                        <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; display: grid; gap: 10px;">
+                            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                <span style="font-weight: 600; color: var(--text-secondary);">Log ID:</span>
+                                <span style="font-family: monospace;">${log.id}</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                <span style="font-weight: 600; color: var(--text-secondary);">Timestamp:</span>
+                                <span>${timestamp}</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                <span style="font-weight: 600; color: var(--text-secondary);">Action:</span>
+                                <span style="display: inline-block; padding: 4px 12px; background: ${actionColor}20; color: ${actionColor}; border-radius: 4px; font-size: 12px; font-weight: 600; width: fit-content;">${log.action}</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                <span style="font-weight: 600; color: var(--text-secondary);">Status Code:</span>
+                                <span style="display: inline-block; padding: 4px 12px; background: ${statusColor}20; color: ${statusColor}; border-radius: 4px; font-size: 12px; font-weight: 600; width: fit-content;">${log.status_code || 'N/A'}</span>
+                            </div>
+                            ${log.table_name ? `
+                                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                    <span style="font-weight: 600; color: var(--text-secondary);">Table:</span>
+                                    <span style="font-family: monospace;">${log.table_name}</span>
+                                </div>
+                            ` : ''}
+                            ${log.record_id ? `
+                                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                    <span style="font-weight: 600; color: var(--text-secondary);">Record ID:</span>
+                                    <span style="font-family: monospace;">${log.record_id}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <!-- User Info -->
+                    <div>
+                        <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">User Information</h3>
+                        <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; display: grid; gap: 10px;">
+                            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                <span style="font-weight: 600; color: var(--text-secondary);">User ID:</span>
+                                <span>${log.user_id || 'N/A'}</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                <span style="font-weight: 600; color: var(--text-secondary);">Username:</span>
+                                <span>${log.username || 'Anonymous'}</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                <span style="font-weight: 600; color: var(--text-secondary);">IP Address:</span>
+                                <span style="font-family: monospace;">${log.ip_address || 'N/A'}</span>
+                            </div>
+                            ${log.geo_location ? `
+                                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                    <span style="font-weight: 600; color: var(--text-secondary);">Location:</span>
+                                    <span>${log.geo_location.city}, ${log.geo_location.country}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <!-- Device Info -->
+                    ${log.device_info ? `
+                        <div>
+                            <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Device Information</h3>
+                            <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; display: grid; gap: 10px;">
+                                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                    <span style="font-weight: 600; color: var(--text-secondary);">Browser:</span>
+                                    <span>${log.device_info.browser || 'Unknown'}</span>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                    <span style="font-weight: 600; color: var(--text-secondary);">OS:</span>
+                                    <span>${log.device_info.os || 'Unknown'}</span>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                    <span style="font-weight: 600; color: var(--text-secondary);">Device:</span>
+                                    <span>${log.device_info.device || 'Unknown'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- Details -->
+                    ${log.details ? `
+                        <div>
+                            <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Additional Details</h3>
+                            <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px;">
+                                <pre style="margin: 0; font-family: monospace; font-size: 11px; white-space: pre-wrap; word-wrap: break-word; color: var(--text-primary);">${JSON.stringify(JSON.parse(log.details), null, 2)}</pre>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- Error Message -->
+                    ${log.error_message ? `
+                        <div>
+                            <h3 style="font-size: 14px; color: var(--danger-color); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">❌ Error Message</h3>
+                            <div style="background: var(--danger-color)10; border-left: 4px solid var(--danger-color); padding: 15px; border-radius: 8px;">
+                                <pre style="margin: 0; font-family: monospace; font-size: 11px; white-space: pre-wrap; word-wrap: break-word; color: var(--danger-color);">${log.error_message}</pre>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <div style="margin-top: 20px; text-align: right;">
+                    <button class="close-modal-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Add to document
+        document.body.appendChild(modal);
+
+        // Setup close handlers
+        modal.querySelectorAll('.close-modal-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                modal.remove();
+            });
+        });
+
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+
+        // Close on Escape key
+        const escHandler = (e) => {
+            if (e.key === 'Escape') {
+                modal.remove();
+                document.removeEventListener('keydown', escHandler);
+            }
+        };
+        document.addEventListener('keydown', escHandler);
+
+    } catch (error) {
+        console.error('Failed to load log details:', error);
+        showError(`Failed to load log details: ${error.message}`);
+    }
 }
 
 /**

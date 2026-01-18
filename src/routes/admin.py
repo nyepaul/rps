@@ -129,6 +129,61 @@ def get_log_statistics():
         return jsonify({'error': str(e)}), 500
 
 
+@admin_bp.route('/logs/<int:log_id>', methods=['GET'])
+@login_required
+@admin_required
+def get_log_by_id(log_id: int):
+    """Get a single audit log by ID with full details."""
+    try:
+        from src.database.connection import db
+
+        # Query for the specific log
+        log = db.execute_one(
+            'SELECT * FROM enhanced_audit_log WHERE id = ?',
+            (log_id,)
+        )
+
+        if not log:
+            return jsonify({'error': 'Log not found'}), 404
+
+        # Convert to dict
+        log_dict = dict(log)
+
+        # Parse JSON fields if they exist
+        if log_dict.get('details'):
+            try:
+                log_dict['details'] = log_dict['details']  # Keep as string for display
+            except:
+                pass
+
+        if log_dict.get('device_info'):
+            try:
+                import json
+                log_dict['device_info'] = json.loads(log_dict['device_info'])
+            except:
+                pass
+
+        if log_dict.get('geo_location'):
+            try:
+                import json
+                log_dict['geo_location'] = json.loads(log_dict['geo_location'])
+            except:
+                pass
+
+        # Log the view action
+        enhanced_audit_logger.log_admin_action(
+            action='VIEW_LOG_DETAILS',
+            details={'log_id': log_id},
+            user_id=current_user.id
+        )
+
+        return jsonify(log_dict), 200
+
+    except Exception as e:
+        print(f"Error fetching log {log_id}: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @admin_bp.route('/logs/export', methods=['GET'])
 @login_required
 @admin_required
