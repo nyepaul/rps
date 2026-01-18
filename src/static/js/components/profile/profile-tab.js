@@ -280,9 +280,17 @@ function setupProfileFormHandlers(container, profile) {
             // Collect form data
             const formData = new FormData(form);
 
-            // Parse person fields as numbers
+            // Parse person fields
             const personFields = ['current_age', 'retirement_age', 'life_expectancy'];
             const person = {};
+
+            // Add name to person object (for setup checker)
+            const personName = formData.get('name');
+            if (personName) {
+                person.name = personName;
+            }
+
+            // Add numeric fields
             personFields.forEach(field => {
                 const value = formData.get(field);
                 if (value) {

@@ -15,7 +15,7 @@ export function checkSetupCompletion(profile) {
     const hasBasicInfo = !!(
         profile?.birth_date &&
         profile?.retirement_date &&
-        profile?.data?.person?.name
+        (profile?.data?.person?.name || profile?.name)  // Fallback to top-level name for older profiles
     );
     checklist.push({
         id: 'basic_info',
