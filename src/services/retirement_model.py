@@ -728,22 +728,37 @@ class RetirementModel:
         def get_period_expenses(period):
             period_total = np.zeros_like(current_cpi)
             for category in ['housing', 'transportation', 'food', 'healthcare',
-                            'insurance', 'discretionary', 'other']:
+                            'insurance', 'discretionary', 'other', 'utilities', 'dining_out',
+                            'travel', 'entertainment', 'personal_care', 'clothing', 'gifts',
+                            'childcare_education', 'charitable_giving', 'subscriptions', 'pet_care',
+                            'home_maintenance', 'debt_payments', 'taxes']:
                 cat_data = expenses_section.get(period, {}).get(category, {})
-                amount = cat_data.get('amount', 0)
-                amount = self._annual_amount(amount, cat_data.get('frequency', 'monthly'))
 
-                # Check if expense is active in this simulation year
-                if not self._is_expense_active(cat_data, simulation_year):
-                    continue
+                # Handle both array (new format) and object (legacy format) structures
+                expense_items = []
+                if isinstance(cat_data, list):
+                    # New format: array of expense items
+                    expense_items = cat_data
+                elif isinstance(cat_data, dict) and cat_data.get('amount'):
+                    # Legacy format: single expense object
+                    expense_items = [cat_data]
 
-                if category == 'housing' and np.any(housing_costs > 0):
-                    period_total += housing_costs
-                else:
-                    if cat_data.get('inflation_adjusted', True):
-                        period_total += amount * current_cpi
+                # Process each expense item in this category
+                for item in expense_items:
+                    amount = item.get('amount', 0)
+                    amount = self._annual_amount(amount, item.get('frequency', 'monthly'))
+
+                    # Check if expense is active in this simulation year
+                    if not self._is_expense_active(item, simulation_year):
+                        continue
+
+                    if category == 'housing' and np.any(housing_costs > 0):
+                        period_total += housing_costs
                     else:
-                        period_total += amount
+                        if item.get('inflation_adjusted', True):
+                            period_total += amount * current_cpi
+                        else:
+                            period_total += amount
             return period_total
 
         if retirement_weight == 0:
