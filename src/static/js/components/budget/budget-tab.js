@@ -54,10 +54,10 @@ export function renderBudgetTab(container) {
     }
 
     container.innerHTML = `
-        <div style="max-width: 1400px; margin: 0 auto; padding: 12px;">
-            <div style="margin-bottom: 12px;">
-                <h1 style="margin: 0; font-size: 24px;">💵 Expense Planning</h1>
-                <p style="color: var(--text-secondary); margin: 4px 0 0 0; font-size: 13px;">
+        <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-3);">
+            <div style="margin-bottom: var(--space-3);">
+                <h1 style="margin: 0; font-size: var(--font-2xl);">💵 Expense Planning</h1>
+                <p style="color: var(--text-secondary); margin: var(--space-1) 0 0 0; font-size: var(--font-sm);">
                     Plan your current and future expenses (Income managed on Income tab)
                 </p>
             </div>
@@ -66,22 +66,22 @@ export function renderBudgetTab(container) {
             <div id="budget-summary"></div>
 
             <!-- Period Toggle - Above content sections -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin: 16px 0 12px 0; padding: 12px 16px; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-color);">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <span style="font-weight: 600; color: var(--text-secondary); font-size: 13px;">Viewing:</span>
-                    <div id="period-toggle" style="display: flex; gap: 4px; background: var(--bg-primary); padding: 3px; border-radius: 6px;">
-                        <button class="period-btn active" data-period="current" style="padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; transition: all 0.2s; font-size: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin: var(--space-4) 0 var(--space-3) 0; padding: var(--space-3) var(--space-4); background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-color); flex-wrap: wrap; gap: var(--space-3);">
+                <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+                    <span style="font-weight: 600; color: var(--text-secondary); font-size: var(--font-sm);">Viewing:</span>
+                    <div id="period-toggle" style="display: flex; gap: var(--space-1); background: var(--bg-primary); padding: 3px; border-radius: 6px;">
+                        <button class="period-btn active" data-period="current" style="padding: var(--space-2) var(--space-4); border: none; border-radius: 4px; cursor: pointer; font-weight: 600; transition: all 0.2s; font-size: var(--font-base);">
                             Current
                         </button>
-                        <button class="period-btn" data-period="future" style="padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; transition: all 0.2s; font-size: 14px;">
+                        <button class="period-btn" data-period="future" style="padding: var(--space-2) var(--space-4); border: none; border-radius: 4px; cursor: pointer; font-weight: 600; transition: all 0.2s; font-size: var(--font-base);">
                             Future
                         </button>
                     </div>
-                    <span id="period-context" style="color: var(--text-secondary); font-size: 12px; margin-left: 8px;">
+                    <span id="period-context" style="color: var(--text-secondary); font-size: var(--font-sm); margin-left: var(--space-2);">
                         (Pre-retirement expenses)
                     </span>
                 </div>
-                <button id="save-budget-btn" style="padding: 8px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                <button id="save-budget-btn" style="padding: var(--space-2) var(--space-5); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-base); font-weight: 600;">
                     Save Expenses
                 </button>
             </div>
@@ -236,17 +236,17 @@ function renderCollegeExpensesSection(parentContainer) {
     const currentYear = new Date().getFullYear();
 
     let html = `
-        <div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px; margin-bottom: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h2 style="margin: 0; display: flex; align-items: center; gap: 8px; font-size: 16px;">
-                    <span style="font-size: 18px;">🎓</span>
+        <div style="background: var(--bg-secondary); padding: var(--space-3); border-radius: 8px; margin-bottom: var(--space-3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3); flex-wrap: wrap; gap: var(--space-2);">
+                <h2 style="margin: 0; display: flex; align-items: center; gap: var(--space-2); font-size: var(--font-md);">
+                    <span style="font-size: var(--font-lg);">🎓</span>
                     College Expenses
                 </h2>
-                <button id="sync-children-btn" style="padding: 4px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;" title="Sync with children in profile">
+                <button id="sync-children-btn" style="padding: var(--space-1) var(--space-3); background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: var(--font-sm);" title="Sync with children in profile">
                     🔄 Sync Children
                 </button>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; flex-direction: column; gap: var(--space-2);">
     `;
 
     for (let i = 0; i < collegeExpenses.length; i++) {
@@ -264,23 +264,23 @@ function renderCollegeExpensesSection(parentContainer) {
         }
 
         html += `
-            <div class="college-expense-row" data-index="${i}" style="padding: 6px 10px; background: var(--bg-primary); border-radius: 4px; border: 1px solid ${expense.enabled ? 'var(--border-color)' : 'var(--text-secondary)'}; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; ${expense.enabled ? '' : 'opacity: 0.6;'}" onmouseover="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--accent-color)'" onmouseout="this.style.background='var(--bg-primary)'; this.style.borderColor='${expense.enabled ? 'var(--border-color)' : 'var(--text-secondary)'}'">
-                <div style="display: flex; align-items: center; gap: 8px; flex: 1; font-size: 13px;">
-                    <span style="font-size: 16px;">🎓</span>
+            <div class="college-expense-row" data-index="${i}" style="padding: var(--space-2) var(--space-3); background: var(--bg-primary); border-radius: 4px; border: 1px solid ${expense.enabled ? 'var(--border-color)' : 'var(--text-secondary)'}; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; flex-wrap: wrap; gap: var(--space-2); ${expense.enabled ? '' : 'opacity: 0.6;'}" onmouseover="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--accent-color)'" onmouseout="this.style.background='var(--bg-primary)'; this.style.borderColor='${expense.enabled ? 'var(--border-color)' : 'var(--text-secondary)'}'">
+                <div style="display: flex; align-items: center; gap: var(--space-2); flex: 1; font-size: var(--font-sm); flex-wrap: wrap;">
+                    <span style="font-size: var(--font-md);">🎓</span>
                     <span style="font-weight: 600;">${expense.child_name}</span>
                     <span style="color: var(--text-secondary);">Age ${age}</span>
                     <span style="color: var(--text-secondary);">${formatCurrency(expense.annual_cost, 0)}/year</span>
-                    <span style="font-size: 11px; margin-left: 4px;">${statusText}</span>
-                    ${!expense.enabled ? '<span style="color: var(--danger-color); font-size: 11px; font-weight: 600;">DISABLED</span>' : ''}
+                    <span style="font-size: var(--font-xs); margin-left: var(--space-1);">${statusText}</span>
+                    ${!expense.enabled ? '<span style="color: var(--danger-color); font-size: var(--font-xs); font-weight: 600;">DISABLED</span>' : ''}
                 </div>
-                <span style="font-size: 11px; color: var(--text-secondary);">✏️</span>
+                <span style="font-size: var(--font-xs); color: var(--text-secondary);">✏️</span>
             </div>
         `;
     }
 
     html += `
             </div>
-            <div style="margin-top: 8px; padding: 8px; background: var(--info-bg); border-radius: 4px; font-size: 11px; color: var(--info-color);">
+            <div style="margin-top: var(--space-2); padding: var(--space-2); background: var(--info-bg); border-radius: 4px; font-size: var(--font-xs); color: var(--info-color);">
                 <strong>ℹ️ Tip:</strong> College expenses are automatically initialized based on children in your profile. Click any entry to customize the annual cost and years.
             </div>
         </div>
@@ -329,44 +329,44 @@ function showCollegeExpenseModal(parentContainer, index) {
     `;
 
     modal.innerHTML = `
-        <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; max-width: 500px; width: 90%;">
-            <h2 style="margin: 0 0 15px 0; font-size: 18px;">Edit College Expense - ${expense.child_name}</h2>
+        <div style="background: var(--bg-secondary); padding: var(--space-5); border-radius: 8px; max-width: 500px; width: 90%;">
+            <h2 style="margin: 0 0 var(--space-4) 0; font-size: var(--font-lg);">Edit College Expense - ${expense.child_name}</h2>
             <form id="college-expense-form">
-                <div style="margin-bottom: 10px;">
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; margin-bottom: 8px;">
+                <div style="margin-bottom: var(--space-3);">
+                    <label style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer; font-size: var(--font-sm); margin-bottom: var(--space-2);">
                         <input type="checkbox" id="expense-enabled" ${expense.enabled ? 'checked' : ''}>
                         <span style="font-weight: 600;">Include in expense calculations</span>
                     </label>
                 </div>
-                <div style="margin-bottom: 10px;">
-                    <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">Annual College Cost</label>
+                <div style="margin-bottom: var(--space-3);">
+                    <label style="display: block; margin-bottom: var(--space-1); font-weight: 500; font-size: var(--font-sm);">Annual College Cost</label>
                     <input type="number" id="college-annual-cost" value="${expense.annual_cost}" min="0" step="1000" required
-                           style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 13px;">
+                           style="width: 100%; padding: var(--space-2); border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-sm);">
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); margin-bottom: var(--space-3);">
                     <div>
-                        <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">Start Year</label>
+                        <label style="display: block; margin-bottom: var(--space-1); font-weight: 500; font-size: var(--font-sm);">Start Year</label>
                         <input type="number" id="college-start-year" value="${expense.start_year}" min="2000" max="2100" required
-                               style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 13px;">
+                               style="width: 100%; padding: var(--space-2); border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-sm);">
                     </div>
                     <div>
-                        <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">End Year</label>
+                        <label style="display: block; margin-bottom: var(--space-1); font-weight: 500; font-size: var(--font-sm);">End Year</label>
                         <input type="number" id="college-end-year" value="${expense.end_year}" min="2000" max="2100" required
-                               style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 13px;">
+                               style="width: 100%; padding: var(--space-2); border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-sm);">
                     </div>
                 </div>
-                <div style="background: var(--info-bg); padding: 8px; border-radius: 4px; margin-bottom: 15px; font-size: 11px; color: var(--info-color);">
+                <div style="background: var(--info-bg); padding: var(--space-2); border-radius: 4px; margin-bottom: var(--space-4); font-size: var(--font-xs); color: var(--info-color);">
                     <strong>Note:</strong> College expenses are spread annually from ${expense.start_year} to ${expense.end_year}
                 </div>
-                <div style="display: flex; justify-content: space-between; gap: 8px;">
-                    <button type="button" id="delete-college-btn" style="padding: 6px 14px; background: var(--danger-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
+                <div style="display: flex; justify-content: space-between; gap: var(--space-2); flex-wrap: wrap;">
+                    <button type="button" id="delete-college-btn" style="padding: var(--space-2) var(--space-4); background: var(--danger-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: var(--font-sm);">
                         Delete
                     </button>
-                    <div style="display: flex; gap: 8px;">
-                        <button type="button" id="cancel-btn" style="padding: 6px 14px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 13px;">
+                    <div style="display: flex; gap: var(--space-2);">
+                        <button type="button" id="cancel-btn" style="padding: var(--space-2) var(--space-4); background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: var(--font-sm);">
                             Cancel
                         </button>
-                        <button type="submit" style="padding: 6px 14px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
+                        <button type="submit" style="padding: var(--space-2) var(--space-4); background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: var(--font-sm);">
                             Update
                         </button>
                     </div>
@@ -429,17 +429,17 @@ function renderBudgetSummary(container) {
     const futureExpenses = calculateTotalExpenses('future');
 
     summaryContainer.innerHTML = `
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px;">
-            <div style="background: var(--bg-secondary); padding: 10px; border-radius: 6px; border-left: 3px solid #ef4444;">
-                <div style="color: var(--text-secondary); font-size: 11px; margin-bottom: 4px;">Current Expenses (Pre-Retirement)</div>
-                <div style="font-size: 18px; font-weight: 600;">${formatCurrency(currentExpenses)}/year</div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-2); margin-bottom: var(--space-3);">
+            <div style="background: var(--bg-secondary); padding: var(--space-3); border-radius: 6px; border-left: 3px solid #ef4444;">
+                <div style="color: var(--text-secondary); font-size: var(--font-xs); margin-bottom: var(--space-1);">Current Expenses (Pre-Retirement)</div>
+                <div style="font-size: var(--font-lg); font-weight: 600;">${formatCurrency(currentExpenses)}/year</div>
             </div>
-            <div style="background: var(--bg-secondary); padding: 10px; border-radius: 6px; border-left: 3px solid #f59e0b;">
-                <div style="color: var(--text-secondary); font-size: 11px; margin-bottom: 4px;">Future Expenses (Post-Retirement)</div>
-                <div style="font-size: 18px; font-weight: 600;">${formatCurrency(futureExpenses)}/year</div>
+            <div style="background: var(--bg-secondary); padding: var(--space-3); border-radius: 6px; border-left: 3px solid #f59e0b;">
+                <div style="color: var(--text-secondary); font-size: var(--font-xs); margin-bottom: var(--space-1);">Future Expenses (Post-Retirement)</div>
+                <div style="font-size: var(--font-lg); font-weight: 600;">${formatCurrency(futureExpenses)}/year</div>
             </div>
         </div>
-        <div style="background: var(--info-bg); padding: 8px 12px; border-radius: 6px; font-size: 12px; color: var(--info-color); margin-bottom: 12px; border-left: 3px solid var(--info-color);">
+        <div style="background: var(--info-bg); padding: var(--space-2) var(--space-3); border-radius: 6px; font-size: var(--font-sm); color: var(--info-color); margin-bottom: var(--space-3); border-left: 3px solid var(--info-color);">
             <strong>ℹ️ Note:</strong> Income sources are managed on the <strong>Income</strong> tab. This tab focuses on expense planning only.
         </div>
     `;
@@ -1137,12 +1137,12 @@ function renderExpenseSection(parentContainer) {
     ];
 
     let html = `
-        <div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">
-            <h2 style="margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px; font-size: 16px;">
-                <span style="font-size: 18px;">💳</span>
+        <div style="background: var(--bg-secondary); padding: var(--space-3); border-radius: 8px;">
+            <h2 style="margin: 0 0 var(--space-3) 0; display: flex; align-items: center; gap: var(--space-2); font-size: var(--font-md);">
+                <span style="font-size: var(--font-lg);">💳</span>
                 Expense Categories
             </h2>
-            <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; flex-direction: column; gap: var(--space-2);">
     `;
 
     for (const cat of categories) {
@@ -1173,14 +1173,14 @@ function renderExpenseSection(parentContainer) {
         }
 
         html += `
-            <div class="expense-row" data-category="${cat.key}" style="padding: 6px 10px; background: var(--bg-primary); border-radius: 4px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--accent-color)'" onmouseout="this.style.background='var(--bg-primary)'; this.style.borderColor='var(--border-color)'">
-                <div style="display: flex; align-items: center; gap: 8px; flex: 1; font-size: 13px;">
-                    <span style="font-size: 16px;">${cat.icon}</span>
+            <div class="expense-row" data-category="${cat.key}" style="padding: var(--space-2) var(--space-3); background: var(--bg-primary); border-radius: 4px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; flex-wrap: wrap; gap: var(--space-2);" onmouseover="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--accent-color)'" onmouseout="this.style.background='var(--bg-primary)'; this.style.borderColor='var(--border-color)'">
+                <div style="display: flex; align-items: center; gap: var(--space-2); flex: 1; font-size: var(--font-sm); flex-wrap: wrap;">
+                    <span style="font-size: var(--font-md);">${cat.icon}</span>
                     <span style="font-weight: 500;">${cat.label}</span>
                     <span style="color: var(--text-secondary);">${formatCurrency(expense.amount || 0)}/${expense.frequency || 'monthly'} (${formatCurrency(annual)}/yr)</span>
-                    ${dateInfo ? `<span style="font-size: 11px; margin-left: 4px;">${dateInfo}</span>` : ''}
+                    ${dateInfo ? `<span style="font-size: var(--font-xs); margin-left: var(--space-1);">${dateInfo}</span>` : ''}
                 </div>
-                <span style="font-size: 11px; color: var(--text-secondary);">✏️</span>
+                <span style="font-size: var(--font-xs); color: var(--text-secondary);">✏️</span>
             </div>
         `;
     }
@@ -1261,53 +1261,53 @@ function showExpenseEditorModal(parentContainer, category) {
     `;
 
     modal.innerHTML = `
-        <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; max-width: 500px; width: 90%;">
-            <h2 style="margin: 0 0 15px 0; font-size: 18px;">Edit ${categoryLabels[category]}</h2>
+        <div style="background: var(--bg-secondary); padding: var(--space-5); border-radius: 8px; max-width: 500px; width: 90%;">
+            <h2 style="margin: 0 0 var(--space-4) 0; font-size: var(--font-lg);">Edit ${categoryLabels[category]}</h2>
             <form id="expense-form">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); margin-bottom: var(--space-3);">
                     <div>
-                        <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">Amount</label>
+                        <label style="display: block; margin-bottom: var(--space-1); font-weight: 500; font-size: var(--font-sm);">Amount</label>
                         <input type="number" id="expense-amount" value="${expense.amount}" min="0" step="0.01" required
-                               style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 13px;">
+                               style="width: 100%; padding: var(--space-2); border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-sm);">
                     </div>
                     <div>
-                        <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">Frequency</label>
-                        <select id="expense-frequency" style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 13px;">
+                        <label style="display: block; margin-bottom: var(--space-1); font-weight: 500; font-size: var(--font-sm);">Frequency</label>
+                        <select id="expense-frequency" style="width: 100%; padding: var(--space-2); border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-sm);">
                             <option value="monthly" ${expense.frequency === 'monthly' ? 'selected' : ''}>Monthly</option>
                             <option value="quarterly" ${expense.frequency === 'quarterly' ? 'selected' : ''}>Quarterly</option>
                             <option value="annual" ${expense.frequency === 'annual' ? 'selected' : ''}>Annual</option>
                         </select>
                     </div>
                 </div>
-                <div style="margin-bottom: 10px;">
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
+                <div style="margin-bottom: var(--space-3);">
+                    <label style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer; font-size: var(--font-sm);">
                         <input type="checkbox" id="expense-inflation" ${expense.inflation_adjusted ? 'checked' : ''}>
                         <span>Adjust for inflation</span>
                     </label>
                 </div>
-                <div style="margin-bottom: 10px; padding: 10px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; margin-bottom: 8px;">
+                <div style="margin-bottom: var(--space-3); padding: var(--space-3); background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color);">
+                    <label style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer; font-size: var(--font-sm); font-weight: 600; margin-bottom: var(--space-2);">
                         <input type="checkbox" id="expense-ongoing" ${expense.ongoing !== false ? 'checked' : ''}>
                         <span>⏳ Ongoing expense (no end date)</span>
                     </label>
-                    <div id="date-fields" style="display: ${expense.ongoing !== false ? 'none' : 'grid'}; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;">
+                    <div id="date-fields" style="display: ${expense.ongoing !== false ? 'none' : 'grid'}; grid-template-columns: 1fr 1fr; gap: var(--space-3); margin-top: var(--space-2);">
                         <div>
-                            <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 12px; color: var(--text-secondary);">Start Date</label>
+                            <label style="display: block; margin-bottom: var(--space-1); font-weight: 500; font-size: var(--font-sm); color: var(--text-secondary);">Start Date</label>
                             <input type="date" id="expense-start-date" value="${expense.start_date || ''}"
-                                   style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
+                                   style="width: 100%; padding: var(--space-2); border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-sm);">
                         </div>
                         <div>
-                            <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 12px; color: var(--text-secondary);">End Date</label>
+                            <label style="display: block; margin-bottom: var(--space-1); font-weight: 500; font-size: var(--font-sm); color: var(--text-secondary);">End Date</label>
                             <input type="date" id="expense-end-date" value="${expense.end_date || ''}"
-                                   style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
+                                   style="width: 100%; padding: var(--space-2); border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-sm);">
                         </div>
                     </div>
                 </div>
-                <div style="display: flex; justify-content: flex-end; gap: 8px;">
-                    <button type="button" id="cancel-btn" style="padding: 6px 14px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 13px;">
+                <div style="display: flex; justify-content: flex-end; gap: var(--space-2);">
+                    <button type="button" id="cancel-btn" style="padding: var(--space-2) var(--space-4); background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: var(--font-sm);">
                         Cancel
                     </button>
-                    <button type="submit" style="padding: 6px 14px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
+                    <button type="submit" style="padding: var(--space-2) var(--space-4); background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: var(--font-sm);">
                         Update
                     </button>
                 </div>
