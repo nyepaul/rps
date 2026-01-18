@@ -122,9 +122,14 @@ export function renderAnalysisTab(container) {
 
                 <!-- Spending Model Selector -->
                 <div style="margin-bottom: 25px;">
-                    <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px;">
-                        Spending Strategy (Retiree Behavior)
-                    </label>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 15px;">
+                        <label style="font-weight: 600; font-size: 14px; margin: 0;">
+                            Spending Strategy (Retiree Behavior)
+                        </label>
+                        <button id="spending-strategy-help-btn" style="background: none; border: 1px solid var(--border-color); color: var(--text-secondary); padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 6px; transition: all 0.2s; white-space: nowrap;">
+                            <span style="font-size: 14px;">ℹ️</span> How This Works
+                        </button>
+                    </div>
                     <select id="spending-model-select" style="width: 100%; padding: 12px 15px; font-size: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer;">
                         <option value="constant_real">Constant Inflation-Adjusted (Default)</option>
                         <option value="retirement_smile">Retirement Smile (Reality Planning)</option>
@@ -167,28 +172,28 @@ export function renderAnalysisTab(container) {
         <style>
             .analysis-panel {
                 background: var(--bg-secondary);
-                padding: 30px;
+                padding: var(--space-5);
                 border-radius: 12px;
-                margin-bottom: 30px;
+                margin-bottom: var(--space-5);
             }
             .primary-btn:hover {
                 background: var(--accent-hover);
             }
             .result-card {
                 background: var(--bg-secondary);
-                padding: 25px;
+                padding: var(--space-4);
                 border-radius: 12px;
-                margin-bottom: 20px;
+                margin-bottom: var(--space-5);
             }
             .stat-grid {
                 display: grid;
                 grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 20px;
-                margin-top: 20px;
+                gap: var(--space-4);
+                margin-top: var(--space-4);
             }
             .stat-item {
                 background: var(--bg-primary);
-                padding: 20px;
+                padding: var(--space-4);
                 border-radius: 8px;
                 text-align: center;
                 border: 2px solid var(--border-color);
@@ -323,19 +328,33 @@ function setupAnalysisHandlers(container, profile) {
         });
     }
 
+    // Show spending strategy explanation modal
+    const spendingStrategyHelpBtn = container.querySelector('#spending-strategy-help-btn');
+    if (spendingStrategyHelpBtn) {
+        spendingStrategyHelpBtn.addEventListener('click', () => {
+            showSpendingStrategyExplanationModal();
+        });
+    }
+
     // Spending Model Descriptions
     const spendingDescriptions = {
         'constant_real': {
             title: 'Constant Inflation-Adjusted',
-            desc: 'Maintains purchasing power throughout retirement. Spending increases exactly with inflation every year. Standard conservative assumption.'
+            desc: 'Maintains purchasing power throughout retirement. Spending increases exactly with inflation every year. Standard conservative assumption.',
+            multiplier: 'Multiplier: 1.0x (no change to your expenses)',
+            example: 'Your $80k/year expenses stay at $80k/year (adjusted for inflation)'
         },
         'retirement_smile': {
             title: 'Retirement Smile (Reality Planning)',
-            desc: 'Models typical behavior: High spending in early retirement ("Go-Go" years), declining in mid-retirement ("Slow-Go"), and rising again in late retirement for healthcare ("No-Go").'
+            desc: 'Models typical behavior: High spending in early retirement ("Go-Go" years), declining in mid-retirement ("Slow-Go"), and rising again in late retirement for healthcare ("No-Go").',
+            multiplier: 'Multiplier: 1.0x → 0.8x → 1.2x (varies by age)',
+            example: 'Your $80k/year expenses become $72k at age 75 (0.9x), $64k at age 80 (0.8x), then rise for healthcare'
         },
         'conservative_decline': {
             title: 'Conservative Decline',
-            desc: 'Assumes real spending decreases gradually as you age (1% per year after age 70), reflecting reduced activity levels.'
+            desc: 'Assumes real spending decreases gradually as you age (1% per year after age 70), reflecting reduced activity levels.',
+            multiplier: 'Multiplier: 1.0x → 0.9x → 0.8x (declines 1%/year after 70)',
+            example: 'Your $80k/year expenses become $72k at age 80 (0.9x), $64k at age 90 (0.8x)'
         }
     };
 
@@ -1079,6 +1098,121 @@ async function setupMultiSaveScenarioHandler(container, profile) {
             saveBtn.disabled = false;
             saveBtn.textContent = 'Save as Scenario';
         }
+    });
+}
+
+/**
+ * Show modal explaining spending strategy with expenses
+ */
+function showSpendingStrategyExplanationModal() {
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 10000; padding: 20px;';
+
+    modal.innerHTML = `
+        <div style="background: var(--bg-primary); border-radius: 12px; max-width: 750px; max-height: 90vh; overflow-y: auto; padding: var(--space-6); position: relative;">
+            <button id="close-spending-modal" style="position: absolute; top: 15px; right: 15px; background: var(--bg-tertiary); border: none; color: var(--text-primary); font-size: 24px; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">×</button>
+
+            <h2 style="font-size: 28px; margin-bottom: 20px; color: var(--accent-color);">💰 How Spending Strategies Work</h2>
+
+            <div style="line-height: 1.8; color: var(--text-primary);">
+                <div style="background: linear-gradient(135deg, var(--accent-color), #5faee3); padding: 20px; border-radius: 12px; margin-bottom: 20px; color: white;">
+                    <h3 style="font-size: 20px; margin: 0 0 12px 0; font-weight: bold;">🎯 Key Concept</h3>
+                    <p style="margin: 0; font-size: 15px; line-height: 1.6;">
+                        <strong>Your actual expenses from the Expenses tab are ALWAYS the foundation.</strong><br><br>
+                        Spending strategies are applied as MULTIPLIERS on top of your real expenses to model how spending patterns naturally change as you age.
+                    </p>
+                </div>
+
+                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">The Formula</h3>
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 20px; font-family: monospace; text-align: center;">
+                    <div style="font-size: 16px; color: var(--text-primary); font-weight: bold; margin-bottom: 10px;">
+                        Final Spending = (Your Expenses - Housing) × Strategy Multiplier + Housing
+                    </div>
+                    <div style="font-size: 13px; color: var(--text-secondary); margin-top: 10px;">
+                        Note: Housing costs remain constant regardless of strategy
+                    </div>
+                </div>
+
+                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">The Three Strategies</h3>
+
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                    <h4 style="font-size: 16px; margin-bottom: 10px; color: var(--success-color);">✓ Constant Inflation-Adjusted</h4>
+                    <p style="margin: 0 0 10px 0; color: var(--text-secondary);">
+                        <strong>Multiplier:</strong> Always 1.0x (no change)<br>
+                        <strong>Best For:</strong> Conservative planning, maintaining lifestyle<br>
+                        <strong>Reality:</strong> Assumes you'll spend the same (inflation-adjusted) amount every year
+                    </p>
+                    <div style="background: var(--bg-primary); padding: 10px; border-radius: 6px; border-left: 3px solid var(--success-color);">
+                        <strong>Example:</strong> $80,000/year stays $80,000/year (adjusted for inflation)
+                    </div>
+                </div>
+
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                    <h4 style="font-size: 16px; margin-bottom: 10px; color: var(--warning-color);">📈 Retirement Smile</h4>
+                    <p style="margin: 0 0 10px 0; color: var(--text-secondary);">
+                        <strong>Multiplier:</strong> 1.0x → 0.8x → 1.2x (varies by age)<br>
+                        <strong>Best For:</strong> Realistic planning based on typical behavior<br>
+                        <strong>Reality:</strong> High spending early (travel, activities), lower in middle years, higher again for healthcare
+                    </p>
+                    <div style="background: var(--bg-primary); padding: 10px; border-radius: 6px; border-left: 3px solid var(--warning-color);">
+                        <strong>Example:</strong> $80,000/year → $72,000 at age 75 (0.9x) → $64,000 at age 80 (0.8x) → $76,000 at age 85 (0.95x) → rises for healthcare
+                    </div>
+                </div>
+
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="font-size: 16px; margin-bottom: 10px; color: var(--info-color);">📉 Conservative Decline</h4>
+                    <p style="margin: 0 0 10px 0; color: var(--text-secondary);">
+                        <strong>Multiplier:</strong> 1.0x → gradually decreases 1%/year after age 70<br>
+                        <strong>Best For:</strong> Conservative planning, assuming reduced activity<br>
+                        <strong>Reality:</strong> Spending gradually decreases as you become less active
+                    </p>
+                    <div style="background: var(--bg-primary); padding: 10px; border-radius: 6px; border-left: 3px solid var(--info-color);">
+                        <strong>Example:</strong> $80,000/year → $72,000 at age 80 (0.9x) → $64,000 at age 90 (0.8x)
+                    </div>
+                </div>
+
+                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">Step-by-Step Example</h3>
+                <div style="background: var(--accent-color); padding: 20px; border-radius: 8px; color: white;">
+                    <p style="margin: 0 0 15px 0; font-size: 15px;">
+                        <strong>Your Profile:</strong><br>
+                        • Annual Expenses (from Expenses tab): $80,000<br>
+                        • Housing Costs: $20,000<br>
+                        • Other Expenses: $60,000<br>
+                        • Selected Strategy: Retirement Smile<br>
+                        • Your Age: 75
+                    </p>
+                    <p style="margin: 0 0 10px 0; font-size: 15px;">
+                        <strong>Calculation at Age 75:</strong><br>
+                        1. Multiplier for age 75 in Retirement Smile: 0.9x<br>
+                        2. Non-Housing Expenses: $60,000 × 0.9 = $54,000<br>
+                        3. Add Housing Back: $54,000 + $20,000 = <strong>$74,000</strong>
+                    </p>
+                    <p style="margin: 0; font-size: 14px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px;">
+                        <strong>Result:</strong> The simulation uses $74,000 for your expenses at age 75, instead of the constant $80,000.
+                    </p>
+                </div>
+
+                <div style="background: var(--warning-color); padding: 15px; border-radius: 8px; margin-top: 20px; color: white;">
+                    <strong>💡 Important:</strong> Spending strategies help model realistic behavior patterns while still using YOUR specific expense data as the foundation. This gives you more accurate projections than assuming constant spending forever.
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button id="close-spending-modal-btn" style="padding: 12px 30px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                    Got It!
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Close handlers
+    const closeModal = () => modal.remove();
+    modal.querySelector('#close-spending-modal').addEventListener('click', closeModal);
+    modal.querySelector('#close-spending-modal-btn').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
     });
 }
 

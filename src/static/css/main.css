@@ -24,6 +24,25 @@
             --info-color: #1098ad;
             --card-gradient-1: #4c6ef5;
             --card-gradient-2: #748ffc;
+
+            /* Spacing scale (8px grid system) */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 20px;
+            --space-6: 24px;
+            --space-8: 32px;
+
+            /* Font sizes */
+            --font-xs: 11px;
+            --font-sm: 12px;
+            --font-base: 14px;
+            --font-md: 16px;
+            --font-lg: 18px;
+            --font-xl: 20px;
+            --font-2xl: 24px;
+            --font-3xl: 28px;
         }
 
         body.dark-mode {
@@ -52,6 +71,35 @@
             --info-color: #4dabf7;
             --card-gradient-1: #5c7cfa;
             --card-gradient-2: #9775fa;
+        }
+
+        body.high-contrast-mode {
+            /* High Contrast theme (WCAG AAA) */
+            --bg-primary: #000000;
+            --bg-secondary: #0a0a0a;
+            --bg-tertiary: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #ffff00;
+            --text-light: #00ffff;
+            --header-bg: #000000;
+            --header-text: #ffffff;
+            --accent-color: #00ff00;
+            --accent-hover: #00cc00;
+            --border-color: #ffffff;
+            --shadow: rgba(255,255,255,0.3);
+            --success-color: #00ff00;
+            --warning-color: #ffff00;
+            --danger-color: #ff0000;
+            --success-text: #00ff00;
+            --warning-text: #ffff00;
+            --success-bg: #003300;
+            --warning-bg: #333300;
+            --danger-bg: #330000;
+            --info-bg: #003333;
+            --info-color: #00ffff;
+            --card-gradient-1: #00ff00;
+            --card-gradient-2: #00cc00;
+            --focus-outline: 3px solid #ffff00;
         }
 
         * {
@@ -643,4 +691,217 @@
 
         body.comfortable-mode .modal-content {
             padding: 40px;
+        }
+
+        /* ===================================
+           Enhanced Focus Indicators
+           =================================== */
+
+        /* Enhanced focus indicators for all themes */
+        *:focus-visible {
+            outline: var(--focus-outline, 2px solid var(--accent-color));
+            outline-offset: 2px;
+        }
+
+        button:focus-visible,
+        input:focus-visible,
+        select:focus-visible,
+        textarea:focus-visible,
+        a:focus-visible {
+            outline: var(--focus-outline, 2px solid var(--accent-color));
+            outline-offset: 2px;
+        }
+
+        /* ===================================
+           Responsive Breakpoints (Mobile-First)
+           =================================== */
+
+        /* Mobile: 0-639px (default, no media query needed) */
+
+        /* Tablet: 640px+ */
+        @media (min-width: 640px) {
+            .container {
+                padding: 16px;
+            }
+
+            .tab-content {
+                padding: var(--space-5);
+            }
+
+            header {
+                padding: 12px 20px;
+            }
+
+            .modal-content {
+                padding: var(--space-6);
+            }
+        }
+
+        /* Desktop: 1024px+ */
+        @media (min-width: 1024px) {
+            .container {
+                padding: 20px;
+            }
+
+            .tab-content {
+                padding: var(--space-6);
+            }
+
+            header {
+                padding: 16px 24px;
+            }
+
+            h1 {
+                font-size: var(--font-xl);
+            }
+
+            .modal-content {
+                padding: var(--space-8);
+            }
+        }
+
+        /* Large: 1440px+ */
+        @media (min-width: 1440px) {
+            .container {
+                max-width: 1600px;
+            }
+
+            .tab-content {
+                padding: var(--space-8);
+            }
+        }
+
+        /* Mobile-specific adjustments */
+        @media (max-width: 639px) {
+            .container {
+                padding: var(--space-2);
+            }
+
+            .tab-content {
+                padding: var(--space-3);
+            }
+
+            header {
+                padding: var(--space-2);
+                flex-direction: column;
+                gap: var(--space-2);
+            }
+
+            .header-buttons {
+                width: 100%;
+                justify-content: flex-end;
+            }
+
+            .tabs {
+                overflow-x: auto;
+                flex-wrap: nowrap;
+            }
+
+            .tab {
+                font-size: var(--font-xs);
+                padding: var(--space-1) var(--space-2);
+            }
+
+            .modal-content {
+                padding: var(--space-4);
+                width: 95%;
+                max-width: 95%;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .metric-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ===================================
+           Utility Classes
+           =================================== */
+
+        /* Responsive Grid Utilities */
+        .grid-responsive {
+            display: grid;
+            gap: var(--space-4);
+            grid-template-columns: 1fr;
+        }
+
+        @media (min-width: 640px) {
+            .grid-responsive {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .grid-responsive {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        /* Auto-fit grid for flexible layouts */
+        .grid-auto {
+            display: grid;
+            gap: var(--space-4);
+            grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+        }
+
+        /* Responsive Chart Container */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            min-height: 200px;
+            max-height: 500px;
+        }
+
+        @media (max-width: 639px) {
+            .chart-container {
+                aspect-ratio: 4 / 3;
+                max-height: 300px;
+            }
+        }
+
+        /* Scrollable Section for Single-Page Display */
+        .scrollable-section {
+            max-height: calc(100vh - 280px);
+            overflow-y: auto;
+            scrollbar-gutter: stable;
+        }
+
+        /* Accordion/Collapse Utilities */
+        .accordion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-3);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .accordion-header:hover {
+            background: var(--border-color);
+        }
+
+        .accordion-header .accordion-icon {
+            transition: transform 0.2s;
+        }
+
+        .accordion-header.collapsed .accordion-icon {
+            transform: rotate(-90deg);
+        }
+
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .accordion-content.expanded {
+            max-height: 5000px;
+            transition: max-height 0.5s ease-in;
         }

@@ -312,10 +312,30 @@ async function openSettings(defaultTab = 'general') {
             <div style="margin-bottom: 25px;">
                 <h3 style="font-size: 16px; margin-bottom: 12px; color: var(--text-secondary);">Appearance</h3>
                 <div style="margin-bottom: 15px;">
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                        <input type="checkbox" id="dark-mode-toggle" ${document.body.classList.contains('dark-mode') ? 'checked' : ''}>
-                        <span>Dark Mode</span>
-                    </label>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Theme</label>
+                    <div style="display: flex; flex-direction: column; gap: 8px; margin-left: 10px;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="radio" name="theme-mode" value="light" ${!document.body.classList.contains('dark-mode') && !document.body.classList.contains('high-contrast-mode') ? 'checked' : ''}>
+                            <div>
+                                <div style="font-weight: 500;">Light</div>
+                                <div style="font-size: 12px; color: var(--text-secondary);">Standard light theme (default)</div>
+                            </div>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="radio" name="theme-mode" value="dark" ${document.body.classList.contains('dark-mode') ? 'checked' : ''}>
+                            <div>
+                                <div style="font-weight: 500;">Dark</div>
+                                <div style="font-size: 12px; color: var(--text-secondary);">Easy on the eyes in low light</div>
+                            </div>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="radio" name="theme-mode" value="high-contrast" ${document.body.classList.contains('high-contrast-mode') ? 'checked' : ''}>
+                            <div>
+                                <div style="font-weight: 500;">High Contrast</div>
+                                <div style="font-size: 12px; color: var(--text-secondary);">Maximum contrast for accessibility (WCAG AAA)</div>
+                            </div>
+                        </label>
+                    </div>
                 </div>
                 <div style="margin-bottom: 10px;">
                     <label style="display: block; margin-bottom: 8px; font-weight: 500;">Display Density</label>
@@ -479,8 +499,10 @@ async function openSettings(defaultTab = 'general') {
     }
 
     // Set up event handlers
-    modal.querySelector('#dark-mode-toggle').addEventListener('change', (e) => {
-        toggleTheme(e.target.checked);
+    modal.querySelectorAll('input[name="theme-mode"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            toggleTheme(e.target.value);
+        });
     });
 
     // Display density radio buttons
@@ -525,16 +547,22 @@ async function openSettings(defaultTab = 'general') {
 }
 
 /**
- * Toggle dark/light theme
+ * Toggle theme (light/dark/high-contrast)
  */
-function toggleTheme(isDark) {
-    if (isDark) {
+function toggleTheme(theme) {
+    // Remove all theme classes
+    document.body.classList.remove('dark-mode', 'high-contrast-mode');
+
+    // Apply the selected theme
+    if (theme === 'dark') {
         document.body.classList.add('dark-mode');
-        localStorage.setItem(STORAGE_KEYS.THEME, 'dark');
-    } else {
-        document.body.classList.remove('dark-mode');
-        localStorage.setItem(STORAGE_KEYS.THEME, 'light');
+    } else if (theme === 'high-contrast') {
+        document.body.classList.add('high-contrast-mode');
     }
+    // light mode has no class
+
+    // Save to localStorage
+    localStorage.setItem(STORAGE_KEYS.THEME, theme);
 }
 
 /**
@@ -544,7 +572,10 @@ function loadThemePreference() {
     const theme = localStorage.getItem(STORAGE_KEYS.THEME);
     if (theme === 'dark') {
         document.body.classList.add('dark-mode');
+    } else if (theme === 'high-contrast') {
+        document.body.classList.add('high-contrast-mode');
     }
+    // light mode (default) has no class
 }
 
 /**

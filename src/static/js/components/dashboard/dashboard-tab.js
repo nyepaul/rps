@@ -52,9 +52,9 @@ function renderProfileDashboard(container, profiles, currentProfile, currentUser
     const hasProfiles = profiles && profiles.length > 0;
 
     container.innerHTML = `
-        <div style="max-width: 1400px; margin: 0 auto; padding: 12px;">
+        <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-5);">
             <!-- Header -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3); flex-wrap: wrap; gap: var(--space-2);">
                 <div>
                     <h1 style="font-size: 18px; margin: 0;">📊 Profile Dashboard</h1>
                 </div>
@@ -86,10 +86,10 @@ function renderProfileDashboard(container, profiles, currentProfile, currentUser
             ${hasProfiles ? `
             <!-- Profiles Grid -->
             <div>
-                <h2 style="font-size: 13px; margin-bottom: 8px; color: var(--text-primary);">
+                <h2 style="font-size: 13px; margin-bottom: var(--space-2); color: var(--text-primary);">
                     Profiles <span style="color: var(--text-secondary); font-weight: normal; font-size: 11px;">(${profiles.length})</span>
                 </h2>
-                <div id="profiles-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;">
+                <div id="profiles-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--space-3);">
                     ${profiles.map(profile => renderProfileCard(profile, currentProfile)).join('')}
                 </div>
             </div>
@@ -143,16 +143,16 @@ function renderProfileCard(profile, currentProfile) {
         <div class="profile-card" data-profile-name="${profile.name}" style="
             background: var(--bg-secondary);
             border-radius: 6px;
-            padding: 12px;
+            padding: var(--space-3);
             border: 1px solid ${isActive ? 'var(--accent-color)' : 'var(--border-color)'};
             transition: all 0.2s;
             position: relative;
             box-shadow: ${isActive ? '0 2px 8px rgba(0,0,0,0.1)' : '0 1px 3px rgba(0,0,0,0.05)'};
         ">
-            ${isActive ? `<div style="position: absolute; top: 6px; right: 6px; background: var(--accent-color); color: white; padding: 2px 6px; border-radius: 10px; font-size: 9px; font-weight: 600;">ACTIVE</div>` : ''}
+            ${isActive ? `<div style="position: absolute; top: var(--space-1); right: var(--space-1); background: var(--accent-color); color: white; padding: var(--space-1) var(--space-1); border-radius: 10px; font-size: 9px; font-weight: 600;">ACTIVE</div>` : ''}
 
             <!-- Header -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2);">
                 <h3 style="font-size: 14px; margin: 0; font-weight: 600; color: var(--text-primary);">${profile.name}</h3>
                 <span style="font-size: 10px; color: var(--text-secondary);">${lastUpdated}</span>
             </div>
