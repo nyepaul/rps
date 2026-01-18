@@ -1329,43 +1329,84 @@ function renderExpenseSection(parentContainer) {
     `;
 
     for (const cat of categories) {
-        const expense = expenses[cat.key] || { amount: 0, frequency: 'monthly', ongoing: true };
-        const annual = annualAmount(expense.amount || 0, expense.frequency || 'monthly');
+        const catData = expenses[cat.key];
 
-        // Format date range display
-        let dateInfo = '';
-        if (expense.ongoing !== false) {
-            dateInfo = '<span style="color: var(--success-color);">⏳ Ongoing</span>';
-        } else if (expense.start_date || expense.end_date) {
-            const formatDate = (dateStr) => {
-                if (!dateStr) return '—';
-                const d = new Date(dateStr);
-                return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-            };
-
-            const start = formatDate(expense.start_date);
-            const end = formatDate(expense.end_date);
-
-            if (expense.start_date && expense.end_date) {
-                dateInfo = `<span style="color: var(--warning-color);">📅 ${start} → ${end}</span>`;
-            } else if (expense.start_date) {
-                dateInfo = `<span style="color: var(--info-color);">📅 From ${start}</span>`;
-            } else if (expense.end_date) {
-                dateInfo = `<span style="color: var(--info-color);">📅 Until ${end}</span>`;
-            }
+        // Convert legacy single object to array format
+        let expenseItems = [];
+        if (Array.isArray(catData)) {
+            expenseItems = catData;
+        } else if (catData && typeof catData === 'object' && catData.amount !== undefined) {
+            // Legacy format: single object
+            expenseItems = [catData];
         }
 
+        // Calculate total for category
+        const categoryTotal = expenseItems.reduce((sum, item) => {
+            return sum + annualAmount(item.amount || 0, item.frequency || 'monthly');
+        }, 0);
+
+        // Category header with add button
         html += `
-            <div class="expense-row" data-category="${cat.key}" style="padding: var(--space-2) var(--space-3); background: var(--bg-primary); border-radius: 4px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; flex-wrap: wrap; gap: var(--space-2);" onmouseover="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--accent-color)'" onmouseout="this.style.background='var(--bg-primary)'; this.style.borderColor='var(--border-color)'">
-                <div style="display: flex; align-items: center; gap: var(--space-2); flex: 1; font-size: var(--font-sm); flex-wrap: wrap;">
-                    <span style="font-size: var(--font-md);">${cat.icon}</span>
-                    <span style="font-weight: 500;">${cat.label}</span>
-                    <span style="color: var(--text-secondary);">${formatCurrency(expense.amount || 0)}/${expense.frequency || 'monthly'} (${formatCurrency(annual)}/yr)</span>
-                    ${dateInfo ? `<span style="font-size: var(--font-xs); margin-left: var(--space-1);">${dateInfo}</span>` : ''}
+            <div style="background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color); padding: var(--space-2); margin-bottom: var(--space-2);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${expenseItems.length > 0 ? 'var(--space-2)' : '0'};">
+                    <div style="display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--font-md);">${cat.icon}</span>
+                        <span style="font-weight: 600; font-size: var(--font-sm);">${cat.label}</span>
+                        ${categoryTotal > 0 ? `<span style="color: var(--accent-color); font-weight: 600; font-size: var(--font-sm);">${formatCurrency(categoryTotal)}/yr</span>` : ''}
+                    </div>
+                    <button class="add-expense-btn" data-category="${cat.key}" style="padding: 4px 10px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: var(--font-xs); font-weight: 500;">
+                        + Add
+                    </button>
                 </div>
-                <span style="font-size: var(--font-xs); color: var(--text-secondary);">✏️</span>
-            </div>
         `;
+
+        // Render each expense item
+        if (expenseItems.length > 0) {
+            html += `<div style="display: flex; flex-direction: column; gap: var(--space-1);">`;
+            expenseItems.forEach((expense, index) => {
+                const annual = annualAmount(expense.amount || 0, expense.frequency || 'monthly');
+
+                // Format date range display
+                let dateInfo = '';
+                if (expense.ongoing !== false) {
+                    dateInfo = '<span style="color: var(--success-color); font-size: 10px;">⏳ Ongoing</span>';
+                } else if (expense.start_date || expense.end_date) {
+                    const formatDate = (dateStr) => {
+                        if (!dateStr) return '—';
+                        const d = new Date(dateStr);
+                        return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                    };
+
+                    const start = formatDate(expense.start_date);
+                    const end = formatDate(expense.end_date);
+
+                    if (expense.start_date && expense.end_date) {
+                        dateInfo = `<span style="color: var(--warning-color); font-size: 10px;">📅 ${start} → ${end}</span>`;
+                    } else if (expense.start_date) {
+                        dateInfo = `<span style="color: var(--info-color); font-size: 10px;">📅 From ${start}</span>`;
+                    } else if (expense.end_date) {
+                        dateInfo = `<span style="color: var(--info-color); font-size: 10px;">📅 Until ${end}</span>`;
+                    }
+                }
+
+                html += `
+                    <div class="expense-item-row" data-category="${cat.key}" data-index="${index}" style="padding: var(--space-2); background: var(--bg-secondary); border-radius: 4px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; gap: var(--space-2);" onmouseover="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--accent-color)'" onmouseout="this.style.background='var(--bg-secondary)'; this.style.borderColor='var(--border-color)'">
+                        <div style="display: flex; align-items: center; gap: var(--space-2); flex: 1; font-size: var(--font-xs); flex-wrap: wrap;">
+                            <span style="font-weight: 500;">${expense.name || cat.label}</span>
+                            <span style="color: var(--text-secondary);">${formatCurrency(expense.amount || 0)}/${expense.frequency || 'monthly'} (${formatCurrency(annual)}/yr)</span>
+                            ${dateInfo ? `<span style="margin-left: var(--space-1);">${dateInfo}</span>` : ''}
+                        </div>
+                        <div style="display: flex; gap: 4px;">
+                            <button class="edit-expense-item-btn" data-category="${cat.key}" data-index="${index}" style="padding: 2px 6px; background: transparent; border: none; cursor: pointer; font-size: 12px;" title="Edit">✏️</button>
+                            <button class="delete-expense-item-btn" data-category="${cat.key}" data-index="${index}" style="padding: 2px 6px; background: transparent; border: none; cursor: pointer; font-size: 12px; color: var(--danger-color);" title="Delete">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+        }
+
+        html += `</div>`;
     }
 
     html += `
@@ -1380,9 +1421,9 @@ function renderExpenseSection(parentContainer) {
 }
 
 /**
- * Make expense row editable inline
+ * Make expense item editable inline
  */
-function makeExpenseRowEditable(rowElement, category, expense, parentContainer) {
+function makeExpenseItemEditable(rowElement, category, index, expense, parentContainer) {
     const categoryLabels = {
         housing: 'Housing',
         utilities: 'Utilities',
@@ -1444,6 +1485,13 @@ function makeExpenseRowEditable(rowElement, category, expense, parentContainer) 
                 ${categoryLabels[category]}
             </div>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px 10px; margin-bottom: 10px;">
+                <div style="grid-column: 1 / -1;">
+                    <label style="display: block; font-size: 9px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;">
+                        Description / Name
+                    </label>
+                    <input type="text" name="name" value="${expense.name || ''}" placeholder="${categoryLabels[category]}"
+                           style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
+                </div>
                 <div>
                     <label style="display: block; font-size: 9px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;">
                         Amount
@@ -1531,20 +1579,26 @@ function makeExpenseRowEditable(rowElement, category, expense, parentContainer) 
         const endDate = rowElement.querySelector('[name="end_date"]').value || null;
 
         const updatedExpense = {
+            name: rowElement.querySelector('[name="name"]').value,
             amount: parseFloat(rowElement.querySelector('[name="amount"]').value) || 0,
             frequency: rowElement.querySelector('[name="frequency"]').value,
             inflation_adjusted: rowElement.querySelector('[name="inflation_adjusted"]').checked,
             ongoing: ongoing,
             start_date: ongoing ? null : startDate,
-            end_date: ongoing ? null : endDate,
-            subcategories: expense.subcategories || {}
+            end_date: ongoing ? null : endDate
         };
 
         try {
             saveBtn.disabled = true;
             saveBtn.textContent = 'Saving...';
 
-            budgetData.expenses[currentPeriod][category] = updatedExpense;
+            // Ensure array structure
+            if (!Array.isArray(budgetData.expenses[currentPeriod][category])) {
+                budgetData.expenses[currentPeriod][category] = [];
+            }
+
+            // Update the item at the specified index
+            budgetData.expenses[currentPeriod][category][index] = updatedExpense;
 
             rowElement.classList.remove('editing');
             renderExpenseSection(parentContainer);
@@ -1591,7 +1645,7 @@ function makeExpenseRowEditable(rowElement, category, expense, parentContainer) 
 
     // Focus first input
     setTimeout(() => {
-        const firstInput = rowElement.querySelector('input[name="amount"]');
+        const firstInput = rowElement.querySelector('input[name="name"]');
         if (firstInput) {
             firstInput.focus();
             firstInput.select();
@@ -1603,29 +1657,142 @@ function makeExpenseRowEditable(rowElement, category, expense, parentContainer) 
  * Setup expense event listeners
  */
 function setupExpenseEventListeners(container) {
-    container.querySelectorAll('.expense-row').forEach(row => {
-        row.addEventListener('click', (e) => {
-            // If already editing, close the editor
-            if (row.classList.contains('editing')) {
-                const cancelBtn = row.querySelector('.cancel-inline-edit');
-                if (cancelBtn) cancelBtn.click();
-                row.classList.remove('editing');
-                return;
-            }
-
-            row.classList.add('editing');
-            const category = row.getAttribute('data-category');
-            const expense = budgetData.expenses[currentPeriod][category] || {
-                amount: 0,
-                frequency: 'monthly',
-                inflation_adjusted: true,
-                start_date: null,
-                end_date: null,
-                ongoing: true
-            };
-            makeExpenseRowEditable(row, category, expense, container);
+    // Add expense button handlers
+    container.querySelectorAll('.add-expense-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const category = btn.getAttribute('data-category');
+            addExpenseItem(container, category);
         });
     });
+
+    // Edit expense item button handlers
+    container.querySelectorAll('.edit-expense-item-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const category = btn.getAttribute('data-category');
+            const index = parseInt(btn.getAttribute('data-index'));
+            editExpenseItem(container, category, index);
+        });
+    });
+
+    // Delete expense item button handlers
+    container.querySelectorAll('.delete-expense-item-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const category = btn.getAttribute('data-category');
+            const index = parseInt(btn.getAttribute('data-index'));
+
+            if (confirm('Delete this expense item?')) {
+                // Ensure array structure
+                if (!Array.isArray(budgetData.expenses[currentPeriod][category])) {
+                    budgetData.expenses[currentPeriod][category] = [];
+                }
+
+                budgetData.expenses[currentPeriod][category].splice(index, 1);
+                renderExpenseSection(container);
+                renderBudgetSummary(container);
+
+                const profile = store.get('currentProfile');
+                if (profile) {
+                    await saveBudget(profile, container);
+                }
+            }
+        });
+    });
+
+    // Click on expense item row to edit
+    container.querySelectorAll('.expense-item-row').forEach(row => {
+        row.addEventListener('click', (e) => {
+            // Don't trigger if clicking on buttons
+            if (e.target.closest('button')) return;
+
+            const category = row.getAttribute('data-category');
+            const index = parseInt(row.getAttribute('data-index'));
+            editExpenseItem(container, category, index);
+        });
+    });
+}
+
+/**
+ * Add new expense item to category
+ */
+function addExpenseItem(parentContainer, category) {
+    // Get profile data for calculating default dates
+    const profile = store.get('currentProfile');
+    const retirementDate = profile?.retirement_date || '';
+
+    // Calculate life expectancy date
+    let lifeExpectancyDate = '';
+    if (profile?.birth_date && profile?.data?.person?.life_expectancy) {
+        const birthDate = new Date(profile.birth_date);
+        const lifeExpectancy = profile.data.person.life_expectancy;
+        const lifeExpectancyYear = birthDate.getFullYear() + lifeExpectancy;
+        lifeExpectancyDate = `${lifeExpectancyYear}-${String(birthDate.getMonth() + 1).padStart(2, '0')}-${String(birthDate.getDate()).padStart(2, '0')}`;
+    }
+
+    // Determine default dates based on period
+    let defaultStartDate = '';
+    let defaultEndDate = '';
+    if (currentPeriod === 'current') {
+        defaultEndDate = retirementDate;
+    } else {
+        defaultStartDate = retirementDate;
+        defaultEndDate = lifeExpectancyDate;
+    }
+
+    const newItem = {
+        name: '',
+        amount: 0,
+        frequency: 'monthly',
+        inflation_adjusted: true,
+        ongoing: false,
+        start_date: defaultStartDate,
+        end_date: defaultEndDate
+    };
+
+    // Ensure array structure
+    if (!Array.isArray(budgetData.expenses[currentPeriod][category])) {
+        const existing = budgetData.expenses[currentPeriod][category];
+        if (existing && typeof existing === 'object' && existing.amount !== undefined) {
+            // Convert legacy single object to array
+            budgetData.expenses[currentPeriod][category] = [existing];
+        } else {
+            budgetData.expenses[currentPeriod][category] = [];
+        }
+    }
+
+    budgetData.expenses[currentPeriod][category].push(newItem);
+    renderExpenseSection(parentContainer);
+
+    // Automatically start editing the new item
+    const newIndex = budgetData.expenses[currentPeriod][category].length - 1;
+    setTimeout(() => {
+        editExpenseItem(parentContainer, category, newIndex);
+    }, 100);
+}
+
+/**
+ * Edit expense item inline
+ */
+function editExpenseItem(parentContainer, category, index) {
+    const expenseItems = budgetData.expenses[currentPeriod][category];
+    if (!Array.isArray(expenseItems) || !expenseItems[index]) return;
+
+    const expense = expenseItems[index];
+    const row = parentContainer.querySelector(`.expense-item-row[data-category="${category}"][data-index="${index}"]`);
+    if (!row) return;
+
+    // If already editing, close the editor
+    if (row.classList.contains('editing')) {
+        const cancelBtn = row.querySelector('.cancel-inline-edit');
+        if (cancelBtn) cancelBtn.click();
+        row.classList.remove('editing');
+        return;
+    }
+
+    row.classList.add('editing');
+    makeExpenseItemEditable(row, category, index, expense, parentContainer);
 }
 
 /**
