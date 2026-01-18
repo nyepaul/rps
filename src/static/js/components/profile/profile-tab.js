@@ -11,13 +11,13 @@ export function renderProfileTab(container) {
 
     if (!profile) {
         container.innerHTML = `
-            <div style="text-align: center; padding: 60px 20px;">
-                <div style="font-size: 64px; margin-bottom: 20px;">👤</div>
-                <h2 style="margin-bottom: 15px;">No Profile Selected</h2>
-                <p style="color: var(--text-secondary); margin-bottom: 30px;">
+            <div style="text-align: center; padding: var(--space-8) var(--space-5);">
+                <div style="font-size: 64px; margin-bottom: var(--space-5);">👤</div>
+                <h2 style="margin-bottom: var(--space-4);">No Profile Selected</h2>
+                <p style="color: var(--text-secondary); margin-bottom: var(--space-6);">
                     Please create or select a profile to edit.
                 </p>
-                <button onclick="window.app.showTab('welcome')" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <button onclick="window.app.showTab('welcome')" style="padding: var(--space-3) var(--space-6); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-md);">
                     Go to Welcome
                 </button>
             </div>
@@ -32,16 +32,16 @@ export function renderProfileTab(container) {
     const financial = data.financial || {};
 
     container.innerHTML = `
-        <div style="max-width: 1000px; margin: 0 auto; padding: 20px;">
-            <h1 style="font-size: 28px; margin-bottom: 5px;">Edit Profile</h1>
-            <p style="color: var(--text-secondary); margin-bottom: 15px;">
+        <div style="max-width: 1000px; margin: 0 auto; padding: var(--space-5);">
+            <h1 style="font-size: var(--font-3xl); margin-bottom: var(--space-1);">Edit Profile</h1>
+            <p style="color: var(--text-secondary); margin-bottom: var(--space-4);">
                 Update your retirement planning information
             </p>
 
             <form id="profile-form">
                 <!-- My Details -->
                 <div class="form-section">
-                    <h2 style="font-size: 20px; margin-bottom: 12px; border-bottom: 2px solid var(--accent-color); padding-bottom: 6px;">
+                    <h2 style="font-size: var(--font-xl); margin-bottom: var(--space-3); border-bottom: 2px solid var(--accent-color); padding-bottom: var(--space-2);">
                         My Details
                     </h2>
                     <div class="form-grid">
@@ -77,7 +77,7 @@ export function renderProfileTab(container) {
 
                 <!-- Spouse Details -->
                 <div class="form-section">
-                    <h2 style="font-size: 20px; margin-bottom: 12px; border-bottom: 2px solid var(--accent-color); padding-bottom: 6px;">
+                    <h2 style="font-size: var(--font-xl); margin-bottom: var(--space-3); border-bottom: 2px solid var(--accent-color); padding-bottom: var(--space-2);">
                         Spouse Details
                     </h2>
                     <div class="form-grid">
@@ -113,21 +113,21 @@ export function renderProfileTab(container) {
 
                 <!-- Children -->
                 <div class="form-section">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <h2 style="font-size: 20px; border-bottom: 2px solid var(--accent-color); padding-bottom: 6px; margin: 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3);">
+                        <h2 style="font-size: var(--font-xl); border-bottom: 2px solid var(--accent-color); padding-bottom: var(--space-2); margin: 0;">
                             Children
                         </h2>
-                        <button type="button" id="add-child-btn" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                        <button type="button" id="add-child-btn" style="padding: var(--space-2) var(--space-4); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-base);">
                             + Add Child
                         </button>
                     </div>
                     <div id="children-list">
                         ${children.length === 0 ? '<p style="color: var(--text-secondary); font-style: italic;">No children added. Click "Add Child" to include dependent information.</p>' : ''}
                         ${children.map((child, index) => `
-                            <div class="child-item" data-index="${index}" style="background: var(--bg-primary); padding: 12px; border-radius: 8px; margin-bottom: 10px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                    <h3 style="font-size: 16px; margin: 0;">Child ${index + 1}</h3>
-                                    <button type="button" class="remove-child-btn" data-index="${index}" style="padding: 4px 12px; background: var(--danger-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
+                            <div class="child-item" data-index="${index}" style="background: var(--bg-primary); padding: var(--space-3); border-radius: 8px; margin-bottom: var(--space-3);">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2);">
+                                    <h3 style="font-size: var(--font-md); margin: 0;">Child ${index + 1}</h3>
+                                    <button type="button" class="remove-child-btn" data-index="${index}" style="padding: var(--space-1) var(--space-3); background: var(--danger-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: var(--font-sm);">
                                         Remove
                                     </button>
                                 </div>
@@ -151,11 +151,11 @@ export function renderProfileTab(container) {
                 </div>
 
                 <!-- Action Buttons -->
-                <div style="display: flex; gap: 12px; margin-top: 20px; justify-content: flex-end;">
-                    <button type="button" id="cancel-btn" style="padding: 10px 24px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-radius: 6px; cursor: pointer; font-size: 15px;">
+                <div style="display: flex; gap: var(--space-3); margin-top: var(--space-5); justify-content: flex-end;">
+                    <button type="button" id="cancel-btn" style="padding: var(--space-3) var(--space-6); background: var(--bg-tertiary); color: var(--text-primary); border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-base);">
                         Cancel
                     </button>
-                    <button type="submit" id="save-btn" style="padding: 10px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 15px;">
+                    <button type="submit" id="save-btn" style="padding: var(--space-3) var(--space-6); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-base);">
                         Save Changes
                     </button>
                 </div>
@@ -165,14 +165,14 @@ export function renderProfileTab(container) {
         <style>
             .form-section {
                 background: var(--bg-secondary);
-                padding: 18px;
+                padding: var(--space-5);
                 border-radius: 10px;
-                margin-bottom: 15px;
+                margin-bottom: var(--space-4);
             }
             .form-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                gap: 12px;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: var(--space-3);
             }
             .form-group {
                 display: flex;
@@ -180,16 +180,17 @@ export function renderProfileTab(container) {
             }
             .form-group label {
                 font-weight: 600;
-                margin-bottom: 5px;
+                margin-bottom: var(--space-1);
                 color: var(--text-primary);
+                font-size: var(--font-base);
             }
             .form-group input {
-                padding: 9px 12px;
+                padding: var(--space-2) var(--space-3);
                 border: 1px solid var(--border-color);
                 border-radius: 6px;
                 background: var(--bg-primary);
                 color: var(--text-primary);
-                font-size: 15px;
+                font-size: var(--font-base);
                 transition: border-color 0.2s;
             }
             .form-group input:focus {
@@ -197,9 +198,9 @@ export function renderProfileTab(container) {
                 border-color: var(--accent-color);
             }
             .form-group small {
-                margin-top: 3px;
+                margin-top: var(--space-1);
                 color: var(--text-secondary);
-                font-size: 12px;
+                font-size: var(--font-sm);
             }
             #save-btn:hover {
                 background: var(--accent-hover);
@@ -209,14 +210,14 @@ export function renderProfileTab(container) {
             }
             .calc-badge {
                 display: inline-block;
-                font-size: 10px;
+                font-size: var(--font-xs);
                 font-weight: 500;
                 text-transform: uppercase;
                 background: var(--accent-color);
                 color: white;
-                padding: 2px 6px;
+                padding: var(--space-1) var(--space-2);
                 border-radius: 4px;
-                margin-left: 8px;
+                margin-left: var(--space-2);
                 vertical-align: middle;
             }
             .calculated-field {
@@ -227,6 +228,11 @@ export function renderProfileTab(container) {
             }
             .calculated-field:focus {
                 border-color: var(--border-color) !important;
+            }
+            @media (max-width: 639px) {
+                .form-grid {
+                    grid-template-columns: 1fr;
+                }
             }
         </style>
     `;

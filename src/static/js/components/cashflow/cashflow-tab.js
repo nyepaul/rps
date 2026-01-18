@@ -18,13 +18,13 @@ export function renderCashFlowTab(container) {
 
     if (!profile) {
         container.innerHTML = `
-            <div style="text-align: center; padding: 60px;">
-                <div style="font-size: 48px; margin-bottom: 20px;">💸</div>
-                <h2 style="margin-bottom: 10px;">No Profile Selected</h2>
-                <p style="color: var(--text-secondary); margin-bottom: 20px;">
+            <div style="text-align: center; padding: var(--space-8);">
+                <div style="font-size: 48px; margin-bottom: var(--space-5);">💸</div>
+                <h2 style="margin-bottom: var(--space-3);">No Profile Selected</h2>
+                <p style="color: var(--text-secondary); margin-bottom: var(--space-5);">
                     Please create or select a profile to view cash flow.
                 </p>
-                <button onclick="window.app.showTab('welcome')" style="padding: 10px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <button onclick="window.app.showTab('welcome')" style="padding: var(--space-3) var(--space-6); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-md);">
                     Go to Welcome
                 </button>
             </div>
@@ -54,20 +54,20 @@ export function renderCashFlowTab(container) {
     }
 
     container.innerHTML = `
-        <div style="max-width: 1400px; margin: 0 auto; padding: 20px;">
+        <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-5);">
             <!-- Header -->
-            <div style="margin-bottom: 20px;">
-                <h1 style="font-size: 28px; margin-bottom: 8px;">💸 Cash Flow</h1>
-                <p style="color: var(--text-secondary); margin: 0; font-size: 14px;">
+            <div style="margin-bottom: var(--space-5);">
+                <h1 style="font-size: var(--font-3xl); margin-bottom: var(--space-2);">💸 Cash Flow</h1>
+                <p style="color: var(--text-secondary); margin: 0; font-size: var(--font-base);">
                     Visualize money coming in and going out over time. Investment withdrawals follow the tax-efficient strategy (Taxable → Tax-Deferred → Roth). Select a scenario to compare your projected portfolio with Monte Carlo simulation results.
                 </p>
             </div>
 
             <!-- Controls -->
-            <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+            <div style="background: var(--bg-secondary); padding: var(--space-4); border-radius: 8px; margin-bottom: var(--space-5); display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap;">
                 <div>
-                    <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">Time Period</label>
-                    <select id="time-period" style="padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: 14px;">
+                    <label style="display: block; margin-bottom: var(--space-1); font-size: var(--font-sm); color: var(--text-secondary);">Time Period</label>
+                    <select id="time-period" style="padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-base);">
                         <option value="12">Next 12 months</option>
                         <option value="24">Next 24 months</option>
                         <option value="36">Next 36 months</option>
@@ -81,22 +81,22 @@ export function renderCashFlowTab(container) {
                     </select>
                 </div>
                 <div>
-                    <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">View Type</label>
-                    <select id="view-type" style="padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: 14px;">
+                    <label style="display: block; margin-bottom: var(--space-1); font-size: var(--font-sm); color: var(--text-secondary);">View Type</label>
+                    <select id="view-type" style="padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-base);">
                         <option value="monthly">Monthly</option>
                         <option value="annual" selected>Annual</option>
                     </select>
                 </div>
                 <div>
-                    <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary);">Scenario (Monte Carlo)</label>
-                    <select id="scenario-select" style="padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: 14px; min-width: 200px;">
+                    <label style="display: block; margin-bottom: var(--space-1); font-size: var(--font-sm); color: var(--text-secondary);">Scenario (Monte Carlo)</label>
+                    <select id="scenario-select" style="padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-base); min-width: 200px;">
                         <option value="">None</option>
                     </select>
                 </div>
-                <button id="refresh-chart" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; margin-top: 20px;">
+                <button id="refresh-chart" style="padding: var(--space-2) var(--space-4); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-base); margin-top: var(--space-5);">
                     Refresh
                 </button>
-                <button id="reset-zoom" style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 14px; margin-top: 20px;">
+                <button id="reset-zoom" style="padding: var(--space-2) var(--space-4); background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: var(--font-base); margin-top: var(--space-5);">
                     Reset Zoom
                 </button>
             </div>
