@@ -486,7 +486,7 @@ def delete_user(user_id: int):
             conversations_deleted = cursor.rowcount
 
             # Delete user's feedback submissions
-            cursor.execute('DELETE FROM user_feedback WHERE user_id = ?', (user_id,))
+            cursor.execute('DELETE FROM feedback WHERE user_id = ?', (user_id,))
             feedback_deleted = cursor.rowcount
 
             # Delete the user
