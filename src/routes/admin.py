@@ -440,6 +440,92 @@ def get_user_profiles(user_id: int):
         return jsonify({'error': str(e)}), 500
 
 
+@admin_bp.route('/users/<int:user_id>', methods=['DELETE'])
+@login_required
+@admin_required
+def delete_user(user_id: int):
+    """Delete a user and all associated data (admin only).
+
+    Deletes:
+    - User account
+    - All user profiles
+    - All user scenarios
+    - All user action items
+    - All user conversations
+    - All user audit logs
+
+    Restrictions:
+    - Cannot delete yourself
+    - Requires admin privileges
+    """
+    try:
+        from src.database.connection import db
+
+        # Prevent self-deletion
+        if user_id == current_user.id:
+            return jsonify({'error': 'Cannot delete your own account'}), 400
+
+        # Get user before deletion for logging
+        user = User.get_by_id(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        username = user.username
+        email = user.email
+
+        # Delete user and cascade delete related data
+        with db.get_connection() as conn:
+            cursor = conn.cursor()
+
+            # Delete user's profiles (will cascade to scenarios and action items via ON DELETE CASCADE)
+            cursor.execute('DELETE FROM profile WHERE user_id = ?', (user_id,))
+            profiles_deleted = cursor.rowcount
+
+            # Delete user's conversations
+            cursor.execute('DELETE FROM conversations WHERE user_id = ?', (user_id,))
+            conversations_deleted = cursor.rowcount
+
+            # Delete user's feedback submissions
+            cursor.execute('DELETE FROM user_feedback WHERE user_id = ?', (user_id,))
+            feedback_deleted = cursor.rowcount
+
+            # Delete the user
+            cursor.execute('DELETE FROM users WHERE id = ?', (user_id,))
+
+            if cursor.rowcount == 0:
+                return jsonify({'error': 'User not found'}), 404
+
+            conn.commit()
+
+        # Log admin action AFTER successful deletion
+        enhanced_audit_logger.log_admin_action(
+            action='DELETE_USER',
+            details={
+                'target_user_id': user_id,
+                'target_username': username,
+                'target_email': email,
+                'profiles_deleted': profiles_deleted,
+                'conversations_deleted': conversations_deleted,
+                'feedback_deleted': feedback_deleted
+            },
+            user_id=current_user.id
+        )
+
+        return jsonify({
+            'message': f'User {username} deleted successfully',
+            'deleted': {
+                'user': username,
+                'profiles': profiles_deleted,
+                'conversations': conversations_deleted,
+                'feedback': feedback_deleted
+            }
+        }), 200
+
+    except Exception as e:
+        print(f"Error deleting user: {e}")
+        return jsonify({'error': f'Failed to delete user: {str(e)}'}), 500
+
+
 @admin_bp.route('/system/info', methods=['GET'])
 @login_required
 @admin_required

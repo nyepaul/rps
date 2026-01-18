@@ -117,6 +117,11 @@ function renderUserRow(user, currentUser) {
                     <button class="view-user-profiles-btn" data-user-id="${user.id}" style="padding: 4px 8px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;" title="View Profiles">
                         📁
                     </button>
+                    ${currentUser && user.id !== currentUser.id ? `
+                        <button class="delete-user-btn" data-user-id="${user.id}" data-username="${user.username}" style="padding: 4px 8px; background: var(--danger-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;" title="Delete User">
+                            🗑️
+                        </button>
+                    ` : ''}
                 </div>
             </td>
         </tr>
@@ -181,6 +186,35 @@ function setupUserActionHandlers(container) {
             await viewUserProfiles(userId);
         });
     });
+
+    // Delete user
+    container.querySelectorAll('.delete-user-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const userId = parseInt(btn.getAttribute('data-user-id'));
+            const username = btn.getAttribute('data-username');
+
+            const confirmed = confirm(
+                `⚠️ WARNING: This will permanently delete user "${username}" and ALL their data including:\n\n` +
+                `• All profiles\n` +
+                `• All scenarios\n` +
+                `• All action items\n` +
+                `• All conversations\n` +
+                `• All feedback submissions\n\n` +
+                `This action CANNOT be undone!\n\n` +
+                `Type the username "${username}" in the next prompt to confirm deletion.`
+            );
+
+            if (confirmed) {
+                const typedUsername = prompt(`Type "${username}" to confirm deletion:`);
+                if (typedUsername === username) {
+                    await deleteUser(userId, username);
+                    await renderUserManagement(container);  // Refresh
+                } else if (typedUsername !== null) {
+                    showError('Username did not match. Deletion cancelled.');
+                }
+            }
+        });
+    });
 }
 
 /**
@@ -228,6 +262,33 @@ async function toggleUserSuperAdmin(userId, isSuperAdmin) {
             showError('Only super admins can manage super admin status');
         } else {
             showError(`Failed to update super admin status: ${error.message}`);
+        }
+    }
+}
+
+/**
+ * Delete user and all associated data (admin only)
+ */
+async function deleteUser(userId, username) {
+    try {
+        const response = await apiClient.delete(`/api/admin/users/${userId}`);
+
+        // Show detailed success message
+        const deleted = response.deleted;
+        showSuccess(
+            `User "${username}" deleted successfully.\n` +
+            `Removed: ${deleted.profiles} profiles, ${deleted.conversations} conversations, ${deleted.feedback} feedback items.`
+        );
+    } catch (error) {
+        console.error('Failed to delete user:', error);
+
+        // Show specific error message
+        if (error.message.includes('Cannot delete your own account')) {
+            showError('You cannot delete your own account');
+        } else if (error.message.includes('User not found')) {
+            showError('User not found');
+        } else {
+            showError(`Failed to delete user: ${error.message}`);
         }
     }
 }
