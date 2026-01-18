@@ -111,7 +111,7 @@ function renderIncomeStreamsList(container, incomeStreams) {
         </div>
     `;
 
-    // Setup row click handlers (edit on click)
+    // Setup row click handlers (inline edit on click)
     listContainer.querySelectorAll('.income-row').forEach(row => {
         row.addEventListener('click', (e) => {
             // Don't trigger if clicking action buttons
@@ -119,7 +119,8 @@ function renderIncomeStreamsList(container, incomeStreams) {
                 return;
             }
             const index = parseInt(row.dataset.index);
-            showIncomeStreamModal(container, store.get('currentProfile'), index, incomeStreams);
+            const stream = incomeStreams[index];
+            makeIncomeRowEditable(row, stream, index, incomeStreams, container);
         });
     });
 
@@ -128,7 +129,9 @@ function renderIncomeStreamsList(container, incomeStreams) {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
             const index = parseInt(btn.dataset.index);
-            showIncomeStreamModal(container, store.get('currentProfile'), index, incomeStreams);
+            const stream = incomeStreams[index];
+            const row = btn.closest('.income-row');
+            makeIncomeRowEditable(row, stream, index, incomeStreams, container);
         });
     });
 
@@ -193,6 +196,102 @@ function renderIncomeStreamRow(stream, index) {
             </div>
         </div>
     `;
+}
+
+/**
+ * Make income row editable inline
+ */
+function makeIncomeRowEditable(rowElement, stream, index, incomeStreams, parentContainer) {
+    const originalHTML = rowElement.innerHTML;
+
+    rowElement.innerHTML = `
+        <div style="padding: 10px 12px; background: var(--bg-tertiary); border-radius: 6px; border: 2px solid var(--accent-color);">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px 10px; margin-bottom: 10px;">
+                <div>
+                    <label style="display: block; font-size: 9px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;">
+                        Name
+                    </label>
+                    <input type="text" name="name" value="${stream.name || ''}" required
+                           style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 9px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;">
+                        Monthly Amount
+                    </label>
+                    <input type="text" name="amount" value="${stream.amount || 0}"
+                           style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 9px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;">
+                        Start Date
+                    </label>
+                    <input type="date" name="start_date" value="${stream.start_date || ''}"
+                           style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 9px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;">
+                        End Date
+                    </label>
+                    <input type="date" name="end_date" value="${stream.end_date || ''}"
+                           style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <label style="display: block; font-size: 9px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;">
+                        Description
+                    </label>
+                    <input type="text" name="description" value="${stream.description || ''}"
+                           style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
+                </div>
+            </div>
+            <div style="display: flex; gap: 6px; justify-content: flex-end; padding-top: 6px; border-top: 1px solid var(--border-color);">
+                <button class="cancel-inline-edit" style="padding: 5px 12px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
+                    Cancel
+                </button>
+                <button class="save-inline-edit" style="padding: 5px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                    💾 Save
+                </button>
+            </div>
+        </div>
+    `;
+
+    // Handle save
+    const saveBtn = rowElement.querySelector('.save-inline-edit');
+    saveBtn.addEventListener('click', async () => {
+        const updatedStream = {
+            name: rowElement.querySelector('[name="name"]').value,
+            amount: parseFloat(rowElement.querySelector('[name="amount"]').value.replace(/[$,]/g, '')) || 0,
+            start_date: rowElement.querySelector('[name="start_date"]').value || null,
+            end_date: rowElement.querySelector('[name="end_date"]').value || null,
+            description: rowElement.querySelector('[name="description"]').value
+        };
+
+        try {
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+
+            incomeStreams[index] = updatedStream;
+            const profile = store.get('currentProfile');
+            await saveIncomeStreams(profile, incomeStreams);
+            renderIncomeStreamsList(parentContainer, incomeStreams);
+            showSuccess('Income stream updated!');
+        } catch (error) {
+            alert('Failed to save: ' + error.message);
+            saveBtn.disabled = false;
+            saveBtn.textContent = '💾 Save';
+        }
+    });
+
+    // Handle cancel
+    const cancelBtn = rowElement.querySelector('.cancel-inline-edit');
+    cancelBtn.addEventListener('click', () => {
+        rowElement.innerHTML = originalHTML;
+    });
+
+    // Focus first input
+    setTimeout(() => {
+        const firstInput = rowElement.querySelector('input[name="name"]');
+        if (firstInput) firstInput.focus();
+    }, 100);
 }
 
 /**

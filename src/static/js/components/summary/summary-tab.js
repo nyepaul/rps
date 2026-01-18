@@ -83,32 +83,32 @@ export function renderSummaryTab(container) {
     }
 
     container.innerHTML = `
-        <div style="max-width: 1000px; margin: 0 auto; padding: 20px;">
-            <h1 style="font-size: 36px; margin-bottom: 10px;">Reports & Summary</h1>
-            <p style="color: var(--text-secondary); margin-bottom: 30px;">
+        <div style="max-width: 1000px; margin: 0 auto; padding: 12px 16px;">
+            <h1 style="font-size: 18px; margin-bottom: 6px; font-weight: 600;">Reports & Summary</h1>
+            <p style="color: var(--text-secondary); margin-bottom: 12px; font-size: 13px;">
                 Profile: <strong>${profile.name}</strong>
             </p>
 
-            <div style="background: var(--bg-secondary); padding: 40px; border-radius: 12px;">
-                <div style="text-align: center; margin-bottom: 40px;">
-                    <div style="font-size: 64px; margin-bottom: 20px;">📊</div>
-                    <h2 style="font-size: 28px; margin-bottom: 15px;">Comprehensive Reports</h2>
-                    <p style="color: var(--text-secondary); max-width: 600px; margin: 0 auto;">
-                        Generate detailed PDF reports with analysis, portfolio summaries, and action plans for your retirement plan.
+            <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px;">
+                <div style="text-align: center; margin-bottom: 16px;">
+                    <div style="font-size: 40px; margin-bottom: 8px;">📊</div>
+                    <h2 style="font-size: 18px; margin-bottom: 8px; font-weight: 600;">Comprehensive Reports</h2>
+                    <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto; font-size: 13px;">
+                        Generate detailed PDF reports with analysis, portfolio summaries, and action plans.
                     </p>
                 </div>
 
-                <div style="display: grid; gap: 20px; margin-bottom: 30px;">
-                    <div style="background: var(--bg-primary); padding: 25px; border-radius: 8px; border: 2px solid var(--border-color);">
-                        <div style="display: flex; align-items: flex-start; gap: 15px;">
-                            <div style="font-size: 32px;">📈</div>
+                <div style="display: grid; gap: 12px; margin-bottom: 16px;">
+                    <div style="background: var(--bg-primary); padding: 14px; border-radius: 6px; border: 1px solid var(--border-color);">
+                        <div style="display: flex; align-items: flex-start; gap: 12px;">
+                            <div style="font-size: 24px;">📈</div>
                             <div style="flex: 1;">
-                                <h3 style="font-size: 20px; margin-bottom: 10px;">Analysis Report</h3>
-                                <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                                    Monte Carlo simulation results, success rates, scenario comparisons, and statistical analysis of your retirement projections.
+                                <h3 style="font-size: 15px; margin-bottom: 6px; font-weight: 600;">Analysis Report</h3>
+                                <p style="color: var(--text-secondary); margin-bottom: 10px; font-size: 12px;">
+                                    Monte Carlo simulation results, success rates, scenario comparisons, and statistical analysis.
                                 </p>
-                                <button id="btn-analysis-pdf" class="pdf-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <button id="btn-analysis-pdf" class="pdf-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                                         <polyline points="7 10 12 15 17 10"/>
                                         <line x1="12" y1="15" x2="12" y2="3"/>
@@ -119,16 +119,16 @@ export function renderSummaryTab(container) {
                         </div>
                     </div>
 
-                    <div style="background: var(--bg-primary); padding: 25px; border-radius: 8px; border: 2px solid var(--border-color);">
-                        <div style="display: flex; align-items: flex-start; gap: 15px;">
-                            <div style="font-size: 32px;">💼</div>
+                    <div style="background: var(--bg-primary); padding: 14px; border-radius: 6px; border: 1px solid var(--border-color);">
+                        <div style="display: flex; align-items: flex-start; gap: 12px;">
+                            <div style="font-size: 24px;">💼</div>
                             <div style="flex: 1;">
-                                <h3 style="font-size: 20px; margin-bottom: 10px;">Portfolio Summary</h3>
-                                <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                                <h3 style="font-size: 15px; margin-bottom: 6px; font-weight: 600;">Portfolio Summary</h3>
+                                <p style="color: var(--text-secondary); margin-bottom: 10px; font-size: 12px;">
                                     Current assets breakdown, account allocations, retirement accounts, taxable accounts, and financial overview.
                                 </p>
-                                <button id="btn-portfolio-pdf" class="pdf-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <button id="btn-portfolio-pdf" class="pdf-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                                         <polyline points="7 10 12 15 17 10"/>
                                         <line x1="12" y1="15" x2="12" y2="3"/>
@@ -139,16 +139,16 @@ export function renderSummaryTab(container) {
                         </div>
                     </div>
 
-                    <div style="background: var(--bg-primary); padding: 25px; border-radius: 8px; border: 2px solid var(--border-color);">
-                        <div style="display: flex; align-items: flex-start; gap: 15px;">
-                            <div style="font-size: 32px;">✅</div>
+                    <div style="background: var(--bg-primary); padding: 14px; border-radius: 6px; border: 1px solid var(--border-color);">
+                        <div style="display: flex; align-items: flex-start; gap: 12px;">
+                            <div style="font-size: 24px;">✅</div>
                             <div style="flex: 1;">
-                                <h3 style="font-size: 20px; margin-bottom: 10px;">Action Plan</h3>
-                                <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                                <h3 style="font-size: 15px; margin-bottom: 6px; font-weight: 600;">Action Plan</h3>
+                                <p style="color: var(--text-secondary); margin-bottom: 10px; font-size: 12px;">
                                     Prioritized action items, recommendations, and next steps for optimizing your retirement plan.
                                 </p>
-                                <button id="btn-action-plan-pdf" class="pdf-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <button id="btn-action-plan-pdf" class="pdf-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                                         <polyline points="7 10 12 15 17 10"/>
                                         <line x1="12" y1="15" x2="12" y2="3"/>
@@ -160,15 +160,15 @@ export function renderSummaryTab(container) {
                     </div>
                 </div>
 
-                <div style="text-align: center; padding: 20px; background: var(--bg-tertiary); border-radius: 8px;">
-                    <p style="color: var(--text-secondary); margin-bottom: 15px;">
+                <div style="text-align: center; padding: 12px; background: var(--bg-tertiary); border-radius: 6px;">
+                    <p style="color: var(--text-secondary); margin-bottom: 10px; font-size: 12px;">
                         Want to see your data in other formats?
                     </p>
-                    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                        <button onclick="window.app.showTab('analysis')" style="padding: 10px 20px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
+                    <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                        <button onclick="window.app.showTab('analysis')" style="padding: 6px 12px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px;">
                             View Interactive Analysis
                         </button>
-                        <button onclick="window.app.showTab('actions')" style="padding: 10px 20px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
+                        <button onclick="window.app.showTab('actions')" style="padding: 6px 12px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px;">
                             Manage Action Items
                         </button>
                     </div>

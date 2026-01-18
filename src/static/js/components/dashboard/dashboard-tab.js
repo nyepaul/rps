@@ -52,30 +52,30 @@ function renderProfileDashboard(container, profiles, currentProfile, currentUser
     const hasProfiles = profiles && profiles.length > 0;
 
     container.innerHTML = `
-        <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-5);">
+        <div style="max-width: 1400px; margin: 0 auto; padding: 12px 16px;">
             <!-- Header -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3); flex-wrap: wrap; gap: var(--space-2);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
                 <div style="min-width: 0; flex: 1;">
-                    <h1 style="font-size: 18px; margin: 0;">📊 Profile Dashboard</h1>
+                    <h1 style="font-size: 16px; margin: 0; font-weight: 600;">📊 Profile Dashboard</h1>
                 </div>
-                <button id="create-profile-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; flex-shrink: 0;">
+                <button id="create-profile-btn" style="padding: 5px 10px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; flex-shrink: 0;">
                     + New
                 </button>
             </div>
 
             ${currentProfile ? `
             <!-- Current Profile Banner -->
-            <div style="background: linear-gradient(135deg, var(--accent-color), var(--info-color)); padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div style="background: linear-gradient(135deg, var(--accent-color), var(--info-color)); padding: 6px 10px; border-radius: 4px; margin-bottom: 10px; color: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
                     <div>
-                        <div style="font-size: 10px; opacity: 0.9;">Active:</div>
-                        <div style="font-size: 14px; font-weight: 700;">${currentProfile.name}</div>
+                        <div style="font-size: 9px; opacity: 0.9;">Active:</div>
+                        <div style="font-size: 13px; font-weight: 700;">${currentProfile.name}</div>
                     </div>
-                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                        <button onclick="window.app.showTab('profile')" style="padding: 4px 8px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; color: white; cursor: pointer; font-size: 11px;">
+                    <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                        <button onclick="window.app.showTab('profile')" style="padding: 3px 7px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 3px; color: white; cursor: pointer; font-size: 10px;">
                             Edit
                         </button>
-                        <button onclick="window.app.showTab('assets')" style="padding: 4px 8px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; color: white; cursor: pointer; font-size: 11px;">
+                        <button onclick="window.app.showTab('assets')" style="padding: 3px 7px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 3px; color: white; cursor: pointer; font-size: 10px;">
                             Assets
                         </button>
                     </div>
@@ -86,22 +86,22 @@ function renderProfileDashboard(container, profiles, currentProfile, currentUser
             ${hasProfiles ? `
             <!-- Profiles Grid -->
             <div>
-                <h2 style="font-size: 13px; margin-bottom: var(--space-2); color: var(--text-primary);">
-                    Profiles <span style="color: var(--text-secondary); font-weight: normal; font-size: 11px;">(${profiles.length})</span>
+                <h2 style="font-size: 12px; margin-bottom: 8px; color: var(--text-primary);">
+                    Profiles <span style="color: var(--text-secondary); font-weight: normal; font-size: 10px;">(${profiles.length})</span>
                 </h2>
-                <div id="profiles-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--space-3);">
+                <div id="profiles-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;">
                     ${profiles.map(profile => renderProfileCard(profile, currentProfile)).join('')}
                 </div>
             </div>
             ` : `
             <!-- No Profiles State -->
-            <div style="text-align: center; padding: 80px 20px; background: var(--bg-secondary); border-radius: 12px; border: 2px dashed var(--border-color);">
-                <div style="font-size: 64px; margin-bottom: 20px; opacity: 0.5;">📁</div>
-                <h2 style="margin-bottom: 15px; font-size: 24px;">No Profiles Yet</h2>
-                <p style="color: var(--text-secondary); margin-bottom: 30px; font-size: 16px; max-width: 500px; margin-left: auto; margin-right: auto;">
+            <div style="text-align: center; padding: 60px 20px; background: var(--bg-secondary); border-radius: 10px; border: 2px dashed var(--border-color);">
+                <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;">📁</div>
+                <h2 style="margin-bottom: 12px; font-size: 20px;">No Profiles Yet</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 14px; max-width: 450px; margin-left: auto; margin-right: auto;">
                     Create your first financial planning profile to start modeling your retirement, tracking assets, and planning your future.
                 </p>
-                <button onclick="document.getElementById('create-profile-btn').click()" style="padding: 14px 28px; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600;">
+                <button onclick="document.getElementById('create-profile-btn').click()" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
                     Create Your First Profile
                 </button>
             </div>
@@ -142,58 +142,58 @@ function renderProfileCard(profile, currentProfile) {
     return `
         <div class="profile-card" data-profile-name="${profile.name}" style="
             background: var(--bg-secondary);
-            border-radius: 6px;
-            padding: var(--space-3);
+            border-radius: 5px;
+            padding: 10px;
             border: 1px solid ${isActive ? 'var(--accent-color)' : 'var(--border-color)'};
             transition: all 0.2s;
             position: relative;
-            box-shadow: ${isActive ? '0 2px 8px rgba(0,0,0,0.1)' : '0 1px 3px rgba(0,0,0,0.05)'};
+            box-shadow: ${isActive ? '0 1px 4px rgba(0,0,0,0.1)' : '0 1px 2px rgba(0,0,0,0.05)'};
         ">
-            ${isActive ? `<div style="position: absolute; top: var(--space-1); right: var(--space-1); background: var(--accent-color); color: white; padding: var(--space-1) var(--space-1); border-radius: 10px; font-size: 9px; font-weight: 600;">ACTIVE</div>` : ''}
+            ${isActive ? `<div style="position: absolute; top: 5px; right: 5px; background: var(--accent-color); color: white; padding: 2px 5px; border-radius: 8px; font-size: 8px; font-weight: 600;">ACTIVE</div>` : ''}
 
             <!-- Header -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2);">
-                <h3 style="font-size: 14px; margin: 0; font-weight: 600; color: var(--text-primary);">${profile.name}</h3>
-                <span style="font-size: 10px; color: var(--text-secondary);">${lastUpdated}</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <h3 style="font-size: 13px; margin: 0; font-weight: 600; color: var(--text-primary); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${profile.name}</h3>
+                <span style="font-size: 9px; color: var(--text-secondary);">${lastUpdated}</span>
             </div>
 
             <!-- Stats (horizontal) -->
-            <div style="display: grid; grid-template-columns: repeat(${currentAge ? 3 : 2}, 1fr); gap: 6px; margin-bottom: 8px;">
-                <div style="text-align: center; padding: 6px; background: var(--bg-primary); border-radius: 4px;">
-                    <div style="font-size: 9px; color: var(--text-secondary); margin-bottom: 2px;">Net Worth</div>
-                    <div style="font-size: 12px; font-weight: 600; color: var(--success-color);">
+            <div style="display: grid; grid-template-columns: repeat(${currentAge ? 3 : 2}, 1fr); gap: 5px; margin-bottom: 7px;">
+                <div style="text-align: center; padding: 5px; background: var(--bg-primary); border-radius: 3px;">
+                    <div style="font-size: 8px; color: var(--text-secondary); margin-bottom: 2px;">Net Worth</div>
+                    <div style="font-size: 11px; font-weight: 600; color: var(--success-color);">
                         ${netWorth > 0 ? formatCompact(netWorth) : netWorth < 0 ? '-' + formatCompact(Math.abs(netWorth)) : '--'}
                     </div>
                 </div>
-                <div style="text-align: center; padding: 6px; background: var(--bg-primary); border-radius: 4px;">
-                    <div style="font-size: 9px; color: var(--text-secondary); margin-bottom: 2px;">Income</div>
-                    <div style="font-size: 12px; font-weight: 600; color: var(--info-color);">
+                <div style="text-align: center; padding: 5px; background: var(--bg-primary); border-radius: 3px;">
+                    <div style="font-size: 8px; color: var(--text-secondary); margin-bottom: 2px;">Income</div>
+                    <div style="font-size: 11px; font-weight: 600; color: var(--info-color);">
                         ${financial.annual_income ? formatCompact(financial.annual_income) : '--'}
                     </div>
                 </div>
                 ${currentAge ? `
-                <div style="text-align: center; padding: 6px; background: var(--bg-primary); border-radius: 4px;">
-                    <div style="font-size: 9px; color: var(--text-secondary); margin-bottom: 2px;">Age</div>
-                    <div style="font-size: 12px; font-weight: 600;">${currentAge}</div>
+                <div style="text-align: center; padding: 5px; background: var(--bg-primary); border-radius: 3px;">
+                    <div style="font-size: 8px; color: var(--text-secondary); margin-bottom: 2px;">Age</div>
+                    <div style="font-size: 11px; font-weight: 600;">${currentAge}</div>
                 </div>
                 ` : ''}
             </div>
 
             <!-- Actions -->
-            <div style="display: flex; gap: 4px;">
+            <div style="display: flex; gap: 3px;">
                 ${!isActive ? `
-                <button class="load-profile-btn" data-profile-name="${profile.name}" style="flex: 1; padding: 6px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
+                <button class="load-profile-btn" data-profile-name="${profile.name}" style="flex: 1; padding: 5px; background: var(--accent-color); color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px; font-weight: 600;">
                     Load
                 </button>
                 ` : `
-                <button disabled style="flex: 1; padding: 6px; background: var(--bg-tertiary); color: var(--text-secondary); border: none; border-radius: 4px; cursor: not-allowed; font-size: 11px; font-weight: 600;">
+                <button disabled style="flex: 1; padding: 5px; background: var(--bg-tertiary); color: var(--text-secondary); border: none; border-radius: 3px; cursor: not-allowed; font-size: 10px; font-weight: 600;">
                     Active
                 </button>
                 `}
-                <button class="view-info-btn" data-profile-name="${profile.name}" style="flex: 1; padding: 6px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
+                <button class="view-info-btn" data-profile-name="${profile.name}" style="flex: 1; padding: 5px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 3px; cursor: pointer; font-size: 10px; font-weight: 600;">
                     Info
                 </button>
-                <button class="delete-profile-btn" data-profile-name="${profile.name}" style="padding: 6px 8px; background: transparent; color: var(--danger-color); border: 1px solid var(--danger-color); border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; opacity: 0.7;" onmouseover="this.style.opacity='1'; this.style.background='var(--danger-color)'; this.style.color='white'" onmouseout="this.style.opacity='0.7'; this.style.background='transparent'; this.style.color='var(--danger-color)'">
+                <button class="delete-profile-btn" data-profile-name="${profile.name}" style="padding: 5px 7px; background: transparent; color: var(--danger-color); border: 1px solid var(--danger-color); border-radius: 3px; cursor: pointer; font-size: 10px; font-weight: 600; opacity: 0.7;" onmouseover="this.style.opacity='1'; this.style.background='var(--danger-color)'; this.style.color='white'" onmouseout="this.style.opacity='0.7'; this.style.background='transparent'; this.style.color='var(--danger-color)'">
                     ✕
                 </button>
             </div>

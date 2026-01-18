@@ -1195,13 +1195,178 @@ function renderExpenseSection(parentContainer) {
 }
 
 /**
+ * Make expense row editable inline
+ */
+function makeExpenseRowEditable(rowElement, category, expense, parentContainer) {
+    const categoryLabels = {
+        housing: 'Housing',
+        utilities: 'Utilities',
+        transportation: 'Transportation',
+        food: 'Food',
+        dining_out: 'Dining Out',
+        healthcare: 'Healthcare',
+        insurance: 'Insurance',
+        travel: 'Travel & Vacation',
+        entertainment: 'Entertainment',
+        personal_care: 'Personal Care',
+        clothing: 'Clothing',
+        gifts: 'Gifts & Occasions',
+        childcare_education: 'Childcare & Education',
+        charitable_giving: 'Charitable Giving',
+        subscriptions: 'Subscriptions',
+        pet_care: 'Pet Care',
+        home_maintenance: 'Home Maintenance',
+        debt_payments: 'Debt Payments',
+        taxes: 'Taxes',
+        discretionary: 'Discretionary',
+        other: 'Other'
+    };
+
+    const originalHTML = rowElement.innerHTML;
+
+    rowElement.innerHTML = `
+        <div style="padding: 10px 12px; background: var(--bg-tertiary); border-radius: 6px; border: 2px solid var(--accent-color);">
+            <div style="margin-bottom: 6px; font-weight: 600; font-size: 13px; color: var(--accent-color);">
+                ${categoryLabels[category]}
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px 10px; margin-bottom: 10px;">
+                <div>
+                    <label style="display: block; font-size: 9px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;">
+                        Amount
+                    </label>
+                    <input type="number" name="amount" value="${expense.amount || 0}" min="0" step="0.01"
+                           style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 9px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;">
+                        Frequency
+                    </label>
+                    <select name="frequency" style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
+                        <option value="monthly" ${expense.frequency === 'monthly' ? 'selected' : ''}>Monthly</option>
+                        <option value="quarterly" ${expense.frequency === 'quarterly' ? 'selected' : ''}>Quarterly</option>
+                        <option value="annual" ${expense.frequency === 'annual' ? 'selected' : ''}>Annual</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 9px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;">
+                        Start Date
+                    </label>
+                    <input type="date" name="start_date" value="${expense.start_date || ''}" ${expense.ongoing !== false ? 'disabled' : ''}
+                           style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 9px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;">
+                        End Date
+                    </label>
+                    <input type="date" name="end_date" value="${expense.end_date || ''}" ${expense.ongoing !== false ? 'disabled' : ''}
+                           style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
+                </div>
+                <div style="grid-column: 1 / -1; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 11px;">
+                        <input type="checkbox" name="inflation_adjusted" ${expense.inflation_adjusted ? 'checked' : ''}>
+                        <span>Adjust for inflation</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 11px; font-weight: 600;">
+                        <input type="checkbox" name="ongoing" ${expense.ongoing !== false ? 'checked' : ''}>
+                        <span>⏳ Ongoing</span>
+                    </label>
+                </div>
+            </div>
+            <div style="display: flex; gap: 6px; justify-content: flex-end; padding-top: 6px; border-top: 1px solid var(--border-color);">
+                <button class="cancel-inline-edit" style="padding: 5px 12px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
+                    Cancel
+                </button>
+                <button class="save-inline-edit" style="padding: 5px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                    💾 Save
+                </button>
+            </div>
+        </div>
+    `;
+
+    // Handle ongoing checkbox toggle
+    const ongoingCheckbox = rowElement.querySelector('[name="ongoing"]');
+    const startDateInput = rowElement.querySelector('[name="start_date"]');
+    const endDateInput = rowElement.querySelector('[name="end_date"]');
+
+    ongoingCheckbox.addEventListener('change', () => {
+        const isOngoing = ongoingCheckbox.checked;
+        startDateInput.disabled = isOngoing;
+        endDateInput.disabled = isOngoing;
+        if (isOngoing) {
+            startDateInput.value = '';
+            endDateInput.value = '';
+        }
+    });
+
+    // Handle save
+    const saveBtn = rowElement.querySelector('.save-inline-edit');
+    saveBtn.addEventListener('click', async () => {
+        const ongoing = rowElement.querySelector('[name="ongoing"]').checked;
+        const startDate = rowElement.querySelector('[name="start_date"]').value || null;
+        const endDate = rowElement.querySelector('[name="end_date"]').value || null;
+
+        const updatedExpense = {
+            amount: parseFloat(rowElement.querySelector('[name="amount"]').value) || 0,
+            frequency: rowElement.querySelector('[name="frequency"]').value,
+            inflation_adjusted: rowElement.querySelector('[name="inflation_adjusted"]').checked,
+            ongoing: ongoing,
+            start_date: ongoing ? null : startDate,
+            end_date: ongoing ? null : endDate,
+            subcategories: expense.subcategories || {}
+        };
+
+        try {
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+
+            budgetData.expenses[currentPeriod][category] = updatedExpense;
+
+            renderExpenseSection(parentContainer);
+            renderBudgetSummary(parentContainer);
+
+            const profile = store.get('currentProfile');
+            if (profile) {
+                await saveBudget(profile, parentContainer);
+            }
+        } catch (error) {
+            alert('Failed to save: ' + error.message);
+            saveBtn.disabled = false;
+            saveBtn.textContent = '💾 Save';
+        }
+    });
+
+    // Handle cancel
+    const cancelBtn = rowElement.querySelector('.cancel-inline-edit');
+    cancelBtn.addEventListener('click', () => {
+        rowElement.innerHTML = originalHTML;
+    });
+
+    // Focus first input
+    setTimeout(() => {
+        const firstInput = rowElement.querySelector('input[name="amount"]');
+        if (firstInput) {
+            firstInput.focus();
+            firstInput.select();
+        }
+    }, 100);
+}
+
+/**
  * Setup expense event listeners
  */
 function setupExpenseEventListeners(container) {
     container.querySelectorAll('.expense-row').forEach(row => {
         row.addEventListener('click', (e) => {
             const category = row.getAttribute('data-category');
-            showExpenseEditorModal(container, category);
+            const expense = budgetData.expenses[currentPeriod][category] || {
+                amount: 0,
+                frequency: 'monthly',
+                inflation_adjusted: true,
+                start_date: null,
+                end_date: null,
+                ongoing: true
+            };
+            makeExpenseRowEditable(row, category, expense, container);
         });
     });
 }

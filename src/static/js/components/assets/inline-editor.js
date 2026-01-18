@@ -27,15 +27,15 @@ export function makeRowEditable(rowElement, asset, category, index, onSave, onCa
 
     // Build inline edit form with optimized multi-column layout
     rowElement.innerHTML = `
-        <div style="padding: 12px 15px; background: var(--bg-tertiary); border-radius: 8px; border: 2px solid var(--accent-color);">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 12px; margin-bottom: 12px;">
+        <div style="padding: 10px 12px; background: var(--bg-tertiary); border-radius: 6px; border: 2px solid var(--accent-color);">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px 10px; margin-bottom: 10px;">
                 ${relevantFields.map(field => renderInlineField(field, asset)).join('')}
             </div>
-            <div style="display: flex; gap: 8px; justify-content: flex-end; padding-top: 8px; border-top: 1px solid var(--border-color);">
-                <button class="cancel-inline-edit" style="padding: 6px 14px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500;">
+            <div style="display: flex; gap: 6px; justify-content: flex-end; padding-top: 6px; border-top: 1px solid var(--border-color);">
+                <button class="cancel-inline-edit" style="padding: 5px 12px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
                     Cancel
                 </button>
-                <button class="save-inline-edit" style="padding: 6px 14px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                <button class="save-inline-edit" style="padding: 5px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
                     💾 Save
                 </button>
             </div>
@@ -109,7 +109,7 @@ function renderInlineField(field, asset) {
     if (field.type === 'select') {
         const options = field.options || [];
         inputHTML = `
-            <select name="${field.name}" style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 13px;">
+            <select name="${field.name}" style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
                 ${options.map(opt => {
                     const optValue = typeof opt === 'string' ? opt : opt.value;
                     const optLabel = typeof opt === 'string' ? opt : opt.label;
@@ -119,12 +119,12 @@ function renderInlineField(field, asset) {
         `;
     } else if (field.type === 'checkbox') {
         inputHTML = `
-            <input type="checkbox" name="${field.name}" ${value ? 'checked' : ''} style="width: 18px; height: 18px; cursor: pointer; margin-top: 2px;">
+            <input type="checkbox" name="${field.name}" ${value ? 'checked' : ''} style="width: 16px; height: 16px; cursor: pointer; margin-top: 2px;">
         `;
     } else if (field.type === 'currency') {
         const numValue = value || 0;
         inputHTML = `
-            <input type="text" name="${field.name}" value="${numValue}" placeholder="${field.placeholder || ''}" style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 13px;">
+            <input type="text" name="${field.name}" value="${numValue}" placeholder="${field.placeholder || ''}" style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
         `;
     } else {
         inputHTML = `
@@ -134,13 +134,13 @@ function renderInlineField(field, asset) {
                 ${field.step !== undefined ? `step="${field.step}"` : ''}
                 ${field.maxlength !== undefined ? `maxlength="${field.maxlength}"` : ''}
                 placeholder="${field.placeholder || ''}"
-                style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 13px;">
+                style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
         `;
     }
 
     return `
         <div>
-            <label style="display: block; font-size: 10px; font-weight: 600; color: var(--text-secondary); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.3px;">
+            <label style="display: block; font-size: 9px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;">
                 ${field.label}
             </label>
             ${inputHTML}
