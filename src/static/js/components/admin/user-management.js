@@ -5,6 +5,7 @@
 import { apiClient } from '../../api/client.js';
 import { showSuccess, showError } from '../../utils/dom.js';
 import { store } from '../../state/store.js';
+import { showUserReport } from './user-report.js';
 
 /**
  * Render user management interface
@@ -120,6 +121,9 @@ function renderUserRow(user, currentUser) {
                     <button class="view-user-profiles-btn" data-user-id="${user.id}" style="padding: 4px 8px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;" title="View Profiles">
                         📁
                     </button>
+                    <button class="view-user-report-btn" data-user-id="${user.id}" data-username="${user.username}" style="padding: 4px 8px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;" title="View Activity Report">
+                        📊
+                    </button>
                     ${currentUser && user.id !== currentUser.id && currentUser.is_admin ? `
                         <button class="delete-user-btn" data-user-id="${user.id}" data-username="${user.username}" style="padding: 4px 8px; background: var(--danger-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;" title="Delete User">
                             🗑️
@@ -193,6 +197,15 @@ function setupUserActionHandlers(container) {
         btn.addEventListener('click', async () => {
             const userId = parseInt(btn.getAttribute('data-user-id'));
             await viewUserProfiles(userId);
+        });
+    });
+
+    // View user report
+    container.querySelectorAll('.view-user-report-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const userId = parseInt(btn.getAttribute('data-user-id'));
+            const username = btn.getAttribute('data-username');
+            await showUserReport(userId, username);
         });
     });
 

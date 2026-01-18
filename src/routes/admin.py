@@ -576,6 +576,117 @@ def get_user_profiles(user_id: int):
         return jsonify({'error': str(e)}), 500
 
 
+@admin_bp.route('/users/<int:user_id>/report', methods=['GET'])
+@login_required
+@admin_required
+def get_user_report(user_id: int):
+    """Get comprehensive activity report for a specific user."""
+    try:
+        from src.database.connection import db
+
+        # Get user info
+        user = User.get_by_id(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        report = {
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'is_active': user.is_active,
+                'is_admin': user.is_admin,
+                'is_super_admin': user.is_super_admin,
+                'created_at': user.created_at,
+                'last_login': user.last_login
+            }
+        }
+
+        # Count profiles
+        result = db.execute_one('SELECT COUNT(*) as count FROM profile WHERE user_id = ?', (user_id,))
+        report['profile_count'] = result['count'] if result else 0
+
+        # Get profile list
+        profiles = db.execute('SELECT id, name, created_at FROM profile WHERE user_id = ? ORDER BY created_at DESC', (user_id,))
+        report['profiles'] = [dict(row) for row in profiles]
+
+        # Count scenarios
+        result = db.execute_one('SELECT COUNT(*) as count FROM scenarios WHERE user_id = ?', (user_id,))
+        report['scenario_count'] = result['count'] if result else 0
+
+        # Get recent scenarios
+        scenarios = db.execute('SELECT id, name, created_at FROM scenarios WHERE user_id = ? ORDER BY created_at DESC LIMIT 10', (user_id,))
+        report['recent_scenarios'] = [dict(row) for row in scenarios]
+
+        # Count conversations
+        result = db.execute_one('SELECT COUNT(DISTINCT profile_id) as count FROM conversations WHERE user_id = ?', (user_id,))
+        report['conversation_count'] = result['count'] if result else 0
+
+        # Count conversation messages
+        result = db.execute_one('SELECT COUNT(*) as count FROM conversations WHERE user_id = ?', (user_id,))
+        report['conversation_message_count'] = result['count'] if result else 0
+
+        # Count action items
+        result = db.execute_one('SELECT COUNT(*) as count FROM action_items WHERE user_id = ?', (user_id,))
+        report['action_item_count'] = result['count'] if result else 0
+
+        # Get action item breakdown by status
+        action_status = db.execute(
+            'SELECT status, COUNT(*) as count FROM action_items WHERE user_id = ? GROUP BY status',
+            (user_id,)
+        )
+        report['action_items_by_status'] = {row['status']: row['count'] for row in action_status}
+
+        # Get recent audit activity (last 20 actions)
+        audit_logs = db.execute(
+            'SELECT action, table_name, request_method, request_endpoint, status_code, created_at '
+            'FROM enhanced_audit_log WHERE user_id = ? ORDER BY created_at DESC LIMIT 20',
+            (user_id,)
+        )
+        report['recent_activity'] = [dict(row) for row in audit_logs]
+
+        # Count total audit log entries
+        result = db.execute_one('SELECT COUNT(*) as count FROM enhanced_audit_log WHERE user_id = ?', (user_id,))
+        report['total_activity_count'] = result['count'] if result else 0
+
+        # Get activity by action type
+        activity_by_action = db.execute(
+            'SELECT action, COUNT(*) as count FROM enhanced_audit_log '
+            'WHERE user_id = ? GROUP BY action ORDER BY count DESC LIMIT 10',
+            (user_id,)
+        )
+        report['activity_by_action'] = [dict(row) for row in activity_by_action]
+
+        # Get first and last activity dates
+        first_activity = db.execute_one(
+            'SELECT MIN(created_at) as first_activity FROM enhanced_audit_log WHERE user_id = ?',
+            (user_id,)
+        )
+        last_activity = db.execute_one(
+            'SELECT MAX(created_at) as last_activity FROM enhanced_audit_log WHERE user_id = ?',
+            (user_id,)
+        )
+        report['first_activity'] = first_activity['first_activity'] if first_activity else None
+        report['last_activity'] = last_activity['last_activity'] if last_activity else None
+
+        # Count feedback submissions
+        result = db.execute_one('SELECT COUNT(*) as count FROM feedback WHERE user_id = ?', (user_id,))
+        report['feedback_count'] = result['count'] if result else 0
+
+        # Log admin action
+        enhanced_audit_logger.log_admin_action(
+            action='VIEW_USER_REPORT',
+            details={'target_user_id': user_id},
+            user_id=current_user.id
+        )
+
+        return jsonify({'report': report}), 200
+
+    except Exception as e:
+        print(f"Error generating user report: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @admin_bp.route('/users/<int:user_id>', methods=['DELETE'])
 @login_required
 @admin_required
