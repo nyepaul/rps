@@ -353,12 +353,18 @@ class EnhancedAuditLogger:
         end_date: Optional[str] = None,
         ip_address: Optional[str] = None,
         limit: int = 100,
-        offset: int = 0
+        offset: int = 0,
+        sort_by: str = 'created_at',
+        sort_direction: str = 'desc'
     ):
         """
         Retrieve audit logs with comprehensive filtering.
 
         Returns both the logs and total count for pagination.
+
+        Args:
+            sort_by: Column to sort by (default: created_at)
+            sort_direction: Sort direction 'asc' or 'desc' (default: desc)
         """
         config = AuditConfig.get_config()
         display_config = config.get('display', {})
@@ -409,8 +415,27 @@ class EnhancedAuditLogger:
         count_result = db.execute_one(count_query, tuple(params))
         total_count = count_result['total'] if count_result else 0
 
-        # Get paginated results
-        query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+        # Whitelist allowed sort columns to prevent SQL injection
+        # Include all columns from enhanced_audit_log table plus username from JOIN
+        allowed_sort_columns = [
+            'id', 'created_at', 'action', 'table_name', 'record_id',
+            'user_id', 'username', 'details', 'status_code', 'error_message',
+            'ip_address', 'user_agent', 'geo_location', 'device_info',
+            'request_method', 'request_endpoint', 'request_query',
+            'request_size', 'referrer', 'session_id', 'request_headers'
+        ]
+        if sort_by not in allowed_sort_columns:
+            sort_by = 'created_at'
+
+        # Validate sort direction
+        sort_direction = 'ASC' if sort_direction.lower() == 'asc' else 'DESC'
+
+        # Get paginated results with dynamic sorting
+        # Handle username from JOIN separately (u.username vs eal.column)
+        if sort_by == 'username':
+            query += f' ORDER BY u.{sort_by} {sort_direction} LIMIT ? OFFSET ?'
+        else:
+            query += f' ORDER BY eal.{sort_by} {sort_direction} LIMIT ? OFFSET ?'
         params.extend([limit, offset])
 
         rows = db.execute(query, tuple(params))

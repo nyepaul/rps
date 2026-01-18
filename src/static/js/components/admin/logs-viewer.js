@@ -241,11 +241,11 @@ async function loadLogs(container, offset = 0) {
                     <tr style="background: var(--bg-tertiary); border-bottom: 2px solid var(--border-color);">
                         ${renderSortableHeader('created_at', 'Timestamp', 'left')}
                         ${renderSortableHeader('action', 'Action', 'left')}
-                        ${renderSortableHeader('user_id', 'User', 'left')}
+                        ${renderSortableHeader('username', 'User', 'left')}
                         ${renderSortableHeader('ip_address', 'IP / Location', 'left')}
-                        <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">Device</th>
+                        ${renderSortableHeader('user_agent', 'Device', 'left')}
                         ${renderSortableHeader('status_code', 'Status', 'center')}
-                        <th style="text-align: center; padding: 12px; font-size: 12px; font-weight: 600;">Details</th>
+                        ${renderSortableHeader('table_name', 'Details', 'center')}
                     </tr>
                 </thead>
                 <tbody>
@@ -529,7 +529,7 @@ async function showLogDetails(logId) {
                         <div>
                             <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Additional Details</h3>
                             <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px;">
-                                <pre style="margin: 0; font-family: monospace; font-size: 11px; white-space: pre-wrap; word-wrap: break-word; color: var(--text-primary);">${JSON.stringify(JSON.parse(log.details), null, 2)}</pre>
+                                <pre style="margin: 0; font-family: monospace; font-size: 11px; white-space: pre-wrap; word-wrap: break-word; color: var(--text-primary);">${JSON.stringify(log.details, null, 2)}</pre>
                             </div>
                         </div>
                     ` : ''}

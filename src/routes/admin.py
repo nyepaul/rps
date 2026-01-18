@@ -58,6 +58,8 @@ def get_audit_logs():
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
         ip_address = request.args.get('ip_address')
+        sort_by = request.args.get('sort_by', 'created_at')
+        sort_direction = request.args.get('sort_direction', 'desc')
         limit = min(request.args.get('limit', 50, type=int), 500)  # Cap at 500
         offset = request.args.get('offset', 0, type=int)
 
@@ -69,6 +71,8 @@ def get_audit_logs():
             start_date=start_date,
             end_date=end_date,
             ip_address=ip_address,
+            sort_by=sort_by,
+            sort_direction=sort_direction,
             limit=limit,
             offset=offset
         )
@@ -150,25 +154,30 @@ def get_log_by_id(log_id: int):
         log_dict = dict(log)
 
         # Parse JSON fields if they exist
+        import json
+
         if log_dict.get('details'):
             try:
-                log_dict['details'] = log_dict['details']  # Keep as string for display
-            except:
-                pass
+                # Try to parse as JSON
+                log_dict['details'] = json.loads(log_dict['details'])
+            except (json.JSONDecodeError, TypeError):
+                # If it's plain text or not valid JSON, wrap it in an object
+                if isinstance(log_dict['details'], str):
+                    log_dict['details'] = {'message': log_dict['details']}
+                else:
+                    log_dict['details'] = None
 
         if log_dict.get('device_info'):
             try:
-                import json
                 log_dict['device_info'] = json.loads(log_dict['device_info'])
-            except:
-                pass
+            except (json.JSONDecodeError, TypeError):
+                log_dict['device_info'] = None
 
         if log_dict.get('geo_location'):
             try:
-                import json
                 log_dict['geo_location'] = json.loads(log_dict['geo_location'])
-            except:
-                pass
+            except (json.JSONDecodeError, TypeError):
+                log_dict['geo_location'] = None
 
         # Log the view action
         enhanced_audit_logger.log_admin_action(
