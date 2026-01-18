@@ -53,6 +53,22 @@ export function renderBudgetTab(container) {
         budgetData.college_expenses = initializeCollegeExpenses(profile.data?.children || []);
     }
 
+    // Ensure expenses structure exists
+    if (!budgetData.expenses) budgetData.expenses = {};
+    if (!budgetData.expenses.current) budgetData.expenses.current = {};
+    if (!budgetData.expenses.future) budgetData.expenses.future = {};
+
+    // Convert any legacy single-object expenses to array format at load time
+    ['current', 'future'].forEach(period => {
+        Object.keys(budgetData.expenses[period]).forEach(category => {
+            const catData = budgetData.expenses[period][category];
+            // If it's a single object with an amount, convert to array
+            if (catData && !Array.isArray(catData) && typeof catData === 'object' && catData.amount !== undefined) {
+                budgetData.expenses[period][category] = [catData];
+            }
+        });
+    });
+
     container.innerHTML = `
         <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-3);">
             <div style="margin-bottom: var(--space-3);">
@@ -1350,13 +1366,15 @@ function renderExpenseSection(parentContainer) {
     for (const cat of allCategories) {
         const catData = expenses[cat.key];
 
-        // Convert legacy single object to array format
+        // Convert legacy single object to array format (both in display and data)
         let expenseItems = [];
         if (Array.isArray(catData)) {
             expenseItems = catData;
         } else if (catData && typeof catData === 'object' && catData.amount !== undefined) {
-            // Legacy format: single object
+            // Legacy format: single object - convert to array in the data structure
             expenseItems = [catData];
+            // Persist the conversion
+            budgetData.expenses[currentPeriod][cat.key] = expenseItems;
         }
 
         // Calculate total for category
