@@ -695,25 +695,37 @@ function calculateTotalIncome(period) {
 function calculateTotalExpenses(period, asOfDate = null) {
     let total = 0;
     const expenses = budgetData.expenses[period];
+    if (!expenses) return total;
+
     const today = asOfDate || new Date();
     const currentYear = today.getFullYear();
 
-    const categories = ['housing', 'utilities', 'transportation', 'food', 'healthcare', 'insurance',
-                       'travel', 'entertainment', 'dining_out', 'personal_care', 'clothing', 'gifts',
-                       'childcare_education', 'charitable_giving', 'subscriptions', 'pet_care',
-                       'home_maintenance', 'debt_payments', 'taxes', 'discretionary', 'other'];
+    // Get all categories (including custom ones)
+    const allCategories = Object.keys(expenses);
 
-    for (const category of categories) {
-        const cat = expenses[category] || {};
+    for (const category of allCategories) {
+        const catData = expenses[category];
 
-        // Check if expense is active based on date range
-        if (!isExpenseActive(cat, today)) {
-            continue; // Skip inactive expenses
+        // Handle both array (new format) and object (legacy format) structures
+        let expenseItems = [];
+        if (Array.isArray(catData)) {
+            expenseItems = catData;
+        } else if (catData && typeof catData === 'object' && catData.amount !== undefined) {
+            // Legacy format: single object
+            expenseItems = [catData];
         }
 
-        const amount = cat.amount || 0;
-        const frequency = cat.frequency || 'monthly';
-        total += annualAmount(amount, frequency);
+        // Sum all active items in this category
+        for (const item of expenseItems) {
+            // Check if expense is active based on date range
+            if (!isExpenseActive(item, today)) {
+                continue; // Skip inactive expenses
+            }
+
+            const amount = item.amount || 0;
+            const frequency = item.frequency || 'monthly';
+            total += annualAmount(amount, frequency);
+        }
     }
 
     // Add college expenses for the current year
