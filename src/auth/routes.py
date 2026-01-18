@@ -112,7 +112,8 @@ def register():
             'id': user.id,
             'username': user.username,
             'email': user.email,
-            'is_admin': user.is_admin
+            'is_admin': user.is_admin,
+            'is_super_admin': user.is_super_admin
         }
     }), 201
 
@@ -212,7 +213,8 @@ def login():
             'id': user.id,
             'username': user.username,
             'email': user.email,
-            'is_admin': user.is_admin
+            'is_admin': user.is_admin,
+            'is_super_admin': user.is_super_admin
         }
     }), 200
 
@@ -264,7 +266,8 @@ def check_session():
                 'id': current_user.id,
                 'username': current_user.username,
                 'email': current_user.email,
-                'is_admin': current_user.is_admin
+                'is_admin': current_user.is_admin,
+                'is_super_admin': current_user.is_super_admin
             }
         }), 200
     return jsonify({'authenticated': False}), 200

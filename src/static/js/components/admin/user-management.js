@@ -4,11 +4,15 @@
 
 import { apiClient } from '../../api/client.js';
 import { showSuccess, showError } from '../../utils/dom.js';
+import { store } from '../../state/store.js';
 
 /**
  * Render user management interface
  */
 export async function renderUserManagement(container) {
+    // Get current user to check super admin status
+    const currentUser = store.get('currentUser');
+
     container.innerHTML = `
         <div style="text-align: center; padding: 40px;">
             <div style="font-size: 32px; margin-bottom: 10px;">⏳</div>
@@ -39,13 +43,14 @@ export async function renderUserManagement(container) {
                                 <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">Email</th>
                                 <th style="text-align: center; padding: 12px; font-size: 12px; font-weight: 600;">Status</th>
                                 <th style="text-align: center; padding: 12px; font-size: 12px; font-weight: 600;">Admin</th>
+                                <th style="text-align: center; padding: 12px; font-size: 12px; font-weight: 600;">Super Admin</th>
                                 <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">Created</th>
                                 <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">Last Login</th>
                                 <th style="text-align: center; padding: 12px; font-size: 12px; font-weight: 600;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${users.map(user => renderUserRow(user)).join('')}
+                            ${users.map(user => renderUserRow(user, currentUser)).join('')}
                         </tbody>
                     </table>
                 </div>
@@ -70,7 +75,7 @@ export async function renderUserManagement(container) {
 /**
  * Render user row
  */
-function renderUserRow(user) {
+function renderUserRow(user, currentUser) {
     const createdDate = new Date(user.created_at).toLocaleDateString();
     const lastLogin = user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never';
 
@@ -89,6 +94,11 @@ function renderUserRow(user) {
                     ${user.is_admin ? 'Admin' : 'User'}
                 </span>
             </td>
+            <td style="padding: 12px; text-align: center;">
+                <span style="display: inline-block; padding: 4px 8px; background: ${user.is_super_admin ? '#e03131' : 'var(--bg-tertiary)'}; color: ${user.is_super_admin ? 'white' : 'var(--text-secondary)'}; border-radius: 4px; font-size: 11px; font-weight: 600;">
+                    ${user.is_super_admin ? '⭐ Super Admin' : '—'}
+                </span>
+            </td>
             <td style="padding: 12px; font-size: 12px; color: var(--text-secondary);">${createdDate}</td>
             <td style="padding: 12px; font-size: 12px; color: var(--text-secondary);">${lastLogin}</td>
             <td style="padding: 12px; text-align: center;">
@@ -99,6 +109,11 @@ function renderUserRow(user) {
                     <button class="toggle-admin-btn" data-user-id="${user.id}" data-is-admin="${user.is_admin}" style="padding: 4px 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px;" title="${user.is_admin ? 'Remove Admin' : 'Make Admin'}">
                         ${user.is_admin ? '👤' : '👑'}
                     </button>
+                    ${currentUser && currentUser.is_super_admin ? `
+                        <button class="toggle-super-admin-btn" data-user-id="${user.id}" data-is-super-admin="${user.is_super_admin}" data-is-admin="${user.is_admin}" style="padding: 4px 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px;" title="${user.is_super_admin ? 'Remove Super Admin' : 'Grant Super Admin'}">
+                            ${user.is_super_admin ? '⭐' : '⚪'}
+                        </button>
+                    ` : ''}
                     <button class="view-user-profiles-btn" data-user-id="${user.id}" style="padding: 4px 8px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;" title="View Profiles">
                         📁
                     </button>
@@ -138,6 +153,27 @@ function setupUserActionHandlers(container) {
         });
     });
 
+    // Toggle super admin status (only visible to super admins)
+    container.querySelectorAll('.toggle-super-admin-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const userId = parseInt(btn.getAttribute('data-user-id'));
+            const isSuperAdmin = btn.getAttribute('data-is-super-admin') === 'true';
+            const isAdmin = btn.getAttribute('data-is-admin') === 'true';
+
+            // Validation: user must be admin first
+            if (!isAdmin && !isSuperAdmin) {
+                showError('User must be an admin before becoming super admin');
+                return;
+            }
+
+            const action = isSuperAdmin ? 'revoke super admin privileges from' : 'grant super admin privileges to';
+            if (confirm(`Are you sure you want to ${action} this user?`)) {
+                await toggleUserSuperAdmin(userId, !isSuperAdmin);
+                await renderUserManagement(container);  // Refresh
+            }
+        });
+    });
+
     // View user profiles
     container.querySelectorAll('.view-user-profiles-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
@@ -170,6 +206,29 @@ async function toggleUserAdmin(userId, isAdmin) {
     } catch (error) {
         console.error('Failed to update user:', error);
         showError(`Failed to update user: ${error.message}`);
+    }
+}
+
+/**
+ * Toggle user super admin status (super admin only)
+ */
+async function toggleUserSuperAdmin(userId, isSuperAdmin) {
+    try {
+        await apiClient.put(`/api/admin/users/${userId}/super-admin`, {
+            is_super_admin: isSuperAdmin
+        });
+        showSuccess(`User ${isSuperAdmin ? 'granted super admin privileges' : 'revoked from super admin'} successfully`);
+    } catch (error) {
+        console.error('Failed to update super admin status:', error);
+
+        // Show specific error message
+        if (error.message.includes('must be an admin')) {
+            showError('User must be an admin before becoming super admin');
+        } else if (error.message.includes('Super admin privileges required')) {
+            showError('Only super admins can manage super admin status');
+        } else {
+            showError(`Failed to update super admin status: ${error.message}`);
+        }
     }
 }
 
