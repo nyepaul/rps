@@ -152,7 +152,7 @@ function setupUserActionHandlers(container) {
  */
 async function toggleUserActive(userId, isActive) {
     try {
-        await apiClient.put(`/admin/users/${userId}`, { is_active: isActive });
+        await apiClient.put(`/api/admin/users/${userId}`, { is_active: isActive });
         showSuccess(`User ${isActive ? 'activated' : 'deactivated'} successfully`);
     } catch (error) {
         console.error('Failed to update user:', error);
@@ -165,7 +165,7 @@ async function toggleUserActive(userId, isActive) {
  */
 async function toggleUserAdmin(userId, isAdmin) {
     try {
-        await apiClient.put(`/admin/users/${userId}`, { is_admin: isAdmin });
+        await apiClient.put(`/api/admin/users/${userId}`, { is_admin: isAdmin });
         showSuccess(`User ${isAdmin ? 'promoted to admin' : 'demoted from admin'} successfully`);
     } catch (error) {
         console.error('Failed to update user:', error);
@@ -178,7 +178,7 @@ async function toggleUserAdmin(userId, isAdmin) {
  */
 async function viewUserProfiles(userId) {
     try {
-        const response = await apiClient.get(`/admin/users/${userId}/profiles`);
+        const response = await apiClient.get(`/api/admin/users/${userId}/profiles`);
         const profiles = response.profiles;
 
         // Create modal to show profiles
