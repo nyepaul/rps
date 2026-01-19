@@ -873,15 +873,15 @@ def reset_demo_account():
 
         # Create comprehensive demo profile
         today = date.today()
-        birth_date = today - relativedelta(years=55)  # 55 years old
-        retirement_date = today + relativedelta(years=10)  # Retire at 65
-        spouse_birth_date = today - relativedelta(years=53)  # Spouse 53 years old
-        spouse_retirement_date = today + relativedelta(years=12)  # Retire at 65
+        birth_date = date(1971, 6, 15)  # Born June 15, 1971 (age 55 in 2026)
+        retirement_date = date(2036, 6, 15)  # Retire at 65
+        spouse_birth_date = date(1973, 3, 22)  # Born March 22, 1973 (age 53 in 2026)
+        spouse_retirement_date = date(2038, 3, 22)  # Retire at 65
 
         # Child 1: 18 years old, just starting college
-        child1_birth = today - relativedelta(years=18)
+        child1_birth = date(2008, 9, 10)  # Born September 10, 2008 (age 18 in 2026)
         # Child 2: 19 years old, just starting college (2nd year)
-        child2_birth = today - relativedelta(years=19)
+        child2_birth = date(2007, 4, 5)  # Born April 5, 2007 (age 19 in 2026)
 
         demo_data = {
             "person": {
