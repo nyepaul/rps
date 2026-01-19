@@ -3,7 +3,7 @@
 
 if [ $# -eq 0 ]; then
     echo "Usage: ./bin/bump-version <new_version> [release_notes]"
-    echo "Example: ./bin/bump-version 2.0.5 'Fixed scenario loading bug'"
+    echo "Example: ./bin/bump-version 3.10.0 'Add new feature X'"
     exit 1
 fi
 
@@ -23,8 +23,19 @@ EOF
 # Update index.html cache-busting parameter
 sed -i "s|/js/main.js?v=.*\"|/js/main.js?v=$NEW_VERSION\"|g" src/static/index.html
 
+# Update index.html fallback version display (the visible version in footer)
+sed -i "s|<span id=\"app-version\">v[0-9]\+\.[0-9]\+\.[0-9]\+</span>|<span id=\"app-version\">v$NEW_VERSION</span>|g" src/static/index.html
+
 echo "✅ Version bumped to $NEW_VERSION"
 echo "📅 Release date: $RELEASE_DATE"
 echo "📝 Notes: $RELEASE_NOTES"
 echo ""
-echo "Don't forget to deploy: sudo ./bin/deploy"
+echo "Modified files:"
+echo "  - src/__version__.py"
+echo "  - src/static/index.html"
+echo ""
+echo "Don't forget to commit and deploy:"
+echo "  git add src/__version__.py src/static/index.html"
+echo "  git commit -m 'chore: bump version to $NEW_VERSION'"
+echo "  git push"
+echo "  sudo ./bin/deploy"

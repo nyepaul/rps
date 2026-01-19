@@ -8,6 +8,39 @@ RPS is a retirement and wealth planning system - a local-first financial plannin
 
 **Authored by**: pan
 
+## Version Management
+
+**CRITICAL: Always bump version before pushing when making ANY code changes.**
+
+### Version Scheme
+- Current major.minor: **3.8.x**
+- Use patch versions: 3.8.1, 3.8.2, ..., 3.8.99
+- Increment patch for ALL changes (features, fixes, improvements)
+- Only move to 3.9.0 when explicitly requested
+
+### Version Bump Process
+```bash
+./bin/bump-version 3.8.X "Description of changes"
+```
+
+This updates:
+- `src/__version__.py` - Source of truth (API, admin panel)
+- `src/static/index.html` - Fallback display and cache-busting
+
+### When to Bump
+**ALWAYS** bump version when:
+- Adding new features
+- Fixing bugs
+- Modifying UI/UX
+- Updating dependencies
+- Changing configuration
+- Improving performance
+
+**Before final push**, check:
+1. ✅ Version incremented in both files
+2. ✅ Release notes describe the change
+3. ✅ Commit includes version bump
+
 ## Common Commands
 
 ### Starting the Application
