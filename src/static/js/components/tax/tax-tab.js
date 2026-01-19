@@ -242,7 +242,7 @@ function renderTaxAnalysis(container, analysis, profile) {
                 </div>
                 ` : `
                 <div style="background: var(--info-light, #e3f2fd); padding: 12px; border-radius: 6px; margin-bottom: 12px; border-left: 4px solid var(--info-color);">
-                    <div style="font-size: 13px; color: var(--info-color);">
+                    <div style="font-size: 13px; color: var(--text-primary); font-weight: 600;">
                         RMDs begin in ${rmd_analysis.summary.years_until_rmd} years (age 73)
                     </div>
                 </div>

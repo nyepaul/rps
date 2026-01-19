@@ -16,23 +16,23 @@ tax_optimization_bp = Blueprint('tax_optimization', __name__, url_prefix='/api/t
 class TaxAnalysisRequest(BaseModel):
     """Schema for tax analysis request."""
     profile_name: str
-    filing_status: Optional[str] = 'mfj'
-    state: Optional[str] = 'CA'
+    filing_status: Optional[str] = None  # None = use profile default
+    state: Optional[str] = None  # None = use profile's address/tax_settings
 
 
 class RothConversionRequest(BaseModel):
     """Schema for Roth conversion analysis request."""
     profile_name: str
     conversion_amounts: Optional[List[float]] = None
-    filing_status: Optional[str] = 'mfj'
-    state: Optional[str] = 'CA'
+    filing_status: Optional[str] = None  # None = use profile default
+    state: Optional[str] = None  # None = use profile's address/tax_settings
 
 
 class SocialSecurityRequest(BaseModel):
     """Schema for Social Security analysis request."""
     profile_name: str
     life_expectancy: Optional[int] = 90
-    filing_status: Optional[str] = 'mfj'
+    filing_status: Optional[str] = None  # None = use profile default
 
 
 @tax_optimization_bp.route('/analyze', methods=['POST'])

@@ -7,13 +7,17 @@ import { apiClient } from './client.js';
 export const taxOptimizationAPI = {
     /**
      * Get comprehensive tax analysis
+     * @param {string} profileName - Profile to analyze
+     * @param {string|null} filingStatus - Filing status (null = use profile default)
+     * @param {string|null} state - State (null = use profile's address/tax_settings)
      */
-    async analyzeComprehensive(profileName, filingStatus = 'mfj', state = 'CA') {
-        return apiClient.post('/api/tax-optimization/analyze', {
-            profile_name: profileName,
-            filing_status: filingStatus,
-            state: state
-        });
+    async analyzeComprehensive(profileName, filingStatus = null, state = null) {
+        const payload = { profile_name: profileName };
+        // Only include optional params if explicitly provided
+        // This lets the backend use profile settings as defaults
+        if (filingStatus) payload.filing_status = filingStatus;
+        if (state) payload.state = state;
+        return apiClient.post('/api/tax-optimization/analyze', payload);
     },
 
     /**
@@ -27,25 +31,32 @@ export const taxOptimizationAPI = {
 
     /**
      * Analyze Roth conversion opportunities
+     * @param {string} profileName - Profile to analyze
+     * @param {number[]|null} conversionAmounts - Specific amounts to analyze
+     * @param {string|null} filingStatus - Filing status (null = use profile default)
+     * @param {string|null} state - State (null = use profile's address/tax_settings)
      */
-    async analyzeRothConversion(profileName, conversionAmounts = null, filingStatus = 'mfj', state = 'CA') {
-        return apiClient.post('/api/tax-optimization/roth-conversion', {
-            profile_name: profileName,
-            conversion_amounts: conversionAmounts,
-            filing_status: filingStatus,
-            state: state
-        });
+    async analyzeRothConversion(profileName, conversionAmounts = null, filingStatus = null, state = null) {
+        const payload = { profile_name: profileName };
+        if (conversionAmounts) payload.conversion_amounts = conversionAmounts;
+        if (filingStatus) payload.filing_status = filingStatus;
+        if (state) payload.state = state;
+        return apiClient.post('/api/tax-optimization/roth-conversion', payload);
     },
 
     /**
      * Analyze Social Security claiming strategies
+     * @param {string} profileName - Profile to analyze
+     * @param {number} lifeExpectancy - Expected lifespan
+     * @param {string|null} filingStatus - Filing status (null = use profile default)
      */
-    async analyzeSocialSecurity(profileName, lifeExpectancy = 90, filingStatus = 'mfj') {
-        return apiClient.post('/api/tax-optimization/social-security-timing', {
+    async analyzeSocialSecurity(profileName, lifeExpectancy = 90, filingStatus = null) {
+        const payload = {
             profile_name: profileName,
-            life_expectancy: lifeExpectancy,
-            filing_status: filingStatus
-        });
+            life_expectancy: lifeExpectancy
+        };
+        if (filingStatus) payload.filing_status = filingStatus;
+        return apiClient.post('/api/tax-optimization/social-security-timing', payload);
     },
 
     /**
