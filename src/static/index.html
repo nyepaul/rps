@@ -13,6 +13,7 @@
 
     <!-- Stylesheets -->
     <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/feedback-tracking.css">
 
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -64,6 +65,7 @@
             <button class="tab" data-tab="comparison">Compare Scenarios</button>
             <button class="tab" data-tab="actions">Action Items</button>
             <button class="tab" data-tab="advisor">AI Advisor</button>
+            <button class="tab" data-tab="my-feedback">💬 My Feedback</button>
             <button class="tab" data-tab="summary">📄 Summary</button>
             <button class="tab" data-tab="learn">📚 Learn</button>
             <button class="tab admin-only-tab" data-tab="admin" style="display: none;">⚙️ Admin</button>
@@ -78,7 +80,7 @@
         <!-- Footer -->
         <footer style="text-align: center; padding: 20px; color: var(--text-secondary); font-size: 12px; border-top: 1px solid var(--border-color); margin-top: 40px;">
             <p style="margin: 0;">
-                RPS <span id="app-version">v3.8.22</span> - pan
+                RPS <span id="app-version">v3.8.23</span> - pan
                 <span style="margin: 0 8px;">|</span>
                 <a href="#" id="view-roadmap-link" style="color: var(--accent-color); text-decoration: none;">View Roadmap</a>
             </p>
@@ -86,6 +88,6 @@
     </div>
 
     <!-- ES6 Module Entry Point -->
-    <script type="module" src="/js/main.js?v=3.8.22"></script>
+    <script type="module" src="/js/main.js?v=3.8.23"></script>
 </body>
 </html>

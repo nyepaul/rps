@@ -236,23 +236,28 @@ def get_all_feedback():
     limit = min(int(request.args.get('limit', 100)), 500)
     offset = int(request.args.get('offset', 0))
 
-    # Build query
-    query = 'SELECT * FROM feedback WHERE 1=1'
+    # Build query with reply count
+    query = '''
+        SELECT f.*,
+            (SELECT COUNT(*) FROM feedback_replies WHERE feedback_id = f.id) as reply_count
+        FROM feedback f
+        WHERE 1=1
+    '''
     params = []
 
     if feedback_type:
-        query += ' AND type = ?'
+        query += ' AND f.type = ?'
         params.append(feedback_type)
 
     if status:
-        query += ' AND status = ?'
+        query += ' AND f.status = ?'
         params.append(status)
 
     if user_id:
-        query += ' AND user_id = ?'
+        query += ' AND f.user_id = ?'
         params.append(user_id)
 
-    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+    query += ' ORDER BY f.created_at DESC LIMIT ? OFFSET ?'
     params.extend([limit, offset])
 
     # Execute query
@@ -416,9 +421,10 @@ def get_my_feedback():
     limit = min(int(request.args.get('limit', 50)), 100)
     offset = int(request.args.get('offset', 0))
 
-    # Build query for current user only - join with content table
+    # Build query for current user only - join with content table and add reply count
     query = '''
-        SELECT f.*, fc.content
+        SELECT f.*, fc.content,
+            (SELECT COUNT(*) FROM feedback_replies WHERE feedback_id = f.id AND is_private = 0) as reply_count
         FROM feedback f
         LEFT JOIN feedback_content fc ON f.id = fc.feedback_id
         WHERE f.user_id = ?
@@ -550,3 +556,306 @@ def delete_my_feedback(feedback_id: int):
     except Exception as e:
         print(f"Error deleting user feedback: {e}")
         return jsonify({'error': 'Failed to delete feedback'}), 500
+
+
+@feedback_bp.route('/<int:feedback_id>/replies', methods=['POST'])
+@login_required
+@admin_required
+def add_reply(feedback_id: int):
+    """
+    Add admin reply to feedback.
+
+    Request body:
+        reply_text: The reply message
+        is_private: Boolean, true for private admin note, false for public reply (default: false)
+    """
+    data = request.json
+
+    if 'reply_text' not in data:
+        return jsonify({'error': 'reply_text is required'}), 400
+
+    reply_text = data['reply_text'].strip()
+    if not reply_text:
+        return jsonify({'error': 'Reply text cannot be empty'}), 400
+
+    if len(reply_text) > 5000:
+        return jsonify({'error': 'Reply too long (max 5,000 characters)'}), 400
+
+    is_private = data.get('is_private', False)
+
+    # Sanitize reply text
+    sanitized_reply = html.escape(reply_text)
+
+    try:
+        with db.get_connection() as conn:
+            cursor = conn.cursor()
+
+            # Verify feedback exists
+            cursor.execute('SELECT user_id FROM feedback WHERE id = ?', (feedback_id,))
+            feedback_row = cursor.fetchone()
+            if not feedback_row:
+                return jsonify({'error': 'Feedback not found'}), 404
+
+            # Insert reply
+            cursor.execute('''
+                INSERT INTO feedback_replies (feedback_id, admin_id, reply_text, is_private, created_at)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (feedback_id, current_user.id, sanitized_reply, 1 if is_private else 0, datetime.now().isoformat()))
+
+            reply_id = cursor.lastrowid
+
+            # Update feedback last_reply_at timestamp
+            cursor.execute('''
+                UPDATE feedback
+                SET last_reply_at = ?, updated_at = ?
+                WHERE id = ?
+            ''', (datetime.now().isoformat(), datetime.now().isoformat(), feedback_id))
+
+            conn.commit()
+
+            # TODO: Send email notification to user if public reply
+            if not is_private:
+                pass  # Email notification would go here
+
+            return jsonify({
+                'success': True,
+                'message': 'Reply added successfully',
+                'reply_id': reply_id
+            }), 201
+
+    except Exception as e:
+        print(f"Error adding reply: {e}")
+        return jsonify({'error': 'Failed to add reply'}), 500
+
+
+@feedback_bp.route('/<int:feedback_id>/replies', methods=['GET'])
+@login_required
+def get_replies(feedback_id: int):
+    """
+    Get replies for a feedback item.
+
+    Users can see:
+    - Their own feedback's public replies
+
+    Admins can see:
+    - All replies (both public and private)
+    """
+    try:
+        # Check if user owns this feedback or is admin
+        feedback_row = db.execute_one('SELECT user_id FROM feedback WHERE id = ?', (feedback_id,))
+        if not feedback_row:
+            return jsonify({'error': 'Feedback not found'}), 404
+
+        is_owner = feedback_row['user_id'] == current_user.id
+        is_admin = getattr(current_user, 'is_admin', False)
+
+        if not is_owner and not is_admin:
+            return jsonify({'error': 'Access denied'}), 403
+
+        # Build query based on permissions
+        if is_admin:
+            # Admins see all replies
+            query = '''
+                SELECT fr.*, u.username as admin_username
+                FROM feedback_replies fr
+                LEFT JOIN users u ON fr.admin_id = u.id
+                WHERE fr.feedback_id = ?
+                ORDER BY fr.created_at ASC
+            '''
+        else:
+            # Users only see public replies
+            query = '''
+                SELECT fr.*, u.username as admin_username
+                FROM feedback_replies fr
+                LEFT JOIN users u ON fr.admin_id = u.id
+                WHERE fr.feedback_id = ? AND fr.is_private = 0
+                ORDER BY fr.created_at ASC
+            '''
+
+        rows = db.execute(query, (feedback_id,))
+        replies = [dict(row) for row in rows]
+
+        return jsonify({
+            'replies': replies,
+            'total': len(replies)
+        }), 200
+
+    except Exception as e:
+        print(f"Error fetching replies: {e}")
+        return jsonify({'error': 'Failed to fetch replies'}), 500
+
+
+@feedback_bp.route('/replies/<int:reply_id>', methods=['PATCH'])
+@login_required
+@admin_required
+def update_reply(reply_id: int):
+    """
+    Update a reply (admin only).
+
+    Request body:
+        reply_text: Updated reply text
+        is_private: Updated privacy setting
+    """
+    data = request.json
+
+    updates = []
+    params = []
+
+    if 'reply_text' in data:
+        reply_text = data['reply_text'].strip()
+        if not reply_text:
+            return jsonify({'error': 'Reply text cannot be empty'}), 400
+        if len(reply_text) > 5000:
+            return jsonify({'error': 'Reply too long (max 5,000 characters)'}), 400
+
+        sanitized_reply = html.escape(reply_text)
+        updates.append('reply_text = ?')
+        params.append(sanitized_reply)
+
+    if 'is_private' in data:
+        updates.append('is_private = ?')
+        params.append(1 if data['is_private'] else 0)
+
+    if not updates:
+        return jsonify({'error': 'No valid fields to update'}), 400
+
+    updates.append('updated_at = ?')
+    params.append(datetime.now().isoformat())
+    params.append(reply_id)
+
+    try:
+        with db.get_connection() as conn:
+            cursor = conn.cursor()
+            query = f"UPDATE feedback_replies SET {', '.join(updates)} WHERE id = ?"
+            cursor.execute(query, params)
+            conn.commit()
+
+            if cursor.rowcount == 0:
+                return jsonify({'error': 'Reply not found'}), 404
+
+            return jsonify({
+                'success': True,
+                'message': 'Reply updated successfully'
+            }), 200
+
+    except Exception as e:
+        print(f"Error updating reply: {e}")
+        return jsonify({'error': 'Failed to update reply'}), 500
+
+
+@feedback_bp.route('/replies/<int:reply_id>', methods=['DELETE'])
+@login_required
+@admin_required
+def delete_reply(reply_id: int):
+    """Delete a reply (admin only)."""
+    try:
+        with db.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM feedback_replies WHERE id = ?', (reply_id,))
+            conn.commit()
+
+            if cursor.rowcount == 0:
+                return jsonify({'error': 'Reply not found'}), 404
+
+            return jsonify({
+                'success': True,
+                'message': 'Reply deleted successfully'
+            }), 200
+
+    except Exception as e:
+        print(f"Error deleting reply: {e}")
+        return jsonify({'error': 'Failed to delete reply'}), 500
+
+
+@feedback_bp.route('/my/<int:feedback_id>/thread', methods=['GET'])
+@login_required
+def get_my_feedback_thread(feedback_id: int):
+    """
+    Get full feedback thread with replies (user's own feedback only).
+
+    Returns:
+        - Feedback details
+        - Content
+        - Public admin replies (chronological)
+    """
+    try:
+        # Verify ownership
+        feedback_row = db.execute_one('''
+            SELECT f.*, fc.content, u.username as user_username
+            FROM feedback f
+            LEFT JOIN feedback_content fc ON f.id = fc.feedback_id
+            LEFT JOIN users u ON f.user_id = u.id
+            WHERE f.id = ? AND f.user_id = ?
+        ''', (feedback_id, current_user.id))
+
+        if not feedback_row:
+            return jsonify({'error': 'Feedback not found or access denied'}), 404
+
+        feedback = dict(feedback_row)
+
+        # Get public replies
+        replies_rows = db.execute('''
+            SELECT fr.*, u.username as admin_username
+            FROM feedback_replies fr
+            LEFT JOIN users u ON fr.admin_id = u.id
+            WHERE fr.feedback_id = ? AND fr.is_private = 0
+            ORDER BY fr.created_at ASC
+        ''', (feedback_id,))
+
+        feedback['replies'] = [dict(row) for row in replies_rows]
+        feedback['reply_count'] = len(feedback['replies'])
+        feedback['has_unread_replies'] = len(feedback['replies']) > 0  # Simple version
+
+        return jsonify(feedback), 200
+
+    except Exception as e:
+        print(f"Error fetching feedback thread: {e}")
+        return jsonify({'error': 'Failed to fetch feedback thread'}), 500
+
+
+@feedback_bp.route('/<int:feedback_id>/thread', methods=['GET'])
+@login_required
+@admin_required
+def get_feedback_thread_admin(feedback_id: int):
+    """
+    Get full feedback thread with ALL replies including private notes (admin only).
+
+    Returns:
+        - Feedback details
+        - Content
+        - All admin replies (both public and private)
+    """
+    try:
+        # Get feedback with content
+        feedback_row = db.execute_one('''
+            SELECT f.*, fc.content, u.username as user_username, u.email as user_email
+            FROM feedback f
+            LEFT JOIN feedback_content fc ON f.id = fc.feedback_id
+            LEFT JOIN users u ON f.user_id = u.id
+            WHERE f.id = ?
+        ''', (feedback_id,))
+
+        if not feedback_row:
+            return jsonify({'error': 'Feedback not found'}), 404
+
+        feedback = dict(feedback_row)
+
+        # Get all replies (including private)
+        replies_rows = db.execute('''
+            SELECT fr.*, u.username as admin_username
+            FROM feedback_replies fr
+            LEFT JOIN users u ON fr.admin_id = u.id
+            WHERE fr.feedback_id = ?
+            ORDER BY fr.created_at ASC
+        ''', (feedback_id,))
+
+        feedback['replies'] = [dict(row) for row in replies_rows]
+        feedback['reply_count'] = len(feedback['replies'])
+        feedback['public_reply_count'] = sum(1 for r in feedback['replies'] if not r['is_private'])
+        feedback['private_note_count'] = sum(1 for r in feedback['replies'] if r['is_private'])
+
+        return jsonify(feedback), 200
+
+    except Exception as e:
+        print(f"Error fetching feedback thread: {e}")
+        return jsonify({'error': 'Failed to fetch feedback thread'}), 500
