@@ -839,7 +839,7 @@ def reset_demo_account():
 
         # Demo user credentials
         demo_username = 'demo'
-        demo_password = 'demo123'
+        demo_password = 'demo1234'
         demo_email = 'demo@example.com'
 
         # Find or create demo user
