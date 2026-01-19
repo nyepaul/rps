@@ -948,20 +948,22 @@ def reset_demo_account():
             },
             "income_streams": [
                 {
-                    "source": "Senior Software Engineer",
+                    "name": "Senior Software Engineer - Chris",
                     "amount": 16000,  # Monthly
                     "frequency": "monthly",
                     "start_date": (today - relativedelta(years=10)).isoformat(),
                     "end_date": retirement_date.isoformat(),
-                    "type": "salary"
+                    "type": "salary",
+                    "description": "Full-time software engineering position"
                 },
                 {
-                    "source": "Product Manager",
+                    "name": "Product Manager - Jamie",
                     "amount": 12000,  # Monthly (spouse)
                     "frequency": "monthly",
                     "start_date": (today - relativedelta(years=8)).isoformat(),
                     "end_date": spouse_retirement_date.isoformat(),
-                    "type": "salary"
+                    "type": "salary",
+                    "description": "Product management role"
                 }
             ],
             "assets": {
