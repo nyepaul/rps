@@ -31,7 +31,10 @@ class AuditConfig:
             'os_info': True,
             'login_attempts': True,
             'failed_actions': True,
-            'cloudflare_metadata': True  # CF-Ray, CF-IPCountry, CF-Cache-Status, etc.
+            'cloudflare_metadata': True,  # CF-Ray, CF-IPCountry, CF-Cache-Status, etc.
+            'browser_fingerprint': True,  # Language, encoding, screen size, timezone
+            'risk_scoring': True,  # Security risk assessment (bot detection, automation tools)
+            'session_metadata': True  # Session age, size, authentication state
         },
         'display': {
             'ip_address': True,
@@ -49,7 +52,10 @@ class AuditConfig:
             'os_info': True,
             'login_attempts': True,
             'failed_actions': True,
-            'cloudflare_metadata': True  # Show CF-Ray, CF-IPCountry, etc.
+            'cloudflare_metadata': True,  # Show CF-Ray, CF-IPCountry, etc.
+            'browser_fingerprint': True,  # Show language, screen size, etc.
+            'risk_scoring': True,  # Show risk assessment
+            'session_metadata': True  # Show session details
         },
         'retention_days': 90,
         'log_read_operations': False,  # Can generate lots of logs
@@ -237,6 +243,147 @@ class EnhancedAuditLogger:
         return cf_metadata if cf_metadata else None
 
     @staticmethod
+    def _get_browser_fingerprint() -> Dict[str, Any]:
+        """
+        Generate browser fingerprint for tracking and security.
+        Combines multiple attributes to uniquely identify a browser/device.
+        """
+        if not has_request_context():
+            return {}
+
+        fingerprint = {}
+
+        # User Agent
+        ua_string = request.headers.get('User-Agent', '')
+        if ua_string:
+            fingerprint['user_agent_hash'] = hash(ua_string) % 1000000  # Shorter hash for storage
+
+        # Language preferences (can indicate location/settings)
+        accept_language = request.headers.get('Accept-Language', '')
+        if accept_language:
+            # Parse primary language
+            primary_lang = accept_language.split(',')[0].strip() if accept_language else 'unknown'
+            fingerprint['primary_language'] = primary_lang
+
+        # Encoding preferences
+        accept_encoding = request.headers.get('Accept-Encoding', '')
+        fingerprint['supports_compression'] = 'gzip' in accept_encoding or 'br' in accept_encoding
+
+        # Connection type hints
+        connection = request.headers.get('Connection', '')
+        fingerprint['connection_type'] = connection if connection else 'unknown'
+
+        # DNT (Do Not Track) header
+        dnt = request.headers.get('DNT', '0')
+        fingerprint['dnt_enabled'] = dnt == '1'
+
+        # Screen hints from client (if available in custom headers)
+        screen_width = request.headers.get('X-Screen-Width')
+        screen_height = request.headers.get('X-Screen-Height')
+        if screen_width and screen_height:
+            fingerprint['screen_resolution'] = f"{screen_width}x{screen_height}"
+
+        # Timezone offset (if available in custom headers)
+        tz_offset = request.headers.get('X-Timezone-Offset')
+        if tz_offset:
+            fingerprint['timezone_offset'] = tz_offset
+
+        # Viewport size (if available)
+        viewport_width = request.headers.get('X-Viewport-Width')
+        viewport_height = request.headers.get('X-Viewport-Height')
+        if viewport_width and viewport_height:
+            fingerprint['viewport_size'] = f"{viewport_width}x{viewport_height}"
+
+        return fingerprint
+
+    @staticmethod
+    def _calculate_risk_score(ip_address: str, user_agent: str, device_info: Dict) -> Dict[str, Any]:
+        """
+        Calculate basic risk indicators for the request.
+        Returns dict with risk score and factors.
+        """
+        risk_indicators = {
+            'score': 0,  # 0-100 scale
+            'factors': []
+        }
+
+        # Check for bot
+        if device_info.get('is_bot'):
+            risk_indicators['score'] += 30
+            risk_indicators['factors'].append('bot_detected')
+
+        # Check for missing/suspicious user agent
+        if not user_agent or len(user_agent) < 10:
+            risk_indicators['score'] += 20
+            risk_indicators['factors'].append('suspicious_user_agent')
+
+        # Check for localhost/internal IP
+        if ip_address in ['127.0.0.1', 'localhost', '::1'] or ip_address.startswith('192.168.') or ip_address.startswith('10.'):
+            # Internal IPs are lower risk in some contexts
+            risk_indicators['factors'].append('internal_network')
+
+        # Check for Tor exit nodes (common IPs)
+        # This is a simplified check - production would use a Tor exit node list
+        if any(indicator in user_agent.lower() for indicator in ['tor', 'onion']):
+            risk_indicators['score'] += 40
+            risk_indicators['factors'].append('tor_browser')
+
+        # Check for automation tools
+        automation_keywords = ['selenium', 'puppeteer', 'phantom', 'headless', 'crawler', 'spider', 'bot']
+        if any(keyword in user_agent.lower() for keyword in automation_keywords):
+            risk_indicators['score'] += 25
+            risk_indicators['factors'].append('automation_tool')
+
+        # Cap score at 100
+        risk_indicators['score'] = min(risk_indicators['score'], 100)
+
+        # Assign risk level
+        if risk_indicators['score'] >= 70:
+            risk_indicators['level'] = 'high'
+        elif risk_indicators['score'] >= 40:
+            risk_indicators['level'] = 'medium'
+        else:
+            risk_indicators['level'] = 'low'
+
+        return risk_indicators
+
+    @staticmethod
+    def _get_session_metadata() -> Dict[str, Any]:
+        """Extract detailed session information."""
+        if not has_request_context() or not session:
+            return {}
+
+        metadata = {}
+
+        # Session age (if _created timestamp exists)
+        if '_created' in session:
+            try:
+                created_at = datetime.fromisoformat(session['_created'])
+                age_seconds = (datetime.now() - created_at).total_seconds()
+                metadata['session_age_seconds'] = int(age_seconds)
+                metadata['session_age_minutes'] = round(age_seconds / 60, 2)
+            except Exception:
+                pass
+
+        # Session data size (approximate)
+        try:
+            session_data_size = len(str(dict(session)))
+            metadata['session_size_bytes'] = session_data_size
+        except Exception:
+            pass
+
+        # User authentication state
+        if current_user and current_user.is_authenticated:
+            metadata['authenticated'] = True
+            metadata['user_id'] = current_user.id
+            metadata['username'] = getattr(current_user, 'username', 'unknown')
+            metadata['is_admin'] = getattr(current_user, 'is_admin', False)
+        else:
+            metadata['authenticated'] = False
+
+        return metadata
+
+    @staticmethod
     def _get_request_info() -> Dict[str, Any]:
         """Extract comprehensive request information."""
         if not has_request_context():
@@ -251,6 +398,7 @@ class EnhancedAuditLogger:
             'content_length': request.content_length or 0,
             'is_secure': request.is_secure,
             'scheme': request.scheme,
+            'content_type': request.content_type or 'unknown',
         }
 
         # Session ID (first 8 chars for privacy)
@@ -267,7 +415,15 @@ class EnhancedAuditLogger:
             'accept_language': request.headers.get('Accept-Language', 'N/A'),
             'accept_encoding': request.headers.get('Accept-Encoding', 'N/A'),
             'origin': request.headers.get('Origin', 'N/A'),
+            'dnt': request.headers.get('DNT', 'N/A'),
+            'sec_fetch_site': request.headers.get('Sec-Fetch-Site', 'N/A'),
+            'sec_fetch_mode': request.headers.get('Sec-Fetch-Mode', 'N/A'),
+            'sec_fetch_dest': request.headers.get('Sec-Fetch-Dest', 'N/A'),
         }
+
+        # Request timing hints
+        if request.environ:
+            info['protocol'] = request.environ.get('SERVER_PROTOCOL', 'unknown')
 
         return info
 
@@ -334,8 +490,9 @@ class EnhancedAuditLogger:
         cf_metadata = EnhancedAuditLogger._get_cloudflare_metadata()
 
         # Collect user agent
+        user_agent_string = request.headers.get('User-Agent', '')
+        device_info = {}
         if collect_config.get('user_agent', True):
-            user_agent_string = request.headers.get('User-Agent', '')
             audit_data['user_agent'] = user_agent_string[:500]  # Limit length
 
             # Parse device info from user agent
@@ -381,6 +538,55 @@ class EnhancedAuditLogger:
                 # If request_headers collection is off but we have CF data,
                 # store CF metadata separately
                 audit_data['request_headers'] = json.dumps({'cloudflare': cf_metadata})
+
+        # Collect browser fingerprint for tracking and security
+        if collect_config.get('browser_fingerprint', True):
+            fingerprint = EnhancedAuditLogger._get_browser_fingerprint()
+            if fingerprint:
+                # Store in device_info if it exists, otherwise create new field
+                if audit_data.get('device_info'):
+                    try:
+                        existing_device_info = json.loads(audit_data['device_info'])
+                        existing_device_info['fingerprint'] = fingerprint
+                        audit_data['device_info'] = json.dumps(existing_device_info)
+                    except:
+                        pass
+                else:
+                    audit_data['device_info'] = json.dumps({'fingerprint': fingerprint})
+
+        # Calculate risk score for security monitoring
+        if collect_config.get('risk_scoring', True):
+            ip_address = audit_data.get('ip_address', '')
+            risk_data = EnhancedAuditLogger._calculate_risk_score(ip_address, user_agent_string, device_info)
+            if risk_data:
+                # Store risk data in details if it exists
+                if audit_data.get('details'):
+                    try:
+                        details_dict = json.loads(audit_data['details']) if isinstance(audit_data['details'], str) else {}
+                        details_dict['risk_assessment'] = risk_data
+                        audit_data['details'] = json.dumps(details_dict)
+                    except:
+                        pass
+
+        # Collect detailed session metadata
+        if collect_config.get('session_metadata', True):
+            session_meta = EnhancedAuditLogger._get_session_metadata()
+            if session_meta:
+                # Store in details
+                if audit_data.get('details'):
+                    try:
+                        details_dict = json.loads(audit_data['details']) if isinstance(audit_data['details'], str) else {}
+                        details_dict['session_metadata'] = session_meta
+                        audit_data['details'] = json.dumps(details_dict)
+                    except:
+                        # If details is a string and can't be parsed, wrap it
+                        details_dict = {
+                            'original_details': audit_data['details'],
+                            'session_metadata': session_meta
+                        }
+                        audit_data['details'] = json.dumps(details_dict)
+                else:
+                    audit_data['details'] = json.dumps({'session_metadata': session_meta})
 
         # Save to database
         EnhancedAuditLogger._save_audit_log(audit_data)
@@ -454,6 +660,170 @@ class EnhancedAuditLogger:
             details=details,
             status_code=200
         )
+
+    @staticmethod
+    def log_data_change(
+        action: str,
+        table_name: str,
+        record_id: int,
+        old_data: Optional[Dict] = None,
+        new_data: Optional[Dict] = None,
+        user_id: Optional[int] = None
+    ):
+        """
+        Log a data change operation with before/after snapshots.
+
+        Args:
+            action: CREATE, UPDATE, or DELETE
+            table_name: Name of the table
+            record_id: ID of the record
+            old_data: Data before the change (for UPDATE/DELETE)
+            new_data: Data after the change (for CREATE/UPDATE)
+            user_id: User making the change
+        """
+        details = {
+            'change_tracking': {
+                'old_data': old_data,
+                'new_data': new_data
+            }
+        }
+
+        # Calculate what changed
+        if old_data and new_data:
+            changes = {}
+            all_keys = set(old_data.keys()) | set(new_data.keys())
+            for key in all_keys:
+                old_val = old_data.get(key)
+                new_val = new_data.get(key)
+                if old_val != new_val:
+                    changes[key] = {
+                        'old': old_val,
+                        'new': new_val
+                    }
+            details['change_tracking']['changed_fields'] = changes
+            details['change_tracking']['num_fields_changed'] = len(changes)
+
+        EnhancedAuditLogger.log(
+            action=action,
+            table_name=table_name,
+            record_id=record_id,
+            user_id=user_id,
+            details=details,
+            status_code=200
+        )
+
+    @staticmethod
+    def log_performance(
+        action: str,
+        duration_ms: float,
+        details: Optional[Dict] = None,
+        status_code: int = 200
+    ):
+        """
+        Log performance metrics for an operation.
+
+        Args:
+            action: Name of the operation
+            duration_ms: Duration in milliseconds
+            details: Additional context
+            status_code: HTTP status code
+        """
+        perf_details = {
+            'performance': {
+                'duration_ms': round(duration_ms, 2),
+                'duration_seconds': round(duration_ms / 1000, 3)
+            }
+        }
+
+        # Classify performance
+        if duration_ms < 100:
+            perf_details['performance']['classification'] = 'fast'
+        elif duration_ms < 500:
+            perf_details['performance']['classification'] = 'normal'
+        elif duration_ms < 2000:
+            perf_details['performance']['classification'] = 'slow'
+        else:
+            perf_details['performance']['classification'] = 'very_slow'
+
+        # Merge with existing details
+        if details:
+            perf_details.update(details)
+
+        EnhancedAuditLogger.log(
+            action=action,
+            details=perf_details,
+            status_code=status_code
+        )
+
+    @staticmethod
+    def detect_suspicious_patterns(user_id: Optional[int] = None, ip_address: Optional[str] = None, minutes: int = 5):
+        """
+        Detect suspicious patterns in recent audit logs.
+        Returns list of detected patterns.
+
+        Args:
+            user_id: Filter by user ID
+            ip_address: Filter by IP address
+            minutes: Look back window in minutes
+        """
+        cutoff = (datetime.now() - timedelta(minutes=minutes)).isoformat()
+        patterns = []
+
+        # Query recent logs
+        query = 'SELECT * FROM enhanced_audit_log WHERE created_at >= ?'
+        params = [cutoff]
+
+        if user_id:
+            query += ' AND user_id = ?'
+            params.append(user_id)
+
+        if ip_address:
+            query += ' AND ip_address = ?'
+            params.append(ip_address)
+
+        logs = db.execute(query, tuple(params))
+        log_list = [dict(row) for row in logs]
+
+        # Pattern 1: High frequency of failed logins
+        failed_logins = [log for log in log_list if log['action'] == 'LOGIN_ATTEMPT' and log.get('status_code') == 401]
+        if len(failed_logins) >= 5:
+            patterns.append({
+                'type': 'brute_force_attempt',
+                'severity': 'high',
+                'count': len(failed_logins),
+                'description': f'{len(failed_logins)} failed login attempts in {minutes} minutes'
+            })
+
+        # Pattern 2: Rapid API calls (possible scraping/automation)
+        if len(log_list) >= 100:
+            patterns.append({
+                'type': 'high_frequency_requests',
+                'severity': 'medium',
+                'count': len(log_list),
+                'description': f'{len(log_list)} requests in {minutes} minutes'
+            })
+
+        # Pattern 3: Multiple failed actions
+        failed_actions = [log for log in log_list if log.get('status_code', 200) >= 400]
+        if len(failed_actions) >= 10:
+            patterns.append({
+                'type': 'repeated_failures',
+                'severity': 'medium',
+                'count': len(failed_actions),
+                'description': f'{len(failed_actions)} failed actions in {minutes} minutes'
+            })
+
+        # Pattern 4: Access to many different endpoints (reconnaissance)
+        unique_endpoints = set(log.get('request_endpoint') for log in log_list if log.get('request_endpoint'))
+        if len(unique_endpoints) >= 20:
+            patterns.append({
+                'type': 'endpoint_scanning',
+                'severity': 'high',
+                'count': len(unique_endpoints),
+                'description': f'Access to {len(unique_endpoints)} different endpoints in {minutes} minutes'
+            })
+
+        return patterns
 
     @staticmethod
     def get_logs(
