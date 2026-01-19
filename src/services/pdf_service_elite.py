@@ -338,7 +338,10 @@ def create_key_metrics_box(title, metrics_dict, styles):
     for i, (label, value) in enumerate(metrics_dict.items()):
         # Format value based on type
         if isinstance(value, (int, float)):
-            if value >= 1000000:
+            # Don't add $ for non-monetary values like "Years Projected"
+            if label in ['Years Projected', 'Success Rate']:
+                formatted_value = f"{value:,.0f}"
+            elif value >= 1000000:
                 formatted_value = f"${value/1000000:.2f}M"
             elif value >= 1000:
                 formatted_value = f"${value/1000:.1f}K"
