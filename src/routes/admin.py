@@ -873,23 +873,23 @@ def reset_demo_account():
 
         # Create comprehensive demo profile
         today = date.today()
-        birth_date = today - relativedelta(years=45)  # 45 years old
-        retirement_date = today + relativedelta(years=15)  # Retire at 60
-        spouse_birth_date = today - relativedelta(years=43)  # Spouse 43 years old
-        spouse_retirement_date = today + relativedelta(years=17)  # Retire at 60
+        birth_date = today - relativedelta(years=55)  # 55 years old
+        retirement_date = today + relativedelta(years=10)  # Retire at 65
+        spouse_birth_date = today - relativedelta(years=53)  # Spouse 53 years old
+        spouse_retirement_date = today + relativedelta(years=12)  # Retire at 65
 
-        # Child 1: 19 years old, in college
-        child1_birth = today - relativedelta(years=19)
-        # Child 2: 21 years old, in college
-        child2_birth = today - relativedelta(years=21)
+        # Child 1: 18 years old, just starting college
+        child1_birth = today - relativedelta(years=18)
+        # Child 2: 19 years old, just starting college (2nd year)
+        child2_birth = today - relativedelta(years=19)
 
         demo_data = {
             "person": {
                 "name": "Chris Thompson",
                 "birth_date": birth_date.isoformat(),
                 "retirement_date": retirement_date.isoformat(),
-                "current_age": 45,
-                "retirement_age": 60,
+                "current_age": 55,
+                "retirement_age": 65,
                 "life_expectancy": 95,
                 "email": "chris.thompson@example.com",
                 "phone": "(415) 555-0123"
@@ -898,8 +898,8 @@ def reset_demo_account():
                 "name": "Jamie Thompson",
                 "birth_date": spouse_birth_date.isoformat(),
                 "retirement_date": spouse_retirement_date.isoformat(),
-                "current_age": 43,
-                "retirement_age": 60,
+                "current_age": 53,
+                "retirement_age": 65,
                 "life_expectancy": 95,
                 "email": "jamie.thompson@example.com",
                 "phone": "(415) 555-0124",
@@ -915,8 +915,8 @@ def reset_demo_account():
                     "phone": "(415) 555-0125",
                     "in_college": True,
                     "college_name": "University of California, Berkeley",
-                    "college_start_year": today.year - 1,
-                    "college_end_year": today.year + 3,
+                    "college_start_year": today.year,
+                    "college_end_year": today.year + 4,
                     "major": "Computer Science"
                 },
                 {
@@ -927,8 +927,8 @@ def reset_demo_account():
                     "phone": "(415) 555-0126",
                     "in_college": True,
                     "college_name": "Stanford University",
-                    "college_start_year": today.year - 3,
-                    "college_end_year": today.year + 1,
+                    "college_start_year": today.year - 1,
+                    "college_end_year": today.year + 3,
                     "major": "Business Administration"
                 }
             ],
@@ -1104,7 +1104,7 @@ def reset_demo_account():
                             "frequency": "monthly",
                             "description": "College tuition (2 children)",
                             "ongoing": True,
-                            "end_date": (today + relativedelta(years=3)).isoformat()
+                            "end_date": (today + relativedelta(years=4)).isoformat()
                         }],
                         "entertainment": [{
                             "amount": 600,
