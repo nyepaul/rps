@@ -17,6 +17,7 @@ from src.routes.admin import admin_bp
 from src.routes.feedback import feedback_bp
 from src.routes.roadmap import roadmap_bp
 from src.routes.tax_optimization import tax_optimization_bp
+from src.routes.fingerprint import fingerprint_bp
 from src.__version__ import __version__, __release_date__, __release_notes__
 import os
 import logging
@@ -46,6 +47,7 @@ def create_app(config_name='development'):
     app.register_blueprint(feedback_bp)
     app.register_blueprint(roadmap_bp)
     app.register_blueprint(tax_optimization_bp)
+    app.register_blueprint(fingerprint_bp)
 
     # Configure logging
     if not app.debug:

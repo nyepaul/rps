@@ -21,8 +21,11 @@ pydantic>=2.5.0
 email-validator>=2.1.0
 python-dateutil>=2.8.0
 
-# Audit Logging
+# Audit Logging & Tracking
 user-agents>=2.2.0
+maxminddb-geolite2>=2018.701  # Enhanced geolocation with local DB
+pytz>=2024.1  # Timezone handling
+python-whois>=0.8.0  # WHOIS lookups for IP investigation
 
 # Database
 alembic>=1.13.0

@@ -7,6 +7,7 @@ from flask_login import current_user
 from src.database.connection import db
 import re
 from user_agents import parse as parse_user_agent
+from src.services.ip_intelligence import ip_intelligence
 
 
 class AuditConfig:
@@ -34,7 +35,8 @@ class AuditConfig:
             'cloudflare_metadata': True,  # CF-Ray, CF-IPCountry, CF-Cache-Status, etc.
             'browser_fingerprint': True,  # Language, encoding, screen size, timezone
             'risk_scoring': True,  # Security risk assessment (bot detection, automation tools)
-            'session_metadata': True  # Session age, size, authentication state
+            'session_metadata': True,  # Session age, size, authentication state
+            'ip_intelligence': True  # IP analysis, VPN/proxy detection, reverse DNS
         },
         'display': {
             'ip_address': True,
@@ -55,7 +57,8 @@ class AuditConfig:
             'cloudflare_metadata': True,  # Show CF-Ray, CF-IPCountry, etc.
             'browser_fingerprint': True,  # Show language, screen size, etc.
             'risk_scoring': True,  # Show risk assessment
-            'session_metadata': True  # Show session details
+            'session_metadata': True,  # Show session details
+            'ip_intelligence': True  # Show IP analysis, VPN detection
         },
         'retention_days': 90,
         'log_read_operations': False,  # Can generate lots of logs
@@ -511,6 +514,31 @@ class EnhancedAuditLogger:
             if geo_data:
                 audit_data['geo_location'] = json.dumps(geo_data)
 
+        # Perform IP intelligence analysis
+        if collect_config.get('ip_intelligence', True) and audit_data.get('ip_address'):
+            ip_analysis = ip_intelligence.analyze_ip(audit_data['ip_address'])
+            vpn_detection = ip_intelligence.detect_vpn_proxy(
+                audit_data['ip_address'],
+                user_agent_string
+            )
+
+            # Store IP intelligence in details
+            ip_intel_data = {
+                'ip_analysis': ip_analysis,
+                'vpn_detection': vpn_detection
+            }
+
+            # Add to details
+            if audit_data.get('details'):
+                try:
+                    details_dict = json.loads(audit_data['details']) if isinstance(audit_data['details'], str) else {}
+                    details_dict['ip_intelligence'] = ip_intel_data
+                    audit_data['details'] = json.dumps(details_dict)
+                except:
+                    pass
+            else:
+                audit_data['details'] = json.dumps({'ip_intelligence': ip_intel_data})
+
         # Collect request information
         if collect_config.get('request_method', True) or collect_config.get('request_endpoint', True):
             request_info = EnhancedAuditLogger._get_request_info()
@@ -824,6 +852,108 @@ class EnhancedAuditLogger:
             })
 
         return patterns
+
+    @staticmethod
+    def analyze_fingerprint_data(fingerprint_data: Dict, ip_geolocation: Dict = None) -> Dict[str, Any]:
+        """
+        Analyze browser fingerprint data for anomalies and security insights.
+
+        Returns dict with:
+        - consistency_score: 0-100 (higher is more consistent/trustworthy)
+        - anomalies: List of detected anomalies
+        - device_profile: Summary of device characteristics
+        - location_mismatch: Timezone/language vs IP location mismatch analysis
+        """
+        analysis = {
+            'consistency_score': 100,
+            'anomalies': [],
+            'device_profile': {},
+            'risk_factors': []
+        }
+
+        if not fingerprint_data:
+            return analysis
+
+        # Analyze basic info
+        basic = fingerprint_data.get('basic', {})
+
+        # Check for missing/suspicious user agent
+        if not basic.get('user_agent') or len(basic.get('user_agent', '')) < 10:
+            analysis['anomalies'].append('missing_or_suspicious_user_agent')
+            analysis['consistency_score'] -= 20
+
+        # Check for automation indicators
+        if basic.get('webdriver'):
+            analysis['anomalies'].append('webdriver_detected')
+            analysis['risk_factors'].append('automation')
+            analysis['consistency_score'] -= 30
+
+        # Check headless browser indicators
+        if basic.get('product_sub') == '20030107':  # Headless Chrome indicator
+            analysis['anomalies'].append('headless_browser_indicator')
+            analysis['risk_factors'].append('automation')
+            analysis['consistency_score'] -= 25
+
+        # Analyze screen info
+        screen = fingerprint_data.get('screen', {})
+        if screen:
+            # Unusual screen resolutions (potential emulation)
+            width = screen.get('width', 0)
+            height = screen.get('height', 0)
+            if width == height:  # Square screens are uncommon
+                analysis['anomalies'].append('unusual_screen_resolution')
+                analysis['consistency_score'] -= 10
+
+            # Check for common emulator resolutions
+            emulator_resolutions = [(360, 640), (375, 667), (414, 896), (1920, 1080)]
+            if (width, height) in emulator_resolutions:
+                # Common resolutions, but could indicate emulation
+                analysis['device_profile']['likely_emulated'] = True
+
+        # Analyze capabilities
+        capabilities = fingerprint_data.get('capabilities', {})
+        if capabilities:
+            # Check for impossible combinations
+            if capabilities.get('touch_support') and not basic.get('max_touch_points'):
+                analysis['anomalies'].append('touch_capability_mismatch')
+                analysis['consistency_score'] -= 15
+
+        # Analyze timezone and location consistency
+        if ip_geolocation:
+            timezone_info = fingerprint_data.get('timezone', {})
+            mismatch = ip_intelligence.analyze_ip_location_mismatch(
+                ip_geolocation,
+                timezone_info.get('timezone'),
+                basic.get('language')
+            )
+
+            if mismatch.get('has_mismatch'):
+                analysis['location_mismatch'] = mismatch
+                analysis['consistency_score'] -= mismatch.get('confidence', 0) // 2
+                analysis['risk_factors'].append('location_mismatch')
+
+        # Device profile summary
+        analysis['device_profile'] = {
+            'platform': basic.get('platform'),
+            'hardware_concurrency': basic.get('hardware_concurrency'),
+            'device_memory': basic.get('device_memory'),
+            'screen_resolution': f"{screen.get('width')}x{screen.get('height')}",
+            'color_depth': screen.get('color_depth'),
+            'touch_capable': basic.get('max_touch_points', 0) > 0,
+            'webgl_vendor': fingerprint_data.get('webgl', {}).get('vendor'),
+            'canvas_hash': fingerprint_data.get('canvas', {}).get('hash'),
+            'composite_fingerprint': fingerprint_data.get('composite_fingerprint')
+        }
+
+        # Overall risk assessment
+        if analysis['consistency_score'] < 50:
+            analysis['risk_level'] = 'high'
+        elif analysis['consistency_score'] < 70:
+            analysis['risk_level'] = 'medium'
+        else:
+            analysis['risk_level'] = 'low'
+
+        return analysis
 
     @staticmethod
     def get_logs(
