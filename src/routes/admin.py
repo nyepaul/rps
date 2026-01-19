@@ -1236,15 +1236,22 @@ def reset_demo_account():
             }
         }
 
-        # Create profile
-        demo_profile = Profile(
-            user_id=demo_user.id,
-            name="DemoName",
-            birth_date=birth_date.isoformat(),
-            retirement_date=retirement_date.isoformat()
-        )
-        demo_profile.data_dict = demo_data
-        demo_profile.save()
+        # Create profile with unencrypted data (demo data doesn't need encryption)
+        import json
+        with db.get_connection() as conn:
+            cursor = conn.execute('''
+                INSERT INTO profile (user_id, name, birth_date, retirement_date, data, data_iv, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, NULL, ?, ?)
+            ''', (
+                demo_user.id,
+                "DemoName",
+                birth_date.isoformat(),
+                retirement_date.isoformat(),
+                json.dumps(demo_data),  # Store as plain JSON (unencrypted)
+                datetime.now().isoformat(),
+                datetime.now().isoformat()
+            ))
+            demo_profile_id = cursor.lastrowid
 
         # Log admin action
         enhanced_audit_logger.log_admin_action(
@@ -1252,7 +1259,7 @@ def reset_demo_account():
             user_id=current_user.id,
             details={
                 'demo_user_id': demo_user.id,
-                'profile_created': demo_profile.id
+                'profile_created': demo_profile_id
             }
         )
 
@@ -1260,7 +1267,7 @@ def reset_demo_account():
             'message': 'Demo account reset successfully',
             'username': demo_username,
             'password': demo_password,
-            'profile_name': demo_profile.name
+            'profile_name': 'DemoName'
         }), 200
 
     except Exception as e:
