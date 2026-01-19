@@ -613,10 +613,6 @@ def add_reply(feedback_id: int):
 
             conn.commit()
 
-            # TODO: Send email notification to user if public reply
-            if not is_private:
-                pass  # Email notification would go here
-
             return jsonify({
                 'success': True,
                 'message': 'Reply added successfully',

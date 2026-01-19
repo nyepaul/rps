@@ -21,6 +21,6 @@ CREATE INDEX IF NOT EXISTS idx_feedback_replies_admin_id ON feedback_replies(adm
 CREATE INDEX IF NOT EXISTS idx_feedback_replies_is_private ON feedback_replies(is_private);
 CREATE INDEX IF NOT EXISTS idx_feedback_replies_created_at ON feedback_replies(created_at);
 
--- Add email_sent flag to feedback table to track notifications
-ALTER TABLE feedback ADD COLUMN email_sent BOOLEAN DEFAULT 0;
-ALTER TABLE feedback ADD COLUMN last_reply_at TIMESTAMP;
+-- Add tracking columns to feedback table
+ALTER TABLE feedback ADD COLUMN email_sent BOOLEAN DEFAULT 0;  -- Reserved for future use
+ALTER TABLE feedback ADD COLUMN last_reply_at TIMESTAMP;  -- Track when last reply was added

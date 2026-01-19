@@ -272,7 +272,7 @@ function renderFeedbackThread(thread) {
             </div>
 
             <div class="thread-footer">
-                <p class="help-text">You'll be notified when an admin responds to your feedback.</p>
+                <p class="help-text">Check back here to see admin responses to your feedback.</p>
             </div>
         </div>
     `;
