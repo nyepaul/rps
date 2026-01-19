@@ -223,6 +223,9 @@ function renderSummaryCards(assets, container, selectedFilter) {
  * Calculate total for an array of assets
  */
 function calculateTotal(items, field1 = 'value', field2 = null) {
+    if (!items || !Array.isArray(items)) {
+        return 0;
+    }
     return items.reduce((sum, item) => {
         const value = item[field1] || (field2 ? item[field2] : 0) || 0;
         return sum + value;

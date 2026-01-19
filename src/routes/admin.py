@@ -1051,7 +1051,8 @@ def reset_demo_account():
                         "bond_pct": 0.45,
                         "cash_pct": 0.05
                     }
-                ]
+                ],
+                "pensions_annuities": []
             },
             "budget": {
                 "expenses": {
