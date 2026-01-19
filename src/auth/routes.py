@@ -299,10 +299,11 @@ class PasswordResetSchema(BaseModel):
 @auth_bp.route('/password-reset/request', methods=['POST'])
 @limiter.limit("3 per hour")
 def request_password_reset():
-    """Request a password reset token and send email."""
-    from src.services.email_service import EmailService
-    from flask import current_app
+    """Request a password reset token.
 
+    NOTE: Email sending is not configured. The token is returned in the response
+    for use in development mode. Users can use the token to reset their password.
+    """
     try:
         data = PasswordResetRequestSchema(**request.json)
     except Exception as e:
@@ -315,45 +316,23 @@ def request_password_reset():
     # This prevents email enumeration attacks
     if not user:
         return jsonify({
-            'message': 'If an account exists with that email, a password reset link has been sent.'
+            'message': 'If an account exists with that email, a password reset link has been sent.',
+            'development_mode': True,
+            'token': None
         }), 200
 
     # Generate reset token
     token = user.generate_reset_token(expiry_hours=1)
 
-    # Check if email is configured
-    email_configured = EmailService.is_configured()
-
-    if email_configured:
-        # Send email with reset link
-        try:
-            base_url = current_app.config.get('APP_BASE_URL', 'http://localhost:5137')
-            email_sent = EmailService.send_password_reset_email(data.email, token, base_url)
-
-            if email_sent:
-                return jsonify({
-                    'message': 'If an account exists with that email, a password reset link has been sent.'
-                }), 200
-            else:
-                # Email failed but don't reveal this to user
-                return jsonify({
-                    'message': 'If an account exists with that email, a password reset link has been sent.'
-                }), 200
-        except Exception as e:
-            print(f"Failed to send password reset email: {e}")
-            # Don't reveal error to user
-            return jsonify({
-                'message': 'If an account exists with that email, a password reset link has been sent.'
-            }), 200
-    else:
-        # Email not configured - return token in development mode
-        return jsonify({
-            'message': 'If an account exists with that email, a password reset link has been sent.',
-            'development_mode': True,
-            'token': token,
-            'email': data.email,
-            'note': 'Email not configured. Use this token to reset password. Token expires in 1 hour.'
-        }), 200
+    # Return token in response (DEVELOPMENT MODE)
+    # Email sending disabled - users can use the token directly
+    return jsonify({
+        'message': 'If an account exists with that email, a password reset link has been sent.',
+        'development_mode': True,
+        'token': token,
+        'email': data.email,
+        'note': 'Use the link provided to reset your password. Token expires in 1 hour.'
+    }), 200
 
 
 @auth_bp.route('/password-reset/reset', methods=['POST'])
