@@ -16,12 +16,12 @@ class AuditConfig:
     DEFAULT_CONFIG = {
         'enabled': True,
         'collect': {
-            'ip_address': True,
+            'ip_address': True,  # Uses CF-Connecting-IP when behind Cloudflare
             'user_agent': True,
-            'geo_location': True,
+            'geo_location': True,  # Enhanced with CF-IPCountry when available
             'request_method': True,
             'request_endpoint': True,
-            'request_headers': False,  # Privacy: off by default
+            'request_headers': False,  # Privacy: off by default (CF metadata stored regardless)
             'request_body_size': True,
             'response_status': True,
             'session_id': True,
@@ -30,7 +30,8 @@ class AuditConfig:
             'browser_info': True,
             'os_info': True,
             'login_attempts': True,
-            'failed_actions': True
+            'failed_actions': True,
+            'cloudflare_metadata': True  # CF-Ray, CF-IPCountry, CF-Cache-Status, etc.
         },
         'display': {
             'ip_address': True,
@@ -47,7 +48,8 @@ class AuditConfig:
             'browser_info': True,
             'os_info': True,
             'login_attempts': True,
-            'failed_actions': True
+            'failed_actions': True,
+            'cloudflare_metadata': True  # Show CF-Ray, CF-IPCountry, etc.
         },
         'retention_days': 90,
         'log_read_operations': False,  # Can generate lots of logs
@@ -143,6 +145,98 @@ class EnhancedAuditLogger:
             }
 
     @staticmethod
+    def _get_real_client_ip() -> str:
+        """
+        Get the real client IP address, checking Cloudflare headers first.
+
+        When behind Cloudflare (or other proxies), request.remote_addr returns
+        the proxy IP, not the real client IP. Cloudflare provides the real IP
+        in the CF-Connecting-IP header.
+        """
+        if not has_request_context():
+            return 'Unknown'
+
+        # Priority order for IP detection:
+        # 1. CF-Connecting-IP (Cloudflare's real client IP)
+        # 2. X-Forwarded-For (standard proxy header, use first IP)
+        # 3. X-Real-IP (alternative proxy header)
+        # 4. request.remote_addr (fallback, may be proxy IP)
+
+        # Check Cloudflare header first
+        cf_ip = request.headers.get('CF-Connecting-IP')
+        if cf_ip:
+            return cf_ip
+
+        # Check X-Forwarded-For (may contain chain of IPs, use the first one)
+        x_forwarded_for = request.headers.get('X-Forwarded-For')
+        if x_forwarded_for:
+            # Take the first IP in the chain (original client)
+            return x_forwarded_for.split(',')[0].strip()
+
+        # Check X-Real-IP
+        x_real_ip = request.headers.get('X-Real-IP')
+        if x_real_ip:
+            return x_real_ip
+
+        # Fallback to remote_addr (may be proxy IP if behind reverse proxy)
+        return request.remote_addr or 'Unknown'
+
+    @staticmethod
+    def _get_cloudflare_metadata() -> Optional[Dict[str, str]]:
+        """
+        Extract Cloudflare-specific metadata from request headers.
+
+        Returns dict with Cloudflare metadata if headers are present, None otherwise.
+        Cloudflare provides valuable tracking data in custom headers.
+        """
+        if not has_request_context():
+            return None
+
+        cf_metadata = {}
+
+        # CF-Ray: Unique request identifier for Cloudflare support/debugging
+        cf_ray = request.headers.get('CF-Ray')
+        if cf_ray:
+            cf_metadata['cf_ray'] = cf_ray
+
+        # CF-IPCountry: Two-letter country code of client
+        cf_country = request.headers.get('CF-IPCountry')
+        if cf_country:
+            cf_metadata['cf_country'] = cf_country
+
+        # CF-Visitor: JSON with scheme info (http/https)
+        cf_visitor = request.headers.get('CF-Visitor')
+        if cf_visitor:
+            try:
+                import json as json_lib
+                visitor_data = json_lib.loads(cf_visitor)
+                cf_metadata['cf_scheme'] = visitor_data.get('scheme', 'unknown')
+            except:
+                cf_metadata['cf_visitor'] = cf_visitor
+
+        # CF-Connecting-IP: Real client IP (already captured separately)
+        cf_ip = request.headers.get('CF-Connecting-IP')
+        if cf_ip:
+            cf_metadata['cf_connecting_ip'] = cf_ip
+
+        # CF-Request-ID: Cloudflare internal request ID
+        cf_request_id = request.headers.get('CF-Request-ID')
+        if cf_request_id:
+            cf_metadata['cf_request_id'] = cf_request_id
+
+        # CF-Cache-Status: Cache hit/miss status
+        cf_cache_status = request.headers.get('CF-Cache-Status')
+        if cf_cache_status:
+            cf_metadata['cf_cache_status'] = cf_cache_status
+
+        # CDN-Loop: Cloudflare edge location identifier
+        cdn_loop = request.headers.get('CDN-Loop')
+        if cdn_loop:
+            cf_metadata['cdn_loop'] = cdn_loop
+
+        return cf_metadata if cf_metadata else None
+
+    @staticmethod
     def _get_request_info() -> Dict[str, Any]:
         """Extract comprehensive request information."""
         if not has_request_context():
@@ -232,9 +326,12 @@ class EnhancedAuditLogger:
 
         collect_config = config.get('collect', {})
 
-        # Collect IP address
+        # Collect real client IP address (checks Cloudflare headers)
         if collect_config.get('ip_address', True):
-            audit_data['ip_address'] = request.remote_addr
+            audit_data['ip_address'] = EnhancedAuditLogger._get_real_client_ip()
+
+        # Collect Cloudflare metadata
+        cf_metadata = EnhancedAuditLogger._get_cloudflare_metadata()
 
         # Collect user agent
         if collect_config.get('user_agent', True):
@@ -249,6 +346,11 @@ class EnhancedAuditLogger:
         # Collect geo location
         if collect_config.get('geo_location', True) and audit_data.get('ip_address'):
             geo_data = EnhancedAuditLogger._get_geo_location(audit_data['ip_address'])
+
+            # Enhance with Cloudflare country data if available
+            if geo_data and cf_metadata and 'cf_country' in cf_metadata:
+                geo_data['cf_country_code'] = cf_metadata['cf_country']
+
             if geo_data:
                 audit_data['geo_location'] = json.dumps(geo_data)
 
@@ -269,7 +371,16 @@ class EnhancedAuditLogger:
                 audit_data['session_id'] = request_info.get('session_id')
 
             if collect_config.get('request_headers', False):
-                audit_data['request_headers'] = json.dumps(request_info.get('headers', {}))
+                headers_data = request_info.get('headers', {})
+                # Always include Cloudflare metadata in headers (even if request_headers is off)
+                # This ensures we capture CF-Ray, CF-IPCountry, etc.
+                if cf_metadata:
+                    headers_data['cloudflare'] = cf_metadata
+                audit_data['request_headers'] = json.dumps(headers_data)
+            elif cf_metadata:
+                # If request_headers collection is off but we have CF data,
+                # store CF metadata separately
+                audit_data['request_headers'] = json.dumps({'cloudflare': cf_metadata})
 
         # Save to database
         EnhancedAuditLogger._save_audit_log(audit_data)
@@ -490,6 +601,18 @@ class EnhancedAuditLogger:
 
             if display_config.get('session_id', True):
                 filtered_log['session_id'] = log.get('session_id')
+
+            # Extract Cloudflare metadata from request_headers if enabled
+            if display_config.get('cloudflare_metadata', True):
+                headers_str = log.get('request_headers')
+                if headers_str:
+                    try:
+                        headers_data = json.loads(headers_str)
+                        cf_data = headers_data.get('cloudflare')
+                        if cf_data:
+                            filtered_log['cloudflare'] = cf_data
+                    except:
+                        pass
 
             # Always include details
             details_str = log.get('details')
