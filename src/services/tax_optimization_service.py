@@ -837,20 +837,9 @@ class TaxOptimizationService:
         ss_benefit = (financial.get('social_security_benefit', 0) or 0) * 12  # Monthly to annual
         pension = (financial.get('pension_benefit', 0) or 0) * 12
 
-        # Get tax settings
-        filing_status = tax_settings.get('filing_status', 'mfj')
-        state = tax_settings.get('state', 'CA')
-
-        # Calculate age from birth date if available
-        age = 65
-        spouse_age = 65
-
-        # Update settings
-        self.settings = TaxSettings(filing_status, state, age, spouse_age)
-        self.calculator = TaxCalculator(filing_status, state)
-        self.ss_analyzer = SocialSecurityAnalyzer(filing_status)
-        self.irmaa_calc = IRMAACalculator(filing_status)
-        self.roth_optimizer = RothConversionOptimizer(self.calculator, self.irmaa_calc)
+        # NOTE: Don't re-read tax settings here - use what was passed to __init__
+        # The route already resolved state from address/tax_settings with proper fallback
+        # Just use the already-configured self.settings, self.calculator, etc.
 
         # Calculate traditional IRA balance
         traditional_balance = sum(
