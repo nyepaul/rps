@@ -780,6 +780,7 @@ def get_system_info():
     """Get system information and health metrics."""
     try:
         from src.database.connection import db
+        from src.__version__ import __version__, __release_date__
         import os
         import sys
 
@@ -808,6 +809,8 @@ def get_system_info():
             stats['database_size_mb'] = round(os.path.getsize(db_path) / (1024 * 1024), 2)
 
         # System info
+        stats['app_version'] = __version__
+        stats['release_date'] = __release_date__
         stats['python_version'] = sys.version
         stats['system_platform'] = sys.platform
 
@@ -820,6 +823,432 @@ def get_system_info():
         return jsonify({'system_info': stats}), 200
 
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/reset-demo-account', methods=['POST'])
+@login_required
+@admin_required
+def reset_demo_account():
+    """Reset the demo account with comprehensive default profile data."""
+    try:
+        from src.database.connection import db
+        from src.models.profile import Profile
+        from datetime import datetime, date
+        from dateutil.relativedelta import relativedelta
+
+        # Demo user credentials
+        demo_username = 'demo'
+        demo_password = 'demo123'
+        demo_email = 'demo@example.com'
+
+        # Find or create demo user
+        demo_user = User.get_by_username(demo_username)
+
+        if not demo_user:
+            # Create demo user
+            demo_user = User(
+                id=None,
+                username=demo_username,
+                email=demo_email,
+                password_hash=User.hash_password(demo_password),
+                is_active=True,
+                is_admin=False
+            )
+            demo_user.save()
+            demo_user = User.get_by_username(demo_username)  # Reload to get ID
+        else:
+            # Reset password
+            demo_user.password_hash = User.hash_password(demo_password)
+            with db.get_connection() as conn:
+                conn.execute(
+                    'UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?',
+                    (demo_user.password_hash, datetime.now().isoformat(), demo_user.id)
+                )
+
+        # Delete all existing profiles for demo user
+        with db.get_connection() as conn:
+            conn.execute('DELETE FROM profile WHERE user_id = ?', (demo_user.id,))
+
+        # Create comprehensive demo profile
+        today = date.today()
+        birth_date = today - relativedelta(years=45)  # 45 years old
+        retirement_date = today + relativedelta(years=15)  # Retire at 60
+        spouse_birth_date = today - relativedelta(years=43)  # Spouse 43 years old
+        spouse_retirement_date = today + relativedelta(years=17)  # Retire at 60
+
+        # Child 1: 19 years old, in college
+        child1_birth = today - relativedelta(years=19)
+        # Child 2: 21 years old, in college
+        child2_birth = today - relativedelta(years=21)
+
+        demo_data = {
+            "person": {
+                "current_age": 45,
+                "retirement_age": 60,
+                "life_expectancy": 95
+            },
+            "spouse": {
+                "name": "Jamie Thompson",
+                "birth_date": spouse_birth_date.isoformat(),
+                "retirement_date": spouse_retirement_date.isoformat(),
+                "current_age": 43,
+                "retirement_age": 60,
+                "life_expectancy": 95,
+                "social_security_benefit": 3200,  # Monthly
+                "pension_benefit": 0
+            },
+            "children": [
+                {
+                    "name": "Alex Thompson",
+                    "birth_date": child1_birth.isoformat(),
+                    "relationship": "Child",
+                    "in_college": True,
+                    "college_start_year": today.year - 1,
+                    "college_end_year": today.year + 3
+                },
+                {
+                    "name": "Jordan Thompson",
+                    "birth_date": child2_birth.isoformat(),
+                    "relationship": "Child",
+                    "in_college": True,
+                    "college_start_year": today.year - 3,
+                    "college_end_year": today.year + 1
+                }
+            ],
+            "address": {
+                "street": "2847 Pacific Heights Avenue",
+                "city": "San Francisco",
+                "state": "CA",
+                "zip": "94109"
+            },
+            "financial": {
+                "annual_income": 280000,  # Combined upper-class salary
+                "annual_expenses": 145000,
+                "social_security_benefit": 3800,  # Monthly at retirement
+                "pension_benefit": 0,
+                "emergency_fund": 90000
+            },
+            "income_streams": [
+                {
+                    "source": "Senior Software Engineer",
+                    "amount": 16000,  # Monthly
+                    "frequency": "monthly",
+                    "start_date": (today - relativedelta(years=10)).isoformat(),
+                    "end_date": retirement_date.isoformat(),
+                    "type": "salary"
+                },
+                {
+                    "source": "Product Manager",
+                    "amount": 12000,  # Monthly (spouse)
+                    "frequency": "monthly",
+                    "start_date": (today - relativedelta(years=8)).isoformat(),
+                    "end_date": spouse_retirement_date.isoformat(),
+                    "type": "salary"
+                }
+            ],
+            "assets": {
+                "taxable_accounts": [
+                    {
+                        "name": "Vanguard Brokerage",
+                        "type": "brokerage",
+                        "value": 450000,
+                        "institution": "Vanguard",
+                        "stock_pct": 0.7,
+                        "bond_pct": 0.25,
+                        "cash_pct": 0.05
+                    },
+                    {
+                        "name": "Savings Account",
+                        "type": "savings",
+                        "value": 90000,
+                        "institution": "Chase",
+                        "stock_pct": 0,
+                        "bond_pct": 0,
+                        "cash_pct": 1.0
+                    }
+                ],
+                "retirement_accounts": [
+                    {
+                        "name": "401(k) - Primary",
+                        "type": "401k",
+                        "value": 850000,
+                        "institution": "Fidelity",
+                        "stock_pct": 0.8,
+                        "bond_pct": 0.15,
+                        "cash_pct": 0.05
+                    },
+                    {
+                        "name": "401(k) - Spouse",
+                        "type": "401k",
+                        "value": 620000,
+                        "institution": "Vanguard",
+                        "stock_pct": 0.75,
+                        "bond_pct": 0.2,
+                        "cash_pct": 0.05
+                    },
+                    {
+                        "name": "Roth IRA",
+                        "type": "roth_ira",
+                        "value": 180000,
+                        "institution": "Fidelity",
+                        "stock_pct": 0.85,
+                        "bond_pct": 0.1,
+                        "cash_pct": 0.05
+                    },
+                    {
+                        "name": "Roth IRA - Spouse",
+                        "type": "roth_ira",
+                        "value": 165000,
+                        "institution": "Vanguard",
+                        "stock_pct": 0.85,
+                        "bond_pct": 0.1,
+                        "cash_pct": 0.05
+                    }
+                ],
+                "real_estate": [
+                    {
+                        "name": "Primary Residence",
+                        "type": "primary_residence",
+                        "value": 1850000,
+                        "purchase_price": 1200000,
+                        "purchase_date": (today - relativedelta(years=12)).isoformat(),
+                        "mortgage_balance": 680000,
+                        "monthly_payment": 4200
+                    }
+                ],
+                "other_assets": [
+                    {
+                        "name": "529 College Fund - Alex",
+                        "type": "529_plan",
+                        "value": 45000,
+                        "stock_pct": 0.6,
+                        "bond_pct": 0.35,
+                        "cash_pct": 0.05
+                    },
+                    {
+                        "name": "529 College Fund - Jordan",
+                        "type": "529_plan",
+                        "value": 35000,
+                        "stock_pct": 0.5,
+                        "bond_pct": 0.45,
+                        "cash_pct": 0.05
+                    }
+                ]
+            },
+            "budget": {
+                "expenses": {
+                    "current": {
+                        "housing": [{
+                            "amount": 4200,
+                            "frequency": "monthly",
+                            "description": "Mortgage",
+                            "ongoing": True
+                        }],
+                        "utilities": [{
+                            "amount": 450,
+                            "frequency": "monthly",
+                            "description": "Utilities",
+                            "ongoing": True
+                        }],
+                        "transportation": [{
+                            "amount": 950,
+                            "frequency": "monthly",
+                            "description": "Car payments & insurance",
+                            "ongoing": True
+                        }],
+                        "food": [{
+                            "amount": 1200,
+                            "frequency": "monthly",
+                            "description": "Groceries",
+                            "ongoing": True
+                        }],
+                        "dining_out": [{
+                            "amount": 800,
+                            "frequency": "monthly",
+                            "description": "Restaurants",
+                            "ongoing": True
+                        }],
+                        "healthcare": [{
+                            "amount": 650,
+                            "frequency": "monthly",
+                            "description": "Insurance & medical",
+                            "ongoing": True
+                        }],
+                        "insurance": [{
+                            "amount": 350,
+                            "frequency": "monthly",
+                            "description": "Life & disability",
+                            "ongoing": True
+                        }],
+                        "childcare_education": [{
+                            "amount": 4500,
+                            "frequency": "monthly",
+                            "description": "College tuition (2 children)",
+                            "ongoing": True,
+                            "end_date": (today + relativedelta(years=3)).isoformat()
+                        }],
+                        "entertainment": [{
+                            "amount": 600,
+                            "frequency": "monthly",
+                            "description": "Entertainment",
+                            "ongoing": True
+                        }],
+                        "travel": [{
+                            "amount": 12000,
+                            "frequency": "annual",
+                            "description": "Vacations",
+                            "ongoing": True
+                        }],
+                        "personal_care": [{
+                            "amount": 300,
+                            "frequency": "monthly",
+                            "description": "Personal care",
+                            "ongoing": True
+                        }],
+                        "subscriptions": [{
+                            "amount": 250,
+                            "frequency": "monthly",
+                            "description": "Streaming, gym, etc.",
+                            "ongoing": True
+                        }],
+                        "charitable_giving": [{
+                            "amount": 500,
+                            "frequency": "monthly",
+                            "description": "Charitable donations",
+                            "ongoing": True
+                        }],
+                        "discretionary": [{
+                            "amount": 800,
+                            "frequency": "monthly",
+                            "description": "Miscellaneous",
+                            "ongoing": True
+                        }]
+                    },
+                    "future": {
+                        "housing": [{
+                            "amount": 3500,
+                            "frequency": "monthly",
+                            "description": "Mortgage (paid off scenario)",
+                            "ongoing": True
+                        }],
+                        "utilities": [{
+                            "amount": 450,
+                            "frequency": "monthly",
+                            "description": "Utilities",
+                            "ongoing": True
+                        }],
+                        "transportation": [{
+                            "amount": 600,
+                            "frequency": "monthly",
+                            "description": "Car & insurance",
+                            "ongoing": True
+                        }],
+                        "food": [{
+                            "amount": 1000,
+                            "frequency": "monthly",
+                            "description": "Groceries",
+                            "ongoing": True
+                        }],
+                        "dining_out": [{
+                            "amount": 900,
+                            "frequency": "monthly",
+                            "description": "Restaurants",
+                            "ongoing": True
+                        }],
+                        "healthcare": [{
+                            "amount": 1200,
+                            "frequency": "monthly",
+                            "description": "Medicare & supplemental",
+                            "ongoing": True
+                        }],
+                        "travel": [{
+                            "amount": 15000,
+                            "frequency": "annual",
+                            "description": "Retirement travel",
+                            "ongoing": True
+                        }],
+                        "entertainment": [{
+                            "amount": 700,
+                            "frequency": "monthly",
+                            "description": "Entertainment",
+                            "ongoing": True
+                        }],
+                        "charitable_giving": [{
+                            "amount": 600,
+                            "frequency": "monthly",
+                            "description": "Charitable donations",
+                            "ongoing": True
+                        }],
+                        "discretionary": [{
+                            "amount": 1000,
+                            "frequency": "monthly",
+                            "description": "Miscellaneous",
+                            "ongoing": True
+                        }]
+                    }
+                },
+                "income": {
+                    "current": {
+                        "rental_income": [],
+                        "part_time_consulting": [],
+                        "business_income": [],
+                        "other_income": []
+                    },
+                    "future": {
+                        "rental_income": [],
+                        "part_time_consulting": [{
+                            "amount": 3000,
+                            "frequency": "monthly",
+                            "description": "Part-time consulting",
+                            "start_date": retirement_date.isoformat(),
+                            "end_date": (retirement_date + relativedelta(years=5)).isoformat()
+                        }],
+                        "business_income": [],
+                        "other_income": []
+                    }
+                }
+            },
+            "withdrawal_strategy": {
+                "withdrawal_rate": 0.04,
+                "order": ["taxable", "tax_deferred", "roth"]
+            },
+            "tax_settings": {
+                "filing_status": "mfj",
+                "state": "CA"
+            }
+        }
+
+        # Create profile
+        demo_profile = Profile(
+            user_id=demo_user.id,
+            name="Thompson Family",
+            birth_date=birth_date.isoformat(),
+            retirement_date=retirement_date.isoformat()
+        )
+        demo_profile.data_dict = demo_data
+        demo_profile.save()
+
+        # Log admin action
+        enhanced_audit_logger.log_admin_action(
+            action='RESET_DEMO_ACCOUNT',
+            user_id=current_user.id,
+            details={
+                'demo_user_id': demo_user.id,
+                'profile_created': demo_profile.id
+            }
+        )
+
+        return jsonify({
+            'message': 'Demo account reset successfully',
+            'username': demo_username,
+            'password': demo_password,
+            'profile_name': demo_profile.name
+        }), 200
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 

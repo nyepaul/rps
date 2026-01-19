@@ -91,6 +91,14 @@ export function renderAccountsTab(container) {
                     Plan which accounts to withdraw from first to minimize taxes and maximize portfolio longevity. Click each section to see constituent accounts.
                 </p>
 
+                <!-- Current State Section -->
+                <div style="background: var(--bg-primary); padding: var(--space-5); border-radius: 8px; margin-bottom: var(--space-5); border: 2px solid var(--accent-color);">
+                    <h3 style="font-size: var(--font-lg); margin-bottom: var(--space-4); color: var(--accent-color);">📊 Current State</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4);">
+                        ${renderCurrentWithdrawalState(data)}
+                    </div>
+                </div>
+
                 <div style="display: grid; gap: var(--space-4);">
                     <!-- Taxable Section -->
                     <div class="strategy-card" data-target="list-taxable" style="background: var(--bg-primary); padding: var(--space-5); border-radius: 8px; border-left: 4px solid var(--success-color); cursor: pointer; transition: transform 0.2s;">
@@ -268,6 +276,40 @@ export function renderAccountsTab(container) {
     setupRebalancing(container, profile.name);
     setupRMD(container, profile, assets);
     setupWithdrawalStrategyToggles(container);
+}
+
+/**
+ * Render current withdrawal state from profile
+ */
+function renderCurrentWithdrawalState(data) {
+    const withdrawalStrategy = data.withdrawal_strategy || {};
+    const withdrawalRate = withdrawalStrategy.withdrawal_rate || 0.04;
+    const withdrawalRatePercent = (withdrawalRate * 100).toFixed(1);
+
+    // Calculate total portfolio value for reference
+    const assets = data.assets || {};
+    const taxableValue = (assets.taxable_accounts || []).reduce((sum, a) => sum + (a.value || 0), 0);
+    const retirementValue = (assets.retirement_accounts || []).reduce((sum, a) => sum + (a.value || 0), 0);
+    const totalPortfolio = taxableValue + retirementValue;
+    const annualWithdrawal = totalPortfolio * withdrawalRate;
+
+    return `
+        <div style="text-align: center;">
+            <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: var(--space-2);">Withdrawal Rate</div>
+            <div style="font-size: var(--font-2xl); font-weight: bold; color: var(--accent-color);">${withdrawalRatePercent}%</div>
+            <div style="font-size: var(--font-xs); color: var(--text-light); margin-top: var(--space-1);">Annual rate</div>
+        </div>
+        <div style="text-align: center;">
+            <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: var(--space-2);">Annual Amount</div>
+            <div style="font-size: var(--font-2xl); font-weight: bold; color: var(--success-color);">${formatCurrency(annualWithdrawal, 0)}</div>
+            <div style="font-size: var(--font-xs); color: var(--text-light); margin-top: var(--space-1);">Based on current portfolio</div>
+        </div>
+        <div style="text-align: center;">
+            <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: var(--space-2);">Strategy</div>
+            <div style="font-size: var(--font-base); font-weight: 600; color: var(--text-primary);">Tax-Efficient</div>
+            <div style="font-size: var(--font-xs); color: var(--text-light); margin-top: var(--space-1);">Taxable → Deferred → Roth</div>
+        </div>
+    `;
 }
 
 /**

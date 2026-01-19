@@ -857,6 +857,8 @@ function renderCashFlowChart(container, profile, months, viewType, scenarioData 
                     }
                 },
                 tooltip: {
+                    enabled: true,
+                    position: 'nearest',
                     backgroundColor: 'rgba(0,0,0,0.9)',
                     titleFont: {
                         size: 14,
@@ -866,6 +868,10 @@ function renderCashFlowChart(container, profile, months, viewType, scenarioData 
                         size: 13
                     },
                     padding: 12,
+                    yAlign: 'top',
+                    xAlign: 'left',
+                    caretPadding: 10,
+                    displayColors: true,
                     callbacks: {
                         label: function(context) {
                             let label = context.dataset.label || '';

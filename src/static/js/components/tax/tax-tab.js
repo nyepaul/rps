@@ -299,7 +299,7 @@ function renderTaxAnalysis(container, analysis, profile) {
                 <h2 style="font-size: 16px; margin: 0 0 12px 0; font-weight: 600;">🗺️ State Tax Comparison</h2>
 
                 <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
-                    Current state: <strong>${snapshot.settings.state}</strong>
+                    Current state: <strong>${profile.data?.address?.state || profile.data?.tax_settings?.state || snapshot.settings.state || 'Not set'}</strong>
                 </div>
 
                 <details style="cursor: pointer;">

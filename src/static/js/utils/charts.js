@@ -124,10 +124,16 @@ export function renderStandardTimelineChart(timeline, canvasOrId, existingInstan
                     }
                 },
                 tooltip: {
+                    enabled: true,
+                    position: 'nearest',
                     backgroundColor: 'rgba(0,0,0,0.9)',
                     titleColor: '#fff',
                     bodyColor: '#fff',
                     padding: 12,
+                    yAlign: 'top',
+                    xAlign: 'left',
+                    caretPadding: 10,
+                    displayColors: true,
                     titleFont: {
                         size: 14,
                         weight: 'bold'

@@ -436,6 +436,8 @@ function renderComparisonChart(container, selectedIds, allScenarios) {
                     }
                 },
                 tooltip: {
+                    enabled: true,
+                    position: 'nearest',
                     backgroundColor: 'rgba(0,0,0,0.9)',
                     titleFont: {
                         size: 14,
@@ -445,6 +447,10 @@ function renderComparisonChart(container, selectedIds, allScenarios) {
                         size: 13
                     },
                     padding: 12,
+                    yAlign: 'top',
+                    xAlign: 'left',
+                    caretPadding: 10,
+                    displayColors: true,
                     callbacks: {
                         label: (context) => `${context.dataset.label}: ${formatCurrency(context.raw, 0)}`
                     }
