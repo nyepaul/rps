@@ -115,7 +115,9 @@ def analyze_taxes():
 
         # DEBUG: Log what we're returning
         print(f"=== RESPONSE DEBUG ===")
+        print(f"Service was initialized with state: {service.settings.state}")
         print(f"snapshot.settings.state: {result.get('snapshot', {}).get('settings', {}).get('state')}")
+        print(f"Full snapshot settings: {result.get('snapshot', {}).get('settings', {})}")
         print(f"=== END RESPONSE DEBUG ===\n")
 
         return jsonify(result), 200
