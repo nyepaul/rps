@@ -885,9 +885,14 @@ def reset_demo_account():
 
         demo_data = {
             "person": {
+                "name": "Chris Thompson",
+                "birth_date": birth_date.isoformat(),
+                "retirement_date": retirement_date.isoformat(),
                 "current_age": 45,
                 "retirement_age": 60,
-                "life_expectancy": 95
+                "life_expectancy": 95,
+                "email": "chris.thompson@example.com",
+                "phone": "(415) 555-0123"
             },
             "spouse": {
                 "name": "Jamie Thompson",
@@ -896,6 +901,8 @@ def reset_demo_account():
                 "current_age": 43,
                 "retirement_age": 60,
                 "life_expectancy": 95,
+                "email": "jamie.thompson@example.com",
+                "phone": "(415) 555-0124",
                 "social_security_benefit": 3200,  # Monthly
                 "pension_benefit": 0
             },
@@ -904,24 +911,33 @@ def reset_demo_account():
                     "name": "Alex Thompson",
                     "birth_date": child1_birth.isoformat(),
                     "relationship": "Child",
+                    "email": "alex.thompson@college.edu",
+                    "phone": "(415) 555-0125",
                     "in_college": True,
+                    "college_name": "University of California, Berkeley",
                     "college_start_year": today.year - 1,
-                    "college_end_year": today.year + 3
+                    "college_end_year": today.year + 3,
+                    "major": "Computer Science"
                 },
                 {
                     "name": "Jordan Thompson",
                     "birth_date": child2_birth.isoformat(),
                     "relationship": "Child",
+                    "email": "jordan.thompson@college.edu",
+                    "phone": "(415) 555-0126",
                     "in_college": True,
+                    "college_name": "Stanford University",
                     "college_start_year": today.year - 3,
-                    "college_end_year": today.year + 1
+                    "college_end_year": today.year + 1,
+                    "major": "Business Administration"
                 }
             ],
             "address": {
                 "street": "2847 Pacific Heights Avenue",
                 "city": "San Francisco",
                 "state": "CA",
-                "zip": "94109"
+                "zip": "94109",
+                "country": "USA"
             },
             "financial": {
                 "annual_income": 280000,  # Combined upper-class salary
