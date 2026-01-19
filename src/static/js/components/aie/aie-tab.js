@@ -161,37 +161,22 @@ async function showAIESubtab(subtabName) {
     const container = document.getElementById('aie-subtab-content');
     if (!container) return;
 
-    // Show loading state
-    container.innerHTML = `
-        <div style="text-align: center; padding: 60px;">
-            <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
-            <div>Loading ${subtabName}...</div>
-        </div>
-    `;
-
-    // Create subtab content container
-    const subtabContent = document.createElement('div');
-    subtabContent.className = 'aie-subtab-content';
-
     try {
-        // Load the appropriate component
+        // Load the appropriate component directly into the container
+        // The render functions handle setting innerHTML and event listeners
         switch (subtabName) {
             case 'assets':
-                await renderAssetsTab(subtabContent);
+                renderAssetsTab(container);
                 break;
             case 'income':
-                await renderIncomeTab(subtabContent);
+                renderIncomeTab(container);
                 break;
             case 'expenses':
-                await renderBudgetTab(subtabContent);
+                renderBudgetTab(container);
                 break;
             default:
                 throw new Error(`Unknown AIE subtab: ${subtabName}`);
         }
-
-        // Replace container content
-        container.innerHTML = '';
-        container.appendChild(subtabContent);
     } catch (error) {
         console.error(`Error loading AIE subtab ${subtabName}:`, error);
         container.innerHTML = `
