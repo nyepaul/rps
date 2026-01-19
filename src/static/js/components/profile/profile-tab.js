@@ -59,14 +59,12 @@ export function renderProfileTab(container) {
                             <input type="date" id="retirement_date" name="retirement_date" value="${profile.retirement_date || ''}">
                         </div>
                         <div class="form-group">
-                            <label for="current_age">Current Age <span class="calc-badge">calculated</span></label>
+                            <label for="current_age">Current Age</label>
                             <input type="number" id="current_age" name="current_age" value="${person.current_age || ''}" min="0" max="120" class="calculated-field" readonly>
-                            <small>Based on birth date</small>
                         </div>
                         <div class="form-group">
-                            <label for="retirement_age">Retirement Age <span class="calc-badge">calculated</span></label>
+                            <label for="retirement_age">Retirement Age</label>
                             <input type="number" id="retirement_age" name="retirement_age" value="${person.retirement_age || ''}" min="0" max="120" class="calculated-field" readonly>
-                            <small>Based on birth &amp; retirement dates</small>
                         </div>
                         <div class="form-group">
                             <label for="life_expectancy">Life Expectancy</label>
@@ -181,14 +179,12 @@ export function renderProfileTab(container) {
                             <input type="date" id="spouse_retirement_date" name="spouse_retirement_date" value="${spouse.retirement_date || ''}">
                         </div>
                         <div class="form-group">
-                            <label for="spouse_current_age">Current Age <span class="calc-badge">calculated</span></label>
+                            <label for="spouse_current_age">Current Age</label>
                             <input type="number" id="spouse_current_age" name="spouse_current_age" value="${spouse.current_age || ''}" min="0" max="120" class="calculated-field" readonly>
-                            <small>Based on birth date</small>
                         </div>
                         <div class="form-group">
-                            <label for="spouse_retirement_age">Retirement Age <span class="calc-badge">calculated</span></label>
+                            <label for="spouse_retirement_age">Retirement Age</label>
                             <input type="number" id="spouse_retirement_age" name="spouse_retirement_age" value="${spouse.retirement_age || ''}" min="0" max="120" class="calculated-field" readonly>
-                            <small>Based on birth &amp; retirement dates</small>
                         </div>
                         <div class="form-group">
                             <label for="spouse_life_expectancy">Life Expectancy</label>
