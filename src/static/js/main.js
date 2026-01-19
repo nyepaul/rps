@@ -261,6 +261,11 @@ async function loadTabComponent(tabName, container) {
             renderAdvisorTab(tabContent);
             break;
         }
+        case 'my-feedback': {
+            const { renderMyFeedbackTab } = await import('./components/feedback/my-feedback-tab.js');
+            renderMyFeedbackTab(tabContent);
+            break;
+        }
         case 'accounts': {
             const { renderAccountsTab } = await import('./components/accounts/accounts-tab.js');
             renderAccountsTab(tabContent);

@@ -1,0 +1,394 @@
+/**
+ * Feedback Tracking Styles
+ * For user feedback tracker and admin feedback management
+ */
+
+/* My Feedback Container */
+.my-feedback-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.my-feedback-header {
+    margin-bottom: 30px;
+}
+
+.my-feedback-header h2 {
+    margin-bottom: 5px;
+    color: var(--text-primary);
+}
+
+.my-feedback-header .help-text {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* Filter Controls */
+.filter-controls {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-group label {
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.filter-select {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.filter-select:hover {
+    border-color: var(--accent-color);
+}
+
+/* Feedback List */
+.feedback-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.feedback-item {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    transition: all 0.2s ease;
+}
+
+.feedback-item:hover {
+    border-color: var(--accent-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.feedback-item-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.feedback-type-badge {
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    background-color: var(--accent-light);
+    color: var(--accent-color);
+}
+
+.feedback-status-badge {
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.status-pending {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status-reviewed {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.status-resolved {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-closed {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.reply-indicator {
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    background-color: #e7f3ff;
+    color: #004085;
+    font-weight: 500;
+}
+
+.feedback-item-content {
+    margin-bottom: 12px;
+}
+
+.feedback-item-content p {
+    margin: 0;
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+.feedback-item-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+    flex-wrap: wrap;
+}
+
+.feedback-date, .reply-date {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.view-thread-btn {
+    padding: 8px 16px;
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+.view-thread-btn:hover {
+    background-color: var(--accent-dark);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+}
+
+.empty-state p {
+    margin: 10px 0;
+}
+
+/* Feedback Thread Modal */
+.feedback-thread-content {
+    max-width: 800px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.feedback-thread {
+    padding: 10px;
+}
+
+.thread-header {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.thread-header h3 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+}
+
+.thread-date {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin: 0;
+}
+
+.thread-original-post {
+    background-color: var(--bg-secondary);
+    border-left: 4px solid var(--accent-color);
+    padding: 16px;
+    margin-bottom: 24px;
+    border-radius: 4px;
+}
+
+.post-author {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.post-author strong {
+    color: var(--text-primary);
+}
+
+.post-content {
+    color: var(--text-primary);
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+/* Replies Section */
+.thread-replies {
+    margin-top: 24px;
+}
+
+.reply-item {
+    background-color: #f8f9fa;
+    border-left: 4px solid #6c757d;
+    padding: 16px;
+    margin-bottom: 16px;
+    border-radius: 4px;
+}
+
+.reply-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.reply-header strong {
+    color: var(--text-primary);
+}
+
+.reply-content {
+    color: var(--text-primary);
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.no-replies {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary);
+}
+
+.thread-footer {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+    text-align: center;
+}
+
+/* Admin Reply Form */
+.admin-reply-form {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.admin-reply-form h4 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+}
+
+.admin-reply-form textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 14px;
+    resize: vertical;
+    margin-bottom: 12px;
+}
+
+.reply-options {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.reply-options label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.reply-options input[type="checkbox"] {
+    cursor: pointer;
+}
+
+.reply-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.private-note-indicator {
+    background-color: #fff3cd;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #856404;
+    font-weight: 500;
+}
+
+.reply-item.private-note {
+    background-color: #fff3cd;
+    border-left-color: #ffc107;
+}
+
+/* Loading and Error States */
+.loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.error-message {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 12px 16px;
+    border-radius: 4px;
+    border: 1px solid #f5c6cb;
+    margin: 16px 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .filter-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-group {
+        width: 100%;
+    }
+
+    .filter-select {
+        flex: 1;
+    }
+
+    .feedback-item-footer {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .view-thread-btn {
+        width: 100%;
+    }
+}

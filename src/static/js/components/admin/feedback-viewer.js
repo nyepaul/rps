@@ -154,6 +154,14 @@ async function showFeedbackDetails(feedback) {
         }
     }
 
+    // Fetch thread with replies
+    let thread = null;
+    try {
+        thread = await apiClient.request(`/api/feedback/${feedback.id}/thread`);
+    } catch (error) {
+        console.error('Error loading feedback thread:', error);
+    }
+
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.style.cssText = `
@@ -279,6 +287,74 @@ async function showFeedbackDetails(feedback) {
                     </details>
                 ` : ''}
 
+                <!-- Replies Section -->
+                ${thread && thread.replies && thread.replies.length > 0 ? `
+                    <div style="margin-bottom: 24px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                        <h3 style="font-size: 16px; font-weight: 600; margin: 0 0 12px 0;">
+                            💬 Replies (${thread.replies.length})
+                        </h3>
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            ${thread.replies.map(reply => `
+                                <div style="
+                                    background: ${reply.is_private ? '#fff3cd' : '#f8f9fa'};
+                                    border-left: 4px solid ${reply.is_private ? '#ffc107' : '#6c757d'};
+                                    padding: 16px;
+                                    border-radius: 4px;
+                                ">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                        <div style="font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                                            ${reply.admin_username || 'System'}
+                                            ${reply.is_private ? '<span style="font-size: 11px; background: #ffc107; color: #856404; padding: 2px 6px; border-radius: 3px;">PRIVATE NOTE</span>' : ''}
+                                        </div>
+                                        <div style="font-size: 12px; color: var(--text-secondary);">
+                                            ${formatTimestamp(reply.created_at)}
+                                        </div>
+                                    </div>
+                                    <div style="white-space: pre-wrap; line-height: 1.5;">
+                                        ${reply.reply_text}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- Add Reply Form -->
+                <div style="margin-bottom: 24px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                    <h3 style="font-size: 16px; font-weight: 600; margin: 0 0 12px 0;">
+                        ✍️ Add Reply
+                    </h3>
+                    <textarea id="reply-text" style="
+                        width: 100%;
+                        min-height: 100px;
+                        padding: 12px;
+                        border: 2px solid var(--border-color);
+                        border-radius: 6px;
+                        background: var(--bg-tertiary);
+                        color: var(--text-primary);
+                        font-size: 14px;
+                        font-family: inherit;
+                        resize: vertical;
+                        margin-bottom: 12px;
+                    " placeholder="Write your reply to the user..."></textarea>
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="is-private-reply" style="cursor: pointer;">
+                            <span style="font-size: 14px;">🔒 Private note (only visible to admins)</span>
+                        </label>
+                    </div>
+                    <button class="add-reply" data-id="${feedback.id}" style="
+                        padding: 10px 20px;
+                        background: var(--accent-color);
+                        border: none;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-size: 14px;
+                        font-weight: 600;
+                        color: white;
+                    ">Send Reply</button>
+                </div>
+
                 <!-- Admin Actions -->
                 <div style="border-top: 1px solid var(--border-color); padding-top: 20px;">
                     <h3 style="font-size: 16px; font-weight: 600; margin: 0 0 12px 0;">Admin Actions</h3>
@@ -350,6 +426,36 @@ async function showFeedbackDetails(feedback) {
 
     // Event listeners
     modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+
+    // Add reply handler
+    modal.querySelector('.add-reply').addEventListener('click', async () => {
+        const replyText = modal.querySelector('#reply-text').value.trim();
+        const isPrivate = modal.querySelector('#is-private-reply').checked;
+
+        if (!replyText) {
+            showError('Please enter a reply message');
+            return;
+        }
+
+        try {
+            await apiClient.request(`/api/feedback/${feedback.id}/replies`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    reply_text: replyText,
+                    is_private: isPrivate
+                })
+            });
+            showSuccess(isPrivate ? 'Private note added successfully' : 'Reply sent successfully');
+            modal.remove();
+            // Reload feedback list
+            const container = document.querySelector('#admin-subtab-content');
+            if (container) {
+                await renderFeedbackViewer(container);
+            }
+        } catch (error) {
+            showError(`Failed to send reply: ${error.message}`);
+        }
+    });
 
     modal.querySelector('.delete-feedback').addEventListener('click', async () => {
         if (confirm('Are you sure you want to delete this feedback?')) {
@@ -494,18 +600,29 @@ async function loadFeedback(container) {
                         transition: all 0.2s;
                     ">
                         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
-                            <div style="display: flex; gap: 8px; align-items: center;">
+                            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                                 ${getTypeBadge(item.type)}
                                 ${getStatusBadge(item.status)}
+                                ${item.reply_count > 0 ? `
+                                    <span style="
+                                        padding: 4px 10px;
+                                        background: #e7f3ff;
+                                        color: #004085;
+                                        border-radius: 12px;
+                                        font-size: 12px;
+                                        font-weight: 600;
+                                    ">💬 ${item.reply_count} ${item.reply_count === 1 ? 'reply' : 'replies'}</span>
+                                ` : ''}
                             </div>
                             <div style="font-size: 12px; color: var(--text-secondary);">
                                 ${formatTimestamp(item.created_at)}
                             </div>
                         </div>
-                        <div style="display: flex; gap: 16px; font-size: 13px; color: var(--text-secondary);">
+                        <div style="display: flex; gap: 16px; font-size: 13px; color: var(--text-secondary); flex-wrap: wrap;">
                             <span>👤 User #${item.user_id}</span>
                             ${item.ip_address ? `<span>🌐 ${item.ip_address}</span>` : ''}
                             ${item.browser_name ? `<span>💻 ${item.browser_name}</span>` : ''}
+                            ${item.last_reply_at ? `<span>💬 Last reply: ${formatTimestamp(item.last_reply_at)}</span>` : ''}
                         </div>
                     </div>
                 `).join('')}
