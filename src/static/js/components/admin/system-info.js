@@ -92,7 +92,7 @@ export async function renderSystemInfo(container) {
                         <div style="font-weight: 600; margin-bottom: 8px;">Demo Account Details:</div>
                         <div style="font-size: 13px; font-family: monospace;">
                             <div>Username: <strong>demo</strong></div>
-                            <div>Password: <strong>demo123</strong></div>
+                            <div>Password: <strong>demo1234</strong></div>
                         </div>
                     </div>
                     <div style="background: var(--info-bg); padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 13px;">
