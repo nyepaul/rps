@@ -148,7 +148,47 @@ export function renderAdvisorTab(container) {
                 color: white;
             }
             .message-text {
+                line-height: 1.7;
+                font-size: 15px;
+            }
+            .message-text h1, .message-text h2, .message-text h3 {
+                margin-top: 20px;
+                margin-bottom: 12px;
+            }
+            .message-text h1:first-child,
+            .message-text h2:first-child,
+            .message-text h3:first-child {
+                margin-top: 0;
+            }
+            .message-text ul, .message-text ol {
+                margin: 12px 0;
+                padding-left: 24px;
+            }
+            .message-text li {
+                margin-bottom: 8px;
                 line-height: 1.6;
+            }
+            .message-text p {
+                margin: 12px 0;
+            }
+            .message-text p:first-child {
+                margin-top: 0;
+            }
+            .message-text p:last-child {
+                margin-bottom: 0;
+            }
+            .message-text strong {
+                font-weight: 600;
+                color: var(--text-primary);
+            }
+            .message-text em {
+                font-style: italic;
+                color: var(--text-secondary);
+            }
+            .message-text hr {
+                border: none;
+                border-top: 1px solid var(--border-color);
+                margin: 20px 0;
             }
             .message-time {
                 font-size: 12px;
@@ -319,12 +359,55 @@ async function sendMessage(profile, chatInput, chatContainer) {
     }
 }
 
+function formatMarkdown(text) {
+    // Escape HTML first
+    let html = escapeHtml(text);
+
+    // Bold/Italic with *** (bold italic)
+    html = html.replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>');
+
+    // Bold with **
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+    // Italic with *
+    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+    // Headings
+    html = html.replace(/^### (.*$)/gm, '<h3 style="font-size: 18px; font-weight: 700; margin: 20px 0 12px 0; color: var(--text-primary); border-bottom: 2px solid var(--border-color); padding-bottom: 8px;">$1</h3>');
+    html = html.replace(/^## (.*$)/gm, '<h2 style="font-size: 20px; font-weight: 700; margin: 24px 0 14px 0; color: var(--text-primary);">$1</h2>');
+    html = html.replace(/^# (.*$)/gm, '<h1 style="font-size: 22px; font-weight: 700; margin: 28px 0 16px 0; color: var(--text-primary);">$1</h1>');
+
+    // Horizontal rules
+    html = html.replace(/^---$/gm, '<hr style="border: none; border-top: 1px solid var(--border-color); margin: 20px 0;">');
+
+    // Bullet lists (unordered)
+    html = html.replace(/^\* (.*$)/gm, '<li style="margin-left: 20px; margin-bottom: 6px; line-height: 1.6;">$1</li>');
+    html = html.replace(/(<li.*<\/li>)/s, '<ul style="margin: 12px 0; padding-left: 20px;">$1</ul>');
+
+    // Line breaks
+    html = html.replace(/\n\n/g, '</p><p style="margin: 12px 0;">');
+    html = html.replace(/\n/g, '<br>');
+
+    // Wrap in paragraph
+    html = '<p style="margin: 12px 0;">' + html + '</p>';
+
+    // Clean up extra paragraph tags around block elements
+    html = html.replace(/<p[^>]*><\/p>/g, '');
+    html = html.replace(/<p[^>]*>(<h[1-3]|<hr|<ul)/g, '$1');
+    html = html.replace(/(<\/h[1-3]>|<\/hr>|<\/ul>)<\/p>/g, '$1');
+
+    return html;
+}
+
 function addMessage(container, role, text, isHtml = false) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${role}-message`;
 
     const avatar = role === 'user' ? '👤' : '🤖';
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    // Format markdown for assistant messages
+    const formattedText = isHtml ? text : (role === 'assistant' ? formatMarkdown(text) : escapeHtml(text));
 
     // Add "Add to Action Items" button for assistant messages
     const actionButton = role === 'assistant' && !isHtml ? `
@@ -337,7 +420,7 @@ function addMessage(container, role, text, isHtml = false) {
     messageDiv.innerHTML = `
         <div class="message-avatar">${avatar}</div>
         <div class="message-content">
-            <div class="message-text">${isHtml ? text : escapeHtml(text)}</div>
+            <div class="message-text">${formattedText}</div>
             ${actionButton}
             <div class="message-time">${time}</div>
         </div>
