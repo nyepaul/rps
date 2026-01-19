@@ -118,10 +118,15 @@ async function checkAuth() {
 
             // Show admin tab if user is admin
             if (data.user.is_admin) {
-                const adminTab = document.querySelector('.admin-only-tab');
-                if (adminTab) {
-                    adminTab.style.display = 'inline-block';
-                }
+                // Use requestAnimationFrame to ensure DOM is ready and force repaint
+                requestAnimationFrame(() => {
+                    const adminTab = document.querySelector('.admin-only-tab');
+                    if (adminTab) {
+                        adminTab.style.display = 'inline-block';
+                        // Force reflow to ensure the change is painted
+                        void adminTab.offsetHeight;
+                    }
+                });
             }
         } else {
             // Redirect to login if not authenticated
