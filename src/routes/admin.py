@@ -838,8 +838,9 @@ def reset_demo_account():
         from dateutil.relativedelta import relativedelta
 
         # Demo user credentials
+        import os
         demo_username = 'demo'
-        demo_password = 'demo1234'
+        demo_password = os.environ.get('DEMO_PASSWORD', 'demo1234')  # Default for development
         demo_email = 'demo@example.com'
 
         # Find or create demo user
