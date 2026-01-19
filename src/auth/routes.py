@@ -275,7 +275,7 @@ def check_session():
 
 class PasswordResetRequestSchema(BaseModel):
     """Password reset request validation schema."""
-    email: EmailStr
+    username: str
 
 
 class PasswordResetSchema(BaseModel):
@@ -301,36 +301,33 @@ class PasswordResetSchema(BaseModel):
 def request_password_reset():
     """Request a password reset token.
 
-    NOTE: Email sending is not configured. The token is returned in the response
-    for use in development mode. Users can use the token to reset their password.
+    Uses username lookup (no email required). The token is returned in the response
+    for the user to reset their password.
     """
     try:
         data = PasswordResetRequestSchema(**request.json)
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
-    # Get user by email
-    user = User.get_by_email(data.email)
+    # Get user by username
+    user = User.get_by_username(data.username)
 
     # For security, always return success even if user doesn't exist
-    # This prevents email enumeration attacks
+    # This prevents username enumeration attacks
     if not user:
         return jsonify({
-            'message': 'If an account exists with that email, a password reset link has been sent.',
-            'development_mode': True,
+            'message': 'If an account exists with that username, a password reset link will be provided.',
             'token': None
         }), 200
 
     # Generate reset token
     token = user.generate_reset_token(expiry_hours=1)
 
-    # Return token in response (DEVELOPMENT MODE)
-    # Email sending disabled - users can use the token directly
+    # Return token in response
     return jsonify({
-        'message': 'If an account exists with that email, a password reset link has been sent.',
-        'development_mode': True,
+        'message': 'Password reset link generated. Use the link below to reset your password.',
         'token': token,
-        'email': data.email,
+        'username': data.username,
         'note': 'Use the link provided to reset your password. Token expires in 1 hour.'
     }), 200
 

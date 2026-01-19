@@ -75,6 +75,244 @@ class RetirementModel:
     def calculate_life_expectancy_years(self, person: Person, target_age: int = 90):
         age_now = (datetime.now() - person.birth_date).days / 365.25
         return int(target_age - age_now)
+
+    # =========================================================================
+    # Vectorized Tax Helper Functions
+    # =========================================================================
+
+    def _vectorized_federal_tax(self, taxable_income: np.ndarray,
+                                filing_status: str = 'mfj') -> tuple:
+        """Calculate federal income tax using progressive brackets.
+
+        Args:
+            taxable_income: Array of taxable income values (after deductions)
+            filing_status: 'mfj' (married filing jointly), 'single', 'mfs', 'hoh'
+
+        Returns:
+            Tuple of (total_tax array, marginal_rate array)
+        """
+        # 2024 MFJ brackets (default) - can be extended for other statuses
+        if filing_status == 'single':
+            brackets = [
+                (0, 11600, 0.10),
+                (11600, 47150, 0.12),
+                (47150, 100525, 0.22),
+                (100525, 191950, 0.24),
+                (191950, 243725, 0.32),
+                (243725, 609350, 0.35),
+                (609350, float('inf'), 0.37),
+            ]
+        else:  # MFJ (default for retired couples)
+            brackets = [
+                (0, 23200, 0.10),
+                (23200, 94300, 0.12),
+                (94300, 201050, 0.22),
+                (201050, 383900, 0.24),
+                (383900, 487450, 0.32),
+                (487450, 731200, 0.35),
+                (731200, float('inf'), 0.37),
+            ]
+
+        total_tax = np.zeros_like(taxable_income)
+        marginal_rate = np.zeros_like(taxable_income)
+
+        for lower, upper, rate in brackets:
+            # Income in this bracket
+            in_bracket = np.clip(taxable_income - lower, 0, upper - lower)
+            total_tax += in_bracket * rate
+            # Update marginal rate for incomes above this bracket's lower bound
+            marginal_rate = np.where(taxable_income > lower, rate, marginal_rate)
+
+        return total_tax, marginal_rate
+
+    def _vectorized_taxable_ss(self, other_income: np.ndarray,
+                               ss_benefit: np.ndarray,
+                               filing_status: str = 'mfj') -> np.ndarray:
+        """Calculate taxable portion of Social Security benefits.
+
+        Uses provisional income formula:
+        Provisional = AGI (excluding SS) + 50% of SS + tax-exempt interest
+
+        Args:
+            other_income: Array of AGI excluding SS (pensions, RMDs, withdrawals, etc.)
+            ss_benefit: Array of total SS benefits received
+            filing_status: 'mfj' or 'single'
+
+        Returns:
+            Array of taxable SS amounts (0%, 50%, or 85% of benefits)
+        """
+        # Calculate provisional income
+        provisional = other_income + (ss_benefit * 0.5)
+
+        # Thresholds depend on filing status
+        if filing_status == 'mfj':
+            threshold_1 = 32000  # Below: 0% taxable
+            threshold_2 = 44000  # Above: up to 85% taxable
+        else:  # single
+            threshold_1 = 25000
+            threshold_2 = 34000
+
+        # Calculate taxable portion (complex IRS formula simplified)
+        taxable_ss = np.zeros_like(ss_benefit)
+
+        # Between threshold_1 and threshold_2: up to 50% taxable
+        in_middle = (provisional > threshold_1) & (provisional <= threshold_2)
+        excess_1 = np.maximum(0, provisional - threshold_1)
+        taxable_ss = np.where(in_middle,
+                              np.minimum(ss_benefit * 0.5, excess_1 * 0.5),
+                              taxable_ss)
+
+        # Above threshold_2: up to 85% taxable
+        above_threshold_2 = provisional > threshold_2
+        excess_2 = np.maximum(0, provisional - threshold_2)
+        # Start with 50% of amount between thresholds
+        base_taxable = (threshold_2 - threshold_1) * 0.5
+        # Add 85% of excess above threshold_2
+        additional = excess_2 * 0.85
+        max_85 = ss_benefit * 0.85
+        taxable_ss = np.where(above_threshold_2,
+                              np.minimum(max_85, base_taxable + additional),
+                              taxable_ss)
+
+        return taxable_ss
+
+    def _vectorized_ltcg_tax(self, gains: np.ndarray,
+                             ordinary_income: np.ndarray,
+                             filing_status: str = 'mfj') -> np.ndarray:
+        """Calculate long-term capital gains tax with income stacking.
+
+        LTCG rates depend on total income (ordinary + gains stacked on top).
+
+        Args:
+            gains: Array of long-term capital gains
+            ordinary_income: Array of ordinary taxable income (before LTCG)
+            filing_status: 'mfj' or 'single'
+
+        Returns:
+            Array of LTCG tax amounts
+        """
+        # 2024 LTCG brackets (thresholds for total taxable income including gains)
+        if filing_status == 'mfj':
+            threshold_0 = 94050    # 0% up to here
+            threshold_15 = 583750  # 15% up to here, 20% above
+        else:  # single
+            threshold_0 = 47025
+            threshold_15 = 518900
+
+        total_income = ordinary_income + gains
+        ltcg_tax = np.zeros_like(gains)
+
+        # Calculate how much of gains falls in each bracket
+        # Gains "stack" on top of ordinary income
+
+        # Room in 0% bracket
+        room_0 = np.maximum(0, threshold_0 - ordinary_income)
+        gains_at_0 = np.minimum(gains, room_0)
+        remaining_gains = gains - gains_at_0
+
+        # Room in 15% bracket (after 0% bracket filled)
+        income_after_0 = np.maximum(ordinary_income, threshold_0)
+        room_15 = np.maximum(0, threshold_15 - income_after_0)
+        gains_at_15 = np.minimum(remaining_gains, room_15)
+        remaining_gains = remaining_gains - gains_at_15
+
+        # Remainder at 20%
+        gains_at_20 = remaining_gains
+
+        # Calculate total LTCG tax
+        ltcg_tax = (gains_at_0 * 0.0) + (gains_at_15 * 0.15) + (gains_at_20 * 0.20)
+
+        return ltcg_tax
+
+    def _vectorized_irmaa(self, magi: np.ndarray,
+                          filing_status: str = 'mfj',
+                          both_on_medicare: bool = True) -> np.ndarray:
+        """Calculate Medicare IRMAA surcharges based on MAGI.
+
+        IRMAA = Income-Related Monthly Adjustment Amount
+        Applies to Medicare Part B and Part D premiums for high earners.
+
+        Args:
+            magi: Array of Modified AGI (2 years prior, but we use current as proxy)
+            filing_status: 'mfj' or 'single'
+            both_on_medicare: If True, doubles surcharge for married couples
+
+        Returns:
+            Array of annual IRMAA surcharges
+        """
+        # 2024 IRMAA thresholds and annual surcharges (Part B + Part D combined)
+        if filing_status == 'mfj':
+            thresholds = [
+                (0, 206000, 0),           # No surcharge
+                (206000, 258000, 839.40),  # Tier 1
+                (258000, 322000, 2097.60), # Tier 2
+                (322000, 386000, 3355.20), # Tier 3
+                (386000, 750000, 4612.80), # Tier 4
+                (750000, float('inf'), 5030.40),  # Tier 5
+            ]
+        else:  # single
+            thresholds = [
+                (0, 103000, 0),
+                (103000, 129000, 839.40),
+                (129000, 161000, 2097.60),
+                (161000, 193000, 3355.20),
+                (193000, 500000, 4612.80),
+                (500000, float('inf'), 5030.40),
+            ]
+
+        irmaa = np.zeros_like(magi)
+        for lower, upper, surcharge in thresholds:
+            in_tier = (magi > lower) & (magi <= upper)
+            irmaa = np.where(in_tier, surcharge, irmaa)
+
+        # Handle top tier (above highest threshold)
+        top_threshold = thresholds[-1][0]
+        top_surcharge = thresholds[-1][2]
+        irmaa = np.where(magi > top_threshold, top_surcharge, irmaa)
+
+        # Double if both spouses on Medicare
+        if both_on_medicare and filing_status == 'mfj':
+            irmaa = irmaa * 2
+
+        return irmaa
+
+    def _calculate_employment_tax(self, gross_income: np.ndarray,
+                                  state_rate: float = 0.05) -> np.ndarray:
+        """Estimate total taxes on employment income.
+
+        Includes:
+        - FICA (Social Security 6.2% up to wage base + Medicare 1.45%)
+        - Estimated federal income tax
+        - State income tax (flat rate approximation)
+
+        Args:
+            gross_income: Array of gross employment income
+            state_rate: State income tax rate (default 5%)
+
+        Returns:
+            Array of estimated total employment taxes
+        """
+        # 2024 Social Security wage base
+        SS_WAGE_BASE = 168600
+        SS_RATE = 0.062
+        MEDICARE_RATE = 0.0145
+
+        # FICA taxes
+        ss_tax = np.minimum(gross_income, SS_WAGE_BASE) * SS_RATE
+        medicare_tax = gross_income * MEDICARE_RATE
+        fica = ss_tax + medicare_tax
+
+        # Estimate federal tax (using progressive brackets on AGI estimate)
+        # Assume standard deduction of $29,200 for MFJ
+        standard_deduction = 29200
+        taxable = np.maximum(0, gross_income - standard_deduction)
+        federal_tax, _ = self._vectorized_federal_tax(taxable, 'mfj')
+
+        # State tax (simplified flat rate)
+        state_tax = gross_income * state_rate
+
+        return fica + federal_tax + state_tax
+
     def monte_carlo_simulation(self, years: int, simulations: int = 10000, assumptions: MarketAssumptions = None, effective_tax_rate: float = 0.22, spending_model: str = 'constant_real'):
         """Run Monte Carlo simulation using vectorized NumPy operations for high performance."""
         if assumptions is None:
@@ -183,10 +421,11 @@ class RetirementModel:
                 })
 
         # Constants
+        # Note: ORDINARY_TAX kept as fallback but progressive rates used when possible
         ORDINARY_TAX = effective_tax_rate
-        CAP_GAINS_TAX = 0.15
         EARLY_PENALTY = 0.10
         CASH_INTEREST = 0.015
+        STANDARD_DEDUCTION_MFJ = 29200  # 2024 MFJ standard deduction
         
         # Result Storage
         all_paths = np.zeros((simulations, years))
@@ -226,24 +465,89 @@ class RetirementModel:
             if year_idx > 0:
                 current_cpi *= (1 + inflation_rates[:, year_idx])
 
-            # B. Calculate Income
-            # Dynamic Social Security & Pensions
+            # B. Calculate Income with Proper Tax Treatment
+            # Track income components separately for accurate tax calculations
+
+            # B1. Social Security Benefits (inflation-adjusted)
             p1_ss = (self.profile.person1.social_security * 12) if p1_retired else 0
             p2_ss = (self.profile.person2.social_security * 12) if p2_retired else 0
-            active_pension = base_pension if p1_retired else 0
-            
-            total_income = (p1_ss + p2_ss + active_pension) * current_cpi
-            
-            # Additional Income Streams
+            gross_ss = (p1_ss + p2_ss) * current_cpi  # Total SS before taxation
+
+            # B2. Pension Income (taxable as ordinary income)
+            active_pension = (base_pension if p1_retired else 0) * current_cpi
+
+            # B3. Other Income Streams (pensions, annuities - taxable)
+            other_taxable_income = np.zeros(simulations)
             for stream in income_streams_data:
                 if simulation_year >= stream['start_year']:
                     if stream['inflation_adjusted']:
-                        total_income += stream['amount'] * current_cpi
+                        other_taxable_income += stream['amount'] * current_cpi
                     else:
-                        total_income += stream['amount']
-            
+                        other_taxable_income += stream['amount']
+
+            # B4. Budget Income (employment, rental, etc.)
+            budget_income = np.zeros(simulations)
+            employment_income_gross = np.zeros(simulations)
             if self.profile.budget:
-                total_income += self.calculate_budget_income(simulation_year, current_cpi, p1_retired, p2_retired)
+                budget_income = self.calculate_budget_income(simulation_year, current_cpi, p1_retired, p2_retired)
+                # Track employment income separately for tax calculation
+                current_employment = self.profile.budget.get('income', {}).get('current', {}).get('employment', {})
+                if not p1_retired:
+                    employment_income_gross += current_employment.get('primary_person', 0)
+                if not p2_retired:
+                    employment_income_gross += current_employment.get('spouse', 0)
+
+            # B5. Employment Tax Deduction (FICA + Federal + State)
+            # During working years, employment income is reduced by payroll and income taxes
+            employment_tax = np.zeros(simulations)
+            if np.any(employment_income_gross > 0):
+                employment_tax = self._calculate_employment_tax(employment_income_gross)
+
+            # B6. Calculate Taxable Social Security
+            # Provisional income = Other AGI + 50% of SS benefits
+            # Other AGI at this point includes pension + other income (RMDs added later)
+            provisional_income_base = active_pension + other_taxable_income
+            taxable_ss = self._vectorized_taxable_ss(provisional_income_base, gross_ss, 'mfj')
+
+            # B7. IRMAA Surcharges for Medicare-eligible retirees (age 65+)
+            # Based on prior year MAGI - we use current income as proxy
+            irmaa_expense = np.zeros(simulations)
+            p1_medicare_eligible = p1_age >= 65
+            p2_medicare_eligible = p2_age >= 65
+            if p1_medicare_eligible or p2_medicare_eligible:
+                # Estimate MAGI for IRMAA (includes taxable SS, pension, other income)
+                estimated_magi = taxable_ss + active_pension + other_taxable_income
+                both_on_medicare = p1_medicare_eligible and p2_medicare_eligible
+                irmaa_expense = self._vectorized_irmaa(estimated_magi, 'mfj', both_on_medicare)
+
+            # B8. Calculate Total Spendable Income
+            # Net SS = Gross SS - Tax on taxable portion
+            # For now, estimate SS tax using effective rate on taxable portion
+            # (We'll refine this when we know total income including withdrawals)
+            ss_tax_estimate = np.zeros_like(taxable_ss)
+            if np.any(taxable_ss > 0):
+                # Estimate tax rate for SS (will be refined with total income)
+                ss_tax_estimate = taxable_ss * 0.22  # Conservative estimate
+
+            net_ss = gross_ss - ss_tax_estimate
+
+            # Total available income (after taxes)
+            # Pension and other income taxed at ordinary rates (estimated)
+            ordinary_income_pretax = active_pension + other_taxable_income
+            ordinary_tax_estimate = np.zeros_like(ordinary_income_pretax)
+            if np.any(ordinary_income_pretax > 0):
+                taxable_ordinary = np.maximum(0, ordinary_income_pretax - STANDARD_DEDUCTION_MFJ)
+                ordinary_tax_estimate, _ = self._vectorized_federal_tax(taxable_ordinary, 'mfj')
+
+            # Employment income net of taxes
+            net_employment = employment_income_gross - employment_tax
+            net_other_budget = budget_income - employment_income_gross  # Non-employment budget income
+
+            total_income = net_ss + (ordinary_income_pretax - ordinary_tax_estimate) + net_employment + net_other_budget
+
+            # Track ordinary income for later tax calculations (RMDs, withdrawals)
+            # This is the taxable ordinary income before additional withdrawals
+            year_ordinary_income = taxable_ss + ordinary_income_pretax
 
             # C. Calculate Expenses
             current_housing_costs = np.zeros(simulations)
@@ -267,6 +571,9 @@ class RetirementModel:
             else:
                 # Fallback to simple target income approach
                 target_spending = (self.profile.target_annual_income * current_cpi * spending_mult) + current_housing_costs
+
+            # Add IRMAA surcharges for high-income Medicare beneficiaries
+            target_spending += irmaa_expense
 
             # D. Calculate Shortfall/Surplus
             # During working years: income typically exceeds expenses → surplus saved to investments
@@ -343,7 +650,8 @@ class RetirementModel:
                         gain = gross_proceeds - prop['purchase_price']
                         exclusion = 500000 if prop['property_type'] == 'Primary Residence' else 0
                         taxable_gain = np.maximum(0, gain - exclusion)
-                        capital_gains_tax = taxable_gain * CAP_GAINS_TAX
+                        # Use income-stacked LTCG tax instead of flat 15%
+                        capital_gains_tax = self._vectorized_ltcg_tax(taxable_gain, year_ordinary_income, 'mfj')
                         net_proceeds = gross_proceeds - mortgage_payoff - transaction_costs - capital_gains_tax
                         available_proceeds = net_proceeds - prop['replacement_cost']
                         taxable_val = np.where(active_mask, taxable_val + np.maximum(0, available_proceeds), taxable_val)
@@ -351,28 +659,36 @@ class RetirementModel:
                         prop['values'] = np.where(active_mask, 0, prop['values'])
 
             # F. RMD Logic (Age 73+ for either spouse)
-            # This is a simplification assuming joint assets are split or both have IRAs
+            # Each spouse's RMD is calculated from their half of pretax assets
+            # IMPORTANT: Use original balance for both calculations to avoid double-counting bug
             total_rmd = np.zeros(simulations)
+            original_pretax = pretax_std.copy()  # Store original balance before RMD calculations
+            rmd_factors = {
+                73: 26.5, 74: 25.5, 75: 24.6, 76: 23.7, 77: 22.9,
+                78: 22.0, 79: 21.1, 80: 20.2, 81: 19.4, 82: 18.5,
+                83: 17.7, 84: 16.8, 85: 16.0, 86: 15.2, 87: 14.4,
+                88: 13.7, 89: 12.9, 90: 12.2
+            }
             for age in [p1_age, p2_age]:
                 if age >= 73:
-                    factor = 12.2 # default
-                    rmd_factors = {
-                        73: 26.5, 74: 25.5, 75: 24.6, 76: 23.7, 77: 22.9,
-                        78: 22.0, 79: 21.1, 80: 20.2, 81: 19.4, 82: 18.5,
-                        83: 17.7, 84: 16.8, 85: 16.0, 86: 15.2, 87: 14.4,
-                        88: 13.7, 89: 12.9, 90: 12.2
-                    }
-                    if int(age) in rmd_factors:
-                        factor = rmd_factors[int(age)]
-                    
-                    # Assume each spouse owns half of pretax assets for RMD purposes if joint
-                    # Or just apply to the whole for simplicity in aggregate model
-                    curr_rmd = (pretax_std / 2.0) / factor
+                    factor = rmd_factors.get(int(age), 12.2)
+                    # Each spouse's RMD based on their half of original pretax balance
+                    curr_rmd = (original_pretax / 2.0) / factor
                     total_rmd += curr_rmd
-                    pretax_std -= curr_rmd
+            # Deduct total RMD from pretax balance (after both are calculated)
+            pretax_std -= total_rmd
             
             if np.any(total_rmd > 0):
-                net_rmd = total_rmd * (1 - ORDINARY_TAX)
+                # Use progressive tax on RMDs (stacked on existing ordinary income)
+                # Calculate tax on total income with RMD vs without
+                taxable_with_rmd = np.maximum(0, year_ordinary_income + total_rmd - STANDARD_DEDUCTION_MFJ)
+                taxable_without_rmd = np.maximum(0, year_ordinary_income - STANDARD_DEDUCTION_MFJ)
+                tax_with_rmd, _ = self._vectorized_federal_tax(taxable_with_rmd, 'mfj')
+                tax_without_rmd, _ = self._vectorized_federal_tax(taxable_without_rmd, 'mfj')
+                rmd_tax = tax_with_rmd - tax_without_rmd
+                net_rmd = total_rmd - rmd_tax
+                # Update year_ordinary_income to include RMD for future stacking
+                year_ordinary_income = year_ordinary_income + total_rmd
                 used_for_shortfall = np.minimum(shortfall, net_rmd)
                 shortfall -= used_for_shortfall
                 taxable_val += (net_rmd - used_for_shortfall)
@@ -380,7 +696,9 @@ class RetirementModel:
             # G. Optimized Withdrawal Strategy (Waterfall)
             # Sequence: Cash -> Taxable -> Pre-Tax -> Roth
             # (457b has special rules allowing early withdrawal without penalty)
-            
+            # Track cumulative taxable income for progressive tax stacking
+            cumulative_ordinary = year_ordinary_income.copy()
+
             # 1. Cash (Already taxed, no growth)
             mask = shortfall > 0
             if np.any(mask):
@@ -391,39 +709,71 @@ class RetirementModel:
             # 2. 457b (Special case: No early withdrawal penalty if separated from service)
             mask = (shortfall > 0)
             if np.any(mask) and p1_age < 59.5:
-                gross_needed = shortfall / (1 - ORDINARY_TAX)
+                # Calculate marginal tax rate based on current ordinary income
+                taxable_now = np.maximum(0, cumulative_ordinary - STANDARD_DEDUCTION_MFJ)
+                _, marginal_rate = self._vectorized_federal_tax(taxable_now, 'mfj')
+                # Estimate effective rate for withdrawal (use marginal as approximation)
+                eff_rate = np.where(marginal_rate > 0, marginal_rate, 0.12)  # Default to 12%
+                gross_needed = shortfall / (1 - eff_rate)
                 withdrawal = np.minimum(gross_needed, pretax_457)
                 pretax_457 -= withdrawal
-                shortfall -= (withdrawal * (1 - ORDINARY_TAX))
+                # Calculate actual tax on withdrawal using stacked income
+                taxable_after = np.maximum(0, cumulative_ordinary + withdrawal - STANDARD_DEDUCTION_MFJ)
+                tax_after, _ = self._vectorized_federal_tax(taxable_after, 'mfj')
+                tax_before, _ = self._vectorized_federal_tax(taxable_now, 'mfj')
+                actual_tax = tax_after - tax_before
+                net_withdrawal = withdrawal - actual_tax
+                cumulative_ordinary += withdrawal
+                shortfall -= net_withdrawal
 
-            # 3. Taxable Brokerage (Pay only capital gains on growth)
+            # 3. Taxable Brokerage (Pay capital gains tax stacked on ordinary income)
             mask = shortfall > 0
             if np.any(mask):
                 denom = np.where(taxable_val > 0, taxable_val, 1.0)
                 gain_ratio = np.maximum(0, (taxable_val - taxable_basis) / denom)
                 gain_ratio = np.where(taxable_val > 0, gain_ratio, 0)
-                
-                eff_tax_rate = gain_ratio * CAP_GAINS_TAX
-                gross_needed = shortfall / (1 - eff_tax_rate)
+
+                # Estimate withdrawal needed (iterate once for better estimate)
+                # First pass: estimate with flat 15% LTCG rate
+                est_tax_rate = gain_ratio * 0.15
+                gross_needed = shortfall / np.maximum(0.01, 1 - est_tax_rate)
                 withdrawal = np.minimum(gross_needed, taxable_val)
-                
+                gains_realized = withdrawal * gain_ratio
+
+                # Calculate actual LTCG tax using income stacking
+                ltcg_tax = self._vectorized_ltcg_tax(gains_realized, cumulative_ordinary, 'mfj')
+                net_withdrawal = withdrawal - ltcg_tax
+
                 basis_ratio = np.where(taxable_val > 0, taxable_basis / taxable_val, 0)
                 basis_reduction = withdrawal * basis_ratio
-                
+
                 taxable_val -= withdrawal
                 taxable_basis -= basis_reduction
-                shortfall -= (withdrawal * (1 - eff_tax_rate))
+                shortfall -= net_withdrawal
 
             # 4. Pre-Tax (Traditional IRA/401k) - Subject to Ordinary Income Tax
             mask = shortfall > 0
             if np.any(mask):
                 # Apply 10% penalty if under 59.5 (excluding 457b handled above)
                 penalty = np.where(p1_age < 59.5, EARLY_PENALTY, 0)
-                tax_rate = ORDINARY_TAX + penalty
-                gross_needed = shortfall / (1 - tax_rate)
+
+                # Calculate marginal rate for estimation
+                taxable_now = np.maximum(0, cumulative_ordinary - STANDARD_DEDUCTION_MFJ)
+                _, marginal_rate = self._vectorized_federal_tax(taxable_now, 'mfj')
+                eff_rate = np.where(marginal_rate > 0, marginal_rate, 0.12) + penalty
+
+                gross_needed = shortfall / np.maximum(0.01, 1 - eff_rate)
                 withdrawal = np.minimum(gross_needed, pretax_std)
                 pretax_std -= withdrawal
-                shortfall -= (withdrawal * (1 - tax_rate))
+
+                # Calculate actual tax on withdrawal using stacked income
+                taxable_after = np.maximum(0, cumulative_ordinary + withdrawal - STANDARD_DEDUCTION_MFJ)
+                tax_after, _ = self._vectorized_federal_tax(taxable_after, 'mfj')
+                tax_before, _ = self._vectorized_federal_tax(taxable_now, 'mfj')
+                actual_tax = (tax_after - tax_before) + (withdrawal * penalty)
+                net_withdrawal = withdrawal - actual_tax
+                cumulative_ordinary += withdrawal
+                shortfall -= net_withdrawal
 
             # 5. Roth Assets (Tax-free, last resort to preserve tax-free growth)
             mask = shortfall > 0

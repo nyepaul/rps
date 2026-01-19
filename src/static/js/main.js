@@ -391,7 +391,7 @@ async function openSettings(defaultTab = 'general') {
         <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2 style="margin: 0;">Settings</h2>
-                <span style="font-size: 12px; color: var(--text-light);">v${APP_CONFIG.VERSION}</span>
+                <span style="font-size: 12px; color: var(--text-light);">v${store.getState().appVersion || APP_CONFIG.VERSION}</span>
             </div>
 
             <!-- Settings Tabs -->

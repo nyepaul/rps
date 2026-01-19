@@ -59,7 +59,15 @@ def analyze_taxes():
         tax_settings = profile_data.get('tax_settings', {})
         address = profile_data.get('address', {})
         filing_status = data.filing_status or tax_settings.get('filing_status', 'mfj')
-        state = data.state or address.get('state') or tax_settings.get('state', 'CA')
+
+        # Resolve state with explicit None checks (empty string is valid and should not fallback)
+        state = data.state
+        if state is None:
+            state = address.get('state')
+        if not state:  # None or empty string
+            state = tax_settings.get('state')
+        if not state:  # Still None or empty
+            state = 'CA'  # Final fallback
 
         # Calculate age from birth date
         age = 65
@@ -133,7 +141,15 @@ def analyze_roth_conversion():
         ss_benefit = (financial.get('social_security_benefit', 0) or 0) * 12
 
         filing_status = data.filing_status or tax_settings.get('filing_status', 'mfj')
-        state = data.state or address.get('state') or tax_settings.get('state', 'CA')
+
+        # Resolve state with explicit None checks
+        state = data.state
+        if state is None:
+            state = address.get('state')
+        if not state:
+            state = tax_settings.get('state')
+        if not state:
+            state = 'CA'
 
         # Create service
         service = TaxOptimizationService(
@@ -255,7 +271,13 @@ def get_tax_snapshot():
         ss_benefit = (financial.get('social_security_benefit', 0) or 0) * 12
 
         filing_status = tax_settings.get('filing_status', 'mfj')
-        state = address.get('state') or tax_settings.get('state', 'CA')
+
+        # Resolve state with explicit None checks
+        state = address.get('state')
+        if not state:
+            state = tax_settings.get('state')
+        if not state:
+            state = 'CA'
 
         # Create service
         service = TaxOptimizationService(
@@ -301,7 +323,13 @@ def compare_states():
         tax_settings = profile_data.get('tax_settings', {})
         address = profile_data.get('address', {})
         filing_status = tax_settings.get('filing_status', 'mfj')
-        current_state = address.get('state') or tax_settings.get('state', 'CA')
+
+        # Resolve state with explicit None checks
+        current_state = address.get('state')
+        if not current_state:
+            current_state = tax_settings.get('state')
+        if not current_state:
+            current_state = 'CA'
 
         # Get taxable income
         financial = profile_data.get('financial', {})
