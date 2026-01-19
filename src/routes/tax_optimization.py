@@ -60,6 +60,15 @@ def analyze_taxes():
         address = profile_data.get('address', {})
         filing_status = data.filing_status or tax_settings.get('filing_status', 'mfj')
 
+        # DEBUG: Log what we're getting
+        print(f"=== TAX OPTIMIZATION DEBUG ===")
+        print(f"Profile name: {data.profile_name}")
+        print(f"Request state param: {data.state}")
+        print(f"Address from profile: {address}")
+        print(f"address.get('state'): {address.get('state')}")
+        print(f"Tax settings from profile: {tax_settings}")
+        print(f"tax_settings.get('state'): {tax_settings.get('state')}")
+
         # Resolve state with explicit None checks (empty string is valid and should not fallback)
         state = data.state
         if state is None:
@@ -68,6 +77,9 @@ def analyze_taxes():
             state = tax_settings.get('state')
         if not state:  # Still None or empty
             state = 'CA'  # Final fallback
+
+        print(f"FINAL STATE USED: {state}")
+        print(f"=== END DEBUG ===\n")
 
         # Calculate age from birth date
         age = 65
@@ -100,6 +112,11 @@ def analyze_taxes():
 
         result = service.get_comprehensive_analysis(profile_data)
         result['profile_name'] = data.profile_name
+
+        # DEBUG: Log what we're returning
+        print(f"=== RESPONSE DEBUG ===")
+        print(f"snapshot.settings.state: {result.get('snapshot', {}).get('settings', {}).get('state')}")
+        print(f"=== END RESPONSE DEBUG ===\n")
 
         return jsonify(result), 200
 
