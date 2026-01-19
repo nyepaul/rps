@@ -9,7 +9,9 @@ import { renderBudgetTab } from '../budget/budget-tab.js';
 /**
  * Render AIE tab with sub-navigation
  */
-export async function renderAIETab(container) {
+export function renderAIETab(container) {
+    console.log('AIE: Rendering AIE tab');
+
     container.innerHTML = `
         <div class="aie-container">
             <div class="aie-header">
@@ -36,11 +38,13 @@ export async function renderAIETab(container) {
     // Add styles for sub-tabs
     addAIEStyles();
 
-    // Set up sub-tab navigation
-    setupSubtabNavigation();
+    // Set up sub-tab navigation (query from container to ensure elements exist)
+    setupSubtabNavigation(container);
+
+    console.log('AIE: Event listeners attached, loading default subtab');
 
     // Load default subtab (assets)
-    await showAIESubtab('assets');
+    showAIESubtab('assets');
 }
 
 /**
@@ -132,8 +136,8 @@ function addAIEStyles() {
 /**
  * Set up sub-tab navigation
  */
-function setupSubtabNavigation() {
-    const subtabButtons = document.querySelectorAll('.aie-subtab');
+function setupSubtabNavigation(container) {
+    const subtabButtons = container.querySelectorAll('.aie-subtab');
 
     subtabButtons.forEach(button => {
         button.addEventListener('click', () => {
@@ -146,7 +150,9 @@ function setupSubtabNavigation() {
 /**
  * Show specific AIE sub-tab
  */
-async function showAIESubtab(subtabName) {
+function showAIESubtab(subtabName) {
+    console.log('AIE: Switching to subtab:', subtabName);
+
     // Update active button
     const subtabButtons = document.querySelectorAll('.aie-subtab');
     subtabButtons.forEach(button => {
@@ -159,9 +165,13 @@ async function showAIESubtab(subtabName) {
 
     // Get container
     const container = document.getElementById('aie-subtab-content');
-    if (!container) return;
+    if (!container) {
+        console.error('AIE: Could not find aie-subtab-content container');
+        return;
+    }
 
     try {
+        console.log('AIE: Rendering subtab content for:', subtabName);
         // Load the appropriate component directly into the container
         // The render functions handle setting innerHTML and event listeners
         switch (subtabName) {
@@ -177,6 +187,7 @@ async function showAIESubtab(subtabName) {
             default:
                 throw new Error(`Unknown AIE subtab: ${subtabName}`);
         }
+        console.log('AIE: Successfully rendered subtab:', subtabName);
     } catch (error) {
         console.error(`Error loading AIE subtab ${subtabName}:`, error);
         container.innerHTML = `

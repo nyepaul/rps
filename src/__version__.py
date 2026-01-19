@@ -1,5 +1,5 @@
 """RPS Version Information"""
 
-__version__ = "3.8.24"
+__version__ = "3.8.25"
 __release_date__ = "2026-01-18"
-__release_notes__ = "Consolidate Assets, Income, and Expenses into AIE tab with sub-navigation to reduce tab clutter"
+__release_notes__ = "Fix AIE sub-tab navigation and rendering - query elements from correct container, add debug logging, remove unnecessary async"
