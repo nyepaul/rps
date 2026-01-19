@@ -837,9 +837,13 @@ class TaxOptimizationService:
         ss_benefit = (financial.get('social_security_benefit', 0) or 0) * 12  # Monthly to annual
         pension = (financial.get('pension_benefit', 0) or 0) * 12
 
-        # NOTE: Don't re-read tax settings here - use what was passed to __init__
-        # The route already resolved state from address/tax_settings with proper fallback
-        # Just use the already-configured self.settings, self.calculator, etc.
+        # NOTE: Don't re-read filing_status/state from tax_settings
+        # The route already resolved these from address/tax_settings with proper fallback
+        # and passed them to __init__, so just use the already-configured self.settings
+
+        # Get age for RMD calculations (use from self.settings which was set in __init__)
+        age = self.settings.age
+        spouse_age = self.settings.spouse_age
 
         # Calculate traditional IRA balance
         traditional_balance = sum(
