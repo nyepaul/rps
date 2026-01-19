@@ -873,10 +873,10 @@ def reset_demo_account():
 
         # Create comprehensive demo profile
         today = date.today()
-        birth_date = date(1971, 6, 15)  # Born June 15, 1971 (age 55 in 2026)
-        retirement_date = date(2036, 6, 15)  # Retire at 65
-        spouse_birth_date = date(1973, 3, 22)  # Born March 22, 1973 (age 53 in 2026)
-        spouse_retirement_date = date(2038, 3, 22)  # Retire at 65
+        birth_date = date(1971, 1, 18)  # Born January 18, 1971 (age 55 in 2026)
+        retirement_date = date(2036, 1, 18)  # Retire at 65
+        spouse_birth_date = date(1973, 10, 4)  # Born October 4, 1973 (age 53 in 2026)
+        spouse_retirement_date = date(2038, 10, 4)  # Retire at 65
 
         # Child 1: 18 years old, just starting college
         child1_birth = date(2008, 9, 10)  # Born September 10, 2008 (age 18 in 2026)
