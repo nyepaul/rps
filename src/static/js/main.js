@@ -226,19 +226,9 @@ async function loadTabComponent(tabName, container) {
             renderProfileTab(tabContent);
             break;
         }
-        case 'assets': {
-            const { renderAssetsTab } = await import('./components/assets/assets-tab.js');
-            renderAssetsTab(tabContent);
-            break;
-        }
-        case 'income': {
-            const { renderIncomeTab } = await import('./components/income/income-tab.js');
-            renderIncomeTab(tabContent);
-            break;
-        }
-        case 'budget': {
-            const { renderBudgetTab } = await import('./components/budget/budget-tab.js');
-            renderBudgetTab(tabContent);
+        case 'aie': {
+            const { renderAIETab } = await import('./components/aie/aie-tab.js');
+            renderAIETab(tabContent);
             break;
         }
         case 'cashflow': {
