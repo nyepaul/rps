@@ -166,13 +166,13 @@ function renderAssetRow(asset) {
     // For retirement/taxable accounts, show allocations
     if (asset.categoryKey === 'retirement_accounts' || asset.categoryKey === 'taxable_accounts') {
         if (asset.stock_pct !== undefined && asset.stock_pct !== null) {
-            attributes.push({ label: 'Stocks', value: `${asset.stock_pct}%` });
+            attributes.push({ label: 'Stocks', value: `${(asset.stock_pct * 100).toFixed(0)}%` });
         }
         if (asset.bond_pct !== undefined && asset.bond_pct !== null) {
-            attributes.push({ label: 'Bonds', value: `${asset.bond_pct}%` });
+            attributes.push({ label: 'Bonds', value: `${(asset.bond_pct * 100).toFixed(0)}%` });
         }
         if (asset.cash_pct !== undefined && asset.cash_pct !== null && asset.cash_pct > 0) {
-            attributes.push({ label: 'Cash', value: `${asset.cash_pct}%` });
+            attributes.push({ label: 'Cash', value: `${(asset.cash_pct * 100).toFixed(0)}%` });
         }
         if (asset.account_number) {
             attributes.push({ label: 'Acct', value: `****${asset.account_number}` });
