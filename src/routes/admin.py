@@ -1222,7 +1222,7 @@ def reset_demo_account():
         # Create profile
         demo_profile = Profile(
             user_id=demo_user.id,
-            name="Thompson Family",
+            name="DemoName",
             birth_date=birth_date.isoformat(),
             retirement_date=retirement_date.isoformat()
         )
