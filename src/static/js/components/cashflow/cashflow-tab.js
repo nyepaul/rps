@@ -1034,8 +1034,6 @@ function renderSummaryCards(container, chartData) {
  * Setup metric isolation - toggle chart datasets when clicking summary cards
  */
 function setupMetricIsolation(container) {
-    let selectedMetric = null;
-
     const metricCards = container.querySelectorAll('.metric-card');
     const chart = window.cashFlowChart;
 
@@ -1056,46 +1054,29 @@ function setupMetricIsolation(container) {
     metricCards.forEach(card => {
         card.addEventListener('click', () => {
             const metric = card.getAttribute('data-metric');
+            const datasetIndices = metricToDatasetMap[metric] || [];
 
-            // Toggle selection
-            if (selectedMetric === metric) {
-                // Deselect - show all datasets
-                selectedMetric = null;
-                chart.data.datasets.forEach((dataset, index) => {
-                    dataset.hidden = false;
-                });
+            // Toggle visibility of this metric's datasets
+            datasetIndices.forEach(index => {
+                const dataset = chart.data.datasets[index];
+                if (dataset) {
+                    dataset.hidden = !dataset.hidden;
+                }
+            });
 
-                // Remove selected styling from all cards
-                metricCards.forEach(c => {
-                    c.style.borderColor = 'transparent';
-                    c.style.opacity = '1';
-                });
+            // Update card styling based on visibility
+            const isHidden = datasetIndices.every(index => chart.data.datasets[index]?.hidden);
+
+            if (isHidden) {
+                // Dataset is hidden - show dim styling
+                card.style.borderColor = 'transparent';
+                card.style.opacity = '0.4';
+                card.style.boxShadow = 'none';
             } else {
-                // Select this metric - hide all except selected and Portfolio Balance
-                selectedMetric = metric;
-                const visibleIndices = metricToDatasetMap[metric] || [];
-
-                chart.data.datasets.forEach((dataset, index) => {
-                    // Always show Portfolio Balance (index 5) for context
-                    if (visibleIndices.includes(index) || index === 5) {
-                        dataset.hidden = false;
-                    } else {
-                        dataset.hidden = true;
-                    }
-                });
-
-                // Update styling - highlight selected, dim others
-                metricCards.forEach(c => {
-                    if (c === card) {
-                        c.style.borderColor = 'rgba(255, 255, 255, 0.9)';
-                        c.style.opacity = '1';
-                        c.style.boxShadow = '0 4px 20px rgba(0,0,0,0.25)';
-                    } else {
-                        c.style.borderColor = 'transparent';
-                        c.style.opacity = '0.5';
-                        c.style.boxShadow = 'none';
-                    }
-                });
+                // Dataset is visible - show highlighted styling
+                card.style.borderColor = 'rgba(255, 255, 255, 0.9)';
+                card.style.opacity = '1';
+                card.style.boxShadow = '0 4px 20px rgba(0,0,0,0.25)';
             }
 
             chart.update();
