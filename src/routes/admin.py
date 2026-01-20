@@ -1600,6 +1600,7 @@ def run_data_backup():
     """Run a data-only backup (database)."""
     try:
         import subprocess
+        import os
         from pathlib import Path
 
         project_root = Path(__file__).parent.parent.parent
@@ -1608,12 +1609,18 @@ def run_data_backup():
         if not backup_script.exists():
             return jsonify({'error': 'Backup script not found'}), 500
 
+        # Set up environment with proper PATH
+        env = os.environ.copy()
+        env['PATH'] = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+
         # Run backup script
         result = subprocess.run(
             [str(backup_script)],
             capture_output=True,
             text=True,
-            timeout=60
+            timeout=60,
+            env=env,
+            cwd=str(project_root)
         )
 
         # Log admin action
@@ -1653,6 +1660,7 @@ def run_system_backup():
     """Run a system-only backup (configuration and scripts)."""
     try:
         import subprocess
+        import os
         from pathlib import Path
 
         project_root = Path(__file__).parent.parent.parent
@@ -1661,12 +1669,18 @@ def run_system_backup():
         if not backup_script.exists():
             return jsonify({'error': 'Backup script not found'}), 500
 
+        # Set up environment with proper PATH
+        env = os.environ.copy()
+        env['PATH'] = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+
         # Run backup script
         result = subprocess.run(
             [str(backup_script)],
             capture_output=True,
             text=True,
-            timeout=60
+            timeout=60,
+            env=env,
+            cwd=str(project_root)
         )
 
         # Log admin action
@@ -1706,6 +1720,7 @@ def run_full_backup():
     """Run a full backup (database, configuration, and scripts)."""
     try:
         import subprocess
+        import os
         from pathlib import Path
 
         project_root = Path(__file__).parent.parent.parent
@@ -1714,12 +1729,18 @@ def run_full_backup():
         if not backup_script.exists():
             return jsonify({'error': 'Backup script not found'}), 500
 
+        # Set up environment with proper PATH
+        env = os.environ.copy()
+        env['PATH'] = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+
         # Run backup script
         result = subprocess.run(
             [str(backup_script)],
             capture_output=True,
             text=True,
-            timeout=60
+            timeout=60,
+            env=env,
+            cwd=str(project_root)
         )
 
         # Log admin action
