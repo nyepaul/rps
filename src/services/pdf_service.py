@@ -116,7 +116,7 @@ def create_header(profile_name, report_type):
         styles['SmallText']
     ))
     elements.append(Spacer(1, 20))
-    elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#bdc3c7')))
+    elements.append(HRFlowable(width="100%", thickness=0.25, color=colors.HexColor('#bdc3c7')))
     elements.append(Spacer(1, 20))
 
     return elements
@@ -128,10 +128,10 @@ def generate_analysis_report(profile_data, analysis_results):
     doc = SimpleDocTemplate(
         buffer,
         pagesize=letter,
-        rightMargin=0.75*inch,
-        leftMargin=0.75*inch,
-        topMargin=0.75*inch,
-        bottomMargin=0.75*inch
+        rightMargin=1.0*inch,
+        leftMargin=1.0*inch,
+        topMargin=1.0*inch,
+        bottomMargin=1.0*inch
     )
 
     styles = create_styles()
@@ -180,7 +180,7 @@ def generate_analysis_report(profile_data, analysis_results):
         ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
         ('TOPPADDING', (0, 0), (-1, 0), 10),
         ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#ecf0f1')),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#bdc3c7')),
+        ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#bdc3c7')),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
         ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
         ('TOPPADDING', (0, 1), (-1, -1), 8),
@@ -219,7 +219,7 @@ def generate_analysis_report(profile_data, analysis_results):
         ('FONTSIZE', (0, 0), (-1, -1), 9),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
         ('TOPPADDING', (0, 0), (-1, -1), 8),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#bdc3c7')),
+        ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#bdc3c7')),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
     ]))
     elements.append(scenario_table)
@@ -288,10 +288,10 @@ def generate_portfolio_report(profile_data):
     doc = SimpleDocTemplate(
         buffer,
         pagesize=letter,
-        rightMargin=0.75*inch,
-        leftMargin=0.75*inch,
-        topMargin=0.75*inch,
-        bottomMargin=0.75*inch
+        rightMargin=1.0*inch,
+        leftMargin=1.0*inch,
+        topMargin=1.0*inch,
+        bottomMargin=1.0*inch
     )
 
     styles = create_styles()
@@ -330,7 +330,7 @@ def generate_portfolio_report(profile_data):
         ('FONTSIZE', (0, 0), (-1, -1), 10),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
         ('TOPPADDING', (0, 0), (-1, -1), 10),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#bdc3c7')),
+        ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#bdc3c7')),
         ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#ecf0f1')),
         ('ROWBACKGROUNDS', (0, 1), (-1, -2), [colors.white, colors.HexColor('#f8f9fa')]),
     ]))
@@ -358,7 +358,7 @@ def generate_portfolio_report(profile_data):
             ('FONTSIZE', (0, 0), (-1, -1), 10),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
             ('TOPPADDING', (0, 0), (-1, -1), 8),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#bdc3c7')),
+            ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#bdc3c7')),
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
         ]))
         elements.append(retirement_table)
@@ -385,7 +385,7 @@ def generate_portfolio_report(profile_data):
             ('FONTSIZE', (0, 0), (-1, -1), 10),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
             ('TOPPADDING', (0, 0), (-1, -1), 8),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#bdc3c7')),
+            ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#bdc3c7')),
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
         ]))
         elements.append(taxable_table)
@@ -413,7 +413,7 @@ def generate_portfolio_report(profile_data):
             ('FONTSIZE', (0, 0), (-1, -1), 10),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
             ('TOPPADDING', (0, 0), (-1, -1), 8),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#bdc3c7')),
+            ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#bdc3c7')),
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
         ]))
         elements.append(financial_table)
@@ -439,10 +439,10 @@ def generate_action_plan_report(profile_data, action_items):
     doc = SimpleDocTemplate(
         buffer,
         pagesize=letter,
-        rightMargin=0.75*inch,
-        leftMargin=0.75*inch,
-        topMargin=0.75*inch,
-        bottomMargin=0.75*inch
+        rightMargin=1.0*inch,
+        leftMargin=1.0*inch,
+        topMargin=1.0*inch,
+        bottomMargin=1.0*inch
     )
 
     styles = create_styles()
@@ -494,7 +494,7 @@ def generate_action_plan_report(profile_data, action_items):
             ('FONTSIZE', (0, 0), (-1, -1), 9),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
             ('TOPPADDING', (0, 0), (-1, -1), 8),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#bdc3c7')),
+            ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#bdc3c7')),
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ]))
@@ -547,7 +547,7 @@ def generate_action_plan_report(profile_data, action_items):
             ('FONTSIZE', (0, 0), (-1, -1), 9),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
             ('TOPPADDING', (0, 0), (-1, -1), 8),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#bdc3c7')),
+            ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#bdc3c7')),
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
         ]))
         elements.append(completed_table)
