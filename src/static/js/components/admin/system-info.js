@@ -17,8 +17,14 @@ export async function renderSystemInfo(container) {
     `;
 
     try {
-        const response = await apiClient.get('/api/admin/system/info');
-        const info = response.system_info;
+        // Load both system info and database schema
+        const [infoResponse, schemaResponse] = await Promise.all([
+            apiClient.get('/api/admin/system/info'),
+            apiClient.get('/api/admin/database/schema')
+        ]);
+
+        const info = infoResponse.system_info;
+        const schema = schemaResponse.schema;
 
         container.innerHTML = `
             <div style="max-width: 1000px;">
@@ -112,6 +118,23 @@ export async function renderSystemInfo(container) {
                     <div id="reset-demo-result" style="margin-top: 15px; display: none;"></div>
                 </div>
 
+                <!-- Database Schema Viewer -->
+                <div style="background: var(--bg-secondary); padding: 25px; border-radius: 12px; margin-bottom: 20px;">
+                    <h3 style="font-size: 18px; margin-bottom: 15px;">🗄️ Database Schema</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 14px;">
+                        Interactive entity-relationship diagram showing all database tables and their relationships.
+                    </p>
+                    <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px; overflow-x: auto;">
+                        <div id="schema-diagram" style="min-height: 400px;"></div>
+                    </div>
+                    <div style="margin-top: 15px; padding: 12px; background: var(--info-bg); border-radius: 8px; font-size: 13px;">
+                        <strong>📊 Schema Stats:</strong>
+                        <span style="margin-left: 10px;">Tables: <strong>${schema.tables.length}</strong></span>
+                        <span style="margin-left: 20px;">Total Columns: <strong>${schema.tables.reduce((sum, t) => sum + t.columns.length, 0)}</strong></span>
+                        <span style="margin-left: 20px;">Relationships: <strong>${schema.tables.reduce((sum, t) => sum + t.foreign_keys.length, 0)}</strong></span>
+                    </div>
+                </div>
+
                 <!-- Documentation Links -->
                 <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 25px; border-radius: 12px; color: white;">
                     <h3 style="margin: 0 0 15px 0; font-size: 18px;">📚 Documentation</h3>
@@ -147,6 +170,9 @@ export async function renderSystemInfo(container) {
 
         // Setup reset demo button
         setupResetDemoButton(container);
+
+        // Render database schema diagram
+        await renderDatabaseSchema(container, schema);
 
     } catch (error) {
         console.error('Failed to load system info:', error);
@@ -234,4 +260,124 @@ function renderSecurityFeature(name, value, description) {
             </div>
         </div>
     `;
+}
+
+/**
+ * Load Mermaid.js library dynamically
+ */
+async function loadMermaid() {
+    // Check if already loaded
+    if (window.mermaid) {
+        return window.mermaid;
+    }
+
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.type = 'module';
+        script.innerHTML = `
+            import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+            mermaid.initialize({
+                startOnLoad: false,
+                theme: 'default',
+                er: {
+                    useMaxWidth: true
+                }
+            });
+            window.mermaid = mermaid;
+            window.dispatchEvent(new Event('mermaid-loaded'));
+        `;
+
+        script.onerror = () => reject(new Error('Failed to load Mermaid.js'));
+        document.head.appendChild(script);
+
+        window.addEventListener('mermaid-loaded', () => resolve(window.mermaid), { once: true });
+    });
+}
+
+/**
+ * Generate Mermaid ER diagram syntax from schema
+ */
+function generateMermaidDiagram(schema) {
+    let diagram = 'erDiagram\n';
+
+    // Add each table
+    schema.tables.forEach(table => {
+        // Add table with columns
+        diagram += `    ${table.name} {\n`;
+
+        table.columns.forEach(col => {
+            const type = col.type || 'TEXT';
+            const pk = col.primary_key ? ' PK' : '';
+            const nn = col.not_null && !col.primary_key ? ' "NOT NULL"' : '';
+            diagram += `        ${type} ${col.name}${pk}${nn}\n`;
+        });
+
+        diagram += '    }\n';
+    });
+
+    // Add relationships
+    schema.tables.forEach(table => {
+        table.foreign_keys.forEach(fk => {
+            // Determine relationship cardinality
+            // In SQLite, most foreign keys are many-to-one (||--o{)
+            diagram += `    ${fk.referenced_table} ||--o{ ${table.name} : "${fk.column}"\n`;
+        });
+    });
+
+    return diagram;
+}
+
+/**
+ * Render database schema diagram using Mermaid.js
+ */
+async function renderDatabaseSchema(container, schema) {
+    const diagramDiv = container.querySelector('#schema-diagram');
+
+    if (!diagramDiv) {
+        console.error('Schema diagram container not found');
+        return;
+    }
+
+    try {
+        // Show loading
+        diagramDiv.innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+                <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
+                <div style="color: var(--text-secondary);">Loading diagram...</div>
+            </div>
+        `;
+
+        // Load Mermaid.js
+        const mermaid = await loadMermaid();
+
+        // Generate Mermaid syntax
+        const mermaidCode = generateMermaidDiagram(schema);
+
+        // Create unique ID for this diagram
+        const diagramId = `mermaid-diagram-${Date.now()}`;
+
+        // Render diagram
+        const { svg } = await mermaid.render(diagramId, mermaidCode);
+
+        // Insert SVG
+        diagramDiv.innerHTML = svg;
+
+        // Add some styling to the SVG
+        const svgElement = diagramDiv.querySelector('svg');
+        if (svgElement) {
+            svgElement.style.width = '100%';
+            svgElement.style.height = 'auto';
+            svgElement.style.maxWidth = '100%';
+        }
+
+    } catch (error) {
+        console.error('Error rendering schema diagram:', error);
+        diagramDiv.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: var(--danger-color);">
+                <div style="font-size: 24px; margin-bottom: 10px;">❌</div>
+                <div>Failed to render diagram</div>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 10px;">${error.message}</div>
+            </div>
+        `;
+    }
 }

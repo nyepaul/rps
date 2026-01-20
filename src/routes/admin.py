@@ -827,6 +827,85 @@ def get_system_info():
         return jsonify({'error': str(e)}), 500
 
 
+@admin_bp.route('/database/schema', methods=['GET'])
+@login_required
+@admin_required
+def get_database_schema():
+    """Get complete database schema with tables and relationships."""
+    try:
+        from src.database.connection import db
+
+        schema = {
+            'tables': []
+        }
+
+        # Get all tables
+        tables_result = db.execute_all(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+        )
+
+        for table_row in tables_result:
+            table_name = table_row['name']
+
+            # Get table info (columns)
+            columns_result = db.execute_all(f"PRAGMA table_info({table_name})")
+            columns = []
+
+            for col in columns_result:
+                columns.append({
+                    'name': col['name'],
+                    'type': col['type'],
+                    'not_null': bool(col['notnull']),
+                    'default_value': col['dflt_value'],
+                    'primary_key': bool(col['pk'])
+                })
+
+            # Get foreign keys
+            fk_result = db.execute_all(f"PRAGMA foreign_key_list({table_name})")
+            foreign_keys = []
+
+            for fk in fk_result:
+                foreign_keys.append({
+                    'column': fk['from'],
+                    'referenced_table': fk['table'],
+                    'referenced_column': fk['to'],
+                    'on_delete': fk.get('on_delete', 'NO ACTION'),
+                    'on_update': fk.get('on_update', 'NO ACTION')
+                })
+
+            # Get indexes
+            indexes_result = db.execute_all(f"PRAGMA index_list({table_name})")
+            indexes = []
+
+            for idx in indexes_result:
+                idx_info = db.execute_all(f"PRAGMA index_info({idx['name']})")
+                index_columns = [col['name'] for col in idx_info]
+                indexes.append({
+                    'name': idx['name'],
+                    'unique': bool(idx['unique']),
+                    'columns': index_columns
+                })
+
+            schema['tables'].append({
+                'name': table_name,
+                'columns': columns,
+                'foreign_keys': foreign_keys,
+                'indexes': indexes
+            })
+
+        # Log admin action
+        enhanced_audit_logger.log_admin_action(
+            action='VIEW_DATABASE_SCHEMA',
+            user_id=current_user.id
+        )
+
+        return jsonify({'schema': schema}), 200
+
+    except Exception as e:
+        print(f"Error fetching database schema: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @admin_bp.route('/reset-demo-account', methods=['POST'])
 @login_required
 @admin_required
