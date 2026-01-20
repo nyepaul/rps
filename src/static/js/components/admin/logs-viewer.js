@@ -520,11 +520,11 @@ async function showLogDetails(logId) {
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0,0,0,0.85);
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 10000;
+            z-index: 10002;
         `;
 
         const timestamp = new Date(log.created_at).toLocaleString();
