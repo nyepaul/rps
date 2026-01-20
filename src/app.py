@@ -2,7 +2,8 @@
 
 Authored by: pan
 """
-from flask import Flask, send_from_directory, jsonify
+from flask import Flask, send_from_directory, jsonify, request
+from flask_login import current_user
 from src.config import config
 from src.extensions import init_extensions
 from src.auth.routes import auth_bp
@@ -20,6 +21,7 @@ from src.routes.tax_optimization import tax_optimization_bp
 from src.routes.fingerprint import fingerprint_bp
 from src.routes.events import events_bp
 from src.__version__ import __version__, __release_date__, __release_notes__
+from src.services.enhanced_audit_logger import EnhancedAuditLogger
 import os
 import logging
 from logging.handlers import RotatingFileHandler
@@ -34,6 +36,38 @@ def create_app(config_name='development'):
 
     # Initialize extensions
     init_extensions(app)
+
+    # Network access logging - log all requests including unauthenticated
+    @app.before_request
+    def log_network_access():
+        """Log all network access to the application, even without user interaction."""
+        # Skip logging for static assets to avoid excessive logs
+        if request.path.startswith('/css/') or \
+           request.path.startswith('/js/') or \
+           request.path.startswith('/images/') or \
+           request.path.startswith('/fonts/') or \
+           request.path.endswith('.ico') or \
+           request.path.endswith('.png') or \
+           request.path.endswith('.jpg') or \
+           request.path.endswith('.svg') or \
+           request.path.endswith('.woff') or \
+           request.path.endswith('.woff2'):
+            return
+
+        # Determine user_id (None for unauthenticated)
+        user_id = None
+        if current_user and current_user.is_authenticated:
+            user_id = current_user.id
+
+        # Log the network access
+        EnhancedAuditLogger.log(
+            action='NETWORK_ACCESS',
+            table_name=None,
+            record_id=None,
+            user_id=user_id,
+            details=None,
+            status_code=None  # Will be set in after_request
+        )
 
     # Register blueprints
     app.register_blueprint(auth_bp)
