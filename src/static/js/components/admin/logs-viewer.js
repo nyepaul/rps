@@ -27,8 +27,10 @@ export async function renderLogsViewer(container) {
             <h3 style="font-size: 16px; margin-bottom: 15px;">🔍 Filters</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                 <div>
-                    <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">User ID</label>
-                    <input type="number" id="filter-user-id" placeholder="Filter by user ID" style="width: 100%; padding: 8px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
+                    <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">User</label>
+                    <select id="filter-user-id" style="width: 100%; padding: 8px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); cursor: pointer;">
+                        <option value="">All Users</option>
+                    </select>
                 </div>
                 <div>
                     <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">Action</label>
@@ -85,6 +87,9 @@ export async function renderLogsViewer(container) {
         <div id="logs-pagination" style="margin-top: 20px; display: flex; justify-content: center; align-items: center; gap: 15px;"></div>
     `;
 
+    // Load users into dropdown
+    await loadUsersFilter(container);
+
     // Setup event handlers
     setupLogsViewerHandlers(container);
 
@@ -119,6 +124,38 @@ function setupLogsViewerHandlers(container) {
     container.querySelector('#export-logs-btn').addEventListener('click', async () => {
         await exportLogs(container);
     });
+}
+
+/**
+ * Load users into filter dropdown
+ */
+async function loadUsersFilter(container) {
+    try {
+        // Get all users
+        const response = await apiClient.get('/api/admin/users?limit=1000');
+        const users = response.users || [];
+
+        const userSelect = container.querySelector('#filter-user-id');
+        if (!users.length) {
+            return;
+        }
+
+        // Sort users alphabetically by username
+        users.sort((a, b) => a.username.localeCompare(b.username));
+
+        // Populate dropdown
+        userSelect.innerHTML = `
+            <option value="">All Users</option>
+            ${users.map(user => `
+                <option value="${user.id}">
+                    ${user.username} (ID: ${user.id})${user.is_admin ? ' - Admin' : ''}
+                </option>
+            `).join('')}
+        `;
+
+    } catch (error) {
+        console.error('Error loading users filter:', error);
+    }
 }
 
 /**
