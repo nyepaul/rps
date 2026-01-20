@@ -86,7 +86,24 @@ mypy src/               # Type checking
 ./bin/setup-backup-timer        # Install automated daily backups
 ```
 
-See `docs/BACKUP_GUIDE.md` for comprehensive backup documentation.
+See [docs/BACKUP_GUIDE.md](docs/BACKUP_GUIDE.md) for comprehensive backup documentation.
+
+## Documentation Structure
+
+All documentation is organized in the `docs/` directory:
+- **guides/** - User guides and tutorials
+- **reference/** - Technical reference documentation
+- **deployment/** - Deployment and infrastructure setup
+- **security/** - Security documentation and fixes
+- **ai-integration/** - AI service integration guides
+- **architecture/** - System architecture documentation
+
+Key documents:
+- [Quick Start Guide](docs/guides/QUICKSTART.md)
+- [Deployment Guide](docs/deployment/DEPLOYMENT.md)
+- [Security Documentation](docs/security/SYSTEM_SECURITY_DOCUMENTATION.md)
+- [Admin System Guide](docs/reference/ADMIN_SYSTEM_GUIDE.md)
+- [Backup Guide](docs/BACKUP_GUIDE.md)
 
 ## Architecture
 

@@ -45,3 +45,6 @@ backups/data/rps_data_*
 backups/system/*.tar.gz
 backups/system/*.tar
 backups/system/rps_system_*
+
+# Log files in root (should be in logs/)
+/*.log

@@ -1454,9 +1454,9 @@ def get_documentation(doc_name: str):
 
         # Whitelist of allowed documentation files
         allowed_docs = {
-            'system-security': 'SYSTEM_SECURITY_DOCUMENTATION.md',
-            'user-profile-relationship': 'USER_PROFILE_SCENARIO_RELATIONSHIP.md',
-            'asset-fields': 'ASSET_FIELDS_REFERENCE.md'
+            'system-security': 'docs/security/SYSTEM_SECURITY_DOCUMENTATION.md',
+            'user-profile-relationship': 'docs/reference/USER_PROFILE_SCENARIO_RELATIONSHIP.md',
+            'asset-fields': 'docs/reference/ASSET_FIELDS_REFERENCE.md'
         }
 
         if doc_name not in allowed_docs:
@@ -1987,4 +1987,64 @@ def restore_backup():
         return jsonify({'error': 'Restore timed out'}), 500
     except Exception as e:
         print(f"Error restoring backup: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/backup/<backup_type>/<filename>', methods=['DELETE'])
+@login_required
+@super_admin_required
+def delete_backup(backup_type: str, filename: str):
+    """
+    Delete a backup file.
+
+    Path parameters:
+        - backup_type: 'full', 'data', or 'system'
+        - filename: Name of the backup file to delete
+    """
+    try:
+        import os
+        from pathlib import Path
+
+        # Validate backup type
+        if backup_type not in ['full', 'data', 'system']:
+            return jsonify({'error': 'Invalid backup type'}), 400
+
+        # Validate filename to prevent directory traversal
+        if '..' in filename or '/' in filename or '\\' in filename:
+            return jsonify({'error': 'Invalid filename'}), 400
+
+        # Construct path
+        project_root = Path(__file__).parent.parent.parent
+        if backup_type == 'full':
+            backup_path = project_root / 'backups' / filename
+        else:
+            backup_path = project_root / 'backups' / backup_type / filename
+
+        if not backup_path.exists():
+            return jsonify({'error': 'Backup file not found'}), 404
+
+        # Get file info before deletion
+        file_size = backup_path.stat().st_size
+
+        # Delete the file
+        os.remove(str(backup_path))
+
+        # Log admin action
+        enhanced_audit_logger.log_admin_action(
+            action='DELETE_BACKUP',
+            details={
+                'backup_type': backup_type,
+                'filename': filename,
+                'size_bytes': file_size
+            },
+            user_id=current_user.id
+        )
+
+        return jsonify({
+            'success': True,
+            'message': f'Backup {filename} deleted successfully'
+        }), 200
+
+    except Exception as e:
+        print(f"Error deleting backup: {e}")
         return jsonify({'error': str(e)}), 500

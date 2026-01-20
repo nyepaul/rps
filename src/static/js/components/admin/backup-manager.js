@@ -338,8 +338,12 @@ async function loadBackups(container, type = 'all') {
                                         📋 Info
                                     </button>
                                     <button class="restore-btn" data-type="${backup.type}" data-filename="${backup.filename}"
-                                            style="padding: 6px 12px; background: var(--warning-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                                            style="padding: 6px 12px; margin-right: 8px; background: var(--warning-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
                                         ↻ Restore
+                                    </button>
+                                    <button class="delete-btn" data-type="${backup.type}" data-filename="${backup.filename}"
+                                            style="padding: 6px 12px; background: var(--danger-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                                        🗑️ Delete
                                     </button>
                                 </td>
                             </tr>
@@ -386,6 +390,16 @@ function setupBackupActions(container) {
             const type = btn.getAttribute('data-type');
             const filename = btn.getAttribute('data-filename');
             await showRestoreConfirmation(container, type, filename);
+        });
+    });
+
+    // Delete buttons
+    const deleteButtons = container.querySelectorAll('.delete-btn');
+    deleteButtons.forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const type = btn.getAttribute('data-type');
+            const filename = btn.getAttribute('data-filename');
+            await showDeleteConfirmation(container, type, filename);
         });
     });
 }
@@ -591,6 +605,87 @@ async function performRestore(container, backupType, filename, restoreType) {
         document.body.removeChild(overlay);
         console.error('Error restoring backup:', error);
         showError(`Failed to restore backup: ${error.message}`);
+    }
+}
+
+/**
+ * Show delete confirmation dialog
+ */
+async function showDeleteConfirmation(container, backupType, filename) {
+    // Create confirmation modal
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000;';
+
+    modal.innerHTML = `
+        <div style="background: var(--bg-primary); border-radius: 12px; max-width: 500px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
+            <div style="padding: 25px; border-bottom: 2px solid var(--border-color);">
+                <h2 style="margin: 0; font-size: 20px; color: var(--danger-color);">🗑️ Delete Backup</h2>
+            </div>
+
+            <div style="padding: 25px;">
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--danger-color); margin-bottom: 20px;">
+                    <p style="margin: 0 0 15px 0; font-weight: 600; color: var(--danger-color);">
+                        Are you sure you want to delete this backup?
+                    </p>
+                    <div style="font-size: 14px; color: var(--text-secondary);">
+                        <div style="margin-bottom: 8px;"><strong>Backup:</strong> ${filename}</div>
+                        <div><strong>Type:</strong> ${backupType}</div>
+                    </div>
+                </div>
+
+                <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 13px;">
+                    <strong>⚠️ Warning:</strong> This action cannot be undone. The backup file will be permanently deleted.
+                </div>
+
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button id="cancel-delete" style="padding: 10px 20px; background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        Cancel
+                    </button>
+                    <button id="confirm-delete" style="padding: 10px 20px; background: var(--danger-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        Delete Backup
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Handle cancel
+    modal.querySelector('#cancel-delete').addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+        }
+    });
+
+    // Handle confirm
+    modal.querySelector('#confirm-delete').addEventListener('click', async () => {
+        document.body.removeChild(modal);
+        await performDelete(container, backupType, filename);
+    });
+}
+
+/**
+ * Perform the actual deletion
+ */
+async function performDelete(container, backupType, filename) {
+    try {
+        await apiClient.delete(`/api/admin/backup/${backupType}/${encodeURIComponent(filename)}`);
+
+        showSuccess(`Backup ${filename} deleted successfully`);
+
+        // Reload backup list
+        const activeFilter = container.querySelector('.backup-filter.active');
+        const filterType = activeFilter ? activeFilter.getAttribute('data-type') : 'all';
+        await loadBackups(container, filterType);
+
+    } catch (error) {
+        console.error('Error deleting backup:', error);
+        showError(`Failed to delete backup: ${error.message}`);
     }
 }
 
