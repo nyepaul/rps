@@ -137,7 +137,7 @@ def create_app(config_name='development'):
             "style-src 'self' 'unsafe-inline' https://unpkg.com",
             "img-src 'self' data: https://*.tile.openstreetmap.org",
             "font-src 'self' data:",
-            "connect-src 'self'",
+            "connect-src 'self' https://*.tile.openstreetmap.org",
             "frame-ancestors 'self'",
             "base-uri 'self'",
             "form-action 'self'",

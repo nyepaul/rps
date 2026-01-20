@@ -696,7 +696,8 @@ async function showLogDetails(logId) {
                         // Add OpenStreetMap tile layer
                         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                             attribution: '© OpenStreetMap contributors',
-                            maxZoom: 19
+                            maxZoom: 19,
+                            crossOrigin: true
                         }).addTo(map);
 
                         // Add marker at the location
@@ -965,7 +966,8 @@ async function showIPLocationsMap() {
                     // Add OpenStreetMap tile layer
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         attribution: '© OpenStreetMap contributors',
-                        maxZoom: 19
+                        maxZoom: 19,
+                        crossOrigin: true
                     }).addTo(map);
 
                     // Add markers for each unique IP
