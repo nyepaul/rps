@@ -693,22 +693,29 @@ async function showLogDetails(logId) {
                             10 // zoom level
                         );
 
-                        // Add OpenStreetMap tile layer
-                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                            attribution: '© OpenStreetMap contributors',
+                        // Add CartoDB Dark Matter tile layer for dark background
+                        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                            attribution: '© OpenStreetMap contributors © CARTO',
                             maxZoom: 19,
                             crossOrigin: true
                         }).addTo(map);
 
-                        // Add marker at the location
-                        const marker = L.marker([log.geo_location.lat, log.geo_location.lon]).addTo(map);
+                        // Add bright cyan marker with glow effect
+                        const customIcon = L.divIcon({
+                            className: 'custom-marker',
+                            html: '<div style="background: #00ddff; width: 16px; height: 16px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.9); box-shadow: 0 0 15px rgba(0, 221, 255, 0.6), 0 2px 8px rgba(0,0,0,0.8);"></div>',
+                            iconSize: [16, 16],
+                            iconAnchor: [8, 8]
+                        });
 
-                        // Add popup with location details
+                        const marker = L.marker([log.geo_location.lat, log.geo_location.lon], { icon: customIcon }).addTo(map);
+
+                        // Add popup with location details (dark theme)
                         marker.bindPopup(`
-                            <div style="text-align: center; padding: 5px;">
-                                <strong style="font-size: 14px;">${log.geo_location.city}</strong><br>
-                                <span style="font-size: 12px; color: #666;">${log.geo_location.region}, ${log.geo_location.country}</span><br>
-                                <span style="font-size: 11px; color: #888; font-family: monospace;">${log.ip_address}</span>
+                            <div style="text-align: center; padding: 8px; background: #1a1a1a; color: #ffffff; border-radius: 6px;">
+                                <strong style="font-size: 14px; color: #00ddff; text-shadow: 0 0 8px rgba(0, 221, 255, 0.6);">${log.geo_location.city}</strong><br>
+                                <span style="font-size: 12px; color: #aaaaaa;">${log.geo_location.region}, ${log.geo_location.country}</span><br>
+                                <span style="font-size: 11px; color: #00ddff; font-family: monospace; text-shadow: 0 0 6px rgba(0, 221, 255, 0.4);">${log.ip_address}</span>
                             </div>
                         `).openPopup();
                     } catch (error) {
@@ -941,41 +948,82 @@ async function showIPLocationsMap() {
                     // Initialize map
                     const map = L.map('ip-locations-map').setView([centerLat, centerLon], 2);
 
-                    // Add OpenStreetMap tile layer
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '© OpenStreetMap contributors',
+                    // Add CartoDB Dark Matter tile layer for dark background
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                        attribution: '© OpenStreetMap contributors © CARTO',
                         maxZoom: 19,
                         crossOrigin: true
                     }).addTo(map);
 
+                    // Calculate access count thresholds for color coding
+                    const accessCounts = uniqueIPs.map(ip => ip.count).sort((a, b) => b - a);
+                    const highThreshold = accessCounts[Math.floor(accessCounts.length * 0.25)] || accessCounts[0];
+                    const lowThreshold = accessCounts[Math.floor(accessCounts.length * 0.75)] || accessCounts[accessCounts.length - 1];
+
                     // Add markers for each unique IP
                     const markers = [];
                     uniqueIPs.forEach(ipData => {
+                        // Determine color based on access count (precedence)
+                        let markerColor, glowColor, labelColor;
+                        if (ipData.count >= highThreshold) {
+                            // High activity - bright red/orange
+                            markerColor = '#ff4444';
+                            glowColor = 'rgba(255, 68, 68, 0.6)';
+                            labelColor = '#ff4444';
+                        } else if (ipData.count >= lowThreshold) {
+                            // Medium activity - bright yellow/gold
+                            markerColor = '#ffaa00';
+                            glowColor = 'rgba(255, 170, 0, 0.6)';
+                            labelColor = '#ffaa00';
+                        } else {
+                            // Low activity - bright cyan/blue
+                            markerColor = '#00ddff';
+                            glowColor = 'rgba(0, 221, 255, 0.6)';
+                            labelColor = '#00ddff';
+                        }
+
                         // Scale marker size based on access count
                         const maxCount = Math.max(...uniqueIPs.map(ip => ip.count));
-                        const markerSize = Math.max(8, Math.min(20, 8 + (ipData.count / maxCount) * 12));
+                        const markerSize = Math.max(10, Math.min(24, 10 + (ipData.count / maxCount) * 14));
 
-                        // Create custom icon with size based on count
+                        // Create custom icon with color based on count
                         const customIcon = L.divIcon({
                             className: 'custom-marker',
-                            html: `<div style="background: #3498db; width: ${markerSize}px; height: ${markerSize}px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+                            html: `<div style="background: ${markerColor}; width: ${markerSize}px; height: ${markerSize}px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.9); box-shadow: 0 0 15px ${glowColor}, 0 2px 8px rgba(0,0,0,0.8);"></div>`,
                             iconSize: [markerSize, markerSize],
                             iconAnchor: [markerSize / 2, markerSize / 2]
                         });
 
                         const marker = L.marker([ipData.lat, ipData.lon], { icon: customIcon }).addTo(map);
 
-                        // Add popup with IP details
-                        marker.bindPopup(`
-                            <div style="text-align: center; padding: 8px; min-width: 200px;">
-                                <div style="font-size: 16px; font-weight: 700; margin-bottom: 8px; color: #3498db; font-family: monospace;">${ipData.ip}</div>
-                                <div style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">${ipData.city}</div>
-                                <div style="font-size: 12px; color: #666; margin-bottom: 8px;">${ipData.region}, ${ipData.country}</div>
-                                <div style="font-size: 11px; padding: 4px 8px; background: #e8f5e9; border-radius: 4px; color: #2e7d32; font-weight: 600;">
+                        // Add popup with IP details and button to view individual accesses
+                        const popupContent = `
+                            <div style="text-align: center; padding: 10px; min-width: 220px; background: #1a1a1a; color: #ffffff; border-radius: 8px;">
+                                <div style="font-size: 16px; font-weight: 700; margin-bottom: 10px; color: ${labelColor}; font-family: monospace; text-shadow: 0 0 8px ${glowColor};">${ipData.ip}</div>
+                                <div style="font-size: 15px; font-weight: 600; margin-bottom: 5px; color: #ffffff;">${ipData.city}</div>
+                                <div style="font-size: 13px; color: #aaaaaa; margin-bottom: 10px;">${ipData.region}, ${ipData.country}</div>
+                                <div style="font-size: 12px; padding: 6px 12px; background: ${markerColor}; border-radius: 6px; color: #000000; font-weight: 700; box-shadow: 0 0 10px ${glowColor}; margin-bottom: 10px;">
                                     ${ipData.count} access${ipData.count !== 1 ? 'es' : ''}
                                 </div>
+                                <button class="view-ip-logs-btn" data-ip="${ipData.ip}" style="padding: 8px 16px; background: ${markerColor}; color: #000000; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; width: 100%; transition: opacity 0.2s; box-shadow: 0 0 8px ${glowColor};">
+                                    📋 View All Accesses
+                                </button>
                             </div>
-                        `);
+                        `;
+
+                        marker.bindPopup(popupContent);
+
+                        // Add click handler for the button
+                        marker.on('popupopen', () => {
+                            const btn = document.querySelector('.view-ip-logs-btn[data-ip="' + ipData.ip + '"]');
+                            if (btn) {
+                                btn.addEventListener('click', () => {
+                                    showIPAccessDetails(ipData.ip, ipData.city, ipData.region, ipData.country);
+                                });
+                                btn.addEventListener('mouseenter', () => btn.style.opacity = '0.8');
+                                btn.addEventListener('mouseleave', () => btn.style.opacity = '1');
+                            }
+                        });
 
                         markers.push(marker);
                     });
@@ -996,5 +1044,141 @@ async function showIPLocationsMap() {
     } catch (error) {
         console.error('Failed to load IP locations:', error);
         showError(`Failed to load IP locations: ${error.message}`);
+    }
+}
+
+/**
+ * Show all access records for a specific IP address
+ */
+async function showIPAccessDetails(ipAddress, city, region, country) {
+    try {
+        // Fetch all logs for this IP (using high limit to get all records)
+        const params = new URLSearchParams({
+            ip_address: ipAddress,
+            limit: 500,
+            offset: 0
+        });
+
+        const response = await apiClient.get(`/api/admin/logs?${params.toString()}`);
+        const logs = response.logs || [];
+
+        if (logs.length === 0) {
+            showError(`No access records found for ${ipAddress}`);
+            return;
+        }
+
+        // Create modal
+        const modal = document.createElement('div');
+        modal.className = 'ip-access-details-modal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+        `;
+
+        modal.innerHTML = `
+            <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; width: 90%; max-width: 1000px; max-height: 90vh; display: flex; flex-direction: column;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 15px;">
+                    <div>
+                        <h2 style="margin: 0; font-size: 20px;">📋 Access Records for ${ipAddress}</h2>
+                        <p style="margin: 5px 0 0 0; font-size: 13px; color: var(--text-secondary);">
+                            ${city}, ${region}, ${country} • ${logs.length} record${logs.length !== 1 ? 's' : ''}
+                        </p>
+                    </div>
+                    <button class="close-access-modal-btn" style="background: transparent; border: none; font-size: 28px; cursor: pointer; color: var(--text-secondary); padding: 0; line-height: 1;">×</button>
+                </div>
+
+                <div style="flex: 1; overflow-y: auto; margin-bottom: 20px;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead style="position: sticky; top: 0; background: var(--bg-tertiary); z-index: 1;">
+                            <tr style="border-bottom: 2px solid var(--border-color);">
+                                <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">Timestamp</th>
+                                <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">Action</th>
+                                <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">User</th>
+                                <th style="text-align: center; padding: 12px; font-size: 12px; font-weight: 600;">Status</th>
+                                <th style="text-align: center; padding: 12px; font-size: 12px; font-weight: 600;">Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${logs.map(log => `
+                                <tr class="access-log-row" data-log-id="${log.id}" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;" onmouseenter="this.style.background='var(--bg-tertiary)'" onmouseleave="this.style.background='transparent'">
+                                    <td style="padding: 12px; font-size: 13px;">
+                                        ${new Date(log.created_at).toLocaleString()}
+                                    </td>
+                                    <td style="padding: 12px;">
+                                        <span style="font-size: 11px; padding: 4px 8px; background: var(--bg-tertiary); border-radius: 4px; font-weight: 600;">${log.action}</span>
+                                    </td>
+                                    <td style="padding: 12px; font-size: 13px;">
+                                        ${log.username || '<i style="color: var(--text-secondary);">anonymous</i>'}
+                                    </td>
+                                    <td style="padding: 12px; text-align: center;">
+                                        ${log.status_code ? `<span style="font-size: 11px; padding: 4px 8px; background: ${log.status_code >= 400 ? 'var(--danger-color)' : 'var(--success-color)'}; color: white; border-radius: 4px; font-weight: 600;">${log.status_code}</span>` : '—'}
+                                    </td>
+                                    <td style="padding: 12px; text-align: center;">
+                                        <button class="view-log-detail-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
+                                            View
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end;">
+                    <button class="close-access-modal-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Add to document
+        document.body.appendChild(modal);
+
+        // Setup close handlers
+        modal.querySelectorAll('.close-access-modal-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                modal.remove();
+            });
+        });
+
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+
+        // Close on Escape key
+        const escHandler = (e) => {
+            if (e.key === 'Escape') {
+                modal.remove();
+                document.removeEventListener('keydown', escHandler);
+            }
+        };
+        document.addEventListener('keydown', escHandler);
+
+        // Setup row click handlers to show log details
+        modal.querySelectorAll('.access-log-row').forEach(row => {
+            row.addEventListener('click', async () => {
+                const logId = row.getAttribute('data-log-id');
+                const log = logs.find(l => l.id == logId);
+                if (log) {
+                    await showLogDetails(log);
+                }
+            });
+        });
+
+    } catch (error) {
+        console.error('Failed to load IP access details:', error);
+        showError(`Failed to load access details: ${error.message}`);
     }
 }

@@ -2077,3 +2077,187 @@ def delete_backup(backup_type: str, filename: str):
     except Exception as e:
         print(f"Error deleting backup: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+# ==========================================
+# REPORTS
+# ==========================================
+
+@admin_bp.route('/reports/users-by-location', methods=['GET'])
+@login_required
+@super_admin_required
+def get_users_by_location_report():
+    """
+    Generate a comprehensive report showing which users access the system from which locations.
+
+    Super-admin only endpoint that provides:
+    - User access patterns by location
+    - Multiple location detection
+    - Security alerts for unusual patterns
+    - Timeline of location changes
+
+    Query parameters:
+        - days: Number of days to analyze (default: 30, max: 365)
+    """
+    try:
+        days = request.args.get('days', 30, type=int)
+        days = min(max(days, 1), 365)  # Between 1 and 365 days
+
+        from src.database.connection import db
+        from src.auth.models import User
+
+        cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
+
+        # Get all users with their access patterns by location
+        query = '''
+            SELECT
+                l.user_id,
+                l.ip_address,
+                l.geo_location,
+                COUNT(*) as access_count,
+                MIN(l.created_at) as first_access,
+                MAX(l.created_at) as last_access,
+                l.action
+            FROM enhanced_audit_log l
+            WHERE l.created_at >= ?
+            AND l.user_id IS NOT NULL
+            AND l.geo_location IS NOT NULL
+            AND l.action IN ('LOGIN_SUCCESS', 'NETWORK_ACCESS')
+            GROUP BY l.user_id, l.ip_address, l.geo_location
+            ORDER BY l.user_id, access_count DESC
+        '''
+
+        rows = db.execute(query, (cutoff_date,))
+
+        # Organize data by user
+        users_by_location = {}
+
+        for row in rows:
+            user_id = row['user_id']
+
+            if user_id not in users_by_location:
+                # Get user details
+                user = User.get_by_id(user_id)
+                if not user:
+                    continue
+
+                users_by_location[user_id] = {
+                    'user_id': user_id,
+                    'username': user.username,
+                    'email': user.email,
+                    'is_active': user.is_active,
+                    'locations': [],
+                    'total_accesses': 0,
+                    'unique_locations': 0,
+                    'unique_ips': set(),
+                    'first_seen': None,
+                    'last_seen': None,
+                    'security_flags': []
+                }
+
+            # Parse geolocation
+            try:
+                geo = json.loads(row['geo_location'])
+
+                # Only process if we have valid coordinates
+                if not (geo.get('lat') and geo.get('lon')):
+                    continue
+
+                location_data = {
+                    'ip_address': row['ip_address'],
+                    'city': geo.get('city', 'Unknown'),
+                    'region': geo.get('region', 'Unknown'),
+                    'country': geo.get('country', 'Unknown'),
+                    'lat': geo.get('lat'),
+                    'lon': geo.get('lon'),
+                    'access_count': row['access_count'],
+                    'first_access': row['first_access'],
+                    'last_access': row['last_access']
+                }
+
+                users_by_location[user_id]['locations'].append(location_data)
+                users_by_location[user_id]['total_accesses'] += row['access_count']
+                users_by_location[user_id]['unique_ips'].add(row['ip_address'])
+
+                # Update first/last seen
+                if not users_by_location[user_id]['first_seen'] or row['first_access'] < users_by_location[user_id]['first_seen']:
+                    users_by_location[user_id]['first_seen'] = row['first_access']
+
+                if not users_by_location[user_id]['last_seen'] or row['last_access'] > users_by_location[user_id]['last_seen']:
+                    users_by_location[user_id]['last_seen'] = row['last_access']
+
+            except (json.JSONDecodeError, TypeError):
+                continue
+
+        # Calculate security flags and finalize data
+        for user_id, user_data in users_by_location.items():
+            user_data['unique_locations'] = len(user_data['locations'])
+            user_data['unique_ips'] = len(user_data['unique_ips'])
+
+            # Security flags
+            if user_data['unique_locations'] > 5:
+                user_data['security_flags'].append({
+                    'type': 'MULTIPLE_LOCATIONS',
+                    'severity': 'medium',
+                    'message': f"User accessed from {user_data['unique_locations']} different locations"
+                })
+
+            if user_data['unique_ips'] > 10:
+                user_data['security_flags'].append({
+                    'type': 'MULTIPLE_IPS',
+                    'severity': 'medium',
+                    'message': f"User accessed from {user_data['unique_ips']} different IP addresses"
+                })
+
+            # Check for rapid location changes (within 1 hour from different locations)
+            locations_sorted = sorted(user_data['locations'], key=lambda x: x['last_access'])
+            for i in range(len(locations_sorted) - 1):
+                loc1 = locations_sorted[i]
+                loc2 = locations_sorted[i + 1]
+
+                # Different cities within short time
+                if loc1['city'] != loc2['city']:
+                    time1 = datetime.fromisoformat(loc1['last_access'])
+                    time2 = datetime.fromisoformat(loc2['first_access'])
+
+                    if (time2 - time1).total_seconds() < 3600:  # Less than 1 hour
+                        user_data['security_flags'].append({
+                            'type': 'RAPID_LOCATION_CHANGE',
+                            'severity': 'high',
+                            'message': f"Location changed from {loc1['city']} to {loc2['city']} within 1 hour"
+                        })
+                        break  # Only flag once
+
+            # Convert set to count for JSON serialization
+            user_data['unique_ips'] = len(user_data['unique_ips'])
+
+        # Convert to list and sort by total accesses
+        result = sorted(users_by_location.values(), key=lambda x: x['total_accesses'], reverse=True)
+
+        # Generate summary statistics
+        summary = {
+            'total_users': len(result),
+            'total_locations': sum(u['unique_locations'] for u in result),
+            'users_with_multiple_locations': len([u for u in result if u['unique_locations'] > 1]),
+            'users_with_security_flags': len([u for u in result if u['security_flags']]),
+            'period_days': days,
+            'generated_at': datetime.now().isoformat()
+        }
+
+        # Log the report access
+        enhanced_audit_logger.log_admin_action(
+            action='VIEW_USERS_BY_LOCATION_REPORT',
+            details={'period_days': days, 'users_analyzed': len(result)},
+            user_id=current_user.id
+        )
+
+        return jsonify({
+            'summary': summary,
+            'users': result
+        }), 200
+
+    except Exception as e:
+        print(f"Error generating users-by-location report: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
