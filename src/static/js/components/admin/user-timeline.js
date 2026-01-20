@@ -32,9 +32,9 @@ export async function renderUserTimeline(container) {
             <!-- User Selection & Filters -->
             <div style="background: var(--bg-secondary); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
                 <h3 style="font-size: 16px; margin-bottom: 15px;">📋 Select User & Filters</h3>
-                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 15px; align-items: end;">
+                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px; align-items: end;">
                     <div>
-                        <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">User</label>
+                        <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">User (auto-loads on selection)</label>
                         <input
                             type="text"
                             id="timeline-user-input"
@@ -59,14 +59,6 @@ export async function renderUserTimeline(container) {
                             id="timeline-end-date"
                             style="width: 100%; padding: 10px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);"
                         >
-                    </div>
-                    <div>
-                        <button
-                            id="load-timeline-btn"
-                            style="width: 100%; padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;"
-                        >
-                            Load Timeline
-                        </button>
                     </div>
                 </div>
             </div>
@@ -93,13 +85,12 @@ export async function renderUserTimeline(container) {
  * Setup event handlers for timeline
  */
 function setupTimelineHandlers(container) {
-    const loadBtn = container.querySelector('#load-timeline-btn');
     const userInput = container.querySelector('#timeline-user-input');
+    let loadTimeout = null;
 
-    loadBtn.addEventListener('click', async () => {
+    const attemptLoadTimeline = async () => {
         const userValue = userInput.value.trim();
         if (!userValue) {
-            showError('Please enter or select a user');
             return;
         }
 
@@ -111,20 +102,63 @@ function setupTimelineHandlers(container) {
             // Look up username in mapping
             userId = userMapping[userValue.toLowerCase()];
             if (!userId) {
-                showError('User not found');
+                // silently ignore if user not found (might still be typing)
                 return;
             }
         }
 
         await loadUserTimeline(container, userId);
+    };
+
+    // Auto-load on input with debounce
+    userInput.addEventListener('input', () => {
+        // Clear previous timeout
+        if (loadTimeout) {
+            clearTimeout(loadTimeout);
+        }
+
+        // Set new timeout to load after user stops typing
+        loadTimeout = setTimeout(async () => {
+            const userValue = userInput.value.trim();
+            if (userValue && userMapping[userValue.toLowerCase()]) {
+                // Exact match found - auto-load
+                await attemptLoadTimeline();
+            }
+        }, 500); // Wait 500ms after last keystroke
     });
 
-    // Allow Enter key to load timeline
-    userInput.addEventListener('keypress', (e) => {
+    // Also load on blur if valid user
+    userInput.addEventListener('blur', async () => {
+        if (loadTimeout) {
+            clearTimeout(loadTimeout);
+        }
+        await attemptLoadTimeline();
+    });
+
+    // Allow Enter key to load timeline immediately
+    userInput.addEventListener('keypress', async (e) => {
         if (e.key === 'Enter') {
-            loadBtn.click();
+            if (loadTimeout) {
+                clearTimeout(loadTimeout);
+            }
+            await attemptLoadTimeline();
         }
     });
+
+    // Also listen for date changes to reload timeline
+    const startDateInput = container.querySelector('#timeline-start-date');
+    const endDateInput = container.querySelector('#timeline-end-date');
+
+    const reloadIfUserSelected = async () => {
+        const userValue = userInput.value.trim();
+        if (userValue) {
+            // User already selected, reload with new date filters
+            await attemptLoadTimeline();
+        }
+    };
+
+    startDateInput.addEventListener('change', reloadIfUserSelected);
+    endDateInput.addEventListener('change', reloadIfUserSelected);
 }
 
 /**
