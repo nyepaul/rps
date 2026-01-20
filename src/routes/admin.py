@@ -865,12 +865,14 @@ def get_database_schema():
             foreign_keys = []
 
             for fk in fk_result:
+                # Convert Row to dict to safely access values
+                fk_dict = dict(fk)
                 foreign_keys.append({
-                    'column': fk['from'],
-                    'referenced_table': fk['table'],
-                    'referenced_column': fk['to'],
-                    'on_delete': fk.get('on_delete', 'NO ACTION'),
-                    'on_update': fk.get('on_update', 'NO ACTION')
+                    'column': fk_dict['from'],
+                    'referenced_table': fk_dict['table'],
+                    'referenced_column': fk_dict['to'],
+                    'on_delete': fk_dict.get('on_delete', 'NO ACTION'),
+                    'on_update': fk_dict.get('on_update', 'NO ACTION')
                 })
 
             # Get indexes
