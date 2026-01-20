@@ -49,6 +49,7 @@ export async function renderLogsViewer(container) {
                         <option value="UPDATE">UPDATE</option>
                         <option value="DELETE">DELETE</option>
                         <option value="LOGIN_ATTEMPT">LOGIN_ATTEMPT</option>
+                        <option value="NETWORK_ACCESS">NETWORK_ACCESS</option>
                         <option value="ADMIN_ACCESS">ADMIN_ACCESS</option>
                         <option value="ADMIN_ACCESS_DENIED">ADMIN_ACCESS_DENIED</option>
                     </select>
@@ -409,7 +410,7 @@ function renderLogRow(log) {
                 </span>
             </td>
             <td style="padding: 12px; font-size: 12px;">
-                ${log.username ? log.username : (log.user_id ? `User ${log.user_id}` : 'Anonymous')}
+                ${log.username ? log.username : (log.user_id ? `User ${log.user_id}` : 'no_user')}
             </td>
             <td style="padding: 12px; font-size: 12px;">
                 <div>${log.ip_address || 'N/A'}</div>
@@ -440,6 +441,7 @@ function getActionColor(action) {
         'UPDATE': '#FFA500',
         'DELETE': 'var(--danger-color)',
         'LOGIN_ATTEMPT': '#764ba2',
+        'NETWORK_ACCESS': '#3498db',
         'ADMIN_ACCESS': 'var(--success-color)',
         'ADMIN_ACCESS_DENIED': 'var(--danger-color)'
     };
