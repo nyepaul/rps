@@ -10,6 +10,7 @@ from src.services.pdf_service import (
     generate_portfolio_report,
     generate_action_plan_report
 )
+from src.services.pdf_statement_service import generate_statement_report
 from src.services.retirement_model import (
     Person, FinancialProfile, MarketAssumptions, RetirementModel
 )

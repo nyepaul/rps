@@ -246,51 +246,21 @@ def logout():
             status_code=200
         )
 
-    # Clear session data including user_dek
-    session.pop('user_dek', None)
-
-    # CRITICAL: Remove Flask-Login's user_id from session BEFORE clearing
-    session.pop('_user_id', None)
-    session.pop('_fresh', None)
-    session.pop('_id', None)
-
-    # Logout user (clears Flask-Login session)
+    # Logout user FIRST (this removes _user_id from session)
     logout_user()
 
-    # Clear all session data and mark session as modified
-    session.clear()
+    # Clear ALL session data
+    for key in list(session.keys()):
+        session.pop(key)
+
+    # Mark session as modified to force Flask to regenerate the session cookie
     session.modified = True
 
-    # Force new session ID by deleting and recreating session
-    from flask import session as flask_session
-    flask_session.permanent = False
-
-    # Create response and explicitly clear cookies with proper security attributes
+    # Create response
     response = make_response(jsonify({'message': 'Logout successful'}), 200)
 
-    # Clear remember_token cookie if it exists
-    response.set_cookie(
-        'remember_token',
-        '',
-        max_age=0,
-        expires=0,
-        path='/',
-        secure=True,
-        httponly=True,
-        samesite='Lax'
-    )
-
-    # Clear session cookie - this ensures the client discards it
-    response.set_cookie(
-        'session',
-        '',
-        max_age=0,
-        expires=0,
-        path='/',
-        secure=True,
-        httponly=True,
-        samesite='Lax'
-    )
+    # DON'T manually clear cookies - let Flask handle session cookie regeneration
+    # Flask will send a new session cookie with the cleared session data
 
     return response
 
