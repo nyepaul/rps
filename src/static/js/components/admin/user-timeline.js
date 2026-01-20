@@ -246,20 +246,10 @@ function renderTimeline(container, timeline) {
             <p style="margin: 0; font-size: 14px; line-height: 1.6;">${summary}</p>
         </div>
 
-        <!-- Narrative -->
-        <div style="background: var(--bg-secondary); padding: 25px; border-radius: 12px; margin-bottom: 20px;">
-            <h3 style="font-size: 18px; margin-bottom: 15px;">📖 Activity Narrative</h3>
-            <div style="background: var(--bg-primary); padding: 20px; border-radius: 8px; line-height: 1.8; font-size: 15px;">
-                ${narrative}
-            </div>
-        </div>
-
-        <!-- Detailed Events Timeline -->
-        <div style="background: var(--bg-secondary); padding: 20px; border-radius: 12px;">
-            <h3 style="font-size: 18px; margin-bottom: 20px;">🕐 Detailed Event Timeline</h3>
-            <div style="position: relative;">
-                ${events.length > 0 ? renderEventTimeline(events) : '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">No events recorded</p>'}
-            </div>
+        <!-- Activity Timeline Table -->
+        <div style="background: var(--bg-secondary); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+            <h3 style="font-size: 18px; margin-bottom: 15px;">📖 Activity Timeline</h3>
+            ${events.length > 0 ? renderActivityTable(events) : '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">No events recorded</p>'}
         </div>
 
         <!-- Export Button -->
@@ -278,6 +268,119 @@ function renderTimeline(container, timeline) {
     exportBtn.addEventListener('click', () => {
         exportTimeline(timeline);
     });
+}
+
+/**
+ * Render activity table with rows and columns
+ */
+function renderActivityTable(events) {
+    return `
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: var(--bg-tertiary); border-bottom: 2px solid var(--border-color);">
+                        <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">Date</th>
+                        <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">Time</th>
+                        <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">Action</th>
+                        <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">Description</th>
+                        <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">Context</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${events.map(event => renderActivityRow(event)).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+/**
+ * Render a single activity row
+ */
+function renderActivityRow(event) {
+    const timestamp = event.timestamp || '';
+    const description = event.description || 'Unknown action';
+    const action = event.action || '';
+    const context = event.context || {};
+
+    // Format date and time
+    let dateStr = '';
+    let timeStr = '';
+    try {
+        const dt = new Date(timestamp);
+        dateStr = dt.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
+        timeStr = dt.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+    } catch {
+        dateStr = timestamp;
+        timeStr = '';
+    }
+
+    // Get icon and color based on action type
+    const icon = getActionIcon(action);
+    const actionColor = getActionColor(action);
+
+    // Build context info
+    const contextItems = [];
+    if (context.location) contextItems.push(`📍 ${context.location}`);
+    if (context.browser) contextItems.push(`🌐 ${context.browser}`);
+    if (context.device) contextItems.push(`📱 ${context.device}`);
+    if (context.profile) contextItems.push(`👤 ${context.profile}`);
+
+    return `
+        <tr style="border-bottom: 1px solid var(--border-color); transition: background 0.2s;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='transparent'">
+            <td style="padding: 12px; font-size: 13px; white-space: nowrap;">${dateStr}</td>
+            <td style="padding: 12px; font-size: 13px; white-space: nowrap;">${timeStr}</td>
+            <td style="padding: 12px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 16px;">${icon}</span>
+                    <span style="display: inline-block; padding: 4px 8px; background: ${actionColor}20; color: ${actionColor}; border-radius: 4px; font-size: 11px; font-weight: 600;">
+                        ${action}
+                    </span>
+                </div>
+            </td>
+            <td style="padding: 12px; font-size: 13px;">${description}</td>
+            <td style="padding: 12px; font-size: 12px; color: var(--text-secondary);">
+                ${contextItems.length > 0 ? contextItems.join('<br>') : '-'}
+            </td>
+        </tr>
+    `;
+}
+
+/**
+ * Get color for action type
+ */
+function getActionColor(action) {
+    const colorMap = {
+        'LOGIN_SUCCESS': 'var(--success-color)',
+        'LOGIN_ATTEMPT': '#764ba2',
+        'LOGOUT': '#FFA500',
+        'CREATE': 'var(--success-color)',
+        'UPDATE': '#FFA500',
+        'DELETE': 'var(--danger-color)',
+        'READ': 'var(--accent-color)',
+        'UI_CLICK': 'var(--accent-color)',
+        'UI_PAGE_VIEW': 'var(--accent-color)',
+        'UI_TAB_SWITCH': 'var(--accent-color)',
+        'UI_FORM_SUBMIT': 'var(--success-color)',
+        'UI_SEARCH': 'var(--accent-color)',
+        'UI_DOWNLOAD': 'var(--success-color)',
+        'RUN_ANALYSIS': '#764ba2',
+        'ADMIN_ACCESS': 'var(--success-color)',
+        'SESSION_START': 'var(--success-color)',
+        'SESSION_END': '#FFA500',
+        'SESSION_IDLE': 'var(--text-secondary)',
+        'SESSION_RESUME': 'var(--success-color)'
+    };
+
+    return colorMap[action] || 'var(--text-secondary)';
 }
 
 /**
