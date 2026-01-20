@@ -5,6 +5,8 @@
 import { formatCurrency } from '../../utils/formatters.js';
 import { getAssetTypeLabel } from './asset-form-fields.js';
 import { makeRowEditable } from './inline-editor.js';
+import { showAssetWizard } from './asset-wizard.js';
+import { store } from '../../state/store.js';
 
 /**
  * Render all assets in a simple flat list
@@ -64,59 +66,40 @@ export function renderAssetList(assets, container, onSaveCallback) {
         </div>
     `;
 
-    // Add click-to-edit functionality - inline editing with multi-column layout
+    // Add click-to-edit functionality - opens asset wizard modal
     container.querySelectorAll('.asset-row').forEach((row, idx) => {
         const asset = allAssets[idx];
 
-        const cancelEditing = () => {
-            // Trigger cancel by clicking the cancel button if it exists
-            const cancelBtn = row.querySelector('.cancel-inline-edit');
-            if (cancelBtn) {
-                cancelBtn.click();
-            }
-            row.classList.remove('editing');
-        };
+        const openEditModal = () => {
+            const profile = store.get('currentProfile');
+            if (!profile) return;
 
-        const startEditing = () => {
-            // If already editing, close the editor instead
-            if (row.classList.contains('editing')) {
-                cancelEditing();
-                return;
-            }
+            // Get the full assets object from profile
+            const assets = profile.data?.assets || {
+                retirement_accounts: [],
+                taxable_accounts: [],
+                real_estate: [],
+                pensions_annuities: [],
+                other_assets: []
+            };
 
-            // Mark as editing
-            row.classList.add('editing');
-
-            // Make row editable inline with multi-column layout
-            makeRowEditable(
-                row,
-                asset,
+            // Open asset wizard with the existing asset
+            showAssetWizard(
                 asset.categoryKey,
-                asset.index,
-                async (updatedAsset, category, index) => {
-                    // Call save callback if provided (parent updates the original assets and re-renders)
-                    if (onSaveCallback) {
-                        await onSaveCallback(category, index, updatedAsset);
-                    } else {
-                        // Remove editing class if no callback
-                        row.classList.remove('editing');
-                    }
-                },
-                () => {
-                    // Cancel callback
-                    row.classList.remove('editing');
-                }
+                asset,
+                onSaveCallback, // Pass through the save callback from parent
+                asset.index
             );
         };
 
-        // Click on row to edit inline
+        // Click on row to open edit modal
         row.addEventListener('click', (e) => {
             // Don't trigger if clicking on delete button
             if (e.target.closest('.delete-asset-btn')) {
                 return;
             }
 
-            startEditing();
+            openEditModal();
         });
 
         // Also attach to edit button specifically
@@ -124,7 +107,7 @@ export function renderAssetList(assets, container, onSaveCallback) {
         if (editBtn) {
             editBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                startEditing();
+                openEditModal();
             });
         }
     });
