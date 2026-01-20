@@ -107,6 +107,17 @@ class APIClient {
     }
 
     /**
+     * PATCH request
+     */
+    async patch(url, data, options = {}) {
+        return this.request(url, {
+            ...options,
+            method: 'PATCH',
+            body: JSON.stringify(data),
+        });
+    }
+
+    /**
      * DELETE request
      */
     async delete(url, options = {}) {

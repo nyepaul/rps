@@ -146,7 +146,7 @@ async function showFeedbackDetails(feedback) {
 
     if (isSuperAdmin) {
         try {
-            const contentData = await apiClient.request(`/api/feedback/${feedback.id}/content`);
+            const contentData = await apiClient.get(`/api/feedback/${feedback.id}/content`);
             content = contentData.content;
         } catch (error) {
             console.error('Error loading feedback content:', error);
@@ -157,7 +157,7 @@ async function showFeedbackDetails(feedback) {
     // Fetch thread with replies
     let thread = null;
     try {
-        thread = await apiClient.request(`/api/feedback/${feedback.id}/thread`);
+        thread = await apiClient.get(`/api/feedback/${feedback.id}/thread`);
     } catch (error) {
         console.error('Error loading feedback thread:', error);
     }
@@ -438,12 +438,9 @@ async function showFeedbackDetails(feedback) {
         }
 
         try {
-            await apiClient.request(`/api/feedback/${feedback.id}/replies`, {
-                method: 'POST',
-                body: JSON.stringify({
-                    reply_text: replyText,
-                    is_private: isPrivate
-                })
+            await apiClient.post(`/api/feedback/${feedback.id}/replies`, {
+                reply_text: replyText,
+                is_private: isPrivate
             });
             showSuccess(isPrivate ? 'Private note added successfully' : 'Reply sent successfully');
             modal.remove();
@@ -460,7 +457,7 @@ async function showFeedbackDetails(feedback) {
     modal.querySelector('.delete-feedback').addEventListener('click', async () => {
         if (confirm('Are you sure you want to delete this feedback?')) {
             try {
-                await apiClient.request(`/api/feedback/${feedback.id}`, { method: 'DELETE' });
+                await apiClient.delete(`/api/feedback/${feedback.id}`);
                 showSuccess('Feedback deleted successfully');
                 modal.remove();
                 // Reload feedback list
@@ -479,9 +476,9 @@ async function showFeedbackDetails(feedback) {
         const notes = modal.querySelector('#admin-notes').value.trim();
 
         try {
-            await apiClient.request(`/api/feedback/${feedback.id}`, {
-                method: 'PATCH',
-                body: JSON.stringify({ status, admin_notes: notes })
+            await apiClient.patch(`/api/feedback/${feedback.id}`, {
+                status,
+                admin_notes: notes
             });
             showSuccess('Feedback updated successfully');
             modal.remove();
@@ -574,7 +571,7 @@ async function loadFeedback(container) {
         if (filterStatus) params.append('status', filterStatus);
         params.append('limit', '100');
 
-        const data = await apiClient.request(`/api/feedback?${params.toString()}`);
+        const data = await apiClient.get(`/api/feedback?${params.toString()}`);
         const feedback = data.feedback || [];
 
         if (feedback.length === 0) {
