@@ -6,6 +6,9 @@
 import { apiClient } from '../../api/client.js';
 import { showSuccess, showError } from '../../utils/dom.js';
 
+// User mapping for input (username -> user_id)
+let userMapping = {};
+
 /**
  * Render user activity timeline viewer
  */
@@ -25,13 +28,15 @@ export async function renderUserTimeline(container) {
                 <h3 style="font-size: 16px; margin-bottom: 15px;">📋 Select User & Filters</h3>
                 <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 15px; align-items: end;">
                     <div>
-                        <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">Select User</label>
-                        <select
-                            id="timeline-user-select"
-                            style="width: 100%; padding: 10px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); cursor: pointer;"
+                        <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">User</label>
+                        <input
+                            type="text"
+                            id="timeline-user-input"
+                            list="timeline-users-datalist"
+                            placeholder="Type or select user..."
+                            style="width: 100%; padding: 10px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);"
                         >
-                            <option value="">-- Select a user --</option>
-                        </select>
+                        <datalist id="timeline-users-datalist"></datalist>
                     </div>
                     <div>
                         <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">Start Date</label>
@@ -83,29 +88,41 @@ export async function renderUserTimeline(container) {
  */
 function setupTimelineHandlers(container) {
     const loadBtn = container.querySelector('#load-timeline-btn');
-    const userSelect = container.querySelector('#timeline-user-select');
+    const userInput = container.querySelector('#timeline-user-input');
 
     loadBtn.addEventListener('click', async () => {
-        const userId = userSelect.value.trim();
-        if (!userId) {
-            showError('Please select a user');
+        const userValue = userInput.value.trim();
+        if (!userValue) {
+            showError('Please enter or select a user');
             return;
         }
 
-        await loadUserTimeline(container, parseInt(userId));
+        // Check if it's a number (direct user ID) or username
+        let userId;
+        if (!isNaN(userValue)) {
+            userId = parseInt(userValue);
+        } else {
+            // Look up username in mapping
+            userId = userMapping[userValue.toLowerCase()];
+            if (!userId) {
+                showError('User not found');
+                return;
+            }
+        }
+
+        await loadUserTimeline(container, userId);
     });
 
-    // Load timeline when user is selected from dropdown
-    userSelect.addEventListener('change', async () => {
-        const userId = userSelect.value.trim();
-        if (userId) {
-            await loadUserTimeline(container, parseInt(userId));
+    // Allow Enter key to load timeline
+    userInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            loadBtn.click();
         }
     });
 }
 
 /**
- * Load all users into dropdown
+ * Load all users into datalist
  */
 async function loadAllUsers(container) {
     try {
@@ -113,24 +130,28 @@ async function loadAllUsers(container) {
         const response = await apiClient.get('/api/admin/users?limit=1000');
         const users = response.users || [];
 
-        const userSelect = container.querySelector('#timeline-user-select');
+        const datalist = container.querySelector('#timeline-users-datalist');
         if (!users.length) {
-            userSelect.innerHTML = '<option value="">No users found</option>';
             return;
         }
 
         // Sort users alphabetically by username
         users.sort((a, b) => a.username.localeCompare(b.username));
 
-        // Populate dropdown with all users
-        userSelect.innerHTML = `
-            <option value="">-- Select a user --</option>
-            ${users.map(user => `
-                <option value="${user.id}">
-                    ${user.username} (ID: ${user.id})${user.is_admin ? ' - Admin' : ''}
-                </option>
-            `).join('')}
-        `;
+        // Build username -> user_id mapping
+        userMapping = {};
+        users.forEach(user => {
+            userMapping[user.username.toLowerCase()] = user.id;
+            // Also map "username (ID: x)" format
+            userMapping[`${user.username.toLowerCase()} (id: ${user.id})`] = user.id;
+        });
+
+        // Populate datalist with all users
+        datalist.innerHTML = users.map(user => `
+            <option value="${user.username}">
+                ${user.username} (ID: ${user.id})${user.is_admin ? ' - Admin' : ''}
+            </option>
+        `).join('');
 
     } catch (error) {
         console.error('Error loading users:', error);
