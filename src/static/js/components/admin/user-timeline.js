@@ -260,6 +260,9 @@ function renderTimeline(container, timeline) {
         direction: 'desc'
     };
 
+    // Sort events by timestamp descending on initial load
+    const sortedEvents = events.length > 0 ? sortActivityEvents(events, 'timestamp', 'desc') : [];
+
     container.innerHTML = `
         <!-- User Info -->
         <div style="background: var(--bg-secondary); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
@@ -296,7 +299,7 @@ function renderTimeline(container, timeline) {
         <div style="background: var(--bg-secondary); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
             <h3 style="font-size: 18px; margin-bottom: 15px;">📖 Activity Timeline</h3>
             <div id="activity-table-container">
-                ${events.length > 0 ? renderActivityTable(events) : '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">No events recorded</p>'}
+                ${sortedEvents.length > 0 ? renderActivityTable(sortedEvents) : '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">No events recorded</p>'}
             </div>
         </div>
 
@@ -318,8 +321,8 @@ function renderTimeline(container, timeline) {
     });
 
     // Setup sort handlers if events exist
-    if (events.length > 0) {
-        setupActivityTableSort(container, events);
+    if (sortedEvents.length > 0) {
+        setupActivityTableSort(container, sortedEvents);
     }
 }
 
