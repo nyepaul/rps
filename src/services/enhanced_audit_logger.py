@@ -993,9 +993,14 @@ class EnhancedAuditLogger:
         params = []
 
         if user_id is not None:
-            query += ' AND user_id = ?'
-            count_query += ' AND user_id = ?'
-            params.append(user_id)
+            # Handle special case for filtering NULL user_id (unauthenticated users)
+            if user_id == 'null':
+                query += ' AND user_id IS NULL'
+                count_query += ' AND user_id IS NULL'
+            else:
+                query += ' AND user_id = ?'
+                count_query += ' AND user_id = ?'
+                params.append(user_id)
 
         if action is not None:
             query += ' AND action = ?'

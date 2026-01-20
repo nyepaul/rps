@@ -154,18 +154,25 @@ async function loadUsersFilter(container) {
 
         // Build username -> user_id mapping
         userMapping = {};
+
+        // Add special "coward" mapping for unauthenticated users
+        userMapping['coward'] = null;
+
         users.forEach(user => {
             userMapping[user.username.toLowerCase()] = user.id;
             // Also map "username (ID: x)" format
             userMapping[`${user.username.toLowerCase()} (id: ${user.id})`] = user.id;
         });
 
-        // Populate datalist
-        datalist.innerHTML = users.map(user => `
+        // Populate datalist with "coward" at the top
+        const cowardOption = '<option value="coward">coward (Unauthenticated)</option>';
+        const userOptions = users.map(user => `
             <option value="${user.username}">
                 ${user.username} (ID: ${user.id})${user.is_admin ? ' - Admin' : ''}
             </option>
         `).join('');
+
+        datalist.innerHTML = cowardOption + userOptions;
 
     } catch (error) {
         console.error('Error loading users filter:', error);
@@ -256,6 +263,10 @@ async function loadLogs(container, offset = 0) {
             } else {
                 // Look up username in mapping
                 userId = userMapping[userInput.toLowerCase()];
+                // If userId is null (for "coward"), convert to string 'null' for API
+                if (userId === null) {
+                    userId = 'null';
+                }
             }
         }
 
