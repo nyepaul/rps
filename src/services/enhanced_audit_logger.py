@@ -9,6 +9,11 @@ import re
 from user_agents import parse as parse_user_agent
 from src.services.ip_intelligence import ip_intelligence
 
+# Geolocation cache to prevent hitting rate limits
+# Cache structure: {ip_address: {'data': {...}, 'timestamp': datetime}}
+_geo_cache = {}
+_GEO_CACHE_TTL = timedelta(hours=24)  # Cache for 24 hours
+
 
 class AuditConfig:
     """Configuration for audit logging - what to collect and display."""
@@ -101,13 +106,29 @@ class EnhancedAuditLogger:
 
     @staticmethod
     def _get_geo_location(ip_address: str) -> Optional[Dict[str, str]]:
-        """Get geographic location from IP address using ip-api.com."""
+        """
+        Get geographic location from IP address using ip-api.com.
+
+        Results are cached for 24 hours to prevent hitting rate limits
+        and improve performance.
+        """
         if not ip_address or ip_address in ['127.0.0.1', 'localhost', '::1']:
             return {'city': 'Local', 'region': 'Local', 'country': 'Local', 'timezone': 'Local'}
+
+        # Check cache first
+        if ip_address in _geo_cache:
+            cached = _geo_cache[ip_address]
+            age = datetime.now() - cached['timestamp']
+            if age < _GEO_CACHE_TTL:
+                return cached['data']
+            else:
+                # Cache expired, remove it
+                del _geo_cache[ip_address]
 
         try:
             import requests
             # Using ip-api.com free tier (no API key required)
+            # Free tier limit: 45 requests/minute
             # Added lat/lon for map visualization
             response = requests.get(
                 f'http://ip-api.com/json/{ip_address}?fields=status,country,countryCode,region,regionName,city,timezone,lat,lon',
@@ -116,7 +137,7 @@ class EnhancedAuditLogger:
             if response.status_code == 200:
                 data = response.json()
                 if data.get('status') == 'success':
-                    return {
+                    geo_data = {
                         'country': data.get('country', 'Unknown'),
                         'country_code': data.get('countryCode', 'XX'),
                         'region': data.get('regionName', 'Unknown'),
@@ -125,6 +146,12 @@ class EnhancedAuditLogger:
                         'lat': data.get('lat'),
                         'lon': data.get('lon')
                     }
+                    # Cache the result
+                    _geo_cache[ip_address] = {
+                        'data': geo_data,
+                        'timestamp': datetime.now()
+                    }
+                    return geo_data
         except Exception as e:
             print(f"Geo-location lookup failed: {e}")
 
