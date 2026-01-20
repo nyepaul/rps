@@ -59,7 +59,7 @@ class NumberedCanvas(canvas.Canvas):
         canvas.Canvas.save(self)
 
     def draw_page_decorations(self, page_count):
-        """Draw professional headers and footers."""
+        """Draw professional headers and footers with minimal design."""
         page_num = len(self._saved_page_states)
 
         # Skip decorations on cover page (page 1)
@@ -69,45 +69,42 @@ class NumberedCanvas(canvas.Canvas):
         # Save state
         self.saveState()
 
-        # Header - Navy bar with white text
+        # Header - Simple text with thin line (no background bar)
         self.setFillColor(COLORS['navy'])
-        self.rect(0, letter[1] - 0.6*inch, letter[0], 0.6*inch, fill=True, stroke=False)
-
-        # Header text - Company name and report type
-        self.setFillColor(COLORS['white'])
-        self.setFont('Helvetica-Bold', 11)
-        self.drawString(0.75*inch, letter[1] - 0.35*inch, "RPS Wealth Advisory")
+        self.setFont('Helvetica-Bold', 10)
+        self.drawString(1.0*inch, letter[1] - 0.6*inch, "RPS Wealth Advisory")
 
         self.setFont('Helvetica', 9)
-        self.drawRightString(letter[0] - 0.75*inch, letter[1] - 0.35*inch,
+        self.setFillColor(COLORS['gray_medium'])
+        self.drawRightString(letter[0] - 1.0*inch, letter[1] - 0.6*inch,
                            f"{self.report_type}")
 
-        # Thin gold accent line under header
-        self.setStrokeColor(COLORS['gold'])
-        self.setLineWidth(2)
-        self.line(0, letter[1] - 0.6*inch, letter[0], letter[1] - 0.6*inch)
+        # Sharp thin line under header
+        self.setStrokeColor(COLORS['navy'])
+        self.setLineWidth(0.25)
+        self.line(1.0*inch, letter[1] - 0.7*inch, letter[0] - 1.0*inch, letter[1] - 0.7*inch)
 
         # Footer - Page numbers and confidentiality notice
         self.setFillColor(COLORS['gray_medium'])
         self.setFont('Helvetica', 8)
 
         # Left side - Confidential notice
-        self.drawString(0.75*inch, 0.4*inch,
+        self.drawString(1.0*inch, 0.5*inch,
                        "Confidential - For Client Use Only")
 
         # Center - Date
         date_str = datetime.now().strftime("%B %d, %Y")
         text_width = self.stringWidth(date_str, 'Helvetica', 8)
-        self.drawString((letter[0] - text_width) / 2, 0.4*inch, date_str)
+        self.drawString((letter[0] - text_width) / 2, 0.5*inch, date_str)
 
         # Right side - Page number
         page_text = f"Page {page_num} of {page_count}"
-        self.drawRightString(letter[0] - 0.75*inch, 0.4*inch, page_text)
+        self.drawRightString(letter[0] - 1.0*inch, 0.5*inch, page_text)
 
-        # Thin line above footer
+        # Sharp thin line above footer
         self.setStrokeColor(COLORS['gray_light'])
-        self.setLineWidth(0.5)
-        self.line(0.75*inch, 0.6*inch, letter[0] - 0.75*inch, 0.6*inch)
+        self.setLineWidth(0.25)
+        self.line(1.0*inch, 0.7*inch, letter[0] - 1.0*inch, 0.7*inch)
 
         # Restore state
         self.restoreState()
@@ -258,10 +255,10 @@ def create_professional_cover_page(profile_name, report_type, styles):
     elements.append(Paragraph("RPS", styles['CompanyName']))
     elements.append(Paragraph("WEALTH ADVISORY", styles['CoverSubtitle']))
 
-    # Horizontal gold line
+    # Horizontal gold line - sharp and thin
     elements.append(HRFlowable(
         width="60%",
-        thickness=2,
+        thickness=0.5,
         color=COLORS['gold'],
         spaceBefore=20,
         spaceAfter=30,
@@ -279,11 +276,13 @@ def create_professional_cover_page(profile_name, report_type, styles):
     client_table = Table(client_data, colWidths=[5*inch])
     client_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, -1), COLORS['gray_bg']),
-        ('BOX', (0, 0), (-1, -1), 1.5, COLORS['navy']),
+        ('BOX', (0, 0), (-1, -1), 0.25, COLORS['navy']),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('TOPPADDING', (0, 0), (-1, -1), 20),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 20),
+        ('TOPPADDING', (0, 0), (-1, -1), 25),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 25),
+        ('LEFTPADDING', (0, 0), (-1, -1), 30),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 30),
     ]))
     elements.append(client_table)
 
@@ -305,12 +304,12 @@ def create_professional_cover_page(profile_name, report_type, styles):
     disclaimer_table = Table(disclaimer_data, colWidths=[6*inch])
     disclaimer_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, -1), COLORS['gray_bg']),
-        ('BOX', (0, 0), (-1, -1), 0.5, COLORS['gray_light']),
+        ('BOX', (0, 0), (-1, -1), 0.25, COLORS['gray_light']),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('TOPPADDING', (0, 0), (-1, -1), 12),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
-        ('LEFTPADDING', (0, 0), (-1, -1), 15),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 15),
+        ('TOPPADDING', (0, 0), (-1, -1), 15),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 15),
+        ('LEFTPADDING', (0, 0), (-1, -1), 25),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 25),
     ]))
     elements.append(disclaimer_table)
 
@@ -372,13 +371,15 @@ def create_key_metrics_box(title, metrics_dict, styles):
     # Create main table
     metrics_table = Table(metrics_data, colWidths=[3.2*inch, 3.2*inch])
     metrics_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, -1), COLORS['gray_bg']),
-        ('BOX', (0, 0), (-1, -1), 1.5, COLORS['navy']),
-        ('INNERGRID', (0, 0), (-1, -1), 0.5, COLORS['gray_light']),
+        ('BACKGROUND', (0, 0), (-1, -1), COLORS['white']),
+        ('BOX', (0, 0), (-1, -1), 0.25, COLORS['navy']),
+        ('INNERGRID', (0, 0), (-1, -1), 0.25, COLORS['gray_light']),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('TOPPADDING', (0, 0), (-1, -1), 15),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 15),
+        ('TOPPADDING', (0, 0), (-1, -1), 20),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 20),
+        ('LEFTPADDING', (0, 0), (-1, -1), 15),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 15),
     ]))
 
     elements.append(metrics_table)
@@ -419,7 +420,7 @@ def create_professional_table(headers, data, styles, col_widths=None):
         ('BACKGROUND', (0, 0), (-1, 0), COLORS['navy']),
         ('TEXTCOLOR', (0, 0), (-1, 0), COLORS['white']),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 11),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
         ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
 
         # Data rows styling
@@ -429,18 +430,19 @@ def create_professional_table(headers, data, styles, col_widths=None):
         ('FONTSIZE', (0, 1), (-1, -1), 10),
         ('ALIGN', (0, 1), (-1, -1), 'LEFT'),
 
-        # Alternating row colors
+        # Alternating row colors - subtle
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [COLORS['white'], COLORS['gray_bg']]),
 
-        # Grid and borders
-        ('GRID', (0, 0), (-1, -1), 0.5, COLORS['gray_light']),
-        ('BOX', (0, 0), (-1, -1), 1.5, COLORS['navy']),
+        # Grid and borders - sharp thin lines
+        ('GRID', (0, 0), (-1, -1), 0.25, COLORS['gray_light']),
+        ('BOX', (0, 0), (-1, -1), 0.25, COLORS['navy']),
+        ('LINEBELOW', (0, 0), (-1, 0), 0.5, COLORS['navy']),
 
-        # Padding
-        ('TOPPADDING', (0, 0), (-1, -1), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
-        ('LEFTPADDING', (0, 0), (-1, -1), 12),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+        # Padding - more generous
+        ('TOPPADDING', (0, 0), (-1, -1), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+        ('LEFTPADDING', (0, 0), (-1, -1), 15),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 15),
 
         # Alignment
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
@@ -511,14 +513,14 @@ def generate_elite_analysis_report(profile_data, analysis_results):
     profile_name = profile_data.get('name', 'Client')
     report_type = "Comprehensive Retirement Analysis"
 
-    # Create document with custom canvas
+    # Create document with custom canvas - generous margins for professional look
     doc = SimpleDocTemplate(
         buffer,
         pagesize=letter,
-        rightMargin=0.75*inch,
-        leftMargin=0.75*inch,
-        topMargin=1.0*inch,
-        bottomMargin=0.9*inch,
+        rightMargin=1.0*inch,
+        leftMargin=1.0*inch,
+        topMargin=1.1*inch,
+        bottomMargin=0.95*inch,
         title=f"{report_type} - {profile_name}"
     )
 
@@ -533,10 +535,10 @@ def generate_elite_analysis_report(profile_data, analysis_results):
     elements.append(Paragraph("Executive Summary", styles['SectionHeader']))
     elements.append(HRFlowable(
         width="100%",
-        thickness=2,
+        thickness=0.5,
         color=COLORS['navy'],
-        spaceBefore=5,
-        spaceAfter=15
+        spaceBefore=8,
+        spaceAfter=18
     ))
 
     total_assets = analysis_results.get('total_assets', 0)
@@ -567,10 +569,10 @@ def generate_elite_analysis_report(profile_data, analysis_results):
     elements.append(Paragraph("Scenario Analysis", styles['SectionHeader']))
     elements.append(HRFlowable(
         width="100%",
-        thickness=2,
+        thickness=0.5,
         color=COLORS['navy'],
-        spaceBefore=5,
-        spaceAfter=15
+        spaceBefore=8,
+        spaceAfter=18
     ))
 
     scenario_data = []
