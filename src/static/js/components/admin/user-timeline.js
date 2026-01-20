@@ -9,6 +9,12 @@ import { showSuccess, showError } from '../../utils/dom.js';
 // User mapping for input (username -> user_id)
 let userMapping = {};
 
+// Sort state for activity table
+let activitySort = {
+    column: 'timestamp',
+    direction: 'desc'
+};
+
 /**
  * Render user activity timeline viewer
  */
@@ -214,6 +220,12 @@ function renderTimeline(container, timeline) {
     const narrative = timeline.narrative || 'No activity recorded.';
     const summary = timeline.summary || '';
 
+    // Reset sort state
+    activitySort = {
+        column: 'timestamp',
+        direction: 'desc'
+    };
+
     container.innerHTML = `
         <!-- User Info -->
         <div style="background: var(--bg-secondary); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
@@ -249,7 +261,9 @@ function renderTimeline(container, timeline) {
         <!-- Activity Timeline Table -->
         <div style="background: var(--bg-secondary); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
             <h3 style="font-size: 18px; margin-bottom: 15px;">📖 Activity Timeline</h3>
-            ${events.length > 0 ? renderActivityTable(events) : '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">No events recorded</p>'}
+            <div id="activity-table-container">
+                ${events.length > 0 ? renderActivityTable(events) : '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">No events recorded</p>'}
+            </div>
         </div>
 
         <!-- Export Button -->
@@ -268,21 +282,38 @@ function renderTimeline(container, timeline) {
     exportBtn.addEventListener('click', () => {
         exportTimeline(timeline);
     });
+
+    // Setup sort handlers if events exist
+    if (events.length > 0) {
+        setupActivityTableSort(container, events);
+    }
 }
 
 /**
  * Render activity table with rows and columns
  */
 function renderActivityTable(events) {
+    const renderSortableHeader = (column, label) => {
+        const isActive = activitySort.column === column;
+        const arrow = isActive ? (activitySort.direction === 'asc' ? '↑' : '↓') : '⇅';
+        const arrowOpacity = isActive ? '1' : '0.3';
+
+        return `
+            <th class="activity-sortable-header" data-column="${column}" style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600; cursor: pointer; user-select: none; transition: background 0.2s;" onmouseenter="this.style.background='var(--bg-primary)'" onmouseleave="this.style.background='transparent'">
+                ${label} <span style="opacity: ${arrowOpacity}; font-size: 10px; margin-left: 4px;">${arrow}</span>
+            </th>
+        `;
+    };
+
     return `
         <div style="overflow-x: auto;">
             <table style="width: 100%; border-collapse: collapse;">
                 <thead>
                     <tr style="background: var(--bg-tertiary); border-bottom: 2px solid var(--border-color);">
-                        <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">Date</th>
-                        <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">Time</th>
-                        <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">Action</th>
-                        <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">Description</th>
+                        ${renderSortableHeader('timestamp', 'Date')}
+                        ${renderSortableHeader('time', 'Time')}
+                        ${renderSortableHeader('action', 'Action')}
+                        ${renderSortableHeader('description', 'Description')}
                         <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">Context</th>
                     </tr>
                 </thead>
@@ -352,6 +383,71 @@ function renderActivityRow(event) {
             </td>
         </tr>
     `;
+}
+
+/**
+ * Setup sort handlers for activity table
+ */
+function setupActivityTableSort(container, events) {
+    const headers = container.querySelectorAll('.activity-sortable-header');
+
+    headers.forEach(header => {
+        header.addEventListener('click', () => {
+            const column = header.getAttribute('data-column');
+
+            // Toggle direction if clicking same column, otherwise default to desc
+            if (activitySort.column === column) {
+                activitySort.direction = activitySort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                activitySort.column = column;
+                activitySort.direction = 'desc';
+            }
+
+            // Sort and re-render
+            const sortedEvents = sortActivityEvents(events, activitySort.column, activitySort.direction);
+            const tableContainer = container.querySelector('#activity-table-container');
+            tableContainer.innerHTML = renderActivityTable(sortedEvents);
+
+            // Re-setup handlers
+            setupActivityTableSort(container, events);
+        });
+    });
+}
+
+/**
+ * Sort activity events by column
+ */
+function sortActivityEvents(events, column, direction) {
+    const sorted = [...events].sort((a, b) => {
+        let aVal, bVal;
+
+        switch (column) {
+            case 'timestamp':
+                aVal = new Date(a.timestamp || 0).getTime();
+                bVal = new Date(b.timestamp || 0).getTime();
+                break;
+            case 'time':
+                aVal = new Date(a.timestamp || 0).getTime();
+                bVal = new Date(b.timestamp || 0).getTime();
+                break;
+            case 'action':
+                aVal = (a.action || '').toLowerCase();
+                bVal = (b.action || '').toLowerCase();
+                break;
+            case 'description':
+                aVal = (a.description || '').toLowerCase();
+                bVal = (b.description || '').toLowerCase();
+                break;
+            default:
+                return 0;
+        }
+
+        if (aVal < bVal) return direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    return sorted;
 }
 
 /**
