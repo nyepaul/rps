@@ -249,12 +249,21 @@ def logout():
     # Clear session data including user_dek
     session.pop('user_dek', None)
 
-    # Logout user BEFORE clearing session (important for Flask-Login to work correctly)
+    # CRITICAL: Remove Flask-Login's user_id from session BEFORE clearing
+    session.pop('_user_id', None)
+    session.pop('_fresh', None)
+    session.pop('_id', None)
+
+    # Logout user (clears Flask-Login session)
     logout_user()
 
     # Clear all session data and mark session as modified
     session.clear()
     session.modified = True
+
+    # Force new session ID by deleting and recreating session
+    from flask import session as flask_session
+    flask_session.permanent = False
 
     # Create response and explicitly clear cookies with proper security attributes
     response = make_response(jsonify({'message': 'Logout successful'}), 200)
