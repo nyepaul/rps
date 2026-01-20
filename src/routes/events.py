@@ -126,7 +126,13 @@ def log_batch():
 
             # Sanitize event data
             sanitized_data = {}
+            action_description = None
+
             for key, value in event_data.items():
+                if key == 'action_description':
+                    action_description = str(value)[:500]  # Keep description for logging
+                    continue
+
                 if isinstance(value, str):
                     sanitized_data[key] = value[:200]
                 elif isinstance(value, (int, float, bool, type(None))):
@@ -135,6 +141,10 @@ def log_batch():
                     sanitized_data[key] = {k: str(v)[:100] for k, v in list(value.items())[:10]}
 
             sanitized_data['client_timestamp'] = client_timestamp
+
+            # Add human-readable description to details for better logging readability
+            if action_description:
+                sanitized_data['_description'] = action_description
 
             enhanced_audit_logger.log(
                 action=action,
@@ -173,15 +183,22 @@ def log_page_view():
         profile_name = str(data.get('profile_name', ''))[:100]
         referrer = str(data.get('referrer', ''))[:100]
         client_timestamp = data.get('timestamp')
+        action_description = str(data.get('action_description', ''))[:500] if data.get('action_description') else None
+
+        details = {
+            'page': page,
+            'profile_name': profile_name if profile_name else None,
+            'referrer': referrer if referrer else None,
+            'client_timestamp': client_timestamp
+        }
+
+        # Add human-readable description for better logging readability
+        if action_description:
+            details['_description'] = action_description
 
         enhanced_audit_logger.log(
             action='UI_PAGE_VIEW',
-            details={
-                'page': page,
-                'profile_name': profile_name if profile_name else None,
-                'referrer': referrer if referrer else None,
-                'client_timestamp': client_timestamp
-            },
+            details=details,
             status_code=200
         )
 
@@ -217,13 +234,27 @@ def log_session_event():
         if event not in valid_events:
             event = 'unknown'
 
+        # Generate human-readable description
+        description_map = {
+            'start': 'User started a new session',
+            'end': f'User ended session (duration: {duration}s)' if duration else 'User ended session',
+            'idle': f'User became idle after {idle_time}s of inactivity' if idle_time else 'User became idle',
+            'resume': 'User resumed activity after being idle',
+            'visibility_hidden': 'User switched away from tab or minimized window',
+            'visibility_visible': 'User returned to tab or restored window',
+            'unknown': f'Unknown session event: {event}'
+        }
+
+        details = {
+            'duration_seconds': duration,
+            'idle_seconds': idle_time,
+            'client_timestamp': client_timestamp,
+            '_description': description_map.get(event, f'Session event: {event}')
+        }
+
         enhanced_audit_logger.log(
             action=f'SESSION_{event.upper()}',
-            details={
-                'duration_seconds': duration,
-                'idle_seconds': idle_time,
-                'client_timestamp': client_timestamp
-            },
+            details=details,
             status_code=200
         )
 
@@ -261,6 +292,10 @@ def log_client_error():
         page = str(data.get('page', ''))[:100]
         client_timestamp = data.get('timestamp')
 
+        # Generate human-readable description
+        location = f"{source}:{line}:{column}" if source and line else (source or 'unknown location')
+        description = f"JavaScript error on {page}: '{message}' at {location}"
+
         enhanced_audit_logger.log(
             action='CLIENT_ERROR',
             details={
@@ -270,7 +305,8 @@ def log_client_error():
                 'column': column,
                 'stack': stack,
                 'page': page,
-                'client_timestamp': client_timestamp
+                'client_timestamp': client_timestamp,
+                '_description': description
             },
             status_code=200
         )

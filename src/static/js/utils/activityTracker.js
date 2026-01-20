@@ -176,6 +176,9 @@ class ActivityTracker {
             clickData.data_attrs = dataAttrs;
         }
 
+        // Generate human-readable description
+        clickData.action_description = this.generateClickDescription(clickData, interactiveElement);
+
         this.queueEvent('click', clickData);
     }
 
@@ -185,7 +188,7 @@ class ActivityTracker {
     handleRightClick(e) {
         const target = e.target;
 
-        this.queueEvent('rightclick', {
+        const eventData = {
             tag: target.tagName?.toLowerCase() || '',
             element_id: target.id || '',
             element_text: this.getElementText(target),
@@ -194,7 +197,12 @@ class ActivityTracker {
             y: e.clientY,
             page: this.currentPage,
             dom_path: this.getDOMPath(target)
-        });
+        };
+
+        // Generate descriptive action
+        eventData.action_description = this.generateRightClickDescription(eventData);
+
+        this.queueEvent('rightclick', eventData);
     }
 
     /**
@@ -203,7 +211,7 @@ class ActivityTracker {
     handleDoubleClick(e) {
         const target = e.target;
 
-        this.queueEvent('dblclick', {
+        const eventData = {
             tag: target.tagName?.toLowerCase() || '',
             element_id: target.id || '',
             element_text: this.getElementText(target),
@@ -211,7 +219,12 @@ class ActivityTracker {
             y: e.clientY,
             page: this.currentPage,
             dom_path: this.getDOMPath(target)
-        });
+        };
+
+        // Generate descriptive action
+        eventData.action_description = this.generateDoubleClickDescription(eventData);
+
+        this.queueEvent('dblclick', eventData);
     }
 
     /**
@@ -366,17 +379,141 @@ class ActivityTracker {
     }
 
     /**
+     * Generate human-readable description for click events.
+     */
+    generateClickDescription(clickData, interactiveElement) {
+        const page = clickData.page || 'unknown page';
+        const text = clickData.element_text || clickData.interactive_text || '';
+        const tag = clickData.tag;
+        const elementId = clickData.element_id || clickData.interactive_id;
+        const interactiveType = clickData.interactive_type;
+        const targetUrl = clickData.target_url;
+
+        // Build modifiers string
+        const modifiers = [];
+        if (clickData.ctrl_key) modifiers.push('Ctrl');
+        if (clickData.shift_key) modifiers.push('Shift');
+        if (clickData.alt_key) modifiers.push('Alt');
+        if (clickData.meta_key) modifiers.push('Meta');
+        const modifierStr = modifiers.length > 0 ? ` with ${modifiers.join('+')}` : '';
+
+        // Generate specific descriptions based on element type
+        if (interactiveElement) {
+            switch (interactiveType) {
+                case 'button':
+                    return `Clicked button "${text}"${modifierStr} on ${page}`;
+                case 'link':
+                    if (targetUrl) {
+                        return `Clicked link "${text}"${modifierStr} navigating to ${this.shortenUrl(targetUrl)} on ${page}`;
+                    }
+                    return `Clicked link "${text}"${modifierStr} on ${page}`;
+                case 'tab':
+                    return `Switched to tab "${text}"${modifierStr} on ${page}`;
+                case 'nav':
+                    return `Clicked navigation item "${text}"${modifierStr} on ${page}`;
+                case 'dropdown-item':
+                    return `Selected dropdown option "${text}"${modifierStr} on ${page}`;
+                case 'input':
+                    return `Focused on input field${elementId ? ` "${elementId}"` : ''}${modifierStr} on ${page}`;
+                case 'select':
+                    return `Opened dropdown selector${elementId ? ` "${elementId}"` : ''}${modifierStr} on ${page}`;
+                case 'textarea':
+                    return `Focused on text area${elementId ? ` "${elementId}"` : ''}${modifierStr} on ${page}`;
+                default:
+                    if (text) {
+                        return `Clicked ${interactiveType} "${text}"${modifierStr} on ${page}`;
+                    }
+                    return `Clicked ${interactiveType}${elementId ? ` "${elementId}"` : ''}${modifierStr} on ${page}`;
+            }
+        }
+
+        // Non-interactive element
+        if (text) {
+            return `Clicked ${tag} element containing "${text}"${modifierStr} on ${page}`;
+        }
+
+        if (elementId) {
+            return `Clicked ${tag} element with id "${elementId}"${modifierStr} on ${page}`;
+        }
+
+        return `Clicked ${tag} element${modifierStr} on ${page} at position (${clickData.x}, ${clickData.y})`;
+    }
+
+    /**
+     * Generate human-readable description for right-click events.
+     */
+    generateRightClickDescription(eventData) {
+        const page = eventData.page || 'unknown page';
+        const text = eventData.element_text || '';
+        const tag = eventData.tag;
+        const elementId = eventData.element_id;
+
+        if (text) {
+            return `Right-clicked ${tag} element containing "${text}" on ${page}`;
+        }
+
+        if (elementId) {
+            return `Right-clicked ${tag} element with id "${elementId}" on ${page}`;
+        }
+
+        return `Opened context menu on ${tag} element on ${page}`;
+    }
+
+    /**
+     * Generate human-readable description for double-click events.
+     */
+    generateDoubleClickDescription(eventData) {
+        const page = eventData.page || 'unknown page';
+        const text = eventData.element_text || '';
+        const tag = eventData.tag;
+        const elementId = eventData.element_id;
+
+        if (text) {
+            return `Double-clicked ${tag} element containing "${text}" on ${page}`;
+        }
+
+        if (elementId) {
+            return `Double-clicked ${tag} element with id "${elementId}" on ${page}`;
+        }
+
+        return `Double-clicked ${tag} element on ${page}`;
+    }
+
+    /**
+     * Shorten URL for display purposes.
+     */
+    shortenUrl(url) {
+        if (!url) return '';
+        try {
+            const urlObj = new URL(url);
+            // Return just the path if it's the same domain
+            if (urlObj.origin === window.location.origin) {
+                return urlObj.pathname + urlObj.search;
+            }
+            // Return domain + path for external URLs
+            return urlObj.hostname + urlObj.pathname.substring(0, 30);
+        } catch {
+            // Not a valid URL, return truncated
+            return url.substring(0, 50);
+        }
+    }
+
+    /**
      * Track tab/page navigation.
      */
     trackPageView(pageName, profileName = null) {
         const previousPage = this.currentPage;
         this.currentPage = pageName;
 
+        const profileContext = profileName ? ` (profile: ${profileName})` : '';
+        const referrerContext = previousPage ? ` from ${previousPage}` : '';
+
         this.sendImmediately('/api/events/page-view', {
             page: pageName,
             profile_name: profileName,
             referrer: previousPage,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            action_description: `Navigated to ${pageName}${profileContext}${referrerContext}`
         });
     }
 
@@ -384,10 +521,13 @@ class ActivityTracker {
      * Track tab switches within the app.
      */
     trackTabSwitch(tabName, profileName = null) {
+        const profileContext = profileName ? ` for profile ${profileName}` : '';
+
         this.queueEvent('tab_switch', {
             tab: tabName,
             profile_name: profileName,
-            page: this.currentPage
+            page: this.currentPage,
+            action_description: `Switched to "${tabName}" tab${profileContext}`
         });
     }
 
@@ -395,9 +535,13 @@ class ActivityTracker {
      * Track modal open/close.
      */
     trackModal(modalId, action) {
-        this.queueEvent(action === 'open' ? 'modal_open' : 'modal_close', {
+        const isOpen = action === 'open';
+        const actionVerb = isOpen ? 'Opened' : 'Closed';
+
+        this.queueEvent(isOpen ? 'modal_open' : 'modal_close', {
             modal_id: modalId,
-            page: this.currentPage
+            page: this.currentPage,
+            action_description: `${actionVerb} "${modalId}" modal on ${this.currentPage}`
         });
     }
 
@@ -405,10 +549,13 @@ class ActivityTracker {
      * Track form submissions.
      */
     trackFormSubmit(formId, formName) {
+        const formIdentifier = formName || formId || 'form';
+
         this.queueEvent('form_submit', {
             form_id: formId,
             form_name: formName,
-            page: this.currentPage
+            page: this.currentPage,
+            action_description: `Submitted ${formIdentifier} on ${this.currentPage}`
         });
     }
 
@@ -416,10 +563,14 @@ class ActivityTracker {
      * Track search actions.
      */
     trackSearch(searchTerm, resultCount) {
+        const truncatedTerm = searchTerm ? searchTerm.substring(0, 50) : '';
+        const resultText = resultCount !== undefined ? ` (${resultCount} results)` : '';
+
         this.queueEvent('search', {
-            search_term: searchTerm ? searchTerm.substring(0, 50) : '',
+            search_term: truncatedTerm,
             result_count: resultCount,
-            page: this.currentPage
+            page: this.currentPage,
+            action_description: `Searched for "${truncatedTerm}"${resultText} on ${this.currentPage}`
         });
     }
 
@@ -430,7 +581,8 @@ class ActivityTracker {
         this.queueEvent('filter', {
             filter_type: filterType,
             filter_value: filterValue,
-            page: this.currentPage
+            page: this.currentPage,
+            action_description: `Applied ${filterType} filter: "${filterValue}" on ${this.currentPage}`
         });
     }
 
@@ -438,9 +590,12 @@ class ActivityTracker {
      * Track expand/collapse actions.
      */
     trackExpandCollapse(sectionId, isExpanded) {
+        const action = isExpanded ? 'Expanded' : 'Collapsed';
+
         this.queueEvent(isExpanded ? 'expand' : 'collapse', {
             section_id: sectionId,
-            page: this.currentPage
+            page: this.currentPage,
+            action_description: `${action} section "${sectionId}" on ${this.currentPage}`
         });
     }
 
@@ -448,10 +603,13 @@ class ActivityTracker {
      * Track download actions.
      */
     trackDownload(filename, fileType) {
+        const typeContext = fileType ? ` (${fileType})` : '';
+
         this.queueEvent('download', {
             filename: filename,
             file_type: fileType,
-            page: this.currentPage
+            page: this.currentPage,
+            action_description: `Downloaded file "${filename}"${typeContext} from ${this.currentPage}`
         });
     }
 
