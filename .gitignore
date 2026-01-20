@@ -39,3 +39,9 @@ backups/*.tar
 backups/*.zip
 backups/rps_backup_*
 backups/pre_restore_*
+backups/data/*.tar.gz
+backups/data/*.tar
+backups/data/rps_data_*
+backups/system/*.tar.gz
+backups/system/*.tar
+backups/system/rps_system_*

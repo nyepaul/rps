@@ -1,0 +1,141 @@
+#!/bin/bash
+###############################################################################
+# RPS Data-Only Backup Script
+#
+# Backs up only user data (database)
+#
+# Usage:
+#   ./bin/backup-data [--keep N]
+#
+# Author: pan
+# Date: 2026-01-20
+###############################################################################
+
+set -euo pipefail
+
+# Configuration
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+BACKUP_DIR="${PROJECT_ROOT}/backups/data"
+LOG_DIR="${PROJECT_ROOT}/logs"
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+BACKUP_NAME="rps_data_${TIMESTAMP}"
+TEMP_DIR="/tmp/${BACKUP_NAME}"
+
+# Default settings
+KEEP_BACKUPS=14
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --keep) KEEP_BACKUPS="$2"; shift 2 ;;
+        *) shift ;;
+    esac
+done
+
+log() {
+    local level=$1
+    shift
+    local message="$*"
+    local timestamp=$(date +"%Y-%m-%d %H:%M:%S")
+
+    mkdir -p "${LOG_DIR}"
+    echo "[${timestamp}] [${level}] ${message}" >> "${LOG_DIR}/backup.log"
+
+    case $level in
+        INFO) echo -e "${BLUE}[INFO]${NC} ${message}" ;;
+        SUCCESS) echo -e "${GREEN}[SUCCESS]${NC} ${message}" ;;
+        WARNING) echo -e "${YELLOW}[WARNING]${NC} ${message}" ;;
+        ERROR) echo -e "${RED}[ERROR]${NC} ${message}" ;;
+    esac
+}
+
+error_exit() {
+    log ERROR "$1"
+    [[ -d "${TEMP_DIR}" ]] && rm -rf "${TEMP_DIR}"
+    exit 1
+}
+
+trap 'error_exit "Data backup failed at line $LINENO"' ERR
+
+main() {
+    log INFO "Starting RPS data-only backup: ${BACKUP_NAME}"
+
+    mkdir -p "${BACKUP_DIR}"
+    mkdir -p "${TEMP_DIR}/data"
+
+    # Backup database
+    log INFO "Backing up database..."
+    if [[ -f "${PROJECT_ROOT}/data/planning.db" ]]; then
+        sqlite3 "${PROJECT_ROOT}/data/planning.db" ".backup '${TEMP_DIR}/data/planning.db'"
+
+        # Verify integrity
+        log INFO "Verifying database integrity..."
+        if sqlite3 "${TEMP_DIR}/data/planning.db" "PRAGMA integrity_check;" | grep -q "ok"; then
+            log SUCCESS "Database integrity verified"
+        else
+            error_exit "Database integrity check failed"
+        fi
+
+        local db_size=$(du -h "${TEMP_DIR}/data/planning.db" | cut -f1)
+        log INFO "Database size: ${db_size}"
+    else
+        error_exit "Database not found"
+    fi
+
+    # Create metadata
+    cat > "${TEMP_DIR}/backup_metadata.txt" << EOF
+Backup Type: Data Only
+Backup Name: ${BACKUP_NAME}
+Timestamp: $(date)
+Hostname: $(hostname)
+User: $(whoami)
+RPS Version: $(grep -oP '__version__ = "\K[^"]+' "${PROJECT_ROOT}/src/__version__.py" 2>/dev/null || echo "unknown")
+Database Size: $(du -h "${TEMP_DIR}/data/planning.db" 2>/dev/null | cut -f1 || echo "N/A")
+EOF
+
+    # Create archive
+    log INFO "Creating compressed archive..."
+    cd "${BACKUP_DIR}"
+    tar -czf "${BACKUP_NAME}.tar.gz" -C /tmp "${BACKUP_NAME}"
+
+    # Verify archive
+    if tar -tzf "${BACKUP_NAME}.tar.gz" > /dev/null 2>&1; then
+        log SUCCESS "Archive verified"
+    else
+        error_exit "Archive verification failed"
+    fi
+
+    local backup_size=$(du -h "${BACKUP_DIR}/${BACKUP_NAME}.tar.gz" | cut -f1)
+    log SUCCESS "Data backup created: ${BACKUP_NAME}.tar.gz (${backup_size})"
+
+    # Cleanup
+    rm -rf "${TEMP_DIR}"
+
+    # Rotate old backups
+    log INFO "Rotating old backups (keeping last ${KEEP_BACKUPS})..."
+    cd "${BACKUP_DIR}"
+    ls -t rps_data_*.tar.gz 2>/dev/null | tail -n +$((KEEP_BACKUPS + 1)) | while read old_backup; do
+        log INFO "Removing old backup: ${old_backup}"
+        rm -f "${old_backup}"
+    done
+
+    local backup_count=$(ls -1 rps_data_*.tar.gz 2>/dev/null | wc -l)
+    log INFO "Total data backups: ${backup_count}"
+
+    echo ""
+    log SUCCESS "=== Data Backup Complete ==="
+    log INFO "Backup file: ${BACKUP_DIR}/${BACKUP_NAME}.tar.gz"
+    log INFO "Size: ${backup_size}"
+    echo ""
+}
+
+main
+exit 0

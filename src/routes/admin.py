@@ -1498,3 +1498,315 @@ def get_documentation(doc_name: str):
     except Exception as e:
         print(f"Error serving documentation: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+# ============================================================================
+# Backup Management Endpoints (Super Admin Only)
+# ============================================================================
+
+@admin_bp.route('/backups', methods=['GET'])
+@login_required
+@super_admin_required
+def list_backups():
+    """
+    List all available backups.
+
+    Query parameters:
+        - type: Filter by type ('full', 'data', 'system', or 'all')
+    """
+    try:
+        import os
+        import glob
+        from pathlib import Path
+
+        backup_type = request.args.get('type', 'all')
+
+        project_root = Path(__file__).parent.parent.parent
+        backups_dir = project_root / 'backups'
+
+        backups = []
+
+        # Get full backups
+        if backup_type in ['all', 'full']:
+            full_backup_dir = backups_dir
+            for backup_file in sorted(glob.glob(str(full_backup_dir / 'rps_backup_*.tar.gz')), reverse=True):
+                stat_info = os.stat(backup_file)
+                backups.append({
+                    'type': 'full',
+                    'filename': os.path.basename(backup_file),
+                    'path': backup_file,
+                    'size': stat_info.st_size,
+                    'size_human': f"{stat_info.st_size / 1024:.1f} KB",
+                    'created_at': datetime.fromtimestamp(stat_info.st_mtime).isoformat(),
+                    'timestamp': stat_info.st_mtime
+                })
+
+        # Get data backups
+        if backup_type in ['all', 'data']:
+            data_backup_dir = backups_dir / 'data'
+            if data_backup_dir.exists():
+                for backup_file in sorted(glob.glob(str(data_backup_dir / 'rps_data_*.tar.gz')), reverse=True):
+                    stat_info = os.stat(backup_file)
+                    backups.append({
+                        'type': 'data',
+                        'filename': os.path.basename(backup_file),
+                        'path': backup_file,
+                        'size': stat_info.st_size,
+                        'size_human': f"{stat_info.st_size / 1024:.1f} KB",
+                        'created_at': datetime.fromtimestamp(stat_info.st_mtime).isoformat(),
+                        'timestamp': stat_info.st_mtime
+                    })
+
+        # Get system backups
+        if backup_type in ['all', 'system']:
+            system_backup_dir = backups_dir / 'system'
+            if system_backup_dir.exists():
+                for backup_file in sorted(glob.glob(str(system_backup_dir / 'rps_system_*.tar.gz')), reverse=True):
+                    stat_info = os.stat(backup_file)
+                    backups.append({
+                        'type': 'system',
+                        'filename': os.path.basename(backup_file),
+                        'path': backup_file,
+                        'size': stat_info.st_size,
+                        'size_human': f"{stat_info.st_size / 1024:.1f} KB",
+                        'created_at': datetime.fromtimestamp(stat_info.st_mtime).isoformat(),
+                        'timestamp': stat_info.st_mtime
+                    })
+
+        # Sort by timestamp (newest first)
+        backups.sort(key=lambda x: x['timestamp'], reverse=True)
+
+        # Log admin action
+        enhanced_audit_logger.log_admin_action(
+            action='LIST_BACKUPS',
+            details={'backup_type': backup_type, 'count': len(backups)},
+            user_id=current_user.id
+        )
+
+        return jsonify({
+            'backups': backups,
+            'total': len(backups)
+        }), 200
+
+    except Exception as e:
+        print(f"Error listing backups: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/backup/data', methods=['POST'])
+@login_required
+@super_admin_required
+def run_data_backup():
+    """Run a data-only backup (database)."""
+    try:
+        import subprocess
+        from pathlib import Path
+
+        project_root = Path(__file__).parent.parent.parent
+        backup_script = project_root / 'bin' / 'backup-data'
+
+        if not backup_script.exists():
+            return jsonify({'error': 'Backup script not found'}), 500
+
+        # Run backup script
+        result = subprocess.run(
+            [str(backup_script)],
+            capture_output=True,
+            text=True,
+            timeout=60
+        )
+
+        # Log admin action
+        enhanced_audit_logger.log_admin_action(
+            action='RUN_DATA_BACKUP',
+            details={
+                'success': result.returncode == 0,
+                'output': result.stdout[-500:] if result.stdout else None
+            },
+            user_id=current_user.id
+        )
+
+        if result.returncode == 0:
+            return jsonify({
+                'success': True,
+                'message': 'Data backup completed successfully',
+                'output': result.stdout
+            }), 200
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Data backup failed',
+                'error': result.stderr
+            }), 500
+
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'Backup timed out'}), 500
+    except Exception as e:
+        print(f"Error running data backup: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/backup/system', methods=['POST'])
+@login_required
+@super_admin_required
+def run_system_backup():
+    """Run a system-only backup (configuration and scripts)."""
+    try:
+        import subprocess
+        from pathlib import Path
+
+        project_root = Path(__file__).parent.parent.parent
+        backup_script = project_root / 'bin' / 'backup-system'
+
+        if not backup_script.exists():
+            return jsonify({'error': 'Backup script not found'}), 500
+
+        # Run backup script
+        result = subprocess.run(
+            [str(backup_script)],
+            capture_output=True,
+            text=True,
+            timeout=60
+        )
+
+        # Log admin action
+        enhanced_audit_logger.log_admin_action(
+            action='RUN_SYSTEM_BACKUP',
+            details={
+                'success': result.returncode == 0,
+                'output': result.stdout[-500:] if result.stdout else None
+            },
+            user_id=current_user.id
+        )
+
+        if result.returncode == 0:
+            return jsonify({
+                'success': True,
+                'message': 'System backup completed successfully',
+                'output': result.stdout
+            }), 200
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'System backup failed',
+                'error': result.stderr
+            }), 500
+
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'Backup timed out'}), 500
+    except Exception as e:
+        print(f"Error running system backup: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/backup/full', methods=['POST'])
+@login_required
+@super_admin_required
+def run_full_backup():
+    """Run a full backup (database, configuration, and scripts)."""
+    try:
+        import subprocess
+        from pathlib import Path
+
+        project_root = Path(__file__).parent.parent.parent
+        backup_script = project_root / 'bin' / 'backup'
+
+        if not backup_script.exists():
+            return jsonify({'error': 'Backup script not found'}), 500
+
+        # Run backup script
+        result = subprocess.run(
+            [str(backup_script)],
+            capture_output=True,
+            text=True,
+            timeout=60
+        )
+
+        # Log admin action
+        enhanced_audit_logger.log_admin_action(
+            action='RUN_FULL_BACKUP',
+            details={
+                'success': result.returncode == 0,
+                'output': result.stdout[-500:] if result.stdout else None
+            },
+            user_id=current_user.id
+        )
+
+        if result.returncode == 0:
+            return jsonify({
+                'success': True,
+                'message': 'Full backup completed successfully',
+                'output': result.stdout
+            }), 200
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Full backup failed',
+                'error': result.stderr
+            }), 500
+
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'Backup timed out'}), 500
+    except Exception as e:
+        print(f"Error running full backup: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/backup/schedule', methods=['GET'])
+@login_required
+@super_admin_required
+def get_backup_schedule():
+    """Get current backup schedule configuration."""
+    try:
+        import subprocess
+        from pathlib import Path
+
+        # Check if systemd timer is installed
+        result = subprocess.run(
+            ['systemctl', 'list-timers', 'rps-backup.timer', '--no-pager'],
+            capture_output=True,
+            text=True
+        )
+
+        timer_active = 'rps-backup.timer' in result.stdout
+
+        # Get timer details if active
+        next_run = None
+        last_run = None
+
+        if timer_active:
+            # Get next run time
+            next_result = subprocess.run(
+                ['systemctl', 'show', 'rps-backup.timer', '--property=NextElapseUSecRealtime', '--value'],
+                capture_output=True,
+                text=True
+            )
+
+            # Get last run time
+            last_result = subprocess.run(
+                ['systemctl', 'show', 'rps-backup.timer', '--property=LastTriggerUSec', '--value'],
+                capture_output=True,
+                text=True
+            )
+
+            next_run = next_result.stdout.strip() if next_result.returncode == 0 else None
+            last_run = last_result.stdout.strip() if last_result.returncode == 0 else None
+
+        # Log admin action
+        enhanced_audit_logger.log_admin_action(
+            action='VIEW_BACKUP_SCHEDULE',
+            details={'timer_active': timer_active},
+            user_id=current_user.id
+        )
+
+        return jsonify({
+            'timer_installed': timer_active,
+            'enabled': timer_active,
+            'next_run': next_run,
+            'last_run': last_run,
+            'schedule': 'Daily at 2:00 AM' if timer_active else None
+        }), 200
+
+    except Exception as e:
+        print(f"Error getting backup schedule: {e}")
+        return jsonify({'error': str(e)}), 500
