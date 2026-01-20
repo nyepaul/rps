@@ -410,7 +410,7 @@ function renderLogRow(log) {
                 </span>
             </td>
             <td style="padding: 12px; font-size: 12px;">
-                ${log.username ? log.username : (log.user_id ? `User ${log.user_id}` : 'no_user')}
+                ${log.username ? log.username : (log.user_id ? `User ${log.user_id}` : 'coward')}
             </td>
             <td style="padding: 12px; font-size: 12px;">
                 <div>${log.ip_address || 'N/A'}</div>
