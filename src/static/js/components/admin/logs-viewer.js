@@ -581,11 +581,25 @@ async function showLogDetails(logId) {
                             ${log.geo_location ? `
                                 <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
                                     <span style="font-weight: 600; color: var(--text-secondary);">Location:</span>
-                                    <span>${log.geo_location.city}, ${log.geo_location.country}</span>
+                                    <span>${log.geo_location.city}, ${log.geo_location.region}, ${log.geo_location.country}</span>
                                 </div>
+                                ${log.geo_location.lat && log.geo_location.lon ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Coordinates:</span>
+                                        <span style="font-family: monospace;">${log.geo_location.lat.toFixed(4)}, ${log.geo_location.lon.toFixed(4)}</span>
+                                    </div>
+                                ` : ''}
                             ` : ''}
                         </div>
                     </div>
+
+                    <!-- Map -->
+                    ${log.geo_location && log.geo_location.lat && log.geo_location.lon ? `
+                        <div>
+                            <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">🗺️ Location Map</h3>
+                            <div id="location-map" style="height: 300px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color);"></div>
+                        </div>
+                    ` : ''}
 
                     <!-- Device Info -->
                     ${log.device_info ? `
@@ -653,6 +667,44 @@ async function showLogDetails(logId) {
                 modal.remove();
             }
         });
+
+        // Initialize map if coordinates are available
+        if (log.geo_location && log.geo_location.lat && log.geo_location.lon) {
+            // Wait for DOM to be ready
+            setTimeout(() => {
+                const mapContainer = document.getElementById('location-map');
+                if (mapContainer && typeof L !== 'undefined') {
+                    try {
+                        // Initialize map centered on the location
+                        const map = L.map('location-map').setView(
+                            [log.geo_location.lat, log.geo_location.lon],
+                            10 // zoom level
+                        );
+
+                        // Add OpenStreetMap tile layer
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '© OpenStreetMap contributors',
+                            maxZoom: 19
+                        }).addTo(map);
+
+                        // Add marker at the location
+                        const marker = L.marker([log.geo_location.lat, log.geo_location.lon]).addTo(map);
+
+                        // Add popup with location details
+                        marker.bindPopup(`
+                            <div style="text-align: center; padding: 5px;">
+                                <strong style="font-size: 14px;">${log.geo_location.city}</strong><br>
+                                <span style="font-size: 12px; color: #666;">${log.geo_location.region}, ${log.geo_location.country}</span><br>
+                                <span style="font-size: 11px; color: #888; font-family: monospace;">${log.ip_address}</span>
+                            </div>
+                        `).openPopup();
+                    } catch (error) {
+                        console.error('Failed to initialize map:', error);
+                        mapContainer.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--danger-color);">Failed to load map</div>';
+                    }
+                }
+            }, 100);
+        }
 
         // Close on Escape key
         const escHandler = (e) => {

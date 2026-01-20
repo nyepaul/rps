@@ -108,8 +108,9 @@ class EnhancedAuditLogger:
         try:
             import requests
             # Using ip-api.com free tier (no API key required)
+            # Added lat/lon for map visualization
             response = requests.get(
-                f'http://ip-api.com/json/{ip_address}?fields=status,country,countryCode,region,regionName,city,timezone',
+                f'http://ip-api.com/json/{ip_address}?fields=status,country,countryCode,region,regionName,city,timezone,lat,lon',
                 timeout=2
             )
             if response.status_code == 200:
@@ -120,7 +121,9 @@ class EnhancedAuditLogger:
                         'country_code': data.get('countryCode', 'XX'),
                         'region': data.get('regionName', 'Unknown'),
                         'city': data.get('city', 'Unknown'),
-                        'timezone': data.get('timezone', 'Unknown')
+                        'timezone': data.get('timezone', 'Unknown'),
+                        'lat': data.get('lat'),
+                        'lon': data.get('lon')
                     }
         except Exception as e:
             print(f"Geo-location lookup failed: {e}")
