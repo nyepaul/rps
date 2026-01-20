@@ -64,7 +64,19 @@ def get_audit_logs():
     """
     try:
         # Get query parameters
-        user_id = request.args.get('user_id', type=int)
+        user_id_param = request.args.get('user_id')
+
+        # Handle special case for filtering unauthenticated users (coward)
+        if user_id_param == 'null':
+            user_id = 'null'  # Special marker for NULL user_id
+        elif user_id_param is not None:
+            try:
+                user_id = int(user_id_param)
+            except ValueError:
+                user_id = None
+        else:
+            user_id = None
+
         action = request.args.get('action')
         table_name = request.args.get('table_name')
         start_date = request.args.get('start_date')
