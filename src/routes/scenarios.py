@@ -5,6 +5,7 @@ from pydantic import BaseModel, validator
 from typing import Optional
 from src.models.scenario import Scenario
 from src.models.profile import Profile
+from src.services.enhanced_audit_logger import enhanced_audit_logger
 
 scenarios_bp = Blueprint('scenarios', __name__, url_prefix='/api')
 
@@ -50,11 +51,21 @@ def list_scenarios():
     try:
         scenarios = Scenario.list_by_user(current_user.id)
         current_app.logger.info(f"Listed {len(scenarios)} scenarios for user {current_user.id} ({current_user.username})")
+        enhanced_audit_logger.log(
+            action='LIST_SCENARIOS',
+            details={'scenario_count': len(scenarios)},
+            status_code=200
+        )
         return jsonify({
             'scenarios': [s.to_dict() for s in scenarios]
         }), 200
     except Exception as e:
         current_app.logger.error(f"Error listing scenarios for user {current_user.id}: {e}")
+        enhanced_audit_logger.log(
+            action='LIST_SCENARIOS_ERROR',
+            details={'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -65,10 +76,27 @@ def get_scenario(scenario_id: int):
     try:
         scenario = Scenario.get_by_id(scenario_id, current_user.id)
         if not scenario:
+            enhanced_audit_logger.log(
+                action='VIEW_SCENARIO_NOT_FOUND',
+                details={'scenario_id': scenario_id},
+                status_code=404
+            )
             return jsonify({'error': 'Scenario not found'}), 404
 
+        enhanced_audit_logger.log(
+            action='VIEW_SCENARIO',
+            table_name='scenario',
+            record_id=scenario_id,
+            details={'scenario_name': scenario.name},
+            status_code=200
+        )
         return jsonify({'scenario': scenario.to_dict()}), 200
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='VIEW_SCENARIO_ERROR',
+            details={'scenario_id': scenario_id, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -79,6 +107,11 @@ def create_scenario():
     try:
         data = ScenarioCreateSchema(**request.json)
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='CREATE_SCENARIO_VALIDATION_ERROR',
+            details={'error': str(e)},
+            status_code=400
+        )
         return jsonify({'error': str(e)}), 400
 
     try:
@@ -87,6 +120,11 @@ def create_scenario():
         if data.profile_name:
             profile = Profile.get_by_name(data.profile_name, current_user.id)
             if not profile:
+                enhanced_audit_logger.log(
+                    action='CREATE_SCENARIO_PROFILE_NOT_FOUND',
+                    details={'profile_name': data.profile_name, 'scenario_name': data.name},
+                    status_code=404
+                )
                 return jsonify({'error': 'Profile not found'}), 404
             profile_id = profile.id
 
@@ -100,11 +138,27 @@ def create_scenario():
         )
         scenario.save()
 
+        enhanced_audit_logger.log(
+            action='CREATE_SCENARIO',
+            table_name='scenario',
+            record_id=scenario.id,
+            details={
+                'scenario_name': data.name,
+                'profile_name': data.profile_name,
+                'profile_id': profile_id
+            },
+            status_code=201
+        )
         return jsonify({
             'message': 'Scenario created successfully',
             'scenario': scenario.to_dict()
         }), 201
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='CREATE_SCENARIO_ERROR',
+            details={'scenario_name': data.name, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -115,31 +169,61 @@ def update_scenario(scenario_id: int):
     try:
         data = ScenarioUpdateSchema(**request.json)
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='UPDATE_SCENARIO_VALIDATION_ERROR',
+            details={'scenario_id': scenario_id, 'error': str(e)},
+            status_code=400
+        )
         return jsonify({'error': str(e)}), 400
 
     try:
         # Get scenario with ownership check
         scenario = Scenario.get_by_id(scenario_id, current_user.id)
         if not scenario:
+            enhanced_audit_logger.log(
+                action='UPDATE_SCENARIO_NOT_FOUND',
+                details={'scenario_id': scenario_id},
+                status_code=404
+            )
             return jsonify({'error': 'Scenario not found'}), 404
 
-        # Update fields if provided
+        # Track what fields are being updated
+        updated_fields = []
+
         if data.name is not None:
+            updated_fields.append('name')
             scenario.name = data.name
 
         if data.parameters is not None:
+            updated_fields.append('parameters')
             scenario.parameters = data.parameters
 
         if data.results is not None:
+            updated_fields.append('results')
             scenario.results = data.results
 
         scenario.save()
 
+        enhanced_audit_logger.log(
+            action='UPDATE_SCENARIO',
+            table_name='scenario',
+            record_id=scenario_id,
+            details={
+                'scenario_name': scenario.name,
+                'updated_fields': updated_fields
+            },
+            status_code=200
+        )
         return jsonify({
             'message': 'Scenario updated successfully',
             'scenario': scenario.to_dict()
         }), 200
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='UPDATE_SCENARIO_ERROR',
+            details={'scenario_id': scenario_id, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -151,10 +235,28 @@ def delete_scenario(scenario_id: int):
         # Get scenario with ownership check
         scenario = Scenario.get_by_id(scenario_id, current_user.id)
         if not scenario:
+            enhanced_audit_logger.log(
+                action='DELETE_SCENARIO_NOT_FOUND',
+                details={'scenario_id': scenario_id},
+                status_code=404
+            )
             return jsonify({'error': 'Scenario not found'}), 404
 
+        scenario_name = scenario.name
         scenario.delete()
 
+        enhanced_audit_logger.log(
+            action='DELETE_SCENARIO',
+            table_name='scenario',
+            record_id=scenario_id,
+            details={'scenario_name': scenario_name},
+            status_code=200
+        )
         return jsonify({'message': 'Scenario deleted successfully'}), 200
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='DELETE_SCENARIO_ERROR',
+            details={'scenario_id': scenario_id, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500

@@ -13,6 +13,7 @@ from src.services.pdf_service import (
 from src.services.retirement_model import (
     Person, FinancialProfile, MarketAssumptions, RetirementModel
 )
+from src.services.enhanced_audit_logger import enhanced_audit_logger
 from datetime import datetime
 
 reports_bp = Blueprint('reports', __name__, url_prefix='/api/reports')
@@ -161,6 +162,11 @@ def generate_analysis():
     try:
         profile_name = request.json.get('profile_name')
         if not profile_name:
+            enhanced_audit_logger.log(
+                action='GENERATE_ANALYSIS_REPORT_VALIDATION_ERROR',
+                details={'error': 'profile_name is required'},
+                status_code=400
+            )
             return jsonify({'error': 'profile_name is required'}), 400
 
         # Check if view mode is requested
@@ -168,11 +174,21 @@ def generate_analysis():
 
         profile = Profile.get_by_name(profile_name, current_user.id)
         if not profile:
+            enhanced_audit_logger.log(
+                action='GENERATE_ANALYSIS_REPORT_PROFILE_NOT_FOUND',
+                details={'profile_name': profile_name},
+                status_code=404
+            )
             return jsonify({'error': 'Profile not found'}), 404
 
         # Run analysis
         analysis_results = run_analysis_for_report(profile)
         if not analysis_results:
+            enhanced_audit_logger.log(
+                action='GENERATE_ANALYSIS_REPORT_FAILED',
+                details={'profile_name': profile_name},
+                status_code=500
+            )
             return jsonify({'error': 'Unable to generate analysis'}), 500
 
         # Build profile data for PDF
@@ -182,6 +198,18 @@ def generate_analysis():
         # Generate PDF
         pdf_buffer = generate_analysis_report(profile_data, analysis_results)
 
+        enhanced_audit_logger.log(
+            action='GENERATE_ANALYSIS_REPORT_PDF',
+            table_name='profile',
+            record_id=profile.id,
+            details={
+                'profile_name': profile_name,
+                'view_mode': view_mode,
+                'total_assets': analysis_results.get('total_assets'),
+                'years_projected': analysis_results.get('years_projected')
+            },
+            status_code=200
+        )
         # Return PDF for viewing or downloading
         return send_file(
             pdf_buffer,
@@ -194,6 +222,11 @@ def generate_analysis():
         import traceback
         print(f"Error generating analysis report: {str(e)}")
         print(traceback.format_exc())
+        enhanced_audit_logger.log(
+            action='GENERATE_ANALYSIS_REPORT_ERROR',
+            details={'profile_name': profile_name if 'profile_name' in dir() else None, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -204,6 +237,11 @@ def generate_portfolio():
     try:
         profile_name = request.json.get('profile_name')
         if not profile_name:
+            enhanced_audit_logger.log(
+                action='GENERATE_PORTFOLIO_REPORT_VALIDATION_ERROR',
+                details={'error': 'profile_name is required'},
+                status_code=400
+            )
             return jsonify({'error': 'profile_name is required'}), 400
 
         # Check if view mode is requested
@@ -211,6 +249,11 @@ def generate_portfolio():
 
         profile = Profile.get_by_name(profile_name, current_user.id)
         if not profile:
+            enhanced_audit_logger.log(
+                action='GENERATE_PORTFOLIO_REPORT_PROFILE_NOT_FOUND',
+                details={'profile_name': profile_name},
+                status_code=404
+            )
             return jsonify({'error': 'Profile not found'}), 404
 
         # Build profile data for PDF
@@ -220,6 +263,16 @@ def generate_portfolio():
         # Generate PDF
         pdf_buffer = generate_portfolio_report(profile_data)
 
+        enhanced_audit_logger.log(
+            action='GENERATE_PORTFOLIO_REPORT_PDF',
+            table_name='profile',
+            record_id=profile.id,
+            details={
+                'profile_name': profile_name,
+                'view_mode': view_mode
+            },
+            status_code=200
+        )
         # Return PDF for viewing or downloading
         return send_file(
             pdf_buffer,
@@ -232,6 +285,11 @@ def generate_portfolio():
         import traceback
         print(f"Error generating portfolio report: {str(e)}")
         print(traceback.format_exc())
+        enhanced_audit_logger.log(
+            action='GENERATE_PORTFOLIO_REPORT_ERROR',
+            details={'profile_name': profile_name if 'profile_name' in dir() else None, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -242,6 +300,11 @@ def generate_action_plan():
     try:
         profile_name = request.json.get('profile_name')
         if not profile_name:
+            enhanced_audit_logger.log(
+                action='GENERATE_ACTION_PLAN_REPORT_VALIDATION_ERROR',
+                details={'error': 'profile_name is required'},
+                status_code=400
+            )
             return jsonify({'error': 'profile_name is required'}), 400
 
         # Check if view mode is requested
@@ -249,6 +312,11 @@ def generate_action_plan():
 
         profile = Profile.get_by_name(profile_name, current_user.id)
         if not profile:
+            enhanced_audit_logger.log(
+                action='GENERATE_ACTION_PLAN_REPORT_PROFILE_NOT_FOUND',
+                details={'profile_name': profile_name},
+                status_code=404
+            )
             return jsonify({'error': 'Profile not found'}), 404
 
         # Get action items for this profile
@@ -272,6 +340,17 @@ def generate_action_plan():
         # Generate PDF
         pdf_buffer = generate_action_plan_report(profile_data, action_items_list)
 
+        enhanced_audit_logger.log(
+            action='GENERATE_ACTION_PLAN_REPORT_PDF',
+            table_name='profile',
+            record_id=profile.id,
+            details={
+                'profile_name': profile_name,
+                'view_mode': view_mode,
+                'action_items_count': len(action_items_list)
+            },
+            status_code=200
+        )
         # Return PDF for viewing or downloading
         return send_file(
             pdf_buffer,
@@ -284,4 +363,9 @@ def generate_action_plan():
         import traceback
         print(f"Error generating action plan report: {str(e)}")
         print(traceback.format_exc())
+        enhanced_audit_logger.log(
+            action='GENERATE_ACTION_PLAN_REPORT_ERROR',
+            details={'profile_name': profile_name if 'profile_name' in dir() else None, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500

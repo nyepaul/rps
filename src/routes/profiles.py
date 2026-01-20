@@ -7,6 +7,7 @@ from datetime import datetime
 from src.models.profile import Profile
 from src.services.asset_service import assets_to_csv, csv_to_assets, merge_assets, sync_legacy_arrays
 from src.services.encryption_service import get_encryption_service
+from src.services.enhanced_audit_logger import enhanced_audit_logger
 
 profiles_bp = Blueprint('profiles', __name__, url_prefix='/api')
 
@@ -69,8 +70,18 @@ def list_profiles():
     """List all profiles for the current user."""
     try:
         profiles = Profile.list_by_user(current_user.id)
+        enhanced_audit_logger.log(
+            action='LIST_PROFILES',
+            details={'profile_count': len(profiles)},
+            status_code=200
+        )
         return jsonify({'profiles': profiles}), 200
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='LIST_PROFILES_ERROR',
+            details={'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -81,10 +92,27 @@ def get_profile(name: str):
     try:
         profile = Profile.get_by_name(name, current_user.id)
         if not profile:
+            enhanced_audit_logger.log(
+                action='VIEW_PROFILE_NOT_FOUND',
+                details={'profile_name': name},
+                status_code=404
+            )
             return jsonify({'error': 'Profile not found'}), 404
 
+        enhanced_audit_logger.log(
+            action='VIEW_PROFILE',
+            table_name='profile',
+            record_id=profile.id,
+            details={'profile_name': name},
+            status_code=200
+        )
         return jsonify({'profile': profile.to_dict()}), 200
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='VIEW_PROFILE_ERROR',
+            details={'profile_name': name, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -95,12 +123,22 @@ def create_profile():
     try:
         data = ProfileCreateSchema(**request.json)
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='CREATE_PROFILE_VALIDATION_ERROR',
+            details={'error': str(e)},
+            status_code=400
+        )
         return jsonify({'error': str(e)}), 400
 
     try:
         # Check if profile with same name already exists for this user
         existing = Profile.get_by_name(data.name, current_user.id)
         if existing:
+            enhanced_audit_logger.log(
+                action='CREATE_PROFILE_DUPLICATE',
+                details={'profile_name': data.name},
+                status_code=409
+            )
             return jsonify({'error': 'Profile with this name already exists'}), 409
 
         # Create new profile
@@ -113,11 +151,27 @@ def create_profile():
         )
         profile.save()
 
+        enhanced_audit_logger.log(
+            action='CREATE_PROFILE',
+            table_name='profile',
+            record_id=profile.id,
+            details={
+                'profile_name': data.name,
+                'birth_date': data.birth_date,
+                'retirement_date': data.retirement_date
+            },
+            status_code=201
+        )
         return jsonify({
             'message': 'Profile created successfully',
             'profile': profile.to_dict()
         }), 201
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='CREATE_PROFILE_ERROR',
+            details={'profile_name': data.name, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -128,13 +182,26 @@ def update_profile(name: str):
     try:
         data = ProfileUpdateSchema(**request.json)
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='UPDATE_PROFILE_VALIDATION_ERROR',
+            details={'profile_name': name, 'error': str(e)},
+            status_code=400
+        )
         return jsonify({'error': str(e)}), 400
 
     try:
         # Get profile with ownership check
         profile = Profile.get_by_name(name, current_user.id)
         if not profile:
+            enhanced_audit_logger.log(
+                action='UPDATE_PROFILE_NOT_FOUND',
+                details={'profile_name': name},
+                status_code=404
+            )
             return jsonify({'error': 'Profile not found'}), 404
+
+        # Track what fields are being updated
+        updated_fields = []
 
         # Update fields if provided
         if data.name is not None:
@@ -142,25 +209,49 @@ def update_profile(name: str):
             if data.name != profile.name:
                 existing = Profile.get_by_name(data.name, current_user.id)
                 if existing:
+                    enhanced_audit_logger.log(
+                        action='UPDATE_PROFILE_NAME_CONFLICT',
+                        details={'profile_name': name, 'new_name': data.name},
+                        status_code=409
+                    )
                     return jsonify({'error': 'Profile with this name already exists'}), 409
+                updated_fields.append('name')
             profile.name = data.name
 
         if data.birth_date is not None:
+            updated_fields.append('birth_date')
             profile.birth_date = data.birth_date
 
         if data.retirement_date is not None:
+            updated_fields.append('retirement_date')
             profile.retirement_date = data.retirement_date
 
         if data.data is not None:
+            updated_fields.append('data')
             profile.data = data.data
 
         profile.save()
 
+        enhanced_audit_logger.log(
+            action='UPDATE_PROFILE',
+            table_name='profile',
+            record_id=profile.id,
+            details={
+                'profile_name': name,
+                'updated_fields': updated_fields
+            },
+            status_code=200
+        )
         return jsonify({
             'message': 'Profile updated successfully',
             'profile': profile.to_dict()
         }), 200
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='UPDATE_PROFILE_ERROR',
+            details={'profile_name': name, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -172,12 +263,30 @@ def delete_profile(name: str):
         # Get profile with ownership check
         profile = Profile.get_by_name(name, current_user.id)
         if not profile:
+            enhanced_audit_logger.log(
+                action='DELETE_PROFILE_NOT_FOUND',
+                details={'profile_name': name},
+                status_code=404
+            )
             return jsonify({'error': 'Profile not found'}), 404
 
+        profile_id = profile.id
         profile.delete()
 
+        enhanced_audit_logger.log(
+            action='DELETE_PROFILE',
+            table_name='profile',
+            record_id=profile_id,
+            details={'profile_name': name},
+            status_code=200
+        )
         return jsonify({'message': 'Profile deleted successfully'}), 200
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='DELETE_PROFILE_ERROR',
+            details={'profile_name': name, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -189,6 +298,11 @@ def clone_profile(name: str):
         # Get source profile with ownership check
         source_profile = Profile.get_by_name(name, current_user.id)
         if not source_profile:
+            enhanced_audit_logger.log(
+                action='CLONE_PROFILE_NOT_FOUND',
+                details={'source_profile': name},
+                status_code=404
+            )
             return jsonify({'error': 'Profile not found'}), 404
 
         # Get new profile name from request body
@@ -196,15 +310,30 @@ def clone_profile(name: str):
 
         # Validate new name
         if not new_name or not new_name.strip():
+            enhanced_audit_logger.log(
+                action='CLONE_PROFILE_VALIDATION_ERROR',
+                details={'source_profile': name, 'error': 'New profile name is required'},
+                status_code=400
+            )
             return jsonify({'error': 'New profile name is required'}), 400
 
         new_name = new_name.strip()
         if len(new_name) > 100:
+            enhanced_audit_logger.log(
+                action='CLONE_PROFILE_VALIDATION_ERROR',
+                details={'source_profile': name, 'error': 'Name too long'},
+                status_code=400
+            )
             return jsonify({'error': 'Profile name must be less than 100 characters'}), 400
 
         # Check if profile with new name already exists
         existing = Profile.get_by_name(new_name, current_user.id)
         if existing:
+            enhanced_audit_logger.log(
+                action='CLONE_PROFILE_DUPLICATE',
+                details={'source_profile': name, 'new_name': new_name},
+                status_code=409
+            )
             return jsonify({'error': 'Profile with this name already exists'}), 409
 
         # Clone the profile data
@@ -220,11 +349,27 @@ def clone_profile(name: str):
         )
         cloned_profile.save()
 
+        enhanced_audit_logger.log(
+            action='CLONE_PROFILE',
+            table_name='profile',
+            record_id=cloned_profile.id,
+            details={
+                'source_profile': name,
+                'source_profile_id': source_profile.id,
+                'new_profile_name': new_name
+            },
+            status_code=201
+        )
         return jsonify({
             'message': f'Profile cloned successfully as "{new_name}"',
             'profile': cloned_profile.to_dict()
         }), 201
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='CLONE_PROFILE_ERROR',
+            details={'source_profile': name, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -236,6 +381,11 @@ def export_assets_csv(name: str):
         # Get profile with ownership check
         profile = Profile.get_by_name(name, current_user.id)
         if not profile:
+            enhanced_audit_logger.log(
+                action='EXPORT_ASSETS_NOT_FOUND',
+                details={'profile_name': name},
+                status_code=404
+            )
             return jsonify({'error': 'Profile not found'}), 404
 
         # Get assets from profile data
@@ -248,6 +398,9 @@ def export_assets_csv(name: str):
             'other_assets': []
         })
 
+        # Count assets for logging
+        asset_count = sum(len(v) for v in assets.values() if isinstance(v, list))
+
         # Convert to CSV
         csv_content = assets_to_csv(assets)
 
@@ -255,6 +408,17 @@ def export_assets_csv(name: str):
         timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
         filename = f"{name.replace(' ', '_')}_assets_{timestamp}.csv"
 
+        enhanced_audit_logger.log(
+            action='EXPORT_ASSETS_CSV',
+            table_name='profile',
+            record_id=profile.id,
+            details={
+                'profile_name': name,
+                'asset_count': asset_count,
+                'filename': filename
+            },
+            status_code=200
+        )
         return Response(
             csv_content,
             mimetype='text/csv',
@@ -263,6 +427,11 @@ def export_assets_csv(name: str):
             }
         )
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='EXPORT_ASSETS_ERROR',
+            details={'profile_name': name, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -274,14 +443,29 @@ def import_assets_csv(name: str):
         # Get profile with ownership check
         profile = Profile.get_by_name(name, current_user.id)
         if not profile:
+            enhanced_audit_logger.log(
+                action='IMPORT_ASSETS_NOT_FOUND',
+                details={'profile_name': name},
+                status_code=404
+            )
             return jsonify({'error': 'Profile not found'}), 404
 
         # Check if file was uploaded
         if 'file' not in request.files:
+            enhanced_audit_logger.log(
+                action='IMPORT_ASSETS_NO_FILE',
+                details={'profile_name': name},
+                status_code=400
+            )
             return jsonify({'error': 'No file uploaded'}), 400
 
         file = request.files['file']
         if file.filename == '':
+            enhanced_audit_logger.log(
+                action='IMPORT_ASSETS_NO_FILE',
+                details={'profile_name': name},
+                status_code=400
+            )
             return jsonify({'error': 'No file selected'}), 400
 
         # Read and parse CSV
@@ -290,6 +474,11 @@ def import_assets_csv(name: str):
         try:
             new_assets = csv_to_assets(csv_content)
         except ValueError as e:
+            enhanced_audit_logger.log(
+                action='IMPORT_ASSETS_INVALID_CSV',
+                details={'profile_name': name, 'filename': file.filename, 'error': str(e)},
+                status_code=400
+            )
             return jsonify({'error': f'Invalid CSV format: {str(e)}'}), 400
 
         # Get current profile data
@@ -319,6 +508,17 @@ def import_assets_csv(name: str):
         # Count imported assets
         imported_count = sum(len(v) for v in new_assets.values())
 
+        enhanced_audit_logger.log(
+            action='IMPORT_ASSETS_CSV',
+            table_name='profile',
+            record_id=profile.id,
+            details={
+                'profile_name': name,
+                'filename': file.filename,
+                'imported_count': imported_count
+            },
+            status_code=200
+        )
         return jsonify({
             'message': f'Successfully imported {imported_count} assets',
             'assets': merged_assets,
@@ -326,6 +526,11 @@ def import_assets_csv(name: str):
         }), 200
 
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='IMPORT_ASSETS_ERROR',
+            details={'profile_name': name, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -353,6 +558,11 @@ def get_api_keys(name: str):
         # Get profile with ownership check
         profile = Profile.get_by_name(name, current_user.id)
         if not profile:
+            enhanced_audit_logger.log(
+                action='VIEW_API_KEYS_NOT_FOUND',
+                details={'profile_name': name},
+                status_code=404
+            )
             return jsonify({'error': 'Profile not found'}), 404
 
         # Get profile data
@@ -361,14 +571,32 @@ def get_api_keys(name: str):
 
         # Return masked versions (last 4 characters only)
         result = {}
+        keys_configured = []
         if api_keys.get('claude_api_key'):
             result['claude_api_key'] = api_keys['claude_api_key'][-4:]
+            keys_configured.append('claude')
         if api_keys.get('gemini_api_key'):
             result['gemini_api_key'] = api_keys['gemini_api_key'][-4:]
+            keys_configured.append('gemini')
 
+        enhanced_audit_logger.log(
+            action='VIEW_API_KEYS',
+            table_name='profile',
+            record_id=profile.id,
+            details={
+                'profile_name': name,
+                'keys_configured': keys_configured
+            },
+            status_code=200
+        )
         return jsonify(result), 200
 
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='VIEW_API_KEYS_ERROR',
+            details={'profile_name': name, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -380,12 +608,22 @@ def save_api_keys(name: str):
         # Validate input
         data = APIKeySchema(**request.json)
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='SAVE_API_KEYS_VALIDATION_ERROR',
+            details={'profile_name': name, 'error': str(e)},
+            status_code=400
+        )
         return jsonify({'error': str(e)}), 400
 
     try:
         # Get profile with ownership check
         profile = Profile.get_by_name(name, current_user.id)
         if not profile:
+            enhanced_audit_logger.log(
+                action='SAVE_API_KEYS_NOT_FOUND',
+                details={'profile_name': name},
+                status_code=404
+            )
             return jsonify({'error': 'Profile not found'}), 404
 
         # Get current profile data
@@ -395,22 +633,40 @@ def save_api_keys(name: str):
         if 'api_keys' not in data_dict:
             data_dict['api_keys'] = {}
 
-        # Update API keys (they will be encrypted when profile.data is set)
+        # Track which keys are being updated
+        keys_updated = []
         if data.claude_api_key:
             data_dict['api_keys']['claude_api_key'] = data.claude_api_key
+            keys_updated.append('claude')
         if data.gemini_api_key:
             data_dict['api_keys']['gemini_api_key'] = data.gemini_api_key
+            keys_updated.append('gemini')
 
         # Save profile (encryption happens automatically via the data property setter)
         profile.data = data_dict
         profile.save()
 
+        enhanced_audit_logger.log(
+            action='SAVE_API_KEYS',
+            table_name='profile',
+            record_id=profile.id,
+            details={
+                'profile_name': name,
+                'keys_updated': keys_updated
+            },
+            status_code=200
+        )
         return jsonify({
             'message': 'API keys saved successfully',
             'encrypted': True
         }), 200
 
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='SAVE_API_KEYS_ERROR',
+            details={'profile_name': name, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -424,7 +680,18 @@ def test_api_key():
         api_key = data.get('api_key')
 
         if not provider or not api_key:
+            enhanced_audit_logger.log(
+                action='TEST_API_KEY_VALIDATION_ERROR',
+                details={'provider': provider, 'error': 'Missing provider or api_key'},
+                status_code=400
+            )
             return jsonify({'error': 'Missing provider or api_key'}), 400
+
+        enhanced_audit_logger.log(
+            action='TEST_API_KEY',
+            details={'provider': provider},
+            status_code=200
+        )
 
         # Test based on provider
         if provider == 'claude':
@@ -432,9 +699,19 @@ def test_api_key():
         elif provider == 'gemini':
             return test_gemini_api_key(api_key)
         else:
+            enhanced_audit_logger.log(
+                action='TEST_API_KEY_UNKNOWN_PROVIDER',
+                details={'provider': provider},
+                status_code=400
+            )
             return jsonify({'error': f'Unknown provider: {provider}'}), 400
 
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='TEST_API_KEY_ERROR',
+            details={'provider': provider if 'provider' in dir() else None, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 

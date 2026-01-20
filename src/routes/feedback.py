@@ -7,6 +7,7 @@ from src.auth.admin_required import admin_required
 from src.auth.super_admin_required import super_admin_required
 from src.database.connection import db
 from src.extensions import limiter
+from src.services.enhanced_audit_logger import enhanced_audit_logger
 import html
 import json
 from datetime import datetime
@@ -204,6 +205,16 @@ def submit_feedback():
 
             conn.commit()
 
+        enhanced_audit_logger.log(
+            action='SUBMIT_FEEDBACK',
+            table_name='feedback',
+            record_id=feedback_id,
+            details={
+                'type': data.type,
+                'content_length': len(data.content)
+            },
+            status_code=201
+        )
         return jsonify({
             'success': True,
             'message': 'Thank you for your feedback!',
@@ -212,6 +223,11 @@ def submit_feedback():
 
     except Exception as e:
         print(f"Error saving feedback: {e}")
+        enhanced_audit_logger.log(
+            action='SUBMIT_FEEDBACK_ERROR',
+            details={'type': data.type if 'data' in dir() else None, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': 'Failed to save feedback'}), 500
 
 
@@ -459,6 +475,14 @@ def get_my_feedback():
 
         feedback_list = [dict(row) for row in rows]
 
+        enhanced_audit_logger.log(
+            action='VIEW_MY_FEEDBACK',
+            details={
+                'feedback_count': len(feedback_list),
+                'total': total_count
+            },
+            status_code=200
+        )
         return jsonify({
             'feedback': feedback_list,
             'total': total_count,
@@ -468,6 +492,11 @@ def get_my_feedback():
 
     except Exception as e:
         print(f"Error fetching user feedback: {e}")
+        enhanced_audit_logger.log(
+            action='VIEW_MY_FEEDBACK_ERROR',
+            details={'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': 'Failed to fetch feedback'}), 500
 
 
@@ -523,6 +552,13 @@ def update_my_feedback(feedback_id: int):
 
             conn.commit()
 
+        enhanced_audit_logger.log(
+            action='UPDATE_MY_FEEDBACK',
+            table_name='feedback',
+            record_id=feedback_id,
+            details={'content_length': len(content)},
+            status_code=200
+        )
         return jsonify({
             'success': True,
             'message': 'Feedback updated successfully'
@@ -530,6 +566,11 @@ def update_my_feedback(feedback_id: int):
 
     except Exception as e:
         print(f"Error updating user feedback: {e}")
+        enhanced_audit_logger.log(
+            action='UPDATE_MY_FEEDBACK_ERROR',
+            details={'feedback_id': feedback_id, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': 'Failed to update feedback'}), 500
 
 
@@ -546,8 +587,20 @@ def delete_my_feedback(feedback_id: int):
             conn.commit()
 
             if cursor.rowcount == 0:
+                enhanced_audit_logger.log(
+                    action='DELETE_MY_FEEDBACK_NOT_FOUND',
+                    details={'feedback_id': feedback_id},
+                    status_code=404
+                )
                 return jsonify({'error': 'Feedback not found or access denied'}), 404
 
+        enhanced_audit_logger.log(
+            action='DELETE_MY_FEEDBACK',
+            table_name='feedback',
+            record_id=feedback_id,
+            details={},
+            status_code=200
+        )
         return jsonify({
             'success': True,
             'message': 'Feedback deleted successfully'
@@ -555,6 +608,11 @@ def delete_my_feedback(feedback_id: int):
 
     except Exception as e:
         print(f"Error deleting user feedback: {e}")
+        enhanced_audit_logger.log(
+            action='DELETE_MY_FEEDBACK_ERROR',
+            details={'feedback_id': feedback_id, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': 'Failed to delete feedback'}), 500
 
 

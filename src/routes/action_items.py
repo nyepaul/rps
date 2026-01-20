@@ -5,6 +5,7 @@ from pydantic import BaseModel, validator, root_validator
 from typing import Optional
 from src.models.action_item import ActionItem
 from src.models.profile import Profile
+from src.services.enhanced_audit_logger import enhanced_audit_logger
 
 action_items_bp = Blueprint('action_items', __name__, url_prefix='/api')
 
@@ -95,23 +96,48 @@ def generate_action_items():
     try:
         profile_name = request.json.get('profile_name')
         if not profile_name:
+            enhanced_audit_logger.log(
+                action='GENERATE_ACTION_ITEMS_VALIDATION_ERROR',
+                details={'error': 'profile_name is required'},
+                status_code=400
+            )
             return jsonify({'error': 'profile_name is required'}), 400
 
         profile = Profile.get_by_name(profile_name, current_user.id)
         if not profile:
+            enhanced_audit_logger.log(
+                action='GENERATE_ACTION_ITEMS_PROFILE_NOT_FOUND',
+                details={'profile_name': profile_name},
+                status_code=404
+            )
             return jsonify({'error': 'Profile not found'}), 404
 
         # Generate and sync items
         ActionItemService.sync_generated_items(current_user.id, profile)
-        
+
         # Get all items (new and existing)
         action_items = ActionItem.list_by_user(current_user.id, profile.id)
 
+        enhanced_audit_logger.log(
+            action='GENERATE_ACTION_ITEMS',
+            table_name='action_item',
+            record_id=profile.id,
+            details={
+                'profile_name': profile_name,
+                'items_count': len(action_items)
+            },
+            status_code=200
+        )
         return jsonify({
             'message': 'Action items generated successfully',
             'action_items': [item.to_dict() for item in action_items]
         }), 200
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='GENERATE_ACTION_ITEMS_ERROR',
+            details={'profile_name': profile_name if 'profile_name' in dir() else None, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -127,15 +153,33 @@ def list_action_items():
         if profile_name:
             profile = Profile.get_by_name(profile_name, current_user.id)
             if not profile:
+                enhanced_audit_logger.log(
+                    action='LIST_ACTION_ITEMS_PROFILE_NOT_FOUND',
+                    details={'profile_name': profile_name},
+                    status_code=404
+                )
                 return jsonify({'error': 'Profile not found'}), 404
             profile_id = profile.id
 
         action_items = ActionItem.list_by_user(current_user.id, profile_id)
 
+        enhanced_audit_logger.log(
+            action='LIST_ACTION_ITEMS',
+            details={
+                'profile_name': profile_name,
+                'items_count': len(action_items)
+            },
+            status_code=200
+        )
         return jsonify({
             'action_items': [item.to_dict() for item in action_items]
         }), 200
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='LIST_ACTION_ITEMS_ERROR',
+            details={'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -146,10 +190,27 @@ def get_action_item(item_id: int):
     try:
         item = ActionItem.get_by_id(item_id, current_user.id)
         if not item:
+            enhanced_audit_logger.log(
+                action='VIEW_ACTION_ITEM_NOT_FOUND',
+                details={'item_id': item_id},
+                status_code=404
+            )
             return jsonify({'error': 'Action item not found'}), 404
 
+        enhanced_audit_logger.log(
+            action='VIEW_ACTION_ITEM',
+            table_name='action_item',
+            record_id=item_id,
+            details={'category': item.category, 'status': item.status},
+            status_code=200
+        )
         return jsonify({'action_item': item.to_dict()}), 200
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='VIEW_ACTION_ITEM_ERROR',
+            details={'item_id': item_id, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -160,6 +221,11 @@ def create_action_item():
     try:
         data = ActionItemCreateSchema(**request.json)
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='CREATE_ACTION_ITEM_VALIDATION_ERROR',
+            details={'error': str(e)},
+            status_code=400
+        )
         return jsonify({'error': str(e)}), 400
 
     try:
@@ -168,6 +234,11 @@ def create_action_item():
         if data.profile_name:
             profile = Profile.get_by_name(data.profile_name, current_user.id)
             if not profile:
+                enhanced_audit_logger.log(
+                    action='CREATE_ACTION_ITEM_PROFILE_NOT_FOUND',
+                    details={'profile_name': data.profile_name},
+                    status_code=404
+                )
                 return jsonify({'error': 'Profile not found'}), 404
             profile_id = profile.id
 
@@ -185,11 +256,27 @@ def create_action_item():
         )
         item.save()
 
+        enhanced_audit_logger.log(
+            action='CREATE_ACTION_ITEM',
+            table_name='action_item',
+            record_id=item.id,
+            details={
+                'category': data.category,
+                'priority': data.priority,
+                'profile_name': data.profile_name
+            },
+            status_code=201
+        )
         return jsonify({
             'message': 'Action item created successfully',
             'action_item': item.to_dict()
         }), 201
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='CREATE_ACTION_ITEM_ERROR',
+            details={'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -200,43 +287,78 @@ def update_action_item(item_id: int):
     try:
         data = ActionItemUpdateSchema(**request.json)
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='UPDATE_ACTION_ITEM_VALIDATION_ERROR',
+            details={'item_id': item_id, 'error': str(e)},
+            status_code=400
+        )
         return jsonify({'error': str(e)}), 400
 
     try:
         # Get action item with ownership check
         item = ActionItem.get_by_id(item_id, current_user.id)
         if not item:
+            enhanced_audit_logger.log(
+                action='UPDATE_ACTION_ITEM_NOT_FOUND',
+                details={'item_id': item_id},
+                status_code=404
+            )
             return jsonify({'error': 'Action item not found'}), 404
 
-        # Update fields if provided
+        # Track what fields are being updated
+        updated_fields = []
+
         if data.category is not None:
+            updated_fields.append('category')
             item.category = data.category
 
         if data.description is not None:
+            updated_fields.append('description')
             item.description = data.description
 
         if data.priority is not None:
+            updated_fields.append('priority')
             item.priority = data.priority
 
         if data.status is not None:
+            updated_fields.append('status')
             item.status = data.status
 
         if data.due_date is not None:
+            updated_fields.append('due_date')
             item.due_date = data.due_date
 
         if data.action_data is not None:
+            updated_fields.append('action_data')
             item.action_data = data.action_data
 
         if data.subtasks is not None:
+            updated_fields.append('subtasks')
             item.subtasks = data.subtasks
 
         item.save()
 
+        enhanced_audit_logger.log(
+            action='UPDATE_ACTION_ITEM',
+            table_name='action_item',
+            record_id=item_id,
+            details={
+                'updated_fields': updated_fields,
+                'new_status': data.status,
+                'new_priority': data.priority
+            },
+            status_code=200
+        )
         return jsonify({
             'message': 'Action item updated successfully',
             'action_item': item.to_dict()
         }), 200
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='UPDATE_ACTION_ITEM_ERROR',
+            details={'item_id': item_id, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -248,10 +370,28 @@ def delete_action_item(item_id: int):
         # Get action item with ownership check
         item = ActionItem.get_by_id(item_id, current_user.id)
         if not item:
+            enhanced_audit_logger.log(
+                action='DELETE_ACTION_ITEM_NOT_FOUND',
+                details={'item_id': item_id},
+                status_code=404
+            )
             return jsonify({'error': 'Action item not found'}), 404
 
+        category = item.category
         item.delete()
 
+        enhanced_audit_logger.log(
+            action='DELETE_ACTION_ITEM',
+            table_name='action_item',
+            record_id=item_id,
+            details={'category': category},
+            status_code=200
+        )
         return jsonify({'message': 'Action item deleted successfully'}), 200
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='DELETE_ACTION_ITEM_ERROR',
+            details={'item_id': item_id, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500

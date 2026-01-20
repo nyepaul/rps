@@ -8,6 +8,7 @@ import { API_ENDPOINTS, STORAGE_KEYS, APP_CONFIG } from './config.js';
 import { showSetupChecklist, updateSetupButton } from './components/setup/setup-checklist.js';
 import { showFeedbackModal } from './components/feedback/feedback-modal.js';
 import { showRoadmapViewer } from './components/roadmap/roadmap-viewer.js';
+import { activityTracker } from './utils/activityTracker.js';
 
 /**
  * Initialize application
@@ -172,6 +173,10 @@ async function showTab(tabName) {
 
     // Save to localStorage
     localStorage.setItem(STORAGE_KEYS.LAST_TAB, tabName);
+
+    // Track tab view
+    const currentProfile = store.getState().currentProfile;
+    activityTracker.trackPageView(tabName, currentProfile?.name);
 
     // Load tab content
     const container = document.getElementById('tab-content-container');
@@ -741,5 +746,5 @@ if (document.readyState === 'loading') {
     init();
 }
 
-// Export for debugging
-window.app = { store, apiClient, showTab, openSettings };
+// Export for debugging and external access
+window.app = { store, apiClient, showTab, openSettings, activityTracker };

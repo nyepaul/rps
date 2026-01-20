@@ -6,6 +6,7 @@ import json
 import base64
 from io import BytesIO
 from PIL import Image
+from src.services.enhanced_audit_logger import enhanced_audit_logger
 
 ai_services_bp = Blueprint('ai_services', __name__, url_prefix='/api')
 
@@ -119,12 +120,22 @@ def advisor_chat():
     conversation_id = data.get('conversation_id')
 
     if not profile_name or not user_message:
+        enhanced_audit_logger.log(
+            action='AI_ADVISOR_VALIDATION_ERROR',
+            details={'profile_name': profile_name, 'error': 'profile_name and message are required'},
+            status_code=400
+        )
         return jsonify({'error': 'profile_name and message are required'}), 400
 
     try:
         # Get profile with ownership check
         profile = Profile.get_by_name(profile_name, current_user.id)
         if not profile:
+            enhanced_audit_logger.log(
+                action='AI_ADVISOR_PROFILE_NOT_FOUND',
+                details={'profile_name': profile_name},
+                status_code=404
+            )
             return jsonify({'error': 'Profile not found'}), 404
 
         # Get API key from profile
@@ -133,6 +144,11 @@ def advisor_chat():
         api_key = api_keys.get('gemini_api_key')
 
         if not api_key:
+            enhanced_audit_logger.log(
+                action='AI_ADVISOR_NO_API_KEY',
+                details={'profile_name': profile_name},
+                status_code=400
+            )
             return jsonify({
                 'error': 'Gemini API key not configured. Please configure in Settings.'
             }), 400
@@ -252,6 +268,18 @@ def advisor_chat():
         )
         assistant_msg.save()
 
+        enhanced_audit_logger.log(
+            action='AI_ADVISOR_CHAT',
+            table_name='conversation',
+            record_id=profile.id,
+            details={
+                'profile_name': profile_name,
+                'message_length': len(user_message),
+                'response_length': len(assistant_text),
+                'history_count': len(history)
+            },
+            status_code=200
+        )
         return jsonify({
             'response': assistant_text,
             'status': 'success'
@@ -259,6 +287,11 @@ def advisor_chat():
 
     except Exception as e:
         print(f"Advisor chat error: {str(e)}")
+        enhanced_audit_logger.log(
+            action='AI_ADVISOR_CHAT_ERROR',
+            details={'profile_name': profile_name, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -268,13 +301,33 @@ def get_advisor_history():
     """Get conversation history for a profile."""
     profile_name = request.args.get('profile_name')
     if not profile_name:
+        enhanced_audit_logger.log(
+            action='VIEW_ADVISOR_HISTORY_VALIDATION_ERROR',
+            details={'error': 'profile_name is required'},
+            status_code=400
+        )
         return jsonify({'error': 'profile_name is required'}), 400
 
     profile = Profile.get_by_name(profile_name, current_user.id)
     if not profile:
+        enhanced_audit_logger.log(
+            action='VIEW_ADVISOR_HISTORY_NOT_FOUND',
+            details={'profile_name': profile_name},
+            status_code=404
+        )
         return jsonify({'error': 'Profile not found'}), 404
 
     history = Conversation.list_by_profile(current_user.id, profile.id)
+    enhanced_audit_logger.log(
+        action='VIEW_ADVISOR_HISTORY',
+        table_name='conversation',
+        record_id=profile.id,
+        details={
+            'profile_name': profile_name,
+            'message_count': len(history)
+        },
+        status_code=200
+    )
     return jsonify({
         'history': [msg.to_dict() for msg in history]
     }), 200
@@ -285,6 +338,13 @@ def get_advisor_history():
 def clear_advisor_history(profile_id: int):
     """Clear conversation history for a profile."""
     Conversation.delete_by_profile(current_user.id, profile_id)
+    enhanced_audit_logger.log(
+        action='CLEAR_ADVISOR_HISTORY',
+        table_name='conversation',
+        record_id=profile_id,
+        details={'profile_id': profile_id},
+        status_code=200
+    )
     return jsonify({'message': 'History cleared'}), 200
 
 
@@ -303,9 +363,19 @@ def extract_assets():
     print(f"Provider: {provider}, Image data length: {len(image_b64) if image_b64 else 0}")
 
     if not image_b64:
+        enhanced_audit_logger.log(
+            action='EXTRACT_ASSETS_NO_IMAGE',
+            details={'profile_name': profile_name},
+            status_code=400
+        )
         return jsonify({'error': 'No image data provided'}), 400
 
     if not profile_name:
+        enhanced_audit_logger.log(
+            action='EXTRACT_ASSETS_NO_PROFILE',
+            details={'error': 'No profile_name provided'},
+            status_code=400
+        )
         return jsonify({'error': 'No profile_name provided'}), 400
 
     # Get API key from profile
@@ -393,12 +463,29 @@ def extract_assets():
 
                     merged_assets.append(merged)
 
+                enhanced_audit_logger.log(
+                    action='EXTRACT_ASSETS_AI',
+                    table_name='profile',
+                    record_id=profile.id,
+                    details={
+                        'profile_name': profile_name,
+                        'provider': 'gemini',
+                        'assets_extracted': len(merged_assets),
+                        'existing_assets_count': len(existing_assets)
+                    },
+                    status_code=200
+                )
                 return jsonify({
                     'assets': merged_assets,
                     'status': 'success'
                 }), 200
 
             except json.JSONDecodeError as e:
+                enhanced_audit_logger.log(
+                    action='EXTRACT_ASSETS_PARSE_ERROR',
+                    details={'profile_name': profile_name, 'provider': 'gemini', 'error': str(e)},
+                    status_code=500
+                )
                 return jsonify({
                     'error': f'Failed to parse AI response as JSON: {str(e)}',
                     'raw_response': text_response[:500]
@@ -507,12 +594,29 @@ def extract_assets():
 
                                 merged_assets.append(merged)
 
+                            enhanced_audit_logger.log(
+                                action='EXTRACT_ASSETS_AI',
+                                table_name='profile',
+                                record_id=profile.id,
+                                details={
+                                    'profile_name': profile_name,
+                                    'provider': 'claude',
+                                    'assets_extracted': len(merged_assets),
+                                    'existing_assets_count': len(existing_assets)
+                                },
+                                status_code=200
+                            )
                             return jsonify({
                                 'assets': merged_assets,
                                 'status': 'success'
                             }), 200
 
                         except json.JSONDecodeError as e:
+                            enhanced_audit_logger.log(
+                                action='EXTRACT_ASSETS_PARSE_ERROR',
+                                details={'profile_name': profile_name, 'provider': 'claude', 'error': str(e)},
+                                status_code=500
+                            )
                             return jsonify({
                                 'error': f'Failed to parse AI response as JSON: {str(e)}',
                                 'raw_response': text_response[:500]
@@ -527,10 +631,20 @@ def extract_assets():
                     continue
 
             # All Claude models failed
+            enhanced_audit_logger.log(
+                action='EXTRACT_ASSETS_ALL_MODELS_FAILED',
+                details={'profile_name': profile_name, 'provider': 'claude', 'error': str(last_error)},
+                status_code=500
+            )
             return jsonify({
                 'error': f'All Claude models failed. Last error: {str(last_error)}'
             }), 500
 
     except Exception as e:
         print(f"Extract assets error: {str(e)}")
+        enhanced_audit_logger.log(
+            action='EXTRACT_ASSETS_ERROR',
+            details={'profile_name': profile_name, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500

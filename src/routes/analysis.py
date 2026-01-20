@@ -8,6 +8,7 @@ from src.services.retirement_model import (
     Person, FinancialProfile, MarketAssumptions, RetirementModel
 )
 from src.services.rebalancing_service import RebalancingService
+from src.services.enhanced_audit_logger import enhanced_audit_logger
 
 analysis_bp = Blueprint('analysis', __name__, url_prefix='/api')
 
@@ -99,12 +100,22 @@ def run_analysis():
     try:
         data = AnalysisRequestSchema(**request.json)
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='RUN_ANALYSIS_VALIDATION_ERROR',
+            details={'error': str(e)},
+            status_code=400
+        )
         return jsonify({'error': str(e)}), 400
 
     try:
         # Get profile with ownership check
         profile = Profile.get_by_name(data.profile_name, current_user.id)
         if not profile:
+            enhanced_audit_logger.log(
+                action='RUN_ANALYSIS_PROFILE_NOT_FOUND',
+                details={'profile_name': data.profile_name},
+                status_code=404
+            )
             return jsonify({'error': 'Profile not found'}), 404
 
         profile_data = profile.data_dict
@@ -262,17 +273,41 @@ def run_analysis():
             'years_projected': years
         }
 
+        enhanced_audit_logger.log(
+            action='RUN_MONTE_CARLO_ANALYSIS',
+            table_name='profile',
+            record_id=profile.id,
+            details={
+                'profile_name': data.profile_name,
+                'simulations': data.simulations,
+                'spending_model': data.spending_model,
+                'years_projected': years,
+                'total_assets': response['total_assets'],
+                'scenarios_run': list(scenario_results.keys())
+            },
+            status_code=200
+        )
         return jsonify(response), 200
 
     except KeyError as e:
         import traceback
         print(f"KeyError in analysis: {str(e)}")
         print(traceback.format_exc())
+        enhanced_audit_logger.log(
+            action='RUN_ANALYSIS_KEY_ERROR',
+            details={'profile_name': data.profile_name, 'error': str(e)},
+            status_code=400
+        )
         return jsonify({'error': f'Missing required field: {str(e)}'}), 400
     except Exception as e:
         import traceback
         print(f"Exception in analysis: {str(e)}")
         print(traceback.format_exc())
+        enhanced_audit_logger.log(
+            action='RUN_ANALYSIS_ERROR',
+            details={'profile_name': data.profile_name, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -283,15 +318,30 @@ def analyze_social_security():
     try:
         profile_name = request.json.get('profile_name')
         if not profile_name:
+            enhanced_audit_logger.log(
+                action='ANALYZE_SS_VALIDATION_ERROR',
+                details={'error': 'profile_name is required'},
+                status_code=400
+            )
             return jsonify({'error': 'profile_name is required'}), 400
 
         # Get profile with ownership check
         profile = Profile.get_by_name(profile_name, current_user.id)
         if not profile:
+            enhanced_audit_logger.log(
+                action='ANALYZE_SS_PROFILE_NOT_FOUND',
+                details={'profile_name': profile_name},
+                status_code=404
+            )
             return jsonify({'error': 'Profile not found'}), 404
 
         profile_data = profile.data_dict
         if not profile_data:
+            enhanced_audit_logger.log(
+                action='ANALYZE_SS_EMPTY_PROFILE',
+                details={'profile_name': profile_name},
+                status_code=400
+            )
             return jsonify({'error': 'Profile data is empty'}), 400
 
         # Extract data and create model
@@ -333,9 +383,21 @@ def analyze_social_security():
         results = model.analyze_social_security_strategies()
         results['profile_name'] = profile_name
 
+        enhanced_audit_logger.log(
+            action='ANALYZE_SOCIAL_SECURITY',
+            table_name='profile',
+            record_id=profile.id,
+            details={'profile_name': profile_name},
+            status_code=200
+        )
         return jsonify(results), 200
 
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='ANALYZE_SS_ERROR',
+            details={'profile_name': profile_name if 'profile_name' in dir() else None, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -348,15 +410,30 @@ def analyze_roth_conversion():
         conversion_amount = request.json.get('conversion_amount', 50000)
 
         if not profile_name:
+            enhanced_audit_logger.log(
+                action='ANALYZE_ROTH_VALIDATION_ERROR',
+                details={'error': 'profile_name is required'},
+                status_code=400
+            )
             return jsonify({'error': 'profile_name is required'}), 400
 
         # Get profile with ownership check
         profile = Profile.get_by_name(profile_name, current_user.id)
         if not profile:
+            enhanced_audit_logger.log(
+                action='ANALYZE_ROTH_PROFILE_NOT_FOUND',
+                details={'profile_name': profile_name},
+                status_code=404
+            )
             return jsonify({'error': 'Profile not found'}), 404
 
         profile_data = profile.data_dict
         if not profile_data:
+            enhanced_audit_logger.log(
+                action='ANALYZE_ROTH_EMPTY_PROFILE',
+                details={'profile_name': profile_name},
+                status_code=400
+            )
             return jsonify({'error': 'Profile data is empty'}), 400
 
         # Extract data and create model
@@ -398,9 +475,24 @@ def analyze_roth_conversion():
         results = model.analyze_roth_conversion(conversion_amount)
         results['profile_name'] = profile_name
 
+        enhanced_audit_logger.log(
+            action='ANALYZE_ROTH_CONVERSION',
+            table_name='profile',
+            record_id=profile.id,
+            details={
+                'profile_name': profile_name,
+                'conversion_amount': conversion_amount
+            },
+            status_code=200
+        )
         return jsonify(results), 200
 
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='ANALYZE_ROTH_ERROR',
+            details={'profile_name': profile_name if 'profile_name' in dir() else None, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -413,21 +505,46 @@ def analyze_rebalancing():
         target_allocation = request.json.get('target_allocation', {'stocks': 0.6, 'bonds': 0.4, 'cash': 0.0})
 
         if not profile_name:
+            enhanced_audit_logger.log(
+                action='ANALYZE_REBALANCE_VALIDATION_ERROR',
+                details={'error': 'profile_name is required'},
+                status_code=400
+            )
             return jsonify({'error': 'profile_name is required'}), 400
 
         # Get profile with ownership check
         profile = Profile.get_by_name(profile_name, current_user.id)
         if not profile:
+            enhanced_audit_logger.log(
+                action='ANALYZE_REBALANCE_PROFILE_NOT_FOUND',
+                details={'profile_name': profile_name},
+                status_code=404
+            )
             return jsonify({'error': 'Profile not found'}), 404
 
         profile_data = profile.data_dict
         assets = profile_data.get('assets', {})
-        
+
         service = RebalancingService(assets)
         results = service.suggest_rebalancing(target_allocation)
         results['profile_name'] = profile_name
 
+        enhanced_audit_logger.log(
+            action='ANALYZE_REBALANCING',
+            table_name='profile',
+            record_id=profile.id,
+            details={
+                'profile_name': profile_name,
+                'target_allocation': target_allocation
+            },
+            status_code=200
+        )
         return jsonify(results), 200
 
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='ANALYZE_REBALANCE_ERROR',
+            details={'profile_name': profile_name if 'profile_name' in dir() else None, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
