@@ -999,32 +999,108 @@ function renderSummaryCards(container, chartData) {
 
     const summaryContainer = container.querySelector('#summary-cards');
     summaryContainer.innerHTML = `
-        <div style="background: linear-gradient(135deg, #2ed573, #26d07c); padding: 16px; border-radius: 8px; color: white;">
+        <div class="metric-card" data-metric="work-income" style="background: linear-gradient(135deg, #2ed573, #26d07c); padding: 16px; border-radius: 8px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
             <div style="font-size: 11px; opacity: 0.9; margin-bottom: 4px;">Work Income</div>
             <div style="font-size: 20px; font-weight: 700; margin-bottom: 2px;">${formatCurrency(totalWorkIncome, 0)}</div>
             <div style="font-size: 10px; opacity: 0.8;">Salary & other work</div>
         </div>
-        <div style="background: linear-gradient(135deg, #3498db, #5faee3); padding: 16px; border-radius: 8px; color: white;">
+        <div class="metric-card" data-metric="retirement-benefits" style="background: linear-gradient(135deg, #3498db, #5faee3); padding: 16px; border-radius: 8px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
             <div style="font-size: 11px; opacity: 0.9; margin-bottom: 4px;">Retirement Benefits</div>
             <div style="font-size: 20px; font-weight: 700; margin-bottom: 2px;">${formatCurrency(totalRetirementBenefits, 0)}</div>
             <div style="font-size: 10px; opacity: 0.8;">Social Security & Pension</div>
         </div>
-        <div style="background: linear-gradient(135deg, #9b59b6, #8e44ad); padding: 16px; border-radius: 8px; color: white;">
+        <div class="metric-card" data-metric="investment-withdrawals" style="background: linear-gradient(135deg, #9b59b6, #8e44ad); padding: 16px; border-radius: 8px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
             <div style="font-size: 11px; opacity: 0.9; margin-bottom: 4px;">Investment Withdrawals</div>
             <div style="font-size: 20px; font-weight: 700; margin-bottom: 2px;">${formatCurrency(totalInvestmentIncome, 0)}</div>
             <div style="font-size: 10px; opacity: 0.8;">Portfolio withdrawals</div>
         </div>
-        <div style="background: linear-gradient(135deg, #ff6b6b, #ee5a6f); padding: 16px; border-radius: 8px; color: white;">
+        <div class="metric-card" data-metric="expenses" style="background: linear-gradient(135deg, #ff6b6b, #ee5a6f); padding: 16px; border-radius: 8px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
             <div style="font-size: 11px; opacity: 0.9; margin-bottom: 4px;">Total Expenses</div>
             <div style="font-size: 20px; font-weight: 700; margin-bottom: 2px;">${formatCurrency(totalExpenses, 0)}</div>
             <div style="font-size: 10px; opacity: 0.8;">Avg: ${formatCurrency(avgMonthlyExpenses, 0)}/mo</div>
         </div>
-        <div style="background: linear-gradient(135deg, ${totalNet >= 0 ? '#f1c40f, #f39c12' : '#e74c3c, #c0392b'}); padding: 16px; border-radius: 8px; color: white;">
+        <div class="metric-card" data-metric="net-cash-flow" style="background: linear-gradient(135deg, ${totalNet >= 0 ? '#f1c40f, #f39c12' : '#e74c3c, #c0392b'}); padding: 16px; border-radius: 8px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
             <div style="font-size: 11px; opacity: 0.9; margin-bottom: 4px;">Net Cash Flow</div>
             <div style="font-size: 20px; font-weight: 700; margin-bottom: 2px;">${totalNet >= 0 ? '+' : ''}${formatCurrency(totalNet, 0)}</div>
             <div style="font-size: 10px; opacity: 0.8;">Avg: ${avgMonthlyNet >= 0 ? '+' : ''}${formatCurrency(avgMonthlyNet, 0)}/mo</div>
         </div>
     `;
+
+    // Add click handlers for metric isolation
+    setupMetricIsolation(container);
+}
+
+/**
+ * Setup metric isolation - toggle chart datasets when clicking summary cards
+ */
+function setupMetricIsolation(container) {
+    let selectedMetric = null;
+
+    const metricCards = container.querySelectorAll('.metric-card');
+    const chart = window.cashFlowChart;
+
+    if (!chart) {
+        console.warn('Cash flow chart not found, metric isolation disabled');
+        return;
+    }
+
+    // Map metric names to dataset indices
+    const metricToDatasetMap = {
+        'work-income': [0],              // Work Income
+        'retirement-benefits': [1],       // Retirement Benefits (SS/Pension)
+        'investment-withdrawals': [2],    // Investment Withdrawals
+        'expenses': [3],                  // Expenses
+        'net-cash-flow': [4]              // Net Cash Flow
+    };
+
+    metricCards.forEach(card => {
+        card.addEventListener('click', () => {
+            const metric = card.getAttribute('data-metric');
+
+            // Toggle selection
+            if (selectedMetric === metric) {
+                // Deselect - show all datasets
+                selectedMetric = null;
+                chart.data.datasets.forEach((dataset, index) => {
+                    dataset.hidden = false;
+                });
+
+                // Remove selected styling from all cards
+                metricCards.forEach(c => {
+                    c.style.borderColor = 'transparent';
+                    c.style.opacity = '1';
+                });
+            } else {
+                // Select this metric - hide all except selected and Portfolio Balance
+                selectedMetric = metric;
+                const visibleIndices = metricToDatasetMap[metric] || [];
+
+                chart.data.datasets.forEach((dataset, index) => {
+                    // Always show Portfolio Balance (index 5) for context
+                    if (visibleIndices.includes(index) || index === 5) {
+                        dataset.hidden = false;
+                    } else {
+                        dataset.hidden = true;
+                    }
+                });
+
+                // Update styling - highlight selected, dim others
+                metricCards.forEach(c => {
+                    if (c === card) {
+                        c.style.borderColor = 'rgba(255, 255, 255, 0.9)';
+                        c.style.opacity = '1';
+                        c.style.boxShadow = '0 4px 20px rgba(0,0,0,0.25)';
+                    } else {
+                        c.style.borderColor = 'transparent';
+                        c.style.opacity = '0.5';
+                        c.style.boxShadow = 'none';
+                    }
+                });
+            }
+
+            chart.update();
+        });
+    });
 }
 
 /**
