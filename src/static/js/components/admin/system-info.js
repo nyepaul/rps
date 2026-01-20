@@ -122,10 +122,13 @@ export async function renderSystemInfo(container) {
                 <div style="background: var(--bg-secondary); padding: 25px; border-radius: 12px; margin-bottom: 20px;">
                     <h3 style="font-size: 18px; margin-bottom: 15px;">🗄️ Database Schema</h3>
                     <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 14px;">
-                        Interactive entity-relationship diagram showing all database tables and their relationships.
+                        Interactive entity-relationship diagram showing all database tables and their relationships. Click to open in full view.
                     </p>
-                    <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px; overflow-x: auto;">
-                        <div id="schema-diagram" style="min-height: 400px;"></div>
+                    <div id="schema-diagram-preview" style="background: var(--bg-primary); padding: 15px; border-radius: 8px; overflow: hidden; cursor: pointer; position: relative;">
+                        <div id="schema-diagram" style="min-height: 400px; max-height: 600px; overflow: hidden;"></div>
+                        <div style="position: absolute; bottom: 15px; right: 15px; background: rgba(0,0,0,0.7); color: white; padding: 8px 12px; border-radius: 6px; font-size: 12px; pointer-events: none;">
+                            🔍 Click to expand
+                        </div>
                     </div>
                     <div style="margin-top: 15px; padding: 12px; background: var(--info-bg); border-radius: 8px; font-size: 13px;">
                         <strong>📊 Schema Stats:</strong>
@@ -370,6 +373,14 @@ async function renderDatabaseSchema(container, schema) {
             svgElement.style.maxWidth = '100%';
         }
 
+        // Setup click handler to open full view
+        const previewDiv = container.querySelector('#schema-diagram-preview');
+        if (previewDiv) {
+            previewDiv.addEventListener('click', () => {
+                openSchemaModal(svg, schema);
+            });
+        }
+
     } catch (error) {
         console.error('Error rendering schema diagram:', error);
         diagramDiv.innerHTML = `
@@ -380,4 +391,195 @@ async function renderDatabaseSchema(container, schema) {
             </div>
         `;
     }
+}
+
+/**
+ * Open schema diagram in full-screen modal with pan/zoom controls
+ */
+function openSchemaModal(svgContent, schema) {
+    // Create modal
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.95);
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+    `;
+
+    // Create header with controls
+    const header = document.createElement('div');
+    header.style.cssText = `
+        padding: 15px 20px;
+        background: rgba(255, 255, 255, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: white;
+    `;
+    header.innerHTML = `
+        <div style="font-size: 18px; font-weight: 600;">
+            🗄️ Database Schema - ${schema.tables.length} Tables, ${schema.tables.reduce((sum, t) => sum + t.foreign_keys.length, 0)} Relationships
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <button id="zoom-in-btn" style="padding: 8px 16px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; color: white; cursor: pointer; font-size: 16px;">➕ Zoom In</button>
+            <button id="zoom-out-btn" style="padding: 8px 16px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; color: white; cursor: pointer; font-size: 16px;">➖ Zoom Out</button>
+            <button id="reset-view-btn" style="padding: 8px 16px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; color: white; cursor: pointer; font-size: 16px;">🔄 Reset</button>
+            <button id="print-schema-btn" style="padding: 8px 16px; background: rgba(59,130,246,0.8); border: 1px solid rgba(59,130,246,1); border-radius: 6px; color: white; cursor: pointer; font-size: 16px;">🖨️ Print</button>
+            <button id="close-modal-btn" style="padding: 8px 16px; background: rgba(239,68,68,0.8); border: 1px solid rgba(239,68,68,1); border-radius: 6px; color: white; cursor: pointer; font-size: 16px;">✕ Close</button>
+        </div>
+    `;
+
+    // Create diagram container
+    const diagramContainer = document.createElement('div');
+    diagramContainer.style.cssText = `
+        flex: 1;
+        overflow: hidden;
+        position: relative;
+        background: white;
+        margin: 20px;
+        border-radius: 8px;
+        cursor: grab;
+    `;
+
+    // Create inner container for pan/zoom
+    const innerContainer = document.createElement('div');
+    innerContainer.id = 'schema-zoom-container';
+    innerContainer.style.cssText = `
+        transform-origin: 0 0;
+        transition: transform 0.2s ease;
+    `;
+    innerContainer.innerHTML = svgContent;
+
+    diagramContainer.appendChild(innerContainer);
+    modal.appendChild(header);
+    modal.appendChild(diagramContainer);
+    document.body.appendChild(modal);
+
+    // Pan and zoom state
+    let scale = 1;
+    let translateX = 0;
+    let translateY = 0;
+    let isPanning = false;
+    let startX = 0;
+    let startY = 0;
+
+    // Update transform
+    function updateTransform() {
+        innerContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+    }
+
+    // Zoom in
+    modal.querySelector('#zoom-in-btn').addEventListener('click', () => {
+        scale *= 1.2;
+        updateTransform();
+    });
+
+    // Zoom out
+    modal.querySelector('#zoom-out-btn').addEventListener('click', () => {
+        scale *= 0.8;
+        updateTransform();
+    });
+
+    // Reset view
+    modal.querySelector('#reset-view-btn').addEventListener('click', () => {
+        scale = 1;
+        translateX = 0;
+        translateY = 0;
+        updateTransform();
+    });
+
+    // Print
+    modal.querySelector('#print-schema-btn').addEventListener('click', () => {
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>RPS Database Schema</title>
+                <style>
+                    @page { size: landscape; margin: 0.5in; }
+                    body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+                    h1 { text-align: center; margin-bottom: 20px; }
+                    .stats { text-align: center; margin-bottom: 20px; color: #666; }
+                    svg { max-width: 100%; height: auto; }
+                </style>
+            </head>
+            <body>
+                <h1>🗄️ RPS Database Schema</h1>
+                <div class="stats">
+                    ${schema.tables.length} Tables |
+                    ${schema.tables.reduce((sum, t) => sum + t.columns.length, 0)} Columns |
+                    ${schema.tables.reduce((sum, t) => sum + t.foreign_keys.length, 0)} Relationships
+                </div>
+                ${svgContent}
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        setTimeout(() => {
+            printWindow.print();
+        }, 250);
+    });
+
+    // Close modal
+    modal.querySelector('#close-modal-btn').addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+
+    // Mouse wheel zoom
+    diagramContainer.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const rect = diagramContainer.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        const oldScale = scale;
+        if (e.deltaY < 0) {
+            scale *= 1.1;
+        } else {
+            scale *= 0.9;
+        }
+
+        // Adjust translation to zoom towards mouse position
+        translateX -= (mouseX - translateX) * (scale / oldScale - 1);
+        translateY -= (mouseY - translateY) * (scale / oldScale - 1);
+
+        updateTransform();
+    });
+
+    // Pan with mouse drag
+    diagramContainer.addEventListener('mousedown', (e) => {
+        isPanning = true;
+        startX = e.clientX - translateX;
+        startY = e.clientY - translateY;
+        diagramContainer.style.cursor = 'grabbing';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isPanning) return;
+        translateX = e.clientX - startX;
+        translateY = e.clientY - startY;
+        updateTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+        if (isPanning) {
+            isPanning = false;
+            diagramContainer.style.cursor = 'grab';
+        }
+    });
+
+    // ESC key to close
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            document.body.removeChild(modal);
+            window.removeEventListener('keydown', handleEscape);
+        }
+    };
+    window.addEventListener('keydown', handleEscape);
 }
