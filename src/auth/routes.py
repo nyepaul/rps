@@ -4,7 +4,8 @@ from flask_login import login_user, logout_user, current_user
 from src.auth.models import User
 from src.extensions import limiter
 from src.services.enhanced_audit_logger import EnhancedAuditLogger
-from pydantic import BaseModel, EmailStr, validator
+from src.utils.error_sanitizer import sanitize_pydantic_error
+from pydantic import BaseModel, EmailStr, validator, ValidationError
 import re
 import json
 
@@ -57,8 +58,10 @@ def register():
     """Register a new user and initialize their encryption key."""
     try:
         data = RegisterSchema(**request.json)
+    except ValidationError as e:
+        return jsonify({'error': sanitize_pydantic_error(e)}), 400
     except Exception as e:
-        return jsonify({'error': str(e)}), 400
+        return jsonify({'error': 'Invalid registration data'}), 400
 
     # Check if username already exists
     if User.get_by_username(data.username):
@@ -124,8 +127,10 @@ def login():
     """Log in a user and decrypt their encryption key."""
     try:
         data = LoginSchema(**request.json)
+    except ValidationError as e:
+        return jsonify({'error': sanitize_pydantic_error(e)}), 400
     except Exception as e:
-        return jsonify({'error': str(e)}), 400
+        return jsonify({'error': 'Invalid login data'}), 400
 
     # Get user
     user = User.get_by_username(data.username)
@@ -241,17 +246,42 @@ def logout():
             status_code=200
         )
 
-    # Clear session data
+    # Clear session data including user_dek
     session.pop('user_dek', None)
-    session.clear()
 
-    # Logout user (clears Flask-Login session and remember me cookie)
+    # Logout user BEFORE clearing session (important for Flask-Login to work correctly)
     logout_user()
 
-    # Create response and explicitly clear remember me cookie
+    # Clear all session data and mark session as modified
+    session.clear()
+    session.modified = True
+
+    # Create response and explicitly clear cookies with proper security attributes
     response = make_response(jsonify({'message': 'Logout successful'}), 200)
-    response.set_cookie('remember_token', '', expires=0, path='/')
-    response.set_cookie('session', '', expires=0, path='/')
+
+    # Clear remember_token cookie if it exists
+    response.set_cookie(
+        'remember_token',
+        '',
+        max_age=0,
+        expires=0,
+        path='/',
+        secure=True,
+        httponly=True,
+        samesite='Lax'
+    )
+
+    # Clear session cookie - this ensures the client discards it
+    response.set_cookie(
+        'session',
+        '',
+        max_age=0,
+        expires=0,
+        path='/',
+        secure=True,
+        httponly=True,
+        samesite='Lax'
+    )
 
     return response
 
@@ -306,8 +336,10 @@ def request_password_reset():
     """
     try:
         data = PasswordResetRequestSchema(**request.json)
+    except ValidationError as e:
+        return jsonify({'error': sanitize_pydantic_error(e)}), 400
     except Exception as e:
-        return jsonify({'error': str(e)}), 400
+        return jsonify({'error': 'Invalid request data'}), 400
 
     # Get user by username
     user = User.get_by_username(data.username)
@@ -342,8 +374,10 @@ def reset_password():
     """
     try:
         data = PasswordResetSchema(**request.json)
+    except ValidationError as e:
+        return jsonify({'error': sanitize_pydantic_error(e)}), 400
     except Exception as e:
-        return jsonify({'error': str(e)}), 400
+        return jsonify({'error': 'Invalid request data'}), 400
 
     # Get user by token
     user = User.get_by_reset_token(data.token)
@@ -436,8 +470,10 @@ def change_password():
 
     try:
         data = PasswordChangeSchema(**request.json)
+    except ValidationError as e:
+        return jsonify({'error': sanitize_pydantic_error(e)}), 400
     except Exception as e:
-        return jsonify({'error': str(e)}), 400
+        return jsonify({'error': 'Invalid request data'}), 400
 
     # Get fresh user from database
     user = User.get_by_id(current_user.id)

@@ -21,10 +21,17 @@ class ProfileCreateSchema(BaseModel):
 
     @validator('name')
     def validate_name(cls, v):
+        import re
         if not v or not v.strip():
             raise ValueError('Profile name is required')
         if len(v) > 100:
             raise ValueError('Profile name must be less than 100 characters')
+        # Prevent path traversal attacks - reject any path separators or traversal sequences
+        if '..' in v or '/' in v or '\\' in v:
+            raise ValueError('Profile name cannot contain path traversal characters')
+        # Additional security: only allow alphanumeric, spaces, hyphens, underscores, and basic punctuation
+        if not re.match(r'^[a-zA-Z0-9 _\-\(\)\.]+$', v):
+            raise ValueError('Profile name contains invalid characters')
         return v.strip()
 
     @validator('birth_date', 'retirement_date')
@@ -46,11 +53,18 @@ class ProfileUpdateSchema(BaseModel):
 
     @validator('name')
     def validate_name(cls, v):
+        import re
         if v is not None:
             if not v.strip():
                 raise ValueError('Profile name cannot be empty')
             if len(v) > 100:
                 raise ValueError('Profile name must be less than 100 characters')
+            # Prevent path traversal attacks - reject any path separators or traversal sequences
+            if '..' in v or '/' in v or '\\' in v:
+                raise ValueError('Profile name cannot contain path traversal characters')
+            # Additional security: only allow alphanumeric, spaces, hyphens, underscores, and basic punctuation
+            if not re.match(r'^[a-zA-Z0-9 _\-\(\)\.]+$', v):
+                raise ValueError('Profile name contains invalid characters')
             return v.strip()
         return v
 

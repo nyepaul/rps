@@ -35,9 +35,9 @@ class Config:
     DATA_DIR = DATA_DIR
 
     # Security
-    # Allow override via environment variable for mixed HTTP/HTTPS deployments
-    # Set SESSION_COOKIE_SECURE=false for local HTTP access on internal network
-    SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'true' if os.environ.get('FLASK_ENV') == 'production' else 'false').lower() == 'true'
+    # CRITICAL: Secure flag should always be True for production
+    # Only disable for local development over HTTP (set SESSION_COOKIE_SECURE=false)
+    SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'true').lower() == 'true'
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     # Set to None to allow cookies across different hostnames (IP, domain, local hostname)

@@ -72,21 +72,44 @@ def create_app(config_name='development'):
     # Security headers - prevent caching of sensitive data
     @app.after_request
     def set_security_headers(response):
-        """Add security headers to all responses."""
+        """Add comprehensive security headers to all responses."""
         # Prevent caching of sensitive pages
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, private, max-age=0'
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '0'
 
-        # Security headers
+        # CRITICAL: HTTP Strict Transport Security (HSTS)
+        # Force HTTPS for 1 year, include subdomains
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+
+        # Security headers (set once, no duplicates)
         response.headers['X-Content-Type-Options'] = 'nosniff'
-        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['X-Frame-Options'] = 'SAMEORIGIN'  # Changed from DENY to SAMEORIGIN for iframe support
         response.headers['X-XSS-Protection'] = '1; mode=block'
         response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
 
-        # Content Security Policy (relaxed for inline scripts in development)
-        # TODO: Tighten CSP in production by moving inline scripts to separate files
-        response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'"
+        # Modern security headers
+        response.headers['Permissions-Policy'] = 'geolocation=(), camera=(), microphone=(), payment=()'
+        response.headers['Cross-Origin-Embedder-Policy'] = 'require-corp'
+        response.headers['Cross-Origin-Opener-Policy'] = 'same-origin'
+        response.headers['Cross-Origin-Resource-Policy'] = 'same-origin'
+
+        # Content Security Policy
+        # NOTE: 'unsafe-inline' is still required for current inline scripts
+        # TODO: Move inline scripts to external files and use nonces for better security
+        csp_directives = [
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+            "style-src 'self' 'unsafe-inline'",
+            "img-src 'self' data:",
+            "font-src 'self' data:",
+            "connect-src 'self'",
+            "frame-ancestors 'self'",
+            "base-uri 'self'",
+            "form-action 'self'",
+            "upgrade-insecure-requests"
+        ]
+        response.headers['Content-Security-Policy'] = "; ".join(csp_directives)
 
         return response
 
@@ -94,11 +117,31 @@ def create_app(config_name='development'):
     @app.errorhandler(500)
     def server_error(e):
         app.logger.error(f"Server Error: {e}", exc_info=True)
+        # Never expose internal error details in production
+        if app.config.get('DEBUG'):
+            return {'error': f'Internal server error: {str(e)}'}, 500
         return {'error': 'Internal server error'}, 500
 
     @app.errorhandler(404)
     def not_found(e):
         return {'error': 'Not found'}, 404
+
+    @app.errorhandler(400)
+    def bad_request(e):
+        # Sanitize error messages to avoid exposing framework details
+        error_msg = str(e)
+        # Remove Pydantic URLs and technical details
+        if 'pydantic.dev' in error_msg or 'pydantic_core' in error_msg:
+            # Extract just the user-friendly part before the technical details
+            lines = error_msg.split('\n')
+            clean_errors = []
+            for line in lines:
+                if 'https://' not in line and 'pydantic' not in line.lower():
+                    if line.strip() and not line.strip().startswith('['):
+                        clean_errors.append(line.strip())
+            if clean_errors:
+                return {'error': clean_errors[0] if len(clean_errors) == 1 else '; '.join(clean_errors[:3])}, 400
+        return {'error': 'Invalid request data'}, 400
 
     # Routes
     @app.route('/')
