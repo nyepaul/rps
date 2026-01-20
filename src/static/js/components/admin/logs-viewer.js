@@ -996,24 +996,21 @@ async function showIPLocationsMap() {
 
                         const marker = L.marker([ipData.lat, ipData.lon], { icon: customIcon }).addTo(map);
 
-                        // Add popup with IP details and button to view individual accesses
+                        // Add popup with IP details - access count is clickable
                         const popupContent = `
                             <div style="text-align: center; padding: 10px; min-width: 220px; background: #1a1a1a; color: #ffffff; border-radius: 8px;">
                                 <div style="font-size: 16px; font-weight: 700; margin-bottom: 10px; color: ${labelColor}; font-family: monospace; text-shadow: 0 0 8px ${glowColor};">${ipData.ip}</div>
                                 <div style="font-size: 15px; font-weight: 600; margin-bottom: 5px; color: #ffffff;">${ipData.city}</div>
                                 <div style="font-size: 13px; color: #aaaaaa; margin-bottom: 10px;">${ipData.region}, ${ipData.country}</div>
-                                <div style="font-size: 12px; padding: 6px 12px; background: ${markerColor}; border-radius: 6px; color: #000000; font-weight: 700; box-shadow: 0 0 10px ${glowColor}; margin-bottom: 10px;">
-                                    ${ipData.count} access${ipData.count !== 1 ? 'es' : ''}
-                                </div>
-                                <button class="view-ip-logs-btn" data-ip="${ipData.ip}" style="padding: 8px 16px; background: ${markerColor}; color: #000000; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; width: 100%; transition: opacity 0.2s; box-shadow: 0 0 8px ${glowColor};">
-                                    📋 View All Accesses
+                                <button class="view-ip-logs-btn" data-ip="${ipData.ip}" style="padding: 10px 16px; background: ${markerColor}; border: none; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 13px; width: 100%; transition: opacity 0.2s; box-shadow: 0 0 10px ${glowColor}; color: #000000;">
+                                    📋 ${ipData.count} access${ipData.count !== 1 ? 'es' : ''}
                                 </button>
                             </div>
                         `;
 
                         marker.bindPopup(popupContent);
 
-                        // Add click handler for the button
+                        // Add click handler for the access count button
                         marker.on('popupopen', () => {
                             const btn = document.querySelector('.view-ip-logs-btn[data-ip="' + ipData.ip + '"]');
                             if (btn) {
