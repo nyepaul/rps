@@ -310,6 +310,7 @@ async function loadBackups(container, type = 'all') {
                         <th style="padding: 12px; text-align: left; font-size: 13px; font-weight: 600; color: var(--text-secondary);">Filename</th>
                         <th style="padding: 12px; text-align: right; font-size: 13px; font-weight: 600; color: var(--text-secondary);">Size</th>
                         <th style="padding: 12px; text-align: right; font-size: 13px; font-weight: 600; color: var(--text-secondary);">Created</th>
+                        <th style="padding: 12px; text-align: right; font-size: 13px; font-weight: 600; color: var(--text-secondary);">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -331,6 +332,16 @@ async function loadBackups(container, type = 'all') {
                                 <td style="padding: 12px; font-family: monospace; font-size: 13px;">${backup.filename}</td>
                                 <td style="padding: 12px; text-align: right; font-size: 13px;">${backup.size_human}</td>
                                 <td style="padding: 12px; text-align: right; font-size: 13px; color: var(--text-secondary);">${formatDate(backup.created_at)}</td>
+                                <td style="padding: 12px; text-align: right;">
+                                    <button class="view-metadata-btn" data-type="${backup.type}" data-filename="${backup.filename}"
+                                            style="padding: 6px 12px; margin-right: 8px; background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 6px; cursor: pointer; font-size: 12px;">
+                                        📋 Info
+                                    </button>
+                                    <button class="restore-btn" data-type="${backup.type}" data-filename="${backup.filename}"
+                                            style="padding: 6px 12px; background: var(--warning-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                                        ↻ Restore
+                                    </button>
+                                </td>
                             </tr>
                         `;
                     }).join('')}
@@ -339,6 +350,10 @@ async function loadBackups(container, type = 'all') {
         `;
 
         listContainer.innerHTML = tableHtml;
+
+        // Add event listeners for action buttons
+        setupBackupActions(container);
+
     } catch (error) {
         console.error('Error loading backups:', error);
         listContainer.innerHTML = `
@@ -347,6 +362,235 @@ async function loadBackups(container, type = 'all') {
                 Failed to load backups: ${error.message}
             </div>
         `;
+    }
+}
+
+/**
+ * Setup action button event listeners
+ */
+function setupBackupActions(container) {
+    // View metadata buttons
+    const metadataButtons = container.querySelectorAll('.view-metadata-btn');
+    metadataButtons.forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const type = btn.getAttribute('data-type');
+            const filename = btn.getAttribute('data-filename');
+            await showBackupMetadata(type, filename);
+        });
+    });
+
+    // Restore buttons
+    const restoreButtons = container.querySelectorAll('.restore-btn');
+    restoreButtons.forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const type = btn.getAttribute('data-type');
+            const filename = btn.getAttribute('data-filename');
+            await showRestoreConfirmation(container, type, filename);
+        });
+    });
+}
+
+/**
+ * Show backup metadata modal
+ */
+async function showBackupMetadata(backupType, filename) {
+    try {
+        const response = await apiClient.get(`/api/admin/backup/${backupType}/${encodeURIComponent(filename)}/metadata`);
+
+        // Create modal
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000;';
+
+        modal.innerHTML = `
+            <div style="background: var(--bg-primary); border-radius: 12px; max-width: 700px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
+                <div style="padding: 25px; border-bottom: 2px solid var(--border-color);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 20px;">📋 Backup Information</h2>
+                        <button id="close-modal" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">&times;</button>
+                    </div>
+                </div>
+
+                <div style="padding: 25px;">
+                    <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <h3 style="margin: 0 0 15px 0; font-size: 16px;">Backup Details</h3>
+                        <div style="display: grid; gap: 12px; font-size: 14px;">
+                            ${Object.entries(response.metadata).map(([key, value]) => `
+                                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                    <div style="color: var(--text-secondary); font-weight: 600;">${key}:</div>
+                                    <div>${value}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px;">
+                        <h3 style="margin: 0 0 15px 0; font-size: 16px;">Contents (${response.file_count} files)</h3>
+                        <div style="max-height: 200px; overflow-y: auto; font-size: 13px; font-family: monospace; color: var(--text-secondary);">
+                            ${response.files.slice(0, 50).map(file => `<div style="padding: 4px 0;">${file}</div>`).join('')}
+                            ${response.files.length > 50 ? `<div style="padding: 4px 0; color: var(--text-secondary); font-style: italic;">... and ${response.files.length - 50} more files</div>` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Close modal on click
+        modal.querySelector('#close-modal').addEventListener('click', () => {
+            document.body.removeChild(modal);
+        });
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                document.body.removeChild(modal);
+            }
+        });
+
+    } catch (error) {
+        console.error('Error loading metadata:', error);
+        showError(`Failed to load backup metadata: ${error.message}`);
+    }
+}
+
+/**
+ * Show restore confirmation dialog
+ */
+async function showRestoreConfirmation(container, backupType, filename) {
+    // Create confirmation modal
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000;';
+
+    modal.innerHTML = `
+        <div style="background: var(--bg-primary); border-radius: 12px; max-width: 600px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
+            <div style="padding: 25px; border-bottom: 2px solid var(--border-color);">
+                <h2 style="margin: 0; font-size: 20px; color: var(--warning-color);">⚠️ Confirm Restore</h2>
+            </div>
+
+            <div style="padding: 25px;">
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--warning-color); margin-bottom: 20px;">
+                    <p style="margin: 0 0 15px 0; font-weight: 600; color: var(--warning-color);">
+                        This will restore data from the selected backup and may overwrite current data.
+                    </p>
+                    <div style="font-size: 14px; color: var(--text-secondary);">
+                        <div style="margin-bottom: 8px;"><strong>Backup:</strong> ${filename}</div>
+                        <div><strong>Type:</strong> ${backupType}</div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 10px; font-weight: 600; font-size: 14px;">Restore Type:</label>
+                    <select id="restore-type" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
+                        <option value="full">Full Restore (Database + Configuration)</option>
+                        <option value="database">Database Only</option>
+                        <option value="config">Configuration Only</option>
+                    </select>
+                </div>
+
+                <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 13px;">
+                    <strong>⚠️ Important:</strong> A pre-restore backup of current data will be created automatically. The application may need to be restarted after restore.
+                </div>
+
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button id="cancel-restore" style="padding: 10px 20px; background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        Cancel
+                    </button>
+                    <button id="confirm-restore" style="padding: 10px 20px; background: var(--warning-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        Restore Backup
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Handle cancel
+    modal.querySelector('#cancel-restore').addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+        }
+    });
+
+    // Handle confirm
+    modal.querySelector('#confirm-restore').addEventListener('click', async () => {
+        const restoreType = modal.querySelector('#restore-type').value;
+        document.body.removeChild(modal);
+        await performRestore(container, backupType, filename, restoreType);
+    });
+}
+
+/**
+ * Perform the actual restore
+ */
+async function performRestore(container, backupType, filename, restoreType) {
+    // Show loading overlay
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 10001;';
+    overlay.innerHTML = `
+        <div style="background: var(--bg-primary); padding: 40px; border-radius: 12px; text-align: center; max-width: 400px;">
+            <div style="font-size: 48px; margin-bottom: 20px;">🔄</div>
+            <h3 style="margin: 0 0 15px 0;">Restoring Backup...</h3>
+            <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">
+                This may take a minute. Please wait...
+            </p>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    try {
+        const response = await apiClient.post('/api/admin/backup/restore', {
+            backup_type: backupType,
+            filename: filename,
+            restore_type: restoreType
+        });
+
+        document.body.removeChild(overlay);
+
+        if (response.success) {
+            // Show success with warning about restart
+            const successModal = document.createElement('div');
+            successModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000;';
+            successModal.innerHTML = `
+                <div style="background: var(--bg-primary); padding: 40px; border-radius: 12px; text-align: center; max-width: 500px;">
+                    <div style="font-size: 64px; margin-bottom: 20px;">✓</div>
+                    <h2 style="margin: 0 0 15px 0; color: var(--success-color);">Restore Complete!</h2>
+                    <p style="margin: 0 0 20px 0; color: var(--text-secondary);">
+                        The backup has been restored successfully.
+                    </p>
+                    <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; text-align: left;">
+                        <strong>⚠️ Action Required:</strong><br>
+                        Please restart the application for changes to take effect:<br>
+                        <code style="display: block; margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.1); border-radius: 4px;">
+                            sudo systemctl restart rps
+                        </code>
+                    </div>
+                    <button id="close-success" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        OK
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(successModal);
+
+            successModal.querySelector('#close-success').addEventListener('click', () => {
+                document.body.removeChild(successModal);
+                // Reload backup list
+                const activeFilter = container.querySelector('.backup-filter.active');
+                const filterType = activeFilter ? activeFilter.getAttribute('data-type') : 'all';
+                loadBackups(container, filterType);
+            });
+        } else {
+            showError(response.message || 'Restore failed');
+        }
+
+    } catch (error) {
+        document.body.removeChild(overlay);
+        console.error('Error restoring backup:', error);
+        showError(`Failed to restore backup: ${error.message}`);
     }
 }
 

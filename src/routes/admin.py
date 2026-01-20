@@ -1831,3 +1831,160 @@ def get_backup_schedule():
     except Exception as e:
         print(f"Error getting backup schedule: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/backup/<backup_type>/<filename>/metadata', methods=['GET'])
+@login_required
+@super_admin_required
+def get_backup_metadata(backup_type: str, filename: str):
+    """Get metadata from a backup file."""
+    try:
+        import tarfile
+        import tempfile
+        from pathlib import Path
+
+        # Validate backup type
+        if backup_type not in ['full', 'data', 'system']:
+            return jsonify({'error': 'Invalid backup type'}), 400
+
+        # Construct path
+        project_root = Path(__file__).parent.parent.parent
+        if backup_type == 'full':
+            backup_path = project_root / 'backups' / filename
+        else:
+            backup_path = project_root / 'backups' / backup_type / filename
+
+        if not backup_path.exists():
+            return jsonify({'error': 'Backup file not found'}), 404
+
+        # Extract metadata from backup
+        with tarfile.open(backup_path, 'r:gz') as tar:
+            # Find metadata file
+            metadata_files = [m for m in tar.getmembers() if m.name.endswith('backup_metadata.txt')]
+
+            if metadata_files:
+                metadata_file = metadata_files[0]
+                f = tar.extractfile(metadata_file)
+                metadata_content = f.read().decode('utf-8')
+
+                # Parse metadata into dict
+                metadata = {}
+                for line in metadata_content.split('\n'):
+                    if ':' in line:
+                        key, value = line.split(':', 1)
+                        metadata[key.strip()] = value.strip()
+
+                # Get list of files in backup
+                files = [m.name for m in tar.getmembers() if m.isfile()]
+
+                return jsonify({
+                    'metadata': metadata,
+                    'files': files,
+                    'file_count': len(files)
+                }), 200
+            else:
+                return jsonify({'error': 'No metadata found in backup'}), 404
+
+    except Exception as e:
+        print(f"Error getting backup metadata: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/backup/restore', methods=['POST'])
+@login_required
+@super_admin_required
+def restore_backup():
+    """
+    Restore from a backup file.
+
+    Request body:
+        - backup_type: 'full', 'data', or 'system'
+        - filename: Name of the backup file
+        - restore_type: 'full', 'database', or 'config' (optional, defaults to based on backup_type)
+    """
+    try:
+        import subprocess
+        import os
+        from pathlib import Path
+
+        data = request.get_json()
+        backup_type = data.get('backup_type')
+        filename = data.get('filename')
+        restore_type = data.get('restore_type', 'full')
+
+        if not backup_type or not filename:
+            return jsonify({'error': 'Missing required parameters'}), 400
+
+        if backup_type not in ['full', 'data', 'system']:
+            return jsonify({'error': 'Invalid backup type'}), 400
+
+        # Construct backup path
+        project_root = Path(__file__).parent.parent.parent
+        if backup_type == 'full':
+            backup_path = project_root / 'backups' / filename
+        else:
+            backup_path = project_root / 'backups' / backup_type / filename
+
+        if not backup_path.exists():
+            return jsonify({'error': 'Backup file not found'}), 404
+
+        # Use the restore script
+        restore_script = project_root / 'bin' / 'restore'
+        if not restore_script.exists():
+            return jsonify({'error': 'Restore script not found'}), 500
+
+        # Set up environment
+        env = os.environ.copy()
+        env['PATH'] = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+
+        # Build command arguments
+        cmd = [
+            str(restore_script),
+            '--backup', str(backup_path),
+            '--type', restore_type,
+            '--yes'  # Skip confirmation prompts
+        ]
+
+        # Run restore script
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=120,  # 2 minutes for restore
+            env=env,
+            cwd=str(project_root)
+        )
+
+        # Log admin action
+        enhanced_audit_logger.log_admin_action(
+            action='RESTORE_BACKUP',
+            details={
+                'backup_type': backup_type,
+                'filename': filename,
+                'restore_type': restore_type,
+                'success': result.returncode == 0,
+                'output': result.stdout[-500:] if result.stdout else None
+            },
+            user_id=current_user.id
+        )
+
+        if result.returncode == 0:
+            return jsonify({
+                'success': True,
+                'message': 'Restore completed successfully',
+                'output': result.stdout,
+                'warning': 'Please restart the application for changes to take effect'
+            }), 200
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Restore failed',
+                'error': result.stderr,
+                'output': result.stdout
+            }), 500
+
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'Restore timed out'}), 500
+    except Exception as e:
+        print(f"Error restoring backup: {e}")
+        return jsonify({'error': str(e)}), 500
