@@ -241,6 +241,7 @@ async function loadLogs(container, offset = 0) {
                     <tr style="background: var(--bg-tertiary); border-bottom: 2px solid var(--border-color);">
                         ${renderSortableHeader('created_at', 'Timestamp', 'left')}
                         ${renderSortableHeader('action', 'Action', 'left')}
+                        <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">Description</th>
                         ${renderSortableHeader('username', 'User', 'left')}
                         ${renderSortableHeader('ip_address', 'IP / Location', 'left')}
                         ${renderSortableHeader('user_agent', 'Device', 'left')}
@@ -337,6 +338,9 @@ function renderLogRow(log) {
         device = `${dev.browser} on ${dev.os}`;
     }
 
+    // Get description from log
+    const description = log._description || log.description || '-';
+
     return `
         <tr class="log-row" data-log-id="${log.id}" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;">
             <td style="padding: 12px; font-size: 12px;">${timestamp}</td>
@@ -344,6 +348,9 @@ function renderLogRow(log) {
                 <span style="display: inline-block; padding: 4px 8px; background: ${actionColor}20; color: ${actionColor}; border-radius: 4px; font-size: 11px; font-weight: 600;">
                     ${log.action}
                 </span>
+            </td>
+            <td style="padding: 12px; font-size: 12px; color: var(--text-primary); max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${description}">
+                ${description}
             </td>
             <td style="padding: 12px; font-size: 12px;">
                 ${log.username ? log.username : (log.user_id ? `User ${log.user_id}` : 'Anonymous')}
