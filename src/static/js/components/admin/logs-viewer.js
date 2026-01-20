@@ -195,8 +195,11 @@ async function loadStatistics(container) {
                     <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">Total Logs (30d)</div>
                     <div style="font-size: 28px; font-weight: 700; color: var(--text-primary);">${stats.total_logs.toLocaleString()}</div>
                 </div>
-                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 12px; border-left: 4px solid var(--success-color);">
-                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">Unique IPs</div>
+                <div id="unique-ips-stat" style="background: var(--bg-secondary); padding: 20px; border-radius: 12px; border-left: 4px solid var(--success-color); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;"
+                     onmouseenter="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.2)'"
+                     onmouseleave="this.style.transform='translateY(0)'; this.style.boxShadow='none'"
+                     title="Click to view IP locations on map">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">Unique IPs 🗺️</div>
                     <div style="font-size: 28px; font-weight: 700; color: var(--text-primary);">${stats.unique_ips.toLocaleString()}</div>
                 </div>
                 <div style="background: var(--bg-secondary); padding: 20px; border-radius: 12px; border-left: 4px solid var(--danger-color);">
@@ -209,6 +212,15 @@ async function loadStatistics(container) {
                 </div>
             </div>
         `;
+
+        // Setup click handler for Unique IPs stat
+        const uniqueIpsStat = statsContainer.querySelector('#unique-ips-stat');
+        if (uniqueIpsStat) {
+            uniqueIpsStat.addEventListener('click', async () => {
+                await showIPLocationsMap();
+            });
+        }
+
     } catch (error) {
         console.error('Failed to load statistics:', error);
         statsContainer.innerHTML = `<div style="color: var(--danger-color); padding: 20px;">Failed to load statistics</div>`;
@@ -835,5 +847,174 @@ async function exportLogs(container) {
     } catch (error) {
         console.error('Failed to export logs:', error);
         showError(`Failed to export logs: ${error.message}`);
+    }
+}
+
+/**
+ * Show IP locations map modal
+ */
+async function showIPLocationsMap() {
+    try {
+        // Fetch logs with geolocation data (last 30 days)
+        const response = await apiClient.get('/api/admin/logs?limit=1000');
+        const logs = response.logs || [];
+
+        // Extract unique IPs with valid geolocation data
+        const ipMap = new Map();
+        logs.forEach(log => {
+            if (log.ip_address && log.geo_location && log.geo_location.lat && log.geo_location.lon) {
+                if (!ipMap.has(log.ip_address)) {
+                    ipMap.set(log.ip_address, {
+                        ip: log.ip_address,
+                        lat: log.geo_location.lat,
+                        lon: log.geo_location.lon,
+                        city: log.geo_location.city || 'Unknown',
+                        region: log.geo_location.region || 'Unknown',
+                        country: log.geo_location.country || 'Unknown',
+                        count: 0
+                    });
+                }
+                // Increment access count for this IP
+                ipMap.get(log.ip_address).count++;
+            }
+        });
+
+        const uniqueIPs = Array.from(ipMap.values());
+
+        if (uniqueIPs.length === 0) {
+            showError('No IP locations available to display');
+            return;
+        }
+
+        // Create modal
+        const modal = document.createElement('div');
+        modal.className = 'ip-map-modal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        `;
+
+        modal.innerHTML = `
+            <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; width: 90%; max-width: 1200px; max-height: 90vh; overflow-y: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 15px;">
+                    <h2 style="margin: 0; font-size: 20px;">🗺️ IP Locations Map (${uniqueIPs.length} Unique IPs)</h2>
+                    <button class="close-modal-btn" style="background: transparent; border: none; font-size: 28px; cursor: pointer; color: var(--text-secondary); padding: 0; line-height: 1;">×</button>
+                </div>
+
+                <div id="ip-locations-map" style="height: 600px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); margin-bottom: 20px;"></div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="font-size: 12px; color: var(--text-secondary);">
+                        💡 Click markers to see IP details • Larger markers = more access attempts
+                    </div>
+                    <button class="close-modal-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Add to document
+        document.body.appendChild(modal);
+
+        // Setup close handlers
+        modal.querySelectorAll('.close-modal-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                modal.remove();
+            });
+        });
+
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+
+        // Close on Escape key
+        const escHandler = (e) => {
+            if (e.key === 'Escape') {
+                modal.remove();
+                document.removeEventListener('keydown', escHandler);
+            }
+        };
+        document.addEventListener('keydown', escHandler);
+
+        // Initialize map
+        setTimeout(() => {
+            const mapContainer = document.getElementById('ip-locations-map');
+            if (mapContainer && typeof L !== 'undefined') {
+                try {
+                    // Calculate bounds to fit all markers
+                    const lats = uniqueIPs.map(ip => ip.lat);
+                    const lons = uniqueIPs.map(ip => ip.lon);
+                    const centerLat = (Math.min(...lats) + Math.max(...lats)) / 2;
+                    const centerLon = (Math.min(...lons) + Math.max(...lons)) / 2;
+
+                    // Initialize map
+                    const map = L.map('ip-locations-map').setView([centerLat, centerLon], 2);
+
+                    // Add OpenStreetMap tile layer
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap contributors',
+                        maxZoom: 19
+                    }).addTo(map);
+
+                    // Add markers for each unique IP
+                    const markers = [];
+                    uniqueIPs.forEach(ipData => {
+                        // Scale marker size based on access count
+                        const maxCount = Math.max(...uniqueIPs.map(ip => ip.count));
+                        const markerSize = Math.max(8, Math.min(20, 8 + (ipData.count / maxCount) * 12));
+
+                        // Create custom icon with size based on count
+                        const customIcon = L.divIcon({
+                            className: 'custom-marker',
+                            html: `<div style="background: #3498db; width: ${markerSize}px; height: ${markerSize}px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+                            iconSize: [markerSize, markerSize],
+                            iconAnchor: [markerSize / 2, markerSize / 2]
+                        });
+
+                        const marker = L.marker([ipData.lat, ipData.lon], { icon: customIcon }).addTo(map);
+
+                        // Add popup with IP details
+                        marker.bindPopup(`
+                            <div style="text-align: center; padding: 8px; min-width: 200px;">
+                                <div style="font-size: 16px; font-weight: 700; margin-bottom: 8px; color: #3498db; font-family: monospace;">${ipData.ip}</div>
+                                <div style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">${ipData.city}</div>
+                                <div style="font-size: 12px; color: #666; margin-bottom: 8px;">${ipData.region}, ${ipData.country}</div>
+                                <div style="font-size: 11px; padding: 4px 8px; background: #e8f5e9; border-radius: 4px; color: #2e7d32; font-weight: 600;">
+                                    ${ipData.count} access${ipData.count !== 1 ? 'es' : ''}
+                                </div>
+                            </div>
+                        `);
+
+                        markers.push(marker);
+                    });
+
+                    // Fit map to show all markers
+                    if (markers.length > 0) {
+                        const group = L.featureGroup(markers);
+                        map.fitBounds(group.getBounds().pad(0.1));
+                    }
+
+                } catch (error) {
+                    console.error('Failed to initialize map:', error);
+                    mapContainer.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--danger-color);">Failed to load map</div>';
+                }
+            }
+        }, 100);
+
+    } catch (error) {
+        console.error('Failed to load IP locations:', error);
+        showError(`Failed to load IP locations: ${error.message}`);
     }
 }
