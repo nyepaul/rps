@@ -6,6 +6,7 @@ from typing import Optional, Dict, Any
 from src.auth.admin_required import admin_required
 from src.auth.super_admin_required import super_admin_required
 from src.services.enhanced_audit_logger import enhanced_audit_logger, AuditConfig
+from src.services.audit_narrative_generator import audit_narrative_generator
 from src.auth.models import User
 from datetime import datetime
 
@@ -1277,6 +1278,76 @@ def reset_demo_account():
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/users/<int:user_id>/timeline', methods=['GET'])
+@login_required
+@admin_required
+def get_user_activity_timeline(user_id: int):
+    """
+    Generate a human-readable narrative timeline of user actions.
+
+    Query params:
+        start_date: Optional start date (ISO format)
+        end_date: Optional end date (ISO format)
+        limit: Maximum number of events (default: 1000)
+
+    Returns:
+        JSON with narrative timeline describing user actions in plain English
+    """
+    try:
+        # Get query params
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        limit = request.args.get('limit', 1000, type=int)
+
+        # Validate limit
+        if limit < 1 or limit > 10000:
+            return jsonify({'error': 'Limit must be between 1 and 10000'}), 400
+
+        # Verify user exists
+        user = User.get_by_id(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        # Generate timeline
+        timeline = audit_narrative_generator.generate_user_timeline(
+            user_id=user_id,
+            start_date=start_date,
+            end_date=end_date,
+            limit=limit
+        )
+
+        # Add user info
+        timeline['user_info'] = {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'is_active': user.is_active,
+            'is_admin': user.is_admin
+        }
+
+        # Log admin access
+        enhanced_audit_logger.log(
+            action='ADMIN_VIEW_USER_TIMELINE',
+            table_name='enhanced_audit_log',
+            record_id=None,
+            details={
+                'target_user_id': user_id,
+                'target_username': user.username,
+                'start_date': start_date,
+                'end_date': end_date,
+                'limit': limit,
+                'events_returned': timeline.get('event_count', 0)
+            },
+            status_code=200
+        )
+
+        return jsonify(timeline), 200
+
+    except Exception as e:
+        print(f"Error generating user timeline: {e}")
+        return jsonify({'error': 'Failed to generate user timeline'}), 500
 
 
 @admin_bp.route('/documentation/<doc_name>', methods=['GET'])

@@ -5,6 +5,7 @@
 import { store } from '../../state/store.js';
 import { showError } from '../../utils/dom.js';
 import { renderLogsViewer } from './logs-viewer.js';
+import { renderUserTimeline } from './user-timeline.js';
 import { renderConfigEditor } from './config-editor.js';
 import { renderUserManagement } from './user-management.js';
 import { renderSystemInfo } from './system-info.js';
@@ -42,25 +43,28 @@ export async function renderAdminTab(container) {
             </div>
 
             <!-- Admin Sub-Tabs -->
-            <div style="display: flex; gap: 10px; margin-bottom: 30px; border-bottom: 2px solid var(--border-color); padding-bottom: 0;">
-                <button class="admin-subtab active" data-subtab="logs" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid var(--accent-color); cursor: pointer; font-weight: 600; color: var(--accent-color); transition: all 0.2s;">
+            <div style="display: flex; gap: 10px; margin-bottom: 30px; border-bottom: 2px solid var(--border-color); padding-bottom: 0; overflow-x: auto;">
+                <button class="admin-subtab active" data-subtab="logs" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid var(--accent-color); cursor: pointer; font-weight: 600; color: var(--accent-color); transition: all 0.2s; white-space: nowrap;">
                     📋 Audit Logs
                 </button>
-                <button class="admin-subtab" data-subtab="feedback" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s;">
+                <button class="admin-subtab" data-subtab="timeline" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap;">
+                    📖 User Timeline
+                </button>
+                <button class="admin-subtab" data-subtab="feedback" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap;">
                     💬 Feedback
                 </button>
                 ${user.is_super_admin ? `
-                <button class="admin-subtab" data-subtab="roadmap" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s;">
+                <button class="admin-subtab" data-subtab="roadmap" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap;">
                     🗺️ Roadmap
                 </button>
                 ` : ''}
-                <button class="admin-subtab" data-subtab="config" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s;">
+                <button class="admin-subtab" data-subtab="config" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap;">
                     ⚙️ Configuration
                 </button>
-                <button class="admin-subtab" data-subtab="users" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s;">
+                <button class="admin-subtab" data-subtab="users" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap;">
                     👥 Users
                 </button>
-                <button class="admin-subtab" data-subtab="system" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s;">
+                <button class="admin-subtab" data-subtab="system" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap;">
                     🖥️ System Info
                 </button>
             </div>
@@ -124,6 +128,9 @@ async function showSubTab(container, subtab) {
         switch (subtab) {
             case 'logs':
                 await renderLogsViewer(contentContainer);
+                break;
+            case 'timeline':
+                await renderUserTimeline(contentContainer);
                 break;
             case 'feedback':
                 await renderFeedbackViewer(contentContainer);
