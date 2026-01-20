@@ -1168,11 +1168,26 @@ async function showIPAccessDetails(ipAddress, city, region, country) {
 
         // Setup row click handlers to show log details
         modal.querySelectorAll('.access-log-row').forEach(row => {
-            row.addEventListener('click', async () => {
+            row.addEventListener('click', async (e) => {
+                // Don't trigger if clicking the button directly
+                if (e.target.classList.contains('view-log-detail-btn')) {
+                    return;
+                }
                 const logId = row.getAttribute('data-log-id');
-                const log = logs.find(l => l.id == logId);
-                if (log) {
-                    await showLogDetails(log);
+                if (logId) {
+                    await showLogDetails(parseInt(logId));
+                }
+            });
+        });
+
+        // Setup button click handlers
+        modal.querySelectorAll('.view-log-detail-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation(); // Prevent row click from also firing
+                const row = btn.closest('.access-log-row');
+                const logId = row?.getAttribute('data-log-id');
+                if (logId) {
+                    await showLogDetails(parseInt(logId));
                 }
             });
         });
