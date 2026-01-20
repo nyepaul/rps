@@ -318,7 +318,7 @@ function renderActivityTable(events) {
                     </tr>
                 </thead>
                 <tbody>
-                    ${events.map(event => renderActivityRow(event)).join('')}
+                    ${events.map((event, index) => renderActivityRow(event, index)).join('')}
                 </tbody>
             </table>
         </div>
@@ -328,7 +328,7 @@ function renderActivityTable(events) {
 /**
  * Render a single activity row
  */
-function renderActivityRow(event) {
+function renderActivityRow(event, index) {
     const timestamp = event.timestamp || '';
     const description = event.description || 'Unknown action';
     const action = event.action || '';
@@ -366,7 +366,7 @@ function renderActivityRow(event) {
     if (context.profile) contextItems.push(`👤 ${context.profile}`);
 
     return `
-        <tr style="border-bottom: 1px solid var(--border-color); transition: background 0.2s;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='transparent'">
+        <tr class="activity-row" data-event-index="${index}" style="border-bottom: 1px solid var(--border-color); transition: background 0.2s; cursor: pointer;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='transparent'">
             <td style="padding: 12px; font-size: 13px; white-space: nowrap;">${dateStr}</td>
             <td style="padding: 12px; font-size: 13px; white-space: nowrap;">${timeStr}</td>
             <td style="padding: 12px;">
@@ -410,6 +410,18 @@ function setupActivityTableSort(container, events) {
 
             // Re-setup handlers
             setupActivityTableSort(container, events);
+        });
+    });
+
+    // Setup row click handlers
+    const rows = container.querySelectorAll('.activity-row');
+    rows.forEach(row => {
+        row.addEventListener('click', () => {
+            const eventIndex = parseInt(row.getAttribute('data-event-index'));
+            const event = events[eventIndex];
+            if (event) {
+                showActivityDetails(event);
+            }
         });
     });
 }
@@ -563,6 +575,159 @@ function getActionIcon(action) {
     };
 
     return iconMap[action] || '•';
+}
+
+/**
+ * Show activity details modal
+ */
+function showActivityDetails(event) {
+    const timestamp = event.timestamp || '';
+    const description = event.description || 'Unknown action';
+    const action = event.action || '';
+    const context = event.context || {};
+
+    // Format timestamp
+    let timeStr = '';
+    try {
+        const dt = new Date(timestamp);
+        timeStr = dt.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        });
+    } catch {
+        timeStr = timestamp;
+    }
+
+    // Get icon and color
+    const icon = getActionIcon(action);
+    const actionColor = getActionColor(action);
+
+    // Create modal
+    const modal = document.createElement('div');
+    modal.className = 'activity-details-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+    `;
+
+    modal.innerHTML = `
+        <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 15px;">
+                <h2 style="margin: 0; font-size: 20px;">📋 Activity Details</h2>
+                <button class="close-modal-btn" style="background: transparent; border: none; font-size: 28px; cursor: pointer; color: var(--text-secondary); padding: 0; line-height: 1;">×</button>
+            </div>
+
+            <div style="display: grid; gap: 20px;">
+                <!-- Timestamp & Action -->
+                <div>
+                    <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Event Information</h3>
+                    <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; display: grid; gap: 10px;">
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                            <span style="font-weight: 600; color: var(--text-secondary);">Timestamp:</span>
+                            <span>${timeStr}</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                            <span style="font-weight: 600; color: var(--text-secondary);">Action Type:</span>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 18px;">${icon}</span>
+                                <span style="display: inline-block; padding: 4px 12px; background: ${actionColor}20; color: ${actionColor}; border-radius: 4px; font-size: 12px; font-weight: 600; width: fit-content;">${action}</span>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                            <span style="font-weight: 600; color: var(--text-secondary);">Description:</span>
+                            <span>${description}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Context Information -->
+                ${Object.keys(context).length > 0 ? `
+                    <div>
+                        <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Context</h3>
+                        <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; display: grid; gap: 10px;">
+                            ${context.location ? `
+                                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                    <span style="font-weight: 600; color: var(--text-secondary);">📍 Location:</span>
+                                    <span>${context.location}</span>
+                                </div>
+                            ` : ''}
+                            ${context.browser ? `
+                                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                    <span style="font-weight: 600; color: var(--text-secondary);">🌐 Browser:</span>
+                                    <span>${context.browser}</span>
+                                </div>
+                            ` : ''}
+                            ${context.device ? `
+                                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                    <span style="font-weight: 600; color: var(--text-secondary);">📱 Device:</span>
+                                    <span>${context.device}</span>
+                                </div>
+                            ` : ''}
+                            ${context.profile ? `
+                                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                    <span style="font-weight: 600; color: var(--text-secondary);">👤 Profile:</span>
+                                    <span>${context.profile}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- Full Event Data -->
+                <div>
+                    <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Raw Event Data</h3>
+                    <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px;">
+                        <pre style="margin: 0; font-family: monospace; font-size: 11px; white-space: pre-wrap; word-wrap: break-word; color: var(--text-primary); max-height: 300px; overflow-y: auto;">${JSON.stringify(event, null, 2)}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; text-align: right;">
+                <button class="close-modal-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    Close
+                </button>
+            </div>
+        </div>
+    `;
+
+    // Add to document
+    document.body.appendChild(modal);
+
+    // Setup close handlers
+    modal.querySelectorAll('.close-modal-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            modal.remove();
+        });
+    });
+
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+
+    // Close on Escape key
+    const escHandler = (e) => {
+        if (e.key === 'Escape') {
+            modal.remove();
+            document.removeEventListener('keydown', escHandler);
+        }
+    };
+    document.addEventListener('keydown', escHandler);
 }
 
 /**
