@@ -840,7 +840,7 @@ def get_database_schema():
         }
 
         # Get all tables
-        tables_result = db.execute_all(
+        tables_result = db.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
         )
 
@@ -848,7 +848,7 @@ def get_database_schema():
             table_name = table_row['name']
 
             # Get table info (columns)
-            columns_result = db.execute_all(f"PRAGMA table_info({table_name})")
+            columns_result = db.execute(f"PRAGMA table_info({table_name})")
             columns = []
 
             for col in columns_result:
@@ -861,7 +861,7 @@ def get_database_schema():
                 })
 
             # Get foreign keys
-            fk_result = db.execute_all(f"PRAGMA foreign_key_list({table_name})")
+            fk_result = db.execute(f"PRAGMA foreign_key_list({table_name})")
             foreign_keys = []
 
             for fk in fk_result:
@@ -874,11 +874,11 @@ def get_database_schema():
                 })
 
             # Get indexes
-            indexes_result = db.execute_all(f"PRAGMA index_list({table_name})")
+            indexes_result = db.execute(f"PRAGMA index_list({table_name})")
             indexes = []
 
             for idx in indexes_result:
-                idx_info = db.execute_all(f"PRAGMA index_info({idx['name']})")
+                idx_info = db.execute(f"PRAGMA index_info({idx['name']})")
                 index_columns = [col['name'] for col in idx_info]
                 indexes.append({
                     'name': idx['name'],
