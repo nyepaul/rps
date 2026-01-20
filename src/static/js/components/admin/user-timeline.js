@@ -25,13 +25,13 @@ export async function renderUserTimeline(container) {
                 <h3 style="font-size: 16px; margin-bottom: 15px;">📋 Select User & Filters</h3>
                 <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 15px; align-items: end;">
                     <div>
-                        <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">User ID</label>
-                        <input
-                            type="number"
-                            id="timeline-user-id"
-                            placeholder="Enter user ID"
-                            style="width: 100%; padding: 10px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);"
+                        <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">Select User</label>
+                        <select
+                            id="timeline-user-select"
+                            style="width: 100%; padding: 10px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); cursor: pointer;"
                         >
+                            <option value="">-- Select a user --</option>
+                        </select>
                     </div>
                     <div>
                         <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">Start Date</label>
@@ -58,12 +58,6 @@ export async function renderUserTimeline(container) {
                         </button>
                     </div>
                 </div>
-
-                <!-- Quick User Selection -->
-                <div id="recent-users-container" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color);">
-                    <label style="display: block; margin-bottom: 8px; font-size: 13px; font-weight: 600;">Recent Active Users:</label>
-                    <div id="recent-users-list" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
-                </div>
             </div>
 
             <!-- Loading State -->
@@ -77,11 +71,11 @@ export async function renderUserTimeline(container) {
         </div>
     `;
 
+    // Load all users into dropdown
+    await loadAllUsers(container);
+
     // Setup event handlers
     setupTimelineHandlers(container);
-
-    // Load recent users
-    await loadRecentUsers(container);
 }
 
 /**
@@ -89,64 +83,58 @@ export async function renderUserTimeline(container) {
  */
 function setupTimelineHandlers(container) {
     const loadBtn = container.querySelector('#load-timeline-btn');
-    const userIdInput = container.querySelector('#timeline-user-id');
+    const userSelect = container.querySelector('#timeline-user-select');
 
     loadBtn.addEventListener('click', async () => {
-        const userId = userIdInput.value.trim();
+        const userId = userSelect.value.trim();
         if (!userId) {
-            showError('Please enter a user ID');
+            showError('Please select a user');
             return;
         }
 
         await loadUserTimeline(container, parseInt(userId));
     });
 
-    // Allow Enter key to load timeline
-    userIdInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            loadBtn.click();
+    // Load timeline when user is selected from dropdown
+    userSelect.addEventListener('change', async () => {
+        const userId = userSelect.value.trim();
+        if (userId) {
+            await loadUserTimeline(container, parseInt(userId));
         }
     });
 }
 
 /**
- * Load recent users for quick selection
+ * Load all users into dropdown
  */
-async function loadRecentUsers(container) {
+async function loadAllUsers(container) {
     try {
-        // Get users list from existing users endpoint
-        const response = await apiClient.get('/api/admin/users?limit=10');
+        // Get all users from users endpoint (no limit to get all)
+        const response = await apiClient.get('/api/admin/users?limit=1000');
         const users = response.users || [];
 
-        const recentUsersList = container.querySelector('#recent-users-list');
+        const userSelect = container.querySelector('#timeline-user-select');
         if (!users.length) {
-            recentUsersList.innerHTML = '<span style="color: var(--text-secondary); font-size: 13px;">No users found</span>';
+            userSelect.innerHTML = '<option value="">No users found</option>';
             return;
         }
 
-        recentUsersList.innerHTML = users.map(user => `
-            <button
-                class="quick-user-btn"
-                data-user-id="${user.id}"
-                style="padding: 6px 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--text-primary); transition: all 0.2s;"
-                onmouseover="this.style.background='var(--bg-primary)'; this.style.borderColor='var(--accent-color)'"
-                onmouseout="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--border-color)'"
-            >
-                ${user.username} (ID: ${user.id})
-            </button>
-        `).join('');
+        // Sort users alphabetically by username
+        users.sort((a, b) => a.username.localeCompare(b.username));
 
-        // Add click handlers
-        container.querySelectorAll('.quick-user-btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const userId = parseInt(btn.getAttribute('data-user-id'));
-                container.querySelector('#timeline-user-id').value = userId;
-                await loadUserTimeline(container, userId);
-            });
-        });
+        // Populate dropdown with all users
+        userSelect.innerHTML = `
+            <option value="">-- Select a user --</option>
+            ${users.map(user => `
+                <option value="${user.id}">
+                    ${user.username} (ID: ${user.id})${user.is_admin ? ' - Admin' : ''}
+                </option>
+            `).join('')}
+        `;
 
     } catch (error) {
-        console.error('Error loading recent users:', error);
+        console.error('Error loading users:', error);
+        showError('Failed to load users list');
     }
 }
 
