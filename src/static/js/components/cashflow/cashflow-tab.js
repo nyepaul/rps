@@ -981,6 +981,9 @@ function renderCashFlowChart(container, profile, months, viewType, scenarioData 
             categoryPercentage: 0.7
         }
     });
+
+    // Setup metric isolation handlers after chart is created
+    setupMetricIsolation(container);
 }
 
 /**
@@ -1025,9 +1028,6 @@ function renderSummaryCards(container, chartData) {
             <div style="font-size: 10px; opacity: 0.8;">Avg: ${avgMonthlyNet >= 0 ? '+' : ''}${formatCurrency(avgMonthlyNet, 0)}/mo</div>
         </div>
     `;
-
-    // Add click handlers for metric isolation
-    setupMetricIsolation(container);
 }
 
 /**
