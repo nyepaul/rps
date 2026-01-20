@@ -1,5 +1,5 @@
 """RPS Version Information"""
 
-__version__ = "3.8.54"
+__version__ = "3.8.55"
 __release_date__ = "2026-01-20"
-__release_notes__ = "Match all tax sections to Top Recommendations gradient styling for unified appearance"
+__release_notes__ = "Change Tax Optimization sections to black backgrounds for better contrast"

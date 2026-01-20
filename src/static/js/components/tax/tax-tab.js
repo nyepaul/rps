@@ -157,7 +157,7 @@ function renderTaxAnalysis(container, analysis, profile) {
 
             <!-- Roth Conversion Analysis -->
             ${roth_conversion ? `
-            <div style="background: linear-gradient(135deg, var(--accent-color), var(--info-color)); padding: 16px; border-radius: 8px; margin-bottom: 16px; color: white;">
+            <div style="background: #000; padding: 16px; border-radius: 8px; margin-bottom: 16px; color: white; border: 1px solid #333;">
                 <h2 style="font-size: 16px; margin: 0 0 12px 0; font-weight: 600;">🔄 Roth Conversion Opportunities</h2>
 
                 ${roth_conversion.optimal_24pct && roth_conversion.optimal_24pct.conversion_amount > 0 ? `
@@ -225,7 +225,7 @@ function renderTaxAnalysis(container, analysis, profile) {
 
             <!-- RMD Analysis -->
             ${rmd_analysis ? `
-            <div style="background: linear-gradient(135deg, var(--accent-color), var(--info-color)); padding: 16px; border-radius: 8px; margin-bottom: 16px; color: white;">
+            <div style="background: #000; padding: 16px; border-radius: 8px; margin-bottom: 16px; color: white; border: 1px solid #333;">
                 <h2 style="font-size: 16px; margin: 0 0 12px 0; font-weight: 600;">📅 Required Minimum Distributions</h2>
 
                 ${rmd_analysis.current.required ? `
@@ -295,7 +295,7 @@ function renderTaxAnalysis(container, analysis, profile) {
 
             <!-- State Tax Comparison -->
             ${state_comparison && state_comparison.length > 0 ? `
-            <div style="background: linear-gradient(135deg, var(--accent-color), var(--info-color)); padding: 16px; border-radius: 8px; margin-bottom: 16px; color: white;">
+            <div style="background: #000; padding: 16px; border-radius: 8px; margin-bottom: 16px; color: white; border: 1px solid #333;">
                 <h2 style="font-size: 16px; margin: 0 0 12px 0; font-weight: 600;">🗺️ State Tax Comparison</h2>
 
                 <div style="font-size: 12px; opacity: 0.95; margin-bottom: 12px;">
