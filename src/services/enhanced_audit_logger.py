@@ -1201,6 +1201,38 @@ class EnhancedAuditLogger:
 
         return stats
 
+    @staticmethod
+    def get_unique_ip_locations():
+        """Get all unique IP addresses with geolocation data for mapping."""
+        rows = db.execute(
+            '''SELECT ip_address, geo_location, COUNT(*) as access_count
+               FROM enhanced_audit_log
+               WHERE geo_location IS NOT NULL
+               AND ip_address IS NOT NULL
+               GROUP BY ip_address, geo_location
+               ORDER BY access_count DESC'''
+        )
+
+        unique_locations = []
+        for row in rows:
+            try:
+                geo = json.loads(row['geo_location'])
+                # Only include if we have valid coordinates
+                if geo.get('lat') and geo.get('lon'):
+                    unique_locations.append({
+                        'ip': row['ip_address'],
+                        'lat': geo.get('lat'),
+                        'lon': geo.get('lon'),
+                        'city': geo.get('city', 'Unknown'),
+                        'region': geo.get('region', 'Unknown'),
+                        'country': geo.get('country', 'Unknown'),
+                        'count': row['access_count']
+                    })
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+        return unique_locations
+
 
 # Global enhanced audit logger instance
 enhanced_audit_logger = EnhancedAuditLogger()

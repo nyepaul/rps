@@ -856,31 +856,9 @@ async function exportLogs(container) {
  */
 async function showIPLocationsMap() {
     try {
-        // Fetch logs with geolocation data (last 30 days)
-        const response = await apiClient.get('/api/admin/logs?limit=1000');
-        const logs = response.logs || [];
-
-        // Extract unique IPs with valid geolocation data
-        const ipMap = new Map();
-        logs.forEach(log => {
-            if (log.ip_address && log.geo_location && log.geo_location.lat && log.geo_location.lon) {
-                if (!ipMap.has(log.ip_address)) {
-                    ipMap.set(log.ip_address, {
-                        ip: log.ip_address,
-                        lat: log.geo_location.lat,
-                        lon: log.geo_location.lon,
-                        city: log.geo_location.city || 'Unknown',
-                        region: log.geo_location.region || 'Unknown',
-                        country: log.geo_location.country || 'Unknown',
-                        count: 0
-                    });
-                }
-                // Increment access count for this IP
-                ipMap.get(log.ip_address).count++;
-            }
-        });
-
-        const uniqueIPs = Array.from(ipMap.values());
+        // Fetch all unique IP locations directly from the server
+        const response = await apiClient.get('/api/admin/logs/ip-locations');
+        const uniqueIPs = response.locations || [];
 
         if (uniqueIPs.length === 0) {
             showError('No IP locations available to display');

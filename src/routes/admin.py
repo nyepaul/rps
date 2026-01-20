@@ -157,6 +157,35 @@ def get_log_statistics():
         return jsonify({'error': str(e)}), 500
 
 
+@admin_bp.route('/logs/ip-locations', methods=['GET'])
+@login_required
+@admin_required
+def get_ip_locations():
+    """
+    Get all unique IP addresses with geolocation data for mapping.
+
+    Returns:
+        List of unique IP locations with coordinates and access counts
+    """
+    try:
+        locations = enhanced_audit_logger.get_unique_ip_locations()
+
+        # Log admin action
+        enhanced_audit_logger.log_admin_action(
+            action='VIEW_IP_LOCATIONS',
+            details={'location_count': len(locations)},
+            user_id=current_user.id
+        )
+
+        return jsonify({
+            'locations': locations,
+            'total': len(locations)
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @admin_bp.route('/logs/<int:log_id>', methods=['GET'])
 @login_required
 @admin_required
