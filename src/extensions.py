@@ -8,6 +8,7 @@ from flask_mail import Mail
 # Initialize extensions
 login_manager = LoginManager()
 csrf = CSRFProtect()
+# Limiter will read storage_uri from app.config['RATELIMIT_STORAGE_URL'] during init_app
 limiter = Limiter(
     key_func=get_remote_address,
     default_limits=["200 per day", "50 per hour"]
@@ -33,6 +34,7 @@ def init_extensions(app):
     csrf.exempt('auth.reset_password')
     csrf.exempt('auth.validate_reset_token')
 
+    # Initialize limiter (will read RATELIMIT_STORAGE_URL from app.config)
     limiter.init_app(app)
     mail.init_app(app)
 

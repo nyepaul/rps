@@ -15,6 +15,7 @@ flask-limiter>=3.5.0
 flask-mail>=0.9.1
 bcrypt>=4.1.2
 cryptography>=42.0.0
+redis>=5.0.0
 
 # Validation
 pydantic>=2.5.0

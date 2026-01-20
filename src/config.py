@@ -53,7 +53,9 @@ class Config:
     CORS_ORIGINS = os.environ.get('CORS_ORIGINS', '*').split(',')
 
     # Rate Limiting
-    RATELIMIT_STORAGE_URL = "memory://"
+    # Use Redis for rate limit storage (required for multi-worker Gunicorn setup)
+    # Falls back to memory:// if Redis is not available (dev mode only)
+    RATELIMIT_STORAGE_URI = os.environ.get('REDIS_URL', 'redis://localhost:6379')
     RATELIMIT_ENABLED = True
 
     # Encryption

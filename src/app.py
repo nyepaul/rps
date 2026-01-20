@@ -133,9 +133,9 @@ def create_app(config_name='development'):
         # TODO: Move inline scripts to external files and use nonces for better security
         csp_directives = [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
-            "style-src 'self' 'unsafe-inline'",
-            "img-src 'self' data:",
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com",
+            "style-src 'self' 'unsafe-inline' https://unpkg.com",
+            "img-src 'self' data: https://*.tile.openstreetmap.org",
             "font-src 'self' data:",
             "connect-src 'self'",
             "frame-ancestors 'self'",
