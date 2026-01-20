@@ -896,6 +896,32 @@ function renderCashFlowChart(container, profile, months, viewType, scenarioData 
                         color: getComputedStyle(document.body).getPropertyValue('--text-primary').trim(),
                         padding: 15,
                         usePointStyle: true
+                    },
+                    onClick: (e, legendItem, legend) => {
+                        const index = legendItem.datasetIndex;
+                        const chart = legend.chart;
+
+                        // Call default behavior to toggle dataset
+                        const meta = chart.getDatasetMeta(index);
+                        meta.hidden = meta.hidden === null ? !chart.data.datasets[index].hidden : null;
+                        chart.update();
+
+                        // Update metricVisibilityState based on dataset index
+                        const datasetToMetricMap = {
+                            0: 'work-income',
+                            1: 'retirement-benefits',
+                            2: 'investment-withdrawals',
+                            3: 'expenses',
+                            4: 'net-cash-flow'
+                        };
+
+                        const metric = datasetToMetricMap[index];
+                        if (metric) {
+                            metricVisibilityState[metric] = meta.hidden !== null ? meta.hidden : chart.data.datasets[index].hidden;
+
+                            // Update summary card visual state
+                            updateSummaryCardVisuals(container);
+                        }
                     }
                 },
                 tooltip: {
@@ -1111,6 +1137,13 @@ function restoreMetricVisibility() {
  * Restore card visual state based on saved visibility
  */
 function restoreCardVisualState(container) {
+    updateSummaryCardVisuals(container);
+}
+
+/**
+ * Update summary card visual state to match current visibility
+ */
+function updateSummaryCardVisuals(container) {
     const metricCards = container.querySelectorAll('.metric-card');
 
     metricCards.forEach(card => {
