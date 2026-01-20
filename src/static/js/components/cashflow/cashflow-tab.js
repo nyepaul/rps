@@ -7,6 +7,15 @@ import { store } from '../../state/store.js';
 import { formatCurrency } from '../../utils/formatters.js';
 import { scenariosAPI } from '../../api/scenarios.js';
 
+// Track metric visibility state across chart refreshes
+const metricVisibilityState = {
+    'work-income': false,         // false = visible, true = hidden
+    'retirement-benefits': false,
+    'investment-withdrawals': false,
+    'expenses': false,
+    'net-cash-flow': false
+};
+
 export function renderCashFlowTab(container) {
     // Clean up previous keyboard handler if exists
     if (container._cashflowKeyboardHandler) {
@@ -99,6 +108,9 @@ export function renderCashFlowTab(container) {
                 <button id="reset-zoom" style="padding: var(--space-2) var(--space-4); background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: var(--font-base); margin-top: var(--space-5);">
                     Reset Zoom
                 </button>
+                <button id="reset-metrics" style="padding: var(--space-2) var(--space-4); background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: var(--font-base); margin-top: var(--space-5);">
+                    Show All Metrics
+                </button>
             </div>
 
             <!-- Chart -->
@@ -165,6 +177,7 @@ function setupEventHandlers(container, profile, monthsToLifeExpectancy, lifeExpe
     const scenarioSelect = container.querySelector('#scenario-select');
     const refreshBtn = container.querySelector('#refresh-chart');
     const resetZoomBtn = container.querySelector('#reset-zoom');
+    const resetMetricsBtn = container.querySelector('#reset-metrics');
 
     const refresh = async () => {
         const periodValue = timePeriodSelect.value;
@@ -200,6 +213,35 @@ function setupEventHandlers(container, profile, monthsToLifeExpectancy, lifeExpe
             if (window.cashFlowChart) {
                 window.cashFlowChart.resetZoom();
             }
+        });
+    }
+
+    // Reset metrics button - show all metrics
+    if (resetMetricsBtn) {
+        resetMetricsBtn.addEventListener('click', () => {
+            // Reset all metrics to visible
+            Object.keys(metricVisibilityState).forEach(key => {
+                metricVisibilityState[key] = false;
+            });
+
+            // Apply to chart
+            if (window.cashFlowChart) {
+                window.cashFlowChart.data.datasets.forEach((dataset, index) => {
+                    // Keep first 5 datasets (the main metrics) visible, leave others as-is
+                    if (index < 5) {
+                        dataset.hidden = false;
+                    }
+                });
+                window.cashFlowChart.update();
+            }
+
+            // Restore card visual state
+            const metricCards = container.querySelectorAll('.metric-card');
+            metricCards.forEach(card => {
+                card.style.borderColor = 'rgba(255, 255, 255, 0.9)';
+                card.style.opacity = '1';
+                card.style.boxShadow = '0 4px 20px rgba(0,0,0,0.25)';
+            });
         });
     }
 
@@ -982,6 +1024,9 @@ function renderCashFlowChart(container, profile, months, viewType, scenarioData 
         }
     });
 
+    // Restore metric visibility state from previous settings
+    restoreMetricVisibility();
+
     // Setup metric isolation handlers after chart is created
     setupMetricIsolation(container);
 }
@@ -1031,6 +1076,62 @@ function renderSummaryCards(container, chartData) {
 }
 
 /**
+ * Restore metric visibility from saved state
+ */
+function restoreMetricVisibility() {
+    const chart = window.cashFlowChart;
+    if (!chart) return;
+
+    // Map metric names to dataset indices
+    const metricToDatasetMap = {
+        'work-income': [0],
+        'retirement-benefits': [1],
+        'investment-withdrawals': [2],
+        'expenses': [3],
+        'net-cash-flow': [4]
+    };
+
+    // Apply saved visibility state to datasets
+    Object.keys(metricVisibilityState).forEach(metric => {
+        const isHidden = metricVisibilityState[metric];
+        const datasetIndices = metricToDatasetMap[metric] || [];
+
+        datasetIndices.forEach(index => {
+            const dataset = chart.data.datasets[index];
+            if (dataset) {
+                dataset.hidden = isHidden;
+            }
+        });
+    });
+
+    chart.update();
+}
+
+/**
+ * Restore card visual state based on saved visibility
+ */
+function restoreCardVisualState(container) {
+    const metricCards = container.querySelectorAll('.metric-card');
+
+    metricCards.forEach(card => {
+        const metric = card.getAttribute('data-metric');
+        const isHidden = metricVisibilityState[metric];
+
+        if (isHidden) {
+            // Dataset is hidden - show dim styling
+            card.style.borderColor = 'transparent';
+            card.style.opacity = '0.4';
+            card.style.boxShadow = 'none';
+        } else {
+            // Dataset is visible - show highlighted styling
+            card.style.borderColor = 'rgba(255, 255, 255, 0.9)';
+            card.style.opacity = '1';
+            card.style.boxShadow = '0 4px 20px rgba(0,0,0,0.25)';
+        }
+    });
+}
+
+/**
  * Setup metric isolation - toggle chart datasets when clicking summary cards
  */
 function setupMetricIsolation(container) {
@@ -1051,6 +1152,9 @@ function setupMetricIsolation(container) {
         'net-cash-flow': [4]              // Net Cash Flow
     };
 
+    // Restore visual state of cards on initial setup
+    restoreCardVisualState(container);
+
     metricCards.forEach(card => {
         card.addEventListener('click', () => {
             const metric = card.getAttribute('data-metric');
@@ -1064,9 +1168,11 @@ function setupMetricIsolation(container) {
                 }
             });
 
-            // Update card styling based on visibility
+            // Update saved state
             const isHidden = datasetIndices.every(index => chart.data.datasets[index]?.hidden);
+            metricVisibilityState[metric] = isHidden;
 
+            // Update card styling based on visibility
             if (isHidden) {
                 // Dataset is hidden - show dim styling
                 card.style.borderColor = 'transparent';
