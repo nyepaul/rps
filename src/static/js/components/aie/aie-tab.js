@@ -10,7 +10,7 @@ import { renderBudgetTab } from '../budget/budget-tab.js';
  * Render AIE tab with sub-navigation
  */
 export function renderAIETab(container) {
-    console.log('AIE: Rendering AIE tab');
+    console.log('AIE: Rendering AIE tab with Assets as default');
 
     container.innerHTML = `
         <div class="aie-container">
@@ -41,10 +41,13 @@ export function renderAIETab(container) {
     // Set up sub-tab navigation (query from container to ensure elements exist)
     setupSubtabNavigation(container);
 
-    console.log('AIE: Event listeners attached, loading default subtab');
+    console.log('AIE: Event listeners attached, loading default subtab: Assets');
 
-    // Load default subtab (assets)
-    showAIESubtab('assets');
+    // IMPORTANT: Always load Assets by default when AIE tab is opened
+    // Use setTimeout to ensure DOM is fully ready
+    setTimeout(() => {
+        showAIESubtab('assets', container);
+    }, 0);
 }
 
 /**
@@ -142,19 +145,22 @@ function setupSubtabNavigation(container) {
     subtabButtons.forEach(button => {
         button.addEventListener('click', () => {
             const subtab = button.getAttribute('data-subtab');
-            showAIESubtab(subtab);
+            showAIESubtab(subtab, container);
         });
     });
 }
 
 /**
  * Show specific AIE sub-tab
+ * @param {string} subtabName - The subtab to display ('assets', 'income', or 'expenses')
+ * @param {HTMLElement} [parentContainer] - Optional parent container for scoped queries
  */
-function showAIESubtab(subtabName) {
+function showAIESubtab(subtabName, parentContainer = null) {
     console.log('AIE: Switching to subtab:', subtabName);
 
-    // Update active button
-    const subtabButtons = document.querySelectorAll('.aie-subtab');
+    // Update active button (use parent container scope if provided)
+    const scope = parentContainer || document;
+    const subtabButtons = scope.querySelectorAll('.aie-subtab');
     subtabButtons.forEach(button => {
         if (button.getAttribute('data-subtab') === subtabName) {
             button.classList.add('active');
@@ -163,9 +169,9 @@ function showAIESubtab(subtabName) {
         }
     });
 
-    // Get container
-    const container = document.getElementById('aie-subtab-content');
-    if (!container) {
+    // Get content container
+    const contentContainer = document.getElementById('aie-subtab-content');
+    if (!contentContainer) {
         console.error('AIE: Could not find aie-subtab-content container');
         return;
     }
@@ -176,13 +182,14 @@ function showAIESubtab(subtabName) {
         // The render functions handle setting innerHTML and event listeners
         switch (subtabName) {
             case 'assets':
-                renderAssetsTab(container);
+                console.log('AIE: Loading Assets (default subtab)');
+                renderAssetsTab(contentContainer);
                 break;
             case 'income':
-                renderIncomeTab(container);
+                renderIncomeTab(contentContainer);
                 break;
             case 'expenses':
-                renderBudgetTab(container);
+                renderBudgetTab(contentContainer);
                 break;
             default:
                 throw new Error(`Unknown AIE subtab: ${subtabName}`);
@@ -190,7 +197,7 @@ function showAIESubtab(subtabName) {
         console.log('AIE: Successfully rendered subtab:', subtabName);
     } catch (error) {
         console.error(`Error loading AIE subtab ${subtabName}:`, error);
-        container.innerHTML = `
+        contentContainer.innerHTML = `
             <div style="background: var(--danger-bg); padding: 20px; border-radius: 8px; margin: 20px;">
                 <strong>Error:</strong> Could not load ${subtabName}. ${error.message}
             </div>
