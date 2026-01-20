@@ -157,19 +157,19 @@ function renderTaxAnalysis(container, analysis, profile) {
 
             <!-- Roth Conversion Analysis -->
             ${roth_conversion ? `
-            <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; margin-bottom: 16px; border: 1px solid var(--border-color);">
+            <div style="background: linear-gradient(135deg, var(--accent-color), var(--info-color)); padding: 16px; border-radius: 8px; margin-bottom: 16px; color: white;">
                 <h2 style="font-size: 16px; margin: 0 0 12px 0; font-weight: 600;">🔄 Roth Conversion Opportunities</h2>
 
                 ${roth_conversion.optimal_24pct && roth_conversion.optimal_24pct.conversion_amount > 0 ? `
-                <div style="background: #fff; padding: 14px; border-radius: 6px; margin-bottom: 12px; border: 3px solid #2e7d32;">
-                    <div style="font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #1b5e20;">
+                <div style="background: rgba(255,255,255,0.15); padding: 12px; border-radius: 6px; backdrop-filter: blur(10px); margin-bottom: 12px;">
+                    <div style="font-size: 13px; font-weight: 600; margin-bottom: 4px;">
                         Optimal Conversion (24% bracket)
                     </div>
-                    <div style="font-size: 14px; margin-bottom: 4px; color: #000;">
+                    <div style="font-size: 12px; opacity: 0.95; margin-bottom: 6px;">
                         Convert: <strong>${formatCurrency(roth_conversion.optimal_24pct.conversion_amount, 0)}</strong>
                     </div>
-                    <div style="font-size: 12px; color: #333;">
-                        Tax Cost: ${formatCurrency(roth_conversion.optimal_24pct.conversion_tax, 0)}
+                    <div style="font-size: 11px; opacity: 0.85;">
+                        💰 Tax Cost: ${formatCurrency(roth_conversion.optimal_24pct.conversion_tax, 0)}
                         (${formatPercent(roth_conversion.optimal_24pct.effective_rate_on_conversion / 100, 1)} effective)
                     </div>
                 </div>
@@ -180,9 +180,9 @@ function renderTaxAnalysis(container, analysis, profile) {
                     <summary style="font-size: 13px; font-weight: 600; padding: 8px 0; user-select: none;">
                         Available Bracket Space
                     </summary>
-                    <div style="padding: 12px; background: var(--bg-primary); border-radius: 6px; margin-top: 8px;">
+                    <div style="padding: 12px; background: rgba(255,255,255,0.15); border-radius: 6px; backdrop-filter: blur(10px); margin-top: 8px;">
                         ${roth_conversion.bracket_space.map(space => `
-                            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+                            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.2);">
                                 <span style="font-size: 12px;">${space.bracket} bracket (${space.bracket_range})</span>
                                 <span style="font-size: 12px; font-weight: 600;">${formatCurrency(space.space_available, 0)}</span>
                             </div>
@@ -196,10 +196,10 @@ function renderTaxAnalysis(container, analysis, profile) {
                     <summary style="font-size: 13px; font-weight: 600; padding: 8px 0; user-select: none;">
                         Conversion Scenarios
                     </summary>
-                    <div style="padding: 12px; background: var(--bg-primary); border-radius: 6px; margin-top: 8px; overflow-x: auto;">
+                    <div style="padding: 12px; background: rgba(255,255,255,0.15); border-radius: 6px; backdrop-filter: blur(10px); margin-top: 8px; overflow-x: auto;">
                         <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
                             <thead>
-                                <tr style="border-bottom: 2px solid var(--border-color);">
+                                <tr style="border-bottom: 2px solid rgba(255,255,255,0.3);">
                                     <th style="text-align: left; padding: 8px;">Amount</th>
                                     <th style="text-align: right; padding: 8px;">Tax Cost</th>
                                     <th style="text-align: right; padding: 8px;">Effective Rate</th>
@@ -208,7 +208,7 @@ function renderTaxAnalysis(container, analysis, profile) {
                             </thead>
                             <tbody>
                                 ${roth_conversion.scenarios.map(scenario => `
-                                    <tr style="border-bottom: 1px solid var(--border-color);">
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.2);">
                                         <td style="padding: 8px;">${formatCurrency(scenario.conversion_amount, 0)}</td>
                                         <td style="text-align: right; padding: 8px;">${formatCurrency(scenario.conversion_tax, 0)}</td>
                                         <td style="text-align: right; padding: 8px;">${formatPercent(scenario.effective_rate_on_conversion / 100, 1)}</td>
@@ -225,35 +225,35 @@ function renderTaxAnalysis(container, analysis, profile) {
 
             <!-- RMD Analysis -->
             ${rmd_analysis ? `
-            <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; margin-bottom: 16px; border: 1px solid var(--border-color);">
+            <div style="background: linear-gradient(135deg, var(--accent-color), var(--info-color)); padding: 16px; border-radius: 8px; margin-bottom: 16px; color: white;">
                 <h2 style="font-size: 16px; margin: 0 0 12px 0; font-weight: 600;">📅 Required Minimum Distributions</h2>
 
                 ${rmd_analysis.current.required ? `
-                <div style="background: #fff; padding: 14px; border-radius: 6px; margin-bottom: 12px; border: 3px solid #f57c00;">
-                    <div style="font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #e65100;">
+                <div style="background: rgba(255,255,255,0.15); padding: 12px; border-radius: 6px; backdrop-filter: blur(10px); margin-bottom: 12px;">
+                    <div style="font-size: 13px; font-weight: 600; margin-bottom: 4px;">
                         Current RMD Required
                     </div>
-                    <div style="font-size: 18px; font-weight: 700; margin-bottom: 4px; color: #000;">
+                    <div style="font-size: 12px; opacity: 0.95; margin-bottom: 6px;">
                         ${formatCurrency(rmd_analysis.current.rmd_amount, 0)}
                     </div>
-                    <div style="font-size: 12px; color: #333;">
-                        ${formatPercent(rmd_analysis.current.rmd_as_percentage / 100, 2)} of balance at age ${rmd_analysis.current.age}
+                    <div style="font-size: 11px; opacity: 0.85;">
+                        💰 ${formatPercent(rmd_analysis.current.rmd_as_percentage / 100, 2)} of balance at age ${rmd_analysis.current.age}
                     </div>
                 </div>
                 ` : `
-                <div style="background: #fff; padding: 14px; border-radius: 6px; margin-bottom: 12px; border: 3px solid #1976d2;">
-                    <div style="font-size: 13px; color: #0d47a1; font-weight: 600;">
+                <div style="background: rgba(255,255,255,0.15); padding: 12px; border-radius: 6px; backdrop-filter: blur(10px); margin-bottom: 12px;">
+                    <div style="font-size: 13px; font-weight: 600;">
                         RMDs begin in ${rmd_analysis.summary.years_until_rmd} years (age 73)
                     </div>
                 </div>
                 `}
 
                 ${rmd_analysis.qcd_eligible ? `
-                <div style="padding: 10px; background: var(--bg-primary); border-radius: 6px; margin-bottom: 12px;">
-                    <div style="font-size: 12px; color: var(--success-color); font-weight: 600;">
+                <div style="padding: 12px; background: rgba(255,255,255,0.15); border-radius: 6px; backdrop-filter: blur(10px); margin-bottom: 12px;">
+                    <div style="font-size: 12px; font-weight: 600;">
                         ✓ Qualified Charitable Distribution (QCD) Eligible
                     </div>
-                    <div style="font-size: 11px; color: var(--text-secondary);">
+                    <div style="font-size: 11px; opacity: 0.85;">
                         You can direct up to ${formatCurrency(rmd_analysis.qcd_annual_limit, 0)} annually to charities
                     </div>
                 </div>
@@ -264,10 +264,10 @@ function renderTaxAnalysis(container, analysis, profile) {
                     <summary style="font-size: 13px; font-weight: 600; padding: 8px 0; user-select: none;">
                         20-Year RMD Projection
                     </summary>
-                    <div style="padding: 12px; background: var(--bg-primary); border-radius: 6px; margin-top: 8px; overflow-x: auto;">
+                    <div style="padding: 12px; background: rgba(255,255,255,0.15); border-radius: 6px; backdrop-filter: blur(10px); margin-top: 8px; overflow-x: auto;">
                         <table style="width: 100%; font-size: 11px; border-collapse: collapse;">
                             <thead>
-                                <tr style="border-bottom: 2px solid var(--border-color);">
+                                <tr style="border-bottom: 2px solid rgba(255,255,255,0.3);">
                                     <th style="text-align: left; padding: 6px;">Year</th>
                                     <th style="text-align: right; padding: 6px;">Age</th>
                                     <th style="text-align: right; padding: 6px;">Balance</th>
@@ -276,7 +276,7 @@ function renderTaxAnalysis(container, analysis, profile) {
                             </thead>
                             <tbody>
                                 ${rmd_analysis.projections.slice(0, 10).map(proj => `
-                                    <tr style="border-bottom: 1px solid var(--border-color);">
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.2);">
                                         <td style="padding: 6px;">${proj.year}</td>
                                         <td style="text-align: right; padding: 6px;">${proj.age}</td>
                                         <td style="text-align: right; padding: 6px;">${formatCompact(proj.start_balance)}</td>
@@ -295,10 +295,10 @@ function renderTaxAnalysis(container, analysis, profile) {
 
             <!-- State Tax Comparison -->
             ${state_comparison && state_comparison.length > 0 ? `
-            <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; margin-bottom: 16px; border: 1px solid var(--border-color);">
+            <div style="background: linear-gradient(135deg, var(--accent-color), var(--info-color)); padding: 16px; border-radius: 8px; margin-bottom: 16px; color: white;">
                 <h2 style="font-size: 16px; margin: 0 0 12px 0; font-weight: 600;">🗺️ State Tax Comparison</h2>
 
-                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+                <div style="font-size: 12px; opacity: 0.95; margin-bottom: 12px;">
                     Current state: <strong>${profile.data?.address?.state || profile.data?.tax_settings?.state || snapshot.settings.state || 'Not set'}</strong>
                 </div>
 
@@ -306,18 +306,18 @@ function renderTaxAnalysis(container, analysis, profile) {
                     <summary style="font-size: 13px; font-weight: 600; padding: 8px 0; user-select: none;">
                         Compare with Other States
                     </summary>
-                    <div style="padding: 12px; background: var(--bg-primary); border-radius: 6px; margin-top: 8px; max-height: 400px; overflow-y: auto;">
+                    <div style="padding: 12px; background: rgba(255,255,255,0.15); border-radius: 6px; backdrop-filter: blur(10px); margin-top: 8px; max-height: 400px; overflow-y: auto;">
                         ${state_comparison.map(state => `
-                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border-color);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.2);">
                                 <div style="flex: 1;">
                                     <span style="font-size: 12px; font-weight: 600;">${state.state}</span>
-                                    ${state.no_income_tax ? '<span style="margin-left: 8px; font-size: 10px; background: var(--success-color); color: white; padding: 2px 6px; border-radius: 3px;">No Income Tax</span>' : ''}
+                                    ${state.no_income_tax ? '<span style="margin-left: 8px; font-size: 10px; background: rgba(76, 175, 80, 0.8); color: white; padding: 2px 6px; border-radius: 3px;">No Income Tax</span>' : ''}
                                 </div>
                                 <div style="text-align: right;">
                                     <div style="font-size: 12px; font-weight: 600;">${formatCurrency(state.estimated_tax, 0)}</div>
                                     ${state.savings_vs_current !== 0 ? `
-                                        <div style="font-size: 10px; color: ${state.savings_vs_current > 0 ? 'var(--success-color)' : 'var(--danger-color)'};">
-                                            ${state.savings_vs_current > 0 ? 'Save' : 'Pay'} ${formatCurrency(Math.abs(state.savings_vs_current), 0)}
+                                        <div style="font-size: 10px; opacity: 0.9;">
+                                            ${state.savings_vs_current > 0 ? '💰 Save' : 'Pay'} ${formatCurrency(Math.abs(state.savings_vs_current), 0)}
                                         </div>
                                     ` : ''}
                                 </div>
