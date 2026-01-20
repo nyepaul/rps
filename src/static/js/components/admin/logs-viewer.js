@@ -12,6 +12,9 @@ let currentSort = {
     direction: 'desc'
 };
 
+// User mapping for filter (username -> user_id)
+let userMapping = {};
+
 /**
  * Render logs viewer with filtering and pagination
  */
@@ -28,9 +31,14 @@ export async function renderLogsViewer(container) {
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                 <div>
                     <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">User</label>
-                    <select id="filter-user-id" style="width: 100%; padding: 8px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); cursor: pointer;">
-                        <option value="">All Users</option>
-                    </select>
+                    <input
+                        type="text"
+                        id="filter-user-id"
+                        list="users-datalist"
+                        placeholder="Type or select user..."
+                        style="width: 100%; padding: 8px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);"
+                    >
+                    <datalist id="users-datalist"></datalist>
                 </div>
                 <div>
                     <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">Action</label>
@@ -135,7 +143,7 @@ async function loadUsersFilter(container) {
         const response = await apiClient.get('/api/admin/users?limit=1000');
         const users = response.users || [];
 
-        const userSelect = container.querySelector('#filter-user-id');
+        const datalist = container.querySelector('#users-datalist');
         if (!users.length) {
             return;
         }
@@ -143,15 +151,20 @@ async function loadUsersFilter(container) {
         // Sort users alphabetically by username
         users.sort((a, b) => a.username.localeCompare(b.username));
 
-        // Populate dropdown
-        userSelect.innerHTML = `
-            <option value="">All Users</option>
-            ${users.map(user => `
-                <option value="${user.id}">
-                    ${user.username} (ID: ${user.id})${user.is_admin ? ' - Admin' : ''}
-                </option>
-            `).join('')}
-        `;
+        // Build username -> user_id mapping
+        userMapping = {};
+        users.forEach(user => {
+            userMapping[user.username.toLowerCase()] = user.id;
+            // Also map "username (ID: x)" format
+            userMapping[`${user.username.toLowerCase()} (id: ${user.id})`] = user.id;
+        });
+
+        // Populate datalist
+        datalist.innerHTML = users.map(user => `
+            <option value="${user.username}">
+                ${user.username} (ID: ${user.id})${user.is_admin ? ' - Admin' : ''}
+            </option>
+        `).join('');
 
     } catch (error) {
         console.error('Error loading users filter:', error);
@@ -232,8 +245,21 @@ async function loadLogs(container, offset = 0) {
 
     try {
         // Get filter values
+        const userInput = container.querySelector('#filter-user-id').value || '';
+        let userId = undefined;
+
+        if (userInput) {
+            // Check if it's a number (direct user ID)
+            if (!isNaN(userInput) && userInput.trim() !== '') {
+                userId = userInput;
+            } else {
+                // Look up username in mapping
+                userId = userMapping[userInput.toLowerCase()];
+            }
+        }
+
         const filters = {
-            user_id: container.querySelector('#filter-user-id').value || undefined,
+            user_id: userId,
             action: container.querySelector('#filter-action').value || undefined,
             table_name: container.querySelector('#filter-table').value || undefined,
             ip_address: container.querySelector('#filter-ip').value || undefined,

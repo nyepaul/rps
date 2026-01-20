@@ -1,5 +1,5 @@
 """RPS Version Information"""
 
-__version__ = "3.8.40"
+__version__ = "3.8.41"
 __release_date__ = "2026-01-19"
-__release_notes__ = "Replace User ID input with user dropdown in audit logs filter"
+__release_notes__ = "Add autocomplete text input for user filter in audit logs"
