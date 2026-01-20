@@ -77,6 +77,17 @@ mypy src/               # Type checking
 ./bin/setup-api-keys    # Configure Gemini/Claude API keys
 ```
 
+### Backup and Restore
+```bash
+./bin/backup                    # Run manual backup
+./bin/backup --keep 30          # Keep last 30 backups
+./bin/restore --list            # List available backups
+./bin/restore --latest          # Restore latest backup
+./bin/setup-backup-timer        # Install automated daily backups
+```
+
+See `docs/BACKUP_GUIDE.md` for comprehensive backup documentation.
+
 ## Architecture
 
 ### Backend (Python/Flask)

@@ -33,5 +33,9 @@ data/*.db-*
 Thumbs.db
 .gemini-clipboard/
 
-# Backups
-backups/
+# Backups (exclude backup files but keep README)
+backups/*.tar.gz
+backups/*.tar
+backups/*.zip
+backups/rps_backup_*
+backups/pre_restore_*

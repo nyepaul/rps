@@ -1,0 +1,36 @@
+# RPS Backup Configuration
+#
+# This file contains default configuration for the RPS backup system.
+# Settings here can be overridden by command-line arguments.
+#
+# Edit this file to customize your backup behavior.
+
+# Backup retention (number of backups to keep)
+KEEP_BACKUPS=14
+
+# Remote sync destination (leave empty to disable)
+# Format: user@host:/path or rsync://host/path
+# Example: backup@nas.local:/mnt/backups/rps
+REMOTE_SYNC=""
+
+# Enable backup verification (recommended)
+VERIFY_BACKUP=true
+
+# Verbose output (useful for debugging)
+VERBOSE=false
+
+# Compression (recommended for storage efficiency)
+COMPRESS=true
+
+# Email notification on failure (requires mail/sendmail configured)
+# Example: admin@example.com
+NOTIFICATION_EMAIL=""
+
+# Backup schedule (for reference - edit systemd timer to change)
+# Default: Daily at 2:00 AM
+# See: systemd/rps-backup.timer
+
+# Paths (do not change unless you know what you're doing)
+PROJECT_ROOT="/home/paul/src/rps"
+BACKUP_DIR="${PROJECT_ROOT}/backups"
+LOG_DIR="${PROJECT_ROOT}/logs"

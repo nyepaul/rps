@@ -186,7 +186,7 @@ async function loadAllUsers(container) {
             userMapping[`${user.username.toLowerCase()} (id: ${user.id})`] = user.id;
         });
 
-        // Populate datalist with all users
+        // Populate datalist with all users (no "coward" - timelines are only for registered users)
         datalist.innerHTML = users.map(user => `
             <option value="${user.username}">
                 ${user.username} (ID: ${user.id})${user.is_admin ? ' - Admin' : ''}

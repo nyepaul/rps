@@ -1,0 +1,31 @@
+[Unit]
+Description=RPS Daily Backup Timer
+Documentation=file:///home/paul/src/rps/docs/BACKUP_GUIDE.md
+Requires=rps-backup.service
+
+[Timer]
+# Run daily at 2:00 AM
+OnCalendar=daily
+# Equivalent to: OnCalendar=*-*-* 02:00:00
+
+# Alternative schedules (uncomment to use):
+# Twice daily (2 AM and 2 PM):
+# OnCalendar=*-*-* 02,14:00:00
+
+# Every 6 hours:
+# OnCalendar=*-*-* 00/6:00:00
+
+# Weekly on Sunday at 3 AM:
+# OnCalendar=Sun *-*-* 03:00:00
+
+# Run on boot if missed (e.g., system was off)
+Persistent=true
+
+# Randomize start time by up to 15 minutes to avoid system load spikes
+RandomizedDelaySec=15min
+
+# Don't run if on battery (laptop/portable systems)
+# ConditionACPower=true
+
+[Install]
+WantedBy=timers.target
