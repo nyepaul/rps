@@ -16,7 +16,7 @@ export function renderWelcomeTab(container) {
 
             <!-- Overview Wizard -->
             <div style="background: var(--bg-secondary); border-radius: 8px; padding: var(--space-4); margin-bottom: var(--space-4); border: 1px solid var(--border-color);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3);">
+                <div id="getting-started-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3); cursor: pointer; user-select: none;">
                     <h2 style="font-size: 18px; margin: 0;">📚 Getting Started Guide</h2>
                     <button id="toggle-wizard-btn" style="padding: var(--space-1) var(--space-3); background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px;">
                         Show Guide
@@ -330,11 +330,20 @@ function initializeWizard(container) {
         `).join('');
     }
 
-    toggleBtn.addEventListener('click', () => {
+    const toggleWizard = () => {
         const isVisible = wizardContent.style.display !== 'none';
         wizardContent.style.display = isVisible ? 'none' : 'block';
         toggleBtn.textContent = isVisible ? 'Show Guide' : 'Hide Guide';
+    };
+
+    toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent double trigger from parent
+        toggleWizard();
     });
+
+    // Make the entire header row clickable
+    const headerRow = container.querySelector('#getting-started-header');
+    headerRow.addEventListener('click', toggleWizard);
 
     prevBtn.addEventListener('click', () => {
         if (currentStep > 0) {
