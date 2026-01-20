@@ -162,13 +162,13 @@ function renderTaxAnalysis(container, analysis, profile) {
 
                 ${roth_conversion.optimal_24pct && roth_conversion.optimal_24pct.conversion_amount > 0 ? `
                 <div style="background: var(--success-light, #e8f5e9); padding: 12px; border-radius: 6px; margin-bottom: 12px; border-left: 4px solid var(--success-color);">
-                    <div style="font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--success-color);">
+                    <div style="font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #000;">
                         Optimal Conversion (24% bracket)
                     </div>
-                    <div style="font-size: 14px; margin-bottom: 4px;">
+                    <div style="font-size: 14px; margin-bottom: 4px; color: #000;">
                         Convert: <strong>${formatCurrency(roth_conversion.optimal_24pct.conversion_amount, 0)}</strong>
                     </div>
-                    <div style="font-size: 12px; color: var(--text-secondary);">
+                    <div style="font-size: 12px; color: #000;">
                         Tax Cost: ${formatCurrency(roth_conversion.optimal_24pct.conversion_tax, 0)}
                         (${formatPercent(roth_conversion.optimal_24pct.effective_rate_on_conversion / 100, 1)} effective)
                     </div>
@@ -230,19 +230,19 @@ function renderTaxAnalysis(container, analysis, profile) {
 
                 ${rmd_analysis.current.required ? `
                 <div style="background: var(--warning-light, #fff3e0); padding: 12px; border-radius: 6px; margin-bottom: 12px; border-left: 4px solid var(--warning-color);">
-                    <div style="font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--warning-color);">
+                    <div style="font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #000;">
                         Current RMD Required
                     </div>
-                    <div style="font-size: 18px; font-weight: 700; margin-bottom: 4px;">
+                    <div style="font-size: 18px; font-weight: 700; margin-bottom: 4px; color: #000;">
                         ${formatCurrency(rmd_analysis.current.rmd_amount, 0)}
                     </div>
-                    <div style="font-size: 12px; color: var(--text-secondary);">
+                    <div style="font-size: 12px; color: #000;">
                         ${formatPercent(rmd_analysis.current.rmd_as_percentage / 100, 2)} of balance at age ${rmd_analysis.current.age}
                     </div>
                 </div>
                 ` : `
                 <div style="background: var(--info-light, #e3f2fd); padding: 12px; border-radius: 6px; margin-bottom: 12px; border-left: 4px solid var(--info-color);">
-                    <div style="font-size: 13px; color: var(--text-primary); font-weight: 600;">
+                    <div style="font-size: 13px; color: #000; font-weight: 600;">
                         RMDs begin in ${rmd_analysis.summary.years_until_rmd} years (age 73)
                     </div>
                 </div>
