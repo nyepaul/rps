@@ -257,9 +257,6 @@ function renderTimeline(container, timeline) {
     const narrative = timeline.narrative || 'No activity recorded.';
     const summary = timeline.summary || '';
 
-    // Store events for modal navigation
-    currentEvents = events;
-
     // Reset sort state
     activitySort = {
         column: 'timestamp',
@@ -268,6 +265,9 @@ function renderTimeline(container, timeline) {
 
     // Sort events by timestamp descending on initial load
     const sortedEvents = events.length > 0 ? sortActivityEvents(events, 'timestamp', 'desc') : [];
+
+    // Store SORTED events for modal navigation so indices match the displayed table
+    currentEvents = sortedEvents;
 
     container.innerHTML = `
         <!-- User Info -->
