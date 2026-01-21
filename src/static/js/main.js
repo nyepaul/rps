@@ -544,6 +544,32 @@ async function openSettings(defaultTab = 'general') {
 
             <!-- Security Settings Tab -->
             <div id="settings-security" class="settings-tab-content" style="display: none;">
+                <!-- Change Password Section -->
+                <div style="margin-bottom: 30px;">
+                    <h3 style="font-size: 16px; margin-bottom: 12px; color: var(--text-secondary);">Change Password</h3>
+                    <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
+                        <div id="change-password-message"></div>
+                        <div style="display: grid; gap: 15px;">
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">Current Password</label>
+                                <input type="password" id="current-password-input" placeholder="Enter current password" style="width: 100%; padding: 10px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">New Password</label>
+                                <input type="password" id="new-password-input" placeholder="Enter new password" style="width: 100%; padding: 10px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
+                                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Min 8 chars, one uppercase, one lowercase, one number</div>
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">Confirm New Password</label>
+                                <input type="password" id="confirm-password-input" placeholder="Re-enter new password" style="width: 100%; padding: 10px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
+                            </div>
+                            <button id="update-password-btn" style="background: var(--accent-color); color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; margin-top: 5px;">
+                                Update Password
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div style="margin-bottom: 25px;">
                     <h3 style="font-size: 16px; margin-bottom: 12px; color: var(--text-secondary);">Account Recovery</h3>
                     <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
@@ -687,6 +713,49 @@ async function openSettings(defaultTab = 'general') {
             } finally {
                 generateRecoveryBtn.disabled = false;
                 generateRecoveryBtn.innerHTML = '<span>🔐</span> Generate New Recovery Code';
+            }
+        });
+    }
+
+    // Change Password
+    const updatePasswordBtn = modal.querySelector('#update-password-btn');
+    if (updatePasswordBtn) {
+        updatePasswordBtn.addEventListener('click', async () => {
+            const currentPassword = modal.querySelector('#current-password-input').value;
+            const newPassword = modal.querySelector('#new-password-input').value;
+            const confirmPassword = modal.querySelector('#confirm-password-input').value;
+            const messageDiv = modal.querySelector('#change-password-message');
+
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                messageDiv.innerHTML = '<div style="color: #dc3545; font-size: 13px; margin-bottom: 15px;">Please fill in all password fields.</div>';
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                messageDiv.innerHTML = '<div style="color: #dc3545; font-size: 13px; margin-bottom: 15px;">New passwords do not match.</div>';
+                return;
+            }
+
+            try {
+                updatePasswordBtn.disabled = true;
+                updatePasswordBtn.textContent = 'Updating...';
+                messageDiv.innerHTML = '';
+
+                await apiClient.put('/api/auth/password/change', {
+                    old_password: currentPassword,
+                    new_password: newPassword
+                });
+
+                messageDiv.innerHTML = '<div style="color: #28a745; font-size: 13px; margin-bottom: 15px;">✅ Password updated successfully!</div>';
+                modal.querySelector('#current-password-input').value = '';
+                modal.querySelector('#new-password-input').value = '';
+                modal.querySelector('#confirm-password-input').value = '';
+            } catch (error) {
+                console.error('Failed to update password:', error);
+                messageDiv.innerHTML = `<div style="color: #dc3545; font-size: 13px; margin-bottom: 15px;">❌ ${error.message || 'Failed to update password'}</div>`;
+            } finally {
+                updatePasswordBtn.disabled = false;
+                updatePasswordBtn.textContent = 'Update Password';
             }
         });
     }
