@@ -14,6 +14,7 @@ import { renderRoadmapPanel } from './roadmap-panel.js';
 import { renderBackupManager } from './backup-manager.js';
 import { renderUsersByLocationReport } from './users-by-location-report.js';
 import { renderPasswordRequests } from './password-requests.js';
+import { renderDemoManagement } from './demo-management.js';
 
 /**
  * Render admin tab with sub-tabs
@@ -68,6 +69,9 @@ export async function renderAdminTab(container) {
                         </button>
                         <button class="admin-subtab group-item" data-subtab="users" style="width: 100%; text-align: left; padding: 10px 20px; background: transparent; border: none; cursor: pointer; color: var(--text-secondary); font-weight: 500; transition: all 0.2s;">
                             👤 Accounts
+                        </button>
+                        <button class="admin-subtab group-item" data-subtab="demo_management" style="width: 100%; text-align: left; padding: 10px 20px; background: transparent; border: none; cursor: pointer; color: var(--text-secondary); font-weight: 500; transition: all 0.2s;">
+                            🎭 Demo Management
                         </button>
                     </div>
                 </div>
@@ -214,6 +218,9 @@ async function showSubTab(container, subtab) {
                 break;
             case 'users':
                 await renderUserManagement(contentContainer);
+                break;
+            case 'demo_management':
+                await renderDemoManagement(contentContainer);
                 break;
             case 'system':
                 await renderSystemInfo(contentContainer);

@@ -1,0 +1,105 @@
+/**
+ * Demo Account Management Component
+ * Allows admins to reset the demo account to a baseline state
+ */
+
+import { apiClient } from '../../api/client.js';
+import { showError } from '../../utils/dom.js';
+
+/**
+ * Render demo management interface
+ */
+export async function renderDemoManagement(container) {
+    container.innerHTML = `
+        <div style="max-width: 800px;">
+            <div style="background: var(--bg-secondary); padding: 25px; border-radius: 12px; margin-bottom: 20px; border: 2px solid var(--warning-color);">
+                <h3 style="font-size: 18px; margin-bottom: 15px;">🎭 Demo Account Management</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 14px;">
+                    Reset the demo account with comprehensive upper-class family profile data. This will delete all existing demo profiles and create a new default profile.
+                </p>
+                <div style="background: var(--warning-bg); padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid var(--warning-color);">
+                    <div style="font-weight: 600; margin-bottom: 8px;">Demo Account Details:</div>
+                    <div style="font-size: 13px; font-family: monospace;">
+                        <div>Username: <strong>demo</strong></div>
+                        <div>Password: <strong>demo1234</strong></div>
+                    </div>
+                </div>
+                <div style="background: var(--info-bg); padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 13px;">
+                    <strong>📋 Profile includes:</strong>
+                    <ul style="margin: 8px 0 0 20px; padding: 0;">
+                        <li>Upper-class couple ($280K/year combined income)</li>
+                        <li>Two children in college (ages 19 and 21)</li>
+                        <li>$2.3M investment portfolio (401k, Roth, Brokerage)</li>
+                        <li>$1.85M primary residence in San Francisco</li>
+                        <li>Comprehensive budget with typical expenses</li>
+                        <li>529 college funds for both children</li>
+                    </ul>
+                </div>
+                <button id="reset-demo-btn" style="padding: 12px 24px; background: var(--warning-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;">
+                    🔄 Reset Demo Account
+                </button>
+                <div id="reset-demo-result" style="margin-top: 15px; display: none;"></div>
+            </div>
+        </div>
+    `;
+
+    setupResetDemoButton(container);
+}
+
+/**
+ * Setup reset demo account button
+ */
+function setupResetDemoButton(container) {
+    const resetBtn = container.querySelector('#reset-demo-btn');
+    const resultDiv = container.querySelector('#reset-demo-result');
+
+    if (!resetBtn) return;
+
+    resetBtn.addEventListener('click', async () => {
+        if (!confirm('Are you sure you want to reset the demo account? This will delete all existing demo profiles and create a new default profile with comprehensive data.')) {
+            return;
+        }
+
+        // Disable button and show loading
+        resetBtn.disabled = true;
+        resetBtn.textContent = '⏳ Resetting...';
+        resultDiv.style.display = 'none';
+
+        try {
+            const response = await apiClient.post('/api/admin/reset-demo-account', {});
+
+            // Show success message
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `
+                <div style="padding: 15px; background: var(--success-bg); border: 1px solid var(--success-color); border-radius: 8px;">
+                    <div style="font-weight: 600; margin-bottom: 8px; color: var(--success-color);">✅ Demo Account Reset Successfully</div>
+                    <div style="font-size: 13px;">
+                        <div>Username: <strong>${response.username}</strong></div>
+                        <div>Password: <strong>${response.password}</strong></div>
+                        <div>Profile: <strong>${response.profile_name}</strong></div>
+                    </div>
+                </div>
+            `;
+
+            // Reset button
+            resetBtn.disabled = false;
+            resetBtn.textContent = '🔄 Reset Demo Account';
+
+        } catch (error) {
+            console.error('Failed to reset demo account:', error);
+
+            // Show error message
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `
+                <div style="padding: 15px; background: var(--danger-bg); border: 1px solid var(--danger-color); border-radius: 8px;">
+                    <div style="font-weight: 600; margin-bottom: 8px; color: var(--danger-color);">❌ Reset Failed</div>
+                    <div style="font-size: 13px;">${error.message || 'Unknown error occurred'}</div>
+                </div>
+            `;
+
+            // Reset button
+            resetBtn.disabled = false;
+            resetBtn.textContent = '🔄 Reset Demo Account';
+        }
+    });
+}
