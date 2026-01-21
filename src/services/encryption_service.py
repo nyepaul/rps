@@ -79,6 +79,20 @@ class EncryptionService:
         code = recovery_code.upper().replace(' ', '').replace('-', '').strip()
         return kdf.derive(code.encode('utf-8'))
 
+    @staticmethod
+    def get_email_kek(email: str, salt: bytes) -> bytes:
+        """Derive a Key Encryption Key (KEK) from an email address."""
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=salt,
+            iterations=200000,
+            backend=default_backend()
+        )
+        # Normalize email (lowercase, strip)
+        normalized_email = email.lower().strip()
+        return kdf.derive(normalized_email.encode('utf-8'))
+
     def encrypt(self, plaintext: str) -> Tuple[str, str]:
         """
         Encrypt plaintext string using AES-256-GCM.

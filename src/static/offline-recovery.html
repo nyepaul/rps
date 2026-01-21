@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Forgot Password - Retirement Planning System</title>
+    <title>Account Recovery - Retirement Planning System</title>
     <style>
         * {
             margin: 0;
@@ -109,25 +109,14 @@
             font-size: 14px;
         }
 
-        .info {
-            background: #e8f4fd;
-            color: #014361;
-            padding: 12px;
+        .info-box {
+            background: #f0f7ff;
+            padding: 15px;
             border-radius: 5px;
-            margin-bottom: 20px;
-            border-left: 4px solid #0288d1;
+            margin-bottom: 25px;
+            border-left: 4px solid #007bff;
             font-size: 13px;
-            line-height: 1.5;
-        }
-
-        .warning {
-            background: #fff9e6;
-            color: #856404;
-            padding: 12px;
-            border-radius: 5px;
-            margin: 20px 0;
-            border-left: 4px solid #f59e0b;
-            font-size: 13px;
+            color: #444;
             line-height: 1.5;
         }
 
@@ -147,60 +136,65 @@
             text-decoration: underline;
         }
 
-        .hidden {
-            display: none;
-        }
-
-        .dev-token {
-            background: #f3f4f6;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 15px 0;
-            font-family: monospace;
+        .password-requirements {
             font-size: 12px;
-            word-break: break-all;
-            border: 1px solid #e0e0e0;
+            color: #666;
+            margin-top: 5px;
         }
 
-        .dev-token strong {
-            display: block;
-            margin-bottom: 8px;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            color: #856404;
+        .password-requirements ul {
+            margin-top: 5px;
+            padding-left: 20px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🔐 Forgot Password</h1>
-        <p class="subtitle">Enter your username and registered email address to get a password reset link.</p>
+        <h1>🔐 Account Recovery</h1>
+        <p class="subtitle">Recover access to your account and preserve your data using your identity verification.</p>
 
         <div id="message"></div>
 
-        <form id="forgotPasswordForm">
+        <div class="info-box">
+            <strong>Data Recovery:</strong> We will attempt to recover your data using your email verification. If that is not set up, you may be prompted for your previous password.
+        </div>
+
+        <form id="recoveryForm">
             <div class="form-group">
                 <label for="username">Username</label>
-                <input type="text" id="username" name="username" required autocomplete="username" placeholder="your_username">
+                <input type="text" id="username" name="username" required autocomplete="username" placeholder="Enter username">
             </div>
 
             <div class="form-group">
                 <label for="email">Email Address</label>
-                <input type="email" id="email" name="email" required autocomplete="email" placeholder="email@example.com">
+                <input type="email" id="email" name="email" required autocomplete="email" placeholder="Enter email address">
             </div>
 
-            <div class="warning">
-                <strong>⚠️ Note:</strong> Resetting your password via email will <strong>permanently delete</strong> your encrypted data UNLESS you have a 16-character Recovery Code or have previously logged in to enable email-based backup.
+            <div class="form-group">
+                <label for="oldPassword">Previous Password (Optional)</label>
+                <input type="password" id="oldPassword" name="oldPassword" autocomplete="current-password" placeholder="Enter previous password (if required)">
+                <small style="color: #666; display: block; margin-top: 5px;">Required only if this is your first time recovering or you haven't logged in recently.</small>
             </div>
 
-            <button type="submit" id="submitBtn">Get Reset Link</button>
+            <div class="form-group">
+                <label for="newPassword">New Password</label>
+                <input type="password" id="newPassword" name="newPassword" required autocomplete="new-password" placeholder="Enter new password">
+                <div class="password-requirements">
+                    <strong>Password must contain:</strong>
+                    <ul>
+                        <li>At least 8 characters</li>
+                        <li>One uppercase, one lowercase, one number</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">Confirm New Password</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required autocomplete="new-password" placeholder="Re-enter new password">
+            </div>
+
+            <button type="submit" id="submitBtn">Update Password & Recover Data</button>
         </form>
-
-        <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #eee; text-align: center;">
-            <p style="font-size: 13px; color: #666; margin-bottom: 10px;">Email unavailable?</p>
-            <a href="/offline-recovery.html" style="color: #667eea; text-decoration: none; font-size: 14px; font-weight: 600;">
-                Try Credentials-based Recovery →
-            </a>
-        </div>
 
         <div class="back-link">
             <a href="/login.html">← Back to Login</a>
@@ -208,7 +202,7 @@
     </div>
 
     <script>
-        const form = document.getElementById('forgotPasswordForm');
+        const form = document.getElementById('recoveryForm');
         const messageDiv = document.getElementById('message');
         const submitBtn = document.getElementById('submitBtn');
 
@@ -217,56 +211,59 @@
 
             const username = document.getElementById('username').value;
             const email = document.getElementById('email').value;
+            const old_password = document.getElementById('oldPassword').value;
+            const new_password = document.getElementById('newPassword').value;
+            const confirm_password = document.getElementById('confirmPassword').value;
 
-            // Disable button and show loading
+            if (new_password !== confirm_password) {
+                messageDiv.innerHTML = `<div class="error">New passwords do not match.</div>`;
+                return;
+            }
+
+            if (old_password && new_password === old_password) {
+                messageDiv.innerHTML = `<div class="error">New password must be different from the old one.</div>`;
+                return;
+            }
+
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Generating...';
+            submitBtn.textContent = 'Processing...';
             messageDiv.innerHTML = '';
 
             try {
-                const response = await fetch('/api/auth/password-reset/request', {
+                const body = { 
+                    username, 
+                    email, 
+                    new_password 
+                };
+                
+                if (old_password) {
+                    body.old_password = old_password;
+                }
+
+                const response = await fetch('/api/auth/password/offline-change', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ username, email })
+                    body: JSON.stringify(body)
                 });
 
                 const data = await response.json();
 
                 if (response.ok) {
-                    // Show success message
-                    messageDiv.innerHTML = `
-                        <div class="success">
-                            ${data.message}
-                        </div>
-                    `;
-
-                    // If token is returned, show the reset link (Dev Mode only)
-                    if (data.token) {
-                        messageDiv.innerHTML += `
-                            <div class="info">
-                                Use the link below to reset your password:
-                                <div class="dev-token">
-                                    <a href="/reset-password.html?token=${data.token}" style="color: #667eea; word-break: break-all;">
-                                        ${window.location.origin}/reset-password.html?token=${data.token}
-                                    </a>
-                                </div>
-                                <small>This link expires in 1 hour.</small>
-                            </div>
-                        `;
-                    }
-
-                    // Clear form
+                    messageDiv.innerHTML = `<div class="success">${data.message}</div>`;
                     form.reset();
+                    setTimeout(() => {
+                        window.location.href = '/login.html';
+                    }, 3000);
                 } else {
-                    messageDiv.innerHTML = `<div class="error">${data.error || 'Failed to generate reset link'}</div>`;
+                    messageDiv.innerHTML = `<div class="error">${data.error || 'Recovery failed. Please check your credentials.'}</div>`;
                 }
             } catch (error) {
                 messageDiv.innerHTML = `<div class="error">Network error. Please try again.</div>`;
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Get Reset Link';
+                submitBtn.textContent = 'Update Password & Recover Data';
             }
         });
     </script>

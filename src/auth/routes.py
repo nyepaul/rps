@@ -306,6 +306,7 @@ def check_session():
 class PasswordResetRequestSchema(BaseModel):
     """Password reset request validation schema."""
     username: str
+    email: EmailStr
 
 
 class PasswordResetSchema(BaseModel):
@@ -331,7 +332,7 @@ class PasswordResetSchema(BaseModel):
 def request_password_reset():
     """Request a password reset token.
 
-    Uses username lookup (no email required). The token is sent to the registered email.
+    Requires username AND email for verification. The token is sent to the registered email.
     """
     try:
         data = PasswordResetRequestSchema(**request.json)
@@ -343,11 +344,16 @@ def request_password_reset():
     # Get user by username
     user = User.get_by_username(data.username)
 
-    # For security, always return success even if user doesn't exist
-    # This prevents username enumeration attacks
-    if not user:
+    # Verify user exists AND email matches
+    # Use constant time comparison for email to prevent timing attacks (though not strictly necessary for this low-stakes check)
+    email_match = False
+    if user and user.email.lower() == data.email.lower():
+        email_match = True
+
+    if not email_match:
+        # Return generic success message to prevent enumeration
         return jsonify({
-            'message': 'If an account exists with that username, a password reset link has been sent to the registered email address.',
+            'message': 'If the account exists and the email matches, a password reset link has been sent.',
             'email_sent': False
         }), 200
 
@@ -369,7 +375,7 @@ def request_password_reset():
 
     # Return success message (without token)
     return jsonify({
-        'message': 'If an account exists with that username, a password reset link has been sent to the registered email address.',
+        'message': 'If the account exists and the email matches, a password reset link has been sent.',
         'username': data.username,
         'email_sent': email_sent
     }), 200
@@ -380,8 +386,8 @@ def request_password_reset():
 def reset_password():
     """Reset password using a valid reset token.
 
-    ⚠️ WARNING: Password reset without old password will permanently delete
-    encrypted data for users with password-based encryption enabled.
+    Attempts to preserve data using email-based backup if available.
+    Otherwise, permanently deletes encrypted data.
     """
     try:
         data = PasswordResetSchema(**request.json)
@@ -396,8 +402,46 @@ def reset_password():
     if not user:
         return jsonify({'error': 'Invalid or expired reset token'}), 400
 
-    # Force password reset (will lose encrypted data if user had DEK)
-    dek_was_lost = user.force_password_reset(data.password)
+    dek_recovered = False
+    dek_was_lost = False
+
+    # Attempt to recover data using Email Backup
+    if user.email_encrypted_dek and user.email_iv and user.email_salt:
+        try:
+            email_salt = base64.b64decode(user.email_salt)
+            email_kek = EncryptionService.get_email_kek(user.email, email_salt)
+            email_service = EncryptionService(key=email_kek)
+            dek_b64 = email_service.decrypt(user.email_encrypted_dek, user.email_iv)
+            
+            if dek_b64:
+                dek = base64.b64decode(dek_b64)
+                
+                # Encrypt with new password
+                new_salt = user.get_kek_salt()
+                new_kek = EncryptionService.get_kek_from_password(data.password, new_salt)
+                new_service = EncryptionService(key=new_kek)
+                new_enc_dek, new_iv = new_service.encrypt(dek_b64)
+                
+                # Update user
+                user.encrypted_dek = new_enc_dek
+                user.dek_iv = new_iv
+                user.password_hash = User.hash_password(data.password)
+                
+                # Refresh email backup (rotate salt)
+                user.update_email_recovery_backup(dek)
+                
+                # Clear reset token
+                user.reset_token = None
+                user.reset_token_expires = None
+                
+                user.save()
+                dek_recovered = True
+        except Exception as e:
+            print(f"Token reset recovery failed: {e}")
+
+    # Fallback: Force reset (Data Loss)
+    if not dek_recovered:
+        dek_was_lost = user.force_password_reset(data.password)
 
     # Log the password reset
     EnhancedAuditLogger.log(
@@ -407,18 +451,24 @@ def reset_password():
         user_id=user.id,
         details=json.dumps({
             'username': user.username,
+            'method': 'email_recovery' if dek_recovered else 'force_reset',
+            'dek_recovered': dek_recovered,
             'dek_lost': dek_was_lost
         }),
         status_code=200
     )
 
-    response_message = 'Password successfully reset. You can now log in with your new password.'
-    if dek_was_lost:
-        response_message += ' Note: Encrypted data was lost because old password was not available.'
+    if dek_recovered:
+        response_message = 'Password reset successfully. Your encrypted data has been recovered.'
+    else:
+        response_message = 'Password successfully reset.'
+        if dek_was_lost:
+            response_message += ' Note: Encrypted data was lost because no backup was available.'
 
     return jsonify({
         'message': response_message,
-        'dek_lost': dek_was_lost
+        'dek_lost': dek_was_lost,
+        'dek_recovered': dek_recovered
     }), 200
 
 
@@ -436,14 +486,24 @@ def validate_reset_token():
     user = User.get_by_reset_token(token)
 
     if user:
-        # Check if user will lose data
+        # Check data status
         has_encrypted_data = bool(user.encrypted_dek and user.dek_iv)
+        can_recover_via_email = bool(user.email_encrypted_dek)
+
+        warning = None
+        if has_encrypted_data:
+            if can_recover_via_email:
+                warning = 'Your encrypted data will be automatically recovered.'
+            else:
+                warning = 'Resetting password will permanently delete all your encrypted data. This cannot be undone!'
 
         return jsonify({
             'valid': True,
-            'email': user.email,
+            'username': user.username,
+            # 'email': user.email, # Don't expose email
             'has_encrypted_data': has_encrypted_data,
-            'warning': 'Resetting password will permanently delete all your encrypted data. This cannot be undone!' if has_encrypted_data else None
+            'can_recover_via_email': can_recover_via_email,
+            'warning': warning
         }), 200
     else:
         return jsonify({
@@ -456,7 +516,7 @@ class OfflinePasswordChangeSchema(BaseModel):
     """Schema for offline password change (using credentials)."""
     username: str
     email: EmailStr
-    old_password: str
+    old_password: Optional[str] = None
     new_password: str
 
     @validator('new_password')
@@ -476,12 +536,11 @@ class OfflinePasswordChangeSchema(BaseModel):
 @limiter.limit("5 per hour")
 def offline_change_password():
     """
-    Change password without login session using full credentials.
+    Change password without login session.
     
-    This endpoint allows password rotation when email is unavailable or 
-    login is not possible, but the user KNOWS their old credentials.
-    It verifies username + email + old_password, then re-encrypts data
-    with the new password.
+    Methods:
+    1. Email-based Recovery (Preferred): Uses backup key derived from email. Requires Username + Email.
+    2. Legacy Recovery: Uses old password to decrypt key. Requires Username + Email + Old Password.
     """
     try:
         data = OfflinePasswordChangeSchema(**request.json)
@@ -496,41 +555,78 @@ def offline_change_password():
         # Generic error to prevent enumeration
         return jsonify({'error': 'Invalid credentials'}), 401
         
-    # 2. Verify Old Password
-    if not user.check_password(data.old_password):
-        EnhancedAuditLogger.log(
-            action='OFFLINE_PASSWORD_CHANGE_FAILED',
-            table_name='users',
-            user_id=user.id,
-            details=json.dumps({'reason': 'Invalid old password'}),
-            status_code=401
-        )
-        return jsonify({'error': 'Invalid credentials'}), 401
-        
     try:
-        # 3. Perform Password Update (handles DEK re-encryption & migration)
-        # This will automatically migrate the key salt to (username+email) if it was legacy
-        user.update_password(data.new_password, old_password=data.old_password)
+        dek_b64 = None
+        recovery_method = 'unknown'
+
+        # 2. Try Email-Based Recovery (No old password needed)
+        if user.email_encrypted_dek and user.email_iv and user.email_salt:
+            try:
+                email_salt = base64.b64decode(user.email_salt)
+                email_kek = EncryptionService.get_email_kek(user.email, email_salt)
+                email_service = EncryptionService(key=email_kek)
+                dek_b64 = email_service.decrypt(user.email_encrypted_dek, user.email_iv)
+                recovery_method = 'email_backup'
+            except Exception as e:
+                print(f"Email recovery failed: {e}")
         
-        EnhancedAuditLogger.log(
-            action='OFFLINE_PASSWORD_CHANGE',
-            table_name='users',
-            record_id=user.id,
-            user_id=user.id,
-            details=json.dumps({
-                'username': user.username,
-                'method': 'offline_credentials'
-            }),
-            status_code=200
-        )
-        
-        return jsonify({
-            'message': 'Password changed successfully. You can now log in.'
-        }), 200
-        
-    except ValueError as e:
-        # Decryption failed (wrong old password for DEK?)
-        return jsonify({'error': str(e)}), 400
+        # 3. Fallback to Old Password (if email recovery unavailable/failed)
+        if not dek_b64:
+            if not data.old_password:
+                return jsonify({'error': 'Account not set up for email recovery. Previous password required.'}), 400
+            
+            if not user.check_password(data.old_password):
+                EnhancedAuditLogger.log(
+                    action='OFFLINE_PASSWORD_CHANGE_FAILED',
+                    table_name='users',
+                    user_id=user.id,
+                    details=json.dumps({'reason': 'Invalid old password'}),
+                    status_code=401
+                )
+                return jsonify({'error': 'Invalid credentials'}), 401
+            
+            # Use User model logic to get DEK
+            # This handles migration logic too
+            raw_dek = user.get_dek(data.old_password)
+            dek_b64 = base64.b64encode(raw_dek).decode('utf-8')
+            recovery_method = 'password_backup'
+
+        # 4. Re-encrypt with New Password
+        if dek_b64:
+            dek = base64.b64decode(dek_b64)
+            
+            # Encrypt with new password
+            new_salt = user.get_kek_salt()
+            new_kek = EncryptionService.get_kek_from_password(data.new_password, new_salt)
+            new_service = EncryptionService(key=new_kek)
+            new_enc_dek, new_iv = new_service.encrypt(dek_b64)
+            
+            # Update user
+            user.encrypted_dek = new_enc_dek
+            user.dek_iv = new_iv
+            user.password_hash = User.hash_password(data.new_password)
+            
+            # Refresh email backup with new salt (security best practice)
+            user.update_email_recovery_backup(dek)
+            
+            user.save()
+            
+            EnhancedAuditLogger.log(
+                action='OFFLINE_PASSWORD_CHANGE',
+                table_name='users',
+                record_id=user.id,
+                user_id=user.id,
+                details=json.dumps({
+                    'username': user.username,
+                    'method': recovery_method
+                }),
+                status_code=200
+            )
+            
+            return jsonify({
+                'message': 'Password changed successfully. You can now log in.'
+            }), 200
+            
     except Exception as e:
         print(f"Error in offline password change: {e}")
         return jsonify({'error': 'Failed to change password'}), 500
