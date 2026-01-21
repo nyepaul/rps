@@ -15,6 +15,9 @@ let activitySort = {
     direction: 'desc'
 };
 
+// Current events array for navigation in activity details modal
+let currentEvents = [];
+
 /**
  * Render user activity timeline viewer
  */
@@ -254,6 +257,9 @@ function renderTimeline(container, timeline) {
     const narrative = timeline.narrative || 'No activity recorded.';
     const summary = timeline.summary || '';
 
+    // Store events for modal navigation
+    currentEvents = events;
+
     // Reset sort state
     activitySort = {
         column: 'timestamp',
@@ -455,9 +461,8 @@ function setupActivityTableSort(container, events) {
     rows.forEach(row => {
         row.addEventListener('click', () => {
             const eventIndex = parseInt(row.getAttribute('data-event-index'));
-            const event = events[eventIndex];
-            if (event) {
-                showActivityDetails(event);
+            if (eventIndex >= 0 && eventIndex < currentEvents.length) {
+                showActivityDetails(eventIndex);
             }
         });
     });
@@ -615,9 +620,12 @@ function getActionIcon(action) {
 }
 
 /**
- * Show activity details modal
+ * Show activity details modal with navigation
  */
-function showActivityDetails(event) {
+function showActivityDetails(eventIndex) {
+    const event = currentEvents[eventIndex];
+    if (!event) return;
+
     const timestamp = event.timestamp || '';
     const description = event.description || 'Unknown action';
     const action = event.action || '';
@@ -644,6 +652,10 @@ function showActivityDetails(event) {
     const icon = getActionIcon(action);
     const actionColor = getActionColor(action);
 
+    // Check if prev/next are available
+    const hasPrev = eventIndex > 0;
+    const hasNext = eventIndex < currentEvents.length - 1;
+
     // Create modal
     const modal = document.createElement('div');
     modal.className = 'activity-details-modal';
@@ -663,7 +675,10 @@ function showActivityDetails(event) {
     modal.innerHTML = `
         <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 15px;">
-                <h2 style="margin: 0; font-size: 20px;">📋 Activity Details</h2>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <h2 style="margin: 0; font-size: 20px;">📋 Activity Details</h2>
+                    <span style="font-size: 12px; color: var(--text-secondary); font-weight: 400;">(${eventIndex + 1} of ${currentEvents.length})</span>
+                </div>
                 <button class="close-modal-btn" style="background: transparent; border: none; font-size: 28px; cursor: pointer; color: var(--text-secondary); padding: 0; line-height: 1;">×</button>
             </div>
 
@@ -732,7 +747,16 @@ function showActivityDetails(event) {
                 </div>
             </div>
 
-            <div style="margin-top: 20px; text-align: right;">
+            <!-- Navigation & Close Buttons -->
+            <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; gap: 10px;">
+                    <button class="prev-activity-btn" ${!hasPrev ? 'disabled' : ''} style="padding: 10px 20px; background: ${hasPrev ? 'var(--bg-tertiary)' : 'var(--bg-primary)'}; color: ${hasPrev ? 'var(--text-primary)' : 'var(--text-secondary)'}; border: 1px solid var(--border-color); border-radius: 6px; cursor: ${hasPrev ? 'pointer' : 'not-allowed'}; font-weight: 600; display: flex; align-items: center; gap: 5px; transition: all 0.2s;">
+                        ← Previous
+                    </button>
+                    <button class="next-activity-btn" ${!hasNext ? 'disabled' : ''} style="padding: 10px 20px; background: ${hasNext ? 'var(--bg-tertiary)' : 'var(--bg-primary)'}; color: ${hasNext ? 'var(--text-primary)' : 'var(--text-secondary)'}; border: 1px solid var(--border-color); border-radius: 6px; cursor: ${hasNext ? 'pointer' : 'not-allowed'}; font-weight: 600; display: flex; align-items: center; gap: 5px; transition: all 0.2s;">
+                        Next →
+                    </button>
+                </div>
                 <button class="close-modal-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                     Close
                 </button>
@@ -747,6 +771,7 @@ function showActivityDetails(event) {
     modal.querySelectorAll('.close-modal-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             modal.remove();
+            document.removeEventListener('keydown', keyHandler);
         });
     });
 
@@ -754,17 +779,50 @@ function showActivityDetails(event) {
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {
             modal.remove();
+            document.removeEventListener('keydown', keyHandler);
         }
     });
 
-    // Close on Escape key
-    const escHandler = (e) => {
+    // Previous button handler
+    const prevBtn = modal.querySelector('.prev-activity-btn');
+    if (prevBtn && hasPrev) {
+        prevBtn.addEventListener('click', () => {
+            modal.remove();
+            document.removeEventListener('keydown', keyHandler);
+            showActivityDetails(eventIndex - 1);
+        });
+        prevBtn.addEventListener('mouseenter', () => prevBtn.style.background = 'var(--bg-primary)');
+        prevBtn.addEventListener('mouseleave', () => prevBtn.style.background = 'var(--bg-tertiary)');
+    }
+
+    // Next button handler
+    const nextBtn = modal.querySelector('.next-activity-btn');
+    if (nextBtn && hasNext) {
+        nextBtn.addEventListener('click', () => {
+            modal.remove();
+            document.removeEventListener('keydown', keyHandler);
+            showActivityDetails(eventIndex + 1);
+        });
+        nextBtn.addEventListener('mouseenter', () => nextBtn.style.background = 'var(--bg-primary)');
+        nextBtn.addEventListener('mouseleave', () => nextBtn.style.background = 'var(--bg-tertiary)');
+    }
+
+    // Keyboard navigation
+    const keyHandler = (e) => {
         if (e.key === 'Escape') {
             modal.remove();
-            document.removeEventListener('keydown', escHandler);
+            document.removeEventListener('keydown', keyHandler);
+        } else if (e.key === 'ArrowLeft' && hasPrev) {
+            modal.remove();
+            document.removeEventListener('keydown', keyHandler);
+            showActivityDetails(eventIndex - 1);
+        } else if (e.key === 'ArrowRight' && hasNext) {
+            modal.remove();
+            document.removeEventListener('keydown', keyHandler);
+            showActivityDetails(eventIndex + 1);
         }
     };
-    document.addEventListener('keydown', escHandler);
+    document.addEventListener('keydown', keyHandler);
 }
 
 /**
