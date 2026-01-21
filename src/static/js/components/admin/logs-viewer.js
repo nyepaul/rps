@@ -27,6 +27,9 @@ const logDetailsCache = new Map();
 // Debounce flag to prevent rapid navigation
 let isNavigating = false;
 
+// Store current map instance to properly clean up
+let currentAuditLogMap = null;
+
 /**
  * Render logs viewer with filtering and pagination
  */
@@ -660,7 +663,7 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
                     ${fullLog.geo_location && fullLog.geo_location.lat && fullLog.geo_location.lon ? `
                         <div>
                             <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">🗺️ Location Map</h3>
-                            <div id="location-map-${logIndex}" style="height: 300px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color);"></div>
+                            <div id="audit-log-location-map" style="height: 300px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color);"></div>
                         </div>
                     ` : ''}
 
@@ -731,6 +734,11 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
             // Keyboard navigation
             const keyHandler = (e) => {
                 if (e.key === 'Escape') {
+                    // Clean up map before closing
+                    if (currentAuditLogMap) {
+                        currentAuditLogMap.remove();
+                        currentAuditLogMap = null;
+                    }
                     modal.remove();
                     document.removeEventListener('keydown', keyHandler);
                 } else if (e.key === 'ArrowLeft') {
@@ -753,6 +761,11 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
             // Close on backdrop click
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
+                    // Clean up map before closing
+                    if (currentAuditLogMap) {
+                        currentAuditLogMap.remove();
+                        currentAuditLogMap = null;
+                    }
                     modal.remove();
                     document.removeEventListener('keydown', keyHandler);
                 }
@@ -776,6 +789,11 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
             const newBtn = btn.cloneNode(true);
             btn.replaceWith(newBtn);
             newBtn.addEventListener('click', () => {
+                // Clean up map before closing
+                if (currentAuditLogMap) {
+                    currentAuditLogMap.remove();
+                    currentAuditLogMap = null;
+                }
                 modal.remove();
                 // Keyboard handler cleanup is handled by modal removal
             });
@@ -816,10 +834,17 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
         // Initialize map if coordinates are available
         if (fullLog.geo_location && fullLog.geo_location.lat && fullLog.geo_location.lon) {
             setTimeout(() => {
-                const mapContainer = document.getElementById(`location-map-${logIndex}`);
+                const mapContainer = document.getElementById('audit-log-location-map');
                 if (mapContainer && typeof L !== 'undefined') {
                     try {
-                        const map = L.map(`location-map-${logIndex}`).setView(
+                        // Clean up old map instance if it exists
+                        if (currentAuditLogMap) {
+                            currentAuditLogMap.remove();
+                            currentAuditLogMap = null;
+                        }
+
+                        // Create new map
+                        currentAuditLogMap = L.map('audit-log-location-map').setView(
                             [fullLog.geo_location.lat, fullLog.geo_location.lon],
                             10
                         );
@@ -828,7 +853,7 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
                             attribution: '© OpenStreetMap contributors © CARTO',
                             maxZoom: 19,
                             crossOrigin: true
-                        }).addTo(map);
+                        }).addTo(currentAuditLogMap);
 
                         const customIcon = L.divIcon({
                             className: 'custom-marker',
@@ -837,7 +862,7 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
                             iconAnchor: [8, 8]
                         });
 
-                        const marker = L.marker([fullLog.geo_location.lat, fullLog.geo_location.lon], { icon: customIcon }).addTo(map);
+                        const marker = L.marker([fullLog.geo_location.lat, fullLog.geo_location.lon], { icon: customIcon }).addTo(currentAuditLogMap);
 
                         marker.bindPopup(`
                             <div style="text-align: center; padding: 8px; background: #1a1a1a; color: #ffffff; border-radius: 6px;">
