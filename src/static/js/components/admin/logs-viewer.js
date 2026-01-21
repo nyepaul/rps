@@ -974,7 +974,7 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
 /**
  * Show log details modal
  */
-async function showLogDetails(logId) {
+export async function showLogDetails(logId) {
     try {
         // Fetch full log details from API
         const log = await apiClient.get(`/api/admin/logs/${logId}`);

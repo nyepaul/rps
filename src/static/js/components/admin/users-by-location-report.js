@@ -4,6 +4,7 @@
  */
 
 import { apiClient } from '../../api/client.js';
+import { showLogDetails } from './logs-viewer.js';
 
 /**
  * Render the users-by-location report
@@ -596,7 +597,7 @@ async function showIPLogs(userId, ipAddress, city, country) {
                         const date = new Date(log.created_at);
                         const dev = log.device_info || {};
                         return `
-                            <tr style="border-bottom: 1px solid var(--border-color);">
+                            <tr class="log-drilldown-row" data-id="${log.id}" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='transparent'">
                                 <td style="padding: 10px; white-space: nowrap;">
                                     <div>${date.toLocaleDateString()}</div>
                                     <div style="font-size: 11px; color: var(--text-secondary);">${date.toLocaleTimeString()}</div>
@@ -619,6 +620,13 @@ async function showIPLogs(userId, ipAddress, city, country) {
                 </tbody>
             </table>
         `;
+
+        // Add click handlers for log rows
+        container.querySelectorAll('.log-drilldown-row').forEach(row => {
+            row.addEventListener('click', () => {
+                showLogDetails(row.dataset.id);
+            });
+        });
 
     } catch (error) {
         console.error('Failed to load IP logs:', error);
