@@ -21,6 +21,12 @@ let currentIPLogs = [];
 // Current logs array for main audit logs navigation
 let currentAuditLogs = [];
 
+// Cache for fetched log details to avoid re-fetching
+const logDetailsCache = new Map();
+
+// Debounce flag to prevent rapid navigation
+let isNavigating = false;
+
 /**
  * Render logs viewer with filtering and pagination
  */
@@ -260,6 +266,9 @@ function getTopAction(byAction) {
 async function loadLogs(container, offset = 0) {
     const tableContainer = container.querySelector('#logs-table-container');
     const paginationContainer = container.querySelector('#logs-pagination');
+
+    // Clear cache when loading new logs
+    logDetailsCache.clear();
 
     // Show loading
     tableContainer.innerHTML = `
@@ -524,14 +533,25 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
     const log = currentAuditLogs[logIndex];
     if (!log) return;
 
+    // Prevent rapid navigation to avoid rate limiting
+    if (isNavigating) return;
+    isNavigating = true;
+
     // Previous = earlier in time (higher index, older logs)
     // Next = later in time (lower index, newer logs)
     const hasPrev = logIndex < currentAuditLogs.length - 1;
     const hasNext = logIndex > 0;
 
     try {
-        // Fetch full log details from API
-        const fullLog = await apiClient.get(`/api/admin/logs/${log.id}`);
+        // Check cache first to avoid unnecessary API calls
+        let fullLog = logDetailsCache.get(log.id);
+
+        if (!fullLog) {
+            // Fetch full log details from API only if not cached
+            fullLog = await apiClient.get(`/api/admin/logs/${log.id}`);
+            // Cache the result
+            logDetailsCache.set(log.id, fullLog);
+        }
 
         // Check if modal already exists
         let modal = document.querySelector('.log-details-modal.audit-log-modal');
@@ -841,9 +861,21 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
             }, 100);
         }
 
+        // Reset navigation flag after successful load
+        isNavigating = false;
+
     } catch (error) {
         console.error('Failed to load log details:', error);
-        showError(`Failed to load log details: ${error.message}`);
+
+        // Handle rate limiting specifically
+        if (error.message && error.message.includes('429')) {
+            showError('Too many requests. Please wait a moment before navigating.');
+        } else {
+            showError(`Failed to load log details: ${error.message}`);
+        }
+
+        // Reset navigation flag on error
+        isNavigating = false;
     }
 }
 
@@ -1395,14 +1427,25 @@ async function showLogDetailsWithNavigation(logIndex) {
     const log = currentIPLogs[logIndex];
     if (!log) return;
 
+    // Prevent rapid navigation to avoid rate limiting
+    if (isNavigating) return;
+    isNavigating = true;
+
     // Previous = earlier in time (higher index, older logs)
     // Next = later in time (lower index, newer logs)
     const hasPrev = logIndex < currentIPLogs.length - 1;
     const hasNext = logIndex > 0;
 
     try {
-        // Fetch full log details from API
-        const fullLog = await apiClient.get(`/api/admin/logs/${log.id}`);
+        // Check cache first to avoid unnecessary API calls
+        let fullLog = logDetailsCache.get(log.id);
+
+        if (!fullLog) {
+            // Fetch full log details from API only if not cached
+            fullLog = await apiClient.get(`/api/admin/logs/${log.id}`);
+            // Cache the result
+            logDetailsCache.set(log.id, fullLog);
+        }
 
         // Check if modal already exists
         let modal = document.querySelector('.log-details-modal.ip-log-modal');
@@ -1603,9 +1646,21 @@ async function showLogDetailsWithNavigation(logIndex) {
             }
         }
 
+        // Reset navigation flag after successful load
+        isNavigating = false;
+
     } catch (error) {
         console.error('Failed to load log details:', error);
-        showError(`Failed to load log details: ${error.message}`);
+
+        // Handle rate limiting specifically
+        if (error.message && error.message.includes('429')) {
+            showError('Too many requests. Please wait a moment before navigating.');
+        } else {
+            showError(`Failed to load log details: ${error.message}`);
+        }
+
+        // Reset navigation flag on error
+        isNavigating = false;
     }
 }
 
