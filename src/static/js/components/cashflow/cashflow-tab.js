@@ -1101,7 +1101,6 @@ function renderSummaryCards(container, chartData) {
         </div>
     `;
 }
-}
 
 /**
  * Restore metric visibility from saved state
