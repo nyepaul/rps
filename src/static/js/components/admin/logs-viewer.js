@@ -695,7 +695,7 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
                     ` : ''}
 
                     <!-- Request Information -->
-                    ${fullLog.request_method || fullLog.request_endpoint || fullLog.referrer || fullLog.session_id ? `
+                    ${fullLog.request_method || fullLog.request_endpoint || fullLog.referrer || fullLog.session_id || fullLog.request_query ? `
                         <div>
                             <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Request Information</h3>
                             <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; display: grid; gap: 10px;">
@@ -711,6 +711,12 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
                                         <span style="font-family: monospace; font-size: 11px;">${fullLog.request_endpoint}</span>
                                     </div>
                                 ` : ''}
+                                ${fullLog.request_query ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Query Params:</span>
+                                        <span style="font-family: monospace; font-size: 11px; word-break: break-all;">${fullLog.request_query || '(none)'}</span>
+                                    </div>
+                                ` : ''}
                                 ${fullLog.referrer ? `
                                     <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
                                         <span style="font-weight: 600; color: var(--text-secondary);">Referrer:</span>
@@ -721,6 +727,12 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
                                     <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
                                         <span style="font-weight: 600; color: var(--text-secondary);">Session ID:</span>
                                         <span style="font-family: monospace; font-size: 11px;">${fullLog.session_id}</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.request_size ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Request Size:</span>
+                                        <span>${fullLog.request_size} bytes</span>
                                     </div>
                                 ` : ''}
                             </div>
@@ -1862,7 +1874,7 @@ async function showLogDetailsWithNavigation(logIndex) {
                     ` : ''}
 
                     <!-- Request Information -->
-                    ${fullLog.request_method || fullLog.request_endpoint || fullLog.referrer || fullLog.session_id ? `
+                    ${fullLog.request_method || fullLog.request_endpoint || fullLog.referrer || fullLog.session_id || fullLog.request_query ? `
                         <div>
                             <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Request Information</h3>
                             <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; display: grid; gap: 10px;">
@@ -1878,6 +1890,12 @@ async function showLogDetailsWithNavigation(logIndex) {
                                         <span style="font-family: monospace; font-size: 11px;">${fullLog.request_endpoint}</span>
                                     </div>
                                 ` : ''}
+                                ${fullLog.request_query ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Query Params:</span>
+                                        <span style="font-family: monospace; font-size: 11px; word-break: break-all;">${fullLog.request_query || '(none)'}</span>
+                                    </div>
+                                ` : ''}
                                 ${fullLog.referrer ? `
                                     <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
                                         <span style="font-weight: 600; color: var(--text-secondary);">Referrer:</span>
@@ -1888,6 +1906,12 @@ async function showLogDetailsWithNavigation(logIndex) {
                                     <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
                                         <span style="font-weight: 600; color: var(--text-secondary);">Session ID:</span>
                                         <span style="font-family: monospace; font-size: 11px;">${fullLog.session_id}</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.request_size ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Request Size:</span>
+                                        <span>${fullLog.request_size} bytes</span>
                                     </div>
                                 ` : ''}
                             </div>

@@ -1131,11 +1131,18 @@ class EnhancedAuditLogger:
             if display_config.get('request_endpoint', True):
                 filtered_log['request_endpoint'] = log.get('request_endpoint')
 
+            # Always include request_query for transparency
+            filtered_log['request_query'] = log.get('request_query')
+
             if display_config.get('referrer', True):
                 filtered_log['referrer'] = log.get('referrer')
 
             if display_config.get('session_id', True):
                 filtered_log['session_id'] = log.get('session_id')
+
+            # Include request size if available
+            if display_config.get('request_body_size', True):
+                filtered_log['request_size'] = log.get('request_size')
 
             # Extract Cloudflare metadata from request_headers if enabled
             if display_config.get('cloudflare_metadata', True):
