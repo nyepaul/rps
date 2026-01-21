@@ -684,6 +684,45 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
                                     <span style="font-weight: 600; color: var(--text-secondary);">Device:</span>
                                     <span>${fullLog.device_info.device || 'Unknown'}</span>
                                 </div>
+                                ${fullLog.user_agent ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">User Agent:</span>
+                                        <span style="font-family: monospace; font-size: 10px; word-break: break-all;">${fullLog.user_agent}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- Request Information -->
+                    ${fullLog.request_method || fullLog.request_endpoint || fullLog.referrer || fullLog.session_id ? `
+                        <div>
+                            <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Request Information</h3>
+                            <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; display: grid; gap: 10px;">
+                                ${fullLog.request_method ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Method:</span>
+                                        <span style="display: inline-block; padding: 4px 12px; background: var(--accent-color)20; color: var(--accent-color); border-radius: 4px; font-size: 12px; font-weight: 600; width: fit-content;">${fullLog.request_method}</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.request_endpoint ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Endpoint:</span>
+                                        <span style="font-family: monospace; font-size: 11px;">${fullLog.request_endpoint}</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.referrer ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Referrer:</span>
+                                        <span style="font-family: monospace; font-size: 11px; word-break: break-all;">${fullLog.referrer}</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.session_id ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Session ID:</span>
+                                        <span style="font-family: monospace; font-size: 11px;">${fullLog.session_id}</span>
+                                    </div>
+                                ` : ''}
                             </div>
                         </div>
                     ` : ''}
@@ -1810,6 +1849,45 @@ async function showLogDetailsWithNavigation(logIndex) {
                                     <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
                                         <span style="font-weight: 600; color: var(--text-secondary);">Location:</span>
                                         <span>${fullLog.geo_location.city || 'Unknown'}, ${fullLog.geo_location.region || 'Unknown'}, ${fullLog.geo_location.country || 'Unknown'}</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.user_agent ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">User Agent:</span>
+                                        <span style="font-family: monospace; font-size: 10px; word-break: break-all;">${fullLog.user_agent}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- Request Information -->
+                    ${fullLog.request_method || fullLog.request_endpoint || fullLog.referrer || fullLog.session_id ? `
+                        <div>
+                            <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Request Information</h3>
+                            <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; display: grid; gap: 10px;">
+                                ${fullLog.request_method ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Method:</span>
+                                        <span style="display: inline-block; padding: 4px 12px; background: var(--accent-color)20; color: var(--accent-color); border-radius: 4px; font-size: 12px; font-weight: 600; width: fit-content;">${fullLog.request_method}</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.request_endpoint ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Endpoint:</span>
+                                        <span style="font-family: monospace; font-size: 11px;">${fullLog.request_endpoint}</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.referrer ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Referrer:</span>
+                                        <span style="font-family: monospace; font-size: 11px; word-break: break-all;">${fullLog.referrer}</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.session_id ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Session ID:</span>
+                                        <span style="font-family: monospace; font-size: 11px;">${fullLog.session_id}</span>
                                     </div>
                                 ` : ''}
                             </div>
