@@ -366,9 +366,10 @@ function setupSetupButton() {
 
 /**
  * Open settings modal
- * @param {string} defaultTab - The tab to open by default ('general' or 'api-keys')
+ * @param {string} defaultTab - The tab to open by default ('general', 'security', or 'api-keys')
+ * @param {string} focusElementId - Optional element ID to focus on after opening
  */
-async function openSettings(defaultTab = 'general') {
+async function openSettings(defaultTab = 'general', focusElementId = null) {
     const currentSimulations = localStorage.getItem(STORAGE_KEYS.SIMULATIONS) || APP_CONFIG.DEFAULT_SIMULATIONS;
     const currentMarketProfile = localStorage.getItem(STORAGE_KEYS.MARKET_PROFILE) || 'historical';
 
@@ -638,6 +639,21 @@ async function openSettings(defaultTab = 'general') {
     const { renderAPIKeysSettings } = await import('./components/settings/api-keys-settings.js');
     const apiKeysContent = modal.querySelector('#api-keys-content');
     await renderAPIKeysSettings(apiKeysContent);
+
+    // Focus on specific element if requested
+    if (focusElementId) {
+        setTimeout(() => {
+            const element = modal.querySelector(`#${focusElementId}`);
+            if (element) {
+                element.focus();
+                // If it's an input, highlight it
+                if (element.tagName === 'INPUT') {
+                    element.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.5)';
+                    element.style.borderColor = 'var(--accent-color)';
+                }
+            }
+        }, 100);
+    }
 
     // Activate the default tab
     if (defaultTab === 'api-keys') {

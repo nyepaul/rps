@@ -349,7 +349,7 @@ function setupActionsHandlers(container, profile) {
                     showError(errorMsg + ' Opening API settings...');
                     setTimeout(() => {
                         if (window.app && window.app.openSettings) {
-                            window.app.openSettings('api-keys');
+                            window.app.openSettings('api-keys', 'gemini-api-key');
                         }
                     }, 800);
                 } else {

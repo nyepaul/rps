@@ -104,7 +104,7 @@ function runStep2(profile) {
                 <ul style="padding-left: 20px;">
                     <li style="margin-bottom: 10px;">
                         <strong>API Key:</strong> Configure your Gemini API key
-                        <button onclick="window.app.openSettings('api-keys'); document.querySelector('.modal-overlay').remove();" style="margin-left: 10px; padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                        <button onclick="window.app.openSettings('api-keys', 'gemini-api-key'); document.querySelector('.modal-overlay').remove();" style="margin-left: 10px; padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
                             🔐 Configure API Keys
                         </button>
                     </li>
