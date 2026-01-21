@@ -695,7 +695,7 @@ def change_password():
 
 
 @auth_bp.route('/recovery-code/generate', methods=['POST'])
-@limiter.limit("3 per hour")
+@limiter.limit("10 per hour")
 def generate_recovery_code():
     """Generate a recovery code for the logged-in user.
     
