@@ -213,8 +213,8 @@ async function loadStatistics(container) {
                 <div id="unique-ips-stat" style="background: var(--bg-secondary); padding: 20px; border-radius: 12px; border-left: 4px solid var(--success-color); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;"
                      onmouseenter="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.2)'"
                      onmouseleave="this.style.transform='translateY(0)'; this.style.boxShadow='none'"
-                     title="Click to view IP locations on map">
-                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">Unique IPs 🗺️</div>
+                     title="Click to view list of unique IP addresses">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">Unique IPs 🌐</div>
                     <div style="font-size: 28px; font-weight: 700; color: var(--text-primary);">${stats.unique_ips.toLocaleString()}</div>
                 </div>
                 <div style="background: var(--bg-secondary); padding: 20px; border-radius: 12px; border-left: 4px solid var(--danger-color);">
@@ -232,7 +232,7 @@ async function loadStatistics(container) {
         const uniqueIpsStat = statsContainer.querySelector('#unique-ips-stat');
         if (uniqueIpsStat) {
             uniqueIpsStat.addEventListener('click', async () => {
-                await showIPLocationsMap();
+                await showIPListView();
             });
         }
 
@@ -1260,6 +1260,246 @@ async function exportLogs(container) {
     } catch (error) {
         console.error('Failed to export logs:', error);
         showError(`Failed to export logs: ${error.message}`);
+    }
+}
+
+/**
+ * Show IP list view modal with drill-down capabilities
+ */
+async function showIPListView() {
+    try {
+        // Fetch all unique IP locations directly from the server
+        const response = await apiClient.get('/api/admin/logs/ip-locations');
+        const uniqueIPs = response.locations || [];
+
+        if (uniqueIPs.length === 0) {
+            showError('No IP addresses available to display');
+            return;
+        }
+
+        // Sort by access count descending by default
+        uniqueIPs.sort((a, b) => b.count - a.count);
+
+        // Create modal
+        const modal = document.createElement('div');
+        modal.className = 'ip-list-modal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        `;
+
+        modal.innerHTML = `
+            <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; width: 90%; max-width: 1200px; max-height: 90vh; display: flex; flex-direction: column;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 15px;">
+                    <h2 style="margin: 0; font-size: 20px;">🌐 Unique IP Addresses (${uniqueIPs.length} Total)</h2>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button id="view-map-btn" style="padding: 10px 20px; background: var(--success-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: opacity 0.2s;">
+                            🗺️ View Map
+                        </button>
+                        <button class="close-modal-btn" style="background: transparent; border: none; font-size: 28px; cursor: pointer; color: var(--text-secondary); padding: 0; line-height: 1;">×</button>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 15px; display: flex; gap: 10px;">
+                    <input type="text" id="ip-search-input" placeholder="Search by IP address, city, or country..." style="flex: 1; padding: 10px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
+                    <select id="ip-sort-select" style="padding: 10px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); cursor: pointer;">
+                        <option value="count-desc">Most Active First</option>
+                        <option value="count-asc">Least Active First</option>
+                        <option value="ip-asc">IP Address (A-Z)</option>
+                        <option value="ip-desc">IP Address (Z-A)</option>
+                        <option value="country-asc">Country (A-Z)</option>
+                        <option value="country-desc">Country (Z-A)</option>
+                    </select>
+                </div>
+
+                <div id="ip-list-container" style="flex: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-primary);">
+                    <!-- IP list will be rendered here -->
+                </div>
+
+                <div style="margin-top: 15px; text-align: center;">
+                    <button class="close-modal-btn" style="padding: 10px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Add to document
+        document.body.appendChild(modal);
+
+        // Render IP list
+        const renderIPList = (ips) => {
+            const listContainer = modal.querySelector('#ip-list-container');
+
+            if (ips.length === 0) {
+                listContainer.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                        <div style="font-size: 48px; margin-bottom: 10px;">🔍</div>
+                        <div>No IP addresses match your search</div>
+                    </div>
+                `;
+                return;
+            }
+
+            listContainer.innerHTML = `
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead style="position: sticky; top: 0; background: var(--bg-tertiary); z-index: 1;">
+                        <tr style="border-bottom: 2px solid var(--border-color);">
+                            <th style="text-align: left; padding: 12px 20px; font-size: 12px; font-weight: 600;">IP Address</th>
+                            <th style="text-align: left; padding: 12px 20px; font-size: 12px; font-weight: 600;">Location</th>
+                            <th style="text-align: center; padding: 12px 20px; font-size: 12px; font-weight: 600;">Access Count</th>
+                            <th style="text-align: center; padding: 12px 20px; font-size: 12px; font-weight: 600;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${ips.map((ipData) => `
+                            <tr class="ip-list-row" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;"
+                                onmouseenter="this.style.background='var(--bg-tertiary)'"
+                                onmouseleave="this.style.background='transparent'">
+                                <td style="padding: 12px 20px;">
+                                    <span style="font-family: monospace; font-weight: 600; color: var(--accent-color);">${ipData.ip}</span>
+                                </td>
+                                <td style="padding: 12px 20px; font-size: 14px;">
+                                    <div style="font-weight: 500;">${ipData.city}</div>
+                                    <div style="font-size: 12px; color: var(--text-secondary);">${ipData.region}, ${ipData.country}</div>
+                                </td>
+                                <td style="padding: 12px 20px; text-align: center;">
+                                    <span style="font-size: 16px; font-weight: 700; color: var(--text-primary);">${ipData.count.toLocaleString()}</span>
+                                </td>
+                                <td style="padding: 12px 20px; text-align: center;">
+                                    <button class="view-ip-details-btn" data-ip="${ipData.ip}" data-city="${ipData.city}" data-region="${ipData.region}" data-country="${ipData.country}"
+                                            style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; transition: opacity 0.2s;">
+                                        📋 View Details
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            // Setup click handlers for detail buttons
+            listContainer.querySelectorAll('.view-ip-details-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const ip = btn.getAttribute('data-ip');
+                    const city = btn.getAttribute('data-city');
+                    const region = btn.getAttribute('data-region');
+                    const country = btn.getAttribute('data-country');
+                    showIPAccessDetails(ip, city, region, country);
+                });
+                btn.addEventListener('mouseenter', () => btn.style.opacity = '0.8');
+                btn.addEventListener('mouseleave', () => btn.style.opacity = '1');
+            });
+
+            // Make rows clickable too
+            listContainer.querySelectorAll('.ip-list-row').forEach(row => {
+                row.addEventListener('click', (e) => {
+                    if (!e.target.classList.contains('view-ip-details-btn')) {
+                        const btn = row.querySelector('.view-ip-details-btn');
+                        btn.click();
+                    }
+                });
+            });
+        };
+
+        // Initial render
+        renderIPList(uniqueIPs);
+
+        // Setup search functionality
+        const searchInput = modal.querySelector('#ip-search-input');
+        searchInput.addEventListener('input', () => {
+            const searchTerm = searchInput.value.toLowerCase();
+            const filtered = uniqueIPs.filter(ip =>
+                ip.ip.toLowerCase().includes(searchTerm) ||
+                ip.city.toLowerCase().includes(searchTerm) ||
+                ip.region.toLowerCase().includes(searchTerm) ||
+                ip.country.toLowerCase().includes(searchTerm)
+            );
+            renderIPList(filtered);
+        });
+
+        // Setup sort functionality
+        const sortSelect = modal.querySelector('#ip-sort-select');
+        sortSelect.addEventListener('change', () => {
+            const sortValue = sortSelect.value;
+            const searchTerm = searchInput.value.toLowerCase();
+
+            // Apply current filter
+            let filtered = uniqueIPs.filter(ip =>
+                ip.ip.toLowerCase().includes(searchTerm) ||
+                ip.city.toLowerCase().includes(searchTerm) ||
+                ip.region.toLowerCase().includes(searchTerm) ||
+                ip.country.toLowerCase().includes(searchTerm)
+            );
+
+            // Apply sort
+            switch(sortValue) {
+                case 'count-desc':
+                    filtered.sort((a, b) => b.count - a.count);
+                    break;
+                case 'count-asc':
+                    filtered.sort((a, b) => a.count - b.count);
+                    break;
+                case 'ip-asc':
+                    filtered.sort((a, b) => a.ip.localeCompare(b.ip));
+                    break;
+                case 'ip-desc':
+                    filtered.sort((a, b) => b.ip.localeCompare(a.ip));
+                    break;
+                case 'country-asc':
+                    filtered.sort((a, b) => a.country.localeCompare(b.country));
+                    break;
+                case 'country-desc':
+                    filtered.sort((a, b) => b.country.localeCompare(a.country));
+                    break;
+            }
+
+            renderIPList(filtered);
+        });
+
+        // Setup "View Map" button
+        const viewMapBtn = modal.querySelector('#view-map-btn');
+        viewMapBtn.addEventListener('click', async () => {
+            await showIPLocationsMap();
+        });
+        viewMapBtn.addEventListener('mouseenter', () => viewMapBtn.style.opacity = '0.8');
+        viewMapBtn.addEventListener('mouseleave', () => viewMapBtn.style.opacity = '1');
+
+        // Setup close handlers
+        modal.querySelectorAll('.close-modal-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                modal.remove();
+            });
+        });
+
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+
+        // Close on Escape key
+        const escHandler = (e) => {
+            if (e.key === 'Escape') {
+                modal.remove();
+                document.removeEventListener('keydown', escHandler);
+            }
+        };
+        document.addEventListener('keydown', escHandler);
+
+    } catch (error) {
+        console.error('Failed to load IP list:', error);
+        showError(`Failed to load IP list: ${error.message}`);
     }
 }
 
