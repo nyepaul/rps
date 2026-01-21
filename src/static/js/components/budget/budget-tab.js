@@ -99,7 +99,10 @@ export function renderBudgetTab(container) {
             </div>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 12px;">
-                <!-- Left Column: Summary and College -->
+                <!-- Left Column: Expense Section -->
+                <div id="expense-section"></div>
+
+                <!-- Right Column: Summary and College -->
                 <div style="display: flex; flex-direction: column; gap: 12px;">
                     <!-- College Expenses Section -->
                     <div id="college-expenses-section"></div>
@@ -107,9 +110,6 @@ export function renderBudgetTab(container) {
                     <!-- Income/Investment Info (Simplified) -->
                     <div id="income-section"></div>
                 </div>
-
-                <!-- Right Column: Expense Section -->
-                <div id="expense-section"></div>
             </div>
         </div>
     `;
