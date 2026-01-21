@@ -10,19 +10,15 @@ import { showLoading, showError, createElement, showSuccess } from '../../utils/
 export function renderWelcomeTab(container) {
     container.innerHTML = `
         <div style="max-width: 900px; margin: 0 auto; padding: var(--space-3);">
-            <h1 style="font-size: 28px; margin-bottom: var(--space-5); text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                Retirement Planning System
-            </h1>
-
             <!-- Overview Wizard -->
             <div style="background: var(--bg-secondary); border-radius: 8px; padding: var(--space-4); margin-bottom: var(--space-4); border: 1px solid var(--border-color);">
                 <div id="getting-started-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3); cursor: pointer; user-select: none;">
                     <h2 style="font-size: 18px; margin: 0;">📚 Getting Started Guide</h2>
                     <button id="toggle-wizard-btn" style="padding: var(--space-1) var(--space-3); background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px;">
-                        Show Guide
+                        Hide Guide
                     </button>
                 </div>
-                <div id="wizard-content" style="display: none;">
+                <div id="wizard-content" style="display: block;">
                     <div id="wizard-steps"></div>
                     <div style="display: flex; gap: var(--space-3); justify-content: space-between; margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--border-color);">
                         <button id="wizard-prev" style="padding: var(--space-2) var(--space-4); background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-weight: 600;">
