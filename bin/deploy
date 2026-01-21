@@ -16,10 +16,35 @@ TARGET_DIR="/var/www/rps.pan2.app"
 APACHE_CONFIG_SOURCE="${SOURCE_DIR}/apache2/rps.pan2.app.conf"
 APACHE_CONFIG_TARGET="/etc/apache2/sites-available/rps.pan2.app.conf"
 SERVICE_NAME="rps"
+PREV_COMMIT_FILE="$TARGET_DIR/DEPLOYED_COMMIT"
+
+# --- 1. PRE-DEPLOYMENT INFO ---
+
+# Extract version information from source (fail gracefully if missing)
+VERSION="unknown"
+RELEASE_DATE="unknown"
+RELEASE_NOTES="unknown"
+if [ -f "$SOURCE_DIR/src/__version__.py" ]; then
+    VERSION=$(grep '^__version__' "$SOURCE_DIR/src/__version__.py" | cut -d'"' -f2)
+    RELEASE_DATE=$(grep '^__release_date__' "$SOURCE_DIR/src/__version__.py" | cut -d'"' -f2)
+    RELEASE_NOTES=$(grep '^__release_notes__' "$SOURCE_DIR/src/__version__.py" | cut -d'"' -f2)
+fi
 
 echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${GREEN}║              RPS Deployment to Production                      ║${NC}"
+echo -e "${GREEN}║              Version: $VERSION                            ║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
+echo ""
+
+# Show Tech Details Early
+echo -e "${YELLOW}🔧 Deployment Specifications:${NC}"
+echo "   Source Directory: $SOURCE_DIR"
+echo "   Target Directory: $TARGET_DIR"
+echo "   Service Name:     $SERVICE_NAME"
+echo "   Python Version:   $(python3 --version | cut -d' ' -f2)"
+echo "   OS:               $(lsb_release -ds 2>/dev/null || cat /etc/os-release | grep PRETTY_NAME | cut -d'"' -f2 || uname -sr)"
+echo "   Disk Space:       $(df -h "$TARGET_DIR" | tail -1 | awk '{print $4 " available on " $6}')"
+echo "   Memory:           $(free -h | grep Mem | awk '{print $2 " total, " $4 " free"}')"
 echo ""
 
 # Check if running as root or with sudo
@@ -28,6 +53,14 @@ if [ "$EUID" -ne 0 ]; then
     echo "Usage: sudo ./bin/deploy"
     exit 1
 fi
+
+# Capture previous commit before pulling or modifying anything
+PREV_COMMIT=""
+if [ -f "$PREV_COMMIT_FILE" ]; then
+    PREV_COMMIT=$(cat "$PREV_COMMIT_FILE")
+fi
+
+# --- 2. DEPLOYMENT STEPS ---
 
 # Pull latest code from git
 echo -e "${YELLOW}→ Pulling latest code from git...${NC}"
@@ -42,7 +75,7 @@ mkdir -p "$TARGET_DIR"
 
 # Copy application files (excluding venv, cache, data, logs, etc.)
 echo -e "${YELLOW}→ Syncing application files...${NC}"
-RSYNC_OUTPUT=$(rsync -a --delete \
+rsync -a --delete \
     --exclude='*.pyc' \
     --exclude='__pycache__' \
     --exclude='src/venv' \
@@ -60,7 +93,8 @@ RSYNC_OUTPUT=$(rsync -a --delete \
     --exclude='.DS_Store' \
     --exclude='*.swp' \
     --exclude='*.swo' \
-    "$SOURCE_DIR/" "$TARGET_DIR/" 2>&1)
+    --exclude='DEPLOYED_COMMIT' \
+    "$SOURCE_DIR/" "$TARGET_DIR/"
 echo -e "  ✓ Files synced"
 
 # Create necessary directories
@@ -180,16 +214,31 @@ StandardError=append:$TARGET_DIR/logs/rps-error.log
 WantedBy=multi-user.target
 EOF
 
-# Validate application can start
+# Validate application can start (with timeout)
 echo -e "${YELLOW}→ Validating application...${NC}"
 cd "$TARGET_DIR"
-VALIDATION_OUTPUT=$("$TARGET_DIR/venv/bin/python" -c "from src.app import create_app; create_app('production')" 2>&1)
-if [ $? -ne 0 ]; then
-    echo -e "${RED}  ✗ Application failed to load${NC}"
-    echo "$VALIDATION_OUTPUT"
-    exit 1
+if command -v timeout >/dev/null 2>&1; then
+    TIMEOUT_CMD="timeout 15s"
+else
+    TIMEOUT_CMD=""
 fi
-echo -e "  ✓ Application validated"
+
+# Show real-time output for validation to diagnose hangs
+set +e
+VALIDATION_ERROR=$( $TIMEOUT_CMD "$TARGET_DIR/venv/bin/python" -c "from src.app import create_app; create_app('production'); print('Application factory successfully loaded.')" 2>&1 )
+RET_CODE=$?
+set -e
+
+if [ $RET_CODE -eq 124 ]; then
+    echo -e "${RED}  ✗ Application validation timed out (15s).${NC}"
+    echo -e "    ${YELLOW}Note: This often happens if Redis is not running or ENCRYPTION_KEY is missing.${NC}"
+elif [ $RET_CODE -ne 0 ]; then
+    echo -e "${RED}  ✗ Application failed to load:${NC}"
+    echo "$VALIDATION_ERROR" | sed 's/^/    /'
+    exit 1
+else
+    echo -e "  ✓ Application validated: $(echo "$VALIDATION_ERROR" | tail -1)"
+fi
 
 # Reload systemd
 echo -e "${YELLOW}→ Restarting services...${NC}"
@@ -210,56 +259,61 @@ fi
 
 echo -e "  ✓ RPS service restarted"
 
-# Check service status and extract version
+# --- 3. FINAL REPORT ---
+
+# Get current git info
+cd "$SOURCE_DIR"
+CURRENT_COMMIT_FULL=$(git rev-parse HEAD)
+GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+GIT_SUBJECT=$(git log -1 --format=%s 2>/dev/null || echo "unknown")
+
 echo ""
 echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${GREEN}║                    DEPLOYMENT COMPLETE                         ║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
-# Extract and display version prominently
-if [ -f "$TARGET_DIR/src/__version__.py" ]; then
-    VERSION=$(grep '^__version__' "$TARGET_DIR/src/__version__.py" | cut -d'"' -f2)
-    RELEASE_DATE=$(grep '^__release_date__' "$TARGET_DIR/src/__version__.py" | cut -d'"' -f2)
-    RELEASE_NOTES=$(grep '^__release_notes__' "$TARGET_DIR/src/__version__.py" | cut -d'"' -f2)
-    
-    # Get Git info
-    GIT_COMMIT=$(cd "$SOURCE_DIR" && git rev-parse --short HEAD 2>/dev/null || echo "unknown")
-    GIT_SUBJECT=$(cd "$SOURCE_DIR" && git log -1 --format=%s 2>/dev/null || echo "unknown")
-
-    echo -e "${GREEN}📦 Version:${NC}      $VERSION"
-    echo -e "${GREEN}📅 Released:${NC}     $RELEASE_DATE"
-    echo -e "${GREEN}🚀 Deployed:${NC}     $(date '+%Y-%m-%d %H:%M:%S')"
-    echo -e "${GREEN}Commit:${NC}       $GIT_COMMIT - $GIT_SUBJECT"
-    echo -e "${GREEN}📝 Changes:${NC}      $RELEASE_NOTES"
-    echo ""
-fi
-
-# Technical details
-echo -e "${YELLOW}🔧 Technical Details:${NC}"
-echo "   Deployed to:      $TARGET_DIR"
-echo "   Service:          $SERVICE_NAME"
-echo "   Python:           $(python3 --version | cut -d' ' -f2)"
-echo "   Gunicorn workers: 4"
-echo "   Port (internal):  5137"
-echo "   Port (external):  8087"
+echo -e "${GREEN}📦 Version:${NC}      $VERSION"
+echo -e "${GREEN}📅 Released:${NC}     $RELEASE_DATE"
+echo -e "${GREEN}🚀 Deployed:${NC}     $(date '+%Y-%m-%d %H:%M:%S')"
+echo -e "${GREEN}Commit:${NC}       $GIT_COMMIT - $GIT_SUBJECT"
+echo -e "${GREEN}📝 Changes:${NC}      $RELEASE_NOTES"
 echo ""
 
-# Service status
+# --- TECH REPORT SECTION ---
+echo -e "${YELLOW}📋 Deployment Tech Report (Changelog):${NC}"
+if [ -n "$PREV_COMMIT" ] && [ "$PREV_COMMIT" != "$CURRENT_COMMIT_FULL" ]; then
+     echo "   Changes since last deployment ($PREV_COMMIT):"
+     echo "   --------------------------------------------"
+     git --no-pager log --pretty=format:"   * %h - %s (%an, %ar)" "$PREV_COMMIT..HEAD"
+     echo ""
+     echo ""
+     echo "   Files modified:"
+     git --no-pager diff --stat "$PREV_COMMIT..HEAD" | sed 's/^/   /'
+elif [ "$PREV_COMMIT" == "$CURRENT_COMMIT_FULL" ]; then
+     echo "   No code changes detected since last deployment."
+else
+     echo "   First deployment with tracking or history unavailable."
+     echo "   Recent commits:"
+     git --no-pager log -n 5 --pretty=format:"   * %h - %s (%an, %ar)"
+fi
+echo ""
+
+# Final Status
 SERVICE_STATUS=$(systemctl is-active "$SERVICE_NAME")
 if [ "$SERVICE_STATUS" = "active" ]; then
     echo -e "${GREEN}✓ Service Status:${NC} Running"
+    SERVICE_PID=$(systemctl show -p MainPID --value "$SERVICE_NAME")
+    UPTIME=$(ps -p "$SERVICE_PID" -o etime= | xargs)
+    echo "   Main PID:         $SERVICE_PID (uptime: $UPTIME)"
 else
     echo -e "${RED}✗ Service Status:${NC} $SERVICE_STATUS"
 fi
-
-# Show running process info
-SERVICE_PID=$(systemctl show -p MainPID --value "$SERVICE_NAME")
-if [ "$SERVICE_PID" != "0" ]; then
-    UPTIME=$(ps -p "$SERVICE_PID" -o etime= | xargs)
-    echo "   Main PID:         $SERVICE_PID (uptime: $UPTIME)"
-fi
 echo ""
+
+# Save current commit for next time
+echo "$CURRENT_COMMIT_FULL" > "$PREV_COMMIT_FILE"
+chown www-data:www-data "$PREV_COMMIT_FILE"
 
 # Access URLs
 echo -e "${YELLOW}🌐 Access URLs:${NC}"

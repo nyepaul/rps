@@ -10,6 +10,7 @@ from src.extensions import limiter
 from src.services.encryption_service import EncryptionService
 from src.services.enhanced_audit_logger import EnhancedAuditLogger
 from src.utils.error_sanitizer import sanitize_pydantic_error
+from typing import Optional
 from pydantic import BaseModel, EmailStr, validator, ValidationError
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
