@@ -416,7 +416,7 @@ class PasswordResetRequest:
             cursor.execute('''
                 INSERT INTO password_reset_requests (user_id, status, request_ip, created_at)
                 VALUES (?, 'pending', ?, ?)
-            ''', (user_id, ip_address, datetime.now()))
+            ''', (user_id, ip_address, datetime.now().isoformat()))
             return cursor.lastrowid
 
     @staticmethod
@@ -445,7 +445,7 @@ class PasswordResetRequest:
 
     def mark_processed(self, admin_id):
         self.status = 'processed'
-        self.processed_at = datetime.now()
+        self.processed_at = datetime.now().isoformat()
         self.processed_by = admin_id
         with db.get_connection() as conn:
             conn.execute('''
