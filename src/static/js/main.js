@@ -399,6 +399,9 @@ async function openSettings(defaultTab = 'general') {
                 <button class="settings-tab active" data-settings-tab="general" style="padding: 10px 20px; background: transparent; border: none; border-bottom: 3px solid var(--accent-color); cursor: pointer; font-weight: 600; color: var(--accent-color); transition: all 0.2s;">
                     General
                 </button>
+                <button class="settings-tab" data-settings-tab="security" style="padding: 10px 20px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s;">
+                    🛡️ Security
+                </button>
                 <button class="settings-tab" data-settings-tab="api-keys" style="padding: 10px 20px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s;">
                     🔐 API Keys
                 </button>
@@ -539,6 +542,27 @@ async function openSettings(defaultTab = 'general') {
             </div>
             </div>
 
+            <!-- Security Settings Tab -->
+            <div id="settings-security" class="settings-tab-content" style="display: none;">
+                <div style="margin-bottom: 25px;">
+                    <h3 style="font-size: 16px; margin-bottom: 12px; color: var(--text-secondary);">Account Recovery</h3>
+                    <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                        <p style="margin-top: 0; font-size: 14px; line-height: 1.5;">
+                            A <strong>Recovery Code</strong> is the only way to recover your encrypted data if you forget your password and lose access to your email.
+                        </p>
+                        <div id="recovery-code-container" style="display: none; margin: 15px 0;">
+                            <div style="background: #f8f9fa; padding: 15px; border: 1px dashed #ccc; border-radius: 6px; text-align: center;">
+                                <div style="font-family: monospace; font-size: 24px; font-weight: bold; letter-spacing: 2px; color: #333; margin-bottom: 10px;" id="recovery-code-display"></div>
+                                <div style="color: #dc3545; font-size: 12px; font-weight: 600;">⚠️ SAVE THIS CODE NOW. IT WILL NOT BE SHOWN AGAIN.</div>
+                            </div>
+                        </div>
+                        <button id="generate-recovery-btn" style="background: var(--accent-color); color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                            <span>🔐</span> Generate New Recovery Code
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- API Keys Tab -->
             <div id="settings-api-keys" class="settings-tab-content" style="display: none;">
                 <div id="api-keys-content">Loading...</div>
@@ -616,6 +640,41 @@ async function openSettings(defaultTab = 'general') {
         const profile = APP_CONFIG.MARKET_PROFILES[e.target.value];
         modal.querySelector('#market-profile-description').textContent = profile.description;
     });
+
+    // Generate Recovery Code
+    const generateRecoveryBtn = modal.querySelector('#generate-recovery-btn');
+    if (generateRecoveryBtn) {
+        generateRecoveryBtn.addEventListener('click', async () => {
+            if (!confirm('Generate a new recovery code? This will invalidate any previous code.')) {
+                return;
+            }
+
+            try {
+                generateRecoveryBtn.disabled = true;
+                generateRecoveryBtn.textContent = 'Generating...';
+
+                const response = await apiClient.post('/api/auth/recovery-code/generate');
+                
+                const codeDisplay = modal.querySelector('#recovery-code-display');
+                const codeContainer = modal.querySelector('#recovery-code-container');
+                
+                if (codeDisplay && codeContainer) {
+                    codeDisplay.textContent = response.recovery_code;
+                    codeContainer.style.display = 'block';
+                }
+                
+                import('./utils/dom.js').then(({ showSuccess }) => {
+                    showSuccess('Recovery code generated successfully!');
+                });
+            } catch (error) {
+                console.error('Failed to generate recovery code:', error);
+                alert('Failed to generate recovery code: ' + (error.message || 'Unknown error'));
+            } finally {
+                generateRecoveryBtn.disabled = false;
+                generateRecoveryBtn.innerHTML = '<span>🔐</span> Generate New Recovery Code';
+            }
+        });
+    }
 
     modal.querySelector('#save-settings-btn').addEventListener('click', () => {
         // Save simulations setting

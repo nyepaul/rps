@@ -17,6 +17,8 @@ echo "  Retirement Planning System - Comprehensive Tests"
 echo "==================================================="
 echo ""
 
+
+
 # ---------------------------------------------------------
 # 1. Health Check
 # ---------------------------------------------------------
@@ -24,40 +26,67 @@ echo "1. Health Check..."
 health_response=$(curl -s $BASE_URL/health)
 status=$(echo "$health_response" | get_json_value "['status']")
 
+
+
 if [ "$status" == "healthy" ]; then
+
     echo "   ✓ System is healthy"
+
 else
+
     echo "   ✗ Health check failed: $health_response"
+
     exit 1
+
 fi
+
 echo ""
+
+
 
 # ---------------------------------------------------------
 # 2. System Settings
 # ---------------------------------------------------------
+
 echo "2. System Settings..."
+
 echo "   Setting a test setting..."
 curl -s -X POST $BASE_URL/api/system/settings \
   -H "Content-Type: application/json" \
   -d '{"test_setting": "test_value"}' > /dev/null
 
+
+
 settings=$(curl -s $BASE_URL/api/system/settings)
 test_value=$(echo "$settings" | get_json_value "['test_setting']")
 
+
+
 if [ "$test_value" == "test_value" ]; then
+
     echo "   ✓ System settings updated and retrieved"
+
 else
+
     echo "   ✗ System settings test failed"
+
 fi
+
 echo ""
+
+
 
 # ---------------------------------------------------------
 # 3. Profile Management
 # ---------------------------------------------------------
+
 echo "3. Profile Management..."
 
+
+
 # Create Profile
-echo "   Creating '$TEST_PROFILE'..."
+
+echo "   Creating '$TEST_PROFILE' நான"
 cat > /tmp/profile.json << EOF
 {
   "person1": {"name": "Test User", "birth_date": "1980-01-01", "retirement_date": "2045-01-01", "social_security": 2000},
@@ -78,39 +107,65 @@ cat > /tmp/profile.json << EOF
 }
 EOF
 
+
+
 create_status=$(curl -s -o /dev/null -w "%{http_code}" -X POST $BASE_URL/api/profile/$TEST_PROFILE \
   -H "Content-Type: application/json" \
   -d @/tmp/profile.json)
 
-if [ "$create_status" -eq 200 ]; then
+
+
+if [ "$create_status" -eq 200 ] || [ "$create_status" -eq 201 ]; then
+
     echo "   ✓ Profile created"
+
 else
+
     echo "   ✗ Failed to create profile (Status: $create_status)"
+
 fi
 
+
+
 # List Profiles
+
 echo "   Listing profiles..."
 profiles=$(curl -s $BASE_URL/api/profiles)
 if echo "$profiles" | grep -q "$TEST_PROFILE"; then
+
     echo "   ✓ '$TEST_PROFILE' found in list"
+
 else
+
     echo "   ✗ '$TEST_PROFILE' NOT found in list"
+
 fi
 
+
+
 # Get Profile
-echo "   Getting '$TEST_PROFILE'..."
+
+echo "   Getting '$TEST_PROFILE' நான"
 profile_data=$(curl -s $BASE_URL/api/profile/$TEST_PROFILE)
 if echo "$profile_data" | grep -q "Test User"; then
+
     echo "   ✓ Profile data verified"
+
 else
+
     echo "   ✗ Failed to retrieve profile data"
+
 fi
+
 echo ""
+
+
 
 # ---------------------------------------------------------
 # 4. Financial Analysis
 # ---------------------------------------------------------
-echo "4. Financial Analysis..."
+
+echo "4. Financial Analysis நான"
 cat > /tmp/analysis_input.json << EOF
 {
   "person1": {
@@ -138,26 +193,43 @@ cat > /tmp/analysis_input.json << EOF
 }
 EOF
 
+
+
 analysis_response=$(curl -s -X POST $BASE_URL/api/analysis \
   -H "Content-Type: application/json" \
   -d @/tmp/analysis_input.json)
 
+
+
 if echo "$analysis_response" | grep -q "monte_carlo"; then
+
     echo "   ✓ Analysis completed successfully"
+
     success_rate=$(echo "$analysis_response" | get_json_value "['monte_carlo']['success_rate']")
+
     echo "   - Monte Carlo Success Rate: ${success_rate}%"
+
 else
+
     echo "   ✗ Analysis failed"
+
 fi
+
 echo ""
+
+
 
 # ---------------------------------------------------------
 # 5. Scenarios
 # ---------------------------------------------------------
-echo "5. Scenarios..."
+
+echo "5. Scenarios நான"
+
+
 
 # Create Scenario
-echo "   Creating Test Scenario..."
+
+echo "   Creating Test Scenario நான"
 cat > /tmp/scenario.json << EOF
 {
     "name": "Test Scenario $TIMESTAMP",
@@ -166,56 +238,99 @@ cat > /tmp/scenario.json << EOF
 }
 EOF
 
+
+
 scenario_response=$(curl -s -X POST $BASE_URL/api/scenarios \
   -H "Content-Type: application/json" \
   -d @/tmp/scenario.json)
 
 scenario_id=$(echo "$scenario_response" | get_json_value "['id']")
 
+
+
 if [ "$scenario_id" != "None" ] && [ -n "$scenario_id" ]; then
+
     echo "   ✓ Scenario created (ID: $scenario_id)"
+
 else
+
     echo "   ✗ Failed to create scenario"
+
 fi
+
+
 
 # List Scenarios
-echo "   Listing scenarios..."
+
+echo "   Listing scenarios நான"
 scenarios_list=$(curl -s $BASE_URL/api/scenarios)
 if echo "$scenarios_list" | grep -q "Test Scenario $TIMESTAMP"; then
+
     echo "   ✓ Scenario found in list"
+
 else
+
     echo "   ✗ Scenario NOT found in list"
+
 fi
+
+
 
 # Get Scenario Detail
+
 if [ -n "$scenario_id" ]; then
-    echo "   Getting scenario details..."
+
+    echo "   Getting scenario details நான"
+
     scenario_detail=$(curl -s $BASE_URL/api/scenarios/$scenario_id)
+
     if echo "$scenario_detail" | grep -q "Test Scenario $TIMESTAMP"; then
+
         echo "   ✓ Scenario details verified"
+
     else
+
         echo "   ✗ Failed to retrieve scenario details"
+
     fi
 
+
+
     # Delete Scenario
-    echo "   Deleting scenario..."
+
+    echo "   Deleting scenario நான"
+
     delete_response=$(curl -s -X DELETE $BASE_URL/api/scenarios/$scenario_id)
+
     status=$(echo "$delete_response" | get_json_value "['status']")
+
     if [ "$status" == "success" ]; then
+
         echo "   ✓ Scenario deleted"
+
     else
+
         echo "   ✗ Failed to delete scenario"
+
     fi
+
 fi
+
 echo ""
+
+
 
 # ---------------------------------------------------------
 # 6. Action Items
 # ---------------------------------------------------------
-echo "6. Action Items..."
+
+echo "6. Action Items நான"
+
+
 
 # Create Action Item
-echo "   Creating Action Item..."
+
+echo "   Creating Action Item நான"
 cat > /tmp/action_item.json << EOF
 {
     "category": "Test Category",
@@ -226,59 +341,100 @@ cat > /tmp/action_item.json << EOF
 }
 EOF
 
+
+
 action_response=$(curl -s -X POST $BASE_URL/api/action-items \
   -H "Content-Type: application/json" \
   -d @/tmp/action_item.json)
 
-action_id=$(echo "$action_response" | get_json_value "['id']")
+
+action_id=$(echo "$action_response" | get_json_value "['action_item']['id']")
+
+
 
 if [ "$action_id" != "None" ] && [ -n "$action_id" ]; then
+
     echo "   ✓ Action item created (ID: $action_id)"
+
 else
+
     echo "   ✗ Failed to create action item"
+
 fi
+
+
 
 # Get Action Items
-echo "   Listing action items for profile..."
+
+echo "   Listing action items for profile நான"
 items_list=$(curl -s "$BASE_URL/api/action-items?profile_name=$TEST_PROFILE")
 if echo "$items_list" | grep -q "Test Description $TIMESTAMP"; then
+
     echo "   ✓ Action item found in list"
+
 else
+
     echo "   ✗ Action item NOT found in list"
+
 fi
 
+
+
 # Update Action Item
+
 if [ -n "$action_id" ]; then
-    echo "   Updating action item status..."
-    curl -s -X PUT $BASE_URL/api/action-items \
+
+    echo "   Updating action item status நான"
+
+    curl -s -X PUT $BASE_URL/api/action-item/$action_id \
       -H "Content-Type: application/json" \
-      -d "{\"id\": $action_id, \"status\": \"completed\"}" > /dev/null
+      -d "{\"status\": \"completed\"}" > /dev/null
+
     
+
     # Verify update
+
     updated_list=$(curl -s "$BASE_URL/api/action-items?profile_name=$TEST_PROFILE")
+
     if echo "$updated_list" | grep -q "completed"; then
+
         echo "   ✓ Action item status updated"
+
     else
+
         echo "   ✗ Action item status update failed"
+
     fi
 
+
+
     # Delete Action Item
-    echo "   Deleting action item..."
-    curl -s -X DELETE $BASE_URL/api/action-items \
-      -H "Content-Type: application/json" \
-      -d "{\"id\": $action_id}" > /dev/null
+
+    echo "   Deleting action item நான"
+
+    curl -s -X DELETE $BASE_URL/api/action-item/$action_id \
+      -H "Content-Type: application/json" > /dev/null
+
       
+
     # Verify deletion
+
     final_list=$(curl -s "$BASE_URL/api/action-items?profile_name=$TEST_PROFILE")
+
     if echo "$final_list" | grep -q "Test Description $TIMESTAMP"; then
+
         echo "   ✗ Action item deletion failed"
+
     else
+
         echo "   ✓ Action item deleted"
+
     fi
+
 fi
 
 # Generate Action Items
-echo "   Generating Action Items from Analysis..."
+echo "   Generating Action Items from Analysis நான"
 generate_result=$(curl -s -X POST $BASE_URL/api/generate-action-items \
   -H "Content-Type: application/json" \
   -d "{\"analysis\": $analysis_response, \"profile_name\": \"$TEST_PROFILE\"}")
@@ -289,8 +445,8 @@ echo ""
 # ---------------------------------------------------------
 # 7. PDF Report
 # ---------------------------------------------------------
-echo "7. PDF Report..."
-echo "   Generating PDF report..."
+echo "7. PDF Report நான"
+echo "   Generating PDF report நான"
 # Construct request payload
 cat > /tmp/pdf_request.json << EOF
 {
@@ -314,9 +470,9 @@ echo ""
 # ---------------------------------------------------------
 # 8. Cleanup
 # ---------------------------------------------------------
-echo "8. Cleanup..."
+echo "8. Cleanup நான"
 # Cleanup Action Items
-echo "   Running action items deduplication cleanup..."
+echo "   Running action items deduplication cleanup நான"
 cleanup_response=$(curl -s -X POST $BASE_URL/api/action-items/cleanup)
 status=$(echo "$cleanup_response" | get_json_value "['status']")
 if [ "$status" == "success" ]; then
@@ -326,7 +482,7 @@ else
 fi
 
 # Delete Test Profile
-echo "   Deleting '$TEST_PROFILE'..."
+echo "   Deleting '$TEST_PROFILE' நான"
 curl -s -X DELETE $BASE_URL/api/profile/$TEST_PROFILE > /dev/null
 echo "   ✓ Test profile deleted"
 echo ""
@@ -334,7 +490,7 @@ echo ""
 # ---------------------------------------------------------
 # 9. AI Features (Conditional)
 # ---------------------------------------------------------
-echo "9. AI Features..."
+echo "9. AI Features நான"
 
 # Check for API Key
 API_KEY=""
@@ -351,7 +507,7 @@ else
 fi
 
 if [ -n "$API_KEY" ]; then
-    echo "   Testing Advisor Chat..."
+    echo "   Testing Advisor Chat நான"
     chat_response=$(curl -s -X POST $BASE_URL/api/advisor/chat \
       -H "Content-Type: application/json" \
       -d "{\"message\": \"Hello\", \"llm_provider\": \"$PROVIDER\", \"api_key\": \"$API_KEY\", \"profile_name\": \"main\"}")
@@ -363,7 +519,7 @@ if [ -n "$API_KEY" ]; then
         echo "   ✗ Advisor chat failed: $chat_response"
     fi
     
-    echo "   Testing Conversation History..."
+    echo "   Testing Conversation History நான"
     history_response=$(curl -s "$BASE_URL/api/advisor/history?profile_name=main")
     if echo "$history_response" | grep -q "Hello"; then
         echo "   ✓ Conversation history retrieved"
@@ -371,12 +527,13 @@ if [ -n "$API_KEY" ]; then
         echo "   ✗ Conversation history failed"
     fi
     
-    echo "   Clearing Conversation History..."
+    echo "   Clearing Conversation History நான"
     curl -s -X POST "$BASE_URL/api/advisor/clear?profile_name=main" > /dev/null
     echo "   ✓ History cleared"
 fi
 
 echo ""
+
 echo "==================================================="
 echo "  All Tests Complete!"
 echo "==================================================="
