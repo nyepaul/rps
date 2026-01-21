@@ -37,66 +37,66 @@ export async function renderAdminTab(container) {
     }
 
     container.innerHTML = `
-        <div style="max-width: 1400px; margin: 0 auto;">
+        <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-2) var(--space-3);">
             <!-- Header -->
-            <div style="margin-bottom: 30px;">
-                <h1 style="font-size: 28px; margin-bottom: 10px;">⚙️ Admin Dashboard</h1>
-                <p style="color: var(--text-secondary); margin: 0; font-size: 14px;">
-                    System administration, audit logs, and configuration management
+            <div style="margin-bottom: var(--space-3);">
+                <h1 style="font-size: var(--font-2xl); margin: 0;">⚙️ Admin Dashboard</h1>
+                <p style="color: var(--text-secondary); margin: 0; font-size: 13px;">
+                    System administration and audit logs
                 </p>
             </div>
 
             <!-- Admin Sub-Tabs -->
-            <div style="display: flex; gap: 10px; margin-bottom: 30px; border-bottom: 2px solid var(--border-color); padding-bottom: 0; overflow-x: visible; align-items: center;">
-                <button class="admin-subtab active" data-subtab="logs" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid var(--accent-color); cursor: pointer; font-weight: 600; color: var(--accent-color); transition: all 0.2s; white-space: nowrap;">
-                    📋 Audit Logs
+            <div style="display: flex; gap: 4px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 0; overflow-x: visible; align-items: center; background: var(--bg-secondary); border-radius: 6px 6px 0 0; padding: 0 10px;">
+                <button class="admin-subtab active" data-subtab="logs" style="padding: 10px 16px; background: transparent; border: none; border-bottom: 2px solid var(--accent-color); cursor: pointer; font-weight: 700; color: var(--accent-color); transition: all 0.2s; white-space: nowrap; font-size: 13px;">
+                    📋 Logs
                 </button>
 
                 <!-- User Section Dropdown -->
                 <div class="admin-group-dropdown" style="position: relative; display: inline-block;">
-                    <button class="admin-group-trigger" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap; display: flex; align-items: center; gap: 8px;">
-                        👥 User <span style="font-size: 10px;">▼</span>
+                    <button class="admin-group-trigger" style="padding: 10px 16px; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-weight: 700; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap; display: flex; align-items: center; gap: 6px; font-size: 13px;">
+                        👥 User <span style="font-size: 9px;">▼</span>
                     </button>
-                    <div class="admin-group-content" style="display: none; position: absolute; top: 100%; left: 0; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100; min-width: 200px; padding: 8px 0;">
-                        <button class="admin-subtab group-item" data-subtab="timeline" style="width: 100%; text-align: left; padding: 10px 20px; background: transparent; border: none; cursor: pointer; color: var(--text-secondary); font-weight: 500; transition: all 0.2s;">
-                            📖 User Timeline
+                    <div class="admin-group-content" style="display: none; position: absolute; top: 100%; left: 0; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100; min-width: 180px; padding: 4px 0;">
+                        <button class="admin-subtab group-item" data-subtab="timeline" style="width: 100%; text-align: left; padding: 8px 16px; background: transparent; border: none; cursor: pointer; color: var(--text-secondary); font-weight: 600; font-size: 12px;">
+                            📖 Timeline
                         </button>
-                        <button class="admin-subtab group-item" data-subtab="feedback" style="width: 100%; text-align: left; padding: 10px 20px; background: transparent; border: none; cursor: pointer; color: var(--text-secondary); font-weight: 500; transition: all 0.2s;">
+                        <button class="admin-subtab group-item" data-subtab="feedback" style="width: 100%; text-align: left; padding: 8px 16px; background: transparent; border: none; cursor: pointer; color: var(--text-secondary); font-weight: 600; font-size: 12px;">
                             💬 Feedback
                         </button>
-                        <button class="admin-subtab group-item" data-subtab="password_requests" style="width: 100%; text-align: left; padding: 10px 20px; background: transparent; border: none; cursor: pointer; color: var(--text-secondary); font-weight: 500; transition: all 0.2s;">
+                        <button class="admin-subtab group-item" data-subtab="password_requests" style="width: 100%; text-align: left; padding: 8px 16px; background: transparent; border: none; cursor: pointer; color: var(--text-secondary); font-weight: 600; font-size: 12px;">
                             🔑 Pwd Requests
                         </button>
-                        <button class="admin-subtab group-item" data-subtab="users" style="width: 100%; text-align: left; padding: 10px 20px; background: transparent; border: none; cursor: pointer; color: var(--text-secondary); font-weight: 500; transition: all 0.2s;">
+                        <button class="admin-subtab group-item" data-subtab="users" style="width: 100%; text-align: left; padding: 8px 16px; background: transparent; border: none; cursor: pointer; color: var(--text-secondary); font-weight: 600; font-size: 12px;">
                             👤 Accounts
                         </button>
-                        <button class="admin-subtab group-item" data-subtab="demo_management" style="width: 100%; text-align: left; padding: 10px 20px; background: transparent; border: none; cursor: pointer; color: var(--text-secondary); font-weight: 500; transition: all 0.2s;">
-                            🎭 Demo Management
+                        <button class="admin-subtab group-item" data-subtab="demo_management" style="width: 100%; text-align: left; padding: 8px 16px; background: transparent; border: none; cursor: pointer; color: var(--text-secondary); font-weight: 600; font-size: 12px;">
+                            🎭 Demo Mgmt
                         </button>
                     </div>
                 </div>
 
                 ${user.is_super_admin ? `
-                <button class="admin-subtab" data-subtab="roadmap" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap;">
+                <button class="admin-subtab" data-subtab="roadmap" style="padding: 10px 16px; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-weight: 700; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap; font-size: 13px;">
                     🗺️ Roadmap
                 </button>
-                <button class="admin-subtab" data-subtab="backups" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap;">
+                <button class="admin-subtab" data-subtab="backups" style="padding: 10px 16px; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-weight: 700; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap; font-size: 13px;">
                     💾 Backups
                 </button>
-                <button class="admin-subtab" data-subtab="reports" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap;">
+                <button class="admin-subtab" data-subtab="reports" style="padding: 10px 16px; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-weight: 700; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap; font-size: 13px;">
                     📊 Reports
                 </button>
                 ` : ''}
-                <button class="admin-subtab" data-subtab="config" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap;">
-                    ⚙️ Configuration
+                <button class="admin-subtab" data-subtab="config" style="padding: 10px 16px; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-weight: 700; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap; font-size: 13px;">
+                    ⚙️ Config
                 </button>
-                <button class="admin-subtab" data-subtab="system" style="padding: 12px 24px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap;">
-                    🖥️ System Info
+                <button class="admin-subtab" data-subtab="system" style="padding: 10px 16px; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-weight: 700; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap; font-size: 13px;">
+                    🖥️ System
                 </button>
             </div>
 
             <!-- Sub-tab Content -->
-            <div id="admin-subtab-content"></div>
+            <div id="admin-subtab-content" style="padding: 0;"></div>
         </div>
     `;
 

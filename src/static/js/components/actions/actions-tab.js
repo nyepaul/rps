@@ -28,34 +28,34 @@ export function renderActionsTab(container) {
     }
 
     container.innerHTML = `
-        <div style="max-width: 1000px; margin: 0 auto; padding: var(--space-5);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-6); flex-wrap: wrap; gap: var(--space-4);">
+        <div style="max-width: 1000px; margin: 0 auto; padding: var(--space-2) var(--space-3);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: var(--space-3); flex-wrap: wrap; gap: 8px;">
                 <div style="min-width: 0; flex: 1;">
-                    <h1 style="font-size: var(--font-3xl); margin-bottom: var(--space-3);">Action Items</h1>
-                    <p style="color: var(--text-secondary);">
-                        Profile: <strong>${profile.name}</strong>
+                    <h1 style="font-size: var(--font-2xl); margin: 0;">Action Items</h1>
+                    <p style="color: var(--text-secondary); font-size: 13px; margin: 0;">
+                        Recommendations for <strong>${profile.name}</strong>
                     </p>
                 </div>
-                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; flex-shrink: 0;">
-                    <button id="generate-actions-btn" style="padding: var(--space-3) var(--space-6); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-md); font-weight: 600; transition: all 0.2s ease;" onmouseover="this.style.background='var(--accent-hover)'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 2px 8px rgba(59, 130, 246, 0.3)';" onmouseout="this.style.background='var(--accent-color)'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-                        💡 Generate Recommendations
+                <div style="display: flex; gap: var(--space-2); flex-wrap: wrap; flex-shrink: 0;">
+                    <button id="generate-actions-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s ease;" onmouseover="this.style.background='var(--accent-hover)';" onmouseout="this.style.background='var(--accent-color)';">
+                        💡 Generate
                     </button>
-                    <button id="add-action-btn" style="padding: var(--space-3) var(--space-6); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-md);">
-                        + Add Action Item
+                    <button id="add-action-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                        + Add
                     </button>
                 </div>
             </div>
 
             <!-- Filter Tabs -->
-            <div style="display: flex; gap: var(--space-3); margin-bottom: var(--space-6); border-bottom: 2px solid var(--border-color); flex-wrap: wrap;">
-                <button class="filter-tab active" data-filter="all" style="padding: var(--space-3) var(--space-6); background: none; border: none; cursor: pointer; font-size: var(--font-md); font-weight: 600; border-bottom: 3px solid var(--accent-color); color: var(--accent-color);">
+            <div style="display: flex; gap: var(--space-2); margin-bottom: var(--space-3); border-bottom: 1px solid var(--border-color); flex-wrap: wrap;">
+                <button class="filter-tab active" data-filter="all" style="padding: 8px 12px; background: none; border: none; cursor: pointer; font-size: 13px; font-weight: 600; border-bottom: 2px solid var(--accent-color); color: var(--accent-color);">
                     All (<span id="count-all">0</span>)
                 </button>
-                <button class="filter-tab" data-filter="pending" style="padding: var(--space-3) var(--space-6); background: none; border: none; cursor: pointer; font-size: var(--font-md); color: var(--text-secondary); border-bottom: 3px solid transparent;">
+                <button class="filter-tab" data-filter="pending" style="padding: 8px 12px; background: none; border: none; cursor: pointer; font-size: 13px; color: var(--text-secondary); border-bottom: 2px solid transparent;">
                     To Do (<span id="count-pending">0</span>)
                 </button>
-                <button class="filter-tab" data-filter="completed" style="padding: var(--space-3) var(--space-6); background: none; border: none; cursor: pointer; font-size: var(--font-md); color: var(--text-secondary); border-bottom: 3px solid transparent;">
-                    Completed (<span id="count-completed">0</span>)
+                <button class="filter-tab" data-filter="completed" style="padding: 8px 12px; background: none; border: none; cursor: pointer; font-size: 13px; color: var(--text-secondary); border-bottom: 2px solid transparent;">
+                    Done (<span id="count-completed">0</span>)
                 </button>
             </div>
 
@@ -73,74 +73,77 @@ export function renderActionsTab(container) {
             }
             .action-item {
                 background: var(--bg-secondary);
-                padding: var(--space-5);
-                border-radius: 12px;
-                margin-bottom: var(--space-4);
+                padding: 12px;
+                border-radius: 8px;
+                margin-bottom: 8px;
                 display: flex;
-                gap: var(--space-4);
+                gap: 12px;
                 align-items: flex-start;
                 transition: all 0.2s;
-                border: 2px solid transparent;
+                border: 1px solid var(--border-color);
             }
             .action-item:hover {
                 border-color: var(--accent-color);
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px var(--shadow);
+                background: var(--bg-tertiary);
             }
             .action-item.completed {
-                opacity: 0.7;
+                opacity: 0.6;
             }
             .action-item.completed .action-title {
                 text-decoration: line-through;
             }
             .action-checkbox {
-                width: 24px;
-                height: 24px;
+                width: 18px;
+                height: 18px;
                 cursor: pointer;
-                margin-top: 4px;
+                margin-top: 2px;
             }
             .action-content {
                 flex: 1;
             }
             .action-title {
-                font-size: 18px;
-                font-weight: 600;
-                margin-bottom: 8px;
+                font-size: 14px;
+                font-weight: 700;
+                margin-bottom: 2px;
                 color: var(--text-primary);
             }
             .action-description {
                 color: var(--text-secondary);
-                margin-bottom: 10px;
-                line-height: 1.5;
+                margin-bottom: 6px;
+                line-height: 1.4;
+                font-size: 12px;
             }
             .action-meta {
                 display: flex;
-                gap: 15px;
-                font-size: 13px;
+                gap: 10px;
+                font-size: 11px;
                 color: var(--text-light);
             }
             .action-actions {
                 display: flex;
-                gap: 10px;
+                gap: 6px;
             }
             .action-btn {
-                padding: 6px 12px;
+                padding: 4px 8px;
                 border: none;
-                border-radius: 6px;
+                border-radius: 4px;
                 cursor: pointer;
-                font-size: 14px;
+                font-size: 11px;
+                font-weight: 600;
                 transition: all 0.2s;
             }
             .action-btn:hover {
                 transform: translateY(-1px);
             }
             .btn-edit {
-                background: var(--info-bg);
+                background: var(--bg-tertiary);
                 color: var(--accent-color);
+                border: 1px solid var(--border-color);
             }
             .btn-delete {
-                background: var(--danger-bg);
+                background: transparent;
                 color: var(--danger-color);
+                border: 1px solid var(--danger-color);
             }
         </style>
     `;

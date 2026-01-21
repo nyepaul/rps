@@ -25,13 +25,13 @@ export function renderAnalysisTab(container) {
 
     if (!profile) {
         container.innerHTML = `
-            <div style="text-align: center; padding: 60px 20px;">
-                <div style="font-size: 64px; margin-bottom: 20px;">📊</div>
-                <h2 style="margin-bottom: 15px;">No Profile Selected</h2>
-                <p style="color: var(--text-secondary); margin-bottom: 30px;">
+            <div style="text-align: center; padding: 40px 20px;">
+                <div style="font-size: 48px; margin-bottom: 15px;">📊</div>
+                <h2 style="margin-bottom: 10px;">No Profile Selected</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">
                     Please create or select a profile to run analysis.
                 </p>
-                <button onclick="window.app.showTab('welcome')" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <button onclick="window.app.showTab('welcome')" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">
                     Go to Welcome
                 </button>
             </div>
@@ -56,112 +56,90 @@ export function renderAnalysisTab(container) {
     };
 
     container.innerHTML = `
-        <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
-            <h1 style="font-size: 36px; margin-bottom: 10px;">Retirement Analysis</h1>
-            <p style="color: var(--text-secondary); margin-bottom: 30px;">
-                Profile: <strong>${profile.name}</strong>
-            </p>
+        <div style="max-width: 1200px; margin: 0 auto; padding: var(--space-2) var(--space-3);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: var(--space-3);">
+                <div>
+                    <h1 style="font-size: var(--font-2xl); margin: 0;">Retirement Analysis</h1>
+                    <p style="color: var(--text-secondary); margin: 0; font-size: 13px;">
+                        Monte Carlo simulations for <strong>${profile.name}</strong>
+                    </p>
+                </div>
+                <div id="scenario-loader-container" style="display: flex; gap: 8px; align-items: center;">
+                    <span style="font-size: 11px; color: var(--text-secondary); font-weight: 700;">LOAD SAVED:</span>
+                    <select id="saved-scenario-select" style="padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); font-size: 12px; min-width: 180px;">
+                        <option value="">-- Select Scenario --</option>
+                    </select>
+                </div>
+            </div>
 
             <!-- Analysis Configuration -->
-            <div class="analysis-panel">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; gap: 20px; flex-wrap: wrap;">
+            <div class="analysis-panel" style="padding: 12px; margin-bottom: var(--space-3); border: 1px solid var(--border-color);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
+                    <!-- Market Assumptions Selector -->
                     <div>
-                        <h2 style="font-size: 24px; margin: 0 0 10px 0;">Monte Carlo Simulation</h2>
-                        <button id="show-calculation-info" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;" title="Learn about the calculations" onmouseover="this.style.background='var(--accent-hover)'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 2px 8px rgba(59, 130, 246, 0.3)';" onmouseout="this.style.background='var(--accent-color)'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-                            <span>ℹ️</span> How It Works
-                        </button>
-                    </div>
-
-                    <!-- Scenario Loader -->
-                    <div id="scenario-loader-container" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                        <span style="font-size: 13px; color: var(--text-secondary); font-weight: 600; white-space: nowrap;">Load Saved:</span>
-                        <select id="saved-scenario-select" style="padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); font-size: 13px; min-width: 200px;">
-                            <option value="">-- Select Scenario --</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Market Assumptions Selector -->
-                <div style="margin-bottom: 25px;">
-                    <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px;">
-                        Market Assumptions
-                    </label>
-                    <select id="market-profile-select" style="width: 100%; padding: 12px 15px; font-size: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer;">
-                        ${Object.entries(profileCategories).map(([category, keys]) => `
-                            <optgroup label="${category}">
-                                ${keys.filter(key => APP_CONFIG.MARKET_PROFILES[key]).map(key => {
-                                    const mp = APP_CONFIG.MARKET_PROFILES[key];
-                                    const label = `${mp.name} (${(mp.stock_return_mean * 100).toFixed(1)}% / ${(mp.bond_return_mean * 100).toFixed(1)}% / ${(mp.inflation_mean * 100).toFixed(1)}%)`;
-                                    return `<option value="${key}" ${key === savedMarketProfile ? 'selected' : ''}>${label}</option>`;
-                                }).join('')}
-                            </optgroup>
-                        `).join('')}
-                    </select>
-                    <div id="market-profile-description" style="margin-top: 10px; padding: 12px 15px; background: var(--bg-primary); border-radius: 8px; border: 1px solid var(--border-color);">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <span style="font-weight: 600; color: var(--text-primary);">${marketProfile.name}</span>
-                            <small style="color: var(--accent-color); font-weight: 600;">CUSTOMIZABLE</small>
-                        </div>
-                        <p style="margin: 0 0 15px 0; color: var(--text-secondary); font-size: 14px;">${marketProfile.description}</p>
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; font-size: 13px;">
-                            <div class="form-group">
-                                <label style="font-size: 11px; margin-bottom: 4px; display: block;">Stock Return (%)</label>
-                                <input type="number" id="custom-stock-return" value="${(marketProfile.stock_return_mean * 100).toFixed(1)}" step="0.1" style="width: 100%; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
-                            </div>
-                            <div class="form-group">
-                                <label style="font-size: 11px; margin-bottom: 4px; display: block;">Bond Return (%)</label>
-                                <input type="number" id="custom-bond-return" value="${(marketProfile.bond_return_mean * 100).toFixed(1)}" step="0.1" style="width: 100%; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
-                            </div>
-                            <div class="form-group">
-                                <label style="font-size: 11px; margin-bottom: 4px; display: block;">Inflation (%)</label>
-                                <input type="number" id="custom-inflation" value="${(marketProfile.inflation_mean * 100).toFixed(1)}" step="0.1" style="width: 100%; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Spending Model Selector -->
-                <div style="margin-bottom: 25px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 15px;">
-                        <label style="font-weight: 600; font-size: 14px; margin: 0;">
-                            Spending Strategy (Retiree Behavior)
+                        <label style="display: block; margin-bottom: 4px; font-weight: 700; font-size: 12px; color: var(--accent-color);">
+                            MARKET ASSUMPTIONS
                         </label>
-                        <button id="spending-strategy-help-btn" style="background: none; border: 1px solid var(--border-color); color: var(--text-secondary); padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 6px; transition: all 0.2s; white-space: nowrap;">
-                            <span style="font-size: 14px;">ℹ️</span> How This Works
-                        </button>
-                    </div>
-                    <select id="spending-model-select" style="width: 100%; padding: 12px 15px; font-size: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer;">
-                        <option value="constant_real">Constant Inflation-Adjusted (Default)</option>
-                        <option value="retirement_smile">Retirement Smile (Reality Planning)</option>
-                        <option value="conservative_decline">Conservative Decline (Slow-Go)</option>
-                    </select>
-                    <div id="spending-model-description" style="margin-top: 10px; padding: 12px 15px; background: var(--bg-primary); border-radius: 8px; border: 1px solid var(--border-color);">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <span style="font-weight: 600; color: var(--text-primary);">Constant Inflation-Adjusted</span>
-                        </div>
-                        <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">
-                            Maintains purchasing power throughout retirement. Spending increases exactly with inflation every year. Standard conservative assumption.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Simulations Selector -->
-                <div style="display: flex; gap: 20px; align-items: flex-end; margin-bottom: 20px;">
-                    <div style="flex: 1;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px;">
-                            Number of Simulations
-                        </label>
-                        <select id="simulations-select" style="width: 100%; padding: 12px 15px; font-size: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer;">
-                            <option value="1000" ${parseInt(savedSimulations) === 1000 ? 'selected' : ''}>1,000 (Fast)</option>
-                            <option value="5000" ${parseInt(savedSimulations) === 5000 ? 'selected' : ''}>5,000 (Quick)</option>
-                            <option value="10000" ${parseInt(savedSimulations) === 10000 ? 'selected' : ''}>10,000 (Standard)</option>
-                            <option value="25000" ${parseInt(savedSimulations) === 25000 ? 'selected' : ''}>25,000 (Detailed)</option>
-                            <option value="50000" ${parseInt(savedSimulations) === 50000 ? 'selected' : ''}>50,000 (Maximum)</option>
+                        <select id="market-profile-select" style="width: 100%; padding: 8px; font-size: 13px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer;">
+                            ${Object.entries(profileCategories).map(([category, keys]) => `
+                                <optgroup label="${category}">
+                                    ${keys.filter(key => APP_CONFIG.MARKET_PROFILES[key]).map(key => {
+                                        const mp = APP_CONFIG.MARKET_PROFILES[key];
+                                        const label = `${mp.name} (${(mp.stock_return_mean * 100).toFixed(1)}% / ${(mp.bond_return_mean * 100).toFixed(1)}% / ${(mp.inflation_mean * 100).toFixed(1)}%)`;
+                                        return `<option value="${key}" ${key === savedMarketProfile ? 'selected' : ''}>${label}</option>`;
+                                    }).join('')}
+                                </optgroup>
+                            `).join('')}
                         </select>
+                        <div id="market-profile-description" style="margin-top: 8px; padding: 8px; background: var(--bg-primary); border-radius: 4px; border: 1px solid var(--border-color); font-size: 11px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <span style="font-weight: 700; color: var(--text-primary);">${marketProfile.name}</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                                <div class="form-group">
+                                    <label style="font-size: 9px; margin-bottom: 2px; display: block; opacity: 0.8;">Stock %</label>
+                                    <input type="number" id="custom-stock-return" value="${(marketProfile.stock_return_mean * 100).toFixed(1)}" step="0.1" style="width: 100%; padding: 2px 4px; border-radius: 3px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 11px;">
+                                </div>
+                                <div class="form-group">
+                                    <label style="font-size: 9px; margin-bottom: 2px; display: block; opacity: 0.8;">Bond %</label>
+                                    <input type="number" id="custom-bond-return" value="${(marketProfile.bond_return_mean * 100).toFixed(1)}" step="0.1" style="width: 100%; padding: 2px 4px; border-radius: 3px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 11px;">
+                                </div>
+                                <div class="form-group">
+                                    <label style="font-size: 9px; margin-bottom: 2px; display: block; opacity: 0.8;">Inflation %</label>
+                                    <input type="number" id="custom-inflation" value="${(marketProfile.inflation_mean * 100).toFixed(1)}" step="0.1" style="width: 100%; padding: 2px 4px; border-radius: 3px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 11px;">
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <button id="run-analysis-btn" class="primary-btn" style="padding: 12px 30px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; min-width: 150px;">
-                        Run Analysis
-                    </button>
+
+                    <!-- Right side: Spending & Run -->
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <label style="font-weight: 700; font-size: 12px; color: var(--accent-color);">SPENDING STRATEGY</label>
+                                <button id="spending-strategy-help-btn" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 11px; padding: 0;">ℹ️ Help</button>
+                            </div>
+                            <select id="spending-model-select" style="width: 100%; padding: 8px; font-size: 13px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer;">
+                                <option value="constant_real">Constant (Default)</option>
+                                <option value="retirement_smile">Retirement Smile</option>
+                                <option value="conservative_decline">Conservative Decline</option>
+                            </select>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 150px; gap: 10px; align-items: flex-end;">
+                            <div>
+                                <label style="display: block; margin-bottom: 4px; font-weight: 700; font-size: 12px; color: var(--accent-color);">SIMULATIONS</label>
+                                <select id="simulations-select" style="width: 100%; padding: 8px; font-size: 13px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer;">
+                                    <option value="1000" ${parseInt(savedSimulations) === 1000 ? 'selected' : ''}>1,000</option>
+                                    <option value="5000" ${parseInt(savedSimulations) === 5000 ? 'selected' : ''}>5,000</option>
+                                    <option value="10000" ${parseInt(savedSimulations) === 10000 ? 'selected' : ''}>10,000</option>
+                                </select>
+                            </div>
+                            <button id="run-analysis-btn" class="primary-btn" style="padding: 8px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 700; width: 100%;">
+                                RUN ANALYSIS
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 

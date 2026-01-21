@@ -67,12 +67,12 @@ function addAIEStyles() {
         }
 
         .aie-header {
-            padding: 20px 20px 10px 20px;
+            padding: 12px 16px 8px 16px;
         }
 
         .aie-header h2 {
-            margin: 0 0 5px 0;
-            font-size: 24px;
+            margin: 0 0 2px 0;
+            font-size: 18px;
             font-weight: 600;
             color: var(--text-primary);
         }
@@ -80,29 +80,29 @@ function addAIEStyles() {
         .aie-header .help-text {
             margin: 0;
             color: var(--text-secondary);
-            font-size: 14px;
+            font-size: 12px;
         }
 
         .aie-subtabs {
             display: flex;
             gap: 0;
-            border-bottom: 2px solid var(--border-color);
-            padding: 0 20px;
-            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 16px;
+            margin-bottom: 12px;
             background: var(--bg-secondary);
         }
 
         .aie-subtab {
-            padding: 12px 24px;
+            padding: 8px 16px;
             background: none;
             border: none;
-            border-bottom: 3px solid transparent;
+            border-bottom: 2px solid transparent;
             cursor: pointer;
-            font-size: 15px;
-            font-weight: 500;
+            font-size: 13px;
+            font-weight: 600;
             color: var(--text-secondary);
             transition: all 0.2s;
-            margin-bottom: -2px;
+            margin-bottom: -1px;
         }
 
         .aie-subtab:hover {
@@ -117,7 +117,7 @@ function addAIEStyles() {
         }
 
         #aie-subtab-content {
-            padding: 0 20px 20px 20px;
+            padding: 0 16px 16px 16px;
         }
 
         @media (max-width: 768px) {

@@ -48,184 +48,153 @@ export function renderAccountsTab(container) {
     const totalAssets = liquidAssets + retirementAssets + realEstateAssets + otherAssets;
 
     container.innerHTML = `
-        <div style="max-width: 1200px; margin: 0 auto; padding: var(--space-5);">
-            <h1 style="font-size: var(--font-3xl); margin-bottom: var(--space-3);">Account Management</h1>
-            <p style="color: var(--text-secondary); margin-bottom: var(--space-6);">
-                Profile: <strong>${profile.name}</strong>
-            </p>
+        <div style="max-width: 1200px; margin: 0 auto; padding: var(--space-2) var(--space-3);">
+            <div style="margin-bottom: var(--space-3);">
+                <h1 style="font-size: var(--font-2xl); margin: 0;">Account Management</h1>
+                <p style="color: var(--text-secondary); margin: 0; font-size: 13px;">
+                    Withdrawal strategy and asset allocation for <strong>${profile.name}</strong>
+                </p>
+            </div>
 
             <!-- Account Overview -->
-            <div style="background: var(--bg-secondary); padding: var(--space-6); border-radius: 12px; margin-bottom: var(--space-6);">
-                <h2 style="font-size: var(--font-2xl); margin-bottom: var(--space-5);">Account Summary</h2>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-5);">
-                    <div class="account-card" data-category="liquid" style="cursor: pointer;">
-                        <div class="account-icon">💵</div>
-                        <div class="account-type">Liquid Assets</div>
-                        <div class="account-balance">${formatCurrency(liquidAssets, 0)}</div>
-                        <div class="account-desc">Checking, savings, taxable investments</div>
+            <div style="background: var(--bg-secondary); padding: var(--space-3); border-radius: 8px; margin-bottom: var(--space-3); border: 1px solid var(--border-color);">
+                <h2 style="font-size: 16px; margin-bottom: var(--space-3); color: var(--accent-color);">💰 Account Summary</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-3);">
+                    <div class="account-card" data-category="liquid" style="cursor: pointer; padding: 12px; border-radius: 6px;">
+                        <div class="account-type" style="font-size: 10px; margin-bottom: 4px;">Liquid Assets</div>
+                        <div class="account-balance" style="font-size: 20px; margin-bottom: 2px;">${formatCurrency(liquidAssets, 0)}</div>
+                        <div class="account-desc" style="font-size: 10px;">Taxable accounts</div>
                     </div>
-                    <div class="account-card" data-category="retirement" style="cursor: pointer;">
-                        <div class="account-icon">🏦</div>
-                        <div class="account-type">Retirement Assets</div>
-                        <div class="account-balance">${formatCurrency(retirementAssets, 0)}</div>
-                        <div class="account-desc">401(k), IRA, Roth IRA accounts</div>
+                    <div class="account-card" data-category="retirement" style="cursor: pointer; padding: 12px; border-radius: 6px;">
+                        <div class="account-type" style="font-size: 10px; margin-bottom: 4px;">Retirement Assets</div>
+                        <div class="account-balance" style="font-size: 20px; margin-bottom: 2px;">${formatCurrency(retirementAssets, 0)}</div>
+                        <div class="account-desc" style="font-size: 10px;">401(k), IRA, Roth</div>
                     </div>
-                    <div class="account-card" data-category="total" style="cursor: pointer;">
-                        <div class="account-icon">📊</div>
-                        <div class="account-type">Total Assets</div>
-                        <div class="account-balance">${formatCurrency(totalAssets, 0)}</div>
-                        <div class="account-desc">Combined portfolio value</div>
+                    <div class="account-card" data-category="total" style="cursor: pointer; padding: 12px; border-radius: 6px;">
+                        <div class="account-type" style="font-size: 10px; margin-bottom: 4px;">Total Portfolio</div>
+                        <div class="account-balance" style="font-size: 20px; margin-bottom: 2px;">${formatCurrency(totalAssets, 0)}</div>
+                        <div class="account-desc" style="font-size: 10px;">Combined value</div>
                     </div>
                 </div>
 
                 <!-- Asset List Container -->
-                <div id="asset-list-container" style="margin-top: var(--space-6); display: none; border-top: 1px solid var(--border-color); padding-top: var(--space-5); animation: fadeIn 0.3s ease-in-out;">
+                <div id="asset-list-container" style="margin-top: 15px; display: none; border-top: 1px solid var(--border-color); padding-top: 15px; animation: fadeIn 0.3s ease-in-out;">
                     <!-- Content will be injected here -->
                 </div>
             </div>
 
             <!-- Withdrawal Strategy -->
-            <div style="background: var(--bg-secondary); padding: var(--space-6); border-radius: 12px; margin-bottom: var(--space-6);">
-                <h2 style="font-size: var(--font-2xl); margin-bottom: var(--space-5);">Withdrawal Strategy</h2>
-                <p style="color: var(--text-secondary); margin-bottom: var(--space-5);">
-                    Plan which accounts to withdraw from first to minimize taxes and maximize portfolio longevity. Click each section to see constituent accounts.
-                </p>
+            <div style="background: var(--bg-secondary); padding: var(--space-3); border-radius: 8px; margin-bottom: var(--space-3); border: 1px solid var(--border-color);">
+                <h2 style="font-size: 16px; margin-bottom: var(--space-3); color: var(--accent-color);">🔄 Withdrawal Strategy</h2>
 
-                <!-- Current State Section -->
-                <div style="background: var(--bg-primary); padding: var(--space-5); border-radius: 8px; margin-bottom: var(--space-5); border: 2px solid var(--accent-color);">
-                    <h3 style="font-size: var(--font-lg); margin-bottom: var(--space-4); color: var(--accent-color);">📊 Current State</h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4);">
-                        ${renderCurrentWithdrawalState(data)}
-                    </div>
-                </div>
-
-                <div style="display: grid; gap: var(--space-4);">
-                    <!-- Taxable Section -->
-                    <div class="strategy-card" data-target="list-taxable" style="background: var(--bg-primary); padding: var(--space-5); border-radius: 8px; border-left: 4px solid var(--success-color); cursor: pointer; transition: transform 0.2s;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <h3 style="margin-bottom: var(--space-3);">1️⃣ Taxable Accounts First</h3>
-                            <span class="toggle-icon">▶</span>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: var(--space-3);">
+                    <!-- Current State & Tips -->
+                    <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+                        <div style="background: var(--bg-primary); padding: 12px; border-radius: 6px; border: 1px solid var(--accent-color);">
+                            <h3 style="font-size: 13px; margin-bottom: 10px; color: var(--accent-color); font-weight: 700;">📊 ACTIVE RATE</h3>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                ${renderCurrentWithdrawalState(data)}
+                            </div>
                         </div>
-                        <p style="color: var(--text-secondary); font-size: var(--font-base);">
-                            Withdraw from taxable accounts early to allow tax-advantaged accounts to grow longer.
-                        </p>
-                        <div id="list-taxable" style="display: none; margin-top: var(--space-4); border-top: 1px solid var(--border-color); padding-top: var(--space-3);">
-                            ${renderConstituentAccounts(taxableAccounts)}
+                        <div style="padding: 12px; background: var(--warning-bg); border-radius: 6px; border: 1px solid var(--warning-color);">
+                            <strong style="font-size: 12px;">💡 Planning Keys:</strong>
+                            <ul style="margin: 8px 0 0 0; padding-left: 18px; color: var(--text-secondary); font-size: 11px; line-height: 1.4;">
+                                <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Required Minimum Distributions (RMDs)" data-title="RMD Rules" style="cursor: pointer; color: var(--accent-color); margin-bottom: 4px;">RMDs start at age 73</li>
+                                <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Social Security Taxation" data-title="Social Security Taxes" style="cursor: pointer; color: var(--accent-color); margin-bottom: 4px;">Social Security may be taxable</li>
+                                <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Federal Income Tax Brackets (2024)" data-title="Tax Bracket Management" style="cursor: pointer; color: var(--accent-color);">Active bracket management</li>
+                            </ul>
                         </div>
                     </div>
 
-                    <!-- Tax-Deferred Section -->
-                    <div class="strategy-card" data-target="list-deferred" style="background: var(--bg-primary); padding: var(--space-5); border-radius: 8px; border-left: 4px solid var(--info-color); cursor: pointer; transition: transform 0.2s;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <h3 style="margin-bottom: var(--space-3);">2️⃣ Tax-Deferred Accounts Second</h3>
-                            <span class="toggle-icon">▶</span>
+                    <!-- Steps -->
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <!-- Taxable Section -->
+                        <div class="strategy-card" data-target="list-taxable" style="background: var(--bg-primary); padding: 10px; border-radius: 6px; border-left: 4px solid var(--success-color); cursor: pointer; border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <h3 style="margin: 0; font-size: 13px;">1️⃣ Taxable Accounts First</h3>
+                                <span class="toggle-icon" style="font-size: 10px;">▶</span>
+                            </div>
+                            <div id="list-taxable" style="display: none; margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 8px;">
+                                ${renderConstituentAccounts(taxableAccounts)}
+                            </div>
                         </div>
-                        <p style="color: var(--text-secondary); font-size: var(--font-base);">
-                            Traditional 401(k) and IRA withdrawals are taxed as ordinary income. Use after taxable accounts.
-                        </p>
-                        <div id="list-deferred" style="display: none; margin-top: var(--space-4); border-top: 1px solid var(--border-color); padding-top: var(--space-3);">
-                            ${renderConstituentAccounts(taxDeferredAccounts)}
+
+                        <!-- Tax-Deferred Section -->
+                        <div class="strategy-card" data-target="list-deferred" style="background: var(--bg-primary); padding: 10px; border-radius: 6px; border-left: 4px solid var(--info-color); cursor: pointer; border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <h3 style="margin: 0; font-size: 13px;">2️⃣ Tax-Deferred Second</h3>
+                                <span class="toggle-icon" style="font-size: 10px;">▶</span>
+                            </div>
+                            <div id="list-deferred" style="display: none; margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 8px;">
+                                ${renderConstituentAccounts(taxDeferredAccounts)}
+                            </div>
+                        </div>
+
+                        <!-- Roth Section -->
+                        <div class="strategy-card" data-target="list-roth" style="background: var(--bg-primary); padding: 10px; border-radius: 6px; border-left: 4px solid var(--accent-color); cursor: pointer; border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <h3 style="margin: 0; font-size: 13px;">3️⃣ Roth Accounts Last</h3>
+                                <span class="toggle-icon" style="font-size: 10px;">▶</span>
+                            </div>
+                            <div id="list-roth" style="display: none; margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 8px;">
+                                ${renderConstituentAccounts(rothAccounts)}
+                            </div>
                         </div>
                     </div>
-
-                    <!-- Roth Section -->
-                    <div class="strategy-card" data-target="list-roth" style="background: var(--bg-primary); padding: var(--space-5); border-radius: 8px; border-left: 4px solid var(--accent-color); cursor: pointer; transition: transform 0.2s;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <h3 style="margin-bottom: var(--space-3);">3️⃣ Roth Accounts Last</h3>
-                            <span class="toggle-icon">▶</span>
-                        </div>
-                        <p style="color: var(--text-secondary); font-size: var(--font-base);">
-                            Let Roth accounts grow tax-free as long as possible. These provide maximum flexibility.
-                        </p>
-                        <div id="list-roth" style="display: none; margin-top: var(--space-4); border-top: 1px solid var(--border-color); padding-top: var(--space-3);">
-                            ${renderConstituentAccounts(rothAccounts)}
-                        </div>
-                    </div>
-                </div>
-
-                <div style="margin-top: var(--space-5); padding: var(--space-5); background: var(--warning-bg); border-radius: 8px;">
-                    <strong>⚠️ Important Considerations:</strong>
-                    <ul style="margin: var(--space-3) 0; padding-left: var(--space-5); color: var(--text-secondary);">
-                        <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Required Minimum Distributions (RMDs)" data-title="RMD Rules" style="cursor: pointer; color: var(--accent-color); text-decoration: underline; margin-bottom: var(--space-1);">
-                            Required Minimum Distributions (RMDs) start at age 73
-                        </li>
-                        <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Social Security Taxation" data-title="Social Security Taxes" style="cursor: pointer; color: var(--accent-color); text-decoration: underline; margin-bottom: var(--space-1);">
-                            Social Security benefits may be taxed depending on income
-                        </li>
-                        <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Federal Income Tax Brackets (2024)" data-title="Tax Bracket Management" style="cursor: pointer; color: var(--accent-color); text-decoration: underline; margin-bottom: var(--space-1);">
-                            Consider tax bracket management in each year
-                        </li>
-                        <li class="learn-link" data-skill="healthcare-gap-SKILL.md" data-section="Bridging the Gap (Pre-65)" data-title="Healthcare Subsidies" style="cursor: pointer; color: var(--accent-color); text-decoration: underline;">
-                            Healthcare subsidies may be affected by income
-                        </li>
-                    </ul>
                 </div>
             </div>
 
             <!-- Rebalancing and Asset Allocation -->
-            <div style="background: var(--bg-secondary); padding: var(--space-6); border-radius: 12px; margin-bottom: var(--space-6);" id="rebalancing-section">
-                <h2 style="font-size: var(--font-2xl); margin-bottom: var(--space-5);">Asset Allocation & Rebalancing</h2>
-                <p style="color: var(--text-secondary); margin-bottom: var(--space-5);">
-                    Analyze your current aggregate allocation across all accounts and get tax-efficient rebalancing suggestions.
-                </p>
-
-                <div style="background: var(--bg-primary); padding: var(--space-5); border-radius: 8px; margin-bottom: var(--space-5); border: 1px solid var(--border-color);">
-                    <h3 style="font-size: var(--font-lg); margin-bottom: var(--space-4);">Set Target Allocation</h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-5);">
-                        <div class="form-group">
-                            <label>Stocks (%)</label>
-                            <input type="number" id="target-stocks" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" value="60" min="0" max="100">
-                        </div>
-                        <div class="form-group">
-                            <label>Bonds (%)</label>
-                            <input type="number" id="target-bonds" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" value="40" min="0" max="100">
-                        </div>
-                        <div class="form-group">
-                            <label>Cash (%)</label>
-                            <input type="number" id="target-cash" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" value="0" min="0" max="100">
-                        </div>
-                    </div>
-                    <button id="run-rebalancing" style="margin-top: 20px; padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                        Analyze Allocation
-                    </button>
-                </div>
-
-                <div id="rebalancing-results" style="display: none; animation: fadeIn 0.3s ease-in-out;">
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
-                        <div>
-                            <h3 style="font-size: 18px; margin-bottom: 15px;">Current vs. Target</h3>
-                            <div style="overflow-x: auto;">
-                                <table style="width: 100%; border-collapse: collapse;">
-                                    <thead>
-                                        <tr style="text-align: left; color: var(--text-secondary); font-size: 13px; border-bottom: 1px solid var(--border-color);">
-                                            <th style="padding: 10px;">Asset Class</th>
-                                            <th style="padding: 10px;">Current</th>
-                                            <th style="padding: 10px;">Target</th>
-                                            <th style="padding: 10px; text-align: right;">Diff ($)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="allocation-table-body">
-                                        <!-- Filled dynamically -->
-                                    </tbody>
-                                </table>
+            <div style="background: var(--bg-secondary); padding: var(--space-3); border-radius: 8px; margin-bottom: var(--space-3); border: 1px solid var(--border-color);" id="rebalancing-section">
+                <h2 style="font-size: 16px; margin-bottom: var(--space-3); color: var(--accent-color);">⚖️ Allocation & Rebalancing</h2>
+                
+                <div style="display: grid; grid-template-columns: 300px 1fr; gap: var(--space-3);">
+                    <div style="background: var(--bg-primary); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color);">
+                        <h3 style="font-size: 12px; margin-bottom: 10px; font-weight: 700;">TARGETS</h3>
+                        <div style="display: grid; gap: 8px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <label style="font-size: 11px;">Stocks %</label>
+                                <input type="number" id="target-stocks" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); font-size: 12px;" value="60">
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <label style="font-size: 11px;">Bonds %</label>
+                                <input type="number" id="target-bonds" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); font-size: 12px;" value="40">
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <label style="font-size: 11px;">Cash %</label>
+                                <input type="number" id="target-cash" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); font-size: 12px;" value="0">
                             </div>
                         </div>
-                        <div>
-                            <h3 style="font-size: 18px; margin-bottom: 15px;">Recommendations</h3>
-                            <ul id="rebalancing-recommendations" style="padding-left: 0; list-style: none;">
-                                <!-- Filled dynamically -->
-                            </ul>
+                        <button id="run-rebalancing" style="margin-top: 12px; width: 100%; padding: 8px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                            Analyze
+                        </button>
+                    </div>
+
+                    <div id="rebalancing-results" style="display: none;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div style="overflow-x: auto;">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                                    <thead>
+                                        <tr style="text-align: left; color: var(--text-secondary); border-bottom: 1px solid var(--border-color);">
+                                            <th style="padding: 4px;">Class</th>
+                                            <th style="padding: 4px;">Cur</th>
+                                            <th style="padding: 4px;">Tgt</th>
+                                            <th style="padding: 4px; text-align: right;">Diff</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="allocation-table-body"></tbody>
+                                </table>
+                            </div>
+                            <div id="rebalancing-recommendations" style="font-size: 11px; color: var(--text-secondary);"></div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- RMD Estimates -->
-            <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px;">
-                <h2 style="font-size: 24px; margin-bottom: 20px;">RMD Calculations & Tracking</h2>
-                <div id="rmd-content">
-                    <!-- Filled dynamically -->
-                </div>
+            <div style="background: var(--bg-secondary); padding: var(--space-3); border-radius: 8px; border: 1px solid var(--border-color);">
+                <h2 style="font-size: 16px; margin-bottom: var(--space-3); color: var(--accent-color);">📅 RMD Projections</h2>
+                <div id="rmd-content"></div>
             </div>
         </div>
 

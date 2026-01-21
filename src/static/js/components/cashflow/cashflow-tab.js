@@ -63,20 +63,20 @@ export function renderCashFlowTab(container) {
     }
 
     container.innerHTML = `
-        <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-5);">
+        <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-2) var(--space-3);">
             <!-- Header -->
-            <div style="margin-bottom: var(--space-5);">
-                <h1 style="font-size: var(--font-3xl); margin-bottom: var(--space-2);">💸 Cash Flow</h1>
-                <p style="color: var(--text-secondary); margin: 0; font-size: var(--font-base);">
-                    Visualize money coming in and going out over time. Investment withdrawals follow the tax-efficient strategy (Taxable → Tax-Deferred → Roth). Select a scenario to compare your projected portfolio with Monte Carlo simulation results.
+            <div style="margin-bottom: var(--space-3);">
+                <h1 style="font-size: var(--font-2xl); margin-bottom: 2px;">💸 Cash Flow</h1>
+                <p style="color: var(--text-secondary); margin: 0; font-size: 13px;">
+                    Visualize money coming in and going out over time. Investment withdrawals follow the tax-efficient strategy.
                 </p>
             </div>
 
             <!-- Controls -->
-            <div style="background: var(--bg-secondary); padding: var(--space-4); border-radius: 8px; margin-bottom: var(--space-5); display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap;">
+            <div style="background: var(--bg-secondary); padding: var(--space-2) var(--space-3); border-radius: 8px; margin-bottom: var(--space-3); display: flex; gap: var(--space-3); align-items: flex-end; flex-wrap: wrap; border: 1px solid var(--border-color);">
                 <div>
-                    <label style="display: block; margin-bottom: var(--space-1); font-size: var(--font-sm); color: var(--text-secondary);">Time Period</label>
-                    <select id="time-period" style="padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-base);">
+                    <label style="display: block; margin-bottom: 2px; font-size: 11px; font-weight: 600; color: var(--text-secondary);">Time Period</label>
+                    <select id="time-period" style="padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
                         <option value="12">Next 12 months</option>
                         <option value="24">Next 24 months</option>
                         <option value="36">Next 36 months</option>
@@ -86,44 +86,45 @@ export function renderCashFlowTab(container) {
                         <option value="240">Next 20 years</option>
                         <option value="300">Next 25 years</option>
                         <option value="360">Next 30 years</option>
-                        <option value="life" selected>Through Life Expectancy (Age ${lifeExpectancyAge})</option>
+                        <option value="life" selected>Life (Age ${lifeExpectancyAge})</option>
                     </select>
                 </div>
                 <div>
-                    <label style="display: block; margin-bottom: var(--space-1); font-size: var(--font-sm); color: var(--text-secondary);">View Type</label>
-                    <select id="view-type" style="padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-base);">
+                    <label style="display: block; margin-bottom: 2px; font-size: 11px; font-weight: 600; color: var(--text-secondary);">View</label>
+                    <select id="view-type" style="padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
                         <option value="monthly">Monthly</option>
                         <option value="annual" selected>Annual</option>
                     </select>
                 </div>
                 <div>
-                    <label style="display: block; margin-bottom: var(--space-1); font-size: var(--font-sm); color: var(--text-secondary);">Scenario (Monte Carlo)</label>
-                    <select id="scenario-select" style="padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-base); min-width: 200px;">
+                    <label style="display: block; margin-bottom: 2px; font-size: 11px; font-weight: 600; color: var(--text-secondary);">Compare Scenario</label>
+                    <select id="scenario-select" style="padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px; min-width: 150px;">
                         <option value="">None</option>
                     </select>
                 </div>
-                <button id="refresh-chart" style="padding: var(--space-2) var(--space-4); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-base); margin-top: var(--space-5);">
-                    Refresh
-                </button>
-                <button id="reset-zoom" style="padding: var(--space-2) var(--space-4); background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: var(--font-base); margin-top: var(--space-5);">
-                    Reset Zoom
-                </button>
-                <button id="reset-metrics" style="padding: var(--space-2) var(--space-4); background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: var(--font-base); margin-top: var(--space-5);">
-                    Show All Metrics
-                </button>
+                <div style="display: flex; gap: 4px;">
+                    <button id="refresh-chart" style="padding: 4px 10px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
+                        Refresh
+                    </button>
+                    <button id="reset-zoom" style="padding: 4px 10px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px;">
+                        Reset Zoom
+                    </button>
+                </div>
             </div>
 
             <!-- Chart -->
-            <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                <canvas id="cashflow-chart" style="max-height: 400px;"></canvas>
+            <div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--border-color);">
+                <canvas id="cashflow-chart" style="max-height: 350px;"></canvas>
             </div>
 
             <!-- Summary Cards -->
-            <div id="summary-cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-bottom: 20px;"></div>
+            <div id="summary-cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin-bottom: 12px;"></div>
 
             <!-- Detailed Table -->
-            <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px;">
-                <h2 style="font-size: 18px; margin-bottom: 16px;" id="table-title">Cash Flow Details</h2>
+            <div style="background: var(--bg-secondary); padding: var(--space-3); border-radius: 8px; border: 1px solid var(--border-color);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <h2 style="font-size: 15px; margin: 0;" id="table-title">Cash Flow Details</h2>
+                </div>
                 <div id="cashflow-table" style="overflow-x: auto;"></div>
             </div>
         </div>
@@ -1073,32 +1074,33 @@ function renderSummaryCards(container, chartData) {
 
     const summaryContainer = container.querySelector('#summary-cards');
     summaryContainer.innerHTML = `
-        <div class="metric-card" data-metric="work-income" style="background: linear-gradient(135deg, #2ed573, #26d07c); padding: 16px; border-radius: 8px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-            <div style="font-size: 11px; opacity: 0.9; margin-bottom: 4px;">Work Income</div>
-            <div style="font-size: 20px; font-weight: 700; margin-bottom: 2px;">${formatCurrency(totalWorkIncome, 0)}</div>
-            <div style="font-size: 10px; opacity: 0.8;">Salary & other work</div>
+        <div class="metric-card" data-metric="work-income" style="background: linear-gradient(135deg, #2ed573, #26d07c); padding: 10px; border-radius: 6px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+            <div style="font-size: 10px; opacity: 0.9; margin-bottom: 2px;">Work Income</div>
+            <div style="font-size: 16px; font-weight: 700; margin-bottom: 1px;">${formatCurrency(totalWorkIncome, 0)}</div>
+            <div style="font-size: 9px; opacity: 0.8;">Salary & other</div>
         </div>
-        <div class="metric-card" data-metric="retirement-benefits" style="background: linear-gradient(135deg, #3498db, #5faee3); padding: 16px; border-radius: 8px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-            <div style="font-size: 11px; opacity: 0.9; margin-bottom: 4px;">Retirement Benefits</div>
-            <div style="font-size: 20px; font-weight: 700; margin-bottom: 2px;">${formatCurrency(totalRetirementBenefits, 0)}</div>
-            <div style="font-size: 10px; opacity: 0.8;">Social Security & Pension</div>
+        <div class="metric-card" data-metric="retirement-benefits" style="background: linear-gradient(135deg, #3498db, #5faee3); padding: 10px; border-radius: 6px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+            <div style="font-size: 10px; opacity: 0.9; margin-bottom: 2px;">Retirement Benefits</div>
+            <div style="font-size: 16px; font-weight: 700; margin-bottom: 1px;">${formatCurrency(totalRetirementBenefits, 0)}</div>
+            <div style="font-size: 9px; opacity: 0.8;">SS & Pension</div>
         </div>
-        <div class="metric-card" data-metric="investment-withdrawals" style="background: linear-gradient(135deg, #9b59b6, #8e44ad); padding: 16px; border-radius: 8px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-            <div style="font-size: 11px; opacity: 0.9; margin-bottom: 4px;">Investment Withdrawals</div>
-            <div style="font-size: 20px; font-weight: 700; margin-bottom: 2px;">${formatCurrency(totalInvestmentIncome, 0)}</div>
-            <div style="font-size: 10px; opacity: 0.8;">Portfolio withdrawals</div>
+        <div class="metric-card" data-metric="investment-withdrawals" style="background: linear-gradient(135deg, #9b59b6, #8e44ad); padding: 10px; border-radius: 6px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+            <div style="font-size: 10px; opacity: 0.9; margin-bottom: 2px;">Withdrawals</div>
+            <div style="font-size: 16px; font-weight: 700; margin-bottom: 1px;">${formatCurrency(totalInvestmentIncome, 0)}</div>
+            <div style="font-size: 9px; opacity: 0.8;">Portfolio</div>
         </div>
-        <div class="metric-card" data-metric="expenses" style="background: linear-gradient(135deg, #ff6b6b, #ee5a6f); padding: 16px; border-radius: 8px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-            <div style="font-size: 11px; opacity: 0.9; margin-bottom: 4px;">Total Expenses</div>
-            <div style="font-size: 20px; font-weight: 700; margin-bottom: 2px;">${formatCurrency(totalExpenses, 0)}</div>
-            <div style="font-size: 10px; opacity: 0.8;">Avg: ${formatCurrency(avgMonthlyExpenses, 0)}/mo</div>
+        <div class="metric-card" data-metric="expenses" style="background: linear-gradient(135deg, #ff6b6b, #ee5a6f); padding: 10px; border-radius: 6px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+            <div style="font-size: 10px; opacity: 0.9; margin-bottom: 2px;">Expenses</div>
+            <div style="font-size: 16px; font-weight: 700; margin-bottom: 1px;">${formatCurrency(totalExpenses, 0)}</div>
+            <div style="font-size: 9px; opacity: 0.8;">Avg: ${formatCurrency(avgMonthlyExpenses, 0)}/mo</div>
         </div>
-        <div class="metric-card" data-metric="net-cash-flow" style="background: linear-gradient(135deg, ${totalNet >= 0 ? '#f1c40f, #f39c12' : '#e74c3c, #c0392b'}); padding: 16px; border-radius: 8px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-            <div style="font-size: 11px; opacity: 0.9; margin-bottom: 4px;">Net Cash Flow</div>
-            <div style="font-size: 20px; font-weight: 700; margin-bottom: 2px;">${totalNet >= 0 ? '+' : ''}${formatCurrency(totalNet, 0)}</div>
-            <div style="font-size: 10px; opacity: 0.8;">Avg: ${avgMonthlyNet >= 0 ? '+' : ''}${formatCurrency(avgMonthlyNet, 0)}/mo</div>
+        <div class="metric-card" data-metric="net-cash-flow" style="background: linear-gradient(135deg, ${totalNet >= 0 ? '#f1c40f, #f39c12' : '#e74c3c, #c0392b'}); padding: 10px; border-radius: 6px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+            <div style="font-size: 10px; opacity: 0.9; margin-bottom: 2px;">Net Cash Flow</div>
+            <div style="font-size: 16px; font-weight: 700; margin-bottom: 1px;">${totalNet >= 0 ? '+' : ''}${formatCurrency(totalNet, 0)}</div>
+            <div style="font-size: 9px; opacity: 0.8;">Avg: ${avgMonthlyNet >= 0 ? '+' : ''}${formatCurrency(avgMonthlyNet, 0)}/mo</div>
         </div>
     `;
+}
 }
 
 /**
@@ -1237,39 +1239,39 @@ function renderCashFlowTable(container, displayData, viewType) {
     tableContainer.innerHTML = `
         <table style="width: 100%; border-collapse: collapse;">
             <thead>
-                <tr style="background: var(--bg-tertiary); border-bottom: 2px solid var(--border-color);">
-                    <th style="text-align: left; padding: 10px; font-size: 12px; font-weight: 600;">${periodLabel}</th>
-                    <th style="text-align: right; padding: 10px; font-size: 12px; font-weight: 600;">Work</th>
-                    <th style="text-align: right; padding: 10px; font-size: 12px; font-weight: 600;">SS/Pension</th>
-                    <th style="text-align: right; padding: 10px; font-size: 12px; font-weight: 600;">Withdrawals</th>
-                    <th style="text-align: right; padding: 10px; font-size: 12px; font-weight: 600;">Expenses</th>
-                    <th style="text-align: right; padding: 10px; font-size: 12px; font-weight: 600;">Net</th>
-                    <th style="text-align: right; padding: 10px; font-size: 12px; font-weight: 600;">Portfolio</th>
+                <tr style="background: var(--bg-tertiary); border-bottom: 1px solid var(--border-color);">
+                    <th style="text-align: left; padding: 6px 10px; font-size: 11px; font-weight: 700;">${periodLabel}</th>
+                    <th style="text-align: right; padding: 6px 10px; font-size: 11px; font-weight: 700;">Work</th>
+                    <th style="text-align: right; padding: 6px 10px; font-size: 11px; font-weight: 700;">SS/Pension</th>
+                    <th style="text-align: right; padding: 6px 10px; font-size: 11px; font-weight: 700;">Draws</th>
+                    <th style="text-align: right; padding: 6px 10px; font-size: 11px; font-weight: 700;">Expenses</th>
+                    <th style="text-align: right; padding: 6px 10px; font-size: 11px; font-weight: 700;">Net</th>
+                    <th style="text-align: right; padding: 6px 10px; font-size: 11px; font-weight: 700;">Portfolio</th>
                 </tr>
             </thead>
             <tbody>
                 ${limitedData.map(period => `
                     <tr style="border-bottom: 1px solid var(--border-color); ${period.isRetired ? 'background: rgba(52, 152, 219, 0.05);' : ''}">
-                        <td style="padding: 8px 10px; font-size: 12px;">
+                        <td style="padding: 4px 10px; font-size: 11px;">
                             ${period.label}
-                            ${period.isRetired ? '<span style="font-size: 10px; color: var(--info-color); margin-left: 4px;">🏖️</span>' : ''}
+                            ${period.isRetired ? '<span style="font-size: 9px; color: var(--info-color); margin-left: 2px;">🏖️</span>' : ''}
                         </td>
-                        <td style="padding: 8px 10px; text-align: right; font-size: 12px; color: var(--success-color); font-weight: 500;">
+                        <td style="padding: 4px 10px; text-align: right; font-size: 11px; color: var(--success-color); font-weight: 500;">
                             ${period.workIncome > 0 ? formatCurrency(period.workIncome, 0) : '—'}
                         </td>
-                        <td style="padding: 8px 10px; text-align: right; font-size: 12px; color: var(--info-color); font-weight: 500;">
+                        <td style="padding: 4px 10px; text-align: right; font-size: 11px; color: var(--info-color); font-weight: 500;">
                             ${period.retirementBenefits > 0 ? formatCurrency(period.retirementBenefits, 0) : '—'}
                         </td>
-                        <td style="padding: 8px 10px; text-align: right; font-size: 12px; color: #9b59b6; font-weight: 500;">
+                        <td style="padding: 4px 10px; text-align: right; font-size: 11px; color: #9b59b6; font-weight: 500;">
                             ${period.investmentIncome > 0 ? formatCurrency(period.investmentIncome, 0) : '—'}
                         </td>
-                        <td style="padding: 8px 10px; text-align: right; font-size: 12px; color: var(--danger-color); font-weight: 500;">
+                        <td style="padding: 4px 10px; text-align: right; font-size: 11px; color: var(--danger-color); font-weight: 500;">
                             ${formatCurrency(period.expenses, 0)}
                         </td>
-                        <td style="padding: 8px 10px; text-align: right; font-size: 12px; font-weight: 600; color: ${period.netCashFlow >= 0 ? 'var(--success-color)' : 'var(--danger-color)'};">
+                        <td style="padding: 4px 10px; text-align: right; font-size: 11px; font-weight: 600; color: ${period.netCashFlow >= 0 ? 'var(--success-color)' : 'var(--danger-color)'};">
                             ${period.netCashFlow >= 0 ? '+' : ''}${formatCurrency(period.netCashFlow, 0)}
                         </td>
-                        <td style="padding: 8px 10px; text-align: right; font-size: 12px; font-weight: 600; color: var(--text-primary);">
+                        <td style="padding: 4px 10px; text-align: right; font-size: 11px; font-weight: 600; color: var(--text-primary);">
                             ${formatCurrency(period.portfolioValue || 0, 0)}
                         </td>
                     </tr>

@@ -71,37 +71,34 @@ function renderEmptyState(container, profile) {
 
 function renderComparisonView(container, profile, scenarios) {
     container.innerHTML = `
-        <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-5);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-6); flex-wrap: wrap; gap: var(--space-4);">
+        <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-2) var(--space-3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3); flex-wrap: wrap; gap: var(--space-4);">
                 <div style="min-width: 0; flex: 1;">
-                    <h1 style="font-size: var(--font-3xl); margin-bottom: var(--space-1);">Scenario Comparison</h1>
-                    <p style="color: var(--text-secondary);">
+                    <h1 style="font-size: var(--font-2xl); margin: 0;">Scenario Comparison</h1>
+                    <p style="color: var(--text-secondary); font-size: 13px; margin: 0;">
                         ${scenarios.length} saved scenario${scenarios.length !== 1 ? 's' : ''} for <strong>${profile.name}</strong>
                     </p>
                 </div>
-                <button onclick="window.app.showTab('analysis')" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; flex-shrink: 0;">
+                <button onclick="window.app.showTab('analysis')" style="padding: 6px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; flex-shrink: 0;">
                     + New Analysis
                 </button>
             </div>
 
             <!-- Comparison Table -->
-            <div style="background: var(--bg-secondary); border-radius: 12px; overflow: hidden; margin-bottom: 30px;">
+            <div style="background: var(--bg-secondary); border-radius: 8px; overflow: hidden; margin-bottom: 15px; border: 1px solid var(--border-color);">
                 <div style="overflow-x: auto;">
                     <table style="width: 100%; border-collapse: collapse; min-width: 800px;">
                         <thead>
-                            <tr style="background: var(--bg-tertiary); border-bottom: 2px solid var(--border-color);">
-                                <th style="padding: 16px; text-align: left; font-weight: 600; font-size: 13px; color: var(--text-secondary);">
-                                    <input type="checkbox" id="select-all-scenarios" title="Select all for comparison">
+                            <tr style="background: var(--bg-tertiary); border-bottom: 1px solid var(--border-color);">
+                                <th style="padding: 10px; text-align: left;">
+                                    <input type="checkbox" id="select-all-scenarios" title="Select all">
                                 </th>
-                                <th style="padding: 16px; text-align: left; font-weight: 600; font-size: 13px; color: var(--text-secondary);">SCENARIO</th>
-                                <th style="padding: 16px; text-align: center; font-weight: 600; font-size: 13px; color: var(--text-secondary);" title="The statistical probability that your portfolio remains above zero through the end of retirement (based on 10,000+ Monte Carlo trials).">
-                                    SUCCESS RATE ⓘ
-                                </th>
-                                <th style="padding: 16px; text-align: right; font-weight: 600; font-size: 13px; color: var(--text-secondary);">MEDIAN ENDING</th>
-                                <th style="padding: 16px; text-align: right; font-weight: 600; font-size: 13px; color: var(--text-secondary);">5TH PERCENTILE</th>
-                                <th style="padding: 16px; text-align: right; font-weight: 600; font-size: 13px; color: var(--text-secondary);">95TH PERCENTILE</th>
-                                <th style="padding: 16px; text-align: center; font-weight: 600; font-size: 13px; color: var(--text-secondary);">CREATED</th>
-                                <th style="padding: 16px; text-align: center; font-weight: 600; font-size: 13px; color: var(--text-secondary);">ACTIONS</th>
+                                <th style="padding: 10px; text-align: left; font-weight: 700; font-size: 11px; color: var(--text-secondary);">SCENARIO</th>
+                                <th style="padding: 10px; text-align: center; font-weight: 700; font-size: 11px; color: var(--text-secondary);">SUCCESS ⓘ</th>
+                                <th style="padding: 10px; text-align: right; font-weight: 700; font-size: 11px; color: var(--text-secondary);">MEDIAN</th>
+                                <th style="padding: 10px; text-align: right; font-weight: 700; font-size: 11px; color: var(--text-secondary);">5TH %</th>
+                                <th style="padding: 10px; text-align: right; font-weight: 700; font-size: 11px; color: var(--text-secondary);">95TH %</th>
+                                <th style="padding: 10px; text-align: center; font-weight: 700; font-size: 11px; color: var(--text-secondary);">ACTIONS</th>
                             </tr>
                         </thead>
                         <tbody id="scenarios-table-body">
@@ -112,39 +109,17 @@ function renderComparisonView(container, profile, scenarios) {
             </div>
 
             <!-- Comparison Chart Section -->
-            <div id="comparison-chart-section" style="display: none; background: var(--bg-secondary); padding: 25px; border-radius: 12px; margin-bottom: 30px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div id="comparison-chart-section" style="display: none; background: var(--bg-secondary); padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--border-color);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <div>
-                        <h3 style="font-size: 20px; margin: 0;">Portfolio Projection Comparison</h3>
-                        <p style="color: var(--text-secondary); margin: 5px 0 0 0; font-size: 13px;">
-                            Scroll or +/- keys to zoom, drag to pan
-                        </p>
+                        <h3 style="font-size: 16px; margin: 0;">Portfolio Comparison</h3>
                     </div>
-                    <button id="reset-comparison-zoom" style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 14px;">
+                    <button id="reset-comparison-zoom" style="padding: 4px 10px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px;">
                         Reset Zoom
                     </button>
                 </div>
-                <div style="position: relative; height: 400px;">
+                <div style="position: relative; height: 300px;">
                     <canvas id="comparison-chart"></canvas>
-                </div>
-            </div>
-
-            <!-- Quick Tips -->
-            <div style="background: var(--bg-secondary); padding: 20px; border-radius: 12px;">
-                <h3 style="font-size: 16px; margin-bottom: 15px; color: var(--text-secondary);">Tips for Scenario Comparison</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
-                    <div style="display: flex; gap: 10px; align-items: flex-start;">
-                        <span style="font-size: 20px;">1️⃣</span>
-                        <p style="color: var(--text-secondary); font-size: 14px; margin: 0;">Run analysis with different assumptions to create scenarios</p>
-                    </div>
-                    <div style="display: flex; gap: 10px; align-items: flex-start;">
-                        <span style="font-size: 20px;">2️⃣</span>
-                        <p style="color: var(--text-secondary); font-size: 14px; margin: 0;">Select scenarios using checkboxes to compare visually</p>
-                    </div>
-                    <div style="display: flex; gap: 10px; align-items: flex-start;">
-                        <span style="font-size: 20px;">3️⃣</span>
-                        <p style="color: var(--text-secondary); font-size: 14px; margin: 0;">Focus on success rate and 5th percentile for realistic planning</p>
-                    </div>
                 </div>
             </div>
         </div>
@@ -205,36 +180,33 @@ function renderScenarioRow(scenario) {
 
     return `
         <tr data-scenario-id="${scenario.id}" style="border-bottom: 1px solid var(--border-color); transition: background 0.2s;">
-            <td style="padding: 16px;">
+            <td style="padding: 10px;">
                 <input type="checkbox" class="scenario-checkbox" value="${scenario.id}">
             </td>
-            <td style="padding: 16px;">
-                <div style="font-weight: 600; color: var(--text-primary);">${scenario.name}</div>
-                <div style="font-size: 12px; color: var(--text-secondary);">
-                    ${isMultiScenario ? 'Multiple allocations (showing Moderate)' : `${simulations.toLocaleString()} simulations`}
+            <td style="padding: 10px;">
+                <div style="font-weight: 700; color: var(--text-primary); font-size: 13px;">${scenario.name}</div>
+                <div style="font-size: 11px; color: var(--text-secondary);">
+                    ${isMultiScenario ? 'Multiple allocations' : `${simulations.toLocaleString()} sims`}
                 </div>
             </td>
-            <td style="padding: 16px; text-align: center;">
-                <span class="success-badge ${successClass}" title="${successStatus}${isMultiScenario ? ' - Baseline Moderate Case' : ''}">
+            <td style="padding: 10px; text-align: center;">
+                <span class="success-badge ${successClass}" style="padding: 2px 8px; font-size: 12px;" title="${successStatus}">
                     ${formatPercent(successRate, 0)}
                 </span>
             </td>
-            <td style="padding: 16px; text-align: right; font-weight: 500;">
+            <td style="padding: 10px; text-align: right; font-weight: 600; font-size: 12px;">
                 ${formatCurrency(medianEnding, 0)}
             </td>
-            <td style="padding: 16px; text-align: right; color: var(--text-secondary);">
+            <td style="padding: 10px; text-align: right; color: var(--text-secondary); font-size: 12px;">
                 ${formatCurrency(p5, 0)}
             </td>
-            <td style="padding: 16px; text-align: right; color: var(--success-color);">
+            <td style="padding: 10px; text-align: right; color: var(--success-color); font-size: 12px;">
                 ${formatCurrency(p95, 0)}
             </td>
-            <td style="padding: 16px; text-align: center; color: var(--text-secondary); font-size: 13px;">
-                ${formatDate(scenario.created_at)}
-            </td>
-            <td style="padding: 16px; text-align: center;">
+            <td style="padding: 10px; text-align: center;">
                 <button class="delete-scenario-btn" data-id="${scenario.id}"
-                    style="background: none; border: none; cursor: pointer; color: var(--danger-color); font-size: 16px; padding: 5px;"
-                    title="Delete scenario">
+                    style="background: none; border: none; cursor: pointer; color: var(--danger-color); font-size: 14px; padding: 4px;"
+                    title="Delete">
                     🗑️
                 </button>
             </td>
