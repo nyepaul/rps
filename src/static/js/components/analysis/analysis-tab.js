@@ -67,7 +67,7 @@ export function renderAnalysisTab(container) {
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; gap: 20px; flex-wrap: wrap;">
                     <div>
                         <h2 style="font-size: 24px; margin: 0 0 10px 0;">Monte Carlo Simulation</h2>
-                        <button id="show-calculation-info" style="padding: 6px 12px; background: var(--info-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;" title="Learn about the calculations">
+                        <button id="show-calculation-info" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;" title="Learn about the calculations" onmouseover="this.style.background='var(--accent-hover)'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 2px 8px rgba(59, 130, 246, 0.3)';" onmouseout="this.style.background='var(--accent-color)'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
                             <span>ℹ️</span> How It Works
                         </button>
                     </div>

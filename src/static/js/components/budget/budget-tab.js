@@ -1368,7 +1368,7 @@ function renderExpenseSection(parentContainer) {
                     <span style="font-size: var(--font-lg);">💳</span>
                     Expense Categories
                 </h2>
-                <button id="add-custom-category-btn" style="padding: 6px 12px; background: var(--info-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: var(--font-xs); font-weight: 500;">
+                <button id="add-custom-category-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: var(--font-xs); font-weight: 600; transition: all 0.2s ease;" onmouseover="this.style.background='var(--accent-hover)'; this.style.transform='translateY(-1px)';" onmouseout="this.style.background='var(--accent-color)'; this.style.transform='translateY(0)';">
                     + Custom Category
                 </button>
             </div>
@@ -1432,9 +1432,9 @@ function renderExpenseSection(parentContainer) {
                     if (expense.start_date && expense.end_date) {
                         dateInfo = `<span style="color: var(--warning-color); font-size: 10px;">📅 ${start} → ${end}</span>`;
                     } else if (expense.start_date) {
-                        dateInfo = `<span style="color: var(--info-color); font-size: 10px;">📅 From ${start}</span>`;
+                        dateInfo = `<span style="color: var(--accent-color); font-size: 10px;">📅 From ${start}</span>`;
                     } else if (expense.end_date) {
-                        dateInfo = `<span style="color: var(--info-color); font-size: 10px;">📅 Until ${end}</span>`;
+                        dateInfo = `<span style="color: var(--accent-color); font-size: 10px;">📅 Until ${end}</span>`;
                     }
                 }
 

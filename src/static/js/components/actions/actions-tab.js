@@ -37,7 +37,7 @@ export function renderActionsTab(container) {
                     </p>
                 </div>
                 <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; flex-shrink: 0;">
-                    <button id="generate-actions-btn" style="padding: var(--space-3) var(--space-6); background: var(--info-bg); color: var(--info-color); border: 1px solid var(--info-color); border-radius: 6px; cursor: pointer; font-size: var(--font-md);">
+                    <button id="generate-actions-btn" style="padding: var(--space-3) var(--space-6); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-md); font-weight: 600; transition: all 0.2s ease;" onmouseover="this.style.background='var(--accent-hover)'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 2px 8px rgba(59, 130, 246, 0.3)';" onmouseout="this.style.background='var(--accent-color)'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
                         💡 Generate Recommendations
                     </button>
                     <button id="add-action-btn" style="padding: var(--space-3) var(--space-6); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-md);">
@@ -136,7 +136,7 @@ export function renderActionsTab(container) {
             }
             .btn-edit {
                 background: var(--info-bg);
-                color: var(--info-color);
+                color: var(--accent-color);
             }
             .btn-delete {
                 background: var(--danger-bg);
@@ -180,7 +180,7 @@ async function loadActionItems(container, profile) {
                     <p style="color: var(--text-secondary); margin-bottom: 20px;">
                         Create action items to track tasks and recommendations for your retirement plan.
                     </p>
-                    <button id="add-first-action-btn" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                    <button id="add-first-action-btn" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; transition: all 0.2s ease;" onmouseover="this.style.background='var(--accent-hover)'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(59, 130, 246, 0.3)';" onmouseout="this.style.background='var(--accent-color)'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
                         + Add First Action Item
                     </button>
                 </div>
