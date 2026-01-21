@@ -657,8 +657,10 @@ function showActivityDetails(eventIndex) {
     const actionColor = getActionColor(action);
 
     // Check if prev/next are available
-    const hasPrev = eventIndex > 0;
-    const hasNext = eventIndex < currentEvents.length - 1;
+    // Previous = earlier in time (higher index, older events)
+    // Next = later in time (lower index, newer events)
+    const hasPrev = eventIndex < currentEvents.length - 1;
+    const hasNext = eventIndex > 0;
 
     // Create modal
     const modal = document.createElement('div');
@@ -787,25 +789,25 @@ function showActivityDetails(eventIndex) {
         }
     });
 
-    // Previous button handler
+    // Previous button handler (earlier in time = higher index)
     const prevBtn = modal.querySelector('.prev-activity-btn');
     if (prevBtn && hasPrev) {
         prevBtn.addEventListener('click', () => {
             modal.remove();
             document.removeEventListener('keydown', keyHandler);
-            showActivityDetails(eventIndex - 1);
+            showActivityDetails(eventIndex + 1);
         });
         prevBtn.addEventListener('mouseenter', () => prevBtn.style.background = 'var(--bg-primary)');
         prevBtn.addEventListener('mouseleave', () => prevBtn.style.background = 'var(--bg-tertiary)');
     }
 
-    // Next button handler
+    // Next button handler (later in time = lower index)
     const nextBtn = modal.querySelector('.next-activity-btn');
     if (nextBtn && hasNext) {
         nextBtn.addEventListener('click', () => {
             modal.remove();
             document.removeEventListener('keydown', keyHandler);
-            showActivityDetails(eventIndex + 1);
+            showActivityDetails(eventIndex - 1);
         });
         nextBtn.addEventListener('mouseenter', () => nextBtn.style.background = 'var(--bg-primary)');
         nextBtn.addEventListener('mouseleave', () => nextBtn.style.background = 'var(--bg-tertiary)');
@@ -817,13 +819,15 @@ function showActivityDetails(eventIndex) {
             modal.remove();
             document.removeEventListener('keydown', keyHandler);
         } else if (e.key === 'ArrowLeft' && hasPrev) {
-            modal.remove();
-            document.removeEventListener('keydown', keyHandler);
-            showActivityDetails(eventIndex - 1);
-        } else if (e.key === 'ArrowRight' && hasNext) {
+            // Previous = earlier in time (higher index)
             modal.remove();
             document.removeEventListener('keydown', keyHandler);
             showActivityDetails(eventIndex + 1);
+        } else if (e.key === 'ArrowRight' && hasNext) {
+            // Next = later in time (lower index)
+            modal.remove();
+            document.removeEventListener('keydown', keyHandler);
+            showActivityDetails(eventIndex - 1);
         }
     };
     document.addEventListener('keydown', keyHandler);

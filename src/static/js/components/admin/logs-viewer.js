@@ -524,8 +524,10 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
     const log = currentAuditLogs[logIndex];
     if (!log) return;
 
-    const hasPrev = logIndex > 0;
-    const hasNext = logIndex < currentAuditLogs.length - 1;
+    // Previous = earlier in time (higher index, older logs)
+    // Next = later in time (lower index, newer logs)
+    const hasPrev = logIndex < currentAuditLogs.length - 1;
+    const hasNext = logIndex > 0;
 
     try {
         // Fetch full log details from API
@@ -712,13 +714,15 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
                 modal.remove();
                 document.removeEventListener('keydown', keyHandler);
             } else if (e.key === 'ArrowLeft' && hasPrev) {
-                modal.remove();
-                document.removeEventListener('keydown', keyHandler);
-                showAuditLogDetailsWithNavigation(logIndex - 1);
-            } else if (e.key === 'ArrowRight' && hasNext) {
+                // Previous = earlier in time (higher index)
                 modal.remove();
                 document.removeEventListener('keydown', keyHandler);
                 showAuditLogDetailsWithNavigation(logIndex + 1);
+            } else if (e.key === 'ArrowRight' && hasNext) {
+                // Next = later in time (lower index)
+                modal.remove();
+                document.removeEventListener('keydown', keyHandler);
+                showAuditLogDetailsWithNavigation(logIndex - 1);
             }
         };
         document.addEventListener('keydown', keyHandler);
@@ -739,25 +743,25 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
             }
         });
 
-        // Previous button handler
+        // Previous button handler (earlier in time = higher index)
         const prevBtn = modal.querySelector('.prev-log-btn');
         if (prevBtn && hasPrev) {
             prevBtn.addEventListener('click', () => {
                 modal.remove();
                 document.removeEventListener('keydown', keyHandler);
-                showAuditLogDetailsWithNavigation(logIndex - 1);
+                showAuditLogDetailsWithNavigation(logIndex + 1);
             });
             prevBtn.addEventListener('mouseenter', () => prevBtn.style.background = 'var(--bg-primary)');
             prevBtn.addEventListener('mouseleave', () => prevBtn.style.background = 'var(--bg-tertiary)');
         }
 
-        // Next button handler
+        // Next button handler (later in time = lower index)
         const nextBtn = modal.querySelector('.next-log-btn');
         if (nextBtn && hasNext) {
             nextBtn.addEventListener('click', () => {
                 modal.remove();
                 document.removeEventListener('keydown', keyHandler);
-                showAuditLogDetailsWithNavigation(logIndex + 1);
+                showAuditLogDetailsWithNavigation(logIndex - 1);
             });
             nextBtn.addEventListener('mouseenter', () => nextBtn.style.background = 'var(--bg-primary)');
             nextBtn.addEventListener('mouseleave', () => nextBtn.style.background = 'var(--bg-tertiary)');
@@ -1365,8 +1369,10 @@ async function showLogDetailsWithNavigation(logIndex) {
     const log = currentIPLogs[logIndex];
     if (!log) return;
 
-    const hasPrev = logIndex > 0;
-    const hasNext = logIndex < currentIPLogs.length - 1;
+    // Previous = earlier in time (higher index, older logs)
+    // Next = later in time (lower index, newer logs)
+    const hasPrev = logIndex < currentIPLogs.length - 1;
+    const hasNext = logIndex > 0;
 
     try {
         // Fetch full log details from API
@@ -1503,25 +1509,25 @@ async function showLogDetailsWithNavigation(logIndex) {
             }
         });
 
-        // Previous button handler
+        // Previous button handler (earlier in time = higher index)
         const prevBtn = modal.querySelector('.prev-log-btn');
         if (prevBtn && hasPrev) {
             prevBtn.addEventListener('click', () => {
                 modal.remove();
                 document.removeEventListener('keydown', keyHandler);
-                showLogDetailsWithNavigation(logIndex - 1);
+                showLogDetailsWithNavigation(logIndex + 1);
             });
             prevBtn.addEventListener('mouseenter', () => prevBtn.style.background = 'var(--bg-primary)');
             prevBtn.addEventListener('mouseleave', () => prevBtn.style.background = 'var(--bg-tertiary)');
         }
 
-        // Next button handler
+        // Next button handler (later in time = lower index)
         const nextBtn = modal.querySelector('.next-log-btn');
         if (nextBtn && hasNext) {
             nextBtn.addEventListener('click', () => {
                 modal.remove();
                 document.removeEventListener('keydown', keyHandler);
-                showLogDetailsWithNavigation(logIndex + 1);
+                showLogDetailsWithNavigation(logIndex - 1);
             });
             nextBtn.addEventListener('mouseenter', () => nextBtn.style.background = 'var(--bg-primary)');
             nextBtn.addEventListener('mouseleave', () => nextBtn.style.background = 'var(--bg-tertiary)');
@@ -1533,13 +1539,15 @@ async function showLogDetailsWithNavigation(logIndex) {
                 modal.remove();
                 document.removeEventListener('keydown', keyHandler);
             } else if (e.key === 'ArrowLeft' && hasPrev) {
-                modal.remove();
-                document.removeEventListener('keydown', keyHandler);
-                showLogDetailsWithNavigation(logIndex - 1);
-            } else if (e.key === 'ArrowRight' && hasNext) {
+                // Previous = earlier in time (higher index)
                 modal.remove();
                 document.removeEventListener('keydown', keyHandler);
                 showLogDetailsWithNavigation(logIndex + 1);
+            } else if (e.key === 'ArrowRight' && hasNext) {
+                // Next = later in time (lower index)
+                modal.remove();
+                document.removeEventListener('keydown', keyHandler);
+                showLogDetailsWithNavigation(logIndex - 1);
             }
         };
         document.addEventListener('keydown', keyHandler);
