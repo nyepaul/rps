@@ -1013,7 +1013,7 @@ def reset_demo_account():
 
         demo_data = {
             "person": {
-                "name": "Chris Thompson",
+                "name": "Demo Thompson",
                 "birth_date": birth_date.isoformat(),
                 "retirement_date": retirement_date.isoformat(),
                 "current_age": 55,
@@ -1031,8 +1031,12 @@ def reset_demo_account():
                 "life_expectancy": 95,
                 "email": "jamie.thompson@example.com",
                 "phone": "(415) 555-0124",
-                "social_security_benefit": 3200,  # Monthly
-                "pension_benefit": 0
+                "social_security_benefit": 3200,  # Monthly at retirement
+                "pension_benefit": 0,
+                "employer": "Tech Innovations Inc.",
+                "job_title": "Senior Product Manager",
+                "years_with_employer": 8,
+                "health_insurance": "Through employer"
             },
             "children": [
                 {
@@ -1045,7 +1049,16 @@ def reset_demo_account():
                     "college_name": "University of California, Berkeley",
                     "college_start_year": today.year,
                     "college_end_year": today.year + 4,
-                    "major": "Computer Science"
+                    "major": "Computer Science",
+                    "tuition_annual": 36000,
+                    "room_board_annual": 18000,
+                    "books_supplies_annual": 2000,
+                    "total_annual_cost": 56000,
+                    "scholarship_amount": 8000,
+                    "work_study_income": 4000,
+                    "parent_contribution": 44000,
+                    "has_529_plan": True,
+                    "529_balance": 45000
                 },
                 {
                     "name": "Jordan Thompson",
@@ -1057,7 +1070,16 @@ def reset_demo_account():
                     "college_name": "Stanford University",
                     "college_start_year": today.year - 1,
                     "college_end_year": today.year + 3,
-                    "major": "Business Administration"
+                    "major": "Business Administration",
+                    "tuition_annual": 58000,
+                    "room_board_annual": 19000,
+                    "books_supplies_annual": 2500,
+                    "total_annual_cost": 79500,
+                    "scholarship_amount": 15000,
+                    "work_study_income": 5000,
+                    "parent_contribution": 59500,
+                    "has_529_plan": True,
+                    "529_balance": 35000
                 }
             ],
             "address": {
@@ -1068,30 +1090,71 @@ def reset_demo_account():
                 "country": "USA"
             },
             "financial": {
-                "annual_income": 280000,  # Combined upper-class salary
-                "annual_expenses": 145000,
-                "social_security_benefit": 3800,  # Monthly at retirement
+                "annual_income": 336000,  # Combined salary: Chris $192k + Jamie $144k
+                "annual_expenses": 175000,  # Includes college expenses
+                "social_security_benefit": 3800,  # Monthly at retirement (Chris)
                 "pension_benefit": 0,
-                "emergency_fund": 90000
+                "emergency_fund": 90000,
+                "combined_401k_contribution": 40320,  # Annual: Chris 15% + Jamie 12%
+                "net_annual_savings": 120680,  # After expenses and 401k contributions
+                "tax_bracket_federal": 0.24,
+                "tax_bracket_state": 0.093,
+                "health_insurance_premium": 850,  # Monthly family plan
+                "life_insurance_premium": 350,  # Monthly term life policies
+                "disability_insurance_premium": 180  # Monthly
             },
             "income_streams": [
                 {
                     "name": "Senior Software Engineer - Chris",
-                    "amount": 16000,  # Monthly
+                    "amount": 16000,  # Monthly ($192k annually)
                     "frequency": "monthly",
                     "start_date": (today - relativedelta(years=10)).isoformat(),
                     "end_date": retirement_date.isoformat(),
                     "type": "salary",
-                    "description": "Full-time software engineering position"
+                    "description": "Full-time software engineering position at TechCorp",
+                    "employer": "TechCorp",
+                    "withholding": {
+                        "federal": 0.24,
+                        "state": 0.093,
+                        "social_security": 0.062,
+                        "medicare": 0.0145,
+                        "401k_contribution": 0.15
+                    }
                 },
                 {
-                    "name": "Product Manager - Jamie",
-                    "amount": 12000,  # Monthly (spouse)
+                    "name": "Senior Product Manager - Jamie",
+                    "amount": 12000,  # Monthly ($144k annually)
                     "frequency": "monthly",
                     "start_date": (today - relativedelta(years=8)).isoformat(),
                     "end_date": spouse_retirement_date.isoformat(),
                     "type": "salary",
-                    "description": "Product management role"
+                    "description": "Senior product management role at Tech Innovations",
+                    "employer": "Tech Innovations Inc.",
+                    "withholding": {
+                        "federal": 0.24,
+                        "state": 0.093,
+                        "social_security": 0.062,
+                        "medicare": 0.0145,
+                        "401k_contribution": 0.12
+                    }
+                },
+                {
+                    "name": "Alex Work-Study Income",
+                    "amount": 333,  # Monthly ($4k annually)
+                    "frequency": "monthly",
+                    "start_date": today.isoformat(),
+                    "end_date": (today + relativedelta(years=4)).isoformat(),
+                    "type": "work_study",
+                    "description": "Work-study program at UC Berkeley library"
+                },
+                {
+                    "name": "Jordan Part-Time Job",
+                    "amount": 417,  # Monthly ($5k annually)
+                    "frequency": "monthly",
+                    "start_date": (today - relativedelta(years=1)).isoformat(),
+                    "end_date": (today + relativedelta(years=3)).isoformat(),
+                    "type": "part_time",
+                    "description": "Part-time tutoring and campus employment"
                 }
             ],
             "assets": {
@@ -1229,13 +1292,41 @@ def reset_demo_account():
                             "description": "Life & disability",
                             "ongoing": True
                         }],
-                        "childcare_education": [{
-                            "amount": 4500,
-                            "frequency": "monthly",
-                            "description": "College tuition (2 children)",
-                            "ongoing": True,
-                            "end_date": (today + relativedelta(years=4)).isoformat()
-                        }],
+                        "childcare_education": [
+                            {
+                                "amount": 4667,
+                                "frequency": "monthly",
+                                "description": "Alex - UC Berkeley (tuition, room & board after aid)",
+                                "ongoing": True,
+                                "end_date": (today + relativedelta(years=4)).isoformat(),
+                                "child": "Alex Thompson",
+                                "breakdown": {
+                                    "tuition": 3000,
+                                    "room_board": 1500,
+                                    "books_supplies": 167
+                                }
+                            },
+                            {
+                                "amount": 4958,
+                                "frequency": "monthly",
+                                "description": "Jordan - Stanford (tuition, room & board after aid)",
+                                "ongoing": True,
+                                "end_date": (today + relativedelta(years=3)).isoformat(),
+                                "child": "Jordan Thompson",
+                                "breakdown": {
+                                    "tuition": 3583,
+                                    "room_board": 1167,
+                                    "books_supplies": 208
+                                }
+                            },
+                            {
+                                "amount": 400,
+                                "frequency": "monthly",
+                                "description": "Children allowance & support",
+                                "ongoing": True,
+                                "end_date": (today + relativedelta(years=4)).isoformat()
+                            }
+                        ],
                         "entertainment": [{
                             "amount": 600,
                             "frequency": "monthly",
@@ -1375,7 +1466,7 @@ def reset_demo_account():
                 VALUES (?, ?, ?, ?, ?, NULL, ?, ?)
             ''', (
                 demo_user.id,
-                "DemoName",
+                "DemoProfile",
                 birth_date.isoformat(),
                 retirement_date.isoformat(),
                 json.dumps(demo_data),  # Store as plain JSON (unencrypted)
@@ -1398,7 +1489,7 @@ def reset_demo_account():
             'message': 'Demo account reset successfully',
             'username': demo_username,
             'password': demo_password,
-            'profile_name': 'DemoName'
+            'profile_name': 'DemoProfile'
         }), 200
 
     except Exception as e:

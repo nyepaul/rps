@@ -387,8 +387,17 @@ def extract_assets():
         data_dict = profile.data_dict
         api_keys = data_dict.get('api_keys', {})
 
+        # Debug logging
+        print(f"[DEBUG] Extract Assets - Profile: {profile.name} (ID: {profile.id}, User: {current_user.id})")
+        print(f"[DEBUG] data_dict keys: {list(data_dict.keys())}")
+        print(f"[DEBUG] api_keys: {list(api_keys.keys())}")
+        print(f"[DEBUG] Provider requested: {provider}")
+
         if provider == 'gemini':
             api_key = api_keys.get('gemini_api_key')
+            print(f"[DEBUG] Gemini API key found: {bool(api_key)}")
+            if api_key:
+                print(f"[DEBUG] Gemini API key length: {len(api_key)}")
             if not api_key:
                 return jsonify({'error': 'Gemini API key not configured. Please configure in Settings.'}), 400
         else:
