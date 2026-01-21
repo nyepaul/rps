@@ -121,7 +121,7 @@ function renderUserRow(user, currentUser) {
                     <button class="view-user-profiles-btn" data-user-id="${user.id}" style="padding: 4px 8px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;" title="View Profiles">
                         📁
                     </button>
-                    <button class="view-user-report-btn" data-user-id="${user.id}" data-username="${user.username}" style="padding: 4px 8px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;" title="View Activity Report">
+                    <button class="view-user-report-btn" data-user-id="${user.id}" data-username="${user.username}" style="padding: 4px 8px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;" title="View Activity Report">
                         📊
                     </button>
                     ${currentUser && user.id !== currentUser.id && currentUser.is_admin ? `

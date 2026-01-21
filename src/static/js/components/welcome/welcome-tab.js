@@ -166,7 +166,7 @@ function initializeWizard(container) {
 
                 <div style="background: var(--bg-primary); padding: var(--space-2); border-radius: 6px; margin-bottom: var(--space-2);">
                     <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-1);">
-                        <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px;">👤</div>
+                        <div style="width: 32px; height: 32px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px;">👤</div>
                         <div>
                             <strong style="font-size: 14px;">Account</strong>
                             <div style="font-size: 12px; color: var(--text-secondary);">Your login credentials (email + password)</div>
@@ -183,7 +183,7 @@ function initializeWizard(container) {
 
                 <div style="background: var(--bg-primary); padding: var(--space-2); border-radius: 6px; margin-bottom: var(--space-2);">
                     <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-1);">
-                        <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #2ed573 0%, #26d07c 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px;">📋</div>
+                        <div style="width: 32px; height: 32px; background: var(--success-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px;">📋</div>
                         <div>
                             <strong style="font-size: 14px;">Profiles</strong>
                             <div style="font-size: 12px; color: var(--text-secondary);">Different retirement plans (you, spouse, family)</div>
@@ -200,7 +200,7 @@ function initializeWizard(container) {
 
                 <div style="background: var(--bg-primary); padding: var(--space-2); border-radius: 6px;">
                     <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-1);">
-                        <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #3498db 0%, #5faee3 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px;">🎯</div>
+                        <div style="width: 32px; height: 32px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px;">🎯</div>
                         <div>
                             <strong style="font-size: 14px;">Scenarios</strong>
                             <div style="font-size: 12px; color: var(--text-secondary);">Monte Carlo simulations for "what-if" analysis</div>

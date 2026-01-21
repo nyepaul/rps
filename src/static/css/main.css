@@ -8,8 +8,8 @@
             --text-light: #6c757d;
             --header-bg: #2c3e50;
             --header-text: #ffffff;
-            --accent-color: #228be6;
-            --accent-hover: #1c7ed6;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
             --border-color: #dee2e6;
             --shadow: rgba(0,0,0,0.05);
             --success-color: #2f9e44;
@@ -20,10 +20,10 @@
             --success-bg: #ebfbee;
             --warning-bg: #fff9db;
             --danger-bg: #fff5f5;
-            --info-bg: #e7f5ff;
-            --info-color: #1098ad;
-            --card-gradient-1: #4c6ef5;
-            --card-gradient-2: #748ffc;
+            --info-bg: #eff6ff;
+            --info-color: #3b82f6;
+            --card-gradient-1: #3b82f6;
+            --card-gradient-2: #60a5fa;
 
             /* Spacing scale (8px grid system) */
             --space-1: 4px;

@@ -13,7 +13,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #3b82f6 0%, #764ba2 100%);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -64,13 +64,13 @@
 
         input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #3b82f6;
         }
 
         button {
             width: 100%;
             padding: 12px;
-            background: #667eea;
+            background: #3b82f6;
             color: white;
             border: none;
             border-radius: 5px;
@@ -81,7 +81,7 @@
         }
 
         button:hover {
-            background: #5568d3;
+            background: #2563eb;
         }
 
         button:disabled {
@@ -127,7 +127,7 @@
         }
 
         .back-link a {
-            color: #667eea;
+            color: #3b82f6;
             text-decoration: none;
             font-weight: 600;
         }
@@ -156,7 +156,7 @@
         <div id="message"></div>
 
         <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-            <button id="usePasswordTab" style="flex: 1; padding: 10px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: 600;">
+            <button id="usePasswordTab" style="flex: 1; padding: 10px; background: #3b82f6; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: 600;">
                 Option 1: Use Password
             </button>
             <button id="useCodeTab" style="flex: 1; padding: 10px; background: #f3f4f6; color: #666; border: 1px solid #e0e0e0; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: 600;">
@@ -233,7 +233,7 @@
 
         usePasswordTab.addEventListener('click', () => {
             currentMethod = 'password';
-            usePasswordTab.style.background = '#667eea';
+            usePasswordTab.style.background = '#3b82f6';
             usePasswordTab.style.color = 'white';
             useCodeTab.style.background = '#f3f4f6';
             useCodeTab.style.color = '#666';
@@ -251,7 +251,7 @@
 
         useCodeTab.addEventListener('click', () => {
             currentMethod = 'code';
-            useCodeTab.style.background = '#667eea';
+            useCodeTab.style.background = '#3b82f6';
             useCodeTab.style.color = 'white';
             usePasswordTab.style.background = '#f3f4f6';
             usePasswordTab.style.color = '#666';
