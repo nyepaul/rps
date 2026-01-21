@@ -1424,6 +1424,7 @@ async function showLogDetailsWithNavigation(logIndex) {
             justify-content: center;
             z-index: 10002;
         `;
+        }
 
         const timestamp = new Date(fullLog.created_at).toLocaleString();
         const actionColor = getActionColor(fullLog.action);
