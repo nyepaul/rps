@@ -36,22 +36,22 @@ export function renderIncomeTab(container) {
     const incomeStreams = data.income_streams || [];
 
     container.innerHTML = `
-        <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-5);">
+        <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-2) var(--space-3);">
             <!-- Header -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-5); flex-wrap: wrap; gap: var(--space-3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
                 <div style="min-width: 0; flex: 1;">
-                    <h1 style="font-size: var(--font-3xl); margin: 0 0 var(--space-2) 0;">💰 Income Streams</h1>
-                    <p style="color: var(--text-secondary); margin: 0; font-size: var(--font-base);">
-                        Track current and future income with start and end dates
+                    <h1 style="font-size: var(--font-2xl); margin: 0;">💰 Income Streams</h1>
+                    <p style="color: var(--text-secondary); margin: 0; font-size: 13px;">
+                        Tracking <strong>${profile.name}'s</strong> recurring income
                     </p>
                 </div>
-                <button id="add-income-stream-btn" style="padding: var(--space-3) var(--space-5); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: var(--font-base); flex-shrink: 0;">
+                <button id="add-income-stream-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; flex-shrink: 0;">
                     + Add Income
                 </button>
             </div>
 
             <!-- Income Streams Table -->
-            <div style="background: var(--bg-secondary); border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+            <div style="background: var(--bg-secondary); border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color);">
                 <div id="income-streams-list"></div>
             </div>
         </div>
@@ -198,20 +198,18 @@ function renderIncomeStreamRow(stream, index) {
     const annual = stream.amount * 12;
 
     return `
-        <div class="income-row" data-index="${index}" style="padding: var(--space-2) var(--space-3); background: var(--bg-primary); border-radius: 4px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; flex-wrap: wrap; gap: var(--space-2);" onmouseover="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--accent-color)'" onmouseout="this.style.background='var(--bg-primary)'; this.style.borderColor='var(--border-color)'">
-            <div style="display: flex; align-items: center; gap: var(--space-2); flex: 1; font-size: var(--font-sm); flex-wrap: wrap;">
-                <span style="font-size: var(--font-md);">💰</span>
-                <span style="font-weight: 600;">${stream.name}</span>
-                ${stream.description ? `<span style="color: var(--text-secondary); font-size: var(--font-sm);">${stream.description}</span>` : ''}
-                <span style="color: var(--text-secondary);">${formatCurrency(stream.amount, 0)}/monthly (${formatCurrency(annual, 0)}/yr)</span>
-                <span style="font-size: var(--font-xs); color: var(--text-secondary);">${dateInfo}</span>
+        <div class="income-row" data-index="${index}" style="padding: 8px 12px; background: var(--bg-primary); border-radius: 4px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; flex-wrap: wrap; gap: var(--space-2);" onmouseover="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--accent-color)'" onmouseout="this.style.background='var(--bg-primary)'; this.style.borderColor='var(--border-color)'">
+            <div style="display: flex; align-items: center; gap: var(--space-2); flex: 1; font-size: 13px; flex-wrap: wrap;">
+                <span style="font-weight: 700;">${stream.name}</span>
+                <span style="color: var(--text-secondary);">${formatCurrency(stream.amount, 0)}/mo (${formatCurrency(annual, 0)}/yr)</span>
+                <span style="font-size: 11px; color: var(--text-secondary); opacity: 0.8;">${dateInfo}</span>
             </div>
-            <div style="display: flex; gap: var(--space-1); margin-left: var(--space-2);">
+            <div style="display: flex; gap: 4px; margin-left: 8px;">
                 <button class="edit-income-stream-btn" data-index="${index}"
-                    style="padding: var(--space-1) var(--space-2); background: transparent; color: var(--text-secondary); border: none; cursor: pointer; font-size: var(--font-base);"
+                    style="padding: 2px 6px; background: transparent; color: var(--text-secondary); border: none; cursor: pointer; font-size: 14px;"
                     title="Edit">✏️</button>
                 <button class="delete-income-stream-btn" data-index="${index}"
-                    style="padding: var(--space-1) var(--space-2); background: transparent; color: var(--danger-color); border: none; cursor: pointer; font-size: var(--font-base);"
+                    style="padding: 2px 6px; background: transparent; color: var(--danger-color); border: none; cursor: pointer; font-size: 14px;"
                     title="Delete">🗑️</button>
             </div>
         </div>

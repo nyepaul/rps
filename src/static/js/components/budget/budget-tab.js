@@ -70,43 +70,47 @@ export function renderBudgetTab(container) {
     });
 
     container.innerHTML = `
-        <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-3);">
-            <div style="margin-bottom: var(--space-3);">
-                <h1 style="margin: 0; font-size: var(--font-2xl);">💵 Expense Planning</h1>
-                <p style="color: var(--text-secondary); margin: var(--space-1) 0 0 0; font-size: var(--font-sm);">
-                    Plan your current and future expenses (Income managed on Income tab)
+        <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-2) var(--space-3);">
+            <div style="margin-bottom: var(--space-2);">
+                <h1 style="margin: 0; font-size: var(--font-2xl);">💸 Expense Planning</h1>
+                <p style="color: var(--text-secondary); margin: 0; font-size: 13px;">
+                    Tracking <strong>${profile.name}'s</strong> recurring costs
                 </p>
             </div>
 
             <!-- Summary Cards -->
             <div id="budget-summary"></div>
 
-            <!-- Period Toggle - Above content sections -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin: var(--space-4) 0 var(--space-3) 0; padding: var(--space-3) var(--space-4); background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-color); flex-wrap: wrap; gap: var(--space-3);">
-                <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
-                    <span style="font-weight: 600; color: var(--text-secondary); font-size: var(--font-sm);">Viewing:</span>
-                    <div id="period-toggle" style="display: flex; gap: var(--space-1); background: var(--bg-primary); padding: 3px; border-radius: 6px;">
-                        <button class="period-btn active" data-period="current" style="padding: var(--space-2) var(--space-4); border: none; border-radius: 4px; cursor: pointer; font-weight: 600; transition: all 0.2s; font-size: var(--font-base);">
-                            Current
+            <!-- Period Toggle -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin: 12px 0; padding: 8px 12px; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <div id="period-toggle" style="display: flex; gap: 2px; background: var(--bg-primary); padding: 2px; border-radius: 6px;">
+                        <button class="period-btn active" data-period="current" style="padding: 4px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: 700; transition: all 0.2s; font-size: 12px;">
+                            Pre-Retirement
                         </button>
-                        <button class="period-btn" data-period="future" style="padding: var(--space-2) var(--space-4); border: none; border-radius: 4px; cursor: pointer; font-weight: 600; transition: all 0.2s; font-size: var(--font-base);">
-                            Future
+                        <button class="period-btn" data-period="future" style="padding: 4px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: 700; transition: all 0.2s; font-size: 12px;">
+                            Post-Retirement
                         </button>
                     </div>
-                    <span id="period-context" style="color: var(--text-secondary); font-size: var(--font-sm); margin-left: var(--space-2);">
-                        (Pre-retirement expenses)
-                    </span>
                 </div>
-                <button id="save-budget-btn" style="padding: var(--space-2) var(--space-5); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-base); font-weight: 600;">
-                    Save Expenses
+                <button id="save-budget-btn" style="padding: 6px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 700;">
+                    Save Changes
                 </button>
             </div>
 
-            <!-- College Expenses Section -->
-            <div id="college-expenses-section"></div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 12px;">
+                <!-- Left Column: Summary and College -->
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <!-- College Expenses Section -->
+                    <div id="college-expenses-section"></div>
+                    
+                    <!-- Income/Investment Info (Simplified) -->
+                    <div id="income-section"></div>
+                </div>
 
-            <!-- Expense Section -->
-            <div id="expense-section"></div>
+                <!-- Right Column: Expense Section -->
+                <div id="expense-section"></div>
+            </div>
         </div>
     `;
 
@@ -598,18 +602,15 @@ function renderBudgetSummary(container) {
     const futureExpenses = calculateTotalExpenses('future');
 
     summaryContainer.innerHTML = `
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-2); margin-bottom: var(--space-3);">
-            <div style="background: var(--bg-secondary); padding: var(--space-3); border-radius: 6px; border-left: 3px solid #ef4444;">
-                <div style="color: var(--text-secondary); font-size: var(--font-xs); margin-bottom: var(--space-1);">Current Expenses (Pre-Retirement)</div>
-                <div style="font-size: var(--font-lg); font-weight: 600;">${formatCurrency(currentExpenses)}/year</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+            <div style="background: var(--bg-secondary); padding: 8px 12px; border-radius: 6px; border-left: 4px solid #ef4444; border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+                <div style="color: var(--text-secondary); font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 2px;">PRE-RETIREMENT</div>
+                <div style="font-size: 16px; font-weight: 700;">${formatCurrency(currentExpenses)}<span style="font-size: 11px; font-weight: normal; opacity: 0.7;">/yr</span></div>
             </div>
-            <div style="background: var(--bg-secondary); padding: var(--space-3); border-radius: 6px; border-left: 3px solid #f59e0b;">
-                <div style="color: var(--text-secondary); font-size: var(--font-xs); margin-bottom: var(--space-1);">Future Expenses (Post-Retirement)</div>
-                <div style="font-size: var(--font-lg); font-weight: 600;">${formatCurrency(futureExpenses)}/year</div>
+            <div style="background: var(--bg-secondary); padding: 8px 12px; border-radius: 6px; border-left: 4px solid #f59e0b; border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+                <div style="color: var(--text-secondary); font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 2px;">POST-RETIREMENT</div>
+                <div style="font-size: 16px; font-weight: 700;">${formatCurrency(futureExpenses)}<span style="font-size: 11px; font-weight: normal; opacity: 0.7;">/yr</span></div>
             </div>
-        </div>
-        <div style="background: var(--info-bg); padding: var(--space-2) var(--space-3); border-radius: 6px; font-size: var(--font-sm); color: var(--info-color); margin-bottom: var(--space-3); border-left: 3px solid var(--info-color);">
-            <strong>ℹ️ Note:</strong> Income sources are managed on the <strong>Income</strong> tab. This tab focuses on expense planning only.
         </div>
     `;
 }
@@ -1362,92 +1363,62 @@ function renderExpenseSection(parentContainer) {
     const allCategories = [...categories, ...customCategories];
 
     let html = `
-        <div style="background: var(--bg-secondary); padding: var(--space-3); border-radius: 8px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3);">
-                <h2 style="margin: 0; display: flex; align-items: center; gap: var(--space-2); font-size: var(--font-md);">
-                    <span style="font-size: var(--font-lg);">💳</span>
-                    Expense Categories
+        <div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h2 style="margin: 0; display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--accent-color);">
+                    <span style="font-size: 18px;">💳</span>
+                    EXPENSE CATEGORIES
                 </h2>
-                <button id="add-custom-category-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: var(--font-xs); font-weight: 600; transition: all 0.2s ease;" onmouseover="this.style.background='var(--accent-hover)'; this.style.transform='translateY(-1px)';" onmouseout="this.style.background='var(--accent-color)'; this.style.transform='translateY(0)';">
-                    + Custom Category
+                <button id="add-custom-category-btn" style="padding: 4px 10px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 700;">
+                    + New
                 </button>
             </div>
-            <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 8px;">
     `;
 
     for (const cat of allCategories) {
         const catData = expenses[cat.key];
 
-        // Convert legacy single object to array format (both in display and data)
+        // Convert legacy single object to array format
         let expenseItems = [];
         if (Array.isArray(catData)) {
             expenseItems = catData;
         } else if (catData && typeof catData === 'object' && catData.amount !== undefined) {
-            // Legacy format: single object - convert to array in the data structure
             expenseItems = [catData];
-            // Persist the conversion
             budgetData.expenses[currentPeriod][cat.key] = expenseItems;
         }
 
-        // Calculate total for category
         const categoryTotal = expenseItems.reduce((sum, item) => {
             return sum + annualAmount(item.amount || 0, item.frequency || 'monthly');
         }, 0);
 
-        // Category header with add button
         html += `
-            <div style="background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color); padding: var(--space-2); margin-bottom: var(--space-2);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${expenseItems.length > 0 ? 'var(--space-2)' : '0'};">
-                    <div style="display: flex; align-items: center; gap: var(--space-2);">
-                        <span style="font-size: var(--font-md);">${cat.icon}</span>
-                        <span style="font-weight: 600; font-size: var(--font-sm);">${cat.label}</span>
-                        ${categoryTotal > 0 ? `<span style="color: var(--accent-color); font-weight: 600; font-size: var(--font-sm);">${formatCurrency(categoryTotal)}/yr</span>` : ''}
+            <div style="background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color); padding: 8px; height: 100%;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${expenseItems.length > 0 ? '6px' : '0'};">
+                    <div style="display: flex; align-items: center; gap: 6px; overflow: hidden;">
+                        <span style="font-size: 14px;">${cat.icon}</span>
+                        <span style="font-weight: 700; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${cat.label}</span>
+                        ${categoryTotal > 0 ? `<span style="color: var(--accent-color); font-weight: 700; font-size: 11px;">${formatCurrency(categoryTotal, 0)}/yr</span>` : ''}
                     </div>
-                    <button class="add-expense-btn" data-category="${cat.key}" style="padding: 4px 10px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: var(--font-xs); font-weight: 500;">
-                        + Add
+                    <button class="add-expense-btn" data-category="${cat.key}" style="padding: 2px 6px; background: var(--accent-color); color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px; flex-shrink: 0;">
+                        +
                     </button>
                 </div>
         `;
 
-        // Render each expense item
         if (expenseItems.length > 0) {
-            html += `<div style="display: flex; flex-direction: column; gap: var(--space-1);">`;
+            html += `<div style="display: flex; flex-direction: column; gap: 4px;">`;
             expenseItems.forEach((expense, index) => {
                 const annual = annualAmount(expense.amount || 0, expense.frequency || 'monthly');
 
-                // Format date range display
-                let dateInfo = '';
-                if (expense.ongoing !== false) {
-                    dateInfo = '<span style="color: var(--success-color); font-size: 10px;">⏳ Ongoing</span>';
-                } else if (expense.start_date || expense.end_date) {
-                    const formatDate = (dateStr) => {
-                        if (!dateStr) return '—';
-                        const d = new Date(dateStr);
-                        return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-                    };
-
-                    const start = formatDate(expense.start_date);
-                    const end = formatDate(expense.end_date);
-
-                    if (expense.start_date && expense.end_date) {
-                        dateInfo = `<span style="color: var(--warning-color); font-size: 10px;">📅 ${start} → ${end}</span>`;
-                    } else if (expense.start_date) {
-                        dateInfo = `<span style="color: var(--accent-color); font-size: 10px;">📅 From ${start}</span>`;
-                    } else if (expense.end_date) {
-                        dateInfo = `<span style="color: var(--accent-color); font-size: 10px;">📅 Until ${end}</span>`;
-                    }
-                }
-
                 html += `
-                    <div class="expense-item-row" data-category="${cat.key}" data-index="${index}" style="padding: var(--space-2); background: var(--bg-secondary); border-radius: 4px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; gap: var(--space-2);" onmouseover="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--accent-color)'" onmouseout="this.style.background='var(--bg-secondary)'; this.style.borderColor='var(--border-color)'">
-                        <div style="display: flex; align-items: center; gap: var(--space-2); flex: 1; font-size: var(--font-xs); flex-wrap: wrap;">
-                            <span style="font-weight: 500;">${expense.name || cat.label}</span>
-                            <span style="color: var(--text-secondary);">${formatCurrency(expense.amount || 0)}/${expense.frequency || 'monthly'} (${formatCurrency(annual)}/yr)</span>
-                            ${dateInfo ? `<span style="margin-left: var(--space-1);">${dateInfo}</span>` : ''}
+                    <div class="expense-item-row" data-category="${cat.key}" data-index="${index}" style="padding: 4px 6px; background: var(--bg-secondary); border-radius: 3px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--accent-color)'" onmouseout="this.style.borderColor='var(--border-color)'">
+                        <div style="display: flex; align-items: center; gap: 4px; flex: 1; font-size: 11px; overflow: hidden;">
+                            <span style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${expense.name || cat.label}</span>
+                            <span style="color: var(--text-secondary); white-space: nowrap;">${formatCurrency(expense.amount || 0, 0)}/${expense.frequency[0].toLowerCase()}</span>
                         </div>
-                        <div style="display: flex; gap: 4px;">
-                            <button class="edit-expense-item-btn" data-category="${cat.key}" data-index="${index}" style="padding: 2px 6px; background: transparent; border: none; cursor: pointer; font-size: 12px;" title="Edit">✏️</button>
-                            <button class="delete-expense-item-btn" data-category="${cat.key}" data-index="${index}" style="padding: 2px 6px; background: transparent; border: none; cursor: pointer; font-size: 12px; color: var(--danger-color);" title="Delete">🗑️</button>
+                        <div style="display: flex; gap: 2px; flex-shrink: 0;">
+                            <button class="delete-expense-item-btn" data-category="${cat.key}" data-index="${index}" style="padding: 0 4px; background: transparent; border: none; cursor: pointer; font-size: 10px; color: var(--danger-color);" title="Delete">✕</button>
                         </div>
                     </div>
                 `;
