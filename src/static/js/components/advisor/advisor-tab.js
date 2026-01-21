@@ -341,14 +341,23 @@ async function sendMessage(profile, chatInput, chatContainer) {
         removeTypingIndicator(chatContainer, typingId);
 
         const errorMessage = error.message || 'Unknown error';
+        const isApiKeyError = /API[_ ]key|api-keys|setup-api-keys|Gemini|Claude/i.test(errorMessage) && 
+                             (errorMessage.includes('not configured') || errorMessage.includes('not set') || errorMessage.includes('missing'));
 
         // Check if this is an API key error
-        if (errorMessage.includes('API_KEY') || errorMessage.includes('api-keys') || errorMessage.includes('setup-api-keys')) {
+        if (isApiKeyError) {
             const errorMsg = `Sorry, API key not configured. ${errorMessage}<br><br>
                 <button onclick="window.app.openSettings('api-keys', 'gemini-api-key')" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
                     🔐 Configure API Keys
                 </button>`;
             addMessage(chatContainer, 'assistant', errorMsg, true);
+            
+            // Automatically open settings after a short delay
+            setTimeout(() => {
+                if (window.app && window.app.openSettings) {
+                    window.app.openSettings('api-keys', 'gemini-api-key');
+                }
+            }, 1500);
         } else {
             const errorMsg = `Sorry, I encountered an error: ${errorMessage}. <br><br>
                 <button onclick="import('./advisor-wizard.js').then(m => m.showAdvisorWizard())" style="padding: 5px 10px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 13px;">

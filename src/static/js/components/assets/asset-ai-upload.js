@@ -294,9 +294,11 @@ export function showAIUploadModal(existingAssets, onSuccess, profile = null) {
         } catch (error) {
             console.error('Extraction error:', error);
             const errorMsg = error.message || 'Failed to extract assets. Please try again.';
+            const isApiKeyError = /API[_ ]key|api-keys|setup-api-keys|Gemini|Claude/i.test(errorMsg) && 
+                                 (errorMsg.includes('not configured') || errorMsg.includes('not set') || errorMsg.includes('missing'));
 
             // Check if this is an API key error
-            if (errorMsg.includes('API_KEY') || errorMsg.includes('api-keys') || errorMsg.includes('setup-api-keys')) {
+            if (isApiKeyError) {
                 showError(errorMsg + ' Opening API settings...');
 
                 // Open API settings directly
@@ -304,7 +306,7 @@ export function showAIUploadModal(existingAssets, onSuccess, profile = null) {
                     if (window.app && window.app.openSettings) {
                         window.app.openSettings('api-keys', 'gemini-api-key');
                     }
-                }, 800);
+                }, 1200);
             } else {
                 showError(errorMsg);
             }

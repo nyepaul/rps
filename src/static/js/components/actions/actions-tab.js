@@ -343,15 +343,17 @@ function setupActionsHandlers(container, profile) {
             } catch (error) {
                 console.error('Error generating action items:', error);
                 const errorMsg = error.message || 'Failed to generate recommendations.';
+                const isApiKeyError = /API[_ ]key|api-keys|setup-api-keys|Gemini|Claude/i.test(errorMsg) && 
+                                     (errorMsg.includes('not configured') || errorMsg.includes('not set') || errorMsg.includes('missing'));
 
                 // Check if this is an API key error
-                if (errorMsg.includes('API_KEY') || errorMsg.includes('api-keys') || errorMsg.includes('setup-api-keys')) {
+                if (isApiKeyError) {
                     showError(errorMsg + ' Opening API settings...');
                     setTimeout(() => {
                         if (window.app && window.app.openSettings) {
                             window.app.openSettings('api-keys', 'gemini-api-key');
                         }
-                    }, 800);
+                    }, 1200);
                 } else {
                     showError(errorMsg);
                 }
