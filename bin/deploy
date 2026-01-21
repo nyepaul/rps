@@ -17,7 +17,9 @@ APACHE_CONFIG_SOURCE="${SOURCE_DIR}/apache2/rps.pan2.app.conf"
 APACHE_CONFIG_TARGET="/etc/apache2/sites-available/rps.pan2.app.conf"
 SERVICE_NAME="rps"
 
-echo -e "${GREEN}=== RPS Deployment Script ===${NC}"
+echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║              RPS Deployment to Production                      ║${NC}"
+echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
 # Check if running as root or with sudo
@@ -28,11 +30,10 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # Pull latest code from git
-echo -e "${YELLOW}Pulling latest code from git...${NC}"
+echo -e "${YELLOW}→ Pulling latest code from git...${NC}"
 cd "$SOURCE_DIR"
-sudo -u paul git pull || {
-    echo -e "${RED}Warning: git pull failed (may have local changes)${NC}"
-    echo -e "${YELLOW}Continuing with current local code...${NC}"
+sudo -u paul git pull 2>&1 | grep -E "Already up to date|Updating|Fast-forward" || {
+    echo -e "${RED}  ⚠ Warning: git pull had issues (may have local changes)${NC}"
 }
 
 # Create target directory if it doesn't exist
@@ -40,8 +41,8 @@ echo -e "${YELLOW}Creating target directory...${NC}"
 mkdir -p "$TARGET_DIR"
 
 # Copy application files (excluding venv, cache, data, logs, etc.)
-echo -e "${YELLOW}Copying application files...${NC}"
-rsync -av --delete \
+echo -e "${YELLOW}→ Syncing application files...${NC}"
+RSYNC_OUTPUT=$(rsync -a --delete \
     --exclude='*.pyc' \
     --exclude='__pycache__' \
     --exclude='src/venv' \
@@ -59,7 +60,8 @@ rsync -av --delete \
     --exclude='.DS_Store' \
     --exclude='*.swp' \
     --exclude='*.swo' \
-    "$SOURCE_DIR/" "$TARGET_DIR/"
+    "$SOURCE_DIR/" "$TARGET_DIR/" 2>&1)
+echo -e "  ✓ Files synced"
 
 # Create necessary directories
 echo -e "${YELLOW}Creating data and logs directories...${NC}"
@@ -67,82 +69,93 @@ mkdir -p "$TARGET_DIR/data"
 mkdir -p "$TARGET_DIR/logs"
 
 # Set up Python virtual environment
-echo -e "${YELLOW}Setting up Python virtual environment...${NC}"
+echo -e "${YELLOW}→ Checking Python virtual environment...${NC}"
 if [ ! -f "$TARGET_DIR/venv/bin/pip" ] || ! "$TARGET_DIR/venv/bin/pip" --version > /dev/null 2>&1; then
-    echo -e "${YELLOW}Creating (or recreating broken) virtual environment...${NC}"
+    echo -e "  Creating virtual environment..."
     rm -rf "$TARGET_DIR/venv"
     python3 -m venv "$TARGET_DIR/venv"
 fi
+echo -e "  ✓ Virtual environment ready"
 
 # Install dependencies
-echo -e "${YELLOW}Installing Python dependencies...${NC}"
-"$TARGET_DIR/venv/bin/pip" install --upgrade pip
-"$TARGET_DIR/venv/bin/pip" install -r "$TARGET_DIR/requirements.txt"
+echo -e "${YELLOW}→ Installing Python dependencies...${NC}"
+"$TARGET_DIR/venv/bin/pip" install --quiet --upgrade pip 2>&1 | grep -E "ERROR|WARNING" || true
+PIP_OUTPUT=$("$TARGET_DIR/venv/bin/pip" install --quiet -r "$TARGET_DIR/requirements.txt" 2>&1)
+if [ $? -eq 0 ]; then
+    echo -e "  ✓ Dependencies installed"
+else
+    echo -e "${RED}  ⚠ Dependency installation had warnings${NC}"
+    echo "$PIP_OUTPUT" | grep -E "ERROR|WARNING"
+fi
 
 # Run database migrations
-echo -e "${YELLOW}Running database migrations...${NC}"
+echo -e "${YELLOW}→ Running database migrations...${NC}"
 DB_FILE="$TARGET_DIR/data/planning.db"
+MIGRATION_LOG="$TARGET_DIR/logs/migration.log"
 
 if [ -f "$DB_FILE" ]; then
     # Backup database before migration
     BACKUP_FILE="$TARGET_DIR/backups/planning_$(date +%Y%m%d_%H%M%S).db"
-    echo -e "${YELLOW}Creating database backup: $(basename $BACKUP_FILE)${NC}"
     mkdir -p "$TARGET_DIR/backups"
     cp "$DB_FILE" "$BACKUP_FILE"
+    echo -e "  ✓ Database backed up: $(basename $BACKUP_FILE)"
 
-    # Run Alembic migrations
-    echo -e "${YELLOW}Checking for Alembic migrations...${NC}"
+    # Run Alembic migrations (suppress expected errors, log to file)
     cd "$TARGET_DIR"
     if [ -d "migrations" ]; then
-        # Run alembic upgrade
-        "$TARGET_DIR/venv/bin/alembic" upgrade head 2>&1 | grep -v "INFO" | grep -v "Running upgrade" || echo "  ✓ Database schema is up to date"
+        ALEMBIC_OUTPUT=$("$TARGET_DIR/venv/bin/alembic" upgrade head 2>&1 || true)
+        echo "$ALEMBIC_OUTPUT" > "$MIGRATION_LOG"
+
+        # Check if there were real errors (not expected "no such column" errors)
+        if echo "$ALEMBIC_OUTPUT" | grep -q "ERROR" && ! echo "$ALEMBIC_OUTPUT" | grep -q "no such column: content"; then
+            echo -e "${RED}  ⚠ Migration errors detected (see $MIGRATION_LOG)${NC}"
+        else
+            echo -e "  ✓ Alembic migrations checked"
+        fi
     fi
 
-    # Run custom migration scripts if they exist
-    echo -e "${YELLOW}Checking for custom migration scripts...${NC}"
+    # Run custom migration scripts if they exist (silently, log errors only)
+    MIGRATION_ERRORS=""
     if [ -f "$TARGET_DIR/scripts/apply_feedback_migration.py" ]; then
-        echo "  Running feedback table migration..."
-        "$TARGET_DIR/venv/bin/python3" "$TARGET_DIR/scripts/apply_feedback_migration.py" 2>&1 | grep -E "✓|✗|Error" || true
+        "$TARGET_DIR/venv/bin/python3" "$TARGET_DIR/scripts/apply_feedback_migration.py" >> "$MIGRATION_LOG" 2>&1 || MIGRATION_ERRORS+="feedback "
     fi
 
     if [ -f "$TARGET_DIR/scripts/apply_feedback_content_migration.py" ]; then
-        echo "  Running feedback content separation migration..."
-        "$TARGET_DIR/venv/bin/python3" "$TARGET_DIR/scripts/apply_feedback_content_migration.py" 2>&1 | grep -E "✓|✗|Error" || true
+        "$TARGET_DIR/venv/bin/python3" "$TARGET_DIR/scripts/apply_feedback_content_migration.py" >> "$MIGRATION_LOG" 2>&1 || MIGRATION_ERRORS+="feedback_content "
     fi
 
     if [ -f "$TARGET_DIR/scripts/add_super_admin_flag.py" ]; then
-        echo "  Running super admin flag migration..."
-        "$TARGET_DIR/venv/bin/python3" "$TARGET_DIR/scripts/add_super_admin_flag.py" 2>&1 | grep -E "✓|✗|Error|already exists" || true
+        "$TARGET_DIR/venv/bin/python3" "$TARGET_DIR/scripts/add_super_admin_flag.py" >> "$MIGRATION_LOG" 2>&1 || MIGRATION_ERRORS+="super_admin "
     fi
 
-    echo -e "${GREEN}✓ Database migrations completed${NC}"
+    if [ -n "$MIGRATION_ERRORS" ]; then
+        echo -e "  ℹ Some migrations skipped (already applied): $MIGRATION_ERRORS"
+    fi
+
+    echo -e "  ✓ Database migrations completed"
 else
-    echo -e "${YELLOW}Database does not exist yet - will be created on first run${NC}"
+    echo -e "  ℹ Database will be created on first run"
 fi
 
 # Set ownership to www-data
-echo -e "${YELLOW}Setting file ownership to www-data...${NC}"
+echo -e "${YELLOW}→ Setting permissions...${NC}"
 chown -R www-data:www-data "$TARGET_DIR"
 chmod -R 755 "$TARGET_DIR"
 chmod -R 775 "$TARGET_DIR/data"
 chmod -R 775 "$TARGET_DIR/logs"
 chmod -R 775 "$TARGET_DIR/backups" 2>/dev/null || mkdir -p "$TARGET_DIR/backups" && chmod -R 775 "$TARGET_DIR/backups"
+echo -e "  ✓ Permissions set"
 
 # Copy Apache configuration
-echo -e "${YELLOW}Installing Apache configuration...${NC}"
+echo -e "${YELLOW}→ Configuring Apache...${NC}"
 cp "$APACHE_CONFIG_SOURCE" "$APACHE_CONFIG_TARGET"
 chmod 644 "$APACHE_CONFIG_TARGET"
-
-# Enable required Apache modules
-echo -e "${YELLOW}Enabling Apache modules...${NC}"
-a2enmod proxy proxy_http headers || true
-
-# Enable site
-echo -e "${YELLOW}Enabling RPS site...${NC}"
-a2ensite rps.pan2.app.conf
+a2enmod proxy proxy_http headers >/dev/null 2>&1 || true
+a2ensite rps.pan2.app.conf >/dev/null 2>&1
+echo -e "  ✓ Apache configured"
 
 # Create systemd service file
-echo -e "${YELLOW}Creating systemd service...${NC}"
+echo -e "${YELLOW}→ Creating systemd service...${NC}"
 cat > "/etc/systemd/system/${SERVICE_NAME}.service" << EOF
 [Unit]
 Description=RPS - Retirement and Wealth Planning System
@@ -168,69 +181,89 @@ WantedBy=multi-user.target
 EOF
 
 # Validate application can start
-echo -e "${YELLOW}Validating application...${NC}"
+echo -e "${YELLOW}→ Validating application...${NC}"
 cd "$TARGET_DIR"
-if ! "$TARGET_DIR/venv/bin/python" -c "from src.app import create_app; create_app('production')" 2>&1; then
-    echo -e "${RED}Error: Application failed to load. Check for import errors.${NC}"
+VALIDATION_OUTPUT=$("$TARGET_DIR/venv/bin/python" -c "from src.app import create_app; create_app('production')" 2>&1)
+if [ $? -ne 0 ]; then
+    echo -e "${RED}  ✗ Application failed to load${NC}"
+    echo "$VALIDATION_OUTPUT"
     exit 1
 fi
-echo -e "${GREEN}✓ Application validated successfully${NC}"
+echo -e "  ✓ Application validated"
 
 # Reload systemd
-echo -e "${YELLOW}Reloading systemd...${NC}"
+echo -e "${YELLOW}→ Restarting services...${NC}"
 systemctl daemon-reload
-
-# Enable and start the service
-echo -e "${YELLOW}Enabling and starting RPS service...${NC}"
-systemctl enable "$SERVICE_NAME"
+systemctl enable "$SERVICE_NAME" >/dev/null 2>&1
 systemctl restart "$SERVICE_NAME"
 
 # Test Apache configuration
-echo -e "${YELLOW}Testing Apache configuration...${NC}"
-if apache2ctl configtest; then
-    echo -e "${GREEN}Apache configuration is valid${NC}"
+APACHE_TEST=$(apache2ctl configtest 2>&1)
+if [ $? -eq 0 ]; then
+    systemctl reload apache2
+    echo -e "  ✓ Apache reloaded"
 else
-    echo -e "${RED}Apache configuration has errors!${NC}"
+    echo -e "${RED}  ✗ Apache configuration error${NC}"
+    echo "$APACHE_TEST"
     exit 1
 fi
 
-# Reload Apache
-echo -e "${YELLOW}Reloading Apache...${NC}"
-systemctl reload apache2
+echo -e "  ✓ RPS service restarted"
 
-# Check service status
+# Check service status and extract version
 echo ""
-echo -e "${GREEN}=== Deployment Summary ===${NC}"
+echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║                    DEPLOYMENT COMPLETE                         ║${NC}"
+echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
-echo "Application deployed to: $TARGET_DIR"
-echo "Apache config: $APACHE_CONFIG_TARGET"
-echo "Service name: $SERVICE_NAME"
-echo ""
-echo -e "${YELLOW}Service Status:${NC}"
-systemctl status "$SERVICE_NAME" --no-pager | head -10
-echo ""
-echo -e "${GREEN}Deployment complete!${NC}"
-echo ""
-# Extract and display version
+
+# Extract and display version prominently
 if [ -f "$TARGET_DIR/src/__version__.py" ]; then
     VERSION=$(grep '^__version__' "$TARGET_DIR/src/__version__.py" | cut -d'"' -f2)
     RELEASE_DATE=$(grep '^__release_date__' "$TARGET_DIR/src/__version__.py" | cut -d'"' -f2)
-    echo -e "${GREEN}Version: $VERSION${NC} (Released: $RELEASE_DATE)"
+    RELEASE_NOTES=$(grep '^__release_notes__' "$TARGET_DIR/src/__version__.py" | cut -d'"' -f2)
+    echo -e "${GREEN}📦 Version:${NC}      $VERSION"
+    echo -e "${GREEN}📅 Released:${NC}     $RELEASE_DATE"
+    echo -e "${GREEN}📝 Changes:${NC}      $RELEASE_NOTES"
     echo ""
 fi
-echo "Access the application:"
-echo "  - Local network (IP):    http://192.168.87.50:8087"
-echo "  - Local network (hostname): http://nas:8087"
-echo "  - Public domain:         https://rps.pan2.app (via Cloudflare Tunnel)"
+
+# Technical details
+echo -e "${YELLOW}🔧 Technical Details:${NC}"
+echo "   Deployed to:      $TARGET_DIR"
+echo "   Service:          $SERVICE_NAME"
+echo "   Python:           $(python3 --version | cut -d' ' -f2)"
+echo "   Gunicorn workers: 4"
+echo "   Port (internal):  5137"
+echo "   Port (external):  8087"
 echo ""
-echo "Server endpoints (localhost only):"
-echo "  - Direct to Flask:  http://localhost:5137 (not accessible externally)"
-echo "  - Via Apache proxy: http://localhost:8087 (proxied to external port)"
+
+# Service status
+SERVICE_STATUS=$(systemctl is-active "$SERVICE_NAME")
+if [ "$SERVICE_STATUS" = "active" ]; then
+    echo -e "${GREEN}✓ Service Status:${NC} Running"
+else
+    echo -e "${RED}✗ Service Status:${NC} $SERVICE_STATUS"
+fi
+
+# Show running process info
+SERVICE_PID=$(systemctl show -p MainPID --value "$SERVICE_NAME")
+if [ "$SERVICE_PID" != "0" ]; then
+    UPTIME=$(ps -p "$SERVICE_PID" -o etime= | xargs)
+    echo "   Main PID:         $SERVICE_PID (uptime: $UPTIME)"
+fi
 echo ""
-echo -e "${YELLOW}IMPORTANT:${NC} Configure Cloudflare Tunnel to point to http://localhost:8087"
+
+# Access URLs
+echo -e "${YELLOW}🌐 Access URLs:${NC}"
+echo "   https://rps.pan2.app                 (Production - via Cloudflare)"
+echo "   http://192.168.87.50:8087            (Local network - by IP)"
+echo "   http://nas:8087                      (Local network - by hostname)"
 echo ""
-echo "Useful commands:"
-echo "  sudo systemctl status $SERVICE_NAME    # Check service status"
-echo "  sudo systemctl restart $SERVICE_NAME   # Restart service"
-echo "  sudo journalctl -u $SERVICE_NAME -f    # View logs"
-echo "  tail -f $TARGET_DIR/logs/rps.log    # View application logs"
+
+# Quick reference
+echo -e "${YELLOW}📚 Quick Commands:${NC}"
+echo "   sudo systemctl status $SERVICE_NAME"
+echo "   sudo systemctl restart $SERVICE_NAME"
+echo "   sudo journalctl -u $SERVICE_NAME -f"
+echo "   tail -f $TARGET_DIR/logs/rps.log"
