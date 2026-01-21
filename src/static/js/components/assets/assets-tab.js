@@ -41,33 +41,35 @@ export function renderAssetsTab(container) {
     };
 
     container.innerHTML = `
-        <div style="max-width: 1200px; margin: 0 auto;">
+        <div style="max-width: 1200px; margin: 0 auto; padding: var(--space-2) var(--space-3);">
             <!-- Header -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
                 <div style="min-width: 0; flex: 1;">
-                    <h1 style="font-size: 24px; margin-bottom: 5px;">💰 Asset Management</h1>
+                    <h1 style="font-size: var(--font-2xl); margin: 0;">💰 Asset Management</h1>
                     <p style="color: var(--text-secondary); margin: 0; font-size: 13px;">
-                        Manage your retirement accounts, real estate, and other assets
+                        Tracking <strong>${profile.name}'s</strong> portfolio
                     </p>
                 </div>
-                <div style="display: flex; gap: 6px; flex-wrap: wrap; flex-shrink: 0;">
-                    <button id="add-asset-btn" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s; font-size: 13px;">
+                <div style="display: flex; gap: 4px; flex-wrap: wrap; flex-shrink: 0;">
+                    <button id="add-asset-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px;">
                         + Add Asset
                     </button>
-                    <button id="ai-import-btn" style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; transition: all 0.2s; font-size: 13px;">
+                    <button id="ai-import-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px;">
                         📷 Import
                     </button>
-                    <button id="csv-export-btn" style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; transition: all 0.2s; font-size: 13px;">
-                        ⬇️ Export
-                    </button>
-                    <button id="csv-import-btn" style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; transition: all 0.2s; font-size: 13px;">
-                        ⬆️ Import
-                    </button>
+                    <div style="display: flex; border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden;">
+                        <button id="csv-export-btn" style="padding: 6px 10px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-right: 1px solid var(--border-color); cursor: pointer; font-size: 11px;">
+                            Export
+                        </button>
+                        <button id="csv-import-btn" style="padding: 6px 10px; background: var(--bg-tertiary); color: var(--text-primary); border: none; cursor: pointer; font-size: 11px;">
+                            Import
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <!-- Summary Cards -->
-            <div id="asset-summary" style="margin-bottom: 15px;"></div>
+            <div id="asset-summary" style="margin-bottom: 12px;"></div>
 
             <!-- Asset Categories -->
             <div id="asset-categories"></div>
@@ -176,26 +178,26 @@ function renderSummaryCards(assets, container, selectedFilter) {
     ];
 
     container.innerHTML = `
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px;">
             ${cards.map(card => {
                 const isSelected = card.key === selectedFilter;
                 return `
                 <div class="summary-card" data-filter="${card.key}" style="
-                    background: ${isSelected ? 'linear-gradient(135deg, var(--accent-color) 0%, #764ba2 100%)' : 'var(--bg-secondary)'}; 
-                    padding: 20px; 
-                    border-radius: 12px; 
+                    background: ${isSelected ? 'var(--accent-color)' : 'var(--bg-secondary)'}; 
+                    padding: 10px 12px; 
+                    border-radius: 6px; 
                     cursor: pointer;
                     transition: all 0.2s;
-                    ${isSelected ? 'box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); transform: translateY(-2px);' : 'border: 1px solid transparent;'}
-                    ${!isSelected ? ':hover { border-color: var(--accent-color); transform: translateY(-2px); }' : ''}
+                    border: 1px solid ${isSelected ? 'var(--accent-color)' : 'var(--border-color)'};
+                    ${isSelected ? 'box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);' : ''}
                 ">
-                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                        <span style="font-size: 24px;">${card.icon}</span>
-                        <div style="font-size: 14px; ${isSelected ? 'color: rgba(255,255,255,0.9);' : 'color: var(--text-secondary);'} font-weight: 600;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                        <span style="font-size: 16px;">${card.icon}</span>
+                        <div style="font-size: 11px; ${isSelected ? 'color: white; opacity: 0.9;' : 'color: var(--text-secondary);'} font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;">
                             ${card.label}
                         </div>
                     </div>
-                    <div style="font-size: 28px; font-weight: 700; ${isSelected ? 'color: white;' : 'color: var(--text-primary);'}">
+                    <div style="font-size: 18px; font-weight: 700; ${isSelected ? 'color: white;' : 'color: var(--text-primary);'}">
                         ${formatCurrency(card.value, 0)}${card.suffix || ''}
                     </div>
                 </div>
