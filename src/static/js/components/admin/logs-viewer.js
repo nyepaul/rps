@@ -15,6 +15,9 @@ let currentSort = {
 // User mapping for filter (username -> user_id)
 let userMapping = {};
 
+// Current logs array for IP access details navigation
+let currentIPLogs = [];
+
 /**
  * Render logs viewer with filtering and pagination
  */
@@ -1045,6 +1048,198 @@ async function showIPLocationsMap() {
 }
 
 /**
+ * Show log details modal with navigation (for IP access details)
+ */
+async function showLogDetailsWithNavigation(logIndex) {
+    const log = currentIPLogs[logIndex];
+    if (!log) return;
+
+    const hasPrev = logIndex > 0;
+    const hasNext = logIndex < currentIPLogs.length - 1;
+
+    try {
+        // Fetch full log details from API
+        const fullLog = await apiClient.get(`/api/admin/logs/${log.id}`);
+
+        // Create modal
+        const modal = document.createElement('div');
+        modal.className = 'log-details-modal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10002;
+        `;
+
+        const timestamp = new Date(fullLog.created_at).toLocaleString();
+        const actionColor = getActionColor(fullLog.action);
+        const statusColor = fullLog.status_code >= 400 ? 'var(--danger-color)' : 'var(--success-color)';
+
+        modal.innerHTML = `
+            <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 15px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <h2 style="margin: 0; font-size: 20px;">📋 Audit Log Details</h2>
+                        <span style="font-size: 12px; color: var(--text-secondary); font-weight: 400;">(${logIndex + 1} of ${currentIPLogs.length})</span>
+                    </div>
+                    <button class="close-modal-btn" style="background: transparent; border: none; font-size: 28px; cursor: pointer; color: var(--text-secondary); padding: 0; line-height: 1;">×</button>
+                </div>
+
+                <div style="display: grid; gap: 20px;">
+                    <!-- Basic Info -->
+                    <div>
+                        <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Basic Information</h3>
+                        <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; display: grid; gap: 10px;">
+                            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                <span style="font-weight: 600; color: var(--text-secondary);">Log ID:</span>
+                                <span style="font-family: monospace;">${fullLog.id}</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                <span style="font-weight: 600; color: var(--text-secondary);">Timestamp:</span>
+                                <span>${timestamp}</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                <span style="font-weight: 600; color: var(--text-secondary);">Action:</span>
+                                <span style="display: inline-block; padding: 4px 12px; background: ${actionColor}20; color: ${actionColor}; border-radius: 4px; font-size: 12px; font-weight: 600; width: fit-content;">${fullLog.action}</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                <span style="font-weight: 600; color: var(--text-secondary);">Status Code:</span>
+                                <span style="display: inline-block; padding: 4px 12px; background: ${statusColor}20; color: ${statusColor}; border-radius: 4px; font-size: 12px; font-weight: 600; width: fit-content;">${fullLog.status_code || 'N/A'}</span>
+                            </div>
+                            ${fullLog.table_name ? `
+                                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                    <span style="font-weight: 600; color: var(--text-secondary);">Table:</span>
+                                    <span style="font-family: monospace;">${fullLog.table_name}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <!-- User Info -->
+                    <div>
+                        <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">User Information</h3>
+                        <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; display: grid; gap: 10px;">
+                            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                <span style="font-weight: 600; color: var(--text-secondary);">User ID:</span>
+                                <span>${fullLog.user_id || 'N/A'}</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                <span style="font-weight: 600; color: var(--text-secondary);">Username:</span>
+                                <span>${fullLog.username || 'Anonymous'}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Network Info -->
+                    ${fullLog.ip_address ? `
+                        <div>
+                            <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Network Information</h3>
+                            <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; display: grid; gap: 10px;">
+                                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                    <span style="font-weight: 600; color: var(--text-secondary);">IP Address:</span>
+                                    <span style="font-family: monospace;">${fullLog.ip_address}</span>
+                                </div>
+                                ${fullLog.geo_location ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Location:</span>
+                                        <span>${fullLog.geo_location.city || 'Unknown'}, ${fullLog.geo_location.region || 'Unknown'}, ${fullLog.geo_location.country || 'Unknown'}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <!-- Navigation & Close Buttons -->
+                <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; gap: 10px;">
+                        <button class="prev-log-btn" ${!hasPrev ? 'disabled' : ''} style="padding: 10px 20px; background: ${hasPrev ? 'var(--bg-tertiary)' : 'var(--bg-primary)'}; color: ${hasPrev ? 'var(--text-primary)' : 'var(--text-secondary)'}; border: 1px solid var(--border-color); border-radius: 6px; cursor: ${hasPrev ? 'pointer' : 'not-allowed'}; font-weight: 600; display: flex; align-items: center; gap: 5px; transition: all 0.2s;">
+                            ← Previous
+                        </button>
+                        <button class="next-log-btn" ${!hasNext ? 'disabled' : ''} style="padding: 10px 20px; background: ${hasNext ? 'var(--bg-tertiary)' : 'var(--bg-primary)'}; color: ${hasNext ? 'var(--text-primary)' : 'var(--text-secondary)'}; border: 1px solid var(--border-color); border-radius: 6px; cursor: ${hasNext ? 'pointer' : 'not-allowed'}; font-weight: 600; display: flex; align-items: center; gap: 5px; transition: all 0.2s;">
+                            Next →
+                        </button>
+                    </div>
+                    <button class="close-modal-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Add to document
+        document.body.appendChild(modal);
+
+        // Setup close handlers
+        modal.querySelectorAll('.close-modal-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                modal.remove();
+                document.removeEventListener('keydown', keyHandler);
+            });
+        });
+
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+                document.removeEventListener('keydown', keyHandler);
+            }
+        });
+
+        // Previous button handler
+        const prevBtn = modal.querySelector('.prev-log-btn');
+        if (prevBtn && hasPrev) {
+            prevBtn.addEventListener('click', () => {
+                modal.remove();
+                document.removeEventListener('keydown', keyHandler);
+                showLogDetailsWithNavigation(logIndex - 1);
+            });
+            prevBtn.addEventListener('mouseenter', () => prevBtn.style.background = 'var(--bg-primary)');
+            prevBtn.addEventListener('mouseleave', () => prevBtn.style.background = 'var(--bg-tertiary)');
+        }
+
+        // Next button handler
+        const nextBtn = modal.querySelector('.next-log-btn');
+        if (nextBtn && hasNext) {
+            nextBtn.addEventListener('click', () => {
+                modal.remove();
+                document.removeEventListener('keydown', keyHandler);
+                showLogDetailsWithNavigation(logIndex + 1);
+            });
+            nextBtn.addEventListener('mouseenter', () => nextBtn.style.background = 'var(--bg-primary)');
+            nextBtn.addEventListener('mouseleave', () => nextBtn.style.background = 'var(--bg-tertiary)');
+        }
+
+        // Keyboard navigation
+        const keyHandler = (e) => {
+            if (e.key === 'Escape') {
+                modal.remove();
+                document.removeEventListener('keydown', keyHandler);
+            } else if (e.key === 'ArrowLeft' && hasPrev) {
+                modal.remove();
+                document.removeEventListener('keydown', keyHandler);
+                showLogDetailsWithNavigation(logIndex - 1);
+            } else if (e.key === 'ArrowRight' && hasNext) {
+                modal.remove();
+                document.removeEventListener('keydown', keyHandler);
+                showLogDetailsWithNavigation(logIndex + 1);
+            }
+        };
+        document.addEventListener('keydown', keyHandler);
+
+    } catch (error) {
+        console.error('Failed to load log details:', error);
+        showError(`Failed to load log details: ${error.message}`);
+    }
+}
+
+/**
  * Show all access records for a specific IP address
  */
 async function showIPAccessDetails(ipAddress, city, region, country) {
@@ -1063,6 +1258,9 @@ async function showIPAccessDetails(ipAddress, city, region, country) {
             showError(`No access records found for ${ipAddress}`);
             return;
         }
+
+        // Store logs for navigation
+        currentIPLogs = logs;
 
         // Create modal
         const modal = document.createElement('div');
@@ -1104,8 +1302,8 @@ async function showIPAccessDetails(ipAddress, city, region, country) {
                             </tr>
                         </thead>
                         <tbody>
-                            ${logs.map(log => `
-                                <tr class="access-log-row" data-log-id="${log.id}" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;" onmouseenter="this.style.background='var(--bg-tertiary)'" onmouseleave="this.style.background='transparent'">
+                            ${logs.map((log, index) => `
+                                <tr class="access-log-row" data-log-id="${log.id}" data-log-index="${index}" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;" onmouseenter="this.style.background='var(--bg-tertiary)'" onmouseleave="this.style.background='transparent'">
                                     <td style="padding: 12px; font-size: 13px;">
                                         ${new Date(log.created_at).toLocaleString()}
                                     </td>
@@ -1163,16 +1361,16 @@ async function showIPAccessDetails(ipAddress, city, region, country) {
         };
         document.addEventListener('keydown', escHandler);
 
-        // Setup row click handlers to show log details
+        // Setup row click handlers to show log details with navigation
         modal.querySelectorAll('.access-log-row').forEach(row => {
             row.addEventListener('click', async (e) => {
                 // Don't trigger if clicking the button directly
                 if (e.target.classList.contains('view-log-detail-btn')) {
                     return;
                 }
-                const logId = row.getAttribute('data-log-id');
-                if (logId) {
-                    await showLogDetails(parseInt(logId));
+                const logIndex = parseInt(row.getAttribute('data-log-index'));
+                if (logIndex >= 0 && logIndex < currentIPLogs.length) {
+                    await showLogDetailsWithNavigation(logIndex);
                 }
             });
         });
@@ -1182,9 +1380,9 @@ async function showIPAccessDetails(ipAddress, city, region, country) {
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation(); // Prevent row click from also firing
                 const row = btn.closest('.access-log-row');
-                const logId = row?.getAttribute('data-log-id');
-                if (logId) {
-                    await showLogDetails(parseInt(logId));
+                const logIndex = parseInt(row?.getAttribute('data-log-index'));
+                if (logIndex >= 0 && logIndex < currentIPLogs.length) {
+                    await showLogDetailsWithNavigation(logIndex);
                 }
             });
         });

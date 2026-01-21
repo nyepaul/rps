@@ -448,11 +448,15 @@ function setupActivityTableSort(container, events) {
 
             // Sort and re-render
             const sortedEvents = sortActivityEvents(events, activitySort.column, activitySort.direction);
+
+            // Update currentEvents to reflect sorted order for navigation
+            currentEvents = sortedEvents;
+
             const tableContainer = container.querySelector('#activity-table-container');
             tableContainer.innerHTML = renderActivityTable(sortedEvents);
 
             // Re-setup handlers
-            setupActivityTableSort(container, events);
+            setupActivityTableSort(container, sortedEvents);
         });
     });
 
