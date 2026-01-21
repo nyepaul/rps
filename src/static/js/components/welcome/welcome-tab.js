@@ -15,10 +15,10 @@ export function renderWelcomeTab(container) {
                 <div id="getting-started-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2); cursor: pointer; user-select: none;">
                     <h2 style="font-size: 16px; margin: 0;">📚 Getting Started Guide</h2>
                     <button id="toggle-wizard-btn" style="padding: 4px 10px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px;">
-                        Hide Guide
+                        Show Guide
                     </button>
                 </div>
-                <div id="wizard-content" style="display: block;">
+                <div id="wizard-content" style="display: none;">
                     <div id="wizard-steps"></div>
                     <div style="display: flex; gap: var(--space-2); justify-content: space-between; margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--border-color);">
                         <button id="wizard-prev" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px;">
