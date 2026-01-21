@@ -625,6 +625,18 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
                                     <span style="font-family: monospace;">${fullLog.record_id}</span>
                                 </div>
                             ` : ''}
+                            ${fullLog.details?.page || fullLog.details?.tab || fullLog.details?.last_page ? `
+                                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                    <span style="font-weight: 600; color: var(--text-secondary);">Page/View:</span>
+                                    <span style="display: inline-block; padding: 4px 12px; background: var(--accent-color)15; color: var(--accent-color); border-radius: 4px; font-size: 12px; font-weight: 600; width: fit-content;">📄 ${fullLog.details?.page || fullLog.details?.tab || fullLog.details?.last_page}</span>
+                                </div>
+                            ` : ''}
+                            ${fullLog.details?._description ? `
+                                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                    <span style="font-weight: 600; color: var(--text-secondary);">Description:</span>
+                                    <span style="font-size: 12px; color: var(--text-primary);">${fullLog.details._description}</span>
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
 
@@ -1025,6 +1037,18 @@ async function showLogDetails(logId) {
                                 <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
                                     <span style="font-weight: 600; color: var(--text-secondary);">Record ID:</span>
                                     <span style="font-family: monospace;">${log.record_id}</span>
+                                </div>
+                            ` : ''}
+                            ${log.details?.page || log.details?.tab || log.details?.last_page ? `
+                                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                    <span style="font-weight: 600; color: var(--text-secondary);">Page/View:</span>
+                                    <span style="display: inline-block; padding: 4px 12px; background: var(--accent-color)15; color: var(--accent-color); border-radius: 4px; font-size: 12px; font-weight: 600; width: fit-content;">📄 ${log.details?.page || log.details?.tab || log.details?.last_page}</span>
+                                </div>
+                            ` : ''}
+                            ${log.details?._description ? `
+                                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                    <span style="font-weight: 600; color: var(--text-secondary);">Description:</span>
+                                    <span style="font-size: 12px; color: var(--text-primary);">${log.details._description}</span>
                                 </div>
                             ` : ''}
                         </div>
@@ -1830,6 +1854,18 @@ async function showLogDetailsWithNavigation(logIndex) {
                                     <span style="font-family: monospace;">${fullLog.table_name}</span>
                                 </div>
                             ` : ''}
+                            ${fullLog.details?.page || fullLog.details?.tab || fullLog.details?.last_page ? `
+                                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                    <span style="font-weight: 600; color: var(--text-secondary);">Page/View:</span>
+                                    <span style="display: inline-block; padding: 4px 12px; background: var(--accent-color)15; color: var(--accent-color); border-radius: 4px; font-size: 12px; font-weight: 600; width: fit-content;">📄 ${fullLog.details?.page || fullLog.details?.tab || fullLog.details?.last_page}</span>
+                                </div>
+                            ` : ''}
+                            ${fullLog.details?._description ? `
+                                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                    <span style="font-weight: 600; color: var(--text-secondary);">Description:</span>
+                                    <span style="font-size: 12px; color: var(--text-primary);">${fullLog.details._description}</span>
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
 
@@ -1913,6 +1949,338 @@ async function showLogDetailsWithNavigation(logIndex) {
                                         <span style="font-weight: 600; color: var(--text-secondary);">Request Size:</span>
                                         <span>${fullLog.request_size} bytes</span>
                                     </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- Device & Browser Information -->
+                    ${fullLog.device_info ? `
+                        <div>
+                            <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Device & Browser Information</h3>
+                            <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; display: grid; gap: 10px;">
+                                ${fullLog.device_info.browser ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Browser:</span>
+                                        <span>${fullLog.device_info.browser} ${fullLog.device_info.browser_version || ''}</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.device_info.os ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Operating System:</span>
+                                        <span>${fullLog.device_info.os} ${fullLog.device_info.os_version || ''}</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.device_info.device ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Device:</span>
+                                        <span>${fullLog.device_info.device}${fullLog.device_info.device_brand !== 'Unknown' ? ` (${fullLog.device_info.device_brand})` : ''}</span>
+                                    </div>
+                                ` : ''}
+                                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                    <span style="font-weight: 600; color: var(--text-secondary);">Device Type:</span>
+                                    <span>${fullLog.device_info.is_mobile ? '📱 Mobile' : fullLog.device_info.is_tablet ? '📱 Tablet' : fullLog.device_info.is_pc ? '💻 Desktop' : fullLog.device_info.is_bot ? '🤖 Bot' : 'Unknown'}</span>
+                                </div>
+                                ${fullLog.device_info.fingerprint ? `
+                                    ${fullLog.device_info.fingerprint.screen_resolution ? `
+                                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                            <span style="font-weight: 600; color: var(--text-secondary);">Screen Resolution:</span>
+                                            <span>${fullLog.device_info.fingerprint.screen_resolution}</span>
+                                        </div>
+                                    ` : ''}
+                                    ${fullLog.device_info.fingerprint.viewport_size ? `
+                                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                            <span style="font-weight: 600; color: var(--text-secondary);">Viewport Size:</span>
+                                            <span>${fullLog.device_info.fingerprint.viewport_size}</span>
+                                        </div>
+                                    ` : ''}
+                                    ${fullLog.device_info.fingerprint.device_pixel_ratio ? `
+                                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                            <span style="font-weight: 600; color: var(--text-secondary);">Pixel Ratio:</span>
+                                            <span>${fullLog.device_info.fingerprint.device_pixel_ratio}x</span>
+                                        </div>
+                                    ` : ''}
+                                    ${fullLog.device_info.fingerprint.color_depth ? `
+                                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                            <span style="font-weight: 600; color: var(--text-secondary);">Color Depth:</span>
+                                            <span>${fullLog.device_info.fingerprint.color_depth}-bit</span>
+                                        </div>
+                                    ` : ''}
+                                    ${fullLog.device_info.fingerprint.primary_language ? `
+                                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                            <span style="font-weight: 600; color: var(--text-secondary);">Language:</span>
+                                            <span>${fullLog.device_info.fingerprint.primary_language}</span>
+                                        </div>
+                                    ` : ''}
+                                    ${fullLog.device_info.fingerprint.timezone_offset_hours !== undefined ? `
+                                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                            <span style="font-weight: 600; color: var(--text-secondary);">Timezone Offset:</span>
+                                            <span>UTC${fullLog.device_info.fingerprint.timezone_offset_hours >= 0 ? '+' : ''}${fullLog.device_info.fingerprint.timezone_offset_hours}</span>
+                                        </div>
+                                    ` : ''}
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Do Not Track:</span>
+                                        <span>${fullLog.device_info.fingerprint.dnt_enabled ? '✅ Enabled' : '❌ Disabled'}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- Client Fingerprint Details (from details.client_fingerprint) -->
+                    ${fullLog.details?.client_fingerprint ? `
+                        <div>
+                            <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Client Fingerprint</h3>
+                            <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; display: grid; gap: 10px;">
+                                ${fullLog.details.client_fingerprint.composite_hash ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Fingerprint Hash:</span>
+                                        <span style="font-family: monospace;">${fullLog.details.client_fingerprint.composite_hash}</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.details.client_fingerprint.canvas_hash ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Canvas Hash:</span>
+                                        <span style="font-family: monospace;">${fullLog.details.client_fingerprint.canvas_hash}</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.details.client_fingerprint.audio_hash ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Audio Hash:</span>
+                                        <span style="font-family: monospace;">${fullLog.details.client_fingerprint.audio_hash}</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.details.client_fingerprint.webgl_vendor ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">WebGL Vendor:</span>
+                                        <span style="font-size: 11px;">${fullLog.details.client_fingerprint.webgl_vendor}</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.details.client_fingerprint.webgl_renderer ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">WebGL Renderer:</span>
+                                        <span style="font-size: 11px;">${fullLog.details.client_fingerprint.webgl_renderer}</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.details.client_fingerprint.font_count ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Detected Fonts:</span>
+                                        <span>${fullLog.details.client_fingerprint.font_count} fonts</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.details.client_fingerprint.cpu_cores ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">CPU Cores:</span>
+                                        <span>${fullLog.details.client_fingerprint.cpu_cores}</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.details.client_fingerprint.device_memory ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Device Memory:</span>
+                                        <span>${fullLog.details.client_fingerprint.device_memory} GB</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.details.client_fingerprint.touch_points !== undefined ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Touch Points:</span>
+                                        <span>${fullLog.details.client_fingerprint.touch_points}</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.details.client_fingerprint.color_scheme ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Color Scheme:</span>
+                                        <span>${fullLog.details.client_fingerprint.color_scheme === 'dark' ? '🌙 Dark' : '☀️ Light'}</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.details.client_fingerprint.reduced_motion !== undefined ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Reduced Motion:</span>
+                                        <span>${fullLog.details.client_fingerprint.reduced_motion ? '✅ Enabled' : '❌ Disabled'}</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.details.client_fingerprint.webdriver !== undefined ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">WebDriver:</span>
+                                        <span style="color: ${fullLog.details.client_fingerprint.webdriver ? 'var(--danger-color)' : 'var(--success-color)'};">${fullLog.details.client_fingerprint.webdriver ? '⚠️ Detected (Bot?)' : '✅ Not Detected'}</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.details.client_fingerprint.network_type ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Network Type:</span>
+                                        <span>${fullLog.details.client_fingerprint.network_type}</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.details.client_fingerprint.network_downlink ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Downlink Speed:</span>
+                                        <span>${fullLog.details.client_fingerprint.network_downlink} Mbps</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.details.client_fingerprint.network_rtt ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Network RTT:</span>
+                                        <span>${fullLog.details.client_fingerprint.network_rtt} ms</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- Session Analytics -->
+                    ${fullLog.details?.session_analytics ? `
+                        <div>
+                            <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Session Analytics</h3>
+                            <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; display: grid; gap: 10px;">
+                                ${fullLog.details.session_analytics.engagement_score !== undefined ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Engagement Score:</span>
+                                        <span>
+                                            <span style="display: inline-block; padding: 4px 12px; background: ${fullLog.details.session_analytics.engagement_score >= 70 ? 'var(--success-color)' : fullLog.details.session_analytics.engagement_score >= 40 ? 'var(--warning-color)' : 'var(--danger-color)'}20; color: ${fullLog.details.session_analytics.engagement_score >= 70 ? 'var(--success-color)' : fullLog.details.session_analytics.engagement_score >= 40 ? 'var(--warning-color)' : 'var(--danger-color)'}; border-radius: 4px; font-size: 12px; font-weight: 600;">${fullLog.details.session_analytics.engagement_score}/100</span>
+                                        </span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.details.session_analytics.total_clicks !== undefined ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Total Clicks:</span>
+                                        <span>${fullLog.details.session_analytics.total_clicks}</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.details.session_analytics.total_key_presses !== undefined ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Key Presses:</span>
+                                        <span>${fullLog.details.session_analytics.total_key_presses}</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.details.session_analytics.max_scroll_depth !== undefined ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Max Scroll Depth:</span>
+                                        <span>${fullLog.details.session_analytics.max_scroll_depth}%</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.details.session_analytics.scroll_milestones?.length ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Scroll Milestones:</span>
+                                        <span>${fullLog.details.session_analytics.scroll_milestones.map(m => m + '%').join(', ')}</span>
+                                    </div>
+                                ` : ''}
+                                ${fullLog.details.session_analytics.last_page ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Last Page:</span>
+                                        <span>${fullLog.details.session_analytics.last_page}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- Performance Metrics -->
+                    ${fullLog.details?.performance_metrics || fullLog.details?.performance ? `
+                        <div>
+                            <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Performance Metrics</h3>
+                            <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; display: grid; gap: 10px;">
+                                ${(fullLog.details.performance_metrics?.navigation || fullLog.details.performance?.navigation) ? (() => {
+                                    const nav = fullLog.details.performance_metrics?.navigation || fullLog.details.performance?.navigation;
+                                    return `
+                                        ${nav.ttfb !== undefined ? `
+                                            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                                <span style="font-weight: 600; color: var(--text-secondary);">Time to First Byte:</span>
+                                                <span>${nav.ttfb} ms</span>
+                                            </div>
+                                        ` : ''}
+                                        ${nav.dom_interactive !== undefined ? `
+                                            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                                <span style="font-weight: 600; color: var(--text-secondary);">DOM Interactive:</span>
+                                                <span>${nav.dom_interactive} ms</span>
+                                            </div>
+                                        ` : ''}
+                                        ${nav.dom_complete !== undefined ? `
+                                            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                                <span style="font-weight: 600; color: var(--text-secondary);">DOM Complete:</span>
+                                                <span>${nav.dom_complete} ms</span>
+                                            </div>
+                                        ` : ''}
+                                        ${nav.load_complete !== undefined ? `
+                                            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                                <span style="font-weight: 600; color: var(--text-secondary);">Page Load:</span>
+                                                <span style="color: ${nav.load_complete < 2000 ? 'var(--success-color)' : nav.load_complete < 5000 ? 'var(--warning-color)' : 'var(--danger-color)'};">${nav.load_complete} ms</span>
+                                            </div>
+                                        ` : ''}
+                                        ${nav.transfer_size !== undefined ? `
+                                            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                                <span style="font-weight: 600; color: var(--text-secondary);">Transfer Size:</span>
+                                                <span>${(nav.transfer_size / 1024).toFixed(1)} KB</span>
+                                            </div>
+                                        ` : ''}
+                                    `;
+                                })() : ''}
+                                ${(fullLog.details.performance_metrics?.first_contentful_paint || fullLog.details.performance?.first_contentful_paint) ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">First Contentful Paint:</span>
+                                        <span>${fullLog.details.performance_metrics?.first_contentful_paint || fullLog.details.performance?.first_contentful_paint} ms</span>
+                                    </div>
+                                ` : ''}
+                                ${(fullLog.details.performance_metrics?.resources || fullLog.details.performance?.resources) ? (() => {
+                                    const res = fullLog.details.performance_metrics?.resources || fullLog.details.performance?.resources;
+                                    return `
+                                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                            <span style="font-weight: 600; color: var(--text-secondary);">Resources Loaded:</span>
+                                            <span>${res.count} (${(res.total_transfer_size / 1024).toFixed(1)} KB total)</span>
+                                        </div>
+                                    `;
+                                })() : ''}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- Risk Assessment / IP Intelligence -->
+                    ${fullLog.details?.risk_assessment || fullLog.details?.ip_intelligence ? `
+                        <div>
+                            <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Security Assessment</h3>
+                            <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; display: grid; gap: 10px;">
+                                ${fullLog.details.risk_assessment ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Risk Score:</span>
+                                        <span style="display: inline-block; padding: 4px 12px; background: ${fullLog.details.risk_assessment.level === 'high' ? 'var(--danger-color)' : fullLog.details.risk_assessment.level === 'medium' ? 'var(--warning-color)' : 'var(--success-color)'}20; color: ${fullLog.details.risk_assessment.level === 'high' ? 'var(--danger-color)' : fullLog.details.risk_assessment.level === 'medium' ? 'var(--warning-color)' : 'var(--success-color)'}; border-radius: 4px; font-size: 12px; font-weight: 600; width: fit-content;">${fullLog.details.risk_assessment.score}/100 (${fullLog.details.risk_assessment.level})</span>
+                                    </div>
+                                    ${fullLog.details.risk_assessment.factors?.length ? `
+                                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                            <span style="font-weight: 600; color: var(--text-secondary);">Risk Factors:</span>
+                                            <span>${fullLog.details.risk_assessment.factors.join(', ')}</span>
+                                        </div>
+                                    ` : ''}
+                                ` : ''}
+                                ${fullLog.details.ip_intelligence?.ip_analysis ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">IP Type:</span>
+                                        <span>${fullLog.details.ip_intelligence.ip_analysis.type}</span>
+                                    </div>
+                                    ${fullLog.details.ip_intelligence.ip_analysis.reverse_dns ? `
+                                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                            <span style="font-weight: 600; color: var(--text-secondary);">Reverse DNS:</span>
+                                            <span style="font-family: monospace; font-size: 11px;">${fullLog.details.ip_intelligence.ip_analysis.reverse_dns}</span>
+                                        </div>
+                                    ` : ''}
+                                    ${fullLog.details.ip_intelligence.ip_analysis.risk_indicators?.length ? `
+                                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                            <span style="font-weight: 600; color: var(--text-secondary);">IP Indicators:</span>
+                                            <span>${fullLog.details.ip_intelligence.ip_analysis.risk_indicators.join(', ')}</span>
+                                        </div>
+                                    ` : ''}
+                                ` : ''}
+                                ${fullLog.details.ip_intelligence?.vpn_detection ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">VPN/Proxy:</span>
+                                        <span style="color: ${fullLog.details.ip_intelligence.vpn_detection.is_vpn || fullLog.details.ip_intelligence.vpn_detection.is_proxy ? 'var(--warning-color)' : 'var(--success-color)'};">
+                                            ${fullLog.details.ip_intelligence.vpn_detection.is_vpn ? '⚠️ VPN Detected' : fullLog.details.ip_intelligence.vpn_detection.is_proxy ? '⚠️ Proxy Detected' : '✅ Direct Connection'}
+                                            ${fullLog.details.ip_intelligence.vpn_detection.confidence ? ` (${fullLog.details.ip_intelligence.vpn_detection.confidence}% confidence)` : ''}
+                                        </span>
+                                    </div>
+                                    ${fullLog.details.ip_intelligence.vpn_detection.indicators?.length ? `
+                                        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                            <span style="font-weight: 600; color: var(--text-secondary);">Detection Indicators:</span>
+                                            <span>${fullLog.details.ip_intelligence.vpn_detection.indicators.join(', ')}</span>
+                                        </div>
+                                    ` : ''}
                                 ` : ''}
                             </div>
                         </div>

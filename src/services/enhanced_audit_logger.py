@@ -41,7 +41,12 @@ class AuditConfig:
             'browser_fingerprint': True,  # Language, encoding, screen size, timezone
             'risk_scoring': True,  # Security risk assessment (bot detection, automation tools)
             'session_metadata': True,  # Session age, size, authentication state
-            'ip_intelligence': True  # IP analysis, VPN/proxy detection, reverse DNS
+            'ip_intelligence': True,  # IP analysis, VPN/proxy detection, reverse DNS
+            'client_hints': True,  # Sec-CH-UA headers for detailed browser info
+            'response_timing': True,  # Response time/latency measurement
+            'client_fingerprint': True,  # Canvas, WebGL, audio fingerprints from client
+            'session_analytics': True,  # Engagement score, scroll depth, clicks
+            'performance_metrics': True  # Page load timing, resource counts
         },
         'display': {
             'ip_address': True,
@@ -63,7 +68,12 @@ class AuditConfig:
             'browser_fingerprint': True,  # Show language, screen size, etc.
             'risk_scoring': True,  # Show risk assessment
             'session_metadata': True,  # Show session details
-            'ip_intelligence': True  # Show IP analysis, VPN detection
+            'ip_intelligence': True,  # Show IP analysis, VPN detection
+            'client_hints': True,  # Show Sec-CH-UA data
+            'response_timing': True,  # Show response latency
+            'client_fingerprint': True,  # Show canvas/WebGL/audio fingerprints
+            'session_analytics': True,  # Show engagement metrics
+            'performance_metrics': True  # Show page load metrics
         },
         'retention_days': 90,
         'log_read_operations': False,  # Can generate lots of logs
@@ -297,10 +307,13 @@ class EnhancedAuditLogger:
             # Parse primary language
             primary_lang = accept_language.split(',')[0].strip() if accept_language else 'unknown'
             fingerprint['primary_language'] = primary_lang
+            # Store all languages
+            fingerprint['all_languages'] = [lang.split(';')[0].strip() for lang in accept_language.split(',')[:5]]
 
         # Encoding preferences
         accept_encoding = request.headers.get('Accept-Encoding', '')
         fingerprint['supports_compression'] = 'gzip' in accept_encoding or 'br' in accept_encoding
+        fingerprint['accept_encoding'] = accept_encoding[:100] if accept_encoding else None
 
         # Connection type hints
         connection = request.headers.get('Connection', '')
@@ -310,22 +323,106 @@ class EnhancedAuditLogger:
         dnt = request.headers.get('DNT', '0')
         fingerprint['dnt_enabled'] = dnt == '1'
 
+        # GPC (Global Privacy Control) header
+        gpc = request.headers.get('Sec-GPC', '0')
+        fingerprint['gpc_enabled'] = gpc == '1'
+
         # Screen hints from client (if available in custom headers)
         screen_width = request.headers.get('X-Screen-Width')
         screen_height = request.headers.get('X-Screen-Height')
         if screen_width and screen_height:
             fingerprint['screen_resolution'] = f"{screen_width}x{screen_height}"
+            fingerprint['screen_width'] = int(screen_width) if screen_width.isdigit() else None
+            fingerprint['screen_height'] = int(screen_height) if screen_height.isdigit() else None
 
         # Timezone offset (if available in custom headers)
         tz_offset = request.headers.get('X-Timezone-Offset')
         if tz_offset:
             fingerprint['timezone_offset'] = tz_offset
+            # Convert to hours for readability
+            try:
+                offset_minutes = int(tz_offset)
+                fingerprint['timezone_offset_hours'] = offset_minutes / -60  # Positive for UTC+
+            except ValueError:
+                pass
 
         # Viewport size (if available)
         viewport_width = request.headers.get('X-Viewport-Width')
         viewport_height = request.headers.get('X-Viewport-Height')
         if viewport_width and viewport_height:
             fingerprint['viewport_size'] = f"{viewport_width}x{viewport_height}"
+            fingerprint['viewport_width'] = int(viewport_width) if viewport_width.isdigit() else None
+            fingerprint['viewport_height'] = int(viewport_height) if viewport_height.isdigit() else None
+
+        # Color depth (if available)
+        color_depth = request.headers.get('X-Color-Depth')
+        if color_depth:
+            fingerprint['color_depth'] = int(color_depth) if color_depth.isdigit() else None
+
+        # Device pixel ratio (if available)
+        pixel_ratio = request.headers.get('X-Device-Pixel-Ratio')
+        if pixel_ratio:
+            try:
+                fingerprint['device_pixel_ratio'] = float(pixel_ratio)
+            except ValueError:
+                pass
+
+        # Sec-CH-UA Client Hints (modern browsers)
+        sec_ch_ua = request.headers.get('Sec-CH-UA')
+        if sec_ch_ua:
+            fingerprint['client_hints_ua'] = sec_ch_ua[:200]
+
+        sec_ch_ua_mobile = request.headers.get('Sec-CH-UA-Mobile')
+        if sec_ch_ua_mobile:
+            fingerprint['client_hints_mobile'] = sec_ch_ua_mobile == '?1'
+
+        sec_ch_ua_platform = request.headers.get('Sec-CH-UA-Platform')
+        if sec_ch_ua_platform:
+            fingerprint['client_hints_platform'] = sec_ch_ua_platform.strip('"')
+
+        sec_ch_ua_arch = request.headers.get('Sec-CH-UA-Arch')
+        if sec_ch_ua_arch:
+            fingerprint['client_hints_arch'] = sec_ch_ua_arch.strip('"')
+
+        sec_ch_ua_bitness = request.headers.get('Sec-CH-UA-Bitness')
+        if sec_ch_ua_bitness:
+            fingerprint['client_hints_bitness'] = sec_ch_ua_bitness.strip('"')
+
+        sec_ch_ua_model = request.headers.get('Sec-CH-UA-Model')
+        if sec_ch_ua_model:
+            fingerprint['client_hints_model'] = sec_ch_ua_model.strip('"')
+
+        # Sec-Fetch headers (request context)
+        sec_fetch_site = request.headers.get('Sec-Fetch-Site')
+        if sec_fetch_site:
+            fingerprint['sec_fetch_site'] = sec_fetch_site
+
+        sec_fetch_mode = request.headers.get('Sec-Fetch-Mode')
+        if sec_fetch_mode:
+            fingerprint['sec_fetch_mode'] = sec_fetch_mode
+
+        sec_fetch_dest = request.headers.get('Sec-Fetch-Dest')
+        if sec_fetch_dest:
+            fingerprint['sec_fetch_dest'] = sec_fetch_dest
+
+        sec_fetch_user = request.headers.get('Sec-Fetch-User')
+        if sec_fetch_user:
+            fingerprint['sec_fetch_user'] = sec_fetch_user == '?1'
+
+        # Accept header (content type preferences)
+        accept = request.headers.get('Accept')
+        if accept:
+            fingerprint['accept_types'] = accept[:200]
+
+        # Cache control hints
+        cache_control = request.headers.get('Cache-Control')
+        if cache_control:
+            fingerprint['cache_control'] = cache_control[:100]
+
+        # Priority hints
+        priority = request.headers.get('Priority')
+        if priority:
+            fingerprint['priority'] = priority
 
         return fingerprint
 
@@ -432,6 +529,9 @@ class EnhancedAuditLogger:
             'is_secure': request.is_secure,
             'scheme': request.scheme,
             'content_type': request.content_type or 'unknown',
+            'host': request.host,
+            'url': request.url,
+            'base_url': request.base_url,
         }
 
         # Session ID (first 8 chars for privacy)
@@ -449,14 +549,63 @@ class EnhancedAuditLogger:
             'accept_encoding': request.headers.get('Accept-Encoding', 'N/A'),
             'origin': request.headers.get('Origin', 'N/A'),
             'dnt': request.headers.get('DNT', 'N/A'),
+            'sec_gpc': request.headers.get('Sec-GPC', 'N/A'),
             'sec_fetch_site': request.headers.get('Sec-Fetch-Site', 'N/A'),
             'sec_fetch_mode': request.headers.get('Sec-Fetch-Mode', 'N/A'),
             'sec_fetch_dest': request.headers.get('Sec-Fetch-Dest', 'N/A'),
+            'sec_fetch_user': request.headers.get('Sec-Fetch-User', 'N/A'),
         }
+
+        # Client hints (modern browsers)
+        client_hints = {}
+        sec_ch_headers = [
+            ('Sec-CH-UA', 'ua'),
+            ('Sec-CH-UA-Mobile', 'mobile'),
+            ('Sec-CH-UA-Platform', 'platform'),
+            ('Sec-CH-UA-Arch', 'arch'),
+            ('Sec-CH-UA-Bitness', 'bitness'),
+            ('Sec-CH-UA-Model', 'model'),
+            ('Sec-CH-UA-Platform-Version', 'platform_version'),
+            ('Sec-CH-UA-Full-Version-List', 'full_version_list'),
+            ('Sec-CH-Prefers-Color-Scheme', 'color_scheme'),
+            ('Sec-CH-Prefers-Reduced-Motion', 'reduced_motion'),
+        ]
+        for header, key in sec_ch_headers:
+            value = request.headers.get(header)
+            if value:
+                client_hints[key] = value.strip('"') if value.startswith('"') else value
+        if client_hints:
+            info['client_hints'] = client_hints
+
+        # Custom client headers (from our activity tracker)
+        client_info = {}
+        custom_headers = [
+            ('X-Screen-Width', 'screen_width'),
+            ('X-Screen-Height', 'screen_height'),
+            ('X-Viewport-Width', 'viewport_width'),
+            ('X-Viewport-Height', 'viewport_height'),
+            ('X-Timezone-Offset', 'timezone_offset'),
+            ('X-Color-Depth', 'color_depth'),
+            ('X-Device-Pixel-Ratio', 'device_pixel_ratio'),
+        ]
+        for header, key in custom_headers:
+            value = request.headers.get(header)
+            if value:
+                client_info[key] = value
+        if client_info:
+            info['client_info'] = client_info
 
         # Request timing hints
         if request.environ:
             info['protocol'] = request.environ.get('SERVER_PROTOCOL', 'unknown')
+            info['server_name'] = request.environ.get('SERVER_NAME')
+            info['server_port'] = request.environ.get('SERVER_PORT')
+            info['remote_port'] = request.environ.get('REMOTE_PORT')
+            info['wsgi_url_scheme'] = request.environ.get('wsgi.url_scheme')
+
+        # Request timing (if available from before_request)
+        if hasattr(request, '_start_time'):
+            info['request_start_time'] = request._start_time
 
         return info
 
@@ -611,6 +760,23 @@ class EnhancedAuditLogger:
                         pass
                 else:
                     audit_data['device_info'] = json.dumps({'fingerprint': fingerprint})
+
+                # Extract key fingerprint values into dedicated columns for indexing
+                if fingerprint.get('screen_width'):
+                    audit_data['screen_width'] = fingerprint['screen_width']
+                if fingerprint.get('screen_height'):
+                    audit_data['screen_height'] = fingerprint['screen_height']
+                if fingerprint.get('viewport_width'):
+                    audit_data['viewport_width'] = fingerprint['viewport_width']
+                if fingerprint.get('viewport_height'):
+                    audit_data['viewport_height'] = fingerprint['viewport_height']
+                if fingerprint.get('timezone_offset'):
+                    try:
+                        audit_data['timezone_offset'] = int(fingerprint['timezone_offset'])
+                    except (ValueError, TypeError):
+                        pass
+                if fingerprint.get('device_pixel_ratio'):
+                    audit_data['device_pixel_ratio'] = fingerprint['device_pixel_ratio']
 
         # Calculate risk score for security monitoring
         if collect_config.get('risk_scoring', True):

@@ -2,10 +2,11 @@
 
 Authored by: pan
 """
-from flask import Flask, send_from_directory, jsonify, request
+from flask import Flask, send_from_directory, jsonify, request, g
 from flask_login import current_user
 from src.config import config
 from src.extensions import init_extensions
+import time
 from src.auth.routes import auth_bp
 from src.routes.profiles import profiles_bp
 from src.routes.analysis import analysis_bp
@@ -36,6 +37,13 @@ def create_app(config_name='development'):
 
     # Initialize extensions
     init_extensions(app)
+
+    # Request timing tracking
+    @app.before_request
+    def track_request_start():
+        """Track request start time for response timing measurement."""
+        g.request_start_time = time.time()
+        request._start_time = g.request_start_time
 
     # Network access logging - log all requests including unauthenticated
     @app.before_request
@@ -107,6 +115,16 @@ def create_app(config_name='development'):
     @app.after_request
     def set_security_headers(response):
         """Add comprehensive security headers to all responses."""
+        # Calculate and add response timing header
+        if hasattr(g, 'request_start_time'):
+            response_time_ms = (time.time() - g.request_start_time) * 1000
+            response.headers['X-Response-Time'] = f'{response_time_ms:.2f}ms'
+            # Store for potential logging
+            g.response_time_ms = response_time_ms
+
+        # Add response size header for tracking
+        response.headers['X-Content-Length'] = response.content_length or len(response.get_data())
+
         # Prevent caching of sensitive pages
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, private, max-age=0'
         response.headers['Pragma'] = 'no-cache'

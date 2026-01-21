@@ -27,6 +27,9 @@ user-agents>=2.2.0
 maxminddb-geolite2>=2018.701  # Enhanced geolocation with local DB
 pytz>=2024.1  # Timezone handling
 python-whois>=0.8.0  # WHOIS lookups for IP investigation
+geoip2>=4.8.0  # MaxMind GeoIP2 for ASN/ISP lookup
+httpagentparser>=1.9.5  # Alternative user agent parser for cross-validation
+ua-parser>=1.0.0  # UA parser for detailed browser/device info
 
 # Database
 alembic>=1.13.0

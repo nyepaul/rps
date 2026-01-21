@@ -63,6 +63,20 @@ class ActivityTracker {
         this.hoverTimer = null;
         this.lastMousePathSample = 0;
 
+        // Enhanced fingerprinting cache (computed once per session)
+        this._fingerprintCache = null;
+        this._fingerprintTimestamp = null;
+        this._performanceMetrics = null;
+
+        // Scroll tracking
+        this.maxScrollDepth = 0;
+        this.scrollMilestones = new Set();
+
+        // Engagement tracking
+        this.clickCount = 0;
+        this.keyPressCount = 0;
+        this.scrollEventCount = 0;
+
         if (this.enabled) {
             this.init();
         }
@@ -114,14 +128,753 @@ class ActivityTracker {
         window.addEventListener('error', (e) => this.handleError(e));
         window.addEventListener('unhandledrejection', (e) => this.handlePromiseRejection(e));
 
-        // Log session start
+        // Track scroll depth
+        document.addEventListener('scroll', () => this.trackScrollDepth(), { passive: true });
+
+        // Track key presses for engagement
+        document.addEventListener('keydown', () => { this.keyPressCount++; }, { passive: true });
+
+        // Collect comprehensive fingerprint on session start
+        this.collectFingerprint().then(fingerprint => {
+            this._fingerprintCache = fingerprint;
+            this._fingerprintTimestamp = Date.now();
+        });
+
+        // Collect performance metrics after page load
+        if (document.readyState === 'complete') {
+            this._performanceMetrics = this.collectPerformanceMetrics();
+        } else {
+            window.addEventListener('load', () => {
+                this._performanceMetrics = this.collectPerformanceMetrics();
+            });
+        }
+
+        // Log session start with enhanced data
         this.logSessionEvent('start');
+    }
+
+    /**
+     * Collect comprehensive browser fingerprint data.
+     * This creates a unique signature for the browser/device.
+     */
+    async collectFingerprint() {
+        const fingerprint = {
+            timestamp: Date.now(),
+            basic: this.collectBasicInfo(),
+            screen: this.collectScreenInfo(),
+            hardware: this.collectHardwareInfo(),
+            capabilities: this.collectCapabilities(),
+            network: await this.collectNetworkInfo(),
+            storage: this.collectStorageInfo(),
+            timezone: this.collectTimezoneInfo(),
+            webgl: this.collectWebGLInfo(),
+            canvas: this.collectCanvasFingerprint(),
+            audio: await this.collectAudioFingerprint(),
+            fonts: this.collectFontInfo(),
+            permissions: await this.collectPermissions(),
+            preferences: this.collectPreferences(),
+            plugins: this.collectPluginInfo(),
+            media: await this.collectMediaDevices()
+        };
+
+        // Generate composite fingerprint hash
+        fingerprint.composite_fingerprint = this.hashFingerprint(fingerprint);
+
+        return fingerprint;
+    }
+
+    /**
+     * Collect basic browser/platform information.
+     */
+    collectBasicInfo() {
+        const nav = navigator;
+        return {
+            user_agent: nav.userAgent,
+            platform: nav.platform,
+            vendor: nav.vendor,
+            product: nav.product,
+            product_sub: nav.productSub,
+            app_name: nav.appName,
+            app_version: nav.appVersion,
+            language: nav.language,
+            languages: Array.from(nav.languages || []),
+            cookie_enabled: nav.cookieEnabled,
+            do_not_track: nav.doNotTrack,
+            hardware_concurrency: nav.hardwareConcurrency,
+            device_memory: nav.deviceMemory,
+            max_touch_points: nav.maxTouchPoints,
+            webdriver: nav.webdriver,
+            pdf_viewer_enabled: nav.pdfViewerEnabled,
+            build_id: nav.buildID  // Firefox specific
+        };
+    }
+
+    /**
+     * Collect screen and display information.
+     */
+    collectScreenInfo() {
+        const screen = window.screen;
+        return {
+            width: screen.width,
+            height: screen.height,
+            avail_width: screen.availWidth,
+            avail_height: screen.availHeight,
+            color_depth: screen.colorDepth,
+            pixel_depth: screen.pixelDepth,
+            device_pixel_ratio: window.devicePixelRatio,
+            orientation_type: screen.orientation?.type,
+            orientation_angle: screen.orientation?.angle,
+            viewport_width: window.innerWidth,
+            viewport_height: window.innerHeight,
+            outer_width: window.outerWidth,
+            outer_height: window.outerHeight,
+            screen_left: window.screenLeft,
+            screen_top: window.screenTop
+        };
+    }
+
+    /**
+     * Collect hardware information.
+     */
+    collectHardwareInfo() {
+        const info = {
+            cpu_cores: navigator.hardwareConcurrency,
+            device_memory_gb: navigator.deviceMemory,
+            max_touch_points: navigator.maxTouchPoints,
+            pointer_type: this.detectPointerType()
+        };
+
+        // Battery status (if available)
+        if ('getBattery' in navigator) {
+            navigator.getBattery().then(battery => {
+                info.battery_charging = battery.charging;
+                info.battery_level = Math.round(battery.level * 100);
+                info.battery_charging_time = battery.chargingTime;
+                info.battery_discharging_time = battery.dischargingTime;
+            }).catch(() => {});
+        }
+
+        return info;
+    }
+
+    /**
+     * Detect the primary pointer type.
+     */
+    detectPointerType() {
+        if (window.matchMedia('(pointer: coarse)').matches) return 'coarse'; // Touch
+        if (window.matchMedia('(pointer: fine)').matches) return 'fine'; // Mouse
+        if (window.matchMedia('(pointer: none)').matches) return 'none';
+        return 'unknown';
+    }
+
+    /**
+     * Collect browser capabilities.
+     */
+    collectCapabilities() {
+        return {
+            // APIs
+            service_worker: 'serviceWorker' in navigator,
+            web_worker: typeof Worker !== 'undefined',
+            shared_worker: typeof SharedWorker !== 'undefined',
+            websocket: 'WebSocket' in window,
+            webrtc: 'RTCPeerConnection' in window,
+            webgl: !!this.getWebGLContext(),
+            webgl2: !!this.getWebGL2Context(),
+            webgpu: 'gpu' in navigator,
+            web_audio: 'AudioContext' in window || 'webkitAudioContext' in window,
+            web_assembly: typeof WebAssembly !== 'undefined',
+            geolocation: 'geolocation' in navigator,
+            notifications: 'Notification' in window,
+            push: 'PushManager' in window,
+            bluetooth: 'bluetooth' in navigator,
+            usb: 'usb' in navigator,
+            midi: 'requestMIDIAccess' in navigator,
+            gamepad: 'getGamepads' in navigator,
+            vibrate: 'vibrate' in navigator,
+            speech_synthesis: 'speechSynthesis' in window,
+            speech_recognition: 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window,
+            clipboard: 'clipboard' in navigator,
+            share: 'share' in navigator,
+
+            // Features
+            css_grid: CSS.supports('display', 'grid'),
+            css_flexbox: CSS.supports('display', 'flex'),
+            css_variables: CSS.supports('--test', '0'),
+            intersection_observer: 'IntersectionObserver' in window,
+            resize_observer: 'ResizeObserver' in window,
+            mutation_observer: 'MutationObserver' in window,
+
+            // Touch
+            touch_support: 'ontouchstart' in window || navigator.maxTouchPoints > 0,
+            touch_events: 'TouchEvent' in window,
+
+            // Storage
+            local_storage: this.testLocalStorage(),
+            session_storage: this.testSessionStorage(),
+            indexed_db: 'indexedDB' in window,
+
+            // Media
+            media_source: 'MediaSource' in window,
+            encrypted_media: 'requestMediaKeySystemAccess' in navigator,
+
+            // Other
+            performance_api: 'performance' in window,
+            beacon: 'sendBeacon' in navigator
+        };
+    }
+
+    /**
+     * Test localStorage availability.
+     */
+    testLocalStorage() {
+        try {
+            localStorage.setItem('__test__', '1');
+            localStorage.removeItem('__test__');
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    /**
+     * Test sessionStorage availability.
+     */
+    testSessionStorage() {
+        try {
+            sessionStorage.setItem('__test__', '1');
+            sessionStorage.removeItem('__test__');
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    /**
+     * Collect network information.
+     */
+    async collectNetworkInfo() {
+        const info = {};
+
+        // Network Information API
+        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        if (connection) {
+            info.effective_type = connection.effectiveType; // 4g, 3g, 2g, slow-2g
+            info.downlink = connection.downlink; // Mbps
+            info.rtt = connection.rtt; // Round-trip time in ms
+            info.save_data = connection.saveData;
+            info.type = connection.type; // wifi, cellular, ethernet, etc.
+        }
+
+        // Online status
+        info.online = navigator.onLine;
+
+        return info;
+    }
+
+    /**
+     * Collect storage information.
+     */
+    collectStorageInfo() {
+        const info = {
+            cookies_enabled: navigator.cookieEnabled
+        };
+
+        // Estimate storage quota
+        if ('storage' in navigator && 'estimate' in navigator.storage) {
+            navigator.storage.estimate().then(estimate => {
+                info.quota_bytes = estimate.quota;
+                info.usage_bytes = estimate.usage;
+                info.usage_percent = Math.round((estimate.usage / estimate.quota) * 100);
+            }).catch(() => {});
+        }
+
+        // IndexedDB databases (if accessible)
+        if ('databases' in indexedDB) {
+            indexedDB.databases().then(dbs => {
+                info.indexed_db_count = dbs.length;
+            }).catch(() => {});
+        }
+
+        return info;
+    }
+
+    /**
+     * Collect timezone information.
+     */
+    collectTimezoneInfo() {
+        const date = new Date();
+        return {
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            timezone_offset: date.getTimezoneOffset(),
+            dst_offset: this.getDSTOffset(),
+            locale: Intl.DateTimeFormat().resolvedOptions().locale,
+            calendar: Intl.DateTimeFormat().resolvedOptions().calendar,
+            numbering_system: Intl.DateTimeFormat().resolvedOptions().numberingSystem
+        };
+    }
+
+    /**
+     * Calculate DST offset.
+     */
+    getDSTOffset() {
+        const jan = new Date(new Date().getFullYear(), 0, 1);
+        const jul = new Date(new Date().getFullYear(), 6, 1);
+        return Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset()) - new Date().getTimezoneOffset();
+    }
+
+    /**
+     * Get WebGL context.
+     */
+    getWebGLContext() {
+        try {
+            const canvas = document.createElement('canvas');
+            return canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        } catch {
+            return null;
+        }
+    }
+
+    /**
+     * Get WebGL2 context.
+     */
+    getWebGL2Context() {
+        try {
+            const canvas = document.createElement('canvas');
+            return canvas.getContext('webgl2');
+        } catch {
+            return null;
+        }
+    }
+
+    /**
+     * Collect WebGL information for GPU fingerprinting.
+     */
+    collectWebGLInfo() {
+        const gl = this.getWebGLContext();
+        if (!gl) return { supported: false };
+
+        try {
+            const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+            return {
+                supported: true,
+                vendor: debugInfo ? gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) : gl.getParameter(gl.VENDOR),
+                renderer: debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER),
+                version: gl.getParameter(gl.VERSION),
+                shading_language_version: gl.getParameter(gl.SHADING_LANGUAGE_VERSION),
+                max_texture_size: gl.getParameter(gl.MAX_TEXTURE_SIZE),
+                max_viewport_dims: Array.from(gl.getParameter(gl.MAX_VIEWPORT_DIMS)),
+                max_vertex_attribs: gl.getParameter(gl.MAX_VERTEX_ATTRIBS),
+                max_vertex_uniform_vectors: gl.getParameter(gl.MAX_VERTEX_UNIFORM_VECTORS),
+                max_fragment_uniform_vectors: gl.getParameter(gl.MAX_FRAGMENT_UNIFORM_VECTORS),
+                aliased_line_width_range: Array.from(gl.getParameter(gl.ALIASED_LINE_WIDTH_RANGE)),
+                aliased_point_size_range: Array.from(gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)),
+                extensions: gl.getSupportedExtensions()?.slice(0, 20) // Limit to first 20
+            };
+        } catch {
+            return { supported: true, error: 'Unable to collect WebGL info' };
+        }
+    }
+
+    /**
+     * Generate canvas fingerprint.
+     */
+    collectCanvasFingerprint() {
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 280;
+            canvas.height = 60;
+            const ctx = canvas.getContext('2d');
+
+            // Draw text with various styles
+            ctx.textBaseline = 'top';
+            ctx.font = '14px Arial';
+            ctx.fillStyle = '#f60';
+            ctx.fillRect(125, 1, 62, 20);
+            ctx.fillStyle = '#069';
+            ctx.fillText('Cwm fjordbank', 2, 15);
+            ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+            ctx.fillText('Cwm fjordbank', 4, 17);
+
+            // Draw shapes
+            ctx.beginPath();
+            ctx.arc(50, 50, 10, 0, Math.PI * 2, true);
+            ctx.closePath();
+            ctx.fill();
+
+            const dataUrl = canvas.toDataURL();
+            return {
+                hash: this.simpleHash(dataUrl),
+                data_url_length: dataUrl.length
+            };
+        } catch {
+            return { error: 'Canvas fingerprinting blocked or unavailable' };
+        }
+    }
+
+    /**
+     * Generate audio fingerprint using AudioContext.
+     */
+    async collectAudioFingerprint() {
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return { supported: false };
+
+            const context = new AudioContext();
+            const oscillator = context.createOscillator();
+            const analyser = context.createAnalyser();
+            const gainNode = context.createGain();
+            const scriptProcessor = context.createScriptProcessor(4096, 1, 1);
+
+            gainNode.gain.value = 0; // Mute
+            oscillator.type = 'triangle';
+            oscillator.frequency.setValueAtTime(10000, context.currentTime);
+
+            oscillator.connect(analyser);
+            analyser.connect(scriptProcessor);
+            scriptProcessor.connect(gainNode);
+            gainNode.connect(context.destination);
+
+            oscillator.start(0);
+
+            // Get frequency data
+            const frequencyData = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(frequencyData);
+
+            // Clean up
+            oscillator.stop();
+            context.close();
+
+            return {
+                supported: true,
+                sample_rate: context.sampleRate,
+                state: context.state,
+                channel_count: context.destination.channelCount,
+                fingerprint_hash: this.simpleHash(frequencyData.slice(0, 100).toString())
+            };
+        } catch {
+            return { supported: false, error: 'Audio fingerprinting unavailable' };
+        }
+    }
+
+    /**
+     * Collect font information.
+     */
+    collectFontInfo() {
+        const baseFonts = ['monospace', 'sans-serif', 'serif'];
+        const testFonts = [
+            'Arial', 'Arial Black', 'Arial Narrow', 'Calibri', 'Cambria',
+            'Comic Sans MS', 'Consolas', 'Courier', 'Courier New', 'Georgia',
+            'Helvetica', 'Impact', 'Lucida Console', 'Lucida Sans Unicode',
+            'Microsoft Sans Serif', 'Palatino Linotype', 'Tahoma', 'Times',
+            'Times New Roman', 'Trebuchet MS', 'Verdana'
+        ];
+
+        const detectedFonts = [];
+        const testString = 'mmmmmmmmmmlli';
+        const testSize = '72px';
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const getWidth = (fontFamily) => {
+            ctx.font = `${testSize} ${fontFamily}`;
+            return ctx.measureText(testString).width;
+        };
+
+        const baseWidths = baseFonts.map(getWidth);
+
+        for (const font of testFonts) {
+            for (let i = 0; i < baseFonts.length; i++) {
+                const testFont = `'${font}', ${baseFonts[i]}`;
+                if (getWidth(testFont) !== baseWidths[i]) {
+                    detectedFonts.push(font);
+                    break;
+                }
+            }
+        }
+
+        return {
+            detected_count: detectedFonts.length,
+            fonts: detectedFonts,
+            font_hash: this.simpleHash(detectedFonts.join(','))
+        };
+    }
+
+    /**
+     * Collect permission states.
+     */
+    async collectPermissions() {
+        const permissions = {};
+        const permissionNames = [
+            'geolocation', 'notifications', 'push', 'midi',
+            'camera', 'microphone', 'clipboard-read', 'clipboard-write'
+        ];
+
+        for (const name of permissionNames) {
+            try {
+                const result = await navigator.permissions.query({ name });
+                permissions[name] = result.state;
+            } catch {
+                permissions[name] = 'not_supported';
+            }
+        }
+
+        return permissions;
+    }
+
+    /**
+     * Collect user preferences.
+     */
+    collectPreferences() {
+        return {
+            color_scheme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+            reduced_motion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+            contrast: window.matchMedia('(prefers-contrast: high)').matches ? 'high' : 'normal',
+            reduced_transparency: window.matchMedia('(prefers-reduced-transparency: reduce)').matches,
+            forced_colors: window.matchMedia('(forced-colors: active)').matches,
+            inverted_colors: window.matchMedia('(inverted-colors: inverted)').matches
+        };
+    }
+
+    /**
+     * Collect plugin information.
+     */
+    collectPluginInfo() {
+        const plugins = [];
+        if (navigator.plugins) {
+            for (let i = 0; i < Math.min(navigator.plugins.length, 20); i++) {
+                const plugin = navigator.plugins[i];
+                plugins.push({
+                    name: plugin.name,
+                    filename: plugin.filename,
+                    description: plugin.description?.substring(0, 100)
+                });
+            }
+        }
+        return {
+            count: navigator.plugins?.length || 0,
+            plugins: plugins
+        };
+    }
+
+    /**
+     * Collect media device information.
+     */
+    async collectMediaDevices() {
+        try {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+                return { supported: false };
+            }
+
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            return {
+                supported: true,
+                audio_input_count: devices.filter(d => d.kind === 'audioinput').length,
+                audio_output_count: devices.filter(d => d.kind === 'audiooutput').length,
+                video_input_count: devices.filter(d => d.kind === 'videoinput').length,
+                total_count: devices.length
+            };
+        } catch {
+            return { supported: false, error: 'Unable to enumerate media devices' };
+        }
+    }
+
+    /**
+     * Collect performance metrics.
+     */
+    collectPerformanceMetrics() {
+        if (!('performance' in window)) return null;
+
+        const metrics = {};
+
+        // Navigation timing
+        const nav = performance.getEntriesByType('navigation')[0];
+        if (nav) {
+            metrics.navigation = {
+                dns_lookup: Math.round(nav.domainLookupEnd - nav.domainLookupStart),
+                tcp_connect: Math.round(nav.connectEnd - nav.connectStart),
+                ssl_handshake: Math.round(nav.secureConnectionStart > 0 ? nav.connectEnd - nav.secureConnectionStart : 0),
+                ttfb: Math.round(nav.responseStart - nav.requestStart), // Time to first byte
+                response_time: Math.round(nav.responseEnd - nav.responseStart),
+                dom_interactive: Math.round(nav.domInteractive - nav.fetchStart),
+                dom_complete: Math.round(nav.domComplete - nav.fetchStart),
+                load_complete: Math.round(nav.loadEventEnd - nav.fetchStart),
+                transfer_size: nav.transferSize,
+                encoded_body_size: nav.encodedBodySize,
+                decoded_body_size: nav.decodedBodySize,
+                type: nav.type // navigate, reload, back_forward, prerender
+            };
+        }
+
+        // Paint timing
+        const paint = performance.getEntriesByType('paint');
+        for (const entry of paint) {
+            if (entry.name === 'first-paint') {
+                metrics.first_paint = Math.round(entry.startTime);
+            } else if (entry.name === 'first-contentful-paint') {
+                metrics.first_contentful_paint = Math.round(entry.startTime);
+            }
+        }
+
+        // Resource count and size
+        const resources = performance.getEntriesByType('resource');
+        metrics.resources = {
+            count: resources.length,
+            total_transfer_size: resources.reduce((sum, r) => sum + (r.transferSize || 0), 0),
+            by_type: {}
+        };
+
+        // Count resources by type
+        for (const res of resources) {
+            const type = res.initiatorType || 'other';
+            metrics.resources.by_type[type] = (metrics.resources.by_type[type] || 0) + 1;
+        }
+
+        // Memory info (Chrome only)
+        if (performance.memory) {
+            metrics.memory = {
+                js_heap_size_limit: performance.memory.jsHeapSizeLimit,
+                total_js_heap_size: performance.memory.totalJSHeapSize,
+                used_js_heap_size: performance.memory.usedJSHeapSize
+            };
+        }
+
+        return metrics;
+    }
+
+    /**
+     * Track scroll depth.
+     */
+    trackScrollDepth() {
+        this.scrollEventCount++;
+
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const scrollPercent = Math.round((scrollTop / scrollHeight) * 100);
+
+        if (scrollPercent > this.maxScrollDepth) {
+            this.maxScrollDepth = scrollPercent;
+        }
+
+        // Track milestones (25%, 50%, 75%, 100%)
+        const milestones = [25, 50, 75, 100];
+        for (const milestone of milestones) {
+            if (scrollPercent >= milestone && !this.scrollMilestones.has(milestone)) {
+                this.scrollMilestones.add(milestone);
+                this.queueEvent('scroll_milestone', {
+                    milestone: milestone,
+                    page: this.currentPage,
+                    action_description: `Scrolled to ${milestone}% of page on ${this.currentPage}`
+                });
+            }
+        }
+    }
+
+    /**
+     * Calculate engagement score (0-100).
+     */
+    calculateEngagementScore() {
+        const sessionDuration = (Date.now() - this.sessionStartTime) / 1000; // seconds
+
+        // Factors for engagement score
+        const durationScore = Math.min(sessionDuration / 300, 1) * 30; // Max 30 points for 5+ min
+        const clickScore = Math.min(this.clickCount / 20, 1) * 25; // Max 25 points for 20+ clicks
+        const scrollScore = Math.min(this.maxScrollDepth / 100, 1) * 20; // Max 20 points for full scroll
+        const keyScore = Math.min(this.keyPressCount / 50, 1) * 15; // Max 15 points for 50+ keypresses
+        const idleScore = this.isIdle ? 0 : 10; // 10 points if not idle
+
+        return Math.round(durationScore + clickScore + scrollScore + keyScore + idleScore);
+    }
+
+    /**
+     * Get session analytics summary.
+     */
+    getSessionAnalytics() {
+        return {
+            session_duration_seconds: Math.round((Date.now() - this.sessionStartTime) / 1000),
+            total_clicks: this.clickCount,
+            total_key_presses: this.keyPressCount,
+            total_scroll_events: this.scrollEventCount,
+            max_scroll_depth: this.maxScrollDepth,
+            scroll_milestones_reached: Array.from(this.scrollMilestones),
+            is_idle: this.isIdle,
+            engagement_score: this.calculateEngagementScore(),
+            current_page: this.currentPage
+        };
+    }
+
+    /**
+     * Simple hash function for fingerprinting.
+     */
+    simpleHash(str) {
+        let hash = 0;
+        const s = String(str);
+        for (let i = 0; i < s.length; i++) {
+            const char = s.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32bit integer
+        }
+        return hash >>> 0; // Convert to unsigned
+    }
+
+    /**
+     * Hash the entire fingerprint object.
+     */
+    hashFingerprint(fingerprint) {
+        const str = JSON.stringify({
+            basic: fingerprint.basic,
+            screen: fingerprint.screen,
+            webgl: fingerprint.webgl?.vendor + fingerprint.webgl?.renderer,
+            canvas: fingerprint.canvas?.hash,
+            audio: fingerprint.audio?.fingerprint_hash,
+            fonts: fingerprint.fonts?.font_hash,
+            timezone: fingerprint.timezone?.timezone
+        });
+        return this.simpleHash(str);
+    }
+
+    /**
+     * Get the cached fingerprint data for sending with events.
+     */
+    getFingerprintSummary() {
+        if (!this._fingerprintCache) return null;
+
+        const fp = this._fingerprintCache;
+        return {
+            composite_hash: fp.composite_fingerprint,
+            screen_resolution: `${fp.screen?.width}x${fp.screen?.height}`,
+            viewport_size: `${fp.screen?.viewport_width}x${fp.screen?.viewport_height}`,
+            device_pixel_ratio: fp.screen?.device_pixel_ratio,
+            timezone: fp.timezone?.timezone,
+            timezone_offset: fp.timezone?.timezone_offset,
+            language: fp.basic?.language,
+            languages: fp.basic?.languages?.slice(0, 3),
+            platform: fp.basic?.platform,
+            cpu_cores: fp.hardware?.cpu_cores,
+            device_memory: fp.hardware?.device_memory_gb,
+            touch_points: fp.basic?.max_touch_points,
+            webgl_vendor: fp.webgl?.vendor,
+            webgl_renderer: fp.webgl?.renderer,
+            canvas_hash: fp.canvas?.hash,
+            audio_hash: fp.audio?.fingerprint_hash,
+            font_count: fp.fonts?.detected_count,
+            color_scheme: fp.preferences?.color_scheme,
+            reduced_motion: fp.preferences?.reduced_motion,
+            network_type: fp.network?.effective_type,
+            network_downlink: fp.network?.downlink,
+            network_rtt: fp.network?.rtt,
+            online: fp.network?.online,
+            webdriver: fp.basic?.webdriver,
+            do_not_track: fp.basic?.do_not_track
+        };
     }
 
     /**
      * Handle ALL click events with granular detail.
      */
     handleClick(e) {
+        this.clickCount++;
+
         const target = e.target;
         const interactiveElement = target.closest('button, a, [role="button"], [role="tab"], .clickable, .btn, [onclick], [data-action], input, select, textarea, [contenteditable]');
 
@@ -694,11 +1447,26 @@ class ActivityTracker {
      * Log session-level events.
      */
     logSessionEvent(eventType, extra = {}) {
-        this.sendImmediately('/api/events/session', {
+        const payload = {
             event: eventType,
             timestamp: Date.now(),
             ...extra
-        });
+        };
+
+        // Include full fingerprint and analytics on session start/end
+        if (eventType === 'start') {
+            // Fingerprint might still be loading, so we'll send it with the first batch
+            payload.session_start_time = this.sessionStartTime;
+            payload.url = window.location.href;
+            payload.referrer = document.referrer || null;
+        } else if (eventType === 'end') {
+            payload.session_analytics = this.getSessionAnalytics();
+            payload.fingerprint = this.getFingerprintSummary();
+            payload.full_fingerprint = this._fingerprintCache;
+            payload.performance = this._performanceMetrics;
+        }
+
+        this.sendImmediately('/api/events/session', payload);
     }
 
     /**
@@ -727,12 +1495,28 @@ class ActivityTracker {
         this.eventQueue = [];
 
         try {
+            // Include fingerprint summary and session analytics with batch
+            const payload = {
+                events,
+                fingerprint: this.getFingerprintSummary(),
+                session_analytics: this.getSessionAnalytics(),
+                performance: this._performanceMetrics
+            };
+
             await fetch('/api/events/batch', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    // Send screen/viewport info in headers for all requests
+                    'X-Screen-Width': String(window.screen.width),
+                    'X-Screen-Height': String(window.screen.height),
+                    'X-Viewport-Width': String(window.innerWidth),
+                    'X-Viewport-Height': String(window.innerHeight),
+                    'X-Timezone-Offset': String(new Date().getTimezoneOffset()),
+                    'X-Color-Depth': String(window.screen.colorDepth),
+                    'X-Device-Pixel-Ratio': String(window.devicePixelRatio || 1)
                 },
-                body: JSON.stringify({ events }),
+                body: JSON.stringify(payload),
                 credentials: 'same-origin'
             });
         } catch (error) {
@@ -749,7 +1533,15 @@ class ActivityTracker {
             await fetch(endpoint, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    // Include client info in headers
+                    'X-Screen-Width': String(window.screen.width),
+                    'X-Screen-Height': String(window.screen.height),
+                    'X-Viewport-Width': String(window.innerWidth),
+                    'X-Viewport-Height': String(window.innerHeight),
+                    'X-Timezone-Offset': String(new Date().getTimezoneOffset()),
+                    'X-Color-Depth': String(window.screen.colorDepth),
+                    'X-Device-Pixel-Ratio': String(window.devicePixelRatio || 1)
                 },
                 body: JSON.stringify(data),
                 credentials: 'same-origin'

@@ -76,10 +76,18 @@ def log_batch():
             type: Event type (click, scroll, focus, etc.)
             data: Event-specific data
             timestamp: Client-side timestamp
+        fingerprint: Browser fingerprint summary (optional)
+        session_analytics: Session analytics data (optional)
+        performance: Performance metrics (optional)
     """
     try:
         data = request.json or {}
         events = data.get('events', [])
+
+        # Extract enhanced client data
+        fingerprint_data = data.get('fingerprint')
+        session_analytics = data.get('session_analytics')
+        performance_data = data.get('performance')
 
         if not isinstance(events, list):
             return jsonify({'error': 'events must be an array'}), 400
@@ -145,6 +153,18 @@ def log_batch():
             # Add human-readable description to details for better logging readability
             if action_description:
                 sanitized_data['_description'] = action_description
+
+            # Include fingerprint data with first event only (to avoid duplication)
+            if logged_count == 0 and fingerprint_data:
+                sanitized_data['client_fingerprint'] = fingerprint_data
+
+            # Include session analytics with first event only
+            if logged_count == 0 and session_analytics:
+                sanitized_data['session_analytics'] = session_analytics
+
+            # Include performance data with first event only
+            if logged_count == 0 and performance_data:
+                sanitized_data['performance_metrics'] = performance_data
 
             enhanced_audit_logger.log(
                 action=action,
@@ -221,6 +241,10 @@ def log_session_event():
         duration: Session duration in seconds (for end event)
         idle_time: Time spent idle (for idle event)
         timestamp: Client-side timestamp
+        session_analytics: Engagement and activity metrics (optional)
+        fingerprint: Browser fingerprint summary (optional)
+        full_fingerprint: Complete browser fingerprint (optional, session end only)
+        performance: Page performance metrics (optional)
     """
     try:
         data = request.json or {}
@@ -230,14 +254,28 @@ def log_session_event():
         idle_time = data.get('idle_time')
         client_timestamp = data.get('timestamp')
 
+        # Enhanced session data
+        session_analytics = data.get('session_analytics')
+        fingerprint = data.get('fingerprint')
+        full_fingerprint = data.get('full_fingerprint')
+        performance_data = data.get('performance')
+        session_start_time = data.get('session_start_time')
+        url = data.get('url')
+        referrer = data.get('referrer')
+
         valid_events = ['start', 'end', 'idle', 'resume', 'visibility_hidden', 'visibility_visible']
         if event not in valid_events:
             event = 'unknown'
 
-        # Generate human-readable description
+        # Generate human-readable description with enhanced metrics
+        engagement_text = ''
+        if session_analytics:
+            engagement_score = session_analytics.get('engagement_score', 0)
+            engagement_text = f' (engagement: {engagement_score}/100)'
+
         description_map = {
-            'start': 'User started a new session',
-            'end': f'User ended session (duration: {duration}s)' if duration else 'User ended session',
+            'start': f'User started a new session on {url}' if url else 'User started a new session',
+            'end': f'User ended session (duration: {duration}s){engagement_text}' if duration else f'User ended session{engagement_text}',
             'idle': f'User became idle after {idle_time}s of inactivity' if idle_time else 'User became idle',
             'resume': 'User resumed activity after being idle',
             'visibility_hidden': 'User switched away from tab or minimized window',
@@ -251,6 +289,52 @@ def log_session_event():
             'client_timestamp': client_timestamp,
             '_description': description_map.get(event, f'Session event: {event}')
         }
+
+        # Add session start data
+        if event == 'start':
+            details['session_start_time'] = session_start_time
+            details['entry_url'] = url
+            details['entry_referrer'] = referrer
+
+        # Add enhanced session end data
+        if event == 'end':
+            if session_analytics:
+                details['session_analytics'] = {
+                    'total_clicks': session_analytics.get('total_clicks', 0),
+                    'total_key_presses': session_analytics.get('total_key_presses', 0),
+                    'total_scroll_events': session_analytics.get('total_scroll_events', 0),
+                    'max_scroll_depth': session_analytics.get('max_scroll_depth', 0),
+                    'scroll_milestones': session_analytics.get('scroll_milestones_reached', []),
+                    'engagement_score': session_analytics.get('engagement_score', 0),
+                    'was_idle': session_analytics.get('is_idle', False),
+                    'last_page': session_analytics.get('current_page', '')
+                }
+
+            if fingerprint:
+                details['client_fingerprint'] = fingerprint
+
+            if full_fingerprint:
+                # Store full fingerprint (comprehensive device/browser data)
+                details['full_fingerprint'] = {
+                    'basic': full_fingerprint.get('basic', {}),
+                    'screen': full_fingerprint.get('screen', {}),
+                    'hardware': full_fingerprint.get('hardware', {}),
+                    'capabilities': full_fingerprint.get('capabilities', {}),
+                    'network': full_fingerprint.get('network', {}),
+                    'timezone': full_fingerprint.get('timezone', {}),
+                    'webgl': full_fingerprint.get('webgl', {}),
+                    'canvas': full_fingerprint.get('canvas', {}),
+                    'audio': full_fingerprint.get('audio', {}),
+                    'fonts': full_fingerprint.get('fonts', {}),
+                    'permissions': full_fingerprint.get('permissions', {}),
+                    'preferences': full_fingerprint.get('preferences', {}),
+                    'plugins': full_fingerprint.get('plugins', {}),
+                    'media': full_fingerprint.get('media', {}),
+                    'composite_fingerprint': full_fingerprint.get('composite_fingerprint')
+                }
+
+            if performance_data:
+                details['performance'] = performance_data
 
         enhanced_audit_logger.log(
             action=f'SESSION_{event.upper()}',
