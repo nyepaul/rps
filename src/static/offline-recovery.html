@@ -155,8 +155,17 @@
 
         <div id="message"></div>
 
-        <div class="info-box">
-            <strong>Data Recovery:</strong> To securely recover your data and verify your identity, you must provide your previous password.
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <button id="usePasswordTab" style="flex: 1; padding: 10px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                Option 1: Use Password
+            </button>
+            <button id="useCodeTab" style="flex: 1; padding: 10px; background: #f3f4f6; color: #666; border: 1px solid #e0e0e0; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                Option 2: Recovery Code
+            </button>
+        </div>
+
+        <div class="info-box" id="methodDescription">
+            <strong>Password Recovery:</strong> Use this if you remember your <strong>previous password</strong> but want to change it and recover your data.
         </div>
 
         <form id="recoveryForm">
@@ -165,15 +174,21 @@
                 <input type="text" id="username" name="username" required autocomplete="username" placeholder="Enter username">
             </div>
 
-            <div class="form-group">
+            <div class="form-group" id="emailGroup">
                 <label for="email">Email Address</label>
                 <input type="email" id="email" name="email" required autocomplete="email" placeholder="Enter email address">
             </div>
 
-            <div class="form-group">
+            <div class="form-group" id="oldPasswordGroup">
                 <label for="oldPassword">Previous Password</label>
                 <input type="password" id="oldPassword" name="oldPassword" required autocomplete="current-password" placeholder="Enter previous password">
-                <small style="color: #666; display: block; margin-top: 5px;">Your previous password is required to verify your identity and decrypt your local data.</small>
+                <small style="color: #666; display: block; margin-top: 5px;">Required to verify your identity and decrypt your data.</small>
+            </div>
+
+            <div class="form-group hidden" id="recoveryCodeGroup">
+                <label for="recoveryCode">Recovery Code</label>
+                <input type="text" id="recoveryCode" name="recoveryCode" maxlength="16" placeholder="Enter 16-char code" style="text-transform: uppercase; font-family: monospace; letter-spacing: 1px;">
+                <small style="color: #666; display: block; margin-top: 5px;">Enter the 16-character code you saved earlier.</small>
             </div>
 
             <div class="form-group">
@@ -205,13 +220,57 @@
         const form = document.getElementById('recoveryForm');
         const messageDiv = document.getElementById('message');
         const submitBtn = document.getElementById('submitBtn');
+        
+        const usePasswordTab = document.getElementById('usePasswordTab');
+        const useCodeTab = document.getElementById('useCodeTab');
+        const methodDescription = document.getElementById('methodDescription');
+        
+        const emailGroup = document.getElementById('emailGroup');
+        const oldPasswordGroup = document.getElementById('oldPasswordGroup');
+        const recoveryCodeGroup = document.getElementById('recoveryCodeGroup');
+        
+        let currentMethod = 'password';
+
+        usePasswordTab.addEventListener('click', () => {
+            currentMethod = 'password';
+            usePasswordTab.style.background = '#667eea';
+            usePasswordTab.style.color = 'white';
+            useCodeTab.style.background = '#f3f4f6';
+            useCodeTab.style.color = '#666';
+            
+            emailGroup.classList.remove('hidden');
+            oldPasswordGroup.classList.remove('hidden');
+            recoveryCodeGroup.classList.add('hidden');
+            
+            document.getElementById('email').required = true;
+            document.getElementById('oldPassword').required = true;
+            document.getElementById('recoveryCode').required = false;
+            
+            methodDescription.innerHTML = `<strong>Password Recovery:</strong> Use this if you remember your <strong>previous password</strong> but want to change it and recover your data.`;
+        });
+
+        useCodeTab.addEventListener('click', () => {
+            currentMethod = 'code';
+            useCodeTab.style.background = '#667eea';
+            useCodeTab.style.color = 'white';
+            usePasswordTab.style.background = '#f3f4f6';
+            usePasswordTab.style.color = '#666';
+            
+            emailGroup.classList.add('hidden');
+            oldPasswordGroup.classList.add('hidden');
+            recoveryCodeGroup.classList.remove('hidden');
+            
+            document.getElementById('email').required = false;
+            document.getElementById('oldPassword').required = false;
+            document.getElementById('recoveryCode').required = true;
+            
+            methodDescription.innerHTML = `<strong>Recovery Code:</strong> Use this if you <strong>forgot your password</strong>. Enter your username and the 16-character code to reset access.`;
+        });
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const username = document.getElementById('username').value;
-            const email = document.getElementById('email').value;
-            const old_password = document.getElementById('oldPassword').value;
             const new_password = document.getElementById('newPassword').value;
             const confirm_password = document.getElementById('confirmPassword').value;
 
@@ -220,30 +279,40 @@
                 return;
             }
 
-            if (old_password && new_password === old_password) {
-                messageDiv.innerHTML = `<div class="error">New password must be different from the old one.</div>`;
-                return;
-            }
-
             submitBtn.disabled = true;
             submitBtn.textContent = 'Processing...';
             messageDiv.innerHTML = '';
 
             try {
-                const body = { 
-                    username, 
-                    email, 
-                    old_password,
-                    new_password 
-                };
+                let response;
+                let body;
 
-                const response = await fetch('/api/auth/password/offline-change', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(body)
-                });
+                if (currentMethod === 'password') {
+                    const email = document.getElementById('email').value;
+                    const old_password = document.getElementById('oldPassword').value;
+                    
+                    if (new_password === old_password) {
+                        messageDiv.innerHTML = `<div class="error">New password must be different from the old one.</div>`;
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Update Password & Recover Data';
+                        return;
+                    }
+
+                    body = { username, email, old_password, new_password };
+                    response = await fetch('/api/auth/password/offline-change', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                } else {
+                    const recovery_code = document.getElementById('recoveryCode').value.trim();
+                    body = { username, recovery_code, new_password };
+                    response = await fetch('/api/auth/password-reset/recovery', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                }
 
                 const data = await response.json();
 
