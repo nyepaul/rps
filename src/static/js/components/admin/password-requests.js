@@ -20,13 +20,8 @@ export function renderPasswordRequests(container) {
 
 async function loadRequests() {
     try {
-        const response = await apiClient.get('/api/admin/password-requests');
-        if (response.ok) {
-            const requests = await response.json();
-            renderTable(requests);
-        } else {
-            throw new Error('Failed to fetch requests');
-        }
+        const requests = await apiClient.get('/api/admin/password-requests');
+        renderTable(requests);
     } catch (error) {
         document.getElementById('requestsTableContainer').innerHTML = `<div class="error" style="color: #dc2626; padding: 10px; background: #fee2e2; border-radius: 4px;">Failed to load requests: ${error.message}</div>`;
     }
@@ -34,7 +29,7 @@ async function loadRequests() {
 
 function renderTable(requests) {
     const container = document.getElementById('requestsTableContainer');
-    if (requests.length === 0) {
+    if (!Array.isArray(requests) || requests.length === 0) {
         container.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 20px;">No pending requests.</p>';
         return;
     }
@@ -95,25 +90,19 @@ async function handleReset(reqId, username) {
     }
 
     try {
-        const response = await apiClient.post(`/api/admin/password-requests/${reqId}/reset`, {
+        const result = await apiClient.post(`/api/admin/password-requests/${reqId}/reset`, {
             new_password: newPassword
         });
         
-        const result = await response.json();
-        
-        if (response.ok) {
-            let msg = result.message;
-            if (result.recovery_method === 'email_backup') {
-                msg += '\n\n✅ Data Preserved (re-encrypted via email backup key).';
-            } else {
-                msg += '\n\n⚠️ Data LOST (forced reset - no backup available).';
-            }
-            alert(msg);
-            loadRequests(); // Refresh table
+        let msg = result.message;
+        if (result.recovery_method === 'email_backup') {
+            msg += '\n\n✅ Data Preserved (re-encrypted via email backup key).';
         } else {
-            showError(result.error || 'Failed to reset password');
+            msg += '\n\n⚠️ Data LOST (forced reset - no backup available).';
         }
+        alert(msg);
+        loadRequests(); // Refresh table
     } catch (error) {
-        showError('Network error occurred while processing request');
+        showError(error.message || 'Network error occurred while processing request');
     }
 }

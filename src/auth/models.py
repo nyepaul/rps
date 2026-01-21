@@ -100,13 +100,14 @@ class User(UserMixin):
             if self.id is None:
                 # Insert new user
                 cursor.execute('''
-                    INSERT INTO users (username, email, password_hash, is_active, is_admin, created_at, updated_at, 
+                    INSERT INTO users (username, email, password_hash, is_active, is_admin, is_super_admin, created_at, updated_at, 
                                      encrypted_dek, dek_iv, recovery_encrypted_dek, recovery_iv, recovery_salt,
                                      email_encrypted_dek, email_iv, email_salt)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (self.username, self.email, self.password_hash,
                       1 if self._is_active else 0,
                       1 if self._is_admin else 0,
+                      1 if self._is_super_admin else 0,
                       self.created_at, self.updated_at,
                       self.encrypted_dek, self.dek_iv,
                       self.recovery_encrypted_dek, self.recovery_iv, self.recovery_salt,
@@ -117,13 +118,14 @@ class User(UserMixin):
                 cursor.execute('''
                     UPDATE users
                     SET username = ?, email = ?, password_hash = ?, is_active = ?,
-                        is_admin = ?, last_login = ?, encrypted_dek = ?, dek_iv = ?,
+                        is_admin = ?, is_super_admin = ?, last_login = ?, encrypted_dek = ?, dek_iv = ?,
                         recovery_encrypted_dek = ?, recovery_iv = ?, recovery_salt = ?,
                         email_encrypted_dek = ?, email_iv = ?, email_salt = ?
                     WHERE id = ?
                 ''', (self.username, self.email, self.password_hash,
                       1 if self._is_active else 0,
                       1 if self._is_admin else 0,
+                      1 if self._is_super_admin else 0,
                       self.last_login, self.encrypted_dek, self.dek_iv,
                       self.recovery_encrypted_dek, self.recovery_iv, self.recovery_salt,
                       self.email_encrypted_dek, self.email_iv, self.email_salt,
