@@ -861,8 +861,10 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
             }, 100);
         }
 
-        // Reset navigation flag after successful load
-        isNavigating = false;
+        // Reset navigation flag after a small delay to prevent rapid-fire requests
+        setTimeout(() => {
+            isNavigating = false;
+        }, 300);
 
     } catch (error) {
         console.error('Failed to load log details:', error);
@@ -874,8 +876,10 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
             showError(`Failed to load log details: ${error.message}`);
         }
 
-        // Reset navigation flag on error
-        isNavigating = false;
+        // Reset navigation flag on error after delay
+        setTimeout(() => {
+            isNavigating = false;
+        }, 500);
     }
 }
 
@@ -1646,8 +1650,10 @@ async function showLogDetailsWithNavigation(logIndex) {
             }
         }
 
-        // Reset navigation flag after successful load
-        isNavigating = false;
+        // Reset navigation flag after a small delay to prevent rapid-fire requests
+        setTimeout(() => {
+            isNavigating = false;
+        }, 300);
 
     } catch (error) {
         console.error('Failed to load log details:', error);
@@ -1659,8 +1665,10 @@ async function showLogDetailsWithNavigation(logIndex) {
             showError(`Failed to load log details: ${error.message}`);
         }
 
-        // Reset navigation flag on error
-        isNavigating = false;
+        // Reset navigation flag on error after delay
+        setTimeout(() => {
+            isNavigating = false;
+        }, 500);
     }
 }
 

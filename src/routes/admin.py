@@ -9,6 +9,7 @@ from src.services.enhanced_audit_logger import enhanced_audit_logger, AuditConfi
 from src.services.audit_narrative_generator import audit_narrative_generator
 from src.auth.models import User
 from datetime import datetime
+from src.extensions import limiter
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
 
@@ -46,6 +47,7 @@ class PasswordResetSchema(BaseModel):
 
 
 @admin_bp.route('/logs', methods=['GET'])
+@limiter.limit("100 per minute")  # Generous limit for log viewing
 @login_required
 @admin_required
 def get_audit_logs():
@@ -126,6 +128,7 @@ def get_audit_logs():
 
 
 @admin_bp.route('/logs/statistics', methods=['GET'])
+@limiter.limit("30 per minute")  # Statistics endpoint
 @login_required
 @admin_required
 def get_log_statistics():
@@ -158,6 +161,7 @@ def get_log_statistics():
 
 
 @admin_bp.route('/logs/ip-locations', methods=['GET'])
+@limiter.limit("60 per minute")  # Moderate limit for IP location data
 @login_required
 @admin_required
 def get_ip_locations():
@@ -187,6 +191,7 @@ def get_ip_locations():
 
 
 @admin_bp.route('/logs/<int:log_id>', methods=['GET'])
+@limiter.limit("100 per minute")  # Generous limit for log navigation
 @login_required
 @admin_required
 def get_log_by_id(log_id: int):
