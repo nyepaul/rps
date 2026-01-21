@@ -29,8 +29,7 @@ def test_create_action_item(client, test_user, test_profile):
 
     response = client.post('/api/action-items', json={
         'profile_name': 'Test Profile',
-        'title': 'Review 401k allocation',
-        'description': 'Rebalance portfolio to target allocation',
+        'description': 'Review 401k allocation',
         'priority': 'high',
         'status': 'pending'
     })
@@ -38,7 +37,7 @@ def test_create_action_item(client, test_user, test_profile):
     assert response.status_code == 201
     data = response.get_json()
     assert data['message'] == 'Action item created successfully'
-    assert data['action_item']['title'] == 'Review 401k allocation'
+    assert data['action_item']['description'] == 'Review 401k allocation'
     assert data['action_item']['priority'] == 'high'
     assert data['action_item']['user_id'] == test_user.id
 
@@ -55,7 +54,7 @@ def test_list_action_items(client, test_user, test_profile):
     for i in range(3):
         client.post('/api/action-items', json={
             'profile_name': 'Test Profile',
-            'title': f'Action {i}',
+            'description': f'Action {i}',
             'priority': 'medium',
             'status': 'pending'
         })
@@ -86,13 +85,13 @@ def test_list_action_items_by_profile(client, test_user, test_profile):
     # Create action items for both profiles
     client.post('/api/action-items', json={
         'profile_name': 'Test Profile',
-        'title': 'Action for Profile 1',
+        'description': 'Action for Profile 1',
         'status': 'pending'
     })
 
     client.post('/api/action-items', json={
         'profile_name': 'Profile 2',
-        'title': 'Action for Profile 2',
+        'description': 'Action for Profile 2',
         'status': 'pending'
     })
 
@@ -105,7 +104,7 @@ def test_list_action_items_by_profile(client, test_user, test_profile):
     assert response.status_code == 200
     data = response.get_json()
     assert len(data['action_items']) == 1
-    assert data['action_items'][0]['title'] == 'Action for Profile 1'
+    assert data['action_items'][0]['description'] == 'Action for Profile 1'
 
 
 def test_get_action_item(client, test_user, test_profile):
@@ -119,7 +118,7 @@ def test_get_action_item(client, test_user, test_profile):
     # Create action item
     create_response = client.post('/api/action-items', json={
         'profile_name': 'Test Profile',
-        'title': 'Test Action',
+        'description': 'Test Action',
         'status': 'pending'
     })
 
@@ -129,7 +128,7 @@ def test_get_action_item(client, test_user, test_profile):
     response = client.get(f'/api/action-item/{item_id}')
     assert response.status_code == 200
     data = response.get_json()
-    assert data['action_item']['title'] == 'Test Action'
+    assert data['action_item']['description'] == 'Test Action'
 
 
 def test_get_action_item_not_found(client, test_user):
@@ -155,7 +154,7 @@ def test_update_action_item(client, test_user, test_profile):
     # Create action item
     create_response = client.post('/api/action-items', json={
         'profile_name': 'Test Profile',
-        'title': 'Original Title',
+        'description': 'Original Title',
         'status': 'pending',
         'priority': 'low'
     })
@@ -164,14 +163,14 @@ def test_update_action_item(client, test_user, test_profile):
 
     # Update action item
     response = client.put(f'/api/action-item/{item_id}', json={
-        'title': 'Updated Title',
+        'description': 'Updated Title',
         'status': 'completed',
         'priority': 'high'
     })
 
     assert response.status_code == 200
     data = response.get_json()
-    assert data['action_item']['title'] == 'Updated Title'
+    assert data['action_item']['description'] == 'Updated Title'
     assert data['action_item']['status'] == 'completed'
     assert data['action_item']['priority'] == 'high'
 
@@ -187,7 +186,7 @@ def test_delete_action_item(client, test_user, test_profile):
     # Create action item
     create_response = client.post('/api/action-items', json={
         'profile_name': 'Test Profile',
-        'title': 'To Delete',
+        'description': 'To Delete',
         'status': 'pending'
     })
 
@@ -216,7 +215,7 @@ def test_action_item_ownership(client, test_user, test_admin):
     admin_action = ActionItem(
         user_id=test_admin.id,
         profile_id=admin_profile.id,
-        title='Admin Action',
+        description='Admin Action',
         status='pending'
     )
     admin_action.save()
@@ -242,7 +241,7 @@ def test_action_item_profile_linking(client, test_user, test_profile):
 
     response = client.post('/api/action-items', json={
         'profile_name': 'Test Profile',
-        'title': 'Linked Action',
+        'description': 'Linked Action',
         'status': 'pending'
     })
 
@@ -260,7 +259,7 @@ def test_create_action_item_without_profile(client, test_user):
     })
 
     response = client.post('/api/action-items', json={
-        'title': 'General Action',
+        'description': 'General Action',
         'status': 'pending'
     })
 
@@ -280,7 +279,7 @@ def test_action_item_cascade_delete(client, test_user, test_profile):
     # Create action item
     create_response = client.post('/api/action-items', json={
         'profile_name': 'Test Profile',
-        'title': 'Will be deleted',
+        'description': 'Will be deleted',
         'status': 'pending'
     })
 

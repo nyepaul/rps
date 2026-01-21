@@ -83,7 +83,13 @@ def test_db(test_db_dir, request):
                 encrypted_dek TEXT,
                 dek_iv TEXT,
                 reset_token TEXT,
-                reset_token_expires TEXT
+                reset_token_expires TEXT,
+                recovery_encrypted_dek TEXT,
+                recovery_iv TEXT,
+                recovery_salt TEXT,
+                email_encrypted_dek TEXT,
+                email_iv TEXT,
+                email_salt TEXT
             )
         ''')
 
@@ -193,6 +199,7 @@ def app(test_db):
     app.config['TESTING'] = True
     app.config['WTF_CSRF_ENABLED'] = False  # Disable CSRF for testing
     app.config['RATELIMIT_ENABLED'] = False # Disable Rate Limiting for testing
+    app.config['RATELIMIT_STORAGE_URI'] = 'memory://' # Use memory storage for testing
     return app
 
 
