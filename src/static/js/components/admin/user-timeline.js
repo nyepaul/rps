@@ -662,21 +662,27 @@ function showActivityDetails(eventIndex) {
     const hasPrev = eventIndex < currentEvents.length - 1;
     const hasNext = eventIndex > 0;
 
-    // Create modal
-    const modal = document.createElement('div');
-    modal.className = 'activity-details-modal';
-    modal.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.7);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 10000;
-    `;
+    // Check if modal already exists
+    let modal = document.querySelector('.activity-details-modal');
+    const isExisting = !!modal;
+
+    if (!modal) {
+        // Create modal
+        modal = document.createElement('div');
+        modal.className = 'activity-details-modal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        `;
+    }
 
     modal.innerHTML = `
         <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto;">
@@ -770,67 +776,86 @@ function showActivityDetails(eventIndex) {
         </div>
     `;
 
-    // Add to document
-    document.body.appendChild(modal);
+    // Add to document if new
+    if (!isExisting) {
+        document.body.appendChild(modal);
 
-    // Setup close handlers
-    modal.querySelectorAll('.close-modal-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            modal.remove();
-            document.removeEventListener('keydown', keyHandler);
+        // Setup one-time event handlers for new modal
+        // Keyboard navigation
+        const keyHandler = (e) => {
+            if (e.key === 'Escape') {
+                modal.remove();
+                document.removeEventListener('keydown', keyHandler);
+            } else if (e.key === 'ArrowLeft') {
+                // Previous = earlier in time (higher index)
+                const currentIndex = parseInt(modal.dataset.currentIndex || '0');
+                if (currentIndex < currentEvents.length - 1) {
+                    showActivityDetails(currentIndex + 1);
+                }
+            } else if (e.key === 'ArrowRight') {
+                // Next = later in time (lower index)
+                const currentIndex = parseInt(modal.dataset.currentIndex || '0');
+                if (currentIndex > 0) {
+                    showActivityDetails(currentIndex - 1);
+                }
+            }
+        };
+        document.addEventListener('keydown', keyHandler);
+        modal.dataset.keyHandler = 'attached';
+
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+                document.removeEventListener('keydown', keyHandler);
+            }
         });
-    });
+    }
 
-    // Close on backdrop click
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
+    // Store current index on modal for keyboard navigation
+    modal.dataset.currentIndex = eventIndex;
+
+    // Setup/update close button handlers
+    modal.querySelectorAll('.close-modal-btn').forEach(btn => {
+        // Remove old listeners by cloning
+        const newBtn = btn.cloneNode(true);
+        btn.replaceWith(newBtn);
+        newBtn.addEventListener('click', () => {
             modal.remove();
-            document.removeEventListener('keydown', keyHandler);
-        }
+        });
     });
 
     // Previous button handler (earlier in time = higher index)
     const prevBtn = modal.querySelector('.prev-activity-btn');
-    if (prevBtn && hasPrev) {
-        prevBtn.addEventListener('click', () => {
-            modal.remove();
-            document.removeEventListener('keydown', keyHandler);
-            showActivityDetails(eventIndex + 1);
-        });
-        prevBtn.addEventListener('mouseenter', () => prevBtn.style.background = 'var(--bg-primary)');
-        prevBtn.addEventListener('mouseleave', () => prevBtn.style.background = 'var(--bg-tertiary)');
+    if (prevBtn) {
+        // Remove old listeners by cloning
+        const newPrevBtn = prevBtn.cloneNode(true);
+        prevBtn.replaceWith(newPrevBtn);
+
+        if (hasPrev) {
+            newPrevBtn.addEventListener('click', () => {
+                showActivityDetails(eventIndex + 1);
+            });
+            newPrevBtn.addEventListener('mouseenter', () => newPrevBtn.style.background = 'var(--bg-primary)');
+            newPrevBtn.addEventListener('mouseleave', () => newPrevBtn.style.background = 'var(--bg-tertiary)');
+        }
     }
 
     // Next button handler (later in time = lower index)
     const nextBtn = modal.querySelector('.next-activity-btn');
-    if (nextBtn && hasNext) {
-        nextBtn.addEventListener('click', () => {
-            modal.remove();
-            document.removeEventListener('keydown', keyHandler);
-            showActivityDetails(eventIndex - 1);
-        });
-        nextBtn.addEventListener('mouseenter', () => nextBtn.style.background = 'var(--bg-primary)');
-        nextBtn.addEventListener('mouseleave', () => nextBtn.style.background = 'var(--bg-tertiary)');
-    }
+    if (nextBtn) {
+        // Remove old listeners by cloning
+        const newNextBtn = nextBtn.cloneNode(true);
+        nextBtn.replaceWith(newNextBtn);
 
-    // Keyboard navigation
-    const keyHandler = (e) => {
-        if (e.key === 'Escape') {
-            modal.remove();
-            document.removeEventListener('keydown', keyHandler);
-        } else if (e.key === 'ArrowLeft' && hasPrev) {
-            // Previous = earlier in time (higher index)
-            modal.remove();
-            document.removeEventListener('keydown', keyHandler);
-            showActivityDetails(eventIndex + 1);
-        } else if (e.key === 'ArrowRight' && hasNext) {
-            // Next = later in time (lower index)
-            modal.remove();
-            document.removeEventListener('keydown', keyHandler);
-            showActivityDetails(eventIndex - 1);
+        if (hasNext) {
+            newNextBtn.addEventListener('click', () => {
+                showActivityDetails(eventIndex - 1);
+            });
+            newNextBtn.addEventListener('mouseenter', () => newNextBtn.style.background = 'var(--bg-primary)');
+            newNextBtn.addEventListener('mouseleave', () => newNextBtn.style.background = 'var(--bg-tertiary)');
         }
-    };
-    document.addEventListener('keydown', keyHandler);
+    }
 }
 
 /**

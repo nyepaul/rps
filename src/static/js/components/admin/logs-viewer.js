@@ -533,21 +533,27 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
         // Fetch full log details from API
         const fullLog = await apiClient.get(`/api/admin/logs/${log.id}`);
 
-        // Create modal
-        const modal = document.createElement('div');
-        modal.className = 'log-details-modal';
-        modal.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.85);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10002;
-        `;
+        // Check if modal already exists
+        let modal = document.querySelector('.log-details-modal.audit-log-modal');
+        const isExisting = !!modal;
+
+        if (!modal) {
+            // Create modal
+            modal = document.createElement('div');
+            modal.className = 'log-details-modal audit-log-modal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.85);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10002;
+            `;
+        }
 
         const timestamp = new Date(fullLog.created_at).toLocaleString();
         const actionColor = getActionColor(fullLog.action);
@@ -697,8 +703,44 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
             </div>
         `;
 
-        // Add to document
-        document.body.appendChild(modal);
+        // Add to document if new
+        if (!isExisting) {
+            document.body.appendChild(modal);
+
+            // Setup one-time event handlers for new modal
+            // Keyboard navigation
+            const keyHandler = (e) => {
+                if (e.key === 'Escape') {
+                    modal.remove();
+                    document.removeEventListener('keydown', keyHandler);
+                } else if (e.key === 'ArrowLeft') {
+                    // Previous = earlier in time (higher index)
+                    const currentIndex = parseInt(modal.dataset.currentIndex || '0');
+                    if (currentIndex < currentAuditLogs.length - 1) {
+                        showAuditLogDetailsWithNavigation(currentIndex + 1);
+                    }
+                } else if (e.key === 'ArrowRight') {
+                    // Next = later in time (lower index)
+                    const currentIndex = parseInt(modal.dataset.currentIndex || '0');
+                    if (currentIndex > 0) {
+                        showAuditLogDetailsWithNavigation(currentIndex - 1);
+                    }
+                }
+            };
+            document.addEventListener('keydown', keyHandler);
+            modal.dataset.keyHandler = 'attached';
+
+            // Close on backdrop click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                    document.removeEventListener('keydown', keyHandler);
+                }
+            });
+        }
+
+        // Store current index on modal for keyboard navigation
+        modal.dataset.currentIndex = logIndex;
 
         // Scroll to bottom of modal content (use setTimeout to ensure rendering is complete)
         const modalContent = modal.querySelector('.audit-log-details-content');
@@ -708,63 +750,47 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
             }, 50);
         }
 
-        // Keyboard navigation (define first so it can be used in cleanup)
-        const keyHandler = (e) => {
-            if (e.key === 'Escape') {
-                modal.remove();
-                document.removeEventListener('keydown', keyHandler);
-            } else if (e.key === 'ArrowLeft' && hasPrev) {
-                // Previous = earlier in time (higher index)
-                modal.remove();
-                document.removeEventListener('keydown', keyHandler);
-                showAuditLogDetailsWithNavigation(logIndex + 1);
-            } else if (e.key === 'ArrowRight' && hasNext) {
-                // Next = later in time (lower index)
-                modal.remove();
-                document.removeEventListener('keydown', keyHandler);
-                showAuditLogDetailsWithNavigation(logIndex - 1);
-            }
-        };
-        document.addEventListener('keydown', keyHandler);
-
-        // Setup close handlers
+        // Setup/update close button handlers
         modal.querySelectorAll('.close-modal-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
+            // Remove old listeners by cloning
+            const newBtn = btn.cloneNode(true);
+            btn.replaceWith(newBtn);
+            newBtn.addEventListener('click', () => {
                 modal.remove();
-                document.removeEventListener('keydown', keyHandler);
+                // Keyboard handler cleanup is handled by modal removal
             });
-        });
-
-        // Close on backdrop click
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.remove();
-                document.removeEventListener('keydown', keyHandler);
-            }
         });
 
         // Previous button handler (earlier in time = higher index)
         const prevBtn = modal.querySelector('.prev-log-btn');
-        if (prevBtn && hasPrev) {
-            prevBtn.addEventListener('click', () => {
-                modal.remove();
-                document.removeEventListener('keydown', keyHandler);
-                showAuditLogDetailsWithNavigation(logIndex + 1);
-            });
-            prevBtn.addEventListener('mouseenter', () => prevBtn.style.background = 'var(--bg-primary)');
-            prevBtn.addEventListener('mouseleave', () => prevBtn.style.background = 'var(--bg-tertiary)');
+        if (prevBtn) {
+            // Remove old listeners by cloning
+            const newPrevBtn = prevBtn.cloneNode(true);
+            prevBtn.replaceWith(newPrevBtn);
+
+            if (hasPrev) {
+                newPrevBtn.addEventListener('click', () => {
+                    showAuditLogDetailsWithNavigation(logIndex + 1);
+                });
+                newPrevBtn.addEventListener('mouseenter', () => newPrevBtn.style.background = 'var(--bg-primary)');
+                newPrevBtn.addEventListener('mouseleave', () => newPrevBtn.style.background = 'var(--bg-tertiary)');
+            }
         }
 
         // Next button handler (later in time = lower index)
         const nextBtn = modal.querySelector('.next-log-btn');
-        if (nextBtn && hasNext) {
-            nextBtn.addEventListener('click', () => {
-                modal.remove();
-                document.removeEventListener('keydown', keyHandler);
-                showAuditLogDetailsWithNavigation(logIndex - 1);
-            });
-            nextBtn.addEventListener('mouseenter', () => nextBtn.style.background = 'var(--bg-primary)');
-            nextBtn.addEventListener('mouseleave', () => nextBtn.style.background = 'var(--bg-tertiary)');
+        if (nextBtn) {
+            // Remove old listeners by cloning
+            const newNextBtn = nextBtn.cloneNode(true);
+            nextBtn.replaceWith(newNextBtn);
+
+            if (hasNext) {
+                newNextBtn.addEventListener('click', () => {
+                    showAuditLogDetailsWithNavigation(logIndex - 1);
+                });
+                newNextBtn.addEventListener('mouseenter', () => newNextBtn.style.background = 'var(--bg-primary)');
+                newNextBtn.addEventListener('mouseleave', () => newNextBtn.style.background = 'var(--bg-tertiary)');
+            }
         }
 
         // Initialize map if coordinates are available
@@ -1378,17 +1404,22 @@ async function showLogDetailsWithNavigation(logIndex) {
         // Fetch full log details from API
         const fullLog = await apiClient.get(`/api/admin/logs/${log.id}`);
 
-        // Create modal
-        const modal = document.createElement('div');
-        modal.className = 'log-details-modal';
-        modal.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.85);
-            display: flex;
+        // Check if modal already exists
+        let modal = document.querySelector('.log-details-modal.ip-log-modal');
+        const isExisting = !!modal;
+
+        if (!modal) {
+            // Create modal
+            modal = document.createElement('div');
+            modal.className = 'log-details-modal ip-log-modal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.85);
+                display: flex;
             align-items: center;
             justify-content: center;
             z-index: 10002;
@@ -1490,67 +1521,86 @@ async function showLogDetailsWithNavigation(logIndex) {
             </div>
         `;
 
-        // Add to document
-        document.body.appendChild(modal);
+        // Add to document if new
+        if (!isExisting) {
+            document.body.appendChild(modal);
 
-        // Setup close handlers
-        modal.querySelectorAll('.close-modal-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                modal.remove();
-                document.removeEventListener('keydown', keyHandler);
+            // Setup one-time event handlers for new modal
+            // Keyboard navigation
+            const keyHandler = (e) => {
+                if (e.key === 'Escape') {
+                    modal.remove();
+                    document.removeEventListener('keydown', keyHandler);
+                } else if (e.key === 'ArrowLeft') {
+                    // Previous = earlier in time (higher index)
+                    const currentIndex = parseInt(modal.dataset.currentIndex || '0');
+                    if (currentIndex < currentIPLogs.length - 1) {
+                        showLogDetailsWithNavigation(currentIndex + 1);
+                    }
+                } else if (e.key === 'ArrowRight') {
+                    // Next = later in time (lower index)
+                    const currentIndex = parseInt(modal.dataset.currentIndex || '0');
+                    if (currentIndex > 0) {
+                        showLogDetailsWithNavigation(currentIndex - 1);
+                    }
+                }
+            };
+            document.addEventListener('keydown', keyHandler);
+            modal.dataset.keyHandler = 'attached';
+
+            // Close on backdrop click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                    document.removeEventListener('keydown', keyHandler);
+                }
             });
-        });
+        }
 
-        // Close on backdrop click
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
+        // Store current index on modal for keyboard navigation
+        modal.dataset.currentIndex = logIndex;
+
+        // Setup/update close button handlers
+        modal.querySelectorAll('.close-modal-btn').forEach(btn => {
+            // Remove old listeners by cloning
+            const newBtn = btn.cloneNode(true);
+            btn.replaceWith(newBtn);
+            newBtn.addEventListener('click', () => {
                 modal.remove();
-                document.removeEventListener('keydown', keyHandler);
-            }
+            });
         });
 
         // Previous button handler (earlier in time = higher index)
         const prevBtn = modal.querySelector('.prev-log-btn');
-        if (prevBtn && hasPrev) {
-            prevBtn.addEventListener('click', () => {
-                modal.remove();
-                document.removeEventListener('keydown', keyHandler);
-                showLogDetailsWithNavigation(logIndex + 1);
-            });
-            prevBtn.addEventListener('mouseenter', () => prevBtn.style.background = 'var(--bg-primary)');
-            prevBtn.addEventListener('mouseleave', () => prevBtn.style.background = 'var(--bg-tertiary)');
+        if (prevBtn) {
+            // Remove old listeners by cloning
+            const newPrevBtn = prevBtn.cloneNode(true);
+            prevBtn.replaceWith(newPrevBtn);
+
+            if (hasPrev) {
+                newPrevBtn.addEventListener('click', () => {
+                    showLogDetailsWithNavigation(logIndex + 1);
+                });
+                newPrevBtn.addEventListener('mouseenter', () => newPrevBtn.style.background = 'var(--bg-primary)');
+                newPrevBtn.addEventListener('mouseleave', () => newPrevBtn.style.background = 'var(--bg-tertiary)');
+            }
         }
 
         // Next button handler (later in time = lower index)
         const nextBtn = modal.querySelector('.next-log-btn');
-        if (nextBtn && hasNext) {
-            nextBtn.addEventListener('click', () => {
-                modal.remove();
-                document.removeEventListener('keydown', keyHandler);
-                showLogDetailsWithNavigation(logIndex - 1);
-            });
-            nextBtn.addEventListener('mouseenter', () => nextBtn.style.background = 'var(--bg-primary)');
-            nextBtn.addEventListener('mouseleave', () => nextBtn.style.background = 'var(--bg-tertiary)');
-        }
+        if (nextBtn) {
+            // Remove old listeners by cloning
+            const newNextBtn = nextBtn.cloneNode(true);
+            nextBtn.replaceWith(newNextBtn);
 
-        // Keyboard navigation
-        const keyHandler = (e) => {
-            if (e.key === 'Escape') {
-                modal.remove();
-                document.removeEventListener('keydown', keyHandler);
-            } else if (e.key === 'ArrowLeft' && hasPrev) {
-                // Previous = earlier in time (higher index)
-                modal.remove();
-                document.removeEventListener('keydown', keyHandler);
-                showLogDetailsWithNavigation(logIndex + 1);
-            } else if (e.key === 'ArrowRight' && hasNext) {
-                // Next = later in time (lower index)
-                modal.remove();
-                document.removeEventListener('keydown', keyHandler);
-                showLogDetailsWithNavigation(logIndex - 1);
+            if (hasNext) {
+                newNextBtn.addEventListener('click', () => {
+                    showLogDetailsWithNavigation(logIndex - 1);
+                });
+                newNextBtn.addEventListener('mouseenter', () => newNextBtn.style.background = 'var(--bg-primary)');
+                newNextBtn.addEventListener('mouseleave', () => newNextBtn.style.background = 'var(--bg-tertiary)');
             }
-        };
-        document.addEventListener('keydown', keyHandler);
+        }
 
     } catch (error) {
         console.error('Failed to load log details:', error);

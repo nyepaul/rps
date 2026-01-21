@@ -1,5 +1,5 @@
 """RPS Version Information"""
 
-__version__ = "3.8.84"
+__version__ = "3.8.85"
 __release_date__ = "2026-01-20"
-__release_notes__ = "fix: Reverse prev/next navigation direction to match time order"
+__release_notes__ = "feat: Update modal content in place for smooth prev/next navigation"
