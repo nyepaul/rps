@@ -93,23 +93,26 @@ def register():
     if User.get_by_email(data.email):
         return jsonify({'error': 'Email already exists'}), 400
 
+    # Create user object first to get the correct salt (derived from username + email)
+    user = User(
+        id=None,
+        username=data.username,
+        email=data.email,
+        password_hash=User.hash_password(data.password)
+    )
+
     # Generate user-specific encryption key (DEK)
     dek = EncryptionService.generate_dek()
-    kek = EncryptionService.get_kek_from_password(data.password)
+    # Use deterministic salt based on identity
+    kek = EncryptionService.get_kek_from_password(data.password, user.get_kek_salt())
     
     # Encrypt DEK with KEK derived from password
     temp_service = EncryptionService(key=kek)
     encrypted_dek, dek_iv = temp_service.encrypt(base64.b64encode(dek).decode('utf-8'))
 
-    # Create user
-    user = User(
-        id=None,
-        username=data.username,
-        email=data.email,
-        password_hash=User.hash_password(data.password),
-        encrypted_dek=encrypted_dek,
-        dek_iv=dek_iv
-    )
+    # Update user with encryption details
+    user.encrypted_dek = encrypted_dek
+    user.dek_iv = dek_iv
     user.save()
 
     # Log the registration
@@ -192,17 +195,17 @@ def login():
     # Decrypt user's DEK or generate one for old users
     if user.encrypted_dek and user.dek_iv:
         try:
-            kek = EncryptionService.get_kek_from_password(data.password)
-            temp_service = EncryptionService(key=kek)
-            dek_b64 = temp_service.decrypt(user.encrypted_dek, user.dek_iv)
-            session['user_dek'] = dek_b64
+            # Use User model's get_dek which handles salt migration
+            raw_dek = user.get_dek(data.password)
+            session['user_dek'] = base64.b64encode(raw_dek).decode('utf-8')
         except Exception as e:
-            print(f"Failed to decrypt DEK: {e}")
+            print(f"Failed to decrypt DEK for user {user.username}: {e}")
     else:
         # Auto-migrate: User doesn't have a DEK yet, generate one now
         try:
             dek = EncryptionService.generate_dek()
-            kek = EncryptionService.get_kek_from_password(data.password)
+            # Use new deterministic salt
+            kek = EncryptionService.get_kek_from_password(data.password, user.get_kek_salt())
             temp_service = EncryptionService(key=kek)
             encrypted_dek, dek_iv = temp_service.encrypt(base64.b64encode(dek).decode('utf-8'))
             
