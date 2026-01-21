@@ -10,6 +10,7 @@ from src.services.audit_narrative_generator import audit_narrative_generator
 from src.auth.models import User, PasswordResetRequest
 from src.services.encryption_service import EncryptionService
 import base64
+import json
 from datetime import datetime, timedelta
 from src.extensions import limiter
 
