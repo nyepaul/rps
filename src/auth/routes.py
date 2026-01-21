@@ -736,7 +736,8 @@ def generate_recovery_code():
             
     # 2. If not in session, and request provides password, try to decrypt now
     # This helps users fix a "broken session" without logging out if we add password to request
-    password = request.json.get('password') if request.is_json else None
+    json_data = request.get_json(silent=True) or {}
+    password = json_data.get('password')
     if not dek and password and user.encrypted_dek:
         try:
             dek = user.get_dek(password)
