@@ -412,11 +412,22 @@ function showUserDetails(user) {
                             <div style="font-size: 14px; font-weight: 700; margin-bottom: 4px;">${location.city}</div>
                             <div style="font-size: 12px; color: #666; margin-bottom: 4px;">${location.region}, ${location.country}</div>
                             <div style="font-size: 11px; font-family: monospace; margin-bottom: 8px; color: #888;">${location.ip_address}</div>
-                            <div style="font-size: 11px; padding: 4px 8px; background: #e8f5e9; border-radius: 4px; color: #2e7d32; font-weight: 600;">
-                                ${location.access_count} access${location.access_count !== 1 ? 'es' : ''}
-                            </div>
+                            <button class="map-access-drilldown-btn" data-ip="${location.ip_address}" data-user-id="${user.user_id}" data-city="${location.city}" data-country="${location.country}" 
+                                style="width: 100%; border: none; font-size: 11px; padding: 6px 8px; background: var(--accent-color); border-radius: 4px; color: white; font-weight: 600; cursor: pointer;">
+                                📋 ${location.access_count} access${location.access_count !== 1 ? 'es' : ''} (View Logs)
+                            </button>
                         </div>
                     `);
+
+                    // Add click handler for button inside popup
+                    marker.on('popupopen', () => {
+                        const btn = document.querySelector('.map-access-drilldown-btn');
+                        if (btn) {
+                            btn.addEventListener('click', () => {
+                                showIPLogs(btn.dataset.userId, btn.dataset.ip, btn.dataset.city, btn.dataset.country);
+                            });
+                        }
+                    });
 
                     return marker;
                 });
