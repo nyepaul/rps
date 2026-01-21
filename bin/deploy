@@ -222,8 +222,15 @@ if [ -f "$TARGET_DIR/src/__version__.py" ]; then
     VERSION=$(grep '^__version__' "$TARGET_DIR/src/__version__.py" | cut -d'"' -f2)
     RELEASE_DATE=$(grep '^__release_date__' "$TARGET_DIR/src/__version__.py" | cut -d'"' -f2)
     RELEASE_NOTES=$(grep '^__release_notes__' "$TARGET_DIR/src/__version__.py" | cut -d'"' -f2)
+    
+    # Get Git info
+    GIT_COMMIT=$(cd "$SOURCE_DIR" && git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+    GIT_SUBJECT=$(cd "$SOURCE_DIR" && git log -1 --format=%s 2>/dev/null || echo "unknown")
+
     echo -e "${GREEN}📦 Version:${NC}      $VERSION"
     echo -e "${GREEN}📅 Released:${NC}     $RELEASE_DATE"
+    echo -e "${GREEN}🚀 Deployed:${NC}     $(date '+%Y-%m-%d %H:%M:%S')"
+    echo -e "${GREEN}Commit:${NC}       $GIT_COMMIT - $GIT_SUBJECT"
     echo -e "${GREEN}📝 Changes:${NC}      $RELEASE_NOTES"
     echo ""
 fi
