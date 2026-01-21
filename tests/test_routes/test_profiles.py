@@ -78,7 +78,7 @@ def test_create_profile_duplicate_name(client, test_user, test_profile):
         'birth_date': '1990-01-01'
     })
 
-    assert response.status_code == 400
+    assert response.status_code == 409
     data = response.get_json()
     assert 'error' in data
 
@@ -89,7 +89,7 @@ def test_create_profile_without_auth(client, test_db):
         'name': 'Unauthorized Profile'
     })
 
-    assert response.status_code == 401
+    assert response.status_code == 302
 
 
 def test_get_profile(client, test_user, test_profile):
