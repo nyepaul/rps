@@ -21,19 +21,19 @@ export async function renderBackupManager(container) {
             <!-- Backup Controls -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
                 <!-- Data Backup Card -->
-                <div style="background: var(--bg-secondary); padding: 25px; border-radius: 12px; border-left: 4px solid #3498db;">
-                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
-                        <span style="font-size: 32px;">💿</span>
+                <div style="background: var(--bg-secondary); padding: 25px; border-radius: 12px; border-left: 4px solid var(--accent-color);">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
                         <div>
-                            <h3 style="margin: 0; font-size: 18px;">Data Backup</h3>
-                            <p style="margin: 5px 0 0 0; font-size: 13px; color: var(--text-secondary);">Database only</p>
+                            <h3 style="margin: 0; font-size: 18px;">📋 Data Backups</h3>
+                            <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 13px;">Profiles, scenarios, and application data</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 24px; font-weight: 700; color: var(--accent-color);">${stats.data.count}</div>
+                            <div style="font-size: 11px; color: var(--text-secondary);">Total Backups</div>
                         </div>
                     </div>
-                    <p style="margin-bottom: 20px; font-size: 14px; color: var(--text-secondary);">
-                        Backs up user data (database) only. Fast and efficient for frequent backups.
-                    </p>
-                    <button id="run-data-backup" style="width: 100%; padding: 12px; background: #3498db; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s;">
-                        Run Data Backup
+                    <button id="run-data-backup" style="width: 100%; padding: 12px; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s;">
+                        🔄 Create New Backup
                     </button>
                 </div>
 
@@ -317,8 +317,8 @@ async function loadBackups(container, type = 'all') {
                     ${response.backups.map(backup => {
                         const typeColors = {
                             full: '#27ae60',
-                            data: '#3498db',
-                            system: '#9b59b6'
+                            data: 'rgba(59, 130, 246, 0.8)', // Matching --accent-color (#3b82f6)
+                            system: 'rgba(118, 75, 162, 0.8)'
                         };
                         const typeColor = typeColors[backup.type] || '#999';
 

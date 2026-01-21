@@ -160,7 +160,7 @@ async function loadRoadmapContent() {
                     <div style="font-size: 12px; color: var(--text-secondary);">In Progress</div>
                 </div>
                 <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 24px; font-weight: 700; color: #228be6;">${stats.planned}</div>
+                    <div style="font-size: 24px; font-weight: 700; color: var(--accent-color);">${stats.planned}</div>
                     <div style="font-size: 12px; color: var(--text-secondary);">Planned</div>
                 </div>
             </div>
@@ -255,7 +255,7 @@ function renderRoadmapItem(item) {
     };
 
     const statusConfig = {
-        planned: { icon: '📋', label: 'Planned', color: '#228be6' },
+        planned: { icon: '📋', label: 'Planned', color: 'var(--accent-color)' },
         in_progress: { icon: '⚡', label: 'In Progress', color: '#fab005' },
         completed: { icon: '✅', label: 'Completed', color: '#40c057' },
         on_hold: { icon: '⏸️', label: 'On Hold', color: '#868e96' }

@@ -485,7 +485,7 @@ function getActionColor(action) {
         'UPDATE': '#FFA500',
         'DELETE': 'var(--danger-color)',
         'LOGIN_ATTEMPT': '#764ba2',
-        'NETWORK_ACCESS': '#3498db',
+        'NETWORK_ACCESS': 'var(--accent-color)',
         'ADMIN_ACCESS': 'var(--success-color)',
         'ADMIN_ACCESS_DENIED': 'var(--danger-color)'
     };
