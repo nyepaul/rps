@@ -2437,9 +2437,6 @@ def get_users_by_location_report():
                         })
                         break  # Only flag once
 
-            # Convert set to count for JSON serialization
-            user_data['unique_ips'] = len(user_data['unique_ips'])
-
         # Convert to list and sort by total accesses
         result = sorted(users_by_location.values(), key=lambda x: x['total_accesses'], reverse=True)
 
