@@ -328,15 +328,15 @@ function showUserDetails(user) {
                             <th style="padding: 10px; text-align: left; font-weight: 600;">Last Seen</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="user-location-table-body">
                         ${user.locations.map(location => `
-                            <tr style="border-bottom: 1px solid var(--border-color);">
+                            <tr class="location-drilldown-row" data-ip="${location.ip_address}" data-user-id="${user.user_id}" data-city="${location.city}" data-country="${location.country}" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='transparent'">
                                 <td style="padding: 10px;">
                                     <div style="font-weight: 600;">${location.city}</div>
                                     <div style="font-size: 12px; color: var(--text-secondary);">${location.region}, ${location.country}</div>
                                 </td>
                                 <td style="padding: 10px; font-family: monospace; font-size: 13px;">${location.ip_address}</td>
-                                <td style="padding: 10px; text-align: center; font-weight: 600;">${location.access_count}</td>
+                                <td style="padding: 10px; text-align: center; font-weight: 600; color: var(--accent-color);">${location.access_count}</td>
                                 <td style="padding: 10px; font-size: 13px;">${new Date(location.first_access).toLocaleString()}</td>
                                 <td style="padding: 10px; font-size: 13px;">${new Date(location.last_access).toLocaleString()}</td>
                             </tr>
@@ -358,6 +358,17 @@ function showUserDetails(user) {
     // Setup close handlers
     modal.querySelectorAll('.close-modal-btn').forEach(btn => {
         btn.addEventListener('click', () => modal.remove());
+    });
+
+    // Handle row clicks for drilldown
+    modal.querySelectorAll('.location-drilldown-row').forEach(row => {
+        row.addEventListener('click', (e) => {
+            const ip = row.dataset.ip;
+            const userId = row.dataset.userId;
+            const city = row.dataset.city;
+            const country = row.dataset.country;
+            showIPLogs(userId, ip, city, country);
+        });
     });
 
     modal.addEventListener('click', (e) => {
@@ -490,4 +501,116 @@ function generateCSV(users) {
         headers.join(','),
         ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
     ].join('\n');
+}
+
+/**
+ * Show detailed access logs for a specific IP and User
+ */
+async function showIPLogs(userId, ipAddress, city, country) {
+    const modal = document.createElement('div');
+    modal.className = 'ip-logs-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.85);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10001;
+    `;
+
+    modal.innerHTML = `
+        <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; width: 95%; max-width: 1000px; max-height: 90vh; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 15px;">
+                <div>
+                    <h2 style="margin: 0; font-size: 20px;">📋 Access Logs for ${ipAddress}</h2>
+                    <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 14px;">${city}, ${country}</p>
+                </div>
+                <button class="close-logs-btn" style="background: transparent; border: none; font-size: 28px; cursor: pointer; color: var(--text-secondary); padding: 0; line-height: 1;">×</button>
+            </div>
+
+            <div id="ip-logs-container" style="flex: 1; overflow-y: auto; min-height: 300px;">
+                <div style="text-align: center; padding: 60px;">
+                    <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
+                    <div>Loading records...</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; text-align: center;">
+                <button class="close-logs-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    Close
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Setup close handlers
+    modal.querySelectorAll('.close-logs-btn').forEach(btn => {
+        btn.addEventListener('click', () => modal.remove());
+    });
+
+    try {
+        const params = new URLSearchParams({
+            user_id: userId,
+            ip_address: ipAddress,
+            limit: 500
+        });
+
+        const data = await apiClient.get(`/api/admin/logs?${params.toString()}`);
+        const logs = data.logs || [];
+        const container = modal.querySelector('#ip-logs-container');
+
+        if (logs.length === 0) {
+            container.innerHTML = '<p style="text-align: center; padding: 40px; color: var(--text-secondary);">No matching logs found.</p>';
+            return;
+        }
+
+        container.innerHTML = `
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                    <tr style="background: var(--bg-primary); border-bottom: 2px solid var(--border-color); position: sticky; top: 0; z-index: 1;">
+                        <th style="padding: 10px; text-align: left; font-weight: 600;">Time</th>
+                        <th style="padding: 10px; text-align: left; font-weight: 600;">Action</th>
+                        <th style="padding: 10px; text-align: left; font-weight: 600;">Details</th>
+                        <th style="padding: 10px; text-align: left; font-weight: 600;">Device</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${logs.map(log => {
+                        const date = new Date(log.created_at);
+                        const dev = log.device_info || {};
+                        return `
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <td style="padding: 10px; white-space: nowrap;">
+                                    <div>${date.toLocaleDateString()}</div>
+                                    <div style="font-size: 11px; color: var(--text-secondary);">${date.toLocaleTimeString()}</div>
+                                </td>
+                                <td style="padding: 10px;">
+                                    <span style="display: inline-block; padding: 2px 6px; background: var(--accent-color)15; color: var(--accent-color); border-radius: 4px; font-size: 11px; font-weight: 600;">
+                                        ${log.action}
+                                    </span>
+                                </td>
+                                <td style="padding: 10px;">
+                                    <div style="font-weight: 500;">${log.table_name || '-'}</div>
+                                    <div style="font-size: 11px; color: var(--text-secondary);">${log.details?._description || ''}</div>
+                                </td>
+                                <td style="padding: 10px; font-size: 11px; color: var(--text-secondary);">
+                                    ${dev.browser || 'Unknown'} on ${dev.os || 'Unknown'}
+                                </td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+        `;
+
+    } catch (error) {
+        console.error('Failed to load IP logs:', error);
+        modal.querySelector('#ip-logs-container').innerHTML = `<div style="color: var(--danger-color); padding: 20px;">Error: ${error.message}</div>`;
+    }
 }
