@@ -1,5 +1,5 @@
 """RPS Version Information"""
 
-__version__ = "3.8.128"
+__version__ = "3.8.129"
 __release_date__ = "2026-01-21"
-__release_notes__ = "Improve AI error detection and automatic redirection to settings"
+__release_notes__ = "Rename Profile tab and optimize vertical space"

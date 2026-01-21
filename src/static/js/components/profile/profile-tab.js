@@ -33,214 +33,221 @@ export function renderProfileTab(container) {
     const address = data.address || {};
 
     container.innerHTML = `
-        <div style="max-width: 1000px; margin: 0 auto; padding: var(--space-5);">
-            <h1 style="font-size: var(--font-3xl); margin-bottom: var(--space-1);">Edit Profile</h1>
-            <p style="color: var(--text-secondary); margin-bottom: var(--space-4);">
-                Update your retirement planning information
-            </p>
-
-            <form id="profile-form">
-                <!-- My Details -->
-                <div class="form-section">
-                    <h2 style="font-size: var(--font-xl); margin-bottom: var(--space-3); border-bottom: 2px solid var(--accent-color); padding-bottom: var(--space-2);">
-                        My Details
-                    </h2>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="name">Name *</label>
-                            <input type="text" id="name" name="name" value="${profile.name || ''}" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="birth_date">Birth Date</label>
-                            <input type="date" id="birth_date" name="birth_date" value="${profile.birth_date || ''}">
-                        </div>
-                        <div class="form-group">
-                            <label for="retirement_date">Retirement Date</label>
-                            <input type="date" id="retirement_date" name="retirement_date" value="${profile.retirement_date || ''}">
-                        </div>
-                        <div class="form-group">
-                            <label for="current_age">Current Age</label>
-                            <input type="number" id="current_age" name="current_age" value="${person.current_age || ''}" min="0" max="120" class="calculated-field" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label for="retirement_age">Retirement Age</label>
-                            <input type="number" id="retirement_age" name="retirement_age" value="${person.retirement_age || ''}" min="0" max="120" class="calculated-field" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label for="life_expectancy">Life Expectancy</label>
-                            <input type="number" id="life_expectancy" name="life_expectancy" value="${person.life_expectancy || 95}" min="0" max="120">
-                            <small>Default: 95 years</small>
-                        </div>
-                    </div>
+        <div style="max-width: 1100px; margin: 0 auto; padding: var(--space-3);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: var(--space-3);">
+                <div>
+                    <h1 style="font-size: var(--font-2xl); margin: 0;">Profile Settings</h1>
+                    <p style="color: var(--text-secondary); margin: 0; font-size: 13px;">
+                        Manage personal and dependent information for <strong>${profile.name}</strong>
+                    </p>
                 </div>
-
-                <!-- Address -->
-                <div class="form-section">
-                    <h2 style="font-size: var(--font-xl); margin-bottom: var(--space-3); border-bottom: 2px solid var(--accent-color); padding-bottom: var(--space-2);">
-                        Address & Location
-                    </h2>
-                    <div class="form-grid">
-                        <div class="form-group" style="grid-column: span 2;">
-                            <label for="address_street">Street Address</label>
-                            <input type="text" id="address_street" name="address_street" value="${address.street || ''}" placeholder="123 Main St">
-                        </div>
-                        <div class="form-group">
-                            <label for="address_city">City</label>
-                            <input type="text" id="address_city" name="address_city" value="${address.city || ''}" placeholder="San Francisco">
-                        </div>
-                        <div class="form-group">
-                            <label for="address_state">State</label>
-                            <select id="address_state" name="address_state" style="padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-base);">
-                                <option value="">Select State</option>
-                                <option value="AL" ${address.state === 'AL' ? 'selected' : ''}>Alabama</option>
-                                <option value="AK" ${address.state === 'AK' ? 'selected' : ''}>Alaska</option>
-                                <option value="AZ" ${address.state === 'AZ' ? 'selected' : ''}>Arizona</option>
-                                <option value="AR" ${address.state === 'AR' ? 'selected' : ''}>Arkansas</option>
-                                <option value="CA" ${address.state === 'CA' ? 'selected' : ''}>California</option>
-                                <option value="CO" ${address.state === 'CO' ? 'selected' : ''}>Colorado</option>
-                                <option value="CT" ${address.state === 'CT' ? 'selected' : ''}>Connecticut</option>
-                                <option value="DE" ${address.state === 'DE' ? 'selected' : ''}>Delaware</option>
-                                <option value="FL" ${address.state === 'FL' ? 'selected' : ''}>Florida</option>
-                                <option value="GA" ${address.state === 'GA' ? 'selected' : ''}>Georgia</option>
-                                <option value="HI" ${address.state === 'HI' ? 'selected' : ''}>Hawaii</option>
-                                <option value="ID" ${address.state === 'ID' ? 'selected' : ''}>Idaho</option>
-                                <option value="IL" ${address.state === 'IL' ? 'selected' : ''}>Illinois</option>
-                                <option value="IN" ${address.state === 'IN' ? 'selected' : ''}>Indiana</option>
-                                <option value="IA" ${address.state === 'IA' ? 'selected' : ''}>Iowa</option>
-                                <option value="KS" ${address.state === 'KS' ? 'selected' : ''}>Kansas</option>
-                                <option value="KY" ${address.state === 'KY' ? 'selected' : ''}>Kentucky</option>
-                                <option value="LA" ${address.state === 'LA' ? 'selected' : ''}>Louisiana</option>
-                                <option value="ME" ${address.state === 'ME' ? 'selected' : ''}>Maine</option>
-                                <option value="MD" ${address.state === 'MD' ? 'selected' : ''}>Maryland</option>
-                                <option value="MA" ${address.state === 'MA' ? 'selected' : ''}>Massachusetts</option>
-                                <option value="MI" ${address.state === 'MI' ? 'selected' : ''}>Michigan</option>
-                                <option value="MN" ${address.state === 'MN' ? 'selected' : ''}>Minnesota</option>
-                                <option value="MS" ${address.state === 'MS' ? 'selected' : ''}>Mississippi</option>
-                                <option value="MO" ${address.state === 'MO' ? 'selected' : ''}>Missouri</option>
-                                <option value="MT" ${address.state === 'MT' ? 'selected' : ''}>Montana</option>
-                                <option value="NE" ${address.state === 'NE' ? 'selected' : ''}>Nebraska</option>
-                                <option value="NV" ${address.state === 'NV' ? 'selected' : ''}>Nevada</option>
-                                <option value="NH" ${address.state === 'NH' ? 'selected' : ''}>New Hampshire</option>
-                                <option value="NJ" ${address.state === 'NJ' ? 'selected' : ''}>New Jersey</option>
-                                <option value="NM" ${address.state === 'NM' ? 'selected' : ''}>New Mexico</option>
-                                <option value="NY" ${address.state === 'NY' ? 'selected' : ''}>New York</option>
-                                <option value="NC" ${address.state === 'NC' ? 'selected' : ''}>North Carolina</option>
-                                <option value="ND" ${address.state === 'ND' ? 'selected' : ''}>North Dakota</option>
-                                <option value="OH" ${address.state === 'OH' ? 'selected' : ''}>Ohio</option>
-                                <option value="OK" ${address.state === 'OK' ? 'selected' : ''}>Oklahoma</option>
-                                <option value="OR" ${address.state === 'OR' ? 'selected' : ''}>Oregon</option>
-                                <option value="PA" ${address.state === 'PA' ? 'selected' : ''}>Pennsylvania</option>
-                                <option value="RI" ${address.state === 'RI' ? 'selected' : ''}>Rhode Island</option>
-                                <option value="SC" ${address.state === 'SC' ? 'selected' : ''}>South Carolina</option>
-                                <option value="SD" ${address.state === 'SD' ? 'selected' : ''}>South Dakota</option>
-                                <option value="TN" ${address.state === 'TN' ? 'selected' : ''}>Tennessee</option>
-                                <option value="TX" ${address.state === 'TX' ? 'selected' : ''}>Texas</option>
-                                <option value="UT" ${address.state === 'UT' ? 'selected' : ''}>Utah</option>
-                                <option value="VT" ${address.state === 'VT' ? 'selected' : ''}>Vermont</option>
-                                <option value="VA" ${address.state === 'VA' ? 'selected' : ''}>Virginia</option>
-                                <option value="WA" ${address.state === 'WA' ? 'selected' : ''}>Washington</option>
-                                <option value="WV" ${address.state === 'WV' ? 'selected' : ''}>West Virginia</option>
-                                <option value="WI" ${address.state === 'WI' ? 'selected' : ''}>Wisconsin</option>
-                                <option value="WY" ${address.state === 'WY' ? 'selected' : ''}>Wyoming</option>
-                                <option value="DC" ${address.state === 'DC' ? 'selected' : ''}>District of Columbia</option>
-                            </select>
-                            <small>Used for state tax calculations</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="address_zip">ZIP Code</label>
-                            <input type="text" id="address_zip" name="address_zip" value="${address.zip || ''}" placeholder="94102" maxlength="10">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Spouse Details -->
-                <div class="form-section">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3);">
-                        <h2 style="font-size: var(--font-xl); border-bottom: 2px solid var(--accent-color); padding-bottom: var(--space-2); margin: 0;">
-                            Spouse Details
-                        </h2>
-                        ${spouse.name ? `
-                        <button type="button" id="clear-spouse-btn" style="padding: var(--space-2) var(--space-4); background: var(--danger-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-base);">
-                            Clear Spouse
-                        </button>
-                        ` : ''}
-                    </div>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="spouse_name">Name</label>
-                            <input type="text" id="spouse_name" name="spouse_name" value="${spouse.name || ''}" placeholder="Leave blank if no spouse">
-                        </div>
-                        <div class="form-group">
-                            <label for="spouse_birth_date">Birth Date</label>
-                            <input type="date" id="spouse_birth_date" name="spouse_birth_date" value="${spouse.birth_date || ''}">
-                        </div>
-                        <div class="form-group">
-                            <label for="spouse_retirement_date">Retirement Date</label>
-                            <input type="date" id="spouse_retirement_date" name="spouse_retirement_date" value="${spouse.retirement_date || ''}">
-                        </div>
-                        <div class="form-group">
-                            <label for="spouse_current_age">Current Age</label>
-                            <input type="number" id="spouse_current_age" name="spouse_current_age" value="${spouse.current_age || ''}" min="0" max="120" class="calculated-field" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label for="spouse_retirement_age">Retirement Age</label>
-                            <input type="number" id="spouse_retirement_age" name="spouse_retirement_age" value="${spouse.retirement_age || ''}" min="0" max="120" class="calculated-field" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label for="spouse_life_expectancy">Life Expectancy</label>
-                            <input type="number" id="spouse_life_expectancy" name="spouse_life_expectancy" value="${spouse.life_expectancy || 95}" min="0" max="120">
-                            <small>Default: 95 years</small>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Children -->
-                <div class="form-section">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3);">
-                        <h2 style="font-size: var(--font-xl); border-bottom: 2px solid var(--accent-color); padding-bottom: var(--space-2); margin: 0;">
-                            Children
-                        </h2>
-                        <button type="button" id="add-child-btn" style="padding: var(--space-2) var(--space-4); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-base);">
-                            + Add Child
-                        </button>
-                    </div>
-                    <div id="children-list">
-                        ${children.length === 0 ? '<p style="color: var(--text-secondary); font-style: italic;">No children added. Click "Add Child" to include dependent information.</p>' : ''}
-                        ${children.map((child, index) => `
-                            <div class="child-item" data-index="${index}" style="background: var(--bg-primary); padding: var(--space-3); border-radius: 8px; margin-bottom: var(--space-3);">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2);">
-                                    <h3 style="font-size: var(--font-md); margin: 0;">Child ${index + 1}</h3>
-                                    <button type="button" class="remove-child-btn" data-index="${index}" style="padding: var(--space-1) var(--space-3); background: var(--danger-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: var(--font-sm);">
-                                        Remove
-                                    </button>
-                                </div>
-                                <div class="form-grid">
-                                    <div class="form-group">
-                                        <label>Name</label>
-                                        <input type="text" name="child_${index}_name" value="${child.name || ''}" placeholder="Optional">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Birth Year</label>
-                                        <input type="number" name="child_${index}_birth_year" value="${child.birth_year || ''}" min="1900" max="2100" placeholder="e.g., 2010">
-                                    </div>
-                                    <div class="form-group" style="grid-column: span 2;">
-                                        <label>Notes</label>
-                                        <input type="text" name="child_${index}_notes" value="${child.notes || ''}" placeholder="e.g., College 2028-2032">
-                                    </div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div style="display: flex; gap: var(--space-3); margin-top: var(--space-5); justify-content: flex-end;">
-                    <button type="button" id="cancel-btn" style="padding: var(--space-3) var(--space-6); background: var(--bg-tertiary); color: var(--text-primary); border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-base);">
+                <div style="display: flex; gap: var(--space-2);">
+                    <button type="button" id="cancel-btn" style="padding: 6px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
                         Cancel
                     </button>
-                    <button type="submit" id="save-btn" style="padding: var(--space-3) var(--space-6); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-base);">
+                    <button type="submit" form="profile-form" id="save-btn" style="padding: 6px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
                         Save Changes
                     </button>
+                </div>
+            </div>
+
+            <form id="profile-form">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: var(--space-3);">
+                    <!-- Column 1: Personal Details -->
+                    <div class="form-section" style="margin-bottom: 0;">
+                        <h2 style="font-size: 15px; margin-bottom: var(--space-3); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-2); color: var(--accent-color); display: flex; align-items: center; gap: 8px;">
+                            👤 Personal Details
+                        </h2>
+                        <div class="form-grid" style="grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="name">Profile Name *</label>
+                                <input type="text" id="name" name="name" value="${profile.name || ''}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="birth_date">Birth Date</label>
+                                <input type="date" id="birth_date" name="birth_date" value="${profile.birth_date || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label for="retirement_date">Retirement Date</label>
+                                <input type="date" id="retirement_date" name="retirement_date" value="${profile.retirement_date || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label for="current_age">Current Age</label>
+                                <input type="number" id="current_age" value="${person.current_age || ''}" class="calculated-field" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="retirement_age">Retirement Age</label>
+                                <input type="number" id="retirement_age" value="${person.retirement_age || ''}" class="calculated-field" readonly>
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="life_expectancy">Life Expectancy (years)</label>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <input type="number" id="life_expectancy" name="life_expectancy" value="${person.life_expectancy || 95}" min="0" max="120" style="flex: 1;">
+                                    <span style="font-size: 11px; color: var(--text-secondary); white-space: nowrap;">Default: 95</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Column 2: Address & Location -->
+                    <div class="form-section" style="margin-bottom: 0;">
+                        <h2 style="font-size: 15px; margin-bottom: var(--space-3); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-2); color: var(--accent-color); display: flex; align-items: center; gap: 8px;">
+                            📍 Location & Tax State
+                        </h2>
+                        <div class="form-grid" style="grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="address_street">Street Address</label>
+                                <input type="text" id="address_street" name="address_street" value="${address.street || ''}" placeholder="123 Main St">
+                            </div>
+                            <div class="form-group">
+                                <label for="address_city">City</label>
+                                <input type="text" id="address_city" name="address_city" value="${address.city || ''}" placeholder="City">
+                            </div>
+                            <div class="form-group">
+                                <label for="address_zip">ZIP Code</label>
+                                <input type="text" id="address_zip" name="address_zip" value="${address.zip || ''}" placeholder="ZIP" maxlength="10">
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="address_state">State (for Tax Calculation)</label>
+                                <select id="address_state" name="address_state" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: 13px;">
+                                    <option value="">Select State</option>
+                                    <option value="AL" ${address.state === 'AL' ? 'selected' : ''}>Alabama</option>
+                                    <option value="AK" ${address.state === 'AK' ? 'selected' : ''}>Alaska</option>
+                                    <option value="AZ" ${address.state === 'AZ' ? 'selected' : ''}>Arizona</option>
+                                    <option value="AR" ${address.state === 'AR' ? 'selected' : ''}>Arkansas</option>
+                                    <option value="CA" ${address.state === 'CA' ? 'selected' : ''}>California</option>
+                                    <option value="CO" ${address.state === 'CO' ? 'selected' : ''}>Colorado</option>
+                                    <option value="CT" ${address.state === 'CT' ? 'selected' : ''}>Connecticut</option>
+                                    <option value="DE" ${address.state === 'DE' ? 'selected' : ''}>Delaware</option>
+                                    <option value="FL" ${address.state === 'FL' ? 'selected' : ''}>Florida</option>
+                                    <option value="GA" ${address.state === 'GA' ? 'selected' : ''}>Georgia</option>
+                                    <option value="HI" ${address.state === 'HI' ? 'selected' : ''}>Hawaii</option>
+                                    <option value="ID" ${address.state === 'ID' ? 'selected' : ''}>Idaho</option>
+                                    <option value="IL" ${address.state === 'IL' ? 'selected' : ''}>Illinois</option>
+                                    <option value="IN" ${address.state === 'IN' ? 'selected' : ''}>Indiana</option>
+                                    <option value="IA" ${address.state === 'IA' ? 'selected' : ''}>Iowa</option>
+                                    <option value="KS" ${address.state === 'KS' ? 'selected' : ''}>Kansas</option>
+                                    <option value="KY" ${address.state === 'KY' ? 'selected' : ''}>Kentucky</option>
+                                    <option value="LA" ${address.state === 'LA' ? 'selected' : ''}>Louisiana</option>
+                                    <option value="ME" ${address.state === 'ME' ? 'selected' : ''}>Maine</option>
+                                    <option value="MD" ${address.state === 'MD' ? 'selected' : ''}>Maryland</option>
+                                    <option value="MA" ${address.state === 'MA' ? 'selected' : ''}>Massachusetts</option>
+                                    <option value="MI" ${address.state === 'MI' ? 'selected' : ''}>Michigan</option>
+                                    <option value="MN" ${address.state === 'MN' ? 'selected' : ''}>Minnesota</option>
+                                    <option value="MS" ${address.state === 'MS' ? 'selected' : ''}>Mississippi</option>
+                                    <option value="MO" ${address.state === 'MO' ? 'selected' : ''}>Missouri</option>
+                                    <option value="MT" ${address.state === 'MT' ? 'selected' : ''}>Montana</option>
+                                    <option value="NE" ${address.state === 'NE' ? 'selected' : ''}>Nebraska</option>
+                                    <option value="NV" ${address.state === 'NV' ? 'selected' : ''}>Nevada</option>
+                                    <option value="NH" ${address.state === 'NH' ? 'selected' : ''}>New Hampshire</option>
+                                    <option value="NJ" ${address.state === 'NJ' ? 'selected' : ''}>New Jersey</option>
+                                    <option value="NM" ${address.state === 'NM' ? 'selected' : ''}>New Mexico</option>
+                                    <option value="NY" ${address.state === 'NY' ? 'selected' : ''}>New York</option>
+                                    <option value="NC" ${address.state === 'NC' ? 'selected' : ''}>North Carolina</option>
+                                    <option value="ND" ${address.state === 'ND' ? 'selected' : ''}>North Dakota</option>
+                                    <option value="OH" ${address.state === 'OH' ? 'selected' : ''}>Ohio</option>
+                                    <option value="OK" ${address.state === 'OK' ? 'selected' : ''}>Oklahoma</option>
+                                    <option value="OR" ${address.state === 'OR' ? 'selected' : ''}>Oregon</option>
+                                    <option value="PA" ${address.state === 'PA' ? 'selected' : ''}>Pennsylvania</option>
+                                    <option value="RI" ${address.state === 'RI' ? 'selected' : ''}>Rhode Island</option>
+                                    <option value="SC" ${address.state === 'SC' ? 'selected' : ''}>South Carolina</option>
+                                    <option value="SD" ${address.state === 'SD' ? 'selected' : ''}>South Dakota</option>
+                                    <option value="TN" ${address.state === 'TN' ? 'selected' : ''}>Tennessee</option>
+                                    <option value="TX" ${address.state === 'TX' ? 'selected' : ''}>Texas</option>
+                                    <option value="UT" ${address.state === 'UT' ? 'selected' : ''}>Utah</option>
+                                    <option value="VT" ${address.state === 'VT' ? 'selected' : ''}>Vermont</option>
+                                    <option value="VA" ${address.state === 'VA' ? 'selected' : ''}>Virginia</option>
+                                    <option value="WA" ${address.state === 'WA' ? 'selected' : ''}>Washington</option>
+                                    <option value="WV" ${address.state === 'WV' ? 'selected' : ''}>West Virginia</option>
+                                    <option value="WI" ${address.state === 'WI' ? 'selected' : ''}>Wisconsin</option>
+                                    <option value="WY" ${address.state === 'WY' ? 'selected' : ''}>Wyoming</option>
+                                    <option value="DC" ${address.state === 'DC' ? 'selected' : ''}>District of Columbia</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Spouse Details -->
+                    <div class="form-section" style="margin-bottom: 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-2);">
+                            <h2 style="font-size: 15px; margin: 0; color: var(--accent-color); display: flex; align-items: center; gap: 8px;">
+                                💑 Spouse Details
+                            </h2>
+                            ${spouse.name ? `
+                            <button type="button" id="clear-spouse-btn" style="padding: 2px 8px; background: transparent; color: var(--danger-color); border: 1px solid var(--danger-color); border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
+                                Clear
+                            </button>
+                            ` : ''}
+                        </div>
+                        <div class="form-grid" style="grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="spouse_name">Name</label>
+                                <input type="text" id="spouse_name" name="spouse_name" value="${spouse.name || ''}" placeholder="Leave blank if no spouse">
+                            </div>
+                            <div class="form-group">
+                                <label for="spouse_birth_date">Birth Date</label>
+                                <input type="date" id="spouse_birth_date" name="spouse_birth_date" value="${spouse.birth_date || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label for="spouse_retirement_date">Retirement Date</label>
+                                <input type="date" id="spouse_retirement_date" name="spouse_retirement_date" value="${spouse.retirement_date || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label for="spouse_current_age">Current Age</label>
+                                <input type="number" id="spouse_current_age" value="${spouse.current_age || ''}" class="calculated-field" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="spouse_retirement_age">Retirement Age</label>
+                                <input type="number" id="spouse_retirement_age" value="${spouse.retirement_age || ''}" class="calculated-field" readonly>
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="spouse_life_expectancy">Life Expectancy (years)</label>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <input type="number" id="spouse_life_expectancy" name="spouse_life_expectancy" value="${spouse.life_expectancy || 95}" min="0" max="120" style="flex: 1;">
+                                    <span style="font-size: 11px; color: var(--text-secondary); white-space: nowrap;">Default: 95</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Children -->
+                    <div class="form-section" style="margin-bottom: 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-2);">
+                            <h2 style="font-size: 15px; margin: 0; color: var(--accent-color); display: flex; align-items: center; gap: 8px;">
+                                👶 Children
+                            </h2>
+                            <button type="button" id="add-child-btn" style="padding: 2px 8px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
+                                + Add
+                            </button>
+                        </div>
+                        <div id="children-list">
+                            ${children.length === 0 ? '<p style="color: var(--text-secondary); font-style: italic; font-size: 12px; margin: 10px 0;">No children added.</p>' : ''}
+                            ${children.map((child, index) => `
+                                <div class="child-item" data-index="${index}" style="background: var(--bg-primary); padding: var(--space-2); border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 8px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                        <span style="font-weight: 600; font-size: 13px;">Child ${index + 1}</span>
+                                        <button type="button" class="remove-child-btn" data-index="${index}" style="padding: 2px 6px; background: transparent; color: var(--danger-color); border: none; cursor: pointer; font-size: 11px;">
+                                            ✕ Remove
+                                        </button>
+                                    </div>
+                                    <div class="form-grid" style="grid-template-columns: repeat(2, 1fr); gap: 8px;">
+                                        <div class="form-group">
+                                            <label style="font-size: 11px;">Name</label>
+                                            <input type="text" name="child_${index}_name" value="${child.name || ''}" placeholder="Optional" style="padding: 4px 8px; font-size: 12px;">
+                                        </div>
+                                        <div class="form-group">
+                                            <label style="font-size: 11px;">Birth Year</label>
+                                            <input type="number" name="child_${index}_birth_year" value="${child.birth_year || ''}" min="1900" max="2100" placeholder="e.g. 2010" style="padding: 4px 8px; font-size: 12px;">
+                                        </div>
+                                        <div class="form-group" style="grid-column: span 2;">
+                                            <label style="font-size: 11px;">Notes</label>
+                                            <input type="text" name="child_${index}_notes" value="${child.notes || ''}" placeholder="Notes" style="padding: 4px 8px; font-size: 12px;">
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
                 </div>
             </form>
         </div>
@@ -248,14 +255,13 @@ export function renderProfileTab(container) {
         <style>
             .form-section {
                 background: var(--bg-secondary);
-                padding: var(--space-5);
-                border-radius: 10px;
-                margin-bottom: var(--space-4);
+                padding: var(--space-3);
+                border-radius: 8px;
+                border: 1px solid var(--border-color);
             }
             .form-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                gap: var(--space-3);
+                gap: var(--space-2);
             }
             .form-group {
                 display: flex;
@@ -263,58 +269,33 @@ export function renderProfileTab(container) {
             }
             .form-group label {
                 font-weight: 600;
-                margin-bottom: var(--space-1);
-                color: var(--text-primary);
-                font-size: var(--font-base);
+                margin-bottom: 2px;
+                color: var(--text-secondary);
+                font-size: 12px;
             }
-            .form-group input {
-                padding: var(--space-2) var(--space-3);
+            .form-group input, .form-group select {
+                padding: 6px 10px;
                 border: 1px solid var(--border-color);
-                border-radius: 6px;
+                border-radius: 4px;
                 background: var(--bg-primary);
                 color: var(--text-primary);
-                font-size: var(--font-base);
+                font-size: 13px;
                 transition: border-color 0.2s;
             }
-            .form-group input:focus {
+            .form-group input:focus, .form-group select:focus {
                 outline: none;
                 border-color: var(--accent-color);
-            }
-            .form-group small {
-                margin-top: var(--space-1);
-                color: var(--text-secondary);
-                font-size: var(--font-sm);
-            }
-            #save-btn:hover {
-                background: var(--accent-hover);
-            }
-            #cancel-btn:hover {
-                background: var(--bg-quaternary);
-            }
-            .calc-badge {
-                display: inline-block;
-                font-size: var(--font-xs);
-                font-weight: 500;
-                text-transform: uppercase;
-                background: var(--accent-color);
-                color: white;
-                padding: var(--space-1) var(--space-2);
-                border-radius: 4px;
-                margin-left: var(--space-2);
-                vertical-align: middle;
+                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
             }
             .calculated-field {
                 background: var(--bg-tertiary) !important;
-                color: var(--text-primary) !important;
+                color: var(--text-secondary) !important;
                 font-weight: 600;
                 cursor: default;
             }
-            .calculated-field:focus {
-                border-color: var(--border-color) !important;
-            }
-            @media (max-width: 639px) {
-                .form-grid {
-                    grid-template-columns: 1fr;
+            @media (max-width: 900px) {
+                #profile-form > div {
+                    grid-template-columns: 1fr !important;
                 }
             }
         </style>
