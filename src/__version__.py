@@ -1,5 +1,5 @@
 """RPS Version Information"""
 
-__version__ = "3.8.82"
+__version__ = "3.8.83"
 __release_date__ = "2026-01-20"
-__release_notes__ = "feat: Add prev/next navigation to main audit log details"
+__release_notes__ = "feat: Auto-scroll audit log details to bottom on navigation"

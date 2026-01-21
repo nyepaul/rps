@@ -552,7 +552,7 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
         const statusColor = fullLog.status_code >= 400 ? 'var(--danger-color)' : 'var(--success-color)';
 
         modal.innerHTML = `
-            <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto;">
+            <div class="audit-log-details-content" style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 15px;">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <h2 style="margin: 0; font-size: 20px;">📋 Audit Log Details</h2>
@@ -698,6 +698,14 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
         // Add to document
         document.body.appendChild(modal);
 
+        // Scroll to bottom of modal content (use setTimeout to ensure rendering is complete)
+        const modalContent = modal.querySelector('.audit-log-details-content');
+        if (modalContent) {
+            setTimeout(() => {
+                modalContent.scrollTop = modalContent.scrollHeight;
+            }, 50);
+        }
+
         // Keyboard navigation (define first so it can be used in cleanup)
         const keyHandler = (e) => {
             if (e.key === 'Escape') {
@@ -788,6 +796,13 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
                                 <span style="font-size: 11px; color: #00ddff; font-family: monospace; text-shadow: 0 0 6px rgba(0, 221, 255, 0.4);">${fullLog.ip_address}</span>
                             </div>
                         `).openPopup();
+
+                        // Scroll to bottom after map is rendered
+                        setTimeout(() => {
+                            if (modalContent) {
+                                modalContent.scrollTop = modalContent.scrollHeight;
+                            }
+                        }, 100);
                     } catch (error) {
                         console.error('Failed to initialize map:', error);
                         mapContainer.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--danger-color);">Failed to load map</div>';
