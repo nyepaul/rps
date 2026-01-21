@@ -653,7 +653,22 @@ async function openSettings(defaultTab = 'general') {
                 generateRecoveryBtn.disabled = true;
                 generateRecoveryBtn.textContent = 'Generating...';
 
-                const response = await apiClient.post('/api/auth/recovery-code/generate');
+                let response;
+                try {
+                    response = await apiClient.post('/api/auth/recovery-code/generate');
+                } catch (error) {
+                    // If keys are locked, prompt for password and retry
+                    if (error.data && error.data.needs_password) {
+                        const password = prompt('Your encryption keys are locked in this session.\n\nPlease enter your password to unlock them and generate your recovery code:');
+                        if (password) {
+                            response = await apiClient.post('/api/auth/recovery-code/generate', { password });
+                        } else {
+                            throw new Error('Password required to unlock encryption keys.');
+                        }
+                    } else {
+                        throw error;
+                    }
+                }
                 
                 const codeDisplay = modal.querySelector('#recovery-code-display');
                 const codeContainer = modal.querySelector('#recovery-code-container');

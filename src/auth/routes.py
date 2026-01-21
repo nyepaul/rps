@@ -199,7 +199,21 @@ def login():
             raw_dek = user.get_dek(data.password)
             session['user_dek'] = base64.b64encode(raw_dek).decode('utf-8')
         except Exception as e:
-            print(f"Failed to decrypt DEK for user {user.username}: {e}")
+            # CRITICAL: If we can't decrypt the DEK, we can't let the user in because 
+            # all their data will be inaccessible and new data will be unencryptable.
+            # However, for users who migrated from NO individual key, we might need a fallback.
+            # But here user.encrypted_dek is NOT NULL, so they definitely have one.
+            EnhancedAuditLogger.log(
+                action='LOGIN_DEK_FAILURE',
+                table_name='users',
+                user_id=user.id,
+                details=json.dumps({
+                    'username': user.username,
+                    'error': str(e)
+                }),
+                status_code=500
+            )
+            return jsonify({'error': 'Encryption key error. Your password may be correct but your private encryption key could not be unlocked. Please contact support or use recovery.'}), 500
     else:
         # Auto-migrate: User doesn't have a DEK yet, generate one now
         try:
@@ -713,22 +727,36 @@ def generate_recovery_code():
     # We need the DEK to encrypt it with the recovery code
     dek = None
     
-    # Try getting DEK from session
+    # 1. Try getting DEK from session (Standard)
     if 'user_dek' in session:
         try:
             dek = base64.b64decode(session['user_dek'])
         except:
             pass
             
-    # If not in session, try to get it from DB if we have password in request (optional)
+    # 2. If not in session, and request provides password, try to decrypt now
+    # This helps users fix a "broken session" without logging out if we add password to request
+    password = request.json.get('password') if request.is_json else None
+    if not dek and password and user.encrypted_dek:
+        try:
+            dek = user.get_dek(password)
+            # Restore to session for future use
+            session['user_dek'] = base64.b64encode(dek).decode('utf-8')
+        except:
+            pass
+
     if not dek and user.encrypted_dek:
         # If we can't get DEK, we can't generate a recovery code that recovers data
-        return jsonify({'error': 'Could not access encryption keys. Please re-login.'}), 400
+        return jsonify({
+            'error': 'Encryption key unavailable in current session.',
+            'needs_password': True,
+            'message': 'Please re-enter your password to unlock your keys and generate a recovery code.'
+        }), 400
         
     if not dek and not user.encrypted_dek:
         # User has no encryption set up yet, generate new DEK
         dek = EncryptionService.generate_dek()
-        # Note: This is an edge case where user has no DEK yet
+        # This is an edge case, but we handle it
     
     try:
         # 1. Generate new recovery code
@@ -742,7 +770,9 @@ def generate_recovery_code():
         
         # 4. Encrypt DEK with recovery KEK
         recovery_service = EncryptionService(key=recovery_kek)
-        rec_enc_dek, rec_iv = recovery_service.encrypt(base64.b64encode(dek).decode('utf-8'))
+        # Ensure we are encrypting the base64 string of the DEK to match standard patterns
+        dek_b64 = base64.b64encode(dek).decode('utf-8')
+        rec_enc_dek, rec_iv = recovery_service.encrypt(dek_b64)
         
         # 5. Save to user
         user.recovery_encrypted_dek = rec_enc_dek
@@ -768,7 +798,7 @@ def generate_recovery_code():
         
     except Exception as e:
         print(f"Error generating recovery code: {e}")
-        return jsonify({'error': 'Failed to generate recovery code'}), 500
+        return jsonify({'error': f'Failed to generate recovery code: {str(e)}'}), 500
 
 
 @auth_bp.route('/password-reset/recovery', methods=['POST'])
