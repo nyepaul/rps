@@ -5,7 +5,7 @@ import json
 import base64
 from flask import Blueprint, request, jsonify, session
 from flask_login import login_user, logout_user, current_user
-from src.auth.models import User
+from src.auth.models import User, PasswordResetRequest
 from src.extensions import limiter
 from src.services.encryption_service import EncryptionService
 from src.services.enhanced_audit_logger import EnhancedAuditLogger
@@ -517,7 +517,7 @@ class OfflinePasswordChangeSchema(BaseModel):
     """Schema for offline password change (using credentials)."""
     username: str
     email: EmailStr
-    old_password: Optional[str] = None
+    old_password: str
     new_password: str
 
     @validator('new_password')
@@ -556,11 +556,22 @@ def offline_change_password():
         # Generic error to prevent enumeration
         return jsonify({'error': 'Invalid credentials'}), 401
         
+    # 2. Mandatory Identity Verification via Previous Password
+    if not user.check_password(data.old_password):
+        EnhancedAuditLogger.log(
+            action='OFFLINE_PASSWORD_CHANGE_FAILED',
+            table_name='users',
+            user_id=user.id,
+            details=json.dumps({'reason': 'Invalid old password'}),
+            status_code=401
+        )
+        return jsonify({'error': 'Invalid credentials'}), 401
+
     try:
         dek_b64 = None
         recovery_method = 'unknown'
 
-        # 2. Try Email-Based Recovery (No old password needed)
+        # 3. Try Email-Based Recovery (as fallback/verification)
         if user.email_encrypted_dek and user.email_iv and user.email_salt:
             try:
                 email_salt = base64.b64decode(user.email_salt)
@@ -571,28 +582,15 @@ def offline_change_password():
             except Exception as e:
                 print(f"Email recovery failed: {e}")
         
-        # 3. Fallback to Old Password (if email recovery unavailable/failed)
+        # 4. Use Password-Based Recovery (if email failed or as primary)
         if not dek_b64:
-            if not data.old_password:
-                return jsonify({'error': 'Account not set up for email recovery. Previous password required.'}), 400
-            
-            if not user.check_password(data.old_password):
-                EnhancedAuditLogger.log(
-                    action='OFFLINE_PASSWORD_CHANGE_FAILED',
-                    table_name='users',
-                    user_id=user.id,
-                    details=json.dumps({'reason': 'Invalid old password'}),
-                    status_code=401
-                )
-                return jsonify({'error': 'Invalid credentials'}), 401
-            
             # Use User model logic to get DEK
             # This handles migration logic too
             raw_dek = user.get_dek(data.old_password)
             dek_b64 = base64.b64encode(raw_dek).decode('utf-8')
             recovery_method = 'password_backup'
 
-        # 4. Re-encrypt with New Password
+        # 5. Re-encrypt with New Password
         if dek_b64:
             dek = base64.b64decode(dek_b64)
             
@@ -838,3 +836,33 @@ def reset_password_with_recovery():
     except Exception as e:
         print(f"Recovery error: {e}")
         return jsonify({'error': 'Failed to reset password using recovery code'}), 500
+
+
+@auth_bp.route('/request-admin-reset', methods=['POST'])
+@limiter.limit("5 per hour")
+def request_admin_reset():
+    """Request a password reset from admin (when SMTP is down)."""
+    data = request.json
+    username = data.get('username')
+    email = data.get('email')
+
+    if not username or not email:
+        return jsonify({'error': 'Username and email are required'}), 400
+
+    user = User.get_by_username(username)
+    if not user or user.email.lower() != email.lower():
+        # Generic message
+        return jsonify({'message': 'If the account exists, a request has been submitted.'}), 200
+
+    # Create request
+    PasswordResetRequest.create(user.id, request.remote_addr)
+
+    EnhancedAuditLogger.log(
+        action='PASSWORD_RESET_REQUEST_SUBMITTED',
+        table_name='users',
+        user_id=user.id,
+        details=json.dumps({'type': 'admin_manual'}),
+        status_code=200
+    )
+
+    return jsonify({'message': 'Your request has been submitted to the administrator.'}), 200

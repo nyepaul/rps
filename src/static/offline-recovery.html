@@ -156,7 +156,7 @@
         <div id="message"></div>
 
         <div class="info-box">
-            <strong>Data Recovery:</strong> We will attempt to recover your data using your email verification. If that is not set up, you may be prompted for your previous password.
+            <strong>Data Recovery:</strong> To securely recover your data and verify your identity, you must provide your previous password.
         </div>
 
         <form id="recoveryForm">
@@ -171,9 +171,9 @@
             </div>
 
             <div class="form-group">
-                <label for="oldPassword">Previous Password (Optional)</label>
-                <input type="password" id="oldPassword" name="oldPassword" autocomplete="current-password" placeholder="Enter previous password (if required)">
-                <small style="color: #666; display: block; margin-top: 5px;">Required only if this is your first time recovering or you haven't logged in recently.</small>
+                <label for="oldPassword">Previous Password</label>
+                <input type="password" id="oldPassword" name="oldPassword" required autocomplete="current-password" placeholder="Enter previous password">
+                <small style="color: #666; display: block; margin-top: 5px;">Your previous password is required to verify your identity and decrypt your local data.</small>
             </div>
 
             <div class="form-group">
@@ -233,12 +233,9 @@
                 const body = { 
                     username, 
                     email, 
+                    old_password,
                     new_password 
                 };
-                
-                if (old_password) {
-                    body.old_password = old_password;
-                }
 
                 const response = await fetch('/api/auth/password/offline-change', {
                     method: 'POST',

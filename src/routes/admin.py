@@ -7,7 +7,9 @@ from src.auth.admin_required import admin_required
 from src.auth.super_admin_required import super_admin_required
 from src.services.enhanced_audit_logger import enhanced_audit_logger, AuditConfig
 from src.services.audit_narrative_generator import audit_narrative_generator
-from src.auth.models import User
+from src.auth.models import User, PasswordResetRequest
+from src.services.encryption_service import EncryptionService
+import base64
 from datetime import datetime, timedelta
 from src.extensions import limiter
 
@@ -2467,3 +2469,107 @@ def get_users_by_location_report():
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/password-requests', methods=['GET'])
+@admin_required
+def list_password_requests():
+    """List pending password reset requests."""
+    requests = PasswordResetRequest.get_pending()
+    return jsonify(requests), 200
+
+@admin_bp.route('/password-requests/<int:request_id>/reset', methods=['POST'])
+@admin_required
+def process_password_reset(request_id):
+    """Process a password reset request."""
+    req = PasswordResetRequest.get_by_id(request_id)
+    if not req:
+        return jsonify({'error': 'Request not found'}), 404
+    
+    if req.status != 'pending':
+        return jsonify({'error': 'Request already processed'}), 400
+
+    user = User.get_by_id(req.user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    data = request.json
+    new_password = data.get('new_password')
+    
+    # Use existing schema validation if possible, or manual
+    if not new_password or len(new_password) < 8:
+        return jsonify({'error': 'Password must be at least 8 characters'}), 400
+
+    # Attempt to recover data using email backup
+    recovery_method = 'data_loss'
+    
+    try:
+        if user.email_encrypted_dek and user.email_iv and user.email_salt:
+            # We can recover!
+            try:
+                email_salt = base64.b64decode(user.email_salt)
+                email_kek = EncryptionService.get_email_kek(user.email, email_salt)
+                email_service = EncryptionService(key=email_kek)
+                dek_b64 = email_service.decrypt(user.email_encrypted_dek, user.email_iv)
+                
+                if dek_b64:
+                    # Re-encrypt with new password
+                    dek = base64.b64decode(dek_b64)
+                    
+                    new_salt = user.get_kek_salt()
+                    new_kek = EncryptionService.get_kek_from_password(new_password, new_salt)
+                    new_service = EncryptionService(key=new_kek)
+                    
+                    new_enc_dek, new_iv = new_service.encrypt(dek_b64)
+                    
+                    # Update user
+                    user.encrypted_dek = new_enc_dek
+                    user.dek_iv = new_iv
+                    user.password_hash = User.hash_password(new_password)
+                    user.reset_token = None
+                    user.reset_token_expires = None
+                    
+                    # Refresh email backup
+                    user.update_email_recovery_backup(dek)
+                    
+                    user.save()
+                    recovery_method = 'email_backup'
+            except Exception as e:
+                print(f"Failed to recover using email backup: {e}")
+                # Fallthrough to data_loss
+        
+        if recovery_method == 'data_loss':
+            # Force reset
+            user.force_password_reset(new_password)
+            
+        # Mark request as processed
+        req.mark_processed(current_user.id)
+        
+        EnhancedAuditLogger.log(
+            action='ADMIN_PROCESSED_PASSWORD_RESET',
+            table_name='users',
+            user_id=user.id,
+            details=json.dumps({
+                'request_id': req.id,
+                'method': recovery_method
+            }),
+            status_code=200
+        )
+        
+        message = 'Password reset successfully.'
+        if recovery_method == 'email_backup':
+            message += ' Data was preserved/re-encrypted.'
+        else:
+            message += ' WARNING: Encrypted data was lost.'
+            
+        return jsonify({
+            'message': message,
+            'recovery_method': recovery_method,
+            'password': new_password
+        }), 200
+
+    except Exception as e:
+        print(f"Error processing password reset: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'Internal server error'}), 500

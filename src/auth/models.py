@@ -1,6 +1,7 @@
 """User authentication model."""
 import bcrypt
 import secrets
+import sqlite3
 from datetime import datetime, timedelta
 from flask_login import UserMixin
 from src.database.connection import db
@@ -394,3 +395,61 @@ class User(UserMixin):
     
     def __repr__(self):
         return f'<User {self.username}>'
+
+
+class PasswordResetRequest:
+    """Model for admin password reset requests."""
+    
+    def __init__(self, id, user_id, status='pending', request_ip=None, created_at=None, processed_at=None, processed_by=None):
+        self.id = id
+        self.user_id = user_id
+        self.status = status
+        self.request_ip = request_ip
+        self.created_at = created_at or datetime.now().isoformat()
+        self.processed_at = processed_at
+        self.processed_by = processed_by
+
+    @staticmethod
+    def create(user_id, ip_address=None):
+        with db.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO password_reset_requests (user_id, status, request_ip, created_at)
+                VALUES (?, 'pending', ?, ?)
+            ''', (user_id, ip_address, datetime.now()))
+            return cursor.lastrowid
+
+    @staticmethod
+    def get_pending():
+        with db.get_connection() as conn:
+            # Return rows as dicts
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute('''
+                SELECT r.*, u.username, u.email 
+                FROM password_reset_requests r
+                JOIN users u ON r.user_id = u.id
+                WHERE r.status = 'pending'
+                ORDER BY r.created_at DESC
+            ''')
+            return [dict(row) for row in cursor.fetchall()]
+
+    @staticmethod
+    def get_by_id(request_id):
+        row = db.execute_one(
+            'SELECT * FROM password_reset_requests WHERE id = ?',
+            (request_id,)
+        )
+        if row:
+            return PasswordResetRequest(**dict(row))
+        return None
+
+    def mark_processed(self, admin_id):
+        self.status = 'processed'
+        self.processed_at = datetime.now()
+        self.processed_by = admin_id
+        with db.get_connection() as conn:
+            conn.execute('''
+                UPDATE password_reset_requests 
+                SET status = ?, processed_at = ?, processed_by = ?
+                WHERE id = ?
+            ''', (self.status, self.processed_at, self.processed_by, self.id))
