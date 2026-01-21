@@ -51,12 +51,12 @@ function renderTable(requests) {
 
     requests.forEach(req => {
         html += `
-            <tr style="border-bottom: 1px solid #e5e7eb;">
+            <tr class="password-request-row" data-id="${req.id}" data-username="${req.username}" style="border-bottom: 1px solid #e5e7eb; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='transparent'">
                 <td style="padding: 12px; color: #4b5563;">${new Date(req.created_at).toLocaleString()}</td>
                 <td style="padding: 12px; font-weight: 500; color: #111827;">${req.username}</td>
                 <td style="padding: 12px; color: #4b5563;">${req.email}</td>
                 <td style="padding: 12px; color: #6b7280; font-family: monospace;">${req.request_ip || 'N/A'}</td>
-                <td style="padding: 12px;">
+                <td style="padding: 12px;" onclick="event.stopPropagation()">
                     <button class="action-btn reset-req-btn" data-id="${req.id}" data-username="${req.username}"
                         style="background: #f59e0b; color: white; padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer; font-weight: 500; transition: background 0.2s;">
                         Process Reset
@@ -69,8 +69,15 @@ function renderTable(requests) {
     html += '</tbody></table></div>';
     container.innerHTML = html;
 
+    container.querySelectorAll('.password-request-row').forEach(row => {
+        row.addEventListener('click', () => handleReset(row.dataset.id, row.dataset.username));
+    });
+
     container.querySelectorAll('.reset-req-btn').forEach(btn => {
-        btn.addEventListener('click', () => handleReset(btn.dataset.id, btn.dataset.username));
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            handleReset(btn.dataset.id, btn.dataset.username);
+        });
     });
 }
 

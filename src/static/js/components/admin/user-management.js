@@ -81,7 +81,7 @@ function renderUserRow(user, currentUser) {
     const lastLogin = user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never';
 
     return `
-        <tr style="border-bottom: 1px solid var(--border-color);">
+        <tr class="user-row" data-user-id="${user.id}" data-username="${user.username}" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='transparent'">
             <td style="padding: 12px; font-size: 13px; font-family: monospace;">${user.id}</td>
             <td style="padding: 12px; font-weight: 600;">${user.username}</td>
             <td style="padding: 12px; font-size: 13px;">${user.email}</td>
@@ -102,7 +102,7 @@ function renderUserRow(user, currentUser) {
             </td>
             <td style="padding: 12px; font-size: 12px; color: var(--text-secondary);">${createdDate}</td>
             <td style="padding: 12px; font-size: 12px; color: var(--text-secondary);">${lastLogin}</td>
-            <td style="padding: 12px; text-align: center;">
+            <td style="padding: 12px; text-align: center;" onclick="event.stopPropagation()">
                 <div style="display: flex; gap: 5px; justify-content: center;">
                     <button class="toggle-active-btn" data-user-id="${user.id}" data-is-active="${user.is_active}" style="padding: 4px 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px;" title="${user.is_active ? 'Deactivate' : 'Activate'}">
                         ${user.is_active ? '🚫' : '✅'}
@@ -139,6 +139,15 @@ function renderUserRow(user, currentUser) {
  * Setup user action handlers
  */
 function setupUserActionHandlers(container) {
+    // Row click to view report
+    container.querySelectorAll('.user-row').forEach(row => {
+        row.addEventListener('click', async () => {
+            const userId = parseInt(row.getAttribute('data-user-id'));
+            const username = row.getAttribute('data-username');
+            await showUserReport(userId, username);
+        });
+    });
+
     // Toggle active status
     container.querySelectorAll('.toggle-active-btn').forEach(btn => {
         btn.addEventListener('click', async () => {

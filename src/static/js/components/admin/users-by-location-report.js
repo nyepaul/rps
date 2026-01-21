@@ -195,6 +195,7 @@ function renderUserTable(container, users) {
 function renderUserRow(user) {
     const lastSeen = new Date(user.last_seen);
     const relativeTime = getRelativeTime(lastSeen);
+    const userJson = JSON.stringify(user).replace(/'/g, "&#39;");
 
     const securityBadges = user.security_flags.map(flag => {
         const color = flag.severity === 'high' ? 'var(--danger-color)' :
@@ -207,7 +208,7 @@ function renderUserRow(user) {
     }).join('');
 
     return `
-        <tr class="user-row" data-user-id="${user.user_id}" data-username="${user.username.toLowerCase()}" data-security-flags="${user.security_flags.length}" data-locations="${user.unique_locations}" style="border-bottom: 1px solid var(--border-color); cursor: pointer;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
+        <tr class="user-row" data-user='${userJson}' data-username="${user.username.toLowerCase()}" data-security-flags="${user.security_flags.length}" data-locations="${user.unique_locations}" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='transparent'">
             <td style="padding: 12px;">
                 <div style="font-weight: 600; color: var(--text-primary);">${user.username}</div>
                 <div style="font-size: 12px; color: var(--text-secondary);">${user.email}</div>
@@ -232,7 +233,7 @@ function renderUserRow(user) {
                 ${user.security_flags.length > 0 ? securityBadges : '<span style="color: var(--success-color);">✓ No Flags</span>'}
             </td>
             <td style="padding: 12px; text-align: center;">
-                <button class="view-details-btn" data-user='${JSON.stringify(user).replace(/'/g, "&#39;")}' style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                <button class="view-details-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
                     View Details
                 </button>
             </td>
@@ -257,11 +258,16 @@ function getRelativeTime(date) {
     return `${Math.floor(diffDays / 7)}w ago`;
 }
 
-// Event delegation for view details buttons
+// Event delegation for user rows and view details buttons
 document.addEventListener('click', (e) => {
-    if (e.target.classList.contains('view-details-btn')) {
-        const userData = JSON.parse(e.target.getAttribute('data-user'));
-        showUserDetails(userData);
+    const row = e.target.closest('.user-row');
+    if (row) {
+        try {
+            const userData = JSON.parse(row.getAttribute('data-user'));
+            showUserDetails(userData);
+        } catch (error) {
+            console.error('Error parsing user data:', error);
+        }
     }
 });
 

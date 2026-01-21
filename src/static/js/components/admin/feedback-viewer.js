@@ -588,7 +588,7 @@ async function loadFeedback(container) {
         listContainer.innerHTML = `
             <div style="display: flex; flex-direction: column; gap: 12px;">
                 ${feedback.map(item => `
-                    <div class="feedback-item" data-id="${item.id}" style="
+                    <div class="feedback-item" data-feedback='${JSON.stringify(item).replace(/'/g, "&#39;")}' style="
                         background: var(--bg-tertiary);
                         border: 2px solid var(--border-color);
                         border-radius: 8px;
@@ -629,21 +629,24 @@ async function loadFeedback(container) {
         // Add click handlers
         listContainer.querySelectorAll('.feedback-item').forEach(item => {
             item.addEventListener('click', () => {
-                const id = parseInt(item.getAttribute('data-id'));
-                const feedbackData = feedback.find(f => f.id === id);
-                if (feedbackData) {
+                try {
+                    const feedbackData = JSON.parse(item.getAttribute('data-feedback'));
                     showFeedbackDetails(feedbackData);
+                } catch (error) {
+                    console.error('Error parsing feedback data:', error);
                 }
             });
 
             item.addEventListener('mouseenter', () => {
                 item.style.borderColor = 'var(--accent-color)';
                 item.style.transform = 'translateX(4px)';
+                item.style.background = 'var(--bg-hover)';
             });
 
             item.addEventListener('mouseleave', () => {
                 item.style.borderColor = 'var(--border-color)';
                 item.style.transform = 'translateX(0)';
+                item.style.background = 'var(--bg-tertiary)';
             });
         });
 
