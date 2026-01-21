@@ -18,6 +18,9 @@ let userMapping = {};
 // Current logs array for IP access details navigation
 let currentIPLogs = [];
 
+// Current logs array for main audit logs navigation
+let currentAuditLogs = [];
+
 /**
  * Render logs viewer with filtering and pagination
  */
@@ -312,6 +315,9 @@ async function loadLogs(container, offset = 0) {
         const total = response.total;
         const limit = response.limit;
 
+        // Store logs for navigation
+        currentAuditLogs = logs;
+
         if (logs.length === 0) {
             tableContainer.innerHTML = `
                 <div style="text-align: center; padding: 60px;">
@@ -339,7 +345,7 @@ async function loadLogs(container, offset = 0) {
                     </tr>
                 </thead>
                 <tbody>
-                    ${logs.map(log => renderLogRow(log)).join('')}
+                    ${logs.map((log, index) => renderLogRow(log, index)).join('')}
                 </tbody>
             </table>
         `;
@@ -408,7 +414,7 @@ function setupSortHandlers(container) {
 /**
  * Render a log row
  */
-function renderLogRow(log) {
+function renderLogRow(log, index) {
     const timestamp = new Date(log.created_at).toLocaleString();
     const actionColor = getActionColor(log.action);
     const statusColor = log.status_code >= 400 ? 'var(--danger-color)' : 'var(--success-color)';
@@ -428,7 +434,7 @@ function renderLogRow(log) {
     }
 
     return `
-        <tr class="log-row" data-log-id="${log.id}" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;">
+        <tr class="log-row" data-log-id="${log.id}" data-log-index="${index}" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;">
             <td style="padding: 12px; font-size: 12px;">${timestamp}</td>
             <td style="padding: 12px;">
                 <span style="display: inline-block; padding: 4px 8px; background: ${actionColor}20; color: ${actionColor}; border-radius: 4px; font-size: 11px; font-weight: 600;">
@@ -482,16 +488,21 @@ function setupLogRowHandlers(container) {
     container.querySelectorAll('.view-details-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             e.stopPropagation();
-            const logId = btn.getAttribute('data-log-id');
-            await showLogDetails(logId);
+            const row = btn.closest('.log-row');
+            const logIndex = parseInt(row?.getAttribute('data-log-index'));
+            if (logIndex >= 0 && logIndex < currentAuditLogs.length) {
+                await showAuditLogDetailsWithNavigation(logIndex);
+            }
         });
     });
 
     // Row click to view details
     container.querySelectorAll('.log-row').forEach(row => {
         row.addEventListener('click', async () => {
-            const logId = row.getAttribute('data-log-id');
-            await showLogDetails(logId);
+            const logIndex = parseInt(row.getAttribute('data-log-index'));
+            if (logIndex >= 0 && logIndex < currentAuditLogs.length) {
+                await showAuditLogDetailsWithNavigation(logIndex);
+            }
         });
     });
 
@@ -504,6 +515,291 @@ function setupLogRowHandlers(container) {
             row.style.background = 'transparent';
         });
     });
+}
+
+/**
+ * Show audit log details modal with navigation (for main audit logs table)
+ */
+async function showAuditLogDetailsWithNavigation(logIndex) {
+    const log = currentAuditLogs[logIndex];
+    if (!log) return;
+
+    const hasPrev = logIndex > 0;
+    const hasNext = logIndex < currentAuditLogs.length - 1;
+
+    try {
+        // Fetch full log details from API
+        const fullLog = await apiClient.get(`/api/admin/logs/${log.id}`);
+
+        // Create modal
+        const modal = document.createElement('div');
+        modal.className = 'log-details-modal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10002;
+        `;
+
+        const timestamp = new Date(fullLog.created_at).toLocaleString();
+        const actionColor = getActionColor(fullLog.action);
+        const statusColor = fullLog.status_code >= 400 ? 'var(--danger-color)' : 'var(--success-color)';
+
+        modal.innerHTML = `
+            <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 15px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <h2 style="margin: 0; font-size: 20px;">📋 Audit Log Details</h2>
+                        <span style="font-size: 12px; color: var(--text-secondary); font-weight: 400;">(${logIndex + 1} of ${currentAuditLogs.length})</span>
+                    </div>
+                    <button class="close-modal-btn" style="background: transparent; border: none; font-size: 28px; cursor: pointer; color: var(--text-secondary); padding: 0; line-height: 1;">×</button>
+                </div>
+
+                <div style="display: grid; gap: 20px;">
+                    <!-- Basic Info -->
+                    <div>
+                        <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Basic Information</h3>
+                        <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; display: grid; gap: 10px;">
+                            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                <span style="font-weight: 600; color: var(--text-secondary);">Log ID:</span>
+                                <span style="font-family: monospace;">${fullLog.id}</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                <span style="font-weight: 600; color: var(--text-secondary);">Timestamp:</span>
+                                <span>${timestamp}</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                <span style="font-weight: 600; color: var(--text-secondary);">Action:</span>
+                                <span style="display: inline-block; padding: 4px 12px; background: ${actionColor}20; color: ${actionColor}; border-radius: 4px; font-size: 12px; font-weight: 600; width: fit-content;">${fullLog.action}</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                <span style="font-weight: 600; color: var(--text-secondary);">Status Code:</span>
+                                <span style="display: inline-block; padding: 4px 12px; background: ${statusColor}20; color: ${statusColor}; border-radius: 4px; font-size: 12px; font-weight: 600; width: fit-content;">${fullLog.status_code || 'N/A'}</span>
+                            </div>
+                            ${fullLog.table_name ? `
+                                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                    <span style="font-weight: 600; color: var(--text-secondary);">Table:</span>
+                                    <span style="font-family: monospace;">${fullLog.table_name}</span>
+                                </div>
+                            ` : ''}
+                            ${fullLog.record_id ? `
+                                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                    <span style="font-weight: 600; color: var(--text-secondary);">Record ID:</span>
+                                    <span style="font-family: monospace;">${fullLog.record_id}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <!-- User Info -->
+                    <div>
+                        <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">User Information</h3>
+                        <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; display: grid; gap: 10px;">
+                            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                <span style="font-weight: 600; color: var(--text-secondary);">User ID:</span>
+                                <span>${fullLog.user_id || 'N/A'}</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                <span style="font-weight: 600; color: var(--text-secondary);">Username:</span>
+                                <span>${fullLog.username || 'Anonymous'}</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                <span style="font-weight: 600; color: var(--text-secondary);">IP Address:</span>
+                                <span style="font-family: monospace;">${fullLog.ip_address || 'N/A'}</span>
+                            </div>
+                            ${fullLog.geo_location ? `
+                                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                    <span style="font-weight: 600; color: var(--text-secondary);">Location:</span>
+                                    <span>${fullLog.geo_location.city}, ${fullLog.geo_location.region}, ${fullLog.geo_location.country}</span>
+                                </div>
+                                ${fullLog.geo_location.lat && fullLog.geo_location.lon ? `
+                                    <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                        <span style="font-weight: 600; color: var(--text-secondary);">Coordinates:</span>
+                                        <span style="font-family: monospace;">${fullLog.geo_location.lat.toFixed(4)}, ${fullLog.geo_location.lon.toFixed(4)}</span>
+                                    </div>
+                                ` : ''}
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <!-- Map -->
+                    ${fullLog.geo_location && fullLog.geo_location.lat && fullLog.geo_location.lon ? `
+                        <div>
+                            <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">🗺️ Location Map</h3>
+                            <div id="location-map-${logIndex}" style="height: 300px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color);"></div>
+                        </div>
+                    ` : ''}
+
+                    <!-- Device Info -->
+                    ${fullLog.device_info ? `
+                        <div>
+                            <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Device Information</h3>
+                            <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; display: grid; gap: 10px;">
+                                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                    <span style="font-weight: 600; color: var(--text-secondary);">Browser:</span>
+                                    <span>${fullLog.device_info.browser || 'Unknown'}</span>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                    <span style="font-weight: 600; color: var(--text-secondary);">OS:</span>
+                                    <span>${fullLog.device_info.os || 'Unknown'}</span>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px;">
+                                    <span style="font-weight: 600; color: var(--text-secondary);">Device:</span>
+                                    <span>${fullLog.device_info.device || 'Unknown'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- Details -->
+                    ${fullLog.details ? `
+                        <div>
+                            <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Additional Details</h3>
+                            <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px;">
+                                <pre style="margin: 0; font-family: monospace; font-size: 11px; white-space: pre-wrap; word-wrap: break-word; color: var(--text-primary);">${JSON.stringify(fullLog.details, null, 2)}</pre>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- Error Message -->
+                    ${fullLog.error_message ? `
+                        <div>
+                            <h3 style="font-size: 14px; color: var(--danger-color); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">❌ Error Message</h3>
+                            <div style="background: var(--danger-color)10; border-left: 4px solid var(--danger-color); padding: 15px; border-radius: 8px;">
+                                <pre style="margin: 0; font-family: monospace; font-size: 11px; white-space: pre-wrap; word-wrap: break-word; color: var(--danger-color);">${fullLog.error_message}</pre>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <!-- Navigation & Close Buttons -->
+                <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; gap: 10px;">
+                        <button class="prev-log-btn" ${!hasPrev ? 'disabled' : ''} style="padding: 10px 20px; background: ${hasPrev ? 'var(--bg-tertiary)' : 'var(--bg-primary)'}; color: ${hasPrev ? 'var(--text-primary)' : 'var(--text-secondary)'}; border: 1px solid var(--border-color); border-radius: 6px; cursor: ${hasPrev ? 'pointer' : 'not-allowed'}; font-weight: 600; display: flex; align-items: center; gap: 5px; transition: all 0.2s;">
+                            ← Previous
+                        </button>
+                        <button class="next-log-btn" ${!hasNext ? 'disabled' : ''} style="padding: 10px 20px; background: ${hasNext ? 'var(--bg-tertiary)' : 'var(--bg-primary)'}; color: ${hasNext ? 'var(--text-primary)' : 'var(--text-secondary)'}; border: 1px solid var(--border-color); border-radius: 6px; cursor: ${hasNext ? 'pointer' : 'not-allowed'}; font-weight: 600; display: flex; align-items: center; gap: 5px; transition: all 0.2s;">
+                            Next →
+                        </button>
+                    </div>
+                    <button class="close-modal-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Add to document
+        document.body.appendChild(modal);
+
+        // Keyboard navigation (define first so it can be used in cleanup)
+        const keyHandler = (e) => {
+            if (e.key === 'Escape') {
+                modal.remove();
+                document.removeEventListener('keydown', keyHandler);
+            } else if (e.key === 'ArrowLeft' && hasPrev) {
+                modal.remove();
+                document.removeEventListener('keydown', keyHandler);
+                showAuditLogDetailsWithNavigation(logIndex - 1);
+            } else if (e.key === 'ArrowRight' && hasNext) {
+                modal.remove();
+                document.removeEventListener('keydown', keyHandler);
+                showAuditLogDetailsWithNavigation(logIndex + 1);
+            }
+        };
+        document.addEventListener('keydown', keyHandler);
+
+        // Setup close handlers
+        modal.querySelectorAll('.close-modal-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                modal.remove();
+                document.removeEventListener('keydown', keyHandler);
+            });
+        });
+
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+                document.removeEventListener('keydown', keyHandler);
+            }
+        });
+
+        // Previous button handler
+        const prevBtn = modal.querySelector('.prev-log-btn');
+        if (prevBtn && hasPrev) {
+            prevBtn.addEventListener('click', () => {
+                modal.remove();
+                document.removeEventListener('keydown', keyHandler);
+                showAuditLogDetailsWithNavigation(logIndex - 1);
+            });
+            prevBtn.addEventListener('mouseenter', () => prevBtn.style.background = 'var(--bg-primary)');
+            prevBtn.addEventListener('mouseleave', () => prevBtn.style.background = 'var(--bg-tertiary)');
+        }
+
+        // Next button handler
+        const nextBtn = modal.querySelector('.next-log-btn');
+        if (nextBtn && hasNext) {
+            nextBtn.addEventListener('click', () => {
+                modal.remove();
+                document.removeEventListener('keydown', keyHandler);
+                showAuditLogDetailsWithNavigation(logIndex + 1);
+            });
+            nextBtn.addEventListener('mouseenter', () => nextBtn.style.background = 'var(--bg-primary)');
+            nextBtn.addEventListener('mouseleave', () => nextBtn.style.background = 'var(--bg-tertiary)');
+        }
+
+        // Initialize map if coordinates are available
+        if (fullLog.geo_location && fullLog.geo_location.lat && fullLog.geo_location.lon) {
+            setTimeout(() => {
+                const mapContainer = document.getElementById(`location-map-${logIndex}`);
+                if (mapContainer && typeof L !== 'undefined') {
+                    try {
+                        const map = L.map(`location-map-${logIndex}`).setView(
+                            [fullLog.geo_location.lat, fullLog.geo_location.lon],
+                            10
+                        );
+
+                        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                            attribution: '© OpenStreetMap contributors © CARTO',
+                            maxZoom: 19,
+                            crossOrigin: true
+                        }).addTo(map);
+
+                        const customIcon = L.divIcon({
+                            className: 'custom-marker',
+                            html: '<div style="background: #00ddff; width: 16px; height: 16px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.9); box-shadow: 0 0 15px rgba(0, 221, 255, 0.6), 0 2px 8px rgba(0,0,0,0.8);"></div>',
+                            iconSize: [16, 16],
+                            iconAnchor: [8, 8]
+                        });
+
+                        const marker = L.marker([fullLog.geo_location.lat, fullLog.geo_location.lon], { icon: customIcon }).addTo(map);
+
+                        marker.bindPopup(`
+                            <div style="text-align: center; padding: 8px; background: #1a1a1a; color: #ffffff; border-radius: 6px;">
+                                <strong style="font-size: 14px; color: #00ddff; text-shadow: 0 0 8px rgba(0, 221, 255, 0.6);">${fullLog.geo_location.city}</strong><br>
+                                <span style="font-size: 12px; color: #aaaaaa;">${fullLog.geo_location.region}, ${fullLog.geo_location.country}</span><br>
+                                <span style="font-size: 11px; color: #00ddff; font-family: monospace; text-shadow: 0 0 6px rgba(0, 221, 255, 0.4);">${fullLog.ip_address}</span>
+                            </div>
+                        `).openPopup();
+                    } catch (error) {
+                        console.error('Failed to initialize map:', error);
+                        mapContainer.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--danger-color);">Failed to load map</div>';
+                    }
+                }
+            }, 100);
+        }
+
+    } catch (error) {
+        console.error('Failed to load log details:', error);
+        showError(`Failed to load log details: ${error.message}`);
+    }
 }
 
 /**
