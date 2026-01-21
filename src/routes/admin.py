@@ -46,6 +46,24 @@ class PasswordResetSchema(BaseModel):
         return v
 
 
+class SmtpConfigSchema(BaseModel):
+    """Schema for SMTP configuration."""
+    mail_server: str
+    mail_port: int
+    mail_username: Optional[str] = None
+    mail_password: Optional[str] = None
+    mail_use_tls: bool = True
+    mail_use_ssl: bool = False
+    mail_default_sender: str
+
+    @validator('mail_port')
+    def validate_port(cls, v):
+        if v < 1 or v > 65535:
+            raise ValueError('Port must be between 1 and 65535')
+        return v
+
+
+
 @admin_bp.route('/logs', methods=['GET'])
 @limiter.limit("100 per minute")  # Generous limit for log viewing
 @login_required
@@ -1623,6 +1641,98 @@ def get_documentation(doc_name: str):
     except Exception as e:
         print(f"Error serving documentation: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/smtp/config', methods=['GET'])
+@login_required
+@super_admin_required
+def get_smtp_config():
+    """Get current SMTP configuration (super admin only)."""
+    try:
+        from src.database.connection import db
+        import json
+
+        row = db.execute_one('SELECT value FROM system_config WHERE key = ?', ('smtp_config',))
+        
+        config = {}
+        if row and row['value']:
+            try:
+                config = json.loads(row['value'])
+            except:
+                pass
+        
+        # Mask password
+        if config.get('mail_password'):
+            config['mail_password'] = '********'
+            
+        # Log admin action
+        enhanced_audit_logger.log_admin_action(
+            action='VIEW_SMTP_CONFIG',
+            user_id=current_user.id
+        )
+        
+        return jsonify({'config': config}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/smtp/config', methods=['PUT'])
+@login_required
+@super_admin_required
+def update_smtp_config():
+    """Update SMTP configuration (super admin only)."""
+    try:
+        from src.database.connection import db
+        import json
+        
+        # Validate input
+        data = SmtpConfigSchema(**request.json)
+        
+        # Get existing config to handle password update
+        row = db.execute_one('SELECT value FROM system_config WHERE key = ?', ('smtp_config',))
+        existing_config = {}
+        if row and row['value']:
+            try:
+                existing_config = json.loads(row['value'])
+            except:
+                pass
+        
+        # Prepare new config
+        new_config = data.dict()
+        
+        # Handle password: if None or masked, keep existing
+        if not new_config.get('mail_password') or new_config['mail_password'] == '********':
+            new_config['mail_password'] = existing_config.get('mail_password')
+            
+        # Save to database
+        config_json = json.dumps(new_config)
+        
+        with db.get_connection() as conn:
+            conn.execute('''
+                INSERT OR REPLACE INTO system_config (key, value, updated_at, updated_by)
+                VALUES (?, ?, ?, ?)
+            ''', ('smtp_config', config_json, datetime.now().isoformat(), current_user.id))
+            
+        # Log admin action
+        enhanced_audit_logger.log_admin_action(
+            action='UPDATE_SMTP_CONFIG',
+            details={'server': new_config.get('mail_server')},
+            user_id=current_user.id
+        )
+        
+        # Return config with masked password
+        response_config = new_config.copy()
+        if response_config.get('mail_password'):
+            response_config['mail_password'] = '********'
+            
+        return jsonify({
+            'message': 'SMTP configuration updated successfully',
+            'config': response_config
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
 
 # ============================================================================

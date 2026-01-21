@@ -584,12 +584,27 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
 
         modal.innerHTML = `
             <div class="audit-log-details-content" style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid var(--border-color); padding-bottom: 15px;">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <h2 style="margin: 0; font-size: 20px;">📋 Audit Log Details</h2>
                         <span style="font-size: 12px; color: var(--text-secondary); font-weight: 400;">(${logIndex + 1} of ${currentAuditLogs.length})</span>
                     </div>
                     <button class="close-modal-btn" style="background: transparent; border: none; font-size: 28px; cursor: pointer; color: var(--text-secondary); padding: 0; line-height: 1;">×</button>
+                </div>
+
+                <!-- Navigation Buttons (Top) -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 10px 15px; background: var(--bg-tertiary); border-radius: 8px;">
+                    <div style="display: flex; gap: 10px;">
+                        <button class="prev-log-btn" ${!hasPrev ? 'disabled' : ''} style="padding: 8px 16px; background: ${hasPrev ? 'var(--bg-secondary)' : 'var(--bg-primary)'}; color: ${hasPrev ? 'var(--text-primary)' : 'var(--text-secondary)'}; border: 1px solid var(--border-color); border-radius: 6px; cursor: ${hasPrev ? 'pointer' : 'not-allowed'}; font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 5px; transition: all 0.2s;">
+                            ← Previous
+                        </button>
+                        <button class="next-log-btn" ${!hasNext ? 'disabled' : ''} style="padding: 8px 16px; background: ${hasNext ? 'var(--bg-secondary)' : 'var(--bg-primary)'}; color: ${hasNext ? 'var(--text-primary)' : 'var(--text-secondary)'}; border: 1px solid var(--border-color); border-radius: 6px; cursor: ${hasNext ? 'pointer' : 'not-allowed'}; font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 5px; transition: all 0.2s;">
+                            Next →
+                        </button>
+                    </div>
+                    <button class="close-modal-btn" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
+                        Close
+                    </button>
                 </div>
 
                 <div style="display: grid; gap: 20px;">
@@ -770,21 +785,6 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
                             </div>
                         </div>
                     ` : ''}
-                </div>
-
-                <!-- Navigation & Close Buttons -->
-                <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
-                    <div style="display: flex; gap: 10px;">
-                        <button class="prev-log-btn" ${!hasPrev ? 'disabled' : ''} style="padding: 10px 20px; background: ${hasPrev ? 'var(--bg-tertiary)' : 'var(--bg-primary)'}; color: ${hasPrev ? 'var(--text-primary)' : 'var(--text-secondary)'}; border: 1px solid var(--border-color); border-radius: 6px; cursor: ${hasPrev ? 'pointer' : 'not-allowed'}; font-weight: 600; display: flex; align-items: center; gap: 5px; transition: all 0.2s;">
-                            ← Previous
-                        </button>
-                        <button class="next-log-btn" ${!hasNext ? 'disabled' : ''} style="padding: 10px 20px; background: ${hasNext ? 'var(--bg-tertiary)' : 'var(--bg-primary)'}; color: ${hasNext ? 'var(--text-primary)' : 'var(--text-secondary)'}; border: 1px solid var(--border-color); border-radius: 6px; cursor: ${hasNext ? 'pointer' : 'not-allowed'}; font-weight: 600; display: flex; align-items: center; gap: 5px; transition: all 0.2s;">
-                            Next →
-                        </button>
-                    </div>
-                    <button class="close-modal-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                        Close
-                    </button>
                 </div>
             </div>
         `;
@@ -1819,12 +1819,27 @@ async function showLogDetailsWithNavigation(logIndex) {
 
         modal.innerHTML = `
             <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid var(--border-color); padding-bottom: 15px;">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <h2 style="margin: 0; font-size: 20px;">📋 Audit Log Details</h2>
                         <span style="font-size: 12px; color: var(--text-secondary); font-weight: 400;">(${logIndex + 1} of ${currentIPLogs.length})</span>
                     </div>
                     <button class="close-modal-btn" style="background: transparent; border: none; font-size: 28px; cursor: pointer; color: var(--text-secondary); padding: 0; line-height: 1;">×</button>
+                </div>
+
+                <!-- Navigation Buttons (Top) -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 10px 15px; background: var(--bg-tertiary); border-radius: 8px;">
+                    <div style="display: flex; gap: 10px;">
+                        <button class="prev-log-btn" ${!hasPrev ? 'disabled' : ''} style="padding: 8px 16px; background: ${hasPrev ? 'var(--bg-secondary)' : 'var(--bg-primary)'}; color: ${hasPrev ? 'var(--text-primary)' : 'var(--text-secondary)'}; border: 1px solid var(--border-color); border-radius: 6px; cursor: ${hasPrev ? 'pointer' : 'not-allowed'}; font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 5px; transition: all 0.2s;">
+                            ← Previous
+                        </button>
+                        <button class="next-log-btn" ${!hasNext ? 'disabled' : ''} style="padding: 8px 16px; background: ${hasNext ? 'var(--bg-secondary)' : 'var(--bg-primary)'}; color: ${hasNext ? 'var(--text-primary)' : 'var(--text-secondary)'}; border: 1px solid var(--border-color); border-radius: 6px; cursor: ${hasNext ? 'pointer' : 'not-allowed'}; font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 5px; transition: all 0.2s;">
+                            Next →
+                        </button>
+                    </div>
+                    <button class="close-modal-btn" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
+                        Close
+                    </button>
                 </div>
 
                 <div style="display: grid; gap: 20px;">

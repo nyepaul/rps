@@ -11,7 +11,8 @@ class User(UserMixin):
 
     def __init__(self, id, username, email, password_hash, is_active=True, is_admin=False,
                  created_at=None, last_login=None, updated_at=None, encrypted_dek=None, dek_iv=None,
-                 reset_token=None, reset_token_expires=None, is_super_admin=False):
+                 reset_token=None, reset_token_expires=None, is_super_admin=False,
+                 recovery_encrypted_dek=None, recovery_iv=None, recovery_salt=None):
         self.id = id
         self.username = username
         self.email = email
@@ -26,6 +27,9 @@ class User(UserMixin):
         self.dek_iv = dek_iv
         self.reset_token = reset_token
         self.reset_token_expires = reset_token_expires
+        self.recovery_encrypted_dek = recovery_encrypted_dek
+        self.recovery_iv = recovery_iv
+        self.recovery_salt = recovery_salt
 
     @property
     def is_active(self):
@@ -91,25 +95,30 @@ class User(UserMixin):
             if self.id is None:
                 # Insert new user
                 cursor.execute('''
-                    INSERT INTO users (username, email, password_hash, is_active, is_admin, created_at, updated_at, encrypted_dek, dek_iv)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO users (username, email, password_hash, is_active, is_admin, created_at, updated_at, 
+                                     encrypted_dek, dek_iv, recovery_encrypted_dek, recovery_iv, recovery_salt)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (self.username, self.email, self.password_hash,
                       1 if self._is_active else 0,
                       1 if self._is_admin else 0,
                       self.created_at, self.updated_at,
-                      self.encrypted_dek, self.dek_iv))
+                      self.encrypted_dek, self.dek_iv,
+                      self.recovery_encrypted_dek, self.recovery_iv, self.recovery_salt))
                 self.id = cursor.lastrowid
             else:
                 # Update existing user
                 cursor.execute('''
                     UPDATE users
                     SET username = ?, email = ?, password_hash = ?, is_active = ?,
-                        is_admin = ?, last_login = ?, encrypted_dek = ?, dek_iv = ?
+                        is_admin = ?, last_login = ?, encrypted_dek = ?, dek_iv = ?,
+                        recovery_encrypted_dek = ?, recovery_iv = ?, recovery_salt = ?
                     WHERE id = ?
                 ''', (self.username, self.email, self.password_hash,
                       1 if self._is_active else 0,
                       1 if self._is_admin else 0,
-                      self.last_login, self.encrypted_dek, self.dek_iv, self.id))
+                      self.last_login, self.encrypted_dek, self.dek_iv,
+                      self.recovery_encrypted_dek, self.recovery_iv, self.recovery_salt,
+                      self.id))
         return self
     
     def update_last_login(self):
@@ -118,6 +127,68 @@ class User(UserMixin):
         with db.get_connection() as conn:
             conn.execute('UPDATE users SET last_login = ? WHERE id = ?', (self.last_login, self.id))
     
+    def get_kek_salt(self) -> bytes:
+        """Generate deterministic salt from username and email."""
+        from cryptography.hazmat.primitives import hashes
+        digest = hashes.Hash(hashes.SHA256())
+        digest.update(self.username.encode('utf-8'))
+        digest.update(self.email.encode('utf-8'))
+        return digest.finalize()
+
+    def get_dek(self, password: str):
+        """Get decrypted DEK using password, handling legacy salt migration."""
+        from src.services.encryption_service import EncryptionService
+        import base64
+
+        if not self.encrypted_dek or not self.dek_iv:
+            return None
+
+        # 1. Try with new salt (Username + Email)
+        try:
+            salt = self.get_kek_salt()
+            kek = EncryptionService.get_kek_from_password(password, salt)
+            service = EncryptionService(key=kek)
+            dek_b64 = service.decrypt(self.encrypted_dek, self.dek_iv)
+            if dek_b64:
+                return base64.b64decode(dek_b64)
+        except Exception:
+            pass
+
+        # 2. Try with legacy salt
+        try:
+            legacy_salt = b'user-kek-salt'
+            kek = EncryptionService.get_kek_from_password(password, legacy_salt)
+            service = EncryptionService(key=kek)
+            dek_b64 = service.decrypt(self.encrypted_dek, self.dek_iv)
+            
+            if dek_b64:
+                # MIGRATION: Re-encrypt with new salt immediately
+                dek = base64.b64decode(dek_b64)
+                
+                new_salt = self.get_kek_salt()
+                new_kek = EncryptionService.get_kek_from_password(password, new_salt)
+                new_service = EncryptionService(key=new_kek)
+                
+                new_enc_dek, new_iv = new_service.encrypt(dek_b64)
+                
+                # Update DB directly to persist migration
+                with db.get_connection() as conn:
+                    conn.execute('''
+                        UPDATE users 
+                        SET encrypted_dek = ?, dek_iv = ? 
+                        WHERE id = ?
+                    ''', (new_enc_dek, new_iv, self.id))
+                
+                # Update instance
+                self.encrypted_dek = new_enc_dek
+                self.dek_iv = new_iv
+                
+                return dek
+        except Exception:
+            pass
+
+        raise ValueError("Failed to decrypt encryption key with provided password")
+
     def update_password(self, new_password: str, old_password: str = None):
         """Update the user's password and re-encrypt DEK.
 
@@ -141,16 +212,17 @@ class User(UserMixin):
                 raise ValueError('Old password is incorrect')
 
             try:
-                # Decrypt DEK with old password
-                old_kek = EncryptionService.get_kek_from_password(old_password)
-                temp_service = EncryptionService(key=old_kek)
-                dek_b64 = temp_service.decrypt(self.encrypted_dek, self.dek_iv)
-                dek = base64.b64decode(dek_b64)
+                # Get DEK (handles migration logic internally)
+                dek = self.get_dek(old_password)
 
-                # Re-encrypt DEK with new password
-                new_kek = EncryptionService.get_kek_from_password(new_password)
+                # Re-encrypt DEK with new password and NEW salt
+                new_salt = self.get_kek_salt()
+                new_kek = EncryptionService.get_kek_from_password(new_password, new_salt)
                 new_service = EncryptionService(key=new_kek)
-                new_encrypted_dek, new_dek_iv = new_service.encrypt(base64.b64encode(dek).decode('utf-8'))
+                
+                # Encrypt the base64 string of the DEK (to match existing pattern)
+                dek_b64 = base64.b64encode(dek).decode('utf-8')
+                new_encrypted_dek, new_dek_iv = new_service.encrypt(dek_b64)
 
                 # Update user's encrypted DEK
                 self.encrypted_dek = new_encrypted_dek

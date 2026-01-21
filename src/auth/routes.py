@@ -1,15 +1,36 @@
 """Authentication routes."""
-from flask import Blueprint, request, jsonify
+import os
+import re
+import json
+import base64
+from flask import Blueprint, request, jsonify, session
 from flask_login import login_user, logout_user, current_user
 from src.auth.models import User
 from src.extensions import limiter
+from src.services.encryption_service import EncryptionService
 from src.services.enhanced_audit_logger import EnhancedAuditLogger
 from src.utils.error_sanitizer import sanitize_pydantic_error
 from pydantic import BaseModel, EmailStr, validator, ValidationError
-import re
-import json
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
+
+class ResetWithRecoverySchema(BaseModel):
+    """Schema for password reset using recovery code."""
+    username: str
+    recovery_code: str
+    new_password: str
+
+    @validator('new_password')
+    def validate_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters')
+        if not re.search(r'[A-Z]', v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not re.search(r'[a-z]', v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        if not re.search(r'[0-9]', v):
+            raise ValueError('Password must contain at least one number')
+        return v
 
 
 class RegisterSchema(BaseModel):
@@ -310,8 +331,7 @@ class PasswordResetSchema(BaseModel):
 def request_password_reset():
     """Request a password reset token.
 
-    Uses username lookup (no email required). The token is returned in the response
-    for the user to reset their password.
+    Uses username lookup (no email required). The token is sent to the registered email.
     """
     try:
         data = PasswordResetRequestSchema(**request.json)
@@ -327,19 +347,31 @@ def request_password_reset():
     # This prevents username enumeration attacks
     if not user:
         return jsonify({
-            'message': 'If an account exists with that username, a password reset link will be provided.',
-            'token': None
+            'message': 'If an account exists with that username, a password reset link has been sent to the registered email address.',
+            'email_sent': False
         }), 200
 
     # Generate reset token
     token = user.generate_reset_token(expiry_hours=1)
 
-    # Return token in response
+    # Send reset email
+    email_sent = False
+    try:
+        from src.services.email_service import EmailService
+        email_sent = EmailService.send_password_reset_email(user.email, token)
+    except Exception as e:
+        print(f"Error sending email: {e}")
+
+    # For local development/testing convenience when email is not configured
+    if not email_sent:
+        # Log token to server logs ONLY (do not expose in API)
+        print(f"SECURITY WARNING: Email not sent. Reset token for {user.username}: {token}")
+
+    # Return success message (without token)
     return jsonify({
-        'message': 'Password reset link generated. Use the link below to reset your password.',
-        'token': token,
+        'message': 'If an account exists with that username, a password reset link has been sent to the registered email address.',
         'username': data.username,
-        'note': 'Use the link provided to reset your password. Token expires in 1 hour.'
+        'email_sent': email_sent
     }), 200
 
 
@@ -420,8 +452,10 @@ def validate_reset_token():
         }), 400
 
 
-class PasswordChangeSchema(BaseModel):
-    """Password change validation schema (requires old password)."""
+class OfflinePasswordChangeSchema(BaseModel):
+    """Schema for offline password change (using credentials)."""
+    username: str
+    email: EmailStr
     old_password: str
     new_password: str
 
@@ -436,6 +470,70 @@ class PasswordChangeSchema(BaseModel):
         if not re.search(r'[0-9]', v):
             raise ValueError('Password must contain at least one number')
         return v
+
+
+@auth_bp.route('/password/offline-change', methods=['POST'])
+@limiter.limit("5 per hour")
+def offline_change_password():
+    """
+    Change password without login session using full credentials.
+    
+    This endpoint allows password rotation when email is unavailable or 
+    login is not possible, but the user KNOWS their old credentials.
+    It verifies username + email + old_password, then re-encrypts data
+    with the new password.
+    """
+    try:
+        data = OfflinePasswordChangeSchema(**request.json)
+    except ValidationError as e:
+        return jsonify({'error': sanitize_pydantic_error(e)}), 400
+    except Exception as e:
+        return jsonify({'error': 'Invalid request data'}), 400
+
+    # 1. Verify User exists by Username AND Email
+    user = User.get_by_username(data.username)
+    if not user or user.email.lower() != data.email.lower():
+        # Generic error to prevent enumeration
+        return jsonify({'error': 'Invalid credentials'}), 401
+        
+    # 2. Verify Old Password
+    if not user.check_password(data.old_password):
+        EnhancedAuditLogger.log(
+            action='OFFLINE_PASSWORD_CHANGE_FAILED',
+            table_name='users',
+            user_id=user.id,
+            details=json.dumps({'reason': 'Invalid old password'}),
+            status_code=401
+        )
+        return jsonify({'error': 'Invalid credentials'}), 401
+        
+    try:
+        # 3. Perform Password Update (handles DEK re-encryption & migration)
+        # This will automatically migrate the key salt to (username+email) if it was legacy
+        user.update_password(data.new_password, old_password=data.old_password)
+        
+        EnhancedAuditLogger.log(
+            action='OFFLINE_PASSWORD_CHANGE',
+            table_name='users',
+            record_id=user.id,
+            user_id=user.id,
+            details=json.dumps({
+                'username': user.username,
+                'method': 'offline_credentials'
+            }),
+            status_code=200
+        )
+        
+        return jsonify({
+            'message': 'Password changed successfully. You can now log in.'
+        }), 200
+        
+    except ValueError as e:
+        # Decryption failed (wrong old password for DEK?)
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        print(f"Error in offline password change: {e}")
+        return jsonify({'error': 'Failed to change password'}), 500
 
 
 @auth_bp.route('/password/change', methods=['PUT'])
@@ -496,3 +594,150 @@ def change_password():
     except Exception as e:
         print(f"Error changing password: {e}")
         return jsonify({'error': f'Failed to change password: {str(e)}'}), 500
+
+
+@auth_bp.route('/recovery-code/generate', methods=['POST'])
+@limiter.limit("3 per hour")
+def generate_recovery_code():
+    """Generate a recovery code for the logged-in user.
+    
+    This allows resetting the password without data loss.
+    Returns the raw recovery code which must be saved by the user.
+    """
+    from flask_login import login_required
+    
+    if not current_user.is_authenticated:
+        return jsonify({'error': 'Authentication required'}), 401
+    
+    # Get fresh user
+    user = User.get_by_id(current_user.id)
+    
+    # We need the DEK to encrypt it with the recovery code
+    dek = None
+    
+    # Try getting DEK from session
+    if 'user_dek' in session:
+        try:
+            dek = base64.b64decode(session['user_dek'])
+        except:
+            pass
+            
+    # If not in session, try to get it from DB if we have password in request (optional)
+    if not dek and user.encrypted_dek:
+        # If we can't get DEK, we can't generate a recovery code that recovers data
+        return jsonify({'error': 'Could not access encryption keys. Please re-login.'}), 400
+        
+    if not dek and not user.encrypted_dek:
+        # User has no encryption set up yet, generate new DEK
+        dek = EncryptionService.generate_dek()
+        # Note: This is an edge case where user has no DEK yet
+    
+    try:
+        # 1. Generate new recovery code
+        recovery_code = EncryptionService.generate_recovery_code()
+        
+        # 2. Generate salt
+        recovery_salt = os.urandom(16)
+        
+        # 3. Derive KEK from recovery code
+        recovery_kek = EncryptionService.get_recovery_kek(recovery_code, recovery_salt)
+        
+        # 4. Encrypt DEK with recovery KEK
+        recovery_service = EncryptionService(key=recovery_kek)
+        rec_enc_dek, rec_iv = recovery_service.encrypt(base64.b64encode(dek).decode('utf-8'))
+        
+        # 5. Save to user
+        user.recovery_encrypted_dek = rec_enc_dek
+        user.recovery_iv = rec_iv
+        user.recovery_salt = base64.b64encode(recovery_salt).decode('utf-8')
+        user.save()
+        
+        # 6. Log event
+        EnhancedAuditLogger.log(
+            action='RECOVERY_CODE_GENERATED',
+            table_name='users',
+            record_id=user.id,
+            user_id=user.id,
+            details=json.dumps({'username': user.username}),
+            status_code=200
+        )
+        
+        return jsonify({
+            'message': 'Recovery code generated successfully',
+            'recovery_code': recovery_code,
+            'warning': 'SAVE THIS CODE SECURELY. It is the ONLY way to recover your data if you forget your password.'
+        }), 200
+        
+    except Exception as e:
+        print(f"Error generating recovery code: {e}")
+        return jsonify({'error': 'Failed to generate recovery code'}), 500
+
+
+@auth_bp.route('/password-reset/recovery', methods=['POST'])
+@limiter.limit("5 per hour")
+def reset_password_with_recovery():
+    """Reset password using a recovery code (preserves encrypted data)."""
+    try:
+        data = ResetWithRecoverySchema(**request.json)
+    except ValidationError as e:
+        return jsonify({'error': sanitize_pydantic_error(e)}), 400
+    except Exception as e:
+        return jsonify({'error': 'Invalid request data'}), 400
+
+    user = User.get_by_username(data.username)
+    if not user:
+        # Use generic error to avoid enumeration, but practically user needs to know username to use recovery code
+        return jsonify({'error': 'Invalid username or recovery code'}), 400
+
+    if not user.recovery_encrypted_dek or not user.recovery_iv or not user.recovery_salt:
+        return jsonify({'error': 'Recovery code not set up for this account. Cannot recover data.'}), 400
+
+    try:
+        # 1. Derive key from recovery code
+        salt = base64.b64decode(user.recovery_salt)
+        recovery_kek = EncryptionService.get_recovery_kek(data.recovery_code, salt)
+        
+        # 2. Attempt to decrypt the DEK
+        recovery_service = EncryptionService(key=recovery_kek)
+        dek_b64 = recovery_service.decrypt(user.recovery_encrypted_dek, user.recovery_iv)
+        
+        if not dek_b64:
+            # Decryption failed (wrong code)
+            EnhancedAuditLogger.log(
+                action='RECOVERY_FAILED',
+                table_name='users',
+                record_id=user.id,
+                details=json.dumps({'reason': 'Invalid recovery code'}),
+                status_code=400
+            )
+            return jsonify({'error': 'Invalid username or recovery code'}), 400
+            
+        # 3. Success! We have the DEK. Now re-encrypt it with the new password.
+        dek = base64.b64decode(dek_b64)
+        
+        new_kek = EncryptionService.get_kek_from_password(data.new_password)
+        new_service = EncryptionService(key=new_kek)
+        new_encrypted_dek, new_dek_iv = new_service.encrypt(dek_b64)
+        
+        # 4. Update user
+        user.encrypted_dek = new_encrypted_dek
+        user.dek_iv = new_dek_iv
+        user.password_hash = User.hash_password(data.new_password)
+        
+        # Note: We keep the existing recovery code valid. User can rotate it if they want.
+        user.save()
+        
+        EnhancedAuditLogger.log(
+            action='PASSWORD_RESET_RECOVERY',
+            table_name='users',
+            record_id=user.id,
+            user_id=user.id,
+            details=json.dumps({'username': user.username}),
+            status_code=200
+        )
+        
+        return jsonify({'message': 'Password reset successfully. Your data has been preserved.'}), 200
+        
+    except Exception as e:
+        print(f"Recovery error: {e}")
+        return jsonify({'error': 'Failed to reset password using recovery code'}), 500

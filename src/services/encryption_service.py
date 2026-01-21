@@ -1,6 +1,7 @@
 """AES-256-GCM encryption service for sensitive data."""
 import os
 import base64
+import secrets
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
@@ -46,6 +47,13 @@ class EncryptionService:
         return os.urandom(32)
 
     @staticmethod
+    def generate_recovery_code() -> str:
+        """Generate a secure 16-character alphanumeric recovery code."""
+        # Generate 12 bytes (approx 16 chars in base32/hex)
+        # Using simple hex for readability/typing
+        return secrets.token_hex(8).upper()
+
+    @staticmethod
     def get_kek_from_password(password: str, salt: bytes = b'user-kek-salt') -> bytes:
         """Derive a Key Encryption Key (KEK) from a user password."""
         kdf = PBKDF2HMAC(
@@ -56,6 +64,20 @@ class EncryptionService:
             backend=default_backend()
         )
         return kdf.derive(password.encode('utf-8'))
+
+    @staticmethod
+    def get_recovery_kek(recovery_code: str, salt: bytes) -> bytes:
+        """Derive a Key Encryption Key (KEK) from a recovery code."""
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=salt,
+            iterations=200000,  # Higher iterations for recovery codes
+            backend=default_backend()
+        )
+        # Normalize code (uppercase, strip spaces)
+        code = recovery_code.upper().replace(' ', '').replace('-', '').strip()
+        return kdf.derive(code.encode('utf-8'))
 
     def encrypt(self, plaintext: str) -> Tuple[str, str]:
         """
