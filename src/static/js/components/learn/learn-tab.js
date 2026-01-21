@@ -261,22 +261,28 @@ export async function showArticle(article) {
 
 export function renderLearnTab(container) {
     container.innerHTML = `
-        <div style="max-width: 1200px; margin: 0 auto; padding: var(--space-5);">
-            <h1 style="font-size: var(--font-3xl); margin-bottom: var(--space-3);">Learning Hub</h1>
-            <p style="color: var(--text-secondary); margin-bottom: var(--space-6);">
-                Master retirement planning concepts and strategies
-            </p>
+        <div style="max-width: 1200px; margin: 0 auto; padding: var(--space-3);">
+            <div style="margin-bottom: var(--space-3);">
+                <h1 style="font-size: var(--font-2xl); margin: 0;">Learning Hub</h1>
+                <p style="color: var(--text-secondary); margin: 0; font-size: 13px;">
+                    Master retirement planning concepts and strategies
+                </p>
+            </div>
 
-            <div style="display: grid; gap: var(--space-5);">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: var(--space-3);">
                 ${Object.entries(ARTICLES).map(([key, category]) => `
                     <div class="learn-section">
-                        <h2 style="font-size: var(--font-2xl); margin-bottom: var(--space-5);">${category.icon} ${category.section}</h2>
+                        <h2 style="font-size: 16px; margin-bottom: var(--space-3); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-2); color: var(--accent-color);">
+                            ${category.icon} ${category.section}
+                        </h2>
                         <div class="article-grid">
                             ${category.articles.map(article => `
                                 <div class="article-card" data-article-id="${article.id}">
-                                    <h3>${article.title}</h3>
-                                    <p>${article.description}</p>
-                                    <button class="learn-btn" data-article='${JSON.stringify(article).replace(/'/g, "&#39;")}'>Read More</button>
+                                    <h3 style="font-size: 14px; margin-bottom: 4px;">${article.title}</h3>
+                                    <p style="font-size: 12px; margin-bottom: 8px;">${article.description}</p>
+                                    <button class="learn-btn" data-article='${JSON.stringify(article).replace(/'/g, "&#39;")}' style="padding: 4px 10px; font-size: 11px;">
+                                        Read More
+                                    </button>
                                 </div>
                             `).join('')}
                         </div>
@@ -288,50 +294,52 @@ export function renderLearnTab(container) {
         <style>
             .learn-section {
                 background: var(--bg-secondary);
-                padding: var(--space-6);
-                border-radius: 12px;
+                padding: var(--space-3);
+                border-radius: 8px;
+                border: 1px solid var(--border-color);
             }
             .article-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                gap: var(--space-5);
+                grid-template-columns: 1fr;
+                gap: var(--space-2);
             }
             .article-card {
                 background: var(--bg-primary);
-                padding: var(--space-5);
-                border-radius: 8px;
-                border: 2px solid var(--border-color);
+                padding: var(--space-2);
+                border-radius: 6px;
+                border: 1px solid var(--border-color);
                 transition: all 0.2s;
                 cursor: pointer;
             }
             .article-card:hover {
                 border-color: var(--accent-color);
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px var(--shadow);
+                transform: translateX(4px);
+                background: var(--bg-tertiary);
             }
             .article-card h3 {
-                font-size: var(--font-lg);
-                margin-bottom: var(--space-3);
                 color: var(--text-primary);
+                font-weight: 600;
             }
             .article-card p {
                 color: var(--text-secondary);
-                margin-bottom: var(--space-4);
-                line-height: 1.5;
-                font-size: var(--font-base);
+                line-height: 1.4;
             }
             .learn-btn {
-                padding: var(--space-2) var(--space-4);
                 background: var(--accent-color);
                 color: white;
                 border: none;
-                border-radius: 6px;
+                border-radius: 4px;
                 cursor: pointer;
-                font-size: var(--font-base);
+                font-weight: 600;
                 transition: all 0.2s;
             }
             .learn-btn:hover {
                 background: var(--accent-hover);
+            }
+            @media (max-width: 600px) {
+                div[style*="grid-template-columns: repeat(auto-fit, minmax(500px, 1fr))"] {
+                    grid-template-columns: 1fr !important;
+                }
             }
 
             /* Modal styles */
