@@ -11,7 +11,7 @@ export function renderWelcomeTab(container) {
     container.innerHTML = `
         <div style="max-width: 900px; margin: 0 auto; padding: var(--space-3);">
             <h1 style="font-size: 28px; margin-bottom: var(--space-5); text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                RPS
+                Retirement Planning System
             </h1>
 
             <!-- Overview Wizard -->
@@ -85,7 +85,7 @@ function initializeWizard(container) {
             title: "Understanding the Data Model",
             icon: "🏗️",
             content: `
-                <h3 style="font-size: 18px; margin-bottom: var(--space-4); color: var(--accent-color);">How RPS Organizes Your Data</h3>
+                <h3 style="font-size: 18px; margin-bottom: var(--space-4); color: var(--accent-color);">How the App Organizes Your Data</h3>
 
                 <div style="background: var(--bg-primary); padding: var(--space-4); border-radius: 8px; margin-bottom: var(--space-4);">
                     <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3);">
@@ -162,7 +162,7 @@ function initializeWizard(container) {
                 <div style="background: var(--bg-primary); padding: var(--space-4); border-radius: 8px; margin-bottom: var(--space-4);">
                     <h4 style="font-size: 16px; margin-bottom: var(--space-3);">🏠 Local-First Architecture</h4>
                     <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 0;">
-                        RPS runs on your local machine or private server. Your financial data stays under your control and never
+                        The app runs on your local machine or private server. Your financial data stays under your control and never
                         leaves your infrastructure unless you explicitly choose to share it.
                     </p>
                 </div>
@@ -184,19 +184,19 @@ function initializeWizard(container) {
             `
         },
         {
-            title: "Sample Workflow",
-            icon: "✅",
+            title: "Getting Started",
+            icon: "🚀",
             content: `
-                <h3 style="font-size: 18px; margin-bottom: var(--space-4); color: var(--info-color);">Complete Your First Profile</h3>
+                <h3 style="font-size: 18px; margin-bottom: var(--space-4); color: var(--info-color);">High-Level Process Overview</h3>
 
                 <div style="background: var(--bg-primary); padding: var(--space-4); border-radius: 8px; margin-bottom: var(--space-3);">
                     <div style="display: flex; align-items: start; gap: var(--space-3);">
                         <div style="min-width: 30px; height: 30px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">1</div>
                         <div style="flex: 1;">
-                            <strong style="font-size: 15px;">Create a Profile</strong>
+                            <strong style="font-size: 15px;">Create Your Profile</strong>
                             <p style="font-size: 13px; color: var(--text-secondary); margin: var(--space-1) 0 0 0;">
-                                Click "+ New Profile" below. Enter your name, birth date, and target retirement date.
-                                This becomes your baseline profile.
+                                Click "+ New Profile" below to create your retirement planning profile. Enter your name,
+                                birth date, and target retirement date to establish your baseline.
                             </p>
                         </div>
                     </div>
@@ -206,10 +206,10 @@ function initializeWizard(container) {
                     <div style="display: flex; align-items: start; gap: var(--space-3);">
                         <div style="min-width: 30px; height: 30px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">2</div>
                         <div style="flex: 1;">
-                            <strong style="font-size: 15px;">Add Your Assets</strong>
+                            <strong style="font-size: 15px;">Add Assets, Expenses & Income</strong>
                             <p style="font-size: 13px; color: var(--text-secondary); margin: var(--space-1) 0 0 0;">
-                                Go to <strong>💰 Assets</strong> tab. Add your accounts: checking, savings, 401(k), IRA, Roth,
-                                taxable brokerage, and real estate. Include current values and cost basis.
+                                Build your financial picture by adding all your assets (401k, IRA, brokerage accounts, real estate),
+                                income sources (salary, Social Security, pensions), and expenses (current and projected retirement spending).
                             </p>
                         </div>
                     </div>
@@ -219,10 +219,10 @@ function initializeWizard(container) {
                     <div style="display: flex; align-items: start; gap: var(--space-3);">
                         <div style="min-width: 30px; height: 30px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">3</div>
                         <div style="flex: 1;">
-                            <strong style="font-size: 15px;">Add Income Streams</strong>
+                            <strong style="font-size: 15px;">Review Cash Flow, Withdrawals & Tax Strategy</strong>
                             <p style="font-size: 13px; color: var(--text-secondary); margin: var(--space-1) 0 0 0;">
-                                Go to <strong>💰 Income</strong> tab. Add your current salary, Social Security estimates,
-                                pension, rental income, and any other income sources with start/end dates.
+                                Examine your projected cash flow throughout retirement. Configure your withdrawal strategy
+                                (which accounts to draw from first) and explore tax optimization opportunities including Roth conversions.
                             </p>
                         </div>
                     </div>
@@ -232,10 +232,11 @@ function initializeWizard(container) {
                     <div style="display: flex; align-items: start; gap: var(--space-3);">
                         <div style="min-width: 30px; height: 30px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">4</div>
                         <div style="flex: 1;">
-                            <strong style="font-size: 15px;">Plan Your Expenses</strong>
+                            <strong style="font-size: 15px;">Run Analysis & Compare Scenarios</strong>
                             <p style="font-size: 13px; color: var(--text-secondary); margin: var(--space-1) 0 0 0;">
-                                Go to <strong>💵 Expenses</strong> tab. Set your current expenses and future (retirement) expenses.
-                                Include housing, utilities, food, healthcare, travel, and discretionary spending.
+                                Execute Monte Carlo simulations (10,000+ scenarios) to test your plan under different economic conditions.
+                                Save multiple scenarios ("Base Case", "Early Retirement", "Conservative") and compare them side-by-side
+                                to make informed decisions.
                             </p>
                         </div>
                     </div>
@@ -245,46 +246,20 @@ function initializeWizard(container) {
                     <div style="display: flex; align-items: start; gap: var(--space-3);">
                         <div style="min-width: 30px; height: 30px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">5</div>
                         <div style="flex: 1;">
-                            <strong style="font-size: 15px;">Run Your First Scenario</strong>
+                            <strong style="font-size: 15px;">Generate & Review Action Items</strong>
                             <p style="font-size: 13px; color: var(--text-secondary); margin: var(--space-1) 0 0 0;">
-                                Go to <strong>Analysis</strong> tab. Click "Run Complete Analysis" to run a Monte Carlo simulation
-                                with 10,000 scenarios. Review your success rate and wealth projection.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="background: var(--bg-primary); padding: var(--space-4); border-radius: 8px; margin-bottom: var(--space-3);">
-                    <div style="display: flex; align-items: start; gap: var(--space-3);">
-                        <div style="min-width: 30px; height: 30px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">6</div>
-                        <div style="flex: 1;">
-                            <strong style="font-size: 15px;">Explore "What-If" Scenarios</strong>
-                            <p style="font-size: 13px; color: var(--text-secondary); margin: var(--space-1) 0 0 0;">
-                                Create additional scenarios: "Retire Early", "Conservative Portfolio", "Higher Spending".
-                                Compare them side-by-side in the <strong>Compare Scenarios</strong> tab.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="background: var(--bg-primary); padding: var(--space-4); border-radius: 8px;">
-                    <div style="display: flex; align-items: start; gap: var(--space-3);">
-                        <div style="min-width: 30px; height: 30px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">7</div>
-                        <div style="flex: 1;">
-                            <strong style="font-size: 15px;">Get AI Recommendations</strong>
-                            <p style="font-size: 13px; color: var(--text-secondary); margin: var(--space-1) 0 0 0;">
-                                Go to <strong>AI Advisor</strong> tab. Get personalized recommendations for Social Security timing,
-                                Roth conversions, tax optimization, and more. Convert recommendations to action items.
+                                Get AI-powered recommendations for optimizing your retirement plan. Convert insights into trackable
+                                action items with priorities, due dates, and completion tracking. Monitor progress toward your financial goals.
                             </p>
                         </div>
                     </div>
                 </div>
 
                 <div style="background: var(--success-bg); padding: var(--space-3); border-radius: 6px; border-left: 4px solid var(--success-color); margin-top: var(--space-4);">
-                    <strong style="font-size: 14px;">💡 Pro Tip:</strong>
+                    <strong style="font-size: 14px;">💡 Getting Started Tip:</strong>
                     <p style="font-size: 13px; margin: var(--space-1) 0 0 0;">
-                        Start with a simple baseline profile, then create variations to explore different strategies.
-                        The more scenarios you test, the more confident you'll be in your retirement plan.
+                        Begin with a complete baseline profile, then create alternative scenarios to explore different strategies.
+                        The iterative process of testing various economic conditions builds confidence in your retirement plan.
                     </p>
                 </div>
             `
