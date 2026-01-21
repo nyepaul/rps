@@ -242,7 +242,7 @@ function displayActionItems(container, items, filter) {
         }
 
         return `
-            <div class="action-item ${item.status === 'completed' ? 'completed' : ''}" data-id="${item.id}">
+            <div class="action-item ${item.status === 'completed' ? 'completed' : ''}" data-id="${item.id}" style="cursor: pointer;">
                 <input
                     type="checkbox"
                     class="action-checkbox"
@@ -258,12 +258,7 @@ function displayActionItems(container, items, filter) {
                         ${item.category ? `<span>${getCategoryBadge(item.category)}</span>` : ''}
                         <span>${getPriorityLabel(item.priority)}</span>
                         ${item.due_date ? `<span>Due: ${formatDate(item.due_date)}</span>` : ''}
-                        ${item.created_at ? `<span>Created: ${formatDate(item.created_at)}</span>` : ''}
                     </div>
-                </div>
-                <div class="action-actions">
-                    <button class="action-btn btn-edit" data-id="${item.id}">Edit</button>
-                    <button class="action-btn btn-delete" data-id="${item.id}">Delete</button>
                 </div>
             </div>
         `;
@@ -272,6 +267,7 @@ function displayActionItems(container, items, filter) {
     // Add event listeners
     listContainer.querySelectorAll('.action-checkbox').forEach(checkbox => {
         checkbox.addEventListener('change', async (e) => {
+            e.stopPropagation(); // Prevent row click
             const id = e.target.dataset.id;
             const isChecked = e.target.checked;
 
@@ -296,34 +292,18 @@ function displayActionItems(container, items, filter) {
         });
     });
 
-    listContainer.querySelectorAll('.btn-edit').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const id = btn.dataset.id;
-            const item = items.find(i => i.id == id);
-            if (item) {
-                showEditActionItemModal(item);
-            }
-        });
-    });
-
-    listContainer.querySelectorAll('.btn-delete').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const id = btn.dataset.id;
-
-            if (!confirm('Are you sure you want to delete this action item?')) {
+    // Row click handler for editing
+    listContainer.querySelectorAll('.action-item').forEach(row => {
+        row.addEventListener('click', (e) => {
+            // Don't trigger if clicking the checkbox
+            if (e.target.classList.contains('action-checkbox')) {
                 return;
             }
-
-            try {
-                await actionItemsAPI.delete(id);
-                showSuccess('Action item deleted.');
-
-                const profile = store.get('currentProfile');
-                loadActionItems(container, profile);
-
-            } catch (error) {
-                console.error('Error deleting action item:', error);
-                alert(`Error deleting action item: ${error.message}`);
+            
+            const id = row.dataset.id;
+            const item = items.find(i => i.id == id);
+            if (item) {
+                showActionItemModal(container, store.get('currentProfile'), item);
             }
         });
     });
@@ -361,7 +341,7 @@ function setupActionsHandlers(container, profile) {
                     showError(errorMsg);
                 }
             } finally {
-                generateBtn.innerHTML = '💡 Generate Recommendations';
+                generateBtn.innerHTML = '💡 Generate';
                 generateBtn.disabled = false;
             }
         });
@@ -371,7 +351,7 @@ function setupActionsHandlers(container, profile) {
     const addBtn = container.querySelector('#add-action-btn');
     if (addBtn) {
         addBtn.addEventListener('click', () => {
-            showAddActionItemModal(container, profile);
+            showActionItemModal(container, profile);
         });
     }
 
@@ -398,7 +378,8 @@ function setupActionsHandlers(container, profile) {
     });
 }
 
-function showAddActionItemModal(parentContainer, profile) {
+function showActionItemModal(parentContainer, profile, item = null) {
+    const isEdit = item !== null;
     const modal = document.createElement('div');
     modal.style.cssText = `
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -407,38 +388,47 @@ function showAddActionItemModal(parentContainer, profile) {
     `;
 
     modal.innerHTML = `
-        <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; max-width: 600px; width: 90%;">
-            <h2 style="margin-bottom: 20px;">Add Action Item</h2>
-            <form id="add-action-form">
+        <div style="background: var(--bg-secondary); padding: 25px; border-radius: 12px; max-width: 600px; width: 90%; border: 1px solid var(--border-color);">
+            <h2 style="margin-bottom: 20px;">${isEdit ? 'Edit' : 'Add'} Action Item</h2>
+            <form id="action-item-form">
                 <div style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">Title *</label>
-                    <input type="text" name="title" required style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">Title *</label>
+                    <input type="text" name="title" value="${item?.title || ''}" required style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: 14px;">
                 </div>
                 <div style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">Description</label>
-                    <textarea name="description" rows="3" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);"></textarea>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">Description</label>
+                    <textarea name="description" rows="3" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: 14px;">${item?.description || ''}</textarea>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
                     <div>
-                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Priority</label>
-                        <select name="priority" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
-                            <option value="low">Low</option>
-                            <option value="medium" selected>Medium</option>
-                            <option value="high">High</option>
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">Priority</label>
+                        <select name="priority" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: 14px;">
+                            <option value="low" ${item?.priority === 'low' ? 'selected' : ''}>Low</option>
+                            <option value="medium" ${(!item || item.priority === 'medium') ? 'selected' : ''}>Medium</option>
+                            <option value="high" ${item?.priority === 'high' ? 'selected' : ''}>High</option>
                         </select>
                     </div>
                     <div>
-                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Due Date</label>
-                        <input type="date" name="due_date" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">Due Date</label>
+                        <input type="date" name="due_date" value="${item?.due_date || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: 14px;">
                     </div>
                 </div>
-                <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <button type="button" id="cancel-modal-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-radius: 6px; cursor: pointer;">
-                        Cancel
-                    </button>
-                    <button type="submit" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
-                        Add Action Item
-                    </button>
+                <div style="display: flex; gap: 10px; justify-content: space-between; align-items: center; margin-top: 20px;">
+                    <div>
+                        ${isEdit ? `
+                        <button type="button" id="delete-modal-btn" style="padding: 8px 16px; background: transparent; color: var(--danger-color); border: 1px solid var(--danger-color); border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                            Delete
+                        </button>
+                        ` : ''}
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" id="cancel-modal-btn" style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 13px;">
+                            Cancel
+                        </button>
+                        <button type="submit" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                            ${isEdit ? 'Save Changes' : 'Add Action Item'}
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -457,7 +447,28 @@ function showAddActionItemModal(parentContainer, profile) {
         });
     }
 
-    const form = modal.querySelector('#add-action-form');
+    if (isEdit) {
+        const deleteBtn = modal.querySelector('#delete-modal-btn');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', async () => {
+                if (!confirm('Are you sure you want to delete this action item?')) {
+                    return;
+                }
+
+                try {
+                    await actionItemsAPI.delete(item.id);
+                    showSuccess('Action item deleted.');
+                    modal.remove();
+                    loadActionItems(parentContainer, profile);
+                } catch (error) {
+                    console.error('Error deleting action item:', error);
+                    alert(`Error deleting action item: ${error.message}`);
+                }
+            });
+        }
+    }
+
+    const form = modal.querySelector('#action-item-form');
     if (form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -469,26 +480,35 @@ function showAddActionItemModal(parentContainer, profile) {
                 description: formData.get('description') || '',
                 priority: formData.get('priority'),
                 due_date: formData.get('due_date') || null,
-                status: 'pending'
+                status: isEdit ? item.status : 'pending'
             };
 
             try {
-                await actionItemsAPI.create(actionItemData);
-                showSuccess('Action item created!');
+                if (isEdit) {
+                    await actionItemsAPI.update(item.id, actionItemData);
+                    showSuccess('Action item updated!');
+                } else {
+                    await actionItemsAPI.create(actionItemData);
+                    showSuccess('Action item created!');
+                }
                 modal.remove();
                 loadActionItems(parentContainer, profile);
             } catch (error) {
-                console.error('Error creating action item:', error);
-                alert(`Error creating action item: ${error.message}`);
+                console.error('Error saving action item:', error);
+                alert(`Error saving action item: ${error.message}`);
             }
         });
     }
 }
 
+function showAddActionItemModal(parentContainer, profile) {
+    showActionItemModal(parentContainer, profile);
+}
+
 function showEditActionItemModal(item) {
-    // Similar to add modal, but pre-filled with item data
-    console.log('Edit action item:', item);
-    alert('Edit functionality coming soon!');
+    const profile = store.get('currentProfile');
+    const container = document.getElementById('action-items-container').parentElement;
+    showActionItemModal(container, profile, item);
 }
 
 function getPriorityLabel(priority) {
