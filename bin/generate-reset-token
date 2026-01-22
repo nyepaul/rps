@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+"""
+Generate a password reset token for a specific user.
+Invalidates any existing tokens for that user.
+"""
+
+import sys
+import os
+import secrets
+from datetime import datetime, timedelta
+
+# Add project root to path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from src.auth.models import User
+from src.database.connection import db
+
+def generate_token(username):
+    # 1. Verify user exists
+    user = User.get_by_username(username)
+    if not user:
+        print(f"❌ Error: User '{username}' not found.")
+        return False
+
+    # 2. Generate new secure token
+    token = secrets.token_urlsafe(32)
+    expires = (datetime.utcnow() + timedelta(hours=2)).isoformat()
+
+    # 3. Update user in database (this replaces/invalidates previous token)
+    try:
+        with db.get_connection() as conn:
+            conn.execute(
+                "UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?",
+                (token, expires, user.id)
+            )
+            conn.commit()
+        
+        print(f"\n✅ Successfully generated new token for user: {username}")
+        print(f"⚠️  All previous tokens for this user have been invalidated.")
+        print(f"🕒 Expires in: 2 hours ({expires} UTC)")
+        print("-" * 60)
+        print(f"TOKEN: {token}")
+        print("-" * 60)
+        print(f"\nDIRECT LINK:")
+        print(f"https://rps.pan2.app/account-recovery.html?token={token}\n")
+        return True
+    except Exception as e:
+        print(f"❌ Database error: {e}")
+        return False
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: ./bin/generate-reset-token <username>")
+        sys.exit(1)
+    
+    username = sys.argv[1]
+    if generate_token(username):
+        sys.exit(0)
+    else:
+        sys.exit(1)
