@@ -62,6 +62,22 @@ sudo systemctl stop rps
 pkill -f 'python src/app.py'
 ```
 
+**Note:** `./bin/start` will automatically detect if the production service is running and prompt you to stop it.
+
+## Boot Configuration
+
+Both services are enabled to start on boot:
+```bash
+# Check if enabled
+systemctl is-enabled rps apache2
+
+# Disable auto-start (if needed)
+sudo systemctl disable rps
+
+# Re-enable auto-start
+sudo systemctl enable rps
+```
+
 ### Port 8087 not responding
 ```bash
 # Check Apache status

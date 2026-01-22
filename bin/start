@@ -48,6 +48,22 @@ echo ""
 # Create logs directory
 mkdir -p logs
 
+# Check if production service is running
+if systemctl is-active --quiet rps 2>/dev/null; then
+    echo "⚠️  WARNING: Production service 'rps' is running on port 5137"
+    echo "   Stop it first with: sudo systemctl stop rps"
+    echo ""
+    read -p "Stop production service and continue? [y/N] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        sudo systemctl stop rps
+        echo "✓ Production service stopped"
+    else
+        echo "Aborted."
+        exit 1
+    fi
+fi
+
 # Kill any existing dev server on port 5137
 pkill -f "python src/app.py" 2>/dev/null || true
 
