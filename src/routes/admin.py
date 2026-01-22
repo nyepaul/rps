@@ -1008,7 +1008,7 @@ def reset_demo_account():
         # Demo user credentials
         import os
         demo_username = 'demo'
-        demo_password = os.environ.get('DEMO_PASSWORD', 'demo1234')  # Default for development
+        demo_password = 'demo1234'  # Hardcoded as requested
         demo_email = 'demo@example.com'
 
         # Find or create demo user
@@ -1027,11 +1027,22 @@ def reset_demo_account():
             demo_user.save()
             demo_user = User.get_by_username(demo_username)  # Reload to get ID
         else:
-            # Reset password
+            # Reset password and CLEAR encryption keys to avoid login failures
             demo_user.password_hash = User.hash_password(demo_password)
             with db.get_connection() as conn:
                 conn.execute(
-                    'UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?',
+                    '''UPDATE users 
+                       SET password_hash = ?, 
+                           encrypted_dek = NULL, 
+                           dek_iv = NULL,
+                           recovery_encrypted_dek = NULL,
+                           recovery_iv = NULL,
+                           recovery_salt = NULL,
+                           email_encrypted_dek = NULL,
+                           email_iv = NULL,
+                           email_salt = NULL,
+                           updated_at = ? 
+                       WHERE id = ?''',
                     (demo_user.password_hash, datetime.now().isoformat(), demo_user.id)
                 )
 
