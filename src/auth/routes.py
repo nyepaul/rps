@@ -15,6 +15,48 @@ from pydantic import BaseModel, EmailStr, validator, ValidationError
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 
+# Account lockout settings
+LOCKOUT_THRESHOLD = 5  # Failed attempts before lockout
+LOCKOUT_DURATION_MINUTES = 30  # Lockout duration
+
+
+def check_account_lockout(username: str) -> tuple[bool, int]:
+    """
+    Check if account is locked due to too many failed login attempts.
+    Returns (is_locked, remaining_minutes).
+    """
+    from src.database.connection import db
+    from datetime import datetime, timedelta
+
+    try:
+        # Check failed login attempts in the last LOCKOUT_DURATION_MINUTES
+        cutoff_time = (datetime.utcnow() - timedelta(minutes=LOCKOUT_DURATION_MINUTES)).isoformat()
+
+        # Query audit log for failed login attempts
+        rows = db.execute(
+            '''SELECT COUNT(*) as count, MAX(created_at) as last_attempt
+               FROM enhanced_audit_log
+               WHERE action = 'LOGIN_FAILED'
+               AND details LIKE ?
+               AND created_at > ?''',
+            (f'%"username": "{username}"%', cutoff_time)
+        )
+
+        row = rows[0] if rows else None
+        if row and row['count'] >= LOCKOUT_THRESHOLD:
+            # Account is locked
+            if row['last_attempt']:
+                last_attempt = datetime.fromisoformat(row['last_attempt'].replace('Z', '+00:00').replace('+00:00', ''))
+                unlock_time = last_attempt + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
+                remaining = (unlock_time - datetime.utcnow()).total_seconds() / 60
+                return True, max(1, int(remaining))
+            return True, LOCKOUT_DURATION_MINUTES
+
+        return False, 0
+    except Exception:
+        # If check fails, don't lock out (fail open for availability)
+        return False, 0
+
 class ResetWithRecoverySchema(BaseModel):
     """Schema for password reset using recovery code."""
     username: str
@@ -162,6 +204,22 @@ def login():
     except Exception as e:
         return jsonify({'error': 'Invalid login data'}), 400
 
+    # Check for account lockout before processing login
+    is_locked, remaining_minutes = check_account_lockout(data.username)
+    if is_locked:
+        EnhancedAuditLogger.log(
+            action='LOGIN_BLOCKED_LOCKOUT',
+            table_name='users',
+            details=json.dumps({
+                'username': data.username,
+                'remaining_minutes': remaining_minutes
+            }),
+            status_code=429
+        )
+        return jsonify({
+            'error': f'Account temporarily locked due to too many failed attempts. Try again in {remaining_minutes} minutes.'
+        }), 429
+
     # Get user
     user = User.get_by_username(data.username)
 
@@ -218,7 +276,8 @@ def login():
                 }),
                 status_code=500
             )
-            return jsonify({'error': 'Encryption key error. Your password may be correct but your private encryption key could not be unlocked. Please contact support or use recovery.'}), 500
+            # Generic error to avoid confirming password validity
+            return jsonify({'error': 'Login failed. Please try again or use password recovery.'}), 401
     else:
         # Auto-migrate: User doesn't have a DEK yet, generate one now
         try:
@@ -544,6 +603,24 @@ class OfflinePasswordChangeSchema(BaseModel):
     """Schema for offline password change (using credentials)."""
     username: str
     email: EmailStr
+    old_password: str
+    new_password: str
+
+    @validator('new_password')
+    def validate_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters')
+        if not re.search(r'[A-Z]', v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not re.search(r'[a-z]', v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        if not re.search(r'[0-9]', v):
+            raise ValueError('Password must contain at least one number')
+        return v
+
+
+class PasswordChangeSchema(BaseModel):
+    """Schema for logged-in password change."""
     old_password: str
     new_password: str
 

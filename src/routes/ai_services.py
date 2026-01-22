@@ -7,6 +7,7 @@ import base64
 from io import BytesIO
 from PIL import Image
 from src.services.enhanced_audit_logger import enhanced_audit_logger
+from src.extensions import limiter
 
 ai_services_bp = Blueprint('ai_services', __name__, url_prefix='/api')
 
@@ -112,6 +113,7 @@ from flask_login import current_user
 
 @ai_services_bp.route('/advisor/chat', methods=['POST'])
 @login_required
+@limiter.limit("20 per hour")
 def advisor_chat():
     """AI advisor endpoint that provides personalized financial guidance."""
     data = request.json
@@ -337,6 +339,11 @@ def get_advisor_history():
 @login_required
 def clear_advisor_history(profile_id: int):
     """Clear conversation history for a profile."""
+    # Verify user owns this profile before deleting
+    profile = Profile.get_by_id(profile_id, current_user.id)
+    if not profile:
+        return jsonify({'error': 'Profile not found or access denied'}), 404
+
     Conversation.delete_by_profile(current_user.id, profile_id)
     enhanced_audit_logger.log(
         action='CLEAR_ADVISOR_HISTORY',
@@ -350,6 +357,7 @@ def clear_advisor_history(profile_id: int):
 
 @ai_services_bp.route('/extract-assets', methods=['POST'])
 @login_required
+@limiter.limit("10 per hour")
 def extract_assets():
     """Extract assets from an uploaded image using AI."""
     print("Received extract-assets request")

@@ -177,12 +177,12 @@ def run_analysis():
         print(f"===================\n")
 
         # Create financial profile matching the FinancialProfile dataclass
-        # Use 'or 0' pattern to handle None values from database
-        pension_benefit = financial_data.get('pension_benefit') or 0
-        annual_expenses = financial_data.get('annual_expenses') or 0
-        annual_income = financial_data.get('annual_income') or 0
-        liquid_assets_val = liquid_assets or financial_data.get('liquid_assets') or 0
-        retirement_assets_val = traditional_ira or financial_data.get('retirement_assets') or 0
+        # Use explicit None checks to preserve valid zero values
+        pension_benefit = financial_data.get('pension_benefit') if financial_data.get('pension_benefit') is not None else 0
+        annual_expenses = financial_data.get('annual_expenses') if financial_data.get('annual_expenses') is not None else 0
+        annual_income = financial_data.get('annual_income') if financial_data.get('annual_income') is not None else 0
+        liquid_assets_val = liquid_assets if liquid_assets is not None else (financial_data.get('liquid_assets') if financial_data.get('liquid_assets') is not None else 0)
+        retirement_assets_val = traditional_ira if traditional_ira is not None else (financial_data.get('retirement_assets') if financial_data.get('retirement_assets') is not None else 0)
 
         financial_profile = FinancialProfile(
             person1=person1,

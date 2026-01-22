@@ -899,6 +899,13 @@ def get_system_info():
 @admin_required
 def get_database_schema():
     """Get complete database schema with tables and relationships."""
+    import re
+
+    def validate_identifier(name: str) -> bool:
+        """Validate SQLite identifier to prevent SQL injection in PRAGMA statements."""
+        # Only allow alphanumeric characters and underscores
+        return bool(re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', name))
+
     try:
         from src.database.connection import db
 
@@ -913,6 +920,10 @@ def get_database_schema():
 
         for table_row in tables_result:
             table_name = table_row['name']
+
+            # Validate table name before using in PRAGMA
+            if not validate_identifier(table_name):
+                continue
 
             # Get table info (columns)
             columns_result = db.execute(f"PRAGMA table_info({table_name})")
@@ -947,10 +958,14 @@ def get_database_schema():
             indexes = []
 
             for idx in indexes_result:
-                idx_info = db.execute(f"PRAGMA index_info({idx['name']})")
+                idx_name = idx['name']
+                # Validate index name before using in PRAGMA
+                if not validate_identifier(idx_name):
+                    continue
+                idx_info = db.execute(f"PRAGMA index_info({idx_name})")
                 index_columns = [col['name'] for col in idx_info]
                 indexes.append({
-                    'name': idx['name'],
+                    'name': idx_name,
                     'unique': bool(idx['unique']),
                     'columns': index_columns
                 })

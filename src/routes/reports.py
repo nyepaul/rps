@@ -103,15 +103,19 @@ def run_analysis_for_report(profile):
     roth_ira = sum(a.get('value', 0) for a in assets_data.get('retirement_accounts', [])
                    if 'roth' in a.get('type', '').lower())
 
+    # Use explicit None checks to preserve valid zero values
+    liquid_assets_val = liquid_assets if liquid_assets is not None else (financial_data.get('liquid_assets') if financial_data.get('liquid_assets') is not None else 0)
+    traditional_ira_val = traditional_ira if traditional_ira is not None else (financial_data.get('retirement_assets') if financial_data.get('retirement_assets') is not None else 0)
+
     financial_profile = FinancialProfile(
         person1=person1,
         person2=person2,
         children=children_data,
-        liquid_assets=liquid_assets or financial_data.get('liquid_assets', 0),
-        traditional_ira=traditional_ira or financial_data.get('retirement_assets', 0),
-        roth_ira=roth_ira,
+        liquid_assets=liquid_assets_val,
+        traditional_ira=traditional_ira_val,
+        roth_ira=roth_ira if roth_ira is not None else 0,
         pension_lump_sum=0,
-        pension_annual=financial_data.get('pension_benefit', 0) * 12,
+        pension_annual=(financial_data.get('pension_benefit') or 0) * 12,
         annual_expenses=financial_data.get('annual_expenses', 0),
         target_annual_income=financial_data.get('annual_income', 0),
         risk_tolerance='moderate',

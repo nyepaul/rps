@@ -73,12 +73,16 @@ def create_app(config_name='development'):
                     # Check if inactive for more than 30 minutes
                     if inactive_duration > timedelta(minutes=30):
                         # Log the timeout
+                        import json as json_module
                         EnhancedAuditLogger.log(
                             action='SESSION_TIMEOUT',
                             table_name='users',
                             record_id=current_user.id,
                             user_id=current_user.id,
-                            details=f'{{"username": "{current_user.username}", "inactive_minutes": {inactive_duration.total_seconds() / 60:.1f}}}',
+                            details=json_module.dumps({
+                                'username': current_user.username,
+                                'inactive_minutes': round(inactive_duration.total_seconds() / 60, 1)
+                            }),
                             status_code=401
                         )
 
