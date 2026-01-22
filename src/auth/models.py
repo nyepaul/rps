@@ -14,7 +14,7 @@ class User(UserMixin):
                  created_at=None, last_login=None, updated_at=None, encrypted_dek=None, dek_iv=None,
                  reset_token=None, reset_token_expires=None, is_super_admin=False,
                  recovery_encrypted_dek=None, recovery_iv=None, recovery_salt=None,
-                 email_encrypted_dek=None, email_iv=None, email_salt=None):
+                 email_encrypted_dek=None, email_iv=None, email_salt=None, preferences=None):
         self.id = id
         self.username = username
         self.email = email
@@ -35,6 +35,7 @@ class User(UserMixin):
         self.email_encrypted_dek = email_encrypted_dek
         self.email_iv = email_iv
         self.email_salt = email_salt
+        self.preferences = preferences
 
     @property
     def is_active(self):
@@ -102,8 +103,8 @@ class User(UserMixin):
                 cursor.execute('''
                     INSERT INTO users (username, email, password_hash, is_active, is_admin, is_super_admin, created_at, updated_at, 
                                      encrypted_dek, dek_iv, recovery_encrypted_dek, recovery_iv, recovery_salt,
-                                     email_encrypted_dek, email_iv, email_salt)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                     email_encrypted_dek, email_iv, email_salt, preferences)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (self.username, self.email, self.password_hash,
                       1 if self._is_active else 0,
                       1 if self._is_admin else 0,
@@ -111,7 +112,8 @@ class User(UserMixin):
                       self.created_at, self.updated_at,
                       self.encrypted_dek, self.dek_iv,
                       self.recovery_encrypted_dek, self.recovery_iv, self.recovery_salt,
-                      self.email_encrypted_dek, self.email_iv, self.email_salt))
+                      self.email_encrypted_dek, self.email_iv, self.email_salt,
+                      self.preferences))
                 self.id = cursor.lastrowid
             else:
                 # Update existing user
@@ -120,7 +122,7 @@ class User(UserMixin):
                     SET username = ?, email = ?, password_hash = ?, is_active = ?,
                         is_admin = ?, is_super_admin = ?, last_login = ?, encrypted_dek = ?, dek_iv = ?,
                         recovery_encrypted_dek = ?, recovery_iv = ?, recovery_salt = ?,
-                        email_encrypted_dek = ?, email_iv = ?, email_salt = ?
+                        email_encrypted_dek = ?, email_iv = ?, email_salt = ?, preferences = ?
                     WHERE id = ?
                 ''', (self.username, self.email, self.password_hash,
                       1 if self._is_active else 0,
@@ -129,6 +131,7 @@ class User(UserMixin):
                       self.last_login, self.encrypted_dek, self.dek_iv,
                       self.recovery_encrypted_dek, self.recovery_iv, self.recovery_salt,
                       self.email_encrypted_dek, self.email_iv, self.email_salt,
+                      self.preferences,
                       self.id))
         return self
     

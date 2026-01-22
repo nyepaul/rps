@@ -62,6 +62,8 @@ def test_db(test_db_dir, request):
         importlib.reload(sys.modules['src.models.scenario'])
     if 'src.models.conversation' in sys.modules:
         importlib.reload(sys.modules['src.models.conversation'])
+    if 'src.models.group' in sys.modules:
+        importlib.reload(sys.modules['src.models.group'])
 
     # Create tables
     with test_db_instance.get_connection() as conn:
@@ -89,7 +91,8 @@ def test_db(test_db_dir, request):
                 recovery_salt TEXT,
                 email_encrypted_dek TEXT,
                 email_iv TEXT,
-                email_salt TEXT
+                email_salt TEXT,
+                preferences TEXT
             )
         ''')
 
@@ -322,6 +325,39 @@ def test_db(test_db_dir, request):
             )
         ''')
 
+        # Groups
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS groups (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT UNIQUE NOT NULL,
+                description TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+
+        # User-Group mapping
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS user_groups (
+                user_id INTEGER NOT NULL,
+                group_id INTEGER NOT NULL,
+                PRIMARY KEY (user_id, group_id),
+                FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+                FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE
+            )
+        ''')
+
+        # Admin-Group management mapping
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS admin_groups (
+                user_id INTEGER NOT NULL,
+                group_id INTEGER NOT NULL,
+                PRIMARY KEY (user_id, group_id),
+                FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+                FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE
+            )
+        ''')
+
         conn.commit()
 
     yield test_db_instance
@@ -379,6 +415,21 @@ def test_admin(test_db):
         email='admin@example.com',
         password_hash=User.hash_password('AdminPass123'),
         is_admin=True
+    )
+    user.save()
+    return user
+
+
+@pytest.fixture(scope='function')
+def test_super_admin(test_db):
+    """Create a test super admin user."""
+    user = User(
+        id=None,
+        username='superadmin',
+        email='super@example.com',
+        password_hash=User.hash_password('SuperPass123'),
+        is_admin=True,
+        is_super_admin=True
     )
     user.save()
     return user

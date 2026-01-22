@@ -4,7 +4,7 @@ import re
 import json
 import base64
 from flask import Blueprint, request, jsonify, session
-from flask_login import login_user, logout_user, current_user
+from flask_login import login_user, logout_user, current_user, login_required
 from src.auth.models import User, PasswordResetRequest
 from src.extensions import limiter
 from src.services.encryption_service import EncryptionService
@@ -328,7 +328,8 @@ def login():
             'username': user.username,
             'email': user.email,
             'is_admin': user.is_admin,
-            'is_super_admin': user.is_super_admin
+            'is_super_admin': user.is_super_admin,
+            'preferences': json.loads(user.preferences) if user.preferences else {}
         }
     }), 200
 
@@ -375,20 +376,52 @@ def logout():
 
 
 @auth_bp.route('/session', methods=['GET'])
-def check_session():
-    """Check if user is authenticated."""
-    if current_user.is_authenticated:
+@login_required
+def session_check():
+    """Check if current session is valid and return user data."""
+    return jsonify({
+        'authenticated': True,
+        'user': {
+            'id': current_user.id,
+            'username': current_user.username,
+            'email': current_user.email,
+            'is_admin': current_user.is_admin,
+            'is_super_admin': current_user.is_super_admin,
+            'preferences': json.loads(current_user.preferences) if current_user.preferences else {}
+        }
+    }), 200
+
+
+@auth_bp.route('/preferences', methods=['GET'])
+@login_required
+def get_preferences():
+    """Get current user preferences."""
+    prefs = json.loads(current_user.preferences) if current_user.preferences else {}
+    return jsonify({'preferences': prefs}), 200
+
+
+@auth_bp.route('/preferences', methods=['PUT'])
+@login_required
+def update_preferences():
+    """Update current user preferences."""
+    try:
+        data = request.json
+        if not isinstance(data, dict):
+            return jsonify({'error': 'Invalid preferences format'}), 400
+            
+        # Merge with existing preferences
+        existing = json.loads(current_user.preferences) if current_user.preferences else {}
+        existing.update(data)
+        
+        current_user.preferences = json.dumps(existing)
+        current_user.save()
+        
         return jsonify({
-            'authenticated': True,
-            'user': {
-                'id': current_user.id,
-                'username': current_user.username,
-                'email': current_user.email,
-                'is_admin': current_user.is_admin,
-                'is_super_admin': current_user.is_super_admin
-            }
+            'message': 'Preferences updated',
+            'preferences': existing
         }), 200
-    return jsonify({'authenticated': False}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 class PasswordResetRequestSchema(BaseModel):
