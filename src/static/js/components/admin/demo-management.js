@@ -12,30 +12,34 @@ import { showError } from '../../utils/dom.js';
 export async function renderDemoManagement(container) {
     container.innerHTML = `
         <div style="max-width: 800px;">
-            <div style="background: var(--bg-secondary); padding: 25px; border-radius: 12px; margin-bottom: 20px; border: 2px solid var(--warning-color);">
-                <h3 style="font-size: 18px; margin-bottom: 15px;">🎭 Demo Account Management</h3>
-                <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 14px;">
+            <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--warning-color);">
+                <h3 style="font-size: 16px; margin-bottom: 10px; color: var(--warning-color);">🎭 Demo Account Management</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 12px; font-size: 13px;">
                     Reset the demo account with comprehensive upper-class family profile data. This will delete all existing demo profiles and create a new default profile.
                 </p>
-                <div style="background: var(--warning-bg); padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid var(--warning-color);">
-                    <div style="font-weight: 600; margin-bottom: 8px;">Demo Account Details:</div>
-                    <div style="font-size: 13px; font-family: monospace;">
-                        <div>Username: <strong>demo</strong></div>
-                        <div>Password: <strong>demo1234</strong></div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
+                    <div style="background: var(--warning-bg); padding: 10px; border-radius: 6px; border-left: 3px solid var(--warning-color);">
+                        <div style="font-weight: 700; font-size: 11px; margin-bottom: 4px; text-transform: uppercase;">DEMO ACCOUNT DETAILS:</div>
+                        <div style="font-size: 12px; font-family: monospace;">
+                            <div>Username: <strong>demo</strong></div>
+                            <div>Password: <strong>demo1234</strong></div>
+                        </div>
+                    </div>
+                    <div style="background: var(--info-bg); padding: 10px; border-radius: 6px; border-left: 3px solid var(--accent-color);">
+                        <div style="font-weight: 700; font-size: 11px; margin-bottom: 4px; text-transform: uppercase;">📋 PROFILE INCLUDES:</div>
+                        <ul style="margin: 0; padding-left: 15px; font-size: 11px; line-height: 1.3; color: var(--text-secondary);">
+                            <li>Upper-class couple ($280K/yr combined)</li>
+                            <li>Two children in college (19 and 21)</li>
+                            <li>$2.3M portfolio (401k, Roth, Brkg)</li>
+                            <li>$1.85M SF primary residence</li>
+                            <li>Comprehensive detailed budget</li>
+                            <li>529 college funds</li>
+                        </ul>
                     </div>
                 </div>
-                <div style="background: var(--info-bg); padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 13px;">
-                    <strong>📋 Profile includes:</strong>
-                    <ul style="margin: 8px 0 0 20px; padding: 0;">
-                        <li>Upper-class couple ($280K/year combined income)</li>
-                        <li>Two children in college (ages 19 and 21)</li>
-                        <li>$2.3M investment portfolio (401k, Roth, Brokerage)</li>
-                        <li>$1.85M primary residence in San Francisco</li>
-                        <li>Comprehensive budget with typical expenses</li>
-                        <li>529 college funds for both children</li>
-                    </ul>
-                </div>
-                <button id="reset-demo-btn" style="padding: 12px 24px; background: var(--warning-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;">
+
+                <button id="reset-demo-btn" style="padding: 10px 20px; background: var(--warning-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 13px;">
                     🔄 Reset Demo Account
                 </button>
                 <div id="reset-demo-result" style="margin-top: 15px; display: none;"></div>
