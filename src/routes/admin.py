@@ -1016,9 +1016,12 @@ def reset_demo_account():
                     (demo_user.password_hash, datetime.now().isoformat(), demo_user.id)
                 )
 
-        # Delete all existing profiles for demo user
+        # Delete all existing profiles, action items, scenarios and conversations for demo user
         with db.get_connection() as conn:
             conn.execute('DELETE FROM profile WHERE user_id = ?', (demo_user.id,))
+            conn.execute('DELETE FROM action_items WHERE user_id = ?', (demo_user.id,))
+            conn.execute('DELETE FROM scenarios WHERE user_id = ?', (demo_user.id,))
+            conn.execute('DELETE FROM conversations WHERE user_id = ?', (demo_user.id,))
 
         # Create comprehensive demo profile
         today = date.today()
@@ -1034,7 +1037,7 @@ def reset_demo_account():
 
         demo_data = {
             "person": {
-                "name": "Demo Thompson",
+                "name": "Chris Thompson",
                 "birth_date": birth_date.isoformat(),
                 "retirement_date": retirement_date.isoformat(),
                 "current_age": 55,
@@ -1063,6 +1066,7 @@ def reset_demo_account():
                 {
                     "name": "Alex Thompson",
                     "birth_date": child1_birth.isoformat(),
+                    "birth_year": 2008,
                     "relationship": "Child",
                     "email": "alex.thompson@college.edu",
                     "phone": "(415) 555-0125",
@@ -1084,6 +1088,7 @@ def reset_demo_account():
                 {
                     "name": "Jordan Thompson",
                     "birth_date": child2_birth.isoformat(),
+                    "birth_year": 2007,
                     "relationship": "Child",
                     "email": "jordan.thompson@college.edu",
                     "phone": "(415) 555-0126",
@@ -1126,56 +1131,22 @@ def reset_demo_account():
             },
             "income_streams": [
                 {
-                    "name": "Senior Software Engineer - Chris",
+                    "name": "Chris Salary",
                     "amount": 16000,  # Monthly ($192k annually)
                     "frequency": "monthly",
                     "start_date": (today - relativedelta(years=10)).isoformat(),
                     "end_date": retirement_date.isoformat(),
                     "type": "salary",
-                    "description": "Full-time software engineering position at TechCorp",
-                    "employer": "TechCorp",
-                    "withholding": {
-                        "federal": 0.24,
-                        "state": 0.093,
-                        "social_security": 0.062,
-                        "medicare": 0.0145,
-                        "401k_contribution": 0.15
-                    }
+                    "description": "Senior Software Engineer at TechCorp"
                 },
                 {
-                    "name": "Senior Product Manager - Jamie",
+                    "name": "Jamie Salary",
                     "amount": 12000,  # Monthly ($144k annually)
                     "frequency": "monthly",
                     "start_date": (today - relativedelta(years=8)).isoformat(),
                     "end_date": spouse_retirement_date.isoformat(),
                     "type": "salary",
-                    "description": "Senior product management role at Tech Innovations",
-                    "employer": "Tech Innovations Inc.",
-                    "withholding": {
-                        "federal": 0.24,
-                        "state": 0.093,
-                        "social_security": 0.062,
-                        "medicare": 0.0145,
-                        "401k_contribution": 0.12
-                    }
-                },
-                {
-                    "name": "Alex Work-Study Income",
-                    "amount": 333,  # Monthly ($4k annually)
-                    "frequency": "monthly",
-                    "start_date": today.isoformat(),
-                    "end_date": (today + relativedelta(years=4)).isoformat(),
-                    "type": "work_study",
-                    "description": "Work-study program at UC Berkeley library"
-                },
-                {
-                    "name": "Jordan Part-Time Job",
-                    "amount": 417,  # Monthly ($5k annually)
-                    "frequency": "monthly",
-                    "start_date": (today - relativedelta(years=1)).isoformat(),
-                    "end_date": (today + relativedelta(years=3)).isoformat(),
-                    "type": "part_time",
-                    "description": "Part-time tutoring and campus employment"
+                    "description": "Senior Product Manager at Tech Innovations"
                 }
             ],
             "assets": {
@@ -1190,10 +1161,10 @@ def reset_demo_account():
                         "cash_pct": 0.05
                     },
                     {
-                        "name": "Savings Account",
+                        "name": "High Yield Savings",
                         "type": "savings",
                         "value": 90000,
-                        "institution": "Chase",
+                        "institution": "Marcus",
                         "stock_pct": 0,
                         "bond_pct": 0,
                         "cash_pct": 1.0
@@ -1201,7 +1172,7 @@ def reset_demo_account():
                 ],
                 "retirement_accounts": [
                     {
-                        "name": "401(k) - Primary",
+                        "name": "Chris 401(k)",
                         "type": "401k",
                         "value": 850000,
                         "institution": "Fidelity",
@@ -1210,7 +1181,7 @@ def reset_demo_account():
                         "cash_pct": 0.05
                     },
                     {
-                        "name": "401(k) - Spouse",
+                        "name": "Jamie 401(k)",
                         "type": "401k",
                         "value": 620000,
                         "institution": "Vanguard",
@@ -1219,7 +1190,7 @@ def reset_demo_account():
                         "cash_pct": 0.05
                     },
                     {
-                        "name": "Roth IRA",
+                        "name": "Roth IRA - Chris",
                         "type": "roth_ira",
                         "value": 180000,
                         "institution": "Fidelity",
@@ -1228,7 +1199,7 @@ def reset_demo_account():
                         "cash_pct": 0.05
                     },
                     {
-                        "name": "Roth IRA - Spouse",
+                        "name": "Roth IRA - Jamie",
                         "type": "roth_ira",
                         "value": 165000,
                         "institution": "Vanguard",
@@ -1250,7 +1221,7 @@ def reset_demo_account():
                 ],
                 "other_assets": [
                     {
-                        "name": "529 College Fund - Alex",
+                        "name": "Alex 529 Plan",
                         "type": "529_plan",
                         "value": 45000,
                         "stock_pct": 0.6,
@@ -1258,7 +1229,7 @@ def reset_demo_account():
                         "cash_pct": 0.05
                     },
                     {
-                        "name": "529 College Fund - Jordan",
+                        "name": "Jordan 529 Plan",
                         "type": "529_plan",
                         "value": 35000,
                         "stock_pct": 0.5,
@@ -1274,200 +1245,85 @@ def reset_demo_account():
                         "housing": [{
                             "amount": 4200,
                             "frequency": "monthly",
-                            "description": "Mortgage",
+                            "name": "Mortgage",
                             "ongoing": True
                         }],
                         "utilities": [{
                             "amount": 450,
                             "frequency": "monthly",
-                            "description": "Utilities",
+                            "name": "Utilities",
                             "ongoing": True
                         }],
                         "transportation": [{
                             "amount": 950,
                             "frequency": "monthly",
-                            "description": "Car payments & insurance",
+                            "name": "Auto Expenses",
                             "ongoing": True
                         }],
                         "food": [{
                             "amount": 1200,
                             "frequency": "monthly",
-                            "description": "Groceries",
+                            "name": "Groceries",
                             "ongoing": True
                         }],
                         "dining_out": [{
                             "amount": 800,
                             "frequency": "monthly",
-                            "description": "Restaurants",
+                            "name": "Dining & Entertainment",
                             "ongoing": True
                         }],
                         "healthcare": [{
                             "amount": 650,
                             "frequency": "monthly",
-                            "description": "Insurance & medical",
-                            "ongoing": True
-                        }],
-                        "insurance": [{
-                            "amount": 350,
-                            "frequency": "monthly",
-                            "description": "Life & disability",
-                            "ongoing": True
-                        }],
-                        "childcare_education": [
-                            {
-                                "amount": 4667,
-                                "frequency": "monthly",
-                                "description": "Alex - UC Berkeley (tuition, room & board after aid)",
-                                "ongoing": True,
-                                "end_date": (today + relativedelta(years=4)).isoformat(),
-                                "child": "Alex Thompson",
-                                "breakdown": {
-                                    "tuition": 3000,
-                                    "room_board": 1500,
-                                    "books_supplies": 167
-                                }
-                            },
-                            {
-                                "amount": 4958,
-                                "frequency": "monthly",
-                                "description": "Jordan - Stanford (tuition, room & board after aid)",
-                                "ongoing": True,
-                                "end_date": (today + relativedelta(years=3)).isoformat(),
-                                "child": "Jordan Thompson",
-                                "breakdown": {
-                                    "tuition": 3583,
-                                    "room_board": 1167,
-                                    "books_supplies": 208
-                                }
-                            },
-                            {
-                                "amount": 400,
-                                "frequency": "monthly",
-                                "description": "Children allowance & support",
-                                "ongoing": True,
-                                "end_date": (today + relativedelta(years=4)).isoformat()
-                            }
-                        ],
-                        "entertainment": [{
-                            "amount": 600,
-                            "frequency": "monthly",
-                            "description": "Entertainment",
+                            "name": "Health Costs",
                             "ongoing": True
                         }],
                         "travel": [{
                             "amount": 12000,
                             "frequency": "annual",
-                            "description": "Vacations",
-                            "ongoing": True
-                        }],
-                        "personal_care": [{
-                            "amount": 300,
-                            "frequency": "monthly",
-                            "description": "Personal care",
-                            "ongoing": True
-                        }],
-                        "subscriptions": [{
-                            "amount": 250,
-                            "frequency": "monthly",
-                            "description": "Streaming, gym, etc.",
-                            "ongoing": True
-                        }],
-                        "charitable_giving": [{
-                            "amount": 500,
-                            "frequency": "monthly",
-                            "description": "Charitable donations",
-                            "ongoing": True
-                        }],
-                        "discretionary": [{
-                            "amount": 800,
-                            "frequency": "monthly",
-                            "description": "Miscellaneous",
+                            "name": "Vacations",
                             "ongoing": True
                         }]
                     },
                     "future": {
                         "housing": [{
-                            "amount": 3500,
+                            "amount": 1500,
                             "frequency": "monthly",
-                            "description": "Mortgage (paid off scenario)",
-                            "ongoing": True
-                        }],
-                        "utilities": [{
-                            "amount": 450,
-                            "frequency": "monthly",
-                            "description": "Utilities",
-                            "ongoing": True
-                        }],
-                        "transportation": [{
-                            "amount": 600,
-                            "frequency": "monthly",
-                            "description": "Car & insurance",
+                            "name": "Taxes & Insurance",
                             "ongoing": True
                         }],
                         "food": [{
                             "amount": 1000,
                             "frequency": "monthly",
-                            "description": "Groceries",
-                            "ongoing": True
-                        }],
-                        "dining_out": [{
-                            "amount": 900,
-                            "frequency": "monthly",
-                            "description": "Restaurants",
-                            "ongoing": True
-                        }],
-                        "healthcare": [{
-                            "amount": 1200,
-                            "frequency": "monthly",
-                            "description": "Medicare & supplemental",
+                            "name": "Groceries",
                             "ongoing": True
                         }],
                         "travel": [{
-                            "amount": 15000,
+                            "amount": 20000,
                             "frequency": "annual",
-                            "description": "Retirement travel",
-                            "ongoing": True
-                        }],
-                        "entertainment": [{
-                            "amount": 700,
-                            "frequency": "monthly",
-                            "description": "Entertainment",
-                            "ongoing": True
-                        }],
-                        "charitable_giving": [{
-                            "amount": 600,
-                            "frequency": "monthly",
-                            "description": "Charitable donations",
-                            "ongoing": True
-                        }],
-                        "discretionary": [{
-                            "amount": 1000,
-                            "frequency": "monthly",
-                            "description": "Miscellaneous",
+                            "name": "Retirement Travel",
                             "ongoing": True
                         }]
                     }
                 },
-                "income": {
-                    "current": {
-                        "rental_income": [],
-                        "part_time_consulting": [],
-                        "business_income": [],
-                        "other_income": []
+                "college_expenses": [
+                    {
+                        "child_name": "Alex Thompson",
+                        "birth_year": 2008,
+                        "start_year": today.year,
+                        "end_year": today.year + 4,
+                        "annual_cost": 44000,
+                        "enabled": True
                     },
-                    "future": {
-                        "rental_income": [],
-                        "part_time_consulting": [{
-                            "amount": 3000,
-                            "frequency": "monthly",
-                            "description": "Part-time consulting",
-                            "start_date": retirement_date.isoformat(),
-                            "end_date": (retirement_date + relativedelta(years=5)).isoformat()
-                        }],
-                        "business_income": [],
-                        "other_income": []
+                    {
+                        "child_name": "Jordan Thompson",
+                        "birth_year": 2007,
+                        "start_year": today.year - 1,
+                        "end_year": today.year + 3,
+                        "annual_cost": 59500,
+                        "enabled": True
                     }
-                }
+                ]
             },
             "withdrawal_strategy": {
                 "withdrawal_rate": 0.04,
@@ -1495,6 +1351,65 @@ def reset_demo_account():
                 datetime.now().isoformat()
             ))
             demo_profile_id = cursor.lastrowid
+
+        # Create sample action items
+        action_items = [
+            {
+                "category": "Retirement",
+                "description": "Increase 401(k) contribution to 15% to maximize employer match",
+                "priority": "high",
+                "status": "pending"
+            },
+            {
+                "category": "Tax",
+                "description": "Review Roth conversion strategy for low-income years",
+                "priority": "medium",
+                "status": "pending"
+            },
+            {
+                "category": "Estate",
+                "description": "Update living trust and beneficiary designations",
+                "priority": "high",
+                "status": "completed"
+            }
+        ]
+
+        with db.get_connection() as conn:
+            for item in action_items:
+                conn.execute('''
+                    INSERT INTO action_items (user_id, profile_id, category, description, priority, status, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (demo_user.id, demo_profile_id, item['category'], item['description'], 
+                      item['priority'], item['status'], datetime.now().isoformat(), datetime.now().isoformat()))
+
+        # Create a sample scenario
+        sample_results = {
+            "success_rate": 0.92,
+            "median_final_balance": 4500000,
+            "percentile_10": 1200000,
+            "percentile_90": 12500000,
+            "simulations": 10000,
+            "years_projected": 40
+        }
+
+        with db.get_connection() as conn:
+            conn.execute('''
+                INSERT INTO scenarios (user_id, profile_id, name, results, results_iv, created_at)
+                VALUES (?, ?, ?, ?, NULL, ?)
+            ''', (demo_user.id, demo_profile_id, "Base Case - 4% Rule", json.dumps(sample_results), datetime.now().isoformat()))
+
+        # Create sample conversation
+        conversations = [
+            {"role": "user", "content": "How am I doing on my retirement goals?"},
+            {"role": "assistant", "content": "Based on your current assets of $2.5M and annual expenses of $175k, your plan has a 92% success rate. You are in excellent shape, but should consider increasing your 401(k) contributions to maximize your tax advantages."}
+        ]
+
+        with db.get_connection() as conn:
+            for chat in conversations:
+                conn.execute('''
+                    INSERT INTO conversations (user_id, profile_id, role, content, content_iv, created_at)
+                    VALUES (?, ?, ?, ?, NULL, ?)
+                ''', (demo_user.id, demo_profile_id, chat['role'], chat['content'], datetime.now().isoformat()))
 
         # Log admin action
         enhanced_audit_logger.log_admin_action(
