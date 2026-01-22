@@ -1,5 +1,5 @@
 """RPS Version Information"""
 
-__version__ = "3.8.142"
+__version__ = "3.8.143"
 __release_date__ = "2026-01-22"
-__release_notes__ = "Update recovery error messages to be more specific (Invalid old password/recovery code)"
+__release_notes__ = "Add version display to login box"

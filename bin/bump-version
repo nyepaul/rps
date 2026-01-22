@@ -29,6 +29,9 @@ sed -i "s|<span id=\"app-version\">v[0-9]\+\.[0-9]\+\.[0-9]\+</span>|<span id=\"
 # Update config.js VERSION constant (fallback for when API not loaded yet)
 sed -i "s|VERSION: '[0-9]\+\.[0-9]\+\.[0-9]\+'|VERSION: '$NEW_VERSION'|g" src/static/js/config.js
 
+# Update login.html version display
+sed -i "s|font-size: 10px; color: #ccc; font-weight: 500;\">v[0-9]\+\.[0-9]\+\.[0-9]\+</div>|font-size: 10px; color: #ccc; font-weight: 500;\">v$NEW_VERSION</div>|g" src/static/login.html
+
 echo "✅ Version bumped to $NEW_VERSION"
 echo "📅 Release date: $RELEASE_DATE"
 echo "📝 Notes: $RELEASE_NOTES"
@@ -37,9 +40,10 @@ echo "Modified files:"
 echo "  - src/__version__.py"
 echo "  - src/static/index.html"
 echo "  - src/static/js/config.js"
+echo "  - src/static/login.html"
 echo ""
 echo "Don't forget to commit and deploy:"
-echo "  git add src/__version__.py src/static/index.html src/static/js/config.js"
+echo "  git add src/__version__.py src/static/index.html src/static/js/config.js src/static/login.html"
 echo "  git commit -m 'chore: bump version to $NEW_VERSION'"
 echo "  git push"
 echo "  sudo ./bin/deploy"
