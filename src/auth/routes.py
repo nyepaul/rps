@@ -460,12 +460,20 @@ def request_password_reset():
         # Log token to server logs ONLY (do not expose in API)
         print(f"SECURITY WARNING: Email not sent. Reset token for {user.username}: {token}")
 
-    # Return success message (without token)
-    return jsonify({
+    # Return success message (without token in production)
+    response_data = {
         'message': 'If the account exists and the email matches, a password reset link has been sent.',
         'username': data.username,
         'email_sent': email_sent
-    }), 200
+    }
+
+    # In development mode, expose the token to the frontend for easy testing
+    from flask import current_app
+    if current_app.config.get('DEBUG') or current_app.config.get('FLASK_ENV') == 'development':
+        response_data['token'] = token
+        response_data['development_mode'] = True
+
+    return jsonify(response_data), 200
 
 
 @auth_bp.route('/password-reset/reset', methods=['POST'])

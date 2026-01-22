@@ -294,7 +294,14 @@
                     <div class="method-icon">📧</div>
                     <div class="method-info">
                         <h3>Email Reset</h3>
-                        <p>Receive a reset link via email. Note: May result in data loss if not previously configured.</p>
+                        <p>Receive a reset link via email. (Requires configured mail server)</p>
+                    </div>
+                </div>
+                <div class="method-option" data-method="token">
+                    <div class="method-icon">🎟️</div>
+                    <div class="method-info">
+                        <h3>I have a Reset Token</h3>
+                        <p>If you received a token from an administrator or logs, enter it here.</p>
                     </div>
                 </div>
                 <div class="method-option" data-method="code">
@@ -317,14 +324,19 @@
         <!-- View 2: Identity / Request -->
         <div id="view-identity" class="view">
             <form id="identity-form">
-                <div class="form-group">
+                <div id="username-field" class="form-group">
                     <label for="username">Username</label>
-                    <input type="text" id="username" placeholder="Enter your username" required>
+                    <input type="text" id="username" placeholder="Enter your username">
                 </div>
                 
                 <div id="email-field" class="form-group">
                     <label for="email">Email Address</label>
                     <input type="email" id="email" placeholder="email@example.com">
+                </div>
+
+                <div id="token-field" class="form-group hidden">
+                    <label for="manual-token">Reset Token</label>
+                    <input type="text" id="manual-token" placeholder="Enter the token received">
                 </div>
 
                 <div id="old-password-field" class="form-group hidden">
@@ -463,17 +475,23 @@
 
         function setupIdentityView() {
             clearAlerts();
+            const usernameField = document.getElementById('username-field');
             const emailField = document.getElementById('email-field');
+            const tokenField = document.getElementById('token-field');
             const oldPasswordField = document.getElementById('old-password-field');
             const codeField = document.getElementById('recovery-code-field');
             const submitBtn = document.getElementById('identity-submit');
 
             // Reset fields
+            usernameField.classList.remove('hidden');
             emailField.classList.add('hidden');
+            tokenField.classList.add('hidden');
             oldPasswordField.classList.add('hidden');
             codeField.classList.add('hidden');
             
+            document.getElementById('username').required = true;
             document.getElementById('email').required = false;
+            document.getElementById('manual-token').required = false;
             document.getElementById('old-password').required = false;
             document.getElementById('recovery-code').required = false;
 
@@ -484,6 +502,15 @@
                 document.getElementById('email').required = true;
                 components.methodAlert.innerHTML = '<strong>🔒 Security:</strong> We will send a reset link to your registered email address.';
                 submitBtn.textContent = 'Send Reset Link';
+            } else if (state.method === 'token') {
+                components.title.textContent = 'Token Recovery';
+                components.subtitle.textContent = 'Manual Token Entry';
+                tokenField.classList.remove('hidden');
+                usernameField.classList.add('hidden'); // Token contains user info
+                document.getElementById('username').required = false;
+                document.getElementById('manual-token').required = true;
+                components.methodAlert.innerHTML = '<strong>🎟️ Token Entry:</strong> Paste the reset token you received via email, log, or administrator.';
+                submitBtn.textContent = 'Verify Token';
             } else if (state.method === 'code') {
                 components.title.textContent = 'Recovery Code';
                 components.subtitle.textContent = 'Restore your data';
@@ -520,6 +547,7 @@
             state.email = document.getElementById('email').value;
             state.oldPassword = document.getElementById('old-password').value;
             state.recoveryCode = document.getElementById('recovery-code').value.trim().toUpperCase();
+            const manualToken = document.getElementById('manual-token').value.trim();
 
             btn.disabled = true;
             btn.innerHTML = `<div class="spinner"></div> Processing...`;
@@ -528,6 +556,9 @@
             try {
                 if (state.method === 'email') {
                     await requestEmailReset();
+                } else if (state.method === 'token') {
+                    state.token = manualToken;
+                    await validateToken(manualToken);
                 } else if (state.method === 'code') {
                     // For code, we jump straight to reset view but will use the code during submission
                     setupResetView('Enter your 16-character recovery code above to preserve your data.');
@@ -543,7 +574,7 @@
                 btn.disabled = false;
                 btn.textContent = originalText;
             }
-        });
+        }
 
         async function requestEmailReset() {
             const response = await fetch('/api/auth/password-reset/request', {
@@ -557,11 +588,12 @@
             if (data.token) {
                 // Dev mode
                 state.token = data.token;
-                showAlert('Dev Mode: Token generated. Redirecting...', 'success');
-                setTimeout(() => validateToken(data.token), 1500);
+                showAlert('<strong>Dev Mode:</strong> Reset token generated! In production, this would be emailed.', 'success');
+                setTimeout(() => validateToken(data.token), 2000);
+            } else if (data.email_sent === false) {
+                showAlert('<strong>⚠️ Email Unavailable:</strong> Account identified, but the email service is currently offline. <br><br>Please use a <strong>Recovery Code</strong> or contact an administrator for a reset token.', 'warning');
             } else {
                 showAlert('Success! If the account exists, a reset link has been sent to your email.', 'success');
-                // Stay on identity view to show success
             }
         }
 
