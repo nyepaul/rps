@@ -2131,48 +2131,59 @@ def reset_demo_account():
                 ''', (demo_user.id, item['pid'], item['cat'], item['desc'], item['pri'], item['stat'], datetime.now().isoformat(), datetime.now().isoformat()))
 
         # Create sample scenarios with various market conditions
+        # Use correct field names: median_final_balance, percentile_10, percentile_90
         scenarios = [
-            # Thompson scenarios
+            # Thompson scenarios (Upper Class - $2.3M portfolio)
             {"pid": demo_profile_id, "name": "Thompson Base Case", "res": {
-                "success_rate": 0.92, "simulations": 10000, "median_ending_balance": 4850000,
+                "success_rate": 0.92, "simulations": 10000,
+                "median_final_balance": 4850000, "percentile_10": 2100000, "percentile_90": 8200000,
                 "market_assumption": "historical_average", "inflation_rate": 0.025
             }},
             {"pid": demo_profile_id, "name": "Thompson Bear Market", "res": {
-                "success_rate": 0.78, "simulations": 10000, "median_ending_balance": 2950000,
+                "success_rate": 0.78, "simulations": 10000,
+                "median_final_balance": 2950000, "percentile_10": 850000, "percentile_90": 5400000,
                 "market_assumption": "pessimistic", "inflation_rate": 0.035
             }},
             {"pid": demo_profile_id, "name": "Thompson Early Retirement", "res": {
-                "success_rate": 0.85, "simulations": 10000, "median_ending_balance": 3200000,
+                "success_rate": 0.85, "simulations": 10000,
+                "median_final_balance": 3200000, "percentile_10": 1200000, "percentile_90": 6100000,
                 "market_assumption": "historical_average", "retirement_age": 60
             }},
-            # Starman scenarios
+            # Starman scenarios (Middle Class - $575K portfolio)
             {"pid": starman_profile_id, "name": "Starman Base Case", "res": {
-                "success_rate": 0.84, "simulations": 10000, "median_ending_balance": 1450000,
+                "success_rate": 0.84, "simulations": 10000,
+                "median_final_balance": 1450000, "percentile_10": 520000, "percentile_90": 2800000,
                 "market_assumption": "historical_average", "inflation_rate": 0.025
             }},
             {"pid": starman_profile_id, "name": "Starman With College Savings", "res": {
-                "success_rate": 0.79, "simulations": 10000, "median_ending_balance": 980000,
+                "success_rate": 0.79, "simulations": 10000,
+                "median_final_balance": 980000, "percentile_10": 280000, "percentile_90": 2100000,
                 "market_assumption": "historical_average", "college_funding": True
             }},
             {"pid": starman_profile_id, "name": "Starman Optimistic Market", "res": {
-                "success_rate": 0.94, "simulations": 10000, "median_ending_balance": 2100000,
+                "success_rate": 0.94, "simulations": 10000,
+                "median_final_balance": 2100000, "percentile_10": 950000, "percentile_90": 3800000,
                 "market_assumption": "optimistic", "inflation_rate": 0.02
             }},
-            # Dudeman scenarios
+            # Dudeman scenarios (Blue Collar - $79K portfolio)
             {"pid": dudeman_profile_id, "name": "Dudeman Base Case", "res": {
-                "success_rate": 0.81, "simulations": 10000, "median_ending_balance": 620000,
+                "success_rate": 0.81, "simulations": 10000,
+                "median_final_balance": 620000, "percentile_10": 180000, "percentile_90": 1250000,
                 "market_assumption": "historical_average", "inflation_rate": 0.025
             }},
             {"pid": dudeman_profile_id, "name": "Dudeman With Union Pension", "res": {
-                "success_rate": 0.89, "simulations": 10000, "median_ending_balance": 480000,
+                "success_rate": 0.89, "simulations": 10000,
+                "median_final_balance": 480000, "percentile_10": 220000, "percentile_90": 890000,
                 "market_assumption": "historical_average", "pension_included": True
             }},
             {"pid": dudeman_profile_id, "name": "Dudeman Higher Savings Rate", "res": {
-                "success_rate": 0.91, "simulations": 10000, "median_ending_balance": 850000,
+                "success_rate": 0.91, "simulations": 10000,
+                "median_final_balance": 850000, "percentile_10": 320000, "percentile_90": 1650000,
                 "market_assumption": "historical_average", "savings_rate": 0.15
             }},
             {"pid": dudeman_profile_id, "name": "Dudeman Bear Market", "res": {
-                "success_rate": 0.68, "simulations": 10000, "median_ending_balance": 380000,
+                "success_rate": 0.68, "simulations": 10000,
+                "median_final_balance": 380000, "percentile_10": 45000, "percentile_90": 820000,
                 "market_assumption": "pessimistic", "inflation_rate": 0.04
             }}
         ]

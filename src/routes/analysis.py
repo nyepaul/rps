@@ -145,8 +145,8 @@ def run_analysis():
 
         # Extract person data
         financial_data = profile_data.get('financial', {})
-        spouse_data = profile_data.get('spouse', {})
-        children_data = profile_data.get('children', [])
+        spouse_data = profile_data.get('spouse') or {}  # Handle None spouse for single profiles
+        children_data = profile_data.get('children') or []  # Handle None children
 
         # Create person1 from profile birth_date and retirement_date
         birth_date_str = profile.birth_date if hasattr(profile, 'birth_date') and profile.birth_date else '1980-01-01'

@@ -93,7 +93,7 @@ def analyze_taxes():
                 pass
 
         # Get spouse age if available
-        spouse_data = profile_data.get('spouse', {})
+        spouse_data = profile_data.get('spouse') or {}  # Handle None spouse for single profiles
         if spouse_data.get('birth_date'):
             from datetime import datetime
             try:
