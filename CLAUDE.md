@@ -86,6 +86,11 @@ mypy src/               # Type checking
 ./bin/setup-backup-timer        # Install automated daily backups
 ```
 
+**Admin UI Backups** (Super Admin only):
+- System backups: Admin → Backups → System Backups tab
+- Selective profile/group backups: Admin → Backups → Selective Backup tab
+- Stored in `backups/selective/` as JSON files
+
 See [docs/BACKUP_GUIDE.md](docs/BACKUP_GUIDE.md) for comprehensive backup documentation.
 
 ## Documentation Structure

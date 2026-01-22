@@ -199,6 +199,94 @@ Options:
 ./bin/restore --latest --yes
 ```
 
+## Selective Profile/Group Backups (Admin Feature)
+
+The RPS backup system includes a powerful selective backup feature that allows super administrators to backup and restore specific profiles or entire groups of users. This is useful for:
+
+- Backing up specific client data before major changes
+- Migrating individual user profiles between systems
+- Creating point-in-time snapshots of specific accounts
+- Restoring individual profiles without affecting other users
+
+### Accessing Selective Backups
+
+1. Log in as a super administrator
+2. Navigate to **Admin** → **Backups**
+3. Click the **Selective Backup** tab
+
+### Creating a Selective Backup
+
+#### Select by Group
+- Choose one or more groups from the group list
+- All profiles belonging to users in those groups will be included
+- Shows member count and profile count for each group
+
+#### Select Individual Profiles
+- Use the search box to find specific profiles
+- Check individual profiles to include them
+- Profiles show their owner's username and group memberships
+
+#### Create the Backup
+1. Select profiles and/or groups
+2. (Optional) Add a descriptive label
+3. Click **Create Backup**
+
+The backup includes:
+- Profile data (encrypted)
+- Related scenarios
+- Action items
+- Conversations
+
+### Viewing Selective Backup Details
+
+Click the **📋 View** button on any selective backup to see:
+- Backup metadata (creation date, label)
+- List of all profiles included
+- Counts of scenarios, action items, and conversations
+
+### Restoring from Selective Backup
+
+1. Click **↻ Restore** on the backup you want to restore
+2. Select which profiles to restore (all selected by default)
+3. Choose a restore mode:
+   - **Merge**: Updates existing profiles, adds new ones (safer)
+   - **Replace**: Deletes related data first, then restores (clean restore)
+4. Click **Restore Selected**
+
+### Selective Backup Storage
+
+Selective backups are stored as JSON files in:
+```
+backups/selective/
+```
+
+Naming convention:
+```
+selective_YYYYMMDD_HHMMSS[_label].json
+```
+
+Example: `selective_20260122_143022_Q1_Clients.json`
+
+### API Endpoints (for integration)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/admin/backup/selective/profiles` | GET | List all profiles with details |
+| `/api/admin/backup/selective/groups` | GET | List all groups with counts |
+| `/api/admin/backup/selective` | GET | List selective backups |
+| `/api/admin/backup/selective` | POST | Create selective backup |
+| `/api/admin/backup/selective/<filename>` | GET | Get backup details |
+| `/api/admin/backup/selective/<filename>/restore` | POST | Restore from backup |
+| `/api/admin/backup/selective/<filename>` | DELETE | Delete backup |
+
+### Best Practices for Selective Backups
+
+1. **Label your backups** - Use descriptive labels like "Pre-migration Q1 clients"
+2. **Use groups for bulk operations** - Create groups to organize users for easier backup management
+3. **Test restore in non-production** - Verify restore works before using in production
+4. **Consider merge vs replace** - Use merge mode unless you need a clean restore
+5. **Regular cleanup** - Delete old selective backups that are no longer needed
+
 ## Automated Backups with Systemd
 
 ### Components
@@ -714,7 +802,8 @@ The RPS backup system provides production-ready backup and restore capabilities 
 ✅ Automatic rotation and compression
 ✅ Comprehensive integrity verification
 ✅ Safe restore with pre-restore backups
-✅ Selective restore capabilities
+✅ Selective restore capabilities (database, config, or full)
+✅ **Selective profile/group backups** via admin UI
 ✅ Optional off-site sync support
 ✅ Detailed logging and monitoring
 
@@ -724,7 +813,8 @@ The RPS backup system provides production-ready backup and restore capabilities 
 - `/home/paul/src/rps/bin/setup-backup-timer` - Timer installation
 - `/home/paul/src/rps/systemd/rps-backup.service` - Systemd service
 - `/home/paul/src/rps/systemd/rps-backup.timer` - Systemd timer
-- `/home/paul/src/rps/backups/` - Backup storage
+- `/home/paul/src/rps/backups/` - Backup storage (system backups)
+- `/home/paul/src/rps/backups/selective/` - Selective backup storage
 - `/home/paul/src/rps/logs/backup.log` - Backup logs
 
 For questions or issues, check the troubleshooting section or review logs at `logs/backup.log`.

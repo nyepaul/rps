@@ -2,7 +2,7 @@
 
 This document describes the organization of the Retirement Planning System (RPS) codebase.
 
-**Last Updated:** 2026-01-20 (v3.8.70)
+**Last Updated:** 2026-01-22 (v3.8.168)
 
 ## Directory Structure
 
@@ -70,6 +70,8 @@ rps/
 │   │   ├── encryption_service.py    # Data encryption
 │   │   ├── enhanced_audit_logger.py # Audit logging
 │   │   ├── audit_narrative_generator.py
+│   │   ├── user_backup_service.py   # Per-user backup/restore
+│   │   ├── selective_backup_service.py # Profile/group selective backup
 │   │   └── report_generator.py
 │   │
 │   ├── schemas/             # Pydantic validation schemas
@@ -205,7 +207,8 @@ rps/
 ├── backups/                 # Backup storage (gitignored)
 │   ├── README.md
 │   ├── data/               # Data-only backups
-│   └── system/             # System-only backups
+│   ├── system/             # System-only backups
+│   └── selective/          # Selective profile/group backups (JSON)
 │
 ├── data/                    # Runtime data (gitignored)
 │   └── planning.db         # SQLite database
@@ -320,6 +323,8 @@ The following directories are gitignored:
 
 ## Version History
 
+- **v3.8.168** (2026-01-22) - Selective backup: backup/restore specific profiles or groups
+- **v3.8.167** (2026-01-22) - Per-user backup and restore
 - **v3.8.70** (2026-01-20) - Project structure reorganization
 - **v3.8.69** (2026-01-20) - Backup restore functionality
 - **v3.8.67** (2026-01-20) - Separate data/system backups

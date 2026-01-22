@@ -2,16 +2,29 @@
 
 This directory contains automated backups of the RPS application.
 
-## Backup Files
+## Directory Structure
 
-Backup files follow the naming convention:
+```
+backups/
+├── rps_backup_*.tar.gz      # Full system backups
+├── data/                     # Data-only backups
+│   └── rps_data_*.tar.gz
+├── system/                   # System-only backups
+│   └── rps_system_*.tar.gz
+└── selective/                # Selective profile/group backups
+    └── selective_*.json
+```
+
+## Backup Types
+
+### System Backups (tar.gz)
+
+Full system backups follow the naming convention:
 ```
 rps_backup_YYYYMMDD_HHMMSS.tar.gz
 ```
 
 Example: `rps_backup_20260120_143000.tar.gz`
-
-## Contents
 
 Each backup contains:
 - SQLite database (`data/planning.db`)
@@ -19,6 +32,22 @@ Each backup contains:
 - Version information
 - Recent logs (last 7 days)
 - Backup metadata
+
+### Selective Backups (JSON)
+
+Selective backups are created via the Admin UI and contain specific profiles:
+```
+selective_YYYYMMDD_HHMMSS[_label].json
+```
+
+Example: `selective_20260122_143000_Q1_Clients.json`
+
+Each selective backup contains:
+- Selected profile data (encrypted)
+- Related scenarios
+- Action items
+- Conversations
+- Metadata (creation date, label, creator)
 
 ## Automated Backups
 
@@ -49,6 +78,16 @@ To restore from a backup:
 # List available backups
 ./bin/restore --list
 ```
+
+## Admin UI Backups
+
+Super administrators can manage backups via the Admin panel:
+
+1. Navigate to **Admin → Backups**
+2. **System Backups tab**: Create/restore full system backups
+3. **Selective Backup tab**: Backup specific profiles or groups
+
+See [docs/reference/ADMIN_SYSTEM_GUIDE.md](../docs/reference/ADMIN_SYSTEM_GUIDE.md) for admin UI documentation.
 
 ## Documentation
 

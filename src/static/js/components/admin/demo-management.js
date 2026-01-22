@@ -15,9 +15,9 @@ export async function renderDemoManagement(container) {
             <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--warning-color);">
                 <h3 style="font-size: 16px; margin-bottom: 10px; color: var(--warning-color);">🎭 Demo Account Management</h3>
                 <p style="color: var(--text-secondary); margin-bottom: 12px; font-size: 13px;">
-                    Reset the demo account with multiple family templates. This will delete all existing demo profiles and recreate two comprehensive scenarios representing different wealth levels.
+                    Reset the demo account with multiple family templates. This will delete all existing demo profiles and recreate three comprehensive scenarios representing different wealth levels and lifestyles.
                 </p>
-                
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
                     <div style="background: var(--warning-bg); padding: 10px; border-radius: 6px; border-left: 3px solid var(--warning-color);">
                         <div style="font-weight: 700; font-size: 11px; margin-bottom: 4px; text-transform: uppercase;">DEMO ACCOUNT DETAILS:</div>
@@ -30,10 +30,13 @@ export async function renderDemoManagement(container) {
                         <div style="font-weight: 700; font-size: 11px; margin-bottom: 4px; text-transform: uppercase;">📋 INCLUDED PROFILES:</div>
                         <div style="font-size: 11px; line-height: 1.4; color: var(--text-secondary);">
                             <strong>1. Demo Thompson (Upper-Class)</strong>
-                            <div style="margin-bottom: 4px;">$336K Income, $2.3M Portfolio, $1.85M SF Home, 2 College Kids.</div>
-                            
+                            <div style="margin-bottom: 4px;">$336K Income, $2.3M Portfolio, $1.85M SF Home, Married, 2 College Kids.</div>
+
                             <strong>2. Demo Starman (Middle-Class)</strong>
-                            <div>$165K Income, $575K Portfolio, $450K Austin Home, 3 Kids (7-14).</div>
+                            <div style="margin-bottom: 4px;">$165K Income, $575K Portfolio, $450K Austin Home, Married, 3 Kids (7-14).</div>
+
+                            <strong>3. Demo Dudeman (Blue Collar)</strong>
+                            <div>$73K Income, $79K Portfolio, $220K Columbus Home, Single, IBEW Electrician.</div>
                         </div>
                     </div>
                 </div>
@@ -59,7 +62,7 @@ function setupResetDemoButton(container) {
     if (!resetBtn) return;
 
     resetBtn.addEventListener('click', async () => {
-        if (!confirm('Are you sure you want to reset the demo account? This will delete all existing demo profiles and recreate both the Thompson and Starman templates.')) {
+        if (!confirm('Are you sure you want to reset the demo account? This will delete all existing demo profiles and recreate Thompson, Starman, and Dudeman templates.')) {
             return;
         }
 

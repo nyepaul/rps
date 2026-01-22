@@ -153,8 +153,6 @@ def create_app(config_name='development'):
     app.register_blueprint(events_bp)
     app.register_blueprint(user_backups_bp)
 
-    return app
-
     # Configure logging
     if not app.debug:
         if not os.path.exists(os.path.dirname(app.config['LOG_FILE'])):

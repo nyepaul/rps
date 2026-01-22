@@ -239,6 +239,70 @@ This creates the `enhanced_audit_log` and `audit_config` tables.
   - User & Profile Relationship Guide
   - Asset Fields Reference
 
+### 💾 Backup Management Tab (Super Admin Only)
+
+**Complete backup and restore functionality:**
+
+This tab is only visible to super administrators and provides two backup modes:
+
+#### System Backups Mode
+
+- **Backup Types:**
+  - **Data Backup:** Database, profiles, scenarios, application data
+  - **System Backup:** Configuration files, scripts, settings
+  - **Full Backup:** Complete system backup (database + config + logs)
+
+- **Backup Controls:**
+  - One-click backup creation for each type
+  - Total backup count display
+  - Automated backup schedule status
+
+- **Backup History:**
+  - Filter by backup type (All/Full/Data/System)
+  - View backup metadata and file contents
+  - Restore from any backup
+  - Delete old backups
+
+- **Restore Options:**
+  - Full restore (database + configuration)
+  - Database only restore
+  - Configuration only restore
+  - Pre-restore safety backup created automatically
+
+#### Selective Backup Mode
+
+**Backup and restore specific profiles or groups:**
+
+- **Group Selection:**
+  - Select groups to backup all member profiles
+  - Shows member count and profile count per group
+  - Multiple groups can be selected
+
+- **Profile Selection:**
+  - Search for specific profiles
+  - Select individual profiles
+  - Shows owner username and group memberships
+
+- **Create Selective Backup:**
+  - Selection summary shows counts
+  - Optional label for easy identification
+  - Profiles, scenarios, action items, and conversations included
+
+- **Selective Backup History:**
+  - View all selective backups
+  - Shows profile count and creation date
+  - View detailed contents
+  - Selective restore with profile choice
+  - Delete individual backups
+
+- **Restore Options:**
+  - Choose specific profiles to restore
+  - **Merge Mode:** Updates existing, adds new (safer)
+  - **Replace Mode:** Clears related data first (clean restore)
+  - Select all/none helpers for quick selection
+
+See [BACKUP_GUIDE.md](../BACKUP_GUIDE.md) for complete backup documentation.
+
 ---
 
 ## Data Collected by Enhanced Audit Logger
@@ -376,6 +440,30 @@ This creates the `enhanced_audit_log` and `audit_config` tables.
 2. Apply desired filters
 3. Click **📥 Export CSV**
 4. File downloads with timestamp
+
+### Backup Specific Client Profiles
+
+1. Go to **Admin → Backups**
+2. Click **Selective Backup** tab
+3. Select the group(s) or individual profiles
+4. Add a descriptive label (e.g., "Pre-migration Q1 Clients")
+5. Click **Create Backup**
+
+### Restore a Single Profile
+
+1. Go to **Admin → Backups → Selective Backup**
+2. Find the backup containing the profile
+3. Click **↻ Restore**
+4. Uncheck all profiles except the one to restore
+5. Choose **Merge** mode (preserves other data)
+6. Click **Restore Selected**
+
+### Create Full System Backup
+
+1. Go to **Admin → Backups**
+2. Stay on **System Backups** tab
+3. Click **Run Full Backup**
+4. Wait for completion message
 
 ---
 
@@ -667,6 +755,13 @@ GET /api/admin/system/info
 - View user profiles
 - Audit all admin actions
 
+✅ **Backup Management** (Super Admin)
+- System-wide backups (data/system/full)
+- Selective profile/group backups
+- Granular restore options
+- Merge or replace restore modes
+- Pre-restore safety backups
+
 ✅ **System Monitoring**
 - Usage statistics
 - System health
@@ -686,8 +781,9 @@ GET /api/admin/system/info
 3. **Login and explore:** Access Admin tab
 4. **Configure logging:** Adjust settings to your needs
 5. **Monitor system:** Review logs and statistics
+6. **Set up backups:** Configure automated and selective backups
 
 ---
 
-**Last Updated:** 2025-01-15
-**Version:** 2.0
+**Last Updated:** 2026-01-22
+**Version:** 2.1

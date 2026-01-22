@@ -1894,10 +1894,233 @@ def reset_demo_account():
             ))
             starman_profile_id = cursor.lastrowid
 
-        # Create sample action items for both families
+        # --- Create third demo profile: Demo Dudeman (Blue Collar Single) ---
+        dudeman_birth = date(1988, 7, 14)  # age 38 in 2026
+        dudeman_retire = date(2055, 7, 14)  # age 67
+
+        dudeman_data = {
+            "person": {
+                "name": "Demo Dudeman",
+                "birth_date": dudeman_birth.isoformat(),
+                "retirement_date": dudeman_retire.isoformat(),
+                "current_age": 38,
+                "retirement_age": 67,
+                "life_expectancy": 85,
+                "email": "demo.dudeman@example.com",
+                "phone": "(614) 555-7890"
+            },
+            "spouse": None,  # Single
+            "children": [],  # No children
+            "address": {
+                "street": "4521 Maple Creek Drive",
+                "city": "Columbus",
+                "state": "OH",
+                "zip": "43228",
+                "country": "USA"
+            },
+            "financial": {
+                "annual_income": 73000,  # Hourly worker: ~$35/hr + overtime
+                "annual_expenses": 48000,
+                "social_security_benefit": 2200,  # Monthly at retirement
+                "pension_benefit": 0,
+                "emergency_fund": 8500,
+                "combined_401k_contribution": 4380,  # 6% of salary
+                "net_annual_savings": 12000,
+                "tax_bracket_federal": 0.22,
+                "tax_bracket_state": 0.04,  # Ohio state tax
+                "health_insurance_premium": 380,  # Monthly through employer
+                "life_insurance_premium": 45,  # Monthly term life
+                "disability_insurance_premium": 0  # Through union
+            },
+            "income_streams": [
+                {
+                    "name": "Electrician Wages",
+                    "amount": 6083,  # Monthly ($73k / 12)
+                    "frequency": "monthly",
+                    "start_date": (today - relativedelta(years=12)).isoformat(),
+                    "end_date": dudeman_retire.isoformat(),
+                    "type": "hourly",
+                    "description": "Licensed Journeyman Electrician - IBEW Local 683"
+                }
+            ],
+            "assets": {
+                "taxable_accounts": [
+                    {
+                        "name": "Chase Checking",
+                        "type": "checking",
+                        "value": 3200,
+                        "institution": "Chase",
+                        "stock_pct": 0,
+                        "bond_pct": 0,
+                        "cash_pct": 1.0
+                    },
+                    {
+                        "name": "Ally Savings",
+                        "type": "savings",
+                        "value": 8500,
+                        "institution": "Ally",
+                        "stock_pct": 0,
+                        "bond_pct": 0,
+                        "cash_pct": 1.0
+                    }
+                ],
+                "retirement_accounts": [
+                    {
+                        "name": "IBEW 401(k)",
+                        "type": "401k",
+                        "value": 67000,
+                        "institution": "John Hancock",
+                        "stock_pct": 0.7,
+                        "bond_pct": 0.25,
+                        "cash_pct": 0.05
+                    },
+                    {
+                        "name": "Roth IRA",
+                        "type": "roth_ira",
+                        "value": 12000,
+                        "institution": "Fidelity",
+                        "stock_pct": 0.8,
+                        "bond_pct": 0.15,
+                        "cash_pct": 0.05
+                    }
+                ],
+                "real_estate": [
+                    {
+                        "name": "Primary Residence",
+                        "type": "primary_residence",
+                        "value": 220000,
+                        "purchase_price": 185000,
+                        "purchase_date": "2019-04-15",
+                        "mortgage_balance": 142000,
+                        "monthly_payment": 1180
+                    }
+                ],
+                "other_assets": [
+                    {
+                        "name": "Ford F-150 (2021)",
+                        "type": "vehicle",
+                        "value": 28000,
+                        "loan_balance": 12000,
+                        "monthly_payment": 485
+                    },
+                    {
+                        "name": "Tools & Equipment",
+                        "type": "personal_property",
+                        "value": 8500,
+                        "description": "Professional electrician tools and equipment"
+                    }
+                ],
+                "pensions_annuities": [
+                    {
+                        "name": "IBEW Pension",
+                        "type": "pension",
+                        "value_monthly": 1800,
+                        "start_age": 62,
+                        "inflation_adjustment": 0.0,
+                        "survivor_benefit": 0
+                    }
+                ]
+            },
+            "budget": {
+                "expenses": {
+                    "current": {
+                        "housing": [
+                            {"amount": 1180, "frequency": "monthly", "name": "Mortgage", "ongoing": True},
+                            {"amount": 220, "frequency": "monthly", "name": "Property Tax & Insurance", "ongoing": True},
+                            {"amount": 150, "frequency": "monthly", "name": "Home Maintenance", "ongoing": True}
+                        ],
+                        "utilities": [
+                            {"amount": 130, "frequency": "monthly", "name": "Electric & Gas", "ongoing": True},
+                            {"amount": 45, "frequency": "monthly", "name": "Water/Sewer/Trash", "ongoing": True},
+                            {"amount": 70, "frequency": "monthly", "name": "Internet", "ongoing": True},
+                            {"amount": 85, "frequency": "monthly", "name": "Cell Phone", "ongoing": True}
+                        ],
+                        "transportation": [
+                            {"amount": 485, "frequency": "monthly", "name": "F-150 Loan", "ongoing": True},
+                            {"amount": 280, "frequency": "monthly", "name": "Gas & Maintenance", "ongoing": True},
+                            {"amount": 145, "frequency": "monthly", "name": "Auto Insurance", "ongoing": True}
+                        ],
+                        "food": [
+                            {"amount": 450, "frequency": "monthly", "name": "Groceries", "ongoing": True},
+                            {"amount": 180, "frequency": "monthly", "name": "Eating Out", "ongoing": True}
+                        ],
+                        "healthcare": [
+                            {"amount": 380, "frequency": "monthly", "name": "Health Insurance", "ongoing": True},
+                            {"amount": 50, "frequency": "monthly", "name": "Prescriptions & Copays", "ongoing": True}
+                        ],
+                        "travel": [
+                            {"amount": 1200, "frequency": "annual", "name": "Fishing Trip", "ongoing": True},
+                            {"amount": 800, "frequency": "annual", "name": "Camping Weekends", "ongoing": True}
+                        ],
+                        "personal": [
+                            {"amount": 50, "frequency": "monthly", "name": "Gym Membership", "ongoing": True},
+                            {"amount": 60, "frequency": "monthly", "name": "Haircuts & Grooming", "ongoing": True},
+                            {"amount": 100, "frequency": "monthly", "name": "Clothing & Work Boots", "ongoing": True}
+                        ],
+                        "entertainment": [
+                            {"amount": 45, "frequency": "monthly", "name": "Streaming (Netflix, ESPN+)", "ongoing": True},
+                            {"amount": 80, "frequency": "monthly", "name": "Sports Bar & Buckeyes Games", "ongoing": True},
+                            {"amount": 75, "frequency": "monthly", "name": "Fishing & Hunting Gear", "ongoing": True}
+                        ],
+                        "miscellaneous": [
+                            {"amount": 50, "frequency": "monthly", "name": "Union Dues", "ongoing": True},
+                            {"amount": 100, "frequency": "monthly", "name": "Gifts & Holidays", "ongoing": True}
+                        ]
+                    },
+                    "future": {
+                        "housing": [
+                            {"amount": 400, "frequency": "monthly", "name": "Taxes & Insurance", "ongoing": True},
+                            {"amount": 200, "frequency": "monthly", "name": "Maintenance", "ongoing": True}
+                        ],
+                        "food": [
+                            {"amount": 500, "frequency": "monthly", "name": "Groceries & Dining", "ongoing": True}
+                        ],
+                        "travel": [
+                            {"amount": 3000, "frequency": "annual", "name": "Fishing & Camping Trips", "ongoing": True}
+                        ],
+                        "healthcare": [
+                            {"amount": 600, "frequency": "monthly", "name": "Medicare & Supplemental", "ongoing": True}
+                        ],
+                        "entertainment": [
+                            {"amount": 150, "frequency": "monthly", "name": "Hobbies & Recreation", "ongoing": True}
+                        ]
+                    }
+                }
+            },
+            "withdrawal_strategy": {
+                "withdrawal_rate": 0.04,
+                "order": ["taxable", "tax_deferred", "roth"]
+            },
+            "tax_settings": {
+                "filing_status": "single",
+                "state": "OH"
+            }
+        }
+
+        with db.get_connection() as conn:
+            cursor = conn.execute('''
+                INSERT INTO profile (user_id, name, birth_date, retirement_date, data, data_iv, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, NULL, ?, ?)
+            ''', (
+                demo_user.id,
+                "Demo Dudeman",
+                dudeman_birth.isoformat(),
+                dudeman_retire.isoformat(),
+                json.dumps(dudeman_data),
+                datetime.now().isoformat(),
+                datetime.now().isoformat()
+            ))
+            dudeman_profile_id = cursor.lastrowid
+
+        # Create sample action items for all profiles
         action_items = [
-            {"pid": demo_profile_id, "cat": "Retirement", "desc": "Increase 401(k) to 15%", "pri": "high", "stat": "pending"},
-            {"pid": starman_profile_id, "cat": "Education", "desc": "Review 529 for Leo", "pri": "medium", "stat": "pending"}
+            {"pid": demo_profile_id, "cat": "Retirement", "desc": "Increase 401(k) contribution to 15%", "pri": "high", "stat": "pending"},
+            {"pid": demo_profile_id, "cat": "Tax Planning", "desc": "Review Roth conversion strategy before retirement", "pri": "medium", "stat": "pending"},
+            {"pid": starman_profile_id, "cat": "Education", "desc": "Open 529 plan for Leo before high school", "pri": "medium", "stat": "pending"},
+            {"pid": starman_profile_id, "cat": "Insurance", "desc": "Review life insurance coverage with 3 kids", "pri": "high", "stat": "pending"},
+            {"pid": dudeman_profile_id, "cat": "Retirement", "desc": "Increase 401(k) from 6% to 10%", "pri": "high", "stat": "pending"},
+            {"pid": dudeman_profile_id, "cat": "Emergency Fund", "desc": "Build emergency fund to 6 months expenses", "pri": "medium", "stat": "pending"},
+            {"pid": dudeman_profile_id, "cat": "Debt", "desc": "Pay off truck loan early to free up cash flow", "pri": "low", "stat": "pending"}
         ]
 
         with db.get_connection() as conn:
@@ -1907,10 +2130,51 @@ def reset_demo_account():
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (demo_user.id, item['pid'], item['cat'], item['desc'], item['pri'], item['stat'], datetime.now().isoformat(), datetime.now().isoformat()))
 
-        # Create sample scenarios
+        # Create sample scenarios with various market conditions
         scenarios = [
-            {"pid": demo_profile_id, "name": "Thompson Base Case", "res": {"success_rate": 0.92, "simulations": 10000}},
-            {"pid": starman_profile_id, "name": "Starman Base Case", "res": {"success_rate": 0.84, "simulations": 10000}}
+            # Thompson scenarios
+            {"pid": demo_profile_id, "name": "Thompson Base Case", "res": {
+                "success_rate": 0.92, "simulations": 10000, "median_ending_balance": 4850000,
+                "market_assumption": "historical_average", "inflation_rate": 0.025
+            }},
+            {"pid": demo_profile_id, "name": "Thompson Bear Market", "res": {
+                "success_rate": 0.78, "simulations": 10000, "median_ending_balance": 2950000,
+                "market_assumption": "pessimistic", "inflation_rate": 0.035
+            }},
+            {"pid": demo_profile_id, "name": "Thompson Early Retirement", "res": {
+                "success_rate": 0.85, "simulations": 10000, "median_ending_balance": 3200000,
+                "market_assumption": "historical_average", "retirement_age": 60
+            }},
+            # Starman scenarios
+            {"pid": starman_profile_id, "name": "Starman Base Case", "res": {
+                "success_rate": 0.84, "simulations": 10000, "median_ending_balance": 1450000,
+                "market_assumption": "historical_average", "inflation_rate": 0.025
+            }},
+            {"pid": starman_profile_id, "name": "Starman With College Savings", "res": {
+                "success_rate": 0.79, "simulations": 10000, "median_ending_balance": 980000,
+                "market_assumption": "historical_average", "college_funding": True
+            }},
+            {"pid": starman_profile_id, "name": "Starman Optimistic Market", "res": {
+                "success_rate": 0.94, "simulations": 10000, "median_ending_balance": 2100000,
+                "market_assumption": "optimistic", "inflation_rate": 0.02
+            }},
+            # Dudeman scenarios
+            {"pid": dudeman_profile_id, "name": "Dudeman Base Case", "res": {
+                "success_rate": 0.81, "simulations": 10000, "median_ending_balance": 620000,
+                "market_assumption": "historical_average", "inflation_rate": 0.025
+            }},
+            {"pid": dudeman_profile_id, "name": "Dudeman With Union Pension", "res": {
+                "success_rate": 0.89, "simulations": 10000, "median_ending_balance": 480000,
+                "market_assumption": "historical_average", "pension_included": True
+            }},
+            {"pid": dudeman_profile_id, "name": "Dudeman Higher Savings Rate", "res": {
+                "success_rate": 0.91, "simulations": 10000, "median_ending_balance": 850000,
+                "market_assumption": "historical_average", "savings_rate": 0.15
+            }},
+            {"pid": dudeman_profile_id, "name": "Dudeman Bear Market", "res": {
+                "success_rate": 0.68, "simulations": 10000, "median_ending_balance": 380000,
+                "market_assumption": "pessimistic", "inflation_rate": 0.04
+            }}
         ]
 
         with db.get_connection() as conn:
@@ -1920,10 +2184,14 @@ def reset_demo_account():
                     VALUES (?, ?, ?, ?, ?)
                 ''', (demo_user.id, s['pid'], s['name'], json.dumps(s['res']), datetime.now().isoformat()))
 
-        # Create sample conversation
+        # Create sample conversations
         conversations = [
-            {"pid": demo_profile_id, "role": "user", "content": "How am I doing?"},
-            {"pid": starman_profile_id, "role": "user", "content": "Can we afford college for 3 kids?"}
+            {"pid": demo_profile_id, "role": "user", "content": "How am I doing financially?"},
+            {"pid": demo_profile_id, "role": "assistant", "content": "You're in excellent shape! With $2.3M in investments and $336K combined income, your 92% success rate shows you're well on track for retirement."},
+            {"pid": starman_profile_id, "role": "user", "content": "Can we afford college for all 3 kids?"},
+            {"pid": starman_profile_id, "role": "assistant", "content": "It'll be tight but doable. I'd recommend starting 529 plans now. Even $200/month per child will help significantly by the time they reach college age."},
+            {"pid": dudeman_profile_id, "role": "user", "content": "Am I saving enough for retirement?"},
+            {"pid": dudeman_profile_id, "role": "assistant", "content": "Your 6% contribution is a good start, but I'd recommend increasing to 10-15% if possible. Your union pension will help, but more savings means more flexibility. Consider maxing out a Roth IRA too."}
         ]
 
         with db.get_connection() as conn:
@@ -1961,7 +2229,7 @@ def reset_demo_account():
             'message': 'Demo account reset successfully',
             'username': demo_username,
             'password': demo_password,
-            'profiles': ['Demo Thompson', 'Demo Starman']
+            'profiles': ['Demo Thompson', 'Demo Starman', 'Demo Dudeman']
         }), 200
 
     except Exception as e:
@@ -2935,6 +3203,135 @@ def process_password_reset(request_id):
     pass # placeholder for search match
 
 # ============================================================================
+# User Backup Summary & Bulk Operations
+# ============================================================================
+
+@admin_bp.route('/backups/users/summary', methods=['GET'])
+@login_required
+@admin_required
+def get_users_backup_summary():
+    """Get summary of users and their backup status for bulk management."""
+    try:
+        from src.database.connection import db
+        
+        # Base query for users managed by this admin
+        if current_user.is_super_admin:
+            sql = '''
+                SELECT u.id, u.username, u.email, 
+                       (SELECT COUNT(*) FROM profile WHERE user_id = u.id) as profile_count,
+                       (SELECT COUNT(*) FROM user_backups WHERE user_id = u.id) as backup_count,
+                       (SELECT MAX(created_at) FROM user_backups WHERE user_id = u.id) as last_backup
+                FROM users u
+                ORDER BY u.username
+            '''
+            params = ()
+        else:
+             # Local admin: only users in their managed groups
+             sql = '''
+                SELECT DISTINCT u.id, u.username, u.email,
+                       (SELECT COUNT(*) FROM profile WHERE user_id = u.id) as profile_count,
+                       (SELECT COUNT(*) FROM user_backups WHERE user_id = u.id) as backup_count,
+                       (SELECT MAX(created_at) FROM user_backups WHERE user_id = u.id) as last_backup
+                FROM users u
+                JOIN user_groups ug ON u.id = ug.user_id
+                JOIN admin_groups ag ON ug.group_id = ag.group_id
+                WHERE ag.user_id = ?
+                ORDER BY u.username
+             '''
+             params = (current_user.id,)
+             
+        rows = db.execute(sql, params)
+        users = [dict(row) for row in rows]
+        return jsonify({'users': users}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/backups/users/bulk-create', methods=['POST'])
+@login_required
+@admin_required
+def bulk_create_user_backups():
+    """Create backups for multiple users."""
+    from src.services.user_backup_service import UserBackupService
+    data = request.json
+    user_ids = data.get('user_ids', [])
+    label = data.get('label', f"Bulk Backup {datetime.now().strftime('%Y-%m-%d')}")
+    
+    results = []
+    success_count = 0
+    
+    for uid in user_ids:
+        # Check permissions
+        if not current_user.can_manage_user(uid):
+            results.append({'user_id': uid, 'status': 'error', 'error': 'Unauthorized'})
+            continue
+            
+        try:
+            res = UserBackupService.create_backup(uid, label)
+            results.append({'user_id': uid, 'status': 'success'})
+            success_count += 1
+        except Exception as e:
+            results.append({'user_id': uid, 'status': 'error', 'error': str(e)})
+            
+    enhanced_audit_logger.log_admin_action(
+        action='BULK_CREATE_BACKUP',
+        details={'count': success_count, 'total_requested': len(user_ids)},
+        user_id=current_user.id
+    )
+    
+    return jsonify({'results': results, 'success_count': success_count}), 200
+
+
+@admin_bp.route('/backups/users/bulk-restore', methods=['POST'])
+@login_required
+@admin_required
+def bulk_restore_user_backups():
+    """Restore the latest backup for multiple users."""
+    from src.services.user_backup_service import UserBackupService
+    data = request.json
+    user_ids = data.get('user_ids', [])
+    
+    results = []
+    success_count = 0
+    
+    for uid in user_ids:
+        if not current_user.can_manage_user(uid):
+            results.append({'user_id': uid, 'status': 'error', 'error': 'Unauthorized'})
+            continue
+
+        try:
+            # Get latest backup
+            backups = UserBackupService.list_backups(uid)
+            if not backups:
+                results.append({'user_id': uid, 'status': 'error', 'error': 'No backups found'})
+                continue
+                
+            latest_backup = backups[0]
+            
+            # Create safety backup
+            try:
+                UserBackupService.create_backup(uid, f"Pre-restore Safety (Bulk Admin)")
+            except Exception as e:
+                print(f"Safety backup failed for user {uid}: {e}")
+            
+            # Restore
+            UserBackupService.restore_backup(uid, latest_backup['id'])
+            results.append({'user_id': uid, 'status': 'success', 'restored_backup_id': latest_backup['id']})
+            success_count += 1
+            
+        except Exception as e:
+            results.append({'user_id': uid, 'status': 'error', 'error': str(e)})
+
+    enhanced_audit_logger.log_admin_action(
+        action='BULK_RESTORE_BACKUP',
+        details={'count': success_count, 'total_requested': len(user_ids)},
+        user_id=current_user.id
+    )
+
+    return jsonify({'results': results, 'success_count': success_count}), 200
+
+
+# ============================================================================
 # User-Specific Backup Management (Admin)
 # ============================================================================
 
@@ -3059,13 +3456,235 @@ def delete_user_backup(user_id, backup_id):
                 return jsonify({'error': 'Unauthorized to manage this user'}), 403
 
         UserBackupService.delete_backup(user_id, backup_id)
-        
+
         enhanced_audit_logger.log_admin_action(
             action='DELETE_USER_BACKUP_ADMIN',
             details={'target_user_id': user_id, 'backup_id': backup_id},
             user_id=current_user.id
         )
-        
+
         return jsonify({'message': 'Backup deleted successfully'}), 200
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# =============================================================================
+# Selective Backup Routes (Profile/Group-based backups)
+# =============================================================================
+
+@admin_bp.route('/backup/selective/profiles', methods=['GET'])
+@limiter.limit("60 per minute")
+@login_required
+@super_admin_required
+def get_profiles_for_backup():
+    """Get all profiles with user and group information for backup selection."""
+    from src.services.selective_backup_service import SelectiveBackupService
+
+    try:
+        profiles = SelectiveBackupService.get_all_profiles_with_details()
+        return jsonify({'profiles': profiles}), 200
+    except Exception as e:
+        print(f"Error getting profiles for backup: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/backup/selective/groups', methods=['GET'])
+@limiter.limit("60 per minute")
+@login_required
+@super_admin_required
+def get_groups_for_backup():
+    """Get all groups with member and profile counts for backup selection."""
+    from src.services.selective_backup_service import SelectiveBackupService
+
+    try:
+        groups = SelectiveBackupService.get_all_groups_with_profile_counts()
+        return jsonify({'groups': groups}), 200
+    except Exception as e:
+        print(f"Error getting groups for backup: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/backup/selective', methods=['GET'])
+@limiter.limit("60 per minute")
+@login_required
+@super_admin_required
+def list_selective_backups():
+    """List all selective backups."""
+    from src.services.selective_backup_service import SelectiveBackupService
+
+    try:
+        backups = SelectiveBackupService.list_backups()
+
+        enhanced_audit_logger.log_admin_action(
+            action='LIST_SELECTIVE_BACKUPS',
+            details={'count': len(backups)},
+            user_id=current_user.id
+        )
+
+        return jsonify({'backups': backups}), 200
+    except Exception as e:
+        print(f"Error listing selective backups: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/backup/selective', methods=['POST'])
+@limiter.limit("10 per minute")
+@login_required
+@super_admin_required
+def create_selective_backup():
+    """
+    Create a selective backup of specific profiles or groups.
+
+    Request body:
+        - profile_ids: List of profile IDs to backup (optional)
+        - group_ids: List of group IDs to backup all profiles from (optional)
+        - label: Optional label for the backup
+    """
+    from src.services.selective_backup_service import SelectiveBackupService
+
+    try:
+        data = request.get_json() or {}
+        profile_ids = data.get('profile_ids', [])
+        group_ids = data.get('group_ids', [])
+        label = data.get('label')
+
+        if not profile_ids and not group_ids:
+            return jsonify({'error': 'Must specify profile_ids or group_ids'}), 400
+
+        result = SelectiveBackupService.create_backup(
+            profile_ids=profile_ids,
+            group_ids=group_ids,
+            label=label,
+            created_by=current_user.id
+        )
+
+        enhanced_audit_logger.log_admin_action(
+            action='CREATE_SELECTIVE_BACKUP',
+            details={
+                'profile_ids': profile_ids,
+                'group_ids': group_ids,
+                'label': label,
+                'result': result
+            },
+            user_id=current_user.id
+        )
+
+        return jsonify({
+            'success': True,
+            'message': f"Backup created with {result['profile_count']} profiles",
+            'backup': result
+        }), 200
+
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        print(f"Error creating selective backup: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/backup/selective/<filename>', methods=['GET'])
+@limiter.limit("60 per minute")
+@login_required
+@super_admin_required
+def get_selective_backup_details(filename: str):
+    """Get detailed information about a selective backup."""
+    from src.services.selective_backup_service import SelectiveBackupService
+
+    try:
+        details = SelectiveBackupService.get_backup_details(filename)
+        return jsonify(details), 200
+    except FileNotFoundError:
+        return jsonify({'error': 'Backup not found'}), 404
+    except Exception as e:
+        print(f"Error getting selective backup details: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/backup/selective/<filename>/restore', methods=['POST'])
+@limiter.limit("5 per minute")
+@login_required
+@super_admin_required
+def restore_selective_backup(filename: str):
+    """
+    Restore profiles from a selective backup.
+
+    Request body:
+        - profile_ids: Optional list of profile IDs to restore (restores all if not specified)
+        - restore_mode: 'merge' (default) or 'replace'
+    """
+    from src.services.selective_backup_service import SelectiveBackupService
+
+    try:
+        data = request.get_json() or {}
+        profile_ids = data.get('profile_ids')
+        restore_mode = data.get('restore_mode', 'merge')
+
+        if restore_mode not in ['merge', 'replace']:
+            return jsonify({'error': 'Invalid restore_mode. Must be "merge" or "replace"'}), 400
+
+        result = SelectiveBackupService.restore_backup(
+            filename=filename,
+            profile_ids=profile_ids,
+            restore_mode=restore_mode
+        )
+
+        enhanced_audit_logger.log_admin_action(
+            action='RESTORE_SELECTIVE_BACKUP',
+            details={
+                'filename': filename,
+                'profile_ids': profile_ids,
+                'restore_mode': restore_mode,
+                'result': result
+            },
+            user_id=current_user.id
+        )
+
+        if result.get('success'):
+            return jsonify({
+                'success': True,
+                'message': f"Restored {result['profiles_restored']} profiles, updated {result['profiles_updated']}",
+                'result': result
+            }), 200
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Restore completed with errors',
+                'result': result
+            }), 207  # Multi-Status
+
+    except FileNotFoundError:
+        return jsonify({'error': 'Backup not found'}), 404
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        print(f"Error restoring selective backup: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/backup/selective/<filename>', methods=['DELETE'])
+@limiter.limit("10 per minute")
+@login_required
+@super_admin_required
+def delete_selective_backup(filename: str):
+    """Delete a selective backup file."""
+    from src.services.selective_backup_service import SelectiveBackupService
+
+    try:
+        SelectiveBackupService.delete_backup(filename)
+
+        enhanced_audit_logger.log_admin_action(
+            action='DELETE_SELECTIVE_BACKUP',
+            details={'filename': filename},
+            user_id=current_user.id
+        )
+
+        return jsonify({
+            'success': True,
+            'message': 'Backup deleted successfully'
+        }), 200
+
+    except FileNotFoundError:
+        return jsonify({'error': 'Backup not found'}), 404
+    except Exception as e:
+        print(f"Error deleting selective backup: {e}")
         return jsonify({'error': str(e)}), 500
