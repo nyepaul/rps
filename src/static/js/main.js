@@ -120,6 +120,10 @@ async function checkAuth() {
             store.setState({ currentUser: data.user });
             console.log('✅ User authenticated:', data.user.username);
 
+            // Load user-specific preferences
+            loadThemePreference();
+            loadCompactModePreference();
+
             // Show admin tab if user is admin
             if (data.user.is_admin) {
                 // Use requestAnimationFrame to ensure DOM is ready and force repaint
@@ -403,8 +407,9 @@ function setupSetupButton() {
  * @param {string} focusElementId - Optional element ID to focus on after opening
  */
 async function openSettings(defaultTab = 'general', focusElementId = null) {
-    const currentSimulations = localStorage.getItem(STORAGE_KEYS.SIMULATIONS) || APP_CONFIG.DEFAULT_SIMULATIONS;
-    const currentMarketProfile = localStorage.getItem(STORAGE_KEYS.MARKET_PROFILE) || 'historical';
+    const { currentUser } = store.getState();
+    const currentTheme = (currentUser && currentUser.preferences && currentUser.preferences.theme) || localStorage.getItem(STORAGE_KEYS.THEME) || 'light';
+    const currentDensity = (currentUser && currentUser.preferences && currentUser.preferences.display_density) || localStorage.getItem(STORAGE_KEYS.DISPLAY_DENSITY) || 'normal';
 
     const modal = document.createElement('div');
     modal.className = 'modal';
@@ -451,21 +456,21 @@ async function openSettings(defaultTab = 'general', focusElementId = null) {
                     <label style="display: block; margin-bottom: 8px; font-weight: 500;">Theme</label>
                     <div style="display: flex; flex-direction: column; gap: 8px; margin-left: 10px;">
                         <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                            <input type="radio" name="theme-mode" value="light" ${!document.body.classList.contains('dark-mode') && !document.body.classList.contains('high-contrast-mode') ? 'checked' : ''}>
+                            <input type="radio" name="theme-mode" value="light" ${currentTheme === 'light' ? 'checked' : ''}>
                             <div>
                                 <div style="font-weight: 500;">Light</div>
                                 <div style="font-size: 12px; color: var(--text-secondary);">Standard light theme (default)</div>
                             </div>
                         </label>
                         <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                            <input type="radio" name="theme-mode" value="dark" ${document.body.classList.contains('dark-mode') ? 'checked' : ''}>
+                            <input type="radio" name="theme-mode" value="dark" ${currentTheme === 'dark' ? 'checked' : ''}>
                             <div>
                                 <div style="font-weight: 500;">Dark</div>
                                 <div style="font-size: 12px; color: var(--text-secondary);">Easy on the eyes in low light</div>
                             </div>
                         </label>
                         <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                            <input type="radio" name="theme-mode" value="high-contrast" ${document.body.classList.contains('high-contrast-mode') ? 'checked' : ''}>
+                            <input type="radio" name="theme-mode" value="high-contrast" ${currentTheme === 'high-contrast' ? 'checked' : ''}>
                             <div>
                                 <div style="font-weight: 500;">High Contrast</div>
                                 <div style="font-size: 12px; color: var(--text-secondary);">Maximum contrast for accessibility (WCAG AAA)</div>
@@ -477,21 +482,21 @@ async function openSettings(defaultTab = 'general', focusElementId = null) {
                     <label style="display: block; margin-bottom: 8px; font-weight: 500;">Display Density</label>
                     <div style="display: flex; flex-direction: column; gap: 8px; margin-left: 10px;">
                         <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                            <input type="radio" name="display-density" value="compact" ${document.body.classList.contains('compact-mode') ? 'checked' : ''}>
+                            <input type="radio" name="display-density" value="compact" ${currentDensity === 'compact' ? 'checked' : ''}>
                             <div>
                                 <div style="font-weight: 500;">Compact</div>
                                 <div style="font-size: 12px; color: var(--text-secondary);">Minimal spacing, dense layout - fits more on screen</div>
                             </div>
                         </label>
                         <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                            <input type="radio" name="display-density" value="normal" ${!document.body.classList.contains('compact-mode') && !document.body.classList.contains('comfortable-mode') ? 'checked' : ''}>
+                            <input type="radio" name="display-density" value="normal" ${currentDensity === 'normal' ? 'checked' : ''}>
                             <div>
                                 <div style="font-weight: 500;">Normal</div>
                                 <div style="font-size: 12px; color: var(--text-secondary);">Balanced spacing and readability (default)</div>
                             </div>
                         </label>
                         <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                            <input type="radio" name="display-density" value="comfortable" ${document.body.classList.contains('comfortable-mode') ? 'checked' : ''}>
+                            <input type="radio" name="display-density" value="comfortable" ${currentDensity === 'comfortable' ? 'checked' : ''}>
                             <div>
                                 <div style="font-weight: 500;">Comfortable</div>
                                 <div style="font-size: 12px; color: var(--text-secondary);">Spacious layout, generous padding - easier on the eyes</div>
@@ -840,7 +845,7 @@ async function openSettings(defaultTab = 'general', focusElementId = null) {
 /**
  * Toggle theme (light/dark/high-contrast)
  */
-function toggleTheme(theme) {
+async function toggleTheme(theme) {
     // Remove all theme classes
     document.body.classList.remove('dark-mode', 'high-contrast-mode');
 
@@ -852,15 +857,39 @@ function toggleTheme(theme) {
     }
     // light mode has no class
 
-    // Save to localStorage
+    // Save to localStorage for immediate persistence
     localStorage.setItem(STORAGE_KEYS.THEME, theme);
+
+    // Save to server if logged in
+    const { currentUser } = store.getState();
+    if (currentUser) {
+        try {
+            await apiClient.put('/api/auth/preferences', { theme });
+            // Update local state
+            const updatedUser = { ...currentUser };
+            updatedUser.preferences = { ...updatedUser.preferences, theme };
+            store.setState({ currentUser: updatedUser });
+        } catch (error) {
+            console.warn('Failed to save theme preference to server:', error);
+        }
+    }
 }
 
 /**
- * Load theme preference from localStorage
+ * Load theme preference from localStorage or server
  */
 function loadThemePreference() {
-    const theme = localStorage.getItem(STORAGE_KEYS.THEME);
+    const { currentUser } = store.getState();
+    let theme = null;
+
+    // Prefer server-side preference if available
+    if (currentUser && currentUser.preferences && currentUser.preferences.theme) {
+        theme = currentUser.preferences.theme;
+    } else {
+        // Fallback to localStorage
+        theme = localStorage.getItem(STORAGE_KEYS.THEME);
+    }
+
     if (theme === 'dark') {
         document.body.classList.add('dark-mode');
     } else if (theme === 'high-contrast') {
@@ -872,7 +901,7 @@ function loadThemePreference() {
 /**
  * Set display density (compact, normal, or comfortable)
  */
-function setDisplayDensity(density) {
+async function setDisplayDensity(density) {
     // Remove all density classes
     document.body.classList.remove('compact-mode', 'comfortable-mode');
 
@@ -886,6 +915,20 @@ function setDisplayDensity(density) {
 
     // Save to localStorage
     localStorage.setItem(STORAGE_KEYS.DISPLAY_DENSITY, density);
+
+    // Save to server if logged in
+    const { currentUser } = store.getState();
+    if (currentUser) {
+        try {
+            await apiClient.put('/api/auth/preferences', { display_density: density });
+            // Update local state
+            const updatedUser = { ...currentUser };
+            updatedUser.preferences = { ...updatedUser.preferences, display_density: density };
+            store.setState({ currentUser: updatedUser });
+        } catch (error) {
+            console.warn('Failed to save density preference to server:', error);
+        }
+    }
 }
 
 /**
@@ -896,19 +939,34 @@ function toggleCompactMode(isCompact) {
 }
 
 /**
- * Load display density preference from localStorage
+ * Load display density preference from localStorage or server
  */
 function loadCompactModePreference() {
-    const density = localStorage.getItem(STORAGE_KEYS.DISPLAY_DENSITY);
+    const { currentUser } = store.getState();
+    let density = null;
+
+    // Prefer server-side preference if available
+    if (currentUser && currentUser.preferences && currentUser.preferences.display_density) {
+        density = currentUser.preferences.display_density;
+    } else {
+        // Fallback to localStorage
+        density = localStorage.getItem(STORAGE_KEYS.DISPLAY_DENSITY);
+    }
 
     if (density) {
         // New system: density can be 'compact', 'normal', or 'comfortable'
-        setDisplayDensity(density);
+        // We use a non-async version here for initial load to avoid UI flicker
+        document.body.classList.remove('compact-mode', 'comfortable-mode');
+        if (density === 'compact') {
+            document.body.classList.add('compact-mode');
+        } else if (density === 'comfortable') {
+            document.body.classList.add('comfortable-mode');
+        }
     } else {
         // Legacy fallback: check old compact mode setting
         const compact = localStorage.getItem(STORAGE_KEYS.COMPACT_MODE);
         if (compact === 'true') {
-            setDisplayDensity('compact');
+            document.body.classList.add('compact-mode');
         }
     }
 }
