@@ -411,6 +411,8 @@ async function openSettings(defaultTab = 'general', focusElementId = null) {
     const { currentUser } = store.getState();
     const currentTheme = (currentUser && currentUser.preferences && currentUser.preferences.theme) || localStorage.getItem(STORAGE_KEYS.THEME) || 'light';
     const currentDensity = (currentUser && currentUser.preferences && currentUser.preferences.display_density) || localStorage.getItem(STORAGE_KEYS.DISPLAY_DENSITY) || 'normal';
+    const currentSimulations = localStorage.getItem(STORAGE_KEYS.SIMULATIONS) || APP_CONFIG.DEFAULT_SIMULATIONS;
+    const currentMarketProfile = localStorage.getItem(STORAGE_KEYS.MARKET_PROFILE) || 'historical';
 
     const modal = document.createElement('div');
     modal.className = 'modal';
