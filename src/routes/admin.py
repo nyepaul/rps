@@ -1067,13 +1067,13 @@ def reset_demo_account():
 
         demo_data = {
             "person": {
-                "name": "Chris Thompson",
+                "name": "Demo Thompson",
                 "birth_date": birth_date.isoformat(),
                 "retirement_date": retirement_date.isoformat(),
                 "current_age": 55,
                 "retirement_age": 65,
                 "life_expectancy": 95,
-                "email": "chris.thompson@example.com",
+                "email": "demo.thompson@example.com",
                 "phone": "(415) 555-0123"
             },
             "spouse": {
@@ -1382,7 +1382,7 @@ def reset_demo_account():
                 VALUES (?, ?, ?, ?, ?, NULL, ?, ?)
             ''', (
                 demo_user.id,
-                "Demo Profile",
+                "Demo Thompson",
                 birth_date.isoformat(),
                 retirement_date.isoformat(),
                 json.dumps(demo_data),  # Store as plain JSON (unencrypted)
@@ -1534,7 +1534,7 @@ def reset_demo_account():
             'message': 'Demo account reset successfully',
             'username': demo_username,
             'password': demo_password,
-            'profile_name': 'Demo Profile'
+            'profile_name': 'Demo Thompson'
         }), 200
 
     except Exception as e:
