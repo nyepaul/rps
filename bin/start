@@ -66,20 +66,27 @@ fi
 
 # Kill any existing dev server on port 5137
 pkill -f "python src/app.py" 2>/dev/null || true
+pkill -f "flask run" 2>/dev/null || true
 
-# Run the application in the background
-# Set PYTHONPATH to include the project root so 'src' module imports work
-PYTHONPATH="$PWD:$PYTHONPATH" nohup ./src/venv/bin/python src/app.py > logs/dev-server.log 2>&1 &
+# Run the application in the background using Flask CLI with reloader disabled
+# This ensures proper background execution (debug reloader spawns child processes that don't detach)
+export PYTHONPATH="$PWD:$PYTHONPATH"
+export FLASK_APP=src/app.py
+export FLASK_ENV=development
+
+nohup ./src/venv/bin/flask run --host=0.0.0.0 --port=5137 --no-reload > logs/dev-server.log 2>&1 &
 PID=$!
 
 # Wait a moment and check if it started
-sleep 1
+sleep 2
 if kill -0 $PID 2>/dev/null; then
     echo "✓ Server started (PID: $PID)"
     echo "  Logs: logs/dev-server.log"
+    echo "  Debug mode: ON (without auto-reload)"
     echo ""
-    echo "  To stop: pkill -f 'python src/app.py'"
+    echo "  To stop: pkill -f 'flask run'"
 else
     echo "✗ Server failed to start. Check logs/dev-server.log"
+    cat logs/dev-server.log
     exit 1
 fi
