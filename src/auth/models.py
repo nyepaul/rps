@@ -173,56 +173,60 @@ class User(UserMixin):
         return digest.finalize()
 
     def get_dek(self, password: str):
-        """Get decrypted DEK using password, handling legacy salt migration."""
+        """Get decrypted DEK using password, handling legacy salt and iteration migration."""
         from src.services.encryption_service import EncryptionService
         import base64
 
         if not self.encrypted_dek or not self.dek_iv:
             return None
 
-        # 1. Try with new salt (Username + Email)
-        try:
-            salt = self.get_kek_salt()
-            kek = EncryptionService.get_kek_from_password(password, salt)
-            service = EncryptionService(key=kek)
-            dek_b64 = service.decrypt(self.encrypted_dek, self.dek_iv)
-            if dek_b64:
-                return base64.b64decode(dek_b64)
-        except Exception:
-            pass
+        # Decryption attempt strategy:
+        # 1. New Salt (User-specific) + 600k iterations
+        # 2. New Salt (User-specific) + 100k iterations (Migration needed)
+        # 3. Legacy Salt (Generic) + 600k iterations (Migration needed)
+        # 4. Legacy Salt (Generic) + 100k iterations (Migration needed)
 
-        # 2. Try with legacy salt
-        try:
-            legacy_salt = b'user-kek-salt'
-            kek = EncryptionService.get_kek_from_password(password, legacy_salt)
-            service = EncryptionService(key=kek)
-            dek_b64 = service.decrypt(self.encrypted_dek, self.dek_iv)
-            
-            if dek_b64:
-                # MIGRATION: Re-encrypt with new salt immediately
-                dek = base64.b64decode(dek_b64)
+        new_salt = self.get_kek_salt()
+        legacy_salt = b'user-kek-salt'
+        
+        configs = [
+            (new_salt, 600000, False),  # Preferred
+            (new_salt, 100000, True),   # Needs Iteration Migration
+            (legacy_salt, 600000, True), # Needs Salt Migration
+            (legacy_salt, 100000, True)  # Needs Full Migration
+        ]
+
+        for salt, iterations, needs_migration in configs:
+            try:
+                kek = EncryptionService.get_kek_from_password(password, salt, iterations=iterations)
+                service = EncryptionService(key=kek)
+                dek_b64 = service.decrypt(self.encrypted_dek, self.dek_iv)
                 
-                new_salt = self.get_kek_salt()
-                new_kek = EncryptionService.get_kek_from_password(password, new_salt)
-                new_service = EncryptionService(key=new_kek)
-                
-                new_enc_dek, new_iv = new_service.encrypt(dek_b64)
-                
-                # Update DB directly to persist migration
-                with db.get_connection() as conn:
-                    conn.execute('''
-                        UPDATE users 
-                        SET encrypted_dek = ?, dek_iv = ? 
-                        WHERE id = ?
-                    ''', (new_enc_dek, new_iv, self.id))
-                
-                # Update instance
-                self.encrypted_dek = new_enc_dek
-                self.dek_iv = new_iv
-                
-                return dek
-        except Exception:
-            pass
+                if dek_b64:
+                    dek = base64.b64decode(dek_b64)
+                    
+                    if needs_migration:
+                        # Re-encrypt with new salt AND 600k iterations immediately
+                        new_kek = EncryptionService.get_kek_from_password(password, new_salt, iterations=600000)
+                        new_service = EncryptionService(key=new_kek)
+                        new_enc_dek, new_iv = new_service.encrypt(dek_b64)
+                        
+                        # Update DB directly to persist migration
+                        with db.get_connection() as conn:
+                            conn.execute('''
+                                UPDATE users 
+                                SET encrypted_dek = ?, dek_iv = ? 
+                                WHERE id = ?
+                            ''', (new_enc_dek, new_iv, self.id))
+                        
+                        # Update instance
+                        self.encrypted_dek = new_enc_dek
+                        self.dek_iv = new_iv
+                        print(f"Migrated user {self.username} to new encryption config (salt + iterations)")
+                    
+                    return dek
+            except Exception:
+                continue
 
         raise ValueError("Failed to decrypt encryption key with provided password")
 

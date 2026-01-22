@@ -54,25 +54,25 @@ class EncryptionService:
         return secrets.token_hex(8).upper()
 
     @staticmethod
-    def get_kek_from_password(password: str, salt: bytes = b'user-kek-salt') -> bytes:
+    def get_kek_from_password(password: str, salt: bytes = b'user-kek-salt', iterations: int = 600000) -> bytes:
         """Derive a Key Encryption Key (KEK) from a user password."""
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
             salt=salt,
-            iterations=600000,  # Increased from 100k to 600k (OWASP recommendation)
+            iterations=iterations,
             backend=default_backend()
         )
         return kdf.derive(password.encode('utf-8'))
 
     @staticmethod
-    def get_recovery_kek(recovery_code: str, salt: bytes) -> bytes:
+    def get_recovery_kek(recovery_code: str, salt: bytes, iterations: int = 600000) -> bytes:
         """Derive a Key Encryption Key (KEK) from a recovery code."""
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
             salt=salt,
-            iterations=600000,  # Increased from 200k to 600k
+            iterations=iterations,
             backend=default_backend()
         )
         # Normalize code (uppercase, strip spaces)
@@ -80,13 +80,13 @@ class EncryptionService:
         return kdf.derive(code.encode('utf-8'))
 
     @staticmethod
-    def get_email_kek(email: str, salt: bytes) -> bytes:
+    def get_email_kek(email: str, salt: bytes, iterations: int = 600000) -> bytes:
         """Derive a Key Encryption Key (KEK) from an email address."""
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
             salt=salt,
-            iterations=600000,  # Increased from 200k to 600k
+            iterations=iterations,
             backend=default_backend()
         )
         # Normalize email (lowercase, strip)
