@@ -15,7 +15,7 @@ export async function renderDemoManagement(container) {
             <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--warning-color);">
                 <h3 style="font-size: 16px; margin-bottom: 10px; color: var(--warning-color);">🎭 Demo Account Management</h3>
                 <p style="color: var(--text-secondary); margin-bottom: 12px; font-size: 13px;">
-                    Reset the demo account with comprehensive upper-class family profile data. This will delete all existing demo profiles and create a new default profile.
+                    Reset the demo account with multiple family templates. This will delete all existing demo profiles and recreate two comprehensive scenarios representing different wealth levels.
                 </p>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
@@ -27,15 +27,14 @@ export async function renderDemoManagement(container) {
                         </div>
                     </div>
                     <div style="background: var(--info-bg); padding: 10px; border-radius: 6px; border-left: 3px solid var(--accent-color);">
-                        <div style="font-weight: 700; font-size: 11px; margin-bottom: 4px; text-transform: uppercase;">📋 PROFILE INCLUDES:</div>
-                        <ul style="margin: 0; padding-left: 15px; font-size: 11px; line-height: 1.3; color: var(--text-secondary);">
-                            <li>Upper-class couple ($280K/yr combined)</li>
-                            <li>Two children in college (19 and 21)</li>
-                            <li>$2.3M portfolio (401k, Roth, Brkg)</li>
-                            <li>$1.85M SF primary residence</li>
-                            <li>Comprehensive detailed budget</li>
-                            <li>529 college funds</li>
-                        </ul>
+                        <div style="font-weight: 700; font-size: 11px; margin-bottom: 4px; text-transform: uppercase;">📋 INCLUDED PROFILES:</div>
+                        <div style="font-size: 11px; line-height: 1.4; color: var(--text-secondary);">
+                            <strong>1. Demo Thompson (Upper-Class)</strong>
+                            <div style="margin-bottom: 4px;">$336K Income, $2.3M Portfolio, $1.85M SF Home, 2 College Kids.</div>
+                            
+                            <strong>2. Demo Starman (Middle-Class)</strong>
+                            <div>$165K Income, $575K Portfolio, $450K Austin Home, 3 Kids (7-14).</div>
+                        </div>
                     </div>
                 </div>
 
@@ -60,7 +59,7 @@ function setupResetDemoButton(container) {
     if (!resetBtn) return;
 
     resetBtn.addEventListener('click', async () => {
-        if (!confirm('Are you sure you want to reset the demo account? This will delete all existing demo profiles and create a new default profile with comprehensive data.')) {
+        if (!confirm('Are you sure you want to reset the demo account? This will delete all existing demo profiles and recreate both the Thompson and Starman templates.')) {
             return;
         }
 
@@ -80,7 +79,7 @@ function setupResetDemoButton(container) {
                     <div style="font-size: 13px;">
                         <div>Username: <strong>${response.username}</strong></div>
                         <div>Password: <strong>${response.password}</strong></div>
-                        <div>Profile: <strong>${response.profile_name}</strong></div>
+                        <div>Profiles: <strong>${(response.profiles || []).join(', ')}</strong></div>
                     </div>
                 </div>
             `;
