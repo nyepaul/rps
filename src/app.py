@@ -2,8 +2,9 @@
 
 Authored by: pan
 """
-from flask import Flask, send_from_directory, jsonify, request, g
-from flask_login import current_user
+from flask import Flask, send_from_directory, jsonify, request, g, session
+from flask_login import current_user, logout_user
+from datetime import datetime, timedelta
 from src.config import config
 from src.extensions import init_extensions
 import time
@@ -44,6 +45,59 @@ def create_app(config_name='development'):
         """Track request start time for response timing measurement."""
         g.request_start_time = time.time()
         request._start_time = g.request_start_time
+
+    # Session inactivity timeout - log out users after 30 minutes of inactivity
+    @app.before_request
+    def check_session_timeout():
+        """Check for session inactivity and log out if exceeded."""
+        # Skip for static assets and non-authenticated requests
+        if request.path.startswith('/css/') or \
+           request.path.startswith('/js/') or \
+           request.path.startswith('/images/') or \
+           request.path.endswith('.ico'):
+            return
+
+        # Make session permanent so PERMANENT_SESSION_LIFETIME applies
+        session.permanent = True
+
+        if current_user.is_authenticated:
+            last_activity = session.get('last_activity')
+            now = datetime.utcnow()
+
+            if last_activity:
+                # Parse the stored timestamp
+                try:
+                    last_activity_time = datetime.fromisoformat(last_activity)
+                    inactive_duration = now - last_activity_time
+
+                    # Check if inactive for more than 30 minutes
+                    if inactive_duration > timedelta(minutes=30):
+                        # Log the timeout
+                        EnhancedAuditLogger.log(
+                            action='SESSION_TIMEOUT',
+                            table_name='users',
+                            record_id=current_user.id,
+                            user_id=current_user.id,
+                            details=f'{{"username": "{current_user.username}", "inactive_minutes": {inactive_duration.total_seconds() / 60:.1f}}}',
+                            status_code=401
+                        )
+
+                        # Clear session and log out
+                        logout_user()
+                        for key in list(session.keys()):
+                            session.pop(key)
+                        session.modified = True
+
+                        # For API requests, return JSON error
+                        if request.path.startswith('/api/'):
+                            from flask import abort
+                            abort(401)
+                        return
+                except (ValueError, TypeError):
+                    pass
+
+            # Update last activity timestamp
+            session['last_activity'] = now.isoformat()
 
     # Network access logging - log all requests including unauthenticated
     @app.before_request

@@ -131,6 +131,11 @@ def register():
     # Log user in
     login_user(user)
 
+    # Initialize session with last activity timestamp for inactivity timeout
+    from datetime import datetime
+    session.permanent = True
+    session['last_activity'] = datetime.utcnow().isoformat()
+
     # Store decrypted DEK in session (base64)
     session['user_dek'] = base64.b64encode(dek).decode('utf-8')
 
@@ -237,6 +242,11 @@ def login():
 
     # Log user in (remember=False to allow easy switching between users)
     login_user(user, remember=False)
+
+    # Initialize session with last activity timestamp for inactivity timeout
+    from datetime import datetime
+    session.permanent = True
+    session['last_activity'] = datetime.utcnow().isoformat()
 
     # Log successful login
     EnhancedAuditLogger.log(
