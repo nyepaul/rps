@@ -669,7 +669,7 @@ def offline_change_password():
             details=json.dumps({'reason': 'Invalid old password'}),
             status_code=401
         )
-        return jsonify({'error': 'Invalid credentials'}), 401
+        return jsonify({'error': 'Invalid old password'}), 401
 
     try:
         dek_b64 = None
@@ -926,7 +926,7 @@ def reset_password_with_recovery():
                 details=json.dumps({'reason': 'Invalid recovery code'}),
                 status_code=400
             )
-            return jsonify({'error': 'Invalid username or recovery code'}), 400
+            return jsonify({'error': 'Invalid recovery code'}), 400
             
         # 3. Success! We have the DEK. Now re-encrypt it with the new password.
         dek = base64.b64decode(dek_b64)
