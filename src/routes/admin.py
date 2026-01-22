@@ -1281,48 +1281,41 @@ def reset_demo_account():
             "budget": {
                 "expenses": {
                     "current": {
-                        "housing": [{
-                            "amount": 4200,
-                            "frequency": "monthly",
-                            "name": "Mortgage",
-                            "ongoing": True
-                        }],
-                        "utilities": [{
-                            "amount": 450,
-                            "frequency": "monthly",
-                            "name": "Utilities",
-                            "ongoing": True
-                        }],
-                        "transportation": [{
-                            "amount": 950,
-                            "frequency": "monthly",
-                            "name": "Auto Expenses",
-                            "ongoing": True
-                        }],
-                        "food": [{
-                            "amount": 1200,
-                            "frequency": "monthly",
-                            "name": "Groceries",
-                            "ongoing": True
-                        }],
-                        "dining_out": [{
-                            "amount": 800,
-                            "frequency": "monthly",
-                            "name": "Dining & Entertainment",
-                            "ongoing": True
-                        }],
-                        "healthcare": [{
-                            "amount": 650,
-                            "frequency": "monthly",
-                            "name": "Health Costs",
-                            "ongoing": True
-                        }],
-                        "travel": [{
-                            "amount": 12000,
-                            "frequency": "annual",
-                            "name": "Vacations",
-                            "ongoing": True
-                        }]
+                        "housing": [
+                            {"amount": 4200, "frequency": "monthly", "name": "Mortgage", "ongoing": True},
+                            {"amount": 1200, "frequency": "monthly", "name": "Property Tax & Insurance", "ongoing": True},
+                            {"amount": 350, "frequency": "monthly", "name": "Home Maintenance", "ongoing": True}
+                        ],
+                        "utilities": [
+                            {"amount": 180, "frequency": "monthly", "name": "Electricity", "ongoing": True},
+                            {"amount": 90, "frequency": "monthly", "name": "Water/Sewer", "ongoing": True},
+                            {"amount": 120, "frequency": "monthly", "name": "Internet & Cable", "ongoing": True},
+                            {"amount": 60, "frequency": "monthly", "name": "Cell Phone Plan", "ongoing": True}
+                        ],
+                        "transportation": [
+                            {"amount": 950, "frequency": "monthly", "name": "Tesla Model S Lease", "ongoing": True},
+                            {"amount": 650, "frequency": "monthly", "name": "BMW X5 Loan", "ongoing": True},
+                            {"amount": 300, "frequency": "monthly", "name": "Fuel & Charging", "ongoing": True},
+                            {"amount": 250, "frequency": "monthly", "name": "Auto Insurance", "ongoing": True}
+                        ],
+                        "food": [
+                            {"amount": 1800, "frequency": "monthly", "name": "Groceries (Whole Foods)", "ongoing": True},
+                            {"amount": 1200, "frequency": "monthly", "name": "Fine Dining", "ongoing": True}
+                        ],
+                        "healthcare": [
+                            {"amount": 850, "frequency": "monthly", "name": "Family Premium", "ongoing": True},
+                            {"amount": 200, "frequency": "monthly", "name": "Out-of-pocket Costs", "ongoing": True}
+                        ],
+                        "travel": [
+                            {"amount": 15000, "frequency": "annual", "name": "Annual International Trip", "ongoing": True},
+                            {"amount": 8000, "frequency": "annual", "name": "Ski Trip", "ongoing": True},
+                            {"amount": 5000, "frequency": "annual", "name": "Weekend Getaways", "ongoing": True}
+                        ],
+                        "personal": [
+                            {"amount": 400, "frequency": "monthly", "name": "Health Club Membership", "ongoing": True},
+                            {"amount": 300, "frequency": "monthly", "name": "Personal Care/Grooming", "ongoing": True},
+                            {"amount": 500, "frequency": "monthly", "name": "Clothing & Shopping", "ongoing": True}
+                        ]
                     },
                     "future": {
                         "housing": [{
@@ -1470,9 +1463,40 @@ def reset_demo_account():
             "budget": {
                 "expenses": {
                     "current": {
-                        "housing": [{"amount": 1850, "frequency": "monthly", "name": "Mortgage"}],
-                        "food": [{"amount": 1400, "frequency": "monthly", "name": "Family Groceries"}],
-                        "utilities": [{"amount": 350, "frequency": "monthly", "name": "Utilities"}]
+                        "housing": [
+                            {"amount": 1850, "frequency": "monthly", "name": "Mortgage", "ongoing": True},
+                            {"amount": 450, "frequency": "monthly", "name": "Property Tax & Ins.", "ongoing": True},
+                            {"amount": 200, "frequency": "monthly", "name": "Home Repairs", "ongoing": True}
+                        ],
+                        "utilities": [
+                            {"amount": 150, "frequency": "monthly", "name": "Electricity", "ongoing": True},
+                            {"amount": 60, "frequency": "monthly", "name": "Water", "ongoing": True},
+                            {"amount": 80, "frequency": "monthly", "name": "Internet", "ongoing": True},
+                            {"amount": 100, "frequency": "monthly", "name": "Mobile Phones", "ongoing": True}
+                        ],
+                        "transportation": [
+                            {"amount": 450, "frequency": "monthly", "name": "Honda CR-V Loan", "ongoing": True},
+                            {"amount": 350, "frequency": "monthly", "name": "Toyota Camry (Paid)", "ongoing": True},
+                            {"amount": 250, "frequency": "monthly", "name": "Fuel & Maint.", "ongoing": True},
+                            {"amount": 180, "frequency": "monthly", "name": "Insurance", "ongoing": True}
+                        ],
+                        "food": [
+                            {"amount": 1200, "frequency": "monthly", "name": "Groceries (HEB)", "ongoing": True},
+                            {"amount": 400, "frequency": "monthly", "name": "Family Dining Out", "ongoing": True}
+                        ],
+                        "healthcare": [
+                            {"amount": 450, "frequency": "monthly", "name": "Health Insurance", "ongoing": True},
+                            {"amount": 150, "frequency": "monthly", "name": "Dental & Vision", "ongoing": True}
+                        ],
+                        "travel": [
+                            {"amount": 4000, "frequency": "annual", "name": "Summer Vacation", "ongoing": True},
+                            {"amount": 1500, "frequency": "annual", "name": "Holiday Travel", "ongoing": True}
+                        ],
+                        "personal": [
+                            {"amount": 150, "frequency": "monthly", "name": "Kids Activities", "ongoing": True},
+                            {"amount": 200, "frequency": "monthly", "name": "Clothing", "ongoing": True},
+                            {"amount": 100, "frequency": "monthly", "name": "Streaming/Hobbies", "ongoing": True}
+                        ]
                     },
                     "future": {
                         "housing": [{"amount": 800, "frequency": "monthly", "name": "Taxes & Maintenance"}]
