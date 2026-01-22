@@ -180,6 +180,148 @@ def test_db(test_db_dir, request):
             )
         ''')
 
+        # Enhanced Audit Log
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS enhanced_audit_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                action TEXT NOT NULL,
+                table_name TEXT,
+                record_id INTEGER,
+                user_id INTEGER,
+                details TEXT,
+                status_code INTEGER,
+                error_message TEXT,
+                ip_address TEXT,
+                user_agent TEXT,
+                request_method TEXT,
+                request_endpoint TEXT,
+                request_query TEXT,
+                request_headers TEXT,
+                request_size INTEGER,
+                referrer TEXT,
+                session_id TEXT,
+                geo_location TEXT,
+                device_info TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                response_time_ms REAL,
+                fingerprint_hash INTEGER,
+                engagement_score INTEGER,
+                screen_width INTEGER,
+                screen_height INTEGER,
+                viewport_width INTEGER,
+                viewport_height INTEGER,
+                timezone_offset INTEGER,
+                network_type TEXT,
+                color_scheme TEXT,
+                device_pixel_ratio REAL,
+                is_touch_device INTEGER,
+                is_webdriver INTEGER,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+            )
+        ''')
+
+        # Audit Config
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS audit_config (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                config_data TEXT NOT NULL,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+
+        # Feedback
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS feedback (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                type TEXT NOT NULL,
+                status TEXT DEFAULT 'pending',
+                admin_notes TEXT,
+                ip_address TEXT,
+                user_agent TEXT,
+                browser_name TEXT,
+                browser_version TEXT,
+                os_name TEXT,
+                os_version TEXT,
+                device_type TEXT,
+                screen_resolution TEXT,
+                viewport_size TEXT,
+                timezone TEXT,
+                language TEXT,
+                referrer TEXT,
+                current_url TEXT,
+                session_id TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                email_sent BOOLEAN DEFAULT 0,
+                last_reply_at TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+            )
+        ''')
+
+        # Feedback Content
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS feedback_content (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                feedback_id INTEGER NOT NULL UNIQUE,
+                content TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (feedback_id) REFERENCES feedback (id) ON DELETE CASCADE
+            )
+        ''')
+
+        # Feedback Replies
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS feedback_replies (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                feedback_id INTEGER NOT NULL,
+                admin_id INTEGER NOT NULL,
+                reply_text TEXT NOT NULL,
+                is_private BOOLEAN DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (feedback_id) REFERENCES feedback (id) ON DELETE CASCADE,
+                FOREIGN KEY (admin_id) REFERENCES users (id) ON DELETE SET NULL
+            )
+        ''')
+
+        # Feature Roadmap
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS feature_roadmap (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                description TEXT,
+                category TEXT NOT NULL,
+                priority TEXT NOT NULL DEFAULT 'medium',
+                phase TEXT DEFAULT 'backlog',
+                status TEXT DEFAULT 'planned',
+                impact TEXT,
+                effort TEXT,
+                target_version TEXT,
+                assigned_to TEXT,
+                notes TEXT,
+                related_items TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                completed_at TIMESTAMP
+            )
+        ''')
+
+        # Password Reset Requests
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS password_reset_requests (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                status TEXT DEFAULT 'pending' NOT NULL,
+                request_ip TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                processed_at DATETIME,
+                processed_by INTEGER,
+                FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+                FOREIGN KEY (processed_by) REFERENCES users (id) ON DELETE SET NULL
+            )
+        ''')
+
         conn.commit()
 
     yield test_db_instance
