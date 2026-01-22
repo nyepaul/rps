@@ -33,8 +33,8 @@ def upgrade() -> None:
         sa.Column('created_at', sa.DateTime(), default=datetime.now),
         sa.Column('processed_at', sa.DateTime(), nullable=True),
         sa.Column('processed_by', sa.Integer(), nullable=True),
-        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
-        sa.ForeignKeyConstraint(['processed_by'], ['users.id'], ),
+        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['processed_by'], ['users.id'], ondelete='SET NULL'),
         sa.PrimaryKeyConstraint('id')
     )
 

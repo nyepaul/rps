@@ -804,6 +804,10 @@ def delete_user(user_id: int):
             cursor.execute('DELETE FROM feedback WHERE user_id = ?', (user_id,))
             feedback_deleted = cursor.rowcount
 
+            # Delete user's password reset requests (both as requester and processor)
+            cursor.execute('DELETE FROM password_reset_requests WHERE user_id = ?', (user_id,))
+            cursor.execute('UPDATE password_reset_requests SET processed_by = NULL WHERE processed_by = ?', (user_id,))
+
             # Delete the user
             cursor.execute('DELETE FROM users WHERE id = ?', (user_id,))
 

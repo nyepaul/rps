@@ -25,7 +25,7 @@ class EmailService:
             base_url = os.getenv('APP_BASE_URL', 'http://localhost:5137')
 
         # Generate reset link
-        reset_link = f"{base_url}/reset-password.html?token={token}"
+        reset_link = f"{base_url}/account-recovery.html?token={token}"
 
         # Email subject
         subject = "RPS - Password Reset Request"
@@ -127,7 +127,7 @@ class EmailService:
                         <strong>⚠️ Important:</strong> This link will expire in 1 hour for security reasons.
                     </div>
 
-                    <p><strong>Note:</strong> Resetting your password will permanently delete all your encrypted profile data. This cannot be undone!</p>
+                    <p><strong>Note:</strong> Because RPS uses end-to-end encryption, resetting your password via email will permanently delete your encrypted profile data <strong>UNLESS</strong> you use a Recovery Code or have previously enabled email-based backup.</p>
 
                     <p>If you didn't request this password reset, you can safely ignore this email. Your password will remain unchanged.</p>
                 </div>
@@ -152,7 +152,7 @@ class EmailService:
 
         This link will expire in 1 hour for security reasons.
 
-        IMPORTANT: Resetting your password will permanently delete all your encrypted profile data. This cannot be undone!
+        IMPORTANT: Because RPS uses end-to-end encryption, resetting your password via email will permanently delete your encrypted profile data UNLESS you use a Recovery Code or have previously enabled email-based backup.
 
         If you didn't request this password reset, you can safely ignore this email. Your password will remain unchanged.
 

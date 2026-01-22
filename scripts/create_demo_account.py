@@ -45,7 +45,8 @@ def create_demo_account(db_path, source_username='paul', demo_username='demo', d
             response = input("Delete and recreate? (yes/no): ").strip().lower()
             if response == 'yes':
                 demo_user_id = existing_demo['id']
-                # Delete existing demo user (CASCADE will handle related records)
+                # Delete existing demo user (manual delete of records without CASCADE)
+                cursor.execute("DELETE FROM password_reset_requests WHERE user_id = ? OR processed_by = ?", (demo_user_id, demo_user_id))
                 cursor.execute("DELETE FROM users WHERE id = ?", (demo_user_id,))
                 print(f"✓ Deleted existing demo user and all related data")
             else:

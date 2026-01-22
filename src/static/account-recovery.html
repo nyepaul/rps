@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Recovery - RPS</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --bg-gradient: linear-gradient(135deg, #3b82f6 0%, #764ba2 100%);
+            --white: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --danger: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg-gradient);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--text-main);
+            padding: 20px;
+        }
+
+        .recovery-card {
+            background: var(--white);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            width: 100%;
+            max-width: 500px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 30px;
+        }
+
+        .step-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #e5e7eb;
+            transition: all 0.3s;
+        }
+
+        .step-dot.active {
+            background: var(--primary);
+            width: 24px;
+            border-radius: 4px;
+        }
+
+        .view {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .method-grid {
+            display: grid;
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .method-option {
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .method-option:hover {
+            border-color: var(--primary);
+            background: #f0f7ff;
+        }
+
+        .method-option.selected {
+            border-color: var(--primary);
+            background: #eff6ff;
+            box-shadow: 0 0 0 1px var(--primary);
+        }
+
+        .method-icon {
+            font-size: 24px;
+            background: #f3f4f6;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+        }
+
+        .method-info h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .method-info p {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #374151;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-muted);
+            margin-top: 10px;
+        }
+
+        .btn-ghost:hover {
+            color: var(--text-main);
+            background: #f3f4f6;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            line-height: 1.5;
+        }
+
+        .alert-info { background: #eff6ff; color: #1e40af; border-left: 4px solid #3b82f6; }
+        .alert-warning { background: #fffbeb; color: #92400e; border-left: 4px solid #f59e0b; }
+        .alert-danger { background: #fef2f2; color: #991b1b; border-left: 4px solid #ef4444; }
+        .alert-success { background: #ecfdf5; color: #065f46; border-left: 4px solid #10b981; }
+
+        .recovery-code-input {
+            text-transform: uppercase;
+            font-family: monospace;
+            letter-spacing: 3px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--primary);
+            background: #f9fafb;
+        }
+
+        .back-to-login {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 14px;
+        }
+
+        .back-to-login a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .hidden { display: none; }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="recovery-card">
+        <div class="header">
+            <h1 id="title">Account Recovery</h1>
+            <p id="subtitle">Select a method to regain access</p>
+        </div>
+
+        <div class="step-indicator">
+            <div class="step-dot active" data-step="1"></div>
+            <div class="step-dot" data-step="2"></div>
+            <div class="step-dot" data-step="3"></div>
+        </div>
+
+        <div id="message-container"></div>
+
+        <!-- View 1: Method Selection -->
+        <div id="view-methods" class="view active">
+            <div class="method-grid">
+                <div class="method-option" data-method="email">
+                    <div class="method-icon">📧</div>
+                    <div class="method-info">
+                        <h3>Email Reset</h3>
+                        <p>Receive a reset link via email. Note: May result in data loss if not previously configured.</p>
+                    </div>
+                </div>
+                <div class="method-option" data-method="code">
+                    <div class="method-icon">🔑</div>
+                    <div class="method-info">
+                        <h3>Recovery Code</h3>
+                        <p>Use your 16-character code to reset your password and preserve all data.</p>
+                    </div>
+                </div>
+                <div class="method-option" data-method="password">
+                    <div class="method-icon">🛡️</div>
+                    <div class="method-info">
+                        <h3>Previous Password</h3>
+                        <p>If you remember your old password, use it to safely rotate to a new one.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View 2: Identity / Request -->
+        <div id="view-identity" class="view">
+            <form id="identity-form">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" placeholder="Enter your username" required>
+                </div>
+                
+                <div id="email-field" class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" placeholder="email@example.com">
+                </div>
+
+                <div id="old-password-field" class="form-group hidden">
+                    <label for="old-password">Previous Password</label>
+                    <input type="password" id="old-password" placeholder="Enter your old password">
+                </div>
+
+                <div id="recovery-code-field" class="form-group hidden">
+                    <label for="recovery-code">Recovery Code</label>
+                    <input type="text" id="recovery-code" class="recovery-code-input" maxlength="16" placeholder="A1B2-C3D4-E5F6-G7H8">
+                </div>
+
+                <div id="method-alert" class="alert alert-info"></div>
+
+                <button type="submit" class="btn btn-primary" id="identity-submit">
+                    Continue
+                </button>
+                <button type="button" class="btn btn-ghost" id="identity-back">
+                    Back
+                </button>
+            </form>
+        </div>
+
+        <!-- View 3: Set New Password -->
+        <div id="view-reset" class="view">
+            <div id="reset-alert" class="alert alert-warning"></div>
+            
+            <form id="reset-form">
+                <div class="form-group">
+                    <label for="new-password">New Password</label>
+                    <input type="password" id="new-password" placeholder="Min 8 chars, mixed case + number" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirm-password">Confirm Password</label>
+                    <input type="password" id="confirm-password" placeholder="Re-enter new password" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="reset-submit">
+                    Reset Password
+                </button>
+            </form>
+        </div>
+
+        <!-- View 4: Success / Final -->
+        <div id="view-success" class="view">
+            <div class="alert alert-success">
+                <strong>Success!</strong> Your password has been updated.
+            </div>
+            <p id="success-message" style="text-align: center; margin-bottom: 25px; color: var(--text-muted);">
+                You can now log in with your new password.
+            </p>
+            <a href="/login.html" class="btn btn-primary">Go to Login</a>
+        </div>
+
+        <div class="back-to-login" id="footer-links">
+            <a href="/login.html">← Back to Login</a>
+            <span style="margin: 0 10px; color: #e5e7eb;">|</span>
+            <a href="#" id="admin-help-link">Need Admin Help?</a>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let state = {
+            step: 1,
+            method: null,
+            username: '',
+            email: '',
+            token: null,
+            recoveryCode: '',
+            oldPassword: '',
+            hasEncryptedData: false,
+            canRecoverViaEmail: false
+        };
+
+        // DOM Elements
+        const views = {
+            methods: document.getElementById('view-methods'),
+            identity: document.getElementById('view-identity'),
+            reset: document.getElementById('view-reset'),
+            success: document.getElementById('view-success')
+        };
+
+        const components = {
+            title: document.getElementById('title'),
+            subtitle: document.getElementById('subtitle'),
+            message: document.getElementById('message-container'),
+            methodAlert: document.getElementById('method-alert'),
+            resetAlert: document.getElementById('reset-alert'),
+            dots: document.querySelectorAll('.step-dot')
+        };
+
+        // Initialize from URL token if present
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlToken = urlParams.get('token');
+        if (urlToken) {
+            state.token = urlToken;
+            state.method = 'email';
+            validateToken(urlToken);
+        }
+
+        // --- Navigation ---
+
+        function showView(viewName) {
+            Object.values(views).forEach(v => v.classList.remove('active'));
+            views[viewName].classList.add('active');
+            
+            // Update dots
+            const stepMap = { methods: 1, identity: 2, reset: 3, success: 3 };
+            state.step = stepMap[viewName];
+            components.dots.forEach(dot => {
+                dot.classList.toggle('active', parseInt(dot.dataset.step) === state.step);
+            });
+
+            // Scroll to top of card
+            document.querySelector('.recovery-card').scrollTop = 0;
+        }
+
+        function showAlert(message, type = 'info', container = components.message) {
+            container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+        }
+
+        function clearAlerts() {
+            components.message.innerHTML = '';
+        }
+
+        // --- Step 1: Method Selection ---
+
+        document.querySelectorAll('.method-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                state.method = opt.dataset.method;
+                setupIdentityView();
+                showView('identity');
+            });
+        });
+
+        function setupIdentityView() {
+            clearAlerts();
+            const emailField = document.getElementById('email-field');
+            const oldPasswordField = document.getElementById('old-password-field');
+            const codeField = document.getElementById('recovery-code-field');
+            const submitBtn = document.getElementById('identity-submit');
+
+            // Reset fields
+            emailField.classList.add('hidden');
+            oldPasswordField.classList.add('hidden');
+            codeField.classList.add('hidden');
+            
+            document.getElementById('email').required = false;
+            document.getElementById('old-password').required = false;
+            document.getElementById('recovery-code').required = false;
+
+            if (state.method === 'email') {
+                components.title.textContent = 'Email Recovery';
+                components.subtitle.textContent = 'Verify your identity';
+                emailField.classList.remove('hidden');
+                document.getElementById('email').required = true;
+                components.methodAlert.innerHTML = '<strong>🔒 Security:</strong> We will send a reset link to your registered email address.';
+                submitBtn.textContent = 'Send Reset Link';
+            } else if (state.method === 'code') {
+                components.title.textContent = 'Recovery Code';
+                components.subtitle.textContent = 'Restore your data';
+                codeField.classList.remove('hidden');
+                document.getElementById('recovery-code').required = true;
+                components.methodAlert.innerHTML = '<strong>🛡️ Zero-Knowledge:</strong> Your recovery code allows us to restore your encrypted data without knowing your password.';
+                submitBtn.textContent = 'Verify Code';
+            } else if (state.method === 'password') {
+                components.title.textContent = 'Previous Password';
+                components.subtitle.textContent = 'Identity Verification';
+                emailField.classList.remove('hidden');
+                oldPasswordField.classList.remove('hidden');
+                document.getElementById('email').required = true;
+                document.getElementById('old-password').required = true;
+                components.methodAlert.innerHTML = '<strong>🔄 Password Rotation:</strong> Use your previous credentials to securely set a new password.';
+                submitBtn.textContent = 'Continue';
+            }
+        }
+
+        // --- Step 2: Identity Processing ---
+
+        document.getElementById('identity-back').addEventListener('click', () => {
+            components.title.textContent = 'Account Recovery';
+            components.subtitle.textContent = 'Select a method to regain access';
+            showView('methods');
+        });
+
+        document.getElementById('identity-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('identity-submit');
+            const originalText = btn.textContent;
+            
+            state.username = document.getElementById('username').value;
+            state.email = document.getElementById('email').value;
+            state.oldPassword = document.getElementById('old-password').value;
+            state.recoveryCode = document.getElementById('recovery-code').value.trim().toUpperCase();
+
+            btn.disabled = true;
+            btn.innerHTML = `<div class="spinner"></div> Processing...`;
+            clearAlerts();
+
+            try {
+                if (state.method === 'email') {
+                    await requestEmailReset();
+                } else if (state.method === 'code') {
+                    // For code, we jump straight to reset view but will use the code during submission
+                    setupResetView('Enter your 16-character recovery code above to preserve your data.');
+                    showView('reset');
+                } else if (state.method === 'password') {
+                    // Password recovery validates credentials first
+                    setupResetView('Verify your previous credentials to safely rotate your password.');
+                    showView('reset');
+                }
+            } catch (error) {
+                showAlert(error.message || 'Verification failed', 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        });
+
+        async function requestEmailReset() {
+            const response = await fetch('/api/auth/password-reset/request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: state.username, email: state.email })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error);
+
+            if (data.token) {
+                // Dev mode
+                state.token = data.token;
+                showAlert('Dev Mode: Token generated. Redirecting...', 'success');
+                setTimeout(() => validateToken(data.token), 1500);
+            } else {
+                showAlert('Success! If the account exists, a reset link has been sent to your email.', 'success');
+                // Stay on identity view to show success
+            }
+        }
+
+        // --- Step 3: Token Validation & Reset ---
+
+        async function validateToken(token) {
+            showView('identity'); // Show identity while validating
+            const btn = document.getElementById('identity-submit');
+            btn.disabled = true;
+            btn.innerHTML = `<div class="spinner"></div> Validating...`;
+
+            try {
+                const response = await fetch('/api/auth/password-reset/validate-token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+                const data = await response.json();
+                
+                if (!data.valid) throw new Error(data.error || 'Invalid token');
+
+                state.username = data.username;
+                state.hasEncryptedData = data.has_encrypted_data;
+                state.canRecoverViaEmail = data.can_recover_via_email;
+
+                setupResetView();
+                showView('reset');
+            } catch (error) {
+                showAlert(error.message, 'danger');
+                state.method = null;
+                state.token = null;
+                setTimeout(() => showView('methods'), 3000);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Continue';
+            }
+        }
+
+        function setupResetView(customWarning = null) {
+            components.title.textContent = 'Set New Password';
+            components.subtitle.textContent = `For account: ${state.username}`;
+
+            let warning = '';
+            if (state.method === 'email') {
+                if (state.canRecoverViaEmail) {
+                    warning = '<div class="alert alert-success"><strong>✅ Data Recovery:</strong> Your encrypted data will be restored automatically via email backup.</div>';
+                } else if (state.hasEncryptedData) {
+                    warning = '<div class="alert alert-danger"><strong>⚠️ Data Loss Warning:</strong> Resetting your password via email will PERMANENTLY DELETE your encrypted profile data because no backup was found.</div>';
+                } else {
+                    warning = '<div class="alert alert-info"><strong>💡 Note:</strong> Your account has no encrypted data yet, so no data will be lost.</div>';
+                }
+            } else if (state.method === 'code') {
+                warning = '<div class="alert alert-success"><strong>✅ Data Preservation:</strong> Using your recovery code will preserve all your encrypted profile data.</div>';
+            } else if (state.method === 'password') {
+                warning = '<div class="alert alert-success"><strong>✅ Secure Rotation:</strong> Your data will be re-encrypted with your new password.</div>';
+            }
+
+            components.resetAlert.innerHTML = warning;
+        }
+
+        document.getElementById('reset-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('new-password').value;
+            const confirm = document.getElementById('confirm-password').value;
+
+            if (password !== confirm) {
+                showAlert('Passwords do not match', 'danger', components.resetAlert);
+                return;
+            }
+
+            const btn = document.getElementById('reset-submit');
+            btn.disabled = true;
+            btn.innerHTML = `<div class="spinner"></div> Resetting...`;
+
+            try {
+                let endpoint, body;
+                
+                if (state.method === 'code') {
+                    endpoint = '/api/auth/password-reset/recovery';
+                    body = { username: state.username, recovery_code: state.recoveryCode, new_password: password };
+                } else if (state.method === 'password') {
+                    endpoint = '/api/auth/password/offline-change';
+                    body = { username: state.username, email: state.email, old_password: state.oldPassword, new_password: password };
+                } else {
+                    // Standard email token reset
+                    endpoint = '/api/auth/password-reset/reset';
+                    body = { token: state.token, password: password };
+                }
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await response.json();
+
+                if (!response.ok) throw new Error(data.error);
+
+                if (data.dek_lost) {
+                    document.getElementById('success-message').innerHTML = 'Password updated. <span style="color: var(--danger)">Note: Encrypted data was lost.</span>';
+                } else {
+                    document.getElementById('success-message').textContent = 'Password updated and data preserved successfully.';
+                }
+
+                showView('success');
+                components.title.textContent = 'Success!';
+                components.subtitle.textContent = 'Account recovered';
+                document.getElementById('footer-links').classList.add('hidden');
+            } catch (error) {
+                showAlert(error.message, 'danger', components.resetAlert);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Reset Password';
+            }
+        });
+
+        // Admin Help
+        document.getElementById('admin-help-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            const username = prompt('Enter your username for the administrator to review:');
+            const email = prompt('Enter your registered email:');
+            
+            if (username && email) {
+                fetch('/api/auth/request-admin-reset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email })
+                }).then(r => r.json()).then(data => {
+                    alert(data.message || 'Request submitted.');
+                });
+            }
+        });
+
+    </script>
+</body>
+</html>

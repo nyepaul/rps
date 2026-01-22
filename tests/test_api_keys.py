@@ -7,10 +7,10 @@ Tests encryption, storage, and retrieval of API keys
 import sys
 import os
 
-# Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+# Add project root to path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from services.encryption_service import get_encryption_service
+from src.services.encryption_service import get_encryption_service
 
 def test_encryption_service():
     """Test the encryption service with API key-like data."""
@@ -84,8 +84,7 @@ def test_api_key_validation():
     from pydantic import ValidationError
 
     # Import the schema from routes (we need to test this works)
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
-    from routes.profiles import APIKeySchema
+    from src.routes.profiles import APIKeySchema
 
     # Test valid keys
     try:
