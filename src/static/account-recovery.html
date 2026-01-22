@@ -290,25 +290,18 @@
         <!-- View 1: Method Selection -->
         <div id="view-methods" class="view active">
             <div class="method-grid">
-                <div class="method-option" data-method="email">
-                    <div class="method-icon">📧</div>
-                    <div class="method-info">
-                        <h3>Email Reset</h3>
-                        <p>Receive a reset link via email. (Requires configured mail server)</p>
-                    </div>
-                </div>
-                <div class="method-option" data-method="token">
+                <div class="method-option" data-method="access">
                     <div class="method-icon">🎟️</div>
                     <div class="method-info">
-                        <h3>I have a Reset Token</h3>
-                        <p>If you received a token from an administrator or logs, enter it here.</p>
+                        <h3>Access Token</h3>
+                        <p>Prove ownership via Email link or a token from your administrator.</p>
                     </div>
                 </div>
                 <div class="method-option" data-method="code">
                     <div class="method-icon">🔑</div>
                     <div class="method-info">
                         <h3>Recovery Code</h3>
-                        <p>Use your 16-character code to reset your password and preserve all data.</p>
+                        <p>The 16-character master key. Reset access AND preserve all data.</p>
                     </div>
                 </div>
                 <div class="method-option" data-method="password">
@@ -329,14 +322,22 @@
                     <input type="text" id="username" placeholder="Enter your username">
                 </div>
                 
-                <div id="email-field" class="form-group">
+                <div id="access-choice-field" class="form-group hidden">
+                    <label>How would you like to proceed?</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                        <button type="button" class="btn" id="btn-choice-email" style="background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; font-size: 13px;">📧 Email Link</button>
+                        <button type="button" class="btn" id="btn-choice-token" style="background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; font-size: 13px;">🎟️ Enter Token</button>
+                    </div>
+                </div>
+
+                <div id="email-field" class="form-group hidden">
                     <label for="email">Email Address</label>
                     <input type="email" id="email" placeholder="email@example.com">
                 </div>
 
                 <div id="token-field" class="form-group hidden">
                     <label for="manual-token">Reset Token</label>
-                    <input type="text" id="manual-token" placeholder="Enter the token received">
+                    <input type="text" id="manual-token" placeholder="Paste token here">
                 </div>
 
                 <div id="old-password-field" class="form-group hidden">
@@ -403,6 +404,7 @@
         let state = {
             step: 1,
             method: null,
+            subMethod: null,
             username: '',
             email: '',
             token: null,
@@ -426,7 +428,12 @@
             message: document.getElementById('message-container'),
             methodAlert: document.getElementById('method-alert'),
             resetAlert: document.getElementById('reset-alert'),
-            dots: document.querySelectorAll('.step-dot')
+            dots: document.querySelectorAll('.step-dot'),
+            accessChoice: document.getElementById('access-choice-field'),
+            emailField: document.getElementById('email-field'),
+            tokenField: document.getElementById('token-field'),
+            btnEmail: document.getElementById('btn-choice-email'),
+            btnToken: document.getElementById('btn-choice-token')
         };
 
         // Initialize from URL token if present
@@ -434,7 +441,8 @@
         const urlToken = urlParams.get('token');
         if (urlToken) {
             state.token = urlToken;
-            state.method = 'email';
+            state.method = 'access';
+            state.subMethod = 'token';
             validateToken(urlToken);
         }
 
@@ -468,24 +476,56 @@
         document.querySelectorAll('.method-option').forEach(opt => {
             opt.addEventListener('click', () => {
                 state.method = opt.dataset.method;
+                state.subMethod = null;
                 setupIdentityView();
                 showView('identity');
             });
         });
 
+        components.btnEmail.addEventListener('click', () => {
+            state.subMethod = 'email';
+            updateAccessSubMethod();
+        });
+
+        components.btnToken.addEventListener('click', () => {
+            state.subMethod = 'token';
+            updateAccessSubMethod();
+        });
+
+        function updateAccessSubMethod() {
+            components.emailField.classList.toggle('hidden', state.subMethod !== 'email');
+            components.tokenField.classList.toggle('hidden', state.subMethod !== 'token');
+            document.getElementById('username-field').classList.toggle('hidden', state.subMethod === 'token');
+            
+            components.btnEmail.style.background = state.subMethod === 'email' ? 'var(--primary)' : '#f3f4f6';
+            components.btnEmail.style.color = state.subMethod === 'email' ? 'white' : '#374151';
+            components.btnToken.style.background = state.subMethod === 'token' ? 'var(--primary)' : '#f3f4f6';
+            components.btnToken.style.color = state.subMethod === 'token' ? 'white' : '#374151';
+
+            const submitBtn = document.getElementById('identity-submit');
+            if (state.subMethod === 'email') {
+                submitBtn.textContent = 'Send Reset Link';
+                document.getElementById('email').required = true;
+                document.getElementById('manual-token').required = false;
+            } else {
+                submitBtn.textContent = 'Verify Token';
+                document.getElementById('email').required = false;
+                document.getElementById('manual-token').required = true;
+            }
+        }
+
         function setupIdentityView() {
             clearAlerts();
             const usernameField = document.getElementById('username-field');
-            const emailField = document.getElementById('email-field');
-            const tokenField = document.getElementById('token-field');
             const oldPasswordField = document.getElementById('old-password-field');
             const codeField = document.getElementById('recovery-code-field');
             const submitBtn = document.getElementById('identity-submit');
 
             // Reset fields
             usernameField.classList.remove('hidden');
-            emailField.classList.add('hidden');
-            tokenField.classList.add('hidden');
+            components.accessChoice.classList.add('hidden');
+            components.emailField.classList.add('hidden');
+            components.tokenField.classList.add('hidden');
             oldPasswordField.classList.add('hidden');
             codeField.classList.add('hidden');
             
@@ -495,22 +535,13 @@
             document.getElementById('old-password').required = false;
             document.getElementById('recovery-code').required = false;
 
-            if (state.method === 'email') {
-                components.title.textContent = 'Email Recovery';
-                components.subtitle.textContent = 'Verify your identity';
-                emailField.classList.remove('hidden');
-                document.getElementById('email').required = true;
-                components.methodAlert.innerHTML = '<strong>🔒 Security:</strong> We will send a reset link to your registered email address.';
-                submitBtn.textContent = 'Send Reset Link';
-            } else if (state.method === 'token') {
-                components.title.textContent = 'Token Recovery';
-                components.subtitle.textContent = 'Manual Token Entry';
-                tokenField.classList.remove('hidden');
-                usernameField.classList.add('hidden'); // Token contains user info
-                document.getElementById('username').required = false;
-                document.getElementById('manual-token').required = true;
-                components.methodAlert.innerHTML = '<strong>🎟️ Token Entry:</strong> Paste the reset token you received via email, log, or administrator.';
-                submitBtn.textContent = 'Verify Token';
+            if (state.method === 'access') {
+                components.title.textContent = 'Access Token';
+                components.subtitle.textContent = 'Restore account access';
+                components.accessChoice.classList.remove('hidden');
+                state.subMethod = state.subMethod || 'email';
+                updateAccessSubMethod();
+                components.methodAlert.innerHTML = '<strong>🎟️ Identity:</strong> Prove you own the account to set a new password. Data may be lost unless you have a recovery key.';
             } else if (state.method === 'code') {
                 components.title.textContent = 'Recovery Code';
                 components.subtitle.textContent = 'Restore your data';
@@ -521,7 +552,7 @@
             } else if (state.method === 'password') {
                 components.title.textContent = 'Previous Password';
                 components.subtitle.textContent = 'Identity Verification';
-                emailField.classList.remove('hidden');
+                components.emailField.classList.remove('hidden');
                 oldPasswordField.classList.remove('hidden');
                 document.getElementById('email').required = true;
                 document.getElementById('old-password').required = true;
@@ -554,18 +585,18 @@
             clearAlerts();
 
             try {
-                if (state.method === 'email') {
-                    await requestEmailReset();
-                } else if (state.method === 'token') {
-                    state.token = manualToken;
-                    await validateToken(manualToken);
+                if (state.method === 'access') {
+                    if (state.subMethod === 'email') {
+                        await requestEmailReset();
+                    } else {
+                        state.token = manualToken;
+                        await validateToken(manualToken);
+                    }
                 } else if (state.method === 'code') {
-                    // For code, we jump straight to reset view but will use the code during submission
-                    setupResetView('Enter your 16-character recovery code above to preserve your data.');
+                    setupResetView();
                     showView('reset');
                 } else if (state.method === 'password') {
-                    // Password recovery validates credentials first
-                    setupResetView('Verify your previous credentials to safely rotate your password.');
+                    setupResetView();
                     showView('reset');
                 }
             } catch (error) {
@@ -574,7 +605,7 @@
                 btn.disabled = false;
                 btn.textContent = originalText;
             }
-        }
+        });
 
         async function requestEmailReset() {
             const response = await fetch('/api/auth/password-reset/request', {
@@ -637,11 +668,11 @@
             components.subtitle.textContent = `For account: ${state.username}`;
 
             let warning = '';
-            if (state.method === 'email') {
+            if (state.method === 'access') {
                 if (state.canRecoverViaEmail) {
                     warning = '<div class="alert alert-success"><strong>✅ Data Recovery:</strong> Your encrypted data will be restored automatically via email backup.</div>';
                 } else if (state.hasEncryptedData) {
-                    warning = '<div class="alert alert-danger"><strong>⚠️ Data Loss Warning:</strong> Resetting your password via email will PERMANENTLY DELETE your encrypted profile data because no backup was found.</div>';
+                    warning = '<div class="alert alert-danger"><strong>⚠️ Data Loss Warning:</strong> Resetting your password via token will PERMANENTLY DELETE your encrypted profile data because no backup was found.</div>';
                 } else {
                     warning = '<div class="alert alert-info"><strong>💡 Note:</strong> Your account has no encrypted data yet, so no data will be lost.</div>';
                 }
