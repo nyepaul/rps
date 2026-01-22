@@ -5,9 +5,11 @@ from pydantic import BaseModel, validator
 from typing import Optional, Dict, Any
 from src.auth.admin_required import admin_required
 from src.auth.super_admin_required import super_admin_required
+from src.database.connection import db
 from src.services.enhanced_audit_logger import enhanced_audit_logger, AuditConfig
 from src.services.audit_narrative_generator import audit_narrative_generator
 from src.auth.models import User, PasswordResetRequest
+from src.models.group import Group
 from src.services.encryption_service import EncryptionService
 import base64
 import json
@@ -426,16 +428,28 @@ def update_audit_config():
 @login_required
 @admin_required
 def list_users():
-    """List all users in the system."""
+    """List all users in the system with their group assignments."""
     try:
         from src.database.connection import db
 
         if current_user.is_super_admin:
-            rows = db.execute('SELECT id, username, email, is_active, is_admin, is_super_admin, created_at, last_login FROM users ORDER BY created_at DESC')
+            rows = db.execute('''
+                SELECT u.id, u.username, u.email, u.is_active, u.is_admin, u.is_super_admin, u.created_at, u.last_login,
+                       GROUP_CONCAT(g.name, ', ') as group_names
+                FROM users u
+                LEFT JOIN user_groups ug ON u.id = ug.user_id
+                LEFT JOIN groups g ON ug.group_id = g.id
+                GROUP BY u.id
+                ORDER BY u.created_at DESC
+            ''')
         else:
             # Only show users in groups managed by this admin
             rows = db.execute('''
-                SELECT DISTINCT u.id, u.username, u.email, u.is_active, u.is_admin, u.is_super_admin, u.created_at, u.last_login 
+                SELECT DISTINCT u.id, u.username, u.email, u.is_active, u.is_admin, u.is_super_admin, u.created_at, u.last_login,
+                       (SELECT GROUP_CONCAT(g2.name, ', ') 
+                        FROM groups g2 
+                        JOIN user_groups ug2 ON g2.id = ug2.group_id 
+                        WHERE ug2.user_id = u.id) as group_names
                 FROM users u
                 JOIN user_groups ug ON u.id = ug.user_id
                 JOIN admin_groups ag ON ug.group_id = ag.group_id
@@ -578,7 +592,6 @@ def reset_user_password(user_id: int):
 @admin_required
 def list_groups():
     """List all groups (Super Admin sees all, Local Admin sees managed)."""
-    from src.models.group import Group
     try:
         if current_user.is_super_admin:
             groups = Group.get_all()
@@ -595,7 +608,6 @@ def list_groups():
 @super_admin_required
 def create_group():
     """Create a new user group (Super Admin only)."""
-    from src.models.group import Group
     try:
         data = GroupCreateSchema(**request.json)
         group = Group(None, data.name, data.description)
@@ -617,7 +629,6 @@ def create_group():
 @admin_required
 def get_group(group_id):
     """Get group details and members."""
-    from src.models.group import Group
     try:
         group = Group.get_by_id(group_id)
         if not group:
@@ -643,7 +654,6 @@ def get_group(group_id):
 @super_admin_required
 def update_group(group_id):
     """Update group details (Super Admin only)."""
-    from src.models.group import Group
     try:
         group = Group.get_by_id(group_id)
         if not group:
@@ -670,7 +680,6 @@ def update_group(group_id):
 @super_admin_required
 def delete_group(group_id):
     """Delete a group (Super Admin only)."""
-    from src.models.group import Group
     try:
         group = Group.get_by_id(group_id)
         if not group:
@@ -694,7 +703,6 @@ def delete_group(group_id):
 @super_admin_required
 def add_group_member(group_id, user_id):
     """Add a user to a group (Super Admin only)."""
-    from src.models.group import Group
     try:
         group = Group.get_by_id(group_id)
         if not group:
@@ -722,7 +730,6 @@ def add_group_member(group_id, user_id):
 @super_admin_required
 def remove_group_member(group_id, user_id):
     """Remove a user from a group (Super Admin only)."""
-    from src.models.group import Group
     try:
         group = Group.get_by_id(group_id)
         if not group:
@@ -1130,6 +1137,52 @@ def delete_user(user_id: int):
     except Exception as e:
         print(f"Error deleting user: {e}")
         return jsonify({'error': f'Failed to delete user: {str(e)}'}), 500
+
+
+@admin_bp.route('/users/<int:user_id>/groups/<int:group_id>', methods=['POST'])
+@login_required
+@super_admin_required
+def add_user_to_group(user_id, group_id):
+    """Add a user to a group (Super Admin only)."""
+    try:
+        user = User.get_by_id(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        user.add_to_group(group_id)
+        
+        enhanced_audit_logger.log_admin_action(
+            action='ADD_USER_TO_GROUP',
+            details={'user_id': user_id, 'username': user.username, 'group_id': group_id},
+            user_id=current_user.id
+        )
+        
+        return jsonify({'message': 'User added to group'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/users/<int:user_id>/groups/<int:group_id>', methods=['DELETE'])
+@login_required
+@super_admin_required
+def remove_user_from_group(user_id, group_id):
+    """Remove a user from a group (Super Admin only)."""
+    try:
+        user = User.get_by_id(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+            
+        user.remove_from_group(group_id)
+        
+        enhanced_audit_logger.log_admin_action(
+            action='REMOVE_USER_FROM_GROUP',
+            details={'user_id': user_id, 'username': user.username, 'group_id': group_id},
+            user_id=current_user.id
+        )
+        
+        return jsonify({'message': 'User removed from group'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @admin_bp.route('/system/info', methods=['GET'])

@@ -41,6 +41,7 @@ export async function renderUserManagement(container) {
                             <tr style="background: var(--bg-tertiary); border-bottom: 2px solid var(--border-color);">
                                 <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">ID</th>
                                 <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">Username</th>
+                                <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">Groups</th>
                                 <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">Email</th>
                                 <th style="text-align: center; padding: 12px; font-size: 12px; font-weight: 600;">Status</th>
                                 <th style="text-align: center; padding: 12px; font-size: 12px; font-weight: 600;">Admin</th>
@@ -84,6 +85,9 @@ function renderUserRow(user, currentUser) {
         <tr class="user-row" data-user-id="${user.id}" data-username="${user.username}" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='transparent'">
             <td style="padding: 12px; font-size: 13px; font-family: monospace;">${user.id}</td>
             <td style="padding: 12px; font-weight: 600;">${user.username}</td>
+            <td style="padding: 12px; font-size: 12px; color: var(--text-secondary);">
+                ${user.group_names ? `<span style="display: inline-block; padding: 2px 6px; background: var(--info-bg); color: var(--info-color); border-radius: 4px; font-weight: 600;">${user.group_names}</span>` : '<span style="font-style: italic; opacity: 0.5;">None</span>'}
+            </td>
             <td style="padding: 12px; font-size: 13px;">${user.email}</td>
             <td style="padding: 12px; text-align: center;">
                 <span style="display: inline-block; padding: 4px 8px; background: ${user.is_active ? 'var(--success-color)20' : 'var(--danger-color)20'}; color: ${user.is_active ? 'var(--success-color)' : 'var(--danger-color)'}; border-radius: 4px; font-size: 11px; font-weight: 600;">
@@ -113,6 +117,9 @@ function renderUserRow(user, currentUser) {
                     ${currentUser && currentUser.is_super_admin ? `
                         <button class="toggle-super-admin-btn" data-user-id="${user.id}" data-is-super-admin="${user.is_super_admin}" data-is-admin="${user.is_admin}" style="padding: 4px 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px;" title="${user.is_super_admin ? 'Remove Super Admin' : 'Grant Super Admin'}">
                             ${user.is_super_admin ? '⭐' : '⚪'}
+                        </button>
+                        <button class="manage-user-groups-btn" data-user-id="${user.id}" data-username="${user.username}" style="padding: 4px 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px;" title="Manage Groups">
+                            🔗
                         </button>
                     ` : ''}
                     <button class="reset-password-btn" data-user-id="${user.id}" data-username="${user.username}" style="padding: 4px 8px; background: #f59e0b; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;" title="Reset Password">
@@ -189,6 +196,16 @@ function setupUserActionHandlers(container) {
                 await toggleUserSuperAdmin(userId, !isSuperAdmin);
                 await renderUserManagement(container);  // Refresh
             }
+        });
+    });
+
+    // Manage User Groups (Super Admin only)
+    container.querySelectorAll('.manage-user-groups-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const userId = parseInt(btn.getAttribute('data-user-id'));
+            const username = btn.getAttribute('data-username');
+            await showManageUserGroupsModal(userId, username, container);
         });
     });
 
@@ -471,5 +488,85 @@ async function viewUserProfiles(userId) {
     } catch (error) {
         console.error('Failed to load user profiles:', error);
         showError(`Failed to load user profiles: ${error.message}`);
+    }
+}
+
+/**
+ * Show modal to manage which groups a user belongs to
+ */
+async function showManageUserGroupsModal(userId, username, parentContainer) {
+    try {
+        const [groupsRes, userGroupsRes] = await Promise.all([
+            apiClient.get('/api/admin/groups'),
+            apiClient.get(`/api/admin/users/${userId}/groups`)
+        ]);
+        
+        const allGroups = groupsRes.groups;
+        const userGroups = userGroupsRes.groups;
+        const userGroupIds = new Set(userGroups.map(g => g.id));
+
+        const modal = document.createElement('div');
+        modal.style.cssText = `position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;`;
+        
+        modal.innerHTML = `
+            <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; max-width: 450px; width: 90%;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h3 style="margin: 0;">Manage Groups: ${username}</h3>
+                        <p style="margin: 5px 0 0 0; font-size: 12px; color: var(--text-secondary);">Assign this user to one or more groups</p>
+                    </div>
+                    <button class="close-modal-btn" style="background: transparent; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">×</button>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; padding: 4px;">
+                    ${allGroups.map(group => `
+                        <label style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg-primary); border-radius: 8px; cursor: pointer; border: 1px solid var(--border-color); transition: border-color 0.2s;">
+                            <input type="checkbox" class="group-membership-toggle" data-group-id="${group.id}" ${userGroupIds.has(group.id) ? 'checked' : ''} style="width: 18px; height: 18px;">
+                            <div>
+                                <div style="font-weight: 600; font-size: 14px;">${group.name}</div>
+                                <div style="font-size: 11px; color: var(--text-secondary);">${group.description || 'No description'}</div>
+                            </div>
+                        </label>
+                    `).join('')}
+                    ${allGroups.length === 0 ? '<p style="text-align: center; color: var(--text-secondary);">No groups created yet. Go to the Groups tab to create one.</p>' : ''}
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; margin-top: 25px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+                    <button class="close-modal-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Done</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        
+        // Handle close
+        modal.querySelectorAll('.close-modal-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                modal.remove();
+                renderUserManagement(parentContainer); // Refresh the table to show new group names
+            });
+        });
+        
+        modal.addEventListener('click', (e) => { if (e.target === modal) { modal.remove(); renderUserManagement(parentContainer); } });
+
+        // Handle toggles
+        modal.querySelectorAll('.group-membership-toggle').forEach(toggle => {
+            toggle.addEventListener('change', async () => {
+                const groupId = toggle.dataset.groupId;
+                try {
+                    if (toggle.checked) {
+                        await apiClient.post(`/api/admin/users/${userId}/groups/${groupId}`);
+                    } else {
+                        await apiClient.delete(`/api/admin/users/${userId}/groups/${groupId}`);
+                    }
+                } catch (error) {
+                    showError(error.message);
+                    toggle.checked = !toggle.checked; // Revert
+                }
+            });
+        });
+
+    } catch (error) {
+        showError(`Failed to load groups: ${error.message}`);
     }
 }

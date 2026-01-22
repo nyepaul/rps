@@ -56,6 +56,19 @@ export async function renderGroupManagement(container) {
     } catch (error) {
         console.error('Failed to load groups:', error);
         showError(`Failed to load groups: ${error.message}`);
+        container.innerHTML = `
+            <div style="text-align: center; padding: 60px; color: var(--danger-color);">
+                <div style="font-size: 48px; margin-bottom: 15px;">❌</div>
+                <div>Failed to load groups</div>
+                <div style="color: var(--text-secondary); margin-top: 10px; font-size: 13px;">${error.message}</div>
+                <button id="retry-groups-btn" style="margin-top: 20px; padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">Retry</button>
+            </div>
+        `;
+        
+        const retryBtn = container.querySelector('#retry-groups-btn');
+        if (retryBtn) {
+            retryBtn.addEventListener('click', () => renderGroupManagement(container));
+        }
     }
 }
 
