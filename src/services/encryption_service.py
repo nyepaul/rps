@@ -44,7 +44,7 @@ class EncryptionService:
     @staticmethod
     def generate_dek() -> bytes:
         """Generate a random 32-byte Data Encryption Key."""
-        return os.urandom(32)
+        return secrets.token_bytes(32)
 
     @staticmethod
     def generate_recovery_code() -> str:
@@ -60,7 +60,7 @@ class EncryptionService:
             algorithm=hashes.SHA256(),
             length=32,
             salt=salt,
-            iterations=100000,
+            iterations=600000,  # Increased from 100k to 600k (OWASP recommendation)
             backend=default_backend()
         )
         return kdf.derive(password.encode('utf-8'))
@@ -72,7 +72,7 @@ class EncryptionService:
             algorithm=hashes.SHA256(),
             length=32,
             salt=salt,
-            iterations=200000,  # Higher iterations for recovery codes
+            iterations=600000,  # Increased from 200k to 600k
             backend=default_backend()
         )
         # Normalize code (uppercase, strip spaces)
@@ -86,7 +86,7 @@ class EncryptionService:
             algorithm=hashes.SHA256(),
             length=32,
             salt=salt,
-            iterations=200000,
+            iterations=600000,  # Increased from 200k to 600k
             backend=default_backend()
         )
         # Normalize email (lowercase, strip)
