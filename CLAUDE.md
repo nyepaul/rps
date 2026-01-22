@@ -100,6 +100,7 @@ All documentation is organized in the `docs/` directory:
 
 Key documents:
 - [Quick Start Guide](docs/guides/QUICKSTART.md)
+- [Dev Server Setup](docs/DEV_SERVER.md) - Ports 5137/8087, starting/stopping
 - [Deployment Guide](docs/deployment/DEPLOYMENT.md)
 - [Security Documentation](docs/security/SYSTEM_SECURITY_DOCUMENTATION.md)
 - [Admin System Guide](docs/reference/ADMIN_SYSTEM_GUIDE.md)

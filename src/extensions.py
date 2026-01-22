@@ -35,10 +35,12 @@ def init_extensions(app):
     csrf.exempt('auth.validate_reset_token')
 
     # Initialize limiter
-    # If not enabled or explicitly set to memory, use memory storage to avoid Redis dependency in tests
+    # If not enabled, testing, debug mode, or explicitly set to memory, use memory storage
+    # This avoids Redis dependency in development/tests
     if not app.config.get('RATELIMIT_ENABLED', True) or \
        app.config.get('RATELIMIT_STORAGE_URI') == 'memory://' or \
-       app.config.get('TESTING'):
+       app.config.get('TESTING') or \
+       app.config.get('DEBUG'):
         app.config['RATELIMIT_STORAGE_URI'] = 'memory://'
     
     limiter.init_app(app)
