@@ -1386,6 +1386,25 @@ def reset_demo_account():
                     (demo_user.password_hash, datetime.now().isoformat(), demo_user.id)
                 )
 
+        # Ensure Demo Group exists and demo user is assigned to it
+        with db.get_connection() as conn:
+            cursor = conn.execute("SELECT id FROM groups WHERE name = 'Demo Group'")
+            group_row = cursor.fetchone()
+            if not group_row:
+                cursor = conn.execute(
+                    "INSERT INTO groups (name, description) VALUES (?, ?)",
+                    ('Demo Group', 'Public demo profiles group')
+                )
+                demo_group_id = cursor.lastrowid
+            else:
+                demo_group_id = group_row['id']
+            
+            # Ensure demo user is in the group
+            conn.execute(
+                "INSERT OR IGNORE INTO user_groups (user_id, group_id) VALUES (?, ?)",
+                (demo_user.id, demo_group_id)
+            )
+
         # Delete all existing profiles, action items, scenarios and conversations for demo user
         with db.get_connection() as conn:
             conn.execute('DELETE FROM profile WHERE user_id = ?', (demo_user.id,))
