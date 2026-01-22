@@ -399,6 +399,65 @@ class User(UserMixin):
         )
         return user.save()
     
+    def get_groups(self):
+        """Get groups this user belongs to."""
+        from src.models.group import Group
+        rows = db.execute('''
+            SELECT g.* FROM groups g
+            JOIN user_groups ug ON g.id = ug.group_id
+            WHERE ug.user_id = ?
+        ''', (self.id,))
+        return [Group(**dict(row)) for row in rows]
+
+    def get_managed_groups(self):
+        """Get groups this user can manage (for local admins)."""
+        from src.models.group import Group
+        if self.is_super_admin:
+            return Group.get_all()
+        
+        rows = db.execute('''
+            SELECT g.* FROM groups g
+            JOIN admin_groups ag ON g.id = ag.group_id
+            WHERE ag.user_id = ?
+        ''', (self.id,))
+        return [Group(**dict(row)) for row in rows]
+
+    def can_manage_user(self, target_user_id: int):
+        """Check if this user can manage the target user."""
+        if self.is_super_admin:
+            return True
+        if not self.is_admin:
+            return False
+        
+        # Check if target user is in any group managed by this admin
+        row = db.execute_one('''
+            SELECT 1 FROM user_groups ug
+            JOIN admin_groups ag ON ug.group_id = ag.group_id
+            WHERE ag.user_id = ? AND ug.user_id = ?
+        ''', (self.id, target_user_id))
+        
+        return row is not None
+
+    def add_to_group(self, group_id: int):
+        """Add user to a group."""
+        with db.get_connection() as conn:
+            conn.execute('INSERT OR IGNORE INTO user_groups (user_id, group_id) VALUES (?, ?)', (self.id, group_id))
+
+    def remove_from_group(self, group_id: int):
+        """Remove user from a group."""
+        with db.get_connection() as conn:
+            conn.execute('DELETE FROM user_groups WHERE user_id = ? AND group_id = ?', (self.id, group_id))
+
+    def add_managed_group(self, group_id: int):
+        """Assign a group to be managed by this admin."""
+        with db.get_connection() as conn:
+            conn.execute('INSERT OR IGNORE INTO admin_groups (user_id, group_id) VALUES (?, ?)', (self.id, group_id))
+
+    def remove_managed_group(self, group_id: int):
+        """Remove a group from being managed by this admin."""
+        with db.get_connection() as conn:
+            conn.execute('DELETE FROM admin_groups WHERE user_id = ? AND group_id = ?', (self.id, group_id))
+
     def __repr__(self):
         return f'<User {self.username}>'
 

@@ -49,6 +49,18 @@ class PasswordResetSchema(BaseModel):
         return v
 
 
+class GroupCreateSchema(BaseModel):
+    """Schema for group creation."""
+    name: str
+    description: Optional[str] = None
+
+
+class GroupUpdateSchema(BaseModel):
+    """Schema for group updates."""
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+
 class SmtpConfigSchema(BaseModel):
     """Schema for SMTP configuration."""
     mail_server: str
@@ -418,7 +430,19 @@ def list_users():
     try:
         from src.database.connection import db
 
-        rows = db.execute('SELECT id, username, email, is_active, is_admin, is_super_admin, created_at, last_login FROM users ORDER BY created_at DESC')
+        if current_user.is_super_admin:
+            rows = db.execute('SELECT id, username, email, is_active, is_admin, is_super_admin, created_at, last_login FROM users ORDER BY created_at DESC')
+        else:
+            # Only show users in groups managed by this admin
+            rows = db.execute('''
+                SELECT DISTINCT u.id, u.username, u.email, u.is_active, u.is_admin, u.is_super_admin, u.created_at, u.last_login 
+                FROM users u
+                JOIN user_groups ug ON u.id = ug.user_id
+                JOIN admin_groups ag ON ug.group_id = ag.group_id
+                WHERE ag.user_id = ?
+                ORDER BY u.created_at DESC
+            ''', (current_user.id,))
+
         users = [dict(row) for row in rows]
 
         # Log admin action
@@ -440,6 +464,10 @@ def list_users():
 def update_user(user_id: int):
     """Update user status (activate/deactivate, promote/demote admin)."""
     try:
+        # Check permissions
+        if not current_user.can_manage_user(user_id):
+            return jsonify({'error': 'Unauthorized to manage this user'}), 403
+
         # Validate input
         data = UserUpdateSchema(**request.json)
 
@@ -448,7 +476,11 @@ def update_user(user_id: int):
         if not user:
             return jsonify({'error': 'User not found'}), 404
 
-        # Prevent self-demotion
+        # Prevent demoting a super admin unless requester is also super admin
+        if user.is_super_admin and not current_user.is_super_admin:
+            return jsonify({'error': 'Only super admins can manage other super admins'}), 403
+
+        # Prevent demoting self from admin
         if user_id == current_user.id and data.is_admin == False:
             return jsonify({'error': 'Cannot demote yourself from admin'}), 400
 
@@ -529,17 +561,272 @@ def reset_user_password(user_id: int):
             message += '. ⚠️ WARNING: User\'s encrypted data is now PERMANENTLY INACCESSIBLE because the old password was not available to re-encrypt it.'
 
         return jsonify({
-            'message': message,
-            'dek_lost': dek_was_lost,
-            'warning': 'User will lose access to all encrypted data' if dek_was_lost else None,
-            'user': {
-                'id': user.id,
-                'username': user.username
-            }
+            'message': 'Password reset successfully',
+            'dek_lost': dek_was_lost
         }), 200
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 400
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================================================
+# Group Management Endpoints
+# ============================================================================
+
+@admin_bp.route('/groups', methods=['GET'])
+@login_required
+@admin_required
+def list_groups():
+    """List all groups (Super Admin sees all, Local Admin sees managed)."""
+    from src.models.group import Group
+    try:
+        if current_user.is_super_admin:
+            groups = Group.get_all()
+        else:
+            groups = current_user.get_managed_groups()
+        
+        return jsonify({'groups': [g.to_dict() for g in groups]}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/groups', methods=['POST'])
+@login_required
+@super_admin_required
+def create_group():
+    """Create a new user group (Super Admin only)."""
+    from src.models.group import Group
+    try:
+        data = GroupCreateSchema(**request.json)
+        group = Group(None, data.name, data.description)
+        group.save()
+        
+        enhanced_audit_logger.log_admin_action(
+            action='CREATE_GROUP',
+            details=group.to_dict(),
+            user_id=current_user.id
+        )
+        
+        return jsonify({'message': 'Group created successfully', 'group': group.to_dict()}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/groups/<int:group_id>', methods=['GET'])
+@login_required
+@admin_required
+def get_group(group_id):
+    """Get group details and members."""
+    from src.models.group import Group
+    try:
+        group = Group.get_by_id(group_id)
+        if not group:
+            return jsonify({'error': 'Group not found'}), 404
+        
+        # Check permissions for local admin
+        if not current_user.is_super_admin:
+            managed_ids = [g.id for g in current_user.get_managed_groups()]
+            if group_id not in managed_ids:
+                return jsonify({'error': 'Unauthorized to view this group'}), 403
+        
+        members = group.get_members()
+        return jsonify({
+            'group': group.to_dict(),
+            'members': [{'id': u.id, 'username': u.username, 'email': u.email} for u in members]
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/groups/<int:group_id>', methods=['PUT'])
+@login_required
+@super_admin_required
+def update_group(group_id):
+    """Update group details (Super Admin only)."""
+    from src.models.group import Group
+    try:
+        group = Group.get_by_id(group_id)
+        if not group:
+            return jsonify({'error': 'Group not found'}), 404
+        
+        data = GroupUpdateSchema(**request.json)
+        if data.name: group.name = data.name
+        if data.description: group.description = data.description
+        group.save()
+        
+        enhanced_audit_logger.log_admin_action(
+            action='UPDATE_GROUP',
+            details=group.to_dict(),
+            user_id=current_user.id
+        )
+        
+        return jsonify({'message': 'Group updated successfully', 'group': group.to_dict()}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/groups/<int:group_id>', methods=['DELETE'])
+@login_required
+@super_admin_required
+def delete_group(group_id):
+    """Delete a group (Super Admin only)."""
+    from src.models.group import Group
+    try:
+        group = Group.get_by_id(group_id)
+        if not group:
+            return jsonify({'error': 'Group not found'}), 404
+        
+        group.delete()
+        
+        enhanced_audit_logger.log_admin_action(
+            action='DELETE_GROUP',
+            details={'group_id': group_id, 'name': group.name},
+            user_id=current_user.id
+        )
+        
+        return jsonify({'message': 'Group deleted successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/groups/<int:group_id>/members/<int:user_id>', methods=['POST'])
+@login_required
+@super_admin_required
+def add_group_member(group_id, user_id):
+    """Add a user to a group (Super Admin only)."""
+    from src.models.group import Group
+    try:
+        group = Group.get_by_id(group_id)
+        if not group:
+            return jsonify({'error': 'Group not found'}), 404
+        
+        user = User.get_by_id(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+            
+        group.add_member(user_id)
+        
+        enhanced_audit_logger.log_admin_action(
+            action='ADD_GROUP_MEMBER',
+            details={'group_id': group_id, 'user_id': user_id, 'username': user.username},
+            user_id=current_user.id
+        )
+        
+        return jsonify({'message': 'User added to group'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/groups/<int:group_id>/members/<int:user_id>', methods=['DELETE'])
+@login_required
+@super_admin_required
+def remove_group_member(group_id, user_id):
+    """Remove a user from a group (Super Admin only)."""
+    from src.models.group import Group
+    try:
+        group = Group.get_by_id(group_id)
+        if not group:
+            return jsonify({'error': 'Group not found'}), 404
+            
+        group.remove_member(user_id)
+        
+        enhanced_audit_logger.log_admin_action(
+            action='REMOVE_GROUP_MEMBER',
+            details={'group_id': group_id, 'user_id': user_id},
+            user_id=current_user.id
+        )
+        
+        return jsonify({'message': 'User removed from group'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/users/<int:user_id>/managed-groups/<int:group_id>', methods=['POST'])
+@login_required
+@super_admin_required
+def assign_managed_group(user_id, group_id):
+    """Assign a group to be managed by an admin (Super Admin only)."""
+    try:
+        user = User.get_by_id(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+            
+        if not user.is_admin:
+            return jsonify({'error': 'User is not an admin'}), 400
+            
+        user.add_managed_group(group_id)
+        
+        enhanced_audit_logger.log_admin_action(
+            action='ASSIGN_MANAGED_GROUP',
+            details={'admin_id': user_id, 'group_id': group_id},
+            user_id=current_user.id
+        )
+        
+        return jsonify({'message': 'Managed group assigned to admin'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/users/<int:user_id>/managed-groups/<int:group_id>', methods=['DELETE'])
+@login_required
+@super_admin_required
+def remove_managed_group(user_id, group_id):
+    """Remove a managed group from an admin (Super Admin only)."""
+    try:
+        user = User.get_by_id(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+            
+        user.remove_managed_group(group_id)
+        
+        enhanced_audit_logger.log_admin_action(
+            action='REMOVE_MANAGED_GROUP',
+            details={'admin_id': user_id, 'group_id': group_id},
+            user_id=current_user.id
+        )
+        
+        return jsonify({'message': 'Managed group removed from admin'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/users/<int:user_id>/groups', methods=['GET'])
+@login_required
+@admin_required
+def get_user_groups(user_id):
+    """Get groups a user belongs to."""
+    try:
+        # Check permissions
+        if not current_user.can_manage_user(user_id):
+            return jsonify({'error': 'Unauthorized'}), 403
+            
+        user = User.get_by_id(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+            
+        groups = user.get_groups()
+        return jsonify({'groups': [g.to_dict() for g in groups]}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/users/<int:user_id>/managed-groups', methods=['GET'])
+@login_required
+@admin_required
+def get_admin_managed_groups(user_id):
+    """Get groups managed by an admin."""
+    try:
+        user = User.get_by_id(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+            
+        if not user.is_admin:
+            return jsonify({'groups': []}), 200
+            
+        groups = user.get_managed_groups()
+        return jsonify({'groups': [g.to_dict() for g in groups]}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @admin_bp.route('/users/<int:user_id>/super-admin', methods=['PUT'])
