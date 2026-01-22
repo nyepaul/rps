@@ -18,9 +18,10 @@ show_help() {
     echo "  backup        Backup database and config"
     echo "  restore       Restore from backup"
     echo "  clean         Remove all containers and data"
-    echo "  status        Check application status"
-    echo "  skills        View available planning skills"
-    echo ""
+  status        Check application status
+  skills        View available planning skills
+  reset-token   Generate a password reset token for a user
+  ""
 }
 
 start_simple() {
@@ -199,6 +200,10 @@ case "$1" in
         ;;
     skills)
         view_skills
+        ;;
+    reset-token)
+        shift
+        $PROJECT_DIR/venv/bin/python3 $PROJECT_DIR/bin/generate-reset-token "$@"
         ;;
     *)
         show_help
