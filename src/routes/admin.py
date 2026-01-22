@@ -1256,7 +1256,16 @@ def reset_demo_account():
                         "cash_pct": 0.05
                     }
                 ],
-                "pensions_annuities": []
+                "pensions_annuities": [
+                    {
+                        "name": "TechCorp Defined Benefit",
+                        "type": "pension",
+                        "value_monthly": 2500,
+                        "start_age": 65,
+                        "inflation_adjustment": 0.02,
+                        "survivor_benefit": 0.5
+                    }
+                ]
             },
             "budget": {
                 "expenses": {
@@ -1401,21 +1410,76 @@ def reset_demo_account():
                 ''', (demo_user.id, demo_profile_id, item['category'], item['description'], 
                       item['priority'], item['status'], datetime.now().isoformat(), datetime.now().isoformat()))
 
-        # Create a sample scenario
-        sample_results = {
-            "success_rate": 0.92,
-            "median_final_balance": 4500000,
-            "percentile_10": 1200000,
-            "percentile_90": 12500000,
-            "simulations": 10000,
-            "years_projected": 40
-        }
+        # Create sample scenarios
+        scenarios_to_create = [
+            {
+                "name": "Base Case - 4% Rule",
+                "results": {
+                    "success_rate": 0.92,
+                    "median_final_balance": 4500000,
+                    "percentile_10": 1200000,
+                    "percentile_90": 12500000,
+                    "simulations": 10000,
+                    "years_projected": 40
+                }
+            },
+            {
+                "name": "Early Retirement (Age 60)",
+                "results": {
+                    "success_rate": 0.78,
+                    "median_final_balance": 2100000,
+                    "percentile_10": -500000,
+                    "percentile_90": 8500000,
+                    "simulations": 10000,
+                    "years_projected": 45
+                }
+            },
+            {
+                "name": "High Inflation Environment",
+                "results": {
+                    "success_rate": 0.65,
+                    "median_final_balance": 850000,
+                    "percentile_10": -1200000,
+                    "percentile_90": 4200000,
+                    "simulations": 10000,
+                    "years_projected": 40
+                }
+            }
+        ]
 
         with db.get_connection() as conn:
-            conn.execute('''
-                INSERT INTO scenarios (user_id, profile_id, name, results, results_iv, created_at)
-                VALUES (?, ?, ?, ?, NULL, ?)
-            ''', (demo_user.id, demo_profile_id, "Base Case - 4% Rule", json.dumps(sample_results), datetime.now().isoformat()))
+            for scenario in scenarios_to_create:
+                conn.execute('''
+                    INSERT INTO scenarios (user_id, profile_id, name, results, results_iv, created_at)
+                    VALUES (?, ?, ?, ?, NULL, ?)
+                ''', (demo_user.id, demo_profile_id, scenario['name'], json.dumps(scenario['results']), datetime.now().isoformat()))
+
+        # Create sample feedback
+        feedback_items = [
+            {
+                "type": "feature",
+                "content": "I would love to see more detailed estate planning visualizations!",
+                "status": "reviewed"
+            },
+            {
+                "type": "bug",
+                "content": "The chart legend is slightly cut off on mobile devices.",
+                "status": "resolved"
+            }
+        ]
+
+        with db.get_connection() as conn:
+            for item in feedback_items:
+                cursor = conn.execute('''
+                    INSERT INTO feedback (user_id, type, status, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?)
+                ''', (demo_user.id, item['type'], item['status'], datetime.now().isoformat(), datetime.now().isoformat()))
+                feedback_id = cursor.lastrowid
+                
+                conn.execute('''
+                    INSERT INTO feedback_content (feedback_id, content, created_at)
+                    VALUES (?, ?, ?)
+                ''', (feedback_id, item['content'], datetime.now().isoformat()))
 
         # Create sample conversation
         conversations = [
@@ -1429,6 +1493,21 @@ def reset_demo_account():
                     INSERT INTO conversations (user_id, profile_id, role, content, content_iv, created_at)
                     VALUES (?, ?, ?, ?, NULL, ?)
                 ''', (demo_user.id, demo_profile_id, chat['role'], chat['content'], datetime.now().isoformat()))
+
+        # Create sample audit logs
+        audit_logs = [
+            {"action": "LOGIN_SUCCESS", "table": "users", "details": '{"method": "password"}'},
+            {"action": "VIEW_PROFILE", "table": "profile", "details": f'{{"profile_id": {demo_profile_id}}}'},
+            {"action": "UPDATE_PROFILE", "table": "profile", "details": '{"changes": ["annual_savings"]}'},
+            {"action": "RUN_SIMULATION", "table": "scenarios", "details": '{"simulations": 10000}'}
+        ]
+
+        with db.get_connection() as conn:
+            for log in audit_logs:
+                conn.execute('''
+                    INSERT INTO enhanced_audit_log (action, table_name, user_id, details, status_code, created_at)
+                    VALUES (?, ?, ?, ?, 200, ?)
+                ''', (log['action'], log['table'], demo_user.id, log['details'], datetime.now().isoformat()))
 
         # Log admin action
         enhanced_audit_logger.log_admin_action(
