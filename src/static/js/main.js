@@ -9,6 +9,7 @@ import { showSetupChecklist, updateSetupButton } from './components/setup/setup-
 import { showFeedbackModal } from './components/feedback/feedback-modal.js';
 import { showRoadmapViewer } from './components/roadmap/roadmap-viewer.js';
 import { activityTracker } from './utils/activityTracker.js';
+import { renderUserBackups } from './components/settings/user-backups.js';
 
 /**
  * Initialize application
@@ -438,6 +439,9 @@ async function openSettings(defaultTab = 'general', focusElementId = null) {
                 <button class="settings-tab active" data-settings-tab="general" style="padding: 10px 20px; background: transparent; border: none; border-bottom: 3px solid var(--accent-color); cursor: pointer; font-weight: 600; color: var(--accent-color); transition: all 0.2s;">
                     General
                 </button>
+                <button class="settings-tab" data-settings-tab="backups" style="padding: 10px 20px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s;">
+                    💾 Backups
+                </button>
                 <button class="settings-tab" data-settings-tab="security" style="padding: 10px 20px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s;">
                     🛡️ Security
                 </button>
@@ -504,6 +508,42 @@ async function openSettings(defaultTab = 'general', focusElementId = null) {
                         </label>
                     </div>
                 </div>
+            </div>
+
+            <!-- Analysis Settings -->
+            <div style="margin-bottom: 25px;">
+                <h3 style="font-size: 16px; margin-bottom: 12px; color: var(--text-secondary);">Monte Carlo Analysis</h3>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Default Number of Simulations</label>
+                    <input type="number" id="simulations-setting"
+                           value="${localStorage.getItem(STORAGE_KEYS.SIMULATIONS) || APP_CONFIG.DEFAULT_SIMULATIONS}"
+                           min="${APP_CONFIG.MIN_SIMULATIONS}"
+                           max="${APP_CONFIG.MAX_SIMULATIONS}"
+                           style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 66px; background: var(--bg-primary); color: var(--text-primary);">
+                    <small style="display: block; margin-top: 5px; color: var(--text-secondary);">
+                        Range: ${APP_CONFIG.MIN_SIMULATIONS.toLocaleString()} - ${APP_CONFIG.MAX_SIMULATIONS.toLocaleString()}. More simulations = more accurate (but slower)
+                    </small>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Market Assumptions Profile</label>
+                    <select id="market-profile-setting" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                        <optgroup label="📊 Base Scenarios">
+                            ${['historical', 'conservative', 'balanced', 'aggressive'].map(key => `
+                                <option value="${key}" ${(localStorage.getItem(STORAGE_KEYS.MARKET_PROFILE) || 'historical') === key ? 'selected' : ''}>
+                                    ${APP_CONFIG.MARKET_PROFILES[key].name}
+                                </option>
+                            `).join('')}
+                        </optgroup>
+                        <!-- ... other groups ... -->
+                    </select>
+                </div>
+            </div>
+            </div>
+
+            <!-- Backups Settings Tab -->
+            <div id="settings-backups" class="settings-tab-content" style="display: none;">
+                <div id="user-backups-container"></div>
             </div>
 
             <!-- Analysis Settings -->
@@ -670,6 +710,11 @@ async function openSettings(defaultTab = 'general', focusElementId = null) {
                 content.style.display = 'none';
             });
             modal.querySelector(`#settings-${tabName}`).style.display = 'block';
+
+            // Initialize content if needed
+            if (tabName === 'backups') {
+                renderUserBackups(modal.querySelector('#user-backups-container'));
+            }
         });
     });
 

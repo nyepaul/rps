@@ -1,5 +1,5 @@
 """RPS Version Information"""
 
-__version__ = "3.8.166"
+__version__ = "3.8.167"
 __release_date__ = "2026-01-22"
-__release_notes__ = "Fix backup manager error and simplify header logo"
+__release_notes__ = "Enable per-user backup and restore for users and admins"

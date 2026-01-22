@@ -64,6 +64,8 @@ def test_db(test_db_dir, request):
         importlib.reload(sys.modules['src.models.conversation'])
     if 'src.models.group' in sys.modules:
         importlib.reload(sys.modules['src.models.group'])
+    if 'src.services.user_backup_service' in sys.modules:
+        importlib.reload(sys.modules['src.services.user_backup_service'])
 
     # Create tables
     with test_db_instance.get_connection() as conn:
@@ -355,6 +357,19 @@ def test_db(test_db_dir, request):
                 PRIMARY KEY (user_id, group_id),
                 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
                 FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE
+            )
+        ''')
+
+        # User Backups
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS user_backups (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                filename TEXT NOT NULL,
+                label TEXT,
+                size_bytes INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
             )
         ''')
 
