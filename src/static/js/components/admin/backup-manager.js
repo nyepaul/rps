@@ -28,7 +28,7 @@ export async function renderBackupManager(container) {
                             <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 13px;">Profiles, scenarios, and application data</p>
                         </div>
                         <div style="text-align: right;">
-                            <div style="font-size: 24px; font-weight: 700; color: var(--accent-color);">${stats.data.count}</div>
+                            <div id="total-backup-count" style="font-size: 24px; font-weight: 700; color: var(--accent-color);">--</div>
                             <div style="font-size: 11px; color: var(--text-secondary);">Total Backups</div>
                         </div>
                     </div>
@@ -290,6 +290,12 @@ async function loadBackups(container, type = 'all') {
 
     try {
         const response = await apiClient.get(`/api/admin/backups?type=${type}`);
+
+        // Update total count if viewing all
+        if (type === 'all') {
+            const countEl = container.querySelector('#total-backup-count');
+            if (countEl) countEl.textContent = response.backups.length;
+        }
 
         if (!response.backups || response.backups.length === 0) {
             listContainer.innerHTML = `

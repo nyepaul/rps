@@ -1,5 +1,5 @@
 """RPS Version Information"""
 
-__version__ = "3.8.165"
+__version__ = "3.8.166"
 __release_date__ = "2026-01-22"
-__release_notes__ = "Persist user preferences (theme, density) on the server"
+__release_notes__ = "Fix backup manager error and simplify header logo"

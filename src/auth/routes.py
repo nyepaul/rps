@@ -376,9 +376,11 @@ def logout():
 
 
 @auth_bp.route('/session', methods=['GET'])
-@login_required
 def session_check():
     """Check if current session is valid and return user data."""
+    if not current_user.is_authenticated:
+        return jsonify({'authenticated': False}), 200
+        
     return jsonify({
         'authenticated': True,
         'user': {
