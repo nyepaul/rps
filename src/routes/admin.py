@@ -1391,26 +1391,115 @@ def reset_demo_account():
             ))
             demo_profile_id = cursor.lastrowid
 
-        # Create sample action items
-        action_items = [
-            {
-                "category": "Retirement",
-                "description": "Increase 401(k) contribution to 15% to maximize employer match",
-                "priority": "high",
-                "status": "pending"
+        # --- Create second demo profile: Demo Starman (Middle Class) ---
+        starman_birth = date(1981, 5, 22)  # age 45 in 2026
+        starman_retire = date(2048, 5, 22) # age 67
+        star_spouse_birth = date(1983, 11, 12) # age 43
+        star_spouse_retire = date(2050, 11, 12) # age 67
+
+        starman_data = {
+            "person": {
+                "name": "Demo Starman",
+                "birth_date": starman_birth.isoformat(),
+                "retirement_date": starman_retire.isoformat(),
+                "current_age": 45,
+                "retirement_age": 67,
+                "life_expectancy": 90,
+                "email": "demo.starman@example.com",
+                "phone": "(555) 123-4567"
             },
-            {
-                "category": "Tax",
-                "description": "Review Roth conversion strategy for low-income years",
-                "priority": "medium",
-                "status": "pending"
+            "spouse": {
+                "name": "Stella Starman",
+                "birth_date": star_spouse_birth.isoformat(),
+                "retirement_date": star_spouse_retire.isoformat(),
+                "current_age": 43,
+                "retirement_age": 67,
+                "life_expectancy": 92,
+                "social_security_benefit": 2400,
+                "employer": "City Public Library",
+                "job_title": "Head Librarian"
             },
-            {
-                "category": "Estate",
-                "description": "Update living trust and beneficiary designations",
-                "priority": "high",
-                "status": "completed"
+            "children": [
+                {"name": "Leo Starman", "birth_date": "2012-03-15", "birth_year": 2012, "relationship": "Child", "in_college": False},
+                {"name": "Maya Starman", "birth_date": "2015-08-20", "birth_year": 2015, "relationship": "Child", "in_college": False},
+                {"name": "Nova Starman", "birth_date": "2019-01-10", "birth_year": 2019, "relationship": "Child", "in_college": False}
+            ],
+            "address": {
+                "street": "123 Galaxy Way",
+                "city": "Austin",
+                "state": "TX",
+                "zip": "78701",
+                "country": "USA"
+            },
+            "financial": {
+                "annual_income": 165000,
+                "annual_expenses": 95000,
+                "social_security_benefit": 2800,
+                "emergency_fund": 35000,
+                "combined_401k_contribution": 18000,
+                "tax_bracket_federal": 0.22,
+                "tax_bracket_state": 0.0
+            },
+            "income_streams": [
+                {"name": "Demo Salary", "amount": 7900, "frequency": "monthly", "type": "salary"},
+                {"name": "Stella Salary", "amount": 5800, "frequency": "monthly", "type": "salary"}
+            ],
+            "assets": {
+                "taxable_accounts": [
+                    {"name": "Ally Savings", "type": "savings", "value": 35000, "institution": "Ally", "cash_pct": 1.0},
+                    {"name": "Fidelity Brokerage", "type": "brokerage", "value": 85000, "institution": "Fidelity", "stock_pct": 0.6, "bond_pct": 0.4}
+                ],
+                "retirement_accounts": [
+                    {"name": "Demo 401(k)", "type": "401k", "value": 320000, "institution": "Fidelity", "stock_pct": 0.7, "bond_pct": 0.3},
+                    {"name": "Stella 403(b)", "type": "403b", "value": 210000, "institution": "TIAA", "stock_pct": 0.6, "bond_pct": 0.4}
+                ],
+                "real_estate": [
+                    {
+                        "name": "Family Home",
+                        "type": "primary_residence",
+                        "value": 450000,
+                        "purchase_price": 310000,
+                        "purchase_date": "2015-06-10",
+                        "mortgage_balance": 210000,
+                        "monthly_payment": 1850
+                    }
+                ],
+                "other_assets": [],
+                "pensions_annuities": []
+            },
+            "budget": {
+                "expenses": {
+                    "current": {
+                        "housing": [{"amount": 1850, "frequency": "monthly", "name": "Mortgage"}],
+                        "food": [{"amount": 1400, "frequency": "monthly", "name": "Family Groceries"}],
+                        "utilities": [{"amount": 350, "frequency": "monthly", "name": "Utilities"}]
+                    },
+                    "future": {
+                        "housing": [{"amount": 800, "frequency": "monthly", "name": "Taxes & Maintenance"}]
+                    }
+                }
             }
+        }
+
+        with db.get_connection() as conn:
+            cursor = conn.execute('''
+                INSERT INTO profile (user_id, name, birth_date, retirement_date, data, data_iv, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, NULL, ?, ?)
+            ''', (
+                demo_user.id,
+                "Demo Starman",
+                starman_birth.isoformat(),
+                starman_retire.isoformat(),
+                json.dumps(starman_data),
+                datetime.now().isoformat(),
+                datetime.now().isoformat()
+            ))
+            starman_profile_id = cursor.lastrowid
+
+        # Create sample action items for both families
+        action_items = [
+            {"pid": demo_profile_id, "cat": "Retirement", "desc": "Increase 401(k) to 15%", "pri": "high", "stat": "pending"},
+            {"pid": starman_profile_id, "cat": "Education", "desc": "Review 529 for Leo", "pri": "medium", "stat": "pending"}
         ]
 
         with db.get_connection() as conn:
@@ -1418,123 +1507,63 @@ def reset_demo_account():
                 conn.execute('''
                     INSERT INTO action_items (user_id, profile_id, category, description, priority, status, created_at, updated_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (demo_user.id, demo_profile_id, item['category'], item['description'], 
-                      item['priority'], item['status'], datetime.now().isoformat(), datetime.now().isoformat()))
+                ''', (demo_user.id, item['pid'], item['cat'], item['desc'], item['pri'], item['stat'], datetime.now().isoformat(), datetime.now().isoformat()))
 
         # Create sample scenarios
-        scenarios_to_create = [
-            {
-                "name": "Base Case - 4% Rule",
-                "results": {
-                    "success_rate": 0.92,
-                    "median_final_balance": 4500000,
-                    "percentile_10": 1200000,
-                    "percentile_90": 12500000,
-                    "simulations": 10000,
-                    "years_projected": 40
-                }
-            },
-            {
-                "name": "Early Retirement (Age 60)",
-                "results": {
-                    "success_rate": 0.78,
-                    "median_final_balance": 2100000,
-                    "percentile_10": -500000,
-                    "percentile_90": 8500000,
-                    "simulations": 10000,
-                    "years_projected": 45
-                }
-            },
-            {
-                "name": "High Inflation Environment",
-                "results": {
-                    "success_rate": 0.65,
-                    "median_final_balance": 850000,
-                    "percentile_10": -1200000,
-                    "percentile_90": 4200000,
-                    "simulations": 10000,
-                    "years_projected": 40
-                }
-            }
+        scenarios = [
+            {"pid": demo_profile_id, "name": "Thompson Base Case", "res": {"success_rate": 0.92, "simulations": 10000}},
+            {"pid": starman_profile_id, "name": "Starman Base Case", "res": {"success_rate": 0.84, "simulations": 10000}}
         ]
 
         with db.get_connection() as conn:
-            for scenario in scenarios_to_create:
+            for s in scenarios:
                 conn.execute('''
-                    INSERT INTO scenarios (user_id, profile_id, name, results, results_iv, created_at)
-                    VALUES (?, ?, ?, ?, NULL, ?)
-                ''', (demo_user.id, demo_profile_id, scenario['name'], json.dumps(scenario['results']), datetime.now().isoformat()))
-
-        # Create sample feedback
-        feedback_items = [
-            {
-                "type": "feature",
-                "content": "I would love to see more detailed estate planning visualizations!",
-                "status": "reviewed"
-            },
-            {
-                "type": "bug",
-                "content": "The chart legend is slightly cut off on mobile devices.",
-                "status": "resolved"
-            }
-        ]
-
-        with db.get_connection() as conn:
-            for item in feedback_items:
-                cursor = conn.execute('''
-                    INSERT INTO feedback (user_id, type, status, created_at, updated_at)
+                    INSERT INTO scenarios (user_id, profile_id, name, results, created_at)
                     VALUES (?, ?, ?, ?, ?)
-                ''', (demo_user.id, item['type'], item['status'], datetime.now().isoformat(), datetime.now().isoformat()))
-                feedback_id = cursor.lastrowid
-                
-                conn.execute('''
-                    INSERT INTO feedback_content (feedback_id, content, created_at)
-                    VALUES (?, ?, ?)
-                ''', (feedback_id, item['content'], datetime.now().isoformat()))
+                ''', (demo_user.id, s['pid'], s['name'], json.dumps(s['res']), datetime.now().isoformat()))
 
         # Create sample conversation
         conversations = [
-            {"role": "user", "content": "How am I doing on my retirement goals?"},
-            {"role": "assistant", "content": "Based on your current assets of $2.5M and annual expenses of $175k, your plan has a 92% success rate. You are in excellent shape, but should consider increasing your 401(k) contributions to maximize your tax advantages."}
+            {"pid": demo_profile_id, "role": "user", "content": "How am I doing?"},
+            {"pid": starman_profile_id, "role": "user", "content": "Can we afford college for 3 kids?"}
         ]
 
         with db.get_connection() as conn:
             for chat in conversations:
                 conn.execute('''
-                    INSERT INTO conversations (user_id, profile_id, role, content, content_iv, created_at)
-                    VALUES (?, ?, ?, ?, NULL, ?)
-                ''', (demo_user.id, demo_profile_id, chat['role'], chat['content'], datetime.now().isoformat()))
+                    INSERT INTO conversations (user_id, profile_id, role, content, created_at)
+                    VALUES (?, ?, ?, ?, ?)
+                ''', (demo_user.id, chat['pid'], chat['role'], chat['content'], datetime.now().isoformat()))
+
+        # Create sample feedback
+        with db.get_connection() as conn:
+            cursor = conn.execute('''
+                INSERT INTO feedback (user_id, type, status, created_at, updated_at)
+                VALUES (?, 'feature', 'reviewed', ?, ?)
+            ''', (demo_user.id, datetime.now().isoformat(), datetime.now().isoformat()))
+            fid = cursor.lastrowid
+            conn.execute('INSERT INTO feedback_content (feedback_id, content, created_at) VALUES (?, ?, ?)',
+                       (fid, "Add more estate planning charts", datetime.now().isoformat()))
 
         # Create sample audit logs
-        audit_logs = [
-            {"action": "LOGIN_SUCCESS", "table": "users", "details": '{"method": "password"}'},
-            {"action": "VIEW_PROFILE", "table": "profile", "details": f'{{"profile_id": {demo_profile_id}}}'},
-            {"action": "UPDATE_PROFILE", "table": "profile", "details": '{"changes": ["annual_savings"]}'},
-            {"action": "RUN_SIMULATION", "table": "scenarios", "details": '{"simulations": 10000}'}
-        ]
-
         with db.get_connection() as conn:
-            for log in audit_logs:
-                conn.execute('''
-                    INSERT INTO enhanced_audit_log (action, table_name, user_id, details, status_code, created_at)
-                    VALUES (?, ?, ?, ?, 200, ?)
-                ''', (log['action'], log['table'], demo_user.id, log['details'], datetime.now().isoformat()))
+            conn.execute('''
+                INSERT INTO enhanced_audit_log (action, table_name, user_id, details, status_code, created_at)
+                VALUES ('VIEW_PROFILE', 'profile', ?, '{"profile": "Starman"}', 200, ?)
+            ''', (demo_user.id, datetime.now().isoformat()))
 
         # Log admin action
         enhanced_audit_logger.log_admin_action(
             action='RESET_DEMO_ACCOUNT',
             user_id=current_user.id,
-            details={
-                'demo_user_id': demo_user.id,
-                'profile_created': demo_profile_id
-            }
+            details={'demo_user_id': demo_user.id}
         )
 
         return jsonify({
             'message': 'Demo account reset successfully',
             'username': demo_username,
             'password': demo_password,
-            'profile_name': 'Demo Thompson'
+            'profiles': ['Demo Thompson', 'Demo Starman']
         }), 200
 
     except Exception as e:
