@@ -1312,30 +1312,34 @@ def reset_demo_account():
                             {"amount": 5000, "frequency": "annual", "name": "Weekend Getaways", "ongoing": True}
                         ],
                         "personal": [
-                            {"amount": 400, "frequency": "monthly", "name": "Health Club Membership", "ongoing": True},
-                            {"amount": 300, "frequency": "monthly", "name": "Personal Care/Grooming", "ongoing": True},
-                            {"amount": 500, "frequency": "monthly", "name": "Clothing & Shopping", "ongoing": True}
+                            {"amount": 400, "frequency": "monthly", "name": "Equinox Membership", "ongoing": True},
+                            {"amount": 300, "frequency": "monthly", "name": "Personal Grooming", "ongoing": True},
+                            {"amount": 1500, "frequency": "monthly", "name": "Luxury Shopping", "ongoing": True}
+                        ],
+                        "entertainment": [
+                            {"amount": 500, "frequency": "monthly", "name": "Wine Club & Events", "ongoing": True},
+                            {"amount": 300, "frequency": "monthly", "name": "Streaming & Digital", "ongoing": True}
+                        ],
+                        "miscellaneous": [
+                            {"amount": 2500, "frequency": "monthly", "name": "Philanthropic Giving", "ongoing": True},
+                            {"amount": 1000, "frequency": "monthly", "name": "Gifts & Celebrations", "ongoing": True}
                         ]
                     },
                     "future": {
-                        "housing": [{
-                            "amount": 1500,
-                            "frequency": "monthly",
-                            "name": "Taxes & Insurance",
-                            "ongoing": True
-                        }],
-                        "food": [{
-                            "amount": 1000,
-                            "frequency": "monthly",
-                            "name": "Groceries",
-                            "ongoing": True
-                        }],
-                        "travel": [{
-                            "amount": 20000,
-                            "frequency": "annual",
-                            "name": "Retirement Travel",
-                            "ongoing": True
-                        }]
+                        "housing": [
+                            {"amount": 1500, "frequency": "monthly", "name": "Taxes & Insurance", "ongoing": True},
+                            {"amount": 1000, "frequency": "monthly", "name": "Maintenance & Services", "ongoing": True}
+                        ],
+                        "food": [
+                            {"amount": 1500, "frequency": "monthly", "name": "Groceries", "ongoing": True},
+                            {"amount": 1000, "frequency": "monthly", "name": "Dining Out", "ongoing": True}
+                        ],
+                        "travel": [
+                            {"amount": 35000, "frequency": "annual", "name": "Luxury Global Travel", "ongoing": True}
+                        ],
+                        "healthcare": [
+                            {"amount": 1500, "frequency": "monthly", "name": "Medicare & Private Coverage", "ongoing": True}
+                        ]
                     }
                 },
                 "college_expenses": [
@@ -1496,10 +1500,21 @@ def reset_demo_account():
                             {"amount": 150, "frequency": "monthly", "name": "Kids Activities", "ongoing": True},
                             {"amount": 200, "frequency": "monthly", "name": "Clothing", "ongoing": True},
                             {"amount": 100, "frequency": "monthly", "name": "Streaming/Hobbies", "ongoing": True}
+                        ],
+                        "entertainment": [
+                            {"amount": 150, "frequency": "monthly", "name": "Netflix/Spotify/Hulu", "ongoing": True},
+                            {"amount": 200, "frequency": "monthly", "name": "Local Events/Movies", "ongoing": True}
+                        ],
+                        "miscellaneous": [
+                            {"amount": 100, "frequency": "monthly", "name": "Charitable Giving", "ongoing": True},
+                            {"amount": 150, "frequency": "monthly", "name": "Gifts & Birthdays", "ongoing": True}
                         ]
                     },
                     "future": {
-                        "housing": [{"amount": 800, "frequency": "monthly", "name": "Taxes & Maintenance"}]
+                        "housing": [{"amount": 800, "frequency": "monthly", "name": "Taxes & Maintenance", "ongoing": True}],
+                        "food": [{"amount": 1000, "frequency": "monthly", "name": "Groceries", "ongoing": True}],
+                        "travel": [{"amount": 8000, "frequency": "annual", "name": "Retirement Travel", "ongoing": True}],
+                        "healthcare": [{"amount": 1200, "frequency": "monthly", "name": "Medicare & Supplemental", "ongoing": True}]
                     }
                 }
             }
