@@ -38,7 +38,7 @@ export async function renderDemoManagement(container) {
                     </div>
                 </div>
 
-                <button id="reset-demo-btn" style="padding: 10px 20px; background: var(--warning-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 13px;">
+                <button id="reset-demo-btn" style="padding: 10px 20px; background: var(--warning-color); color: #000; border: 2px solid #000; border-radius: 6px; cursor: pointer; font-weight: 800; font-size: 13px; box-shadow: 0 2px 4px var(--shadow);">
                     🔄 Reset Demo Account
                 </button>
                 <div id="reset-demo-result" style="margin-top: 15px; display: none;"></div>
