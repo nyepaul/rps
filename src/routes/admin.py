@@ -1053,7 +1053,7 @@ def reset_demo_account():
             conn.execute('DELETE FROM scenarios WHERE user_id = ?', (demo_user.id,))
             conn.execute('DELETE FROM conversations WHERE user_id = ?', (demo_user.id,))
 
-        # Create comprehensive demo profile
+        # Create comprehensive Demo Thompson profile
         today = date.today()
         birth_date = date(1971, 1, 18)  # Born January 18, 1971 (age 55 in 2026)
         retirement_date = date(2036, 1, 18)  # Retire at 65
