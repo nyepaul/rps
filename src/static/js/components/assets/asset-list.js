@@ -20,7 +20,8 @@ export function renderAssetList(assets, container, onSaveCallback) {
         taxable_accounts: { label: 'Bank/Brokerage', icon: '💰' },
         real_estate: { label: 'Real Estate', icon: '🏠' },
         pensions_annuities: { label: 'Income Stream', icon: '💵' },
-        other_assets: { label: 'Other', icon: '📦' }
+        other_assets: { label: 'Other', icon: '📦' },
+        liabilities: { label: 'Liabilities', icon: '💳' }
     };
 
     for (const [categoryKey, items] of Object.entries(assets)) {
@@ -38,7 +39,7 @@ export function renderAssetList(assets, container, onSaveCallback) {
 
     // Sort by category, then by value (descending)
     allAssets.sort((a, b) => {
-        const categoryOrder = ['retirement_accounts', 'taxable_accounts', 'real_estate', 'pensions_annuities', 'other_assets'];
+        const categoryOrder = ['retirement_accounts', 'taxable_accounts', 'real_estate', 'pensions_annuities', 'other_assets', 'liabilities'];
         const catDiff = categoryOrder.indexOf(a.categoryKey) - categoryOrder.indexOf(b.categoryKey);
         if (catDiff !== 0) return catDiff;
 
@@ -80,7 +81,8 @@ export function renderAssetList(assets, container, onSaveCallback) {
                 taxable_accounts: [],
                 real_estate: [],
                 pensions_annuities: [],
-                other_assets: []
+                other_assets: [],
+                liabilities: []
             };
 
             // Open asset wizard with the existing asset

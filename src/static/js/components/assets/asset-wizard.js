@@ -12,7 +12,8 @@ const CATEGORIES = {
     taxable_accounts: { label: 'Taxable Accounts', icon: '💰', description: 'Brokerage, Savings, Checking' },
     real_estate: { label: 'Real Estate', icon: '🏠', description: 'Properties and Land' },
     pensions_annuities: { label: 'Pensions & Annuities', icon: '💵', description: 'Retirement Income Streams' },
-    other_assets: { label: 'Other Assets', icon: '📦', description: 'Business, Collectibles, etc.' }
+    other_assets: { label: 'Other Assets', icon: '📦', description: 'Business, Collectibles, etc.' },
+    liabilities: { label: 'Liabilities & Debts', icon: '💳', description: 'Loans, Credit Cards, etc.' }
 };
 
 // Account types grouped by visual category for selection UI
@@ -73,6 +74,17 @@ const ACCOUNT_TYPES = {
             { value: 'collectible', label: 'Collectible', category: 'other_assets' },
             { value: 'other', label: 'Other', category: 'other_assets' }
         ]
+    },
+    liabilities: {
+        label: 'Debts & Liabilities',
+        icon: '💳',
+        types: [
+            { value: 'student_loan', label: 'Student Loan', category: 'liabilities' },
+            { value: 'credit_card', label: 'Credit Card Debt', category: 'liabilities' },
+            { value: 'auto_loan', label: 'Auto Loan', category: 'liabilities' },
+            { value: 'personal_loan', label: 'Personal Loan', category: 'liabilities' },
+            { value: 'other_debt', label: 'Other Debt', category: 'liabilities' }
+        ]
     }
 };
 
@@ -119,14 +131,14 @@ export function showAssetWizard(preselectedCategory = null, existingAsset = null
         return;
     }
 
-    const assets = {
-        retirement_accounts: [],
-        taxable_accounts: [],
-        real_estate: [],
-        pensions_annuities: [],
-        other_assets: [],
-        ...(profile.data?.assets || {})
-    };
+            const assets = profile.data?.assets || {
+                retirement_accounts: [],
+                taxable_accounts: [],
+                real_estate: [],
+                pensions_annuities: [],
+                other_assets: [],
+                liabilities: []
+            };
 
     // Ensure nested arrays exist even if they were null or missing in profile.data.assets
     if (!Array.isArray(assets.retirement_accounts)) assets.retirement_accounts = [];

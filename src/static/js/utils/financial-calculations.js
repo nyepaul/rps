@@ -20,9 +20,10 @@ export function calculateNetWorth(assets) {
     const otherAssets = sumAssets(assets.other_assets);
     const totalAssets = retirementAssets + taxableAssets + realEstateAssets + otherAssets;
 
-    // Calculate total debts (currently only mortgage balances on real estate)
+    // Calculate total debts (mortgage balances + other liabilities)
     const mortgageDebts = sumDebts(assets.real_estate);
-    const totalDebts = mortgageDebts;
+    const otherLiabilities = (assets.liabilities || []).reduce((sum, l) => sum + (l.value || 0), 0);
+    const totalDebts = mortgageDebts + otherLiabilities;
 
     // Net worth = assets - debts
     const netWorth = totalAssets - totalDebts;
@@ -37,6 +38,7 @@ export function calculateNetWorth(assets) {
             realEstateAssets: realEstateAssets - mortgageDebts, // Real estate equity
             realEstateGross: realEstateAssets,
             mortgageDebts,
+            otherLiabilities,
             otherAssets
         }
     };
@@ -77,12 +79,15 @@ export function calculateRealEstateEquity(assets) {
 export function calculateTotalDebts(assets) {
     if (!assets) return 0;
 
-    // Currently only mortgage balances, but can be extended for other debts
     const mortgages = (assets.real_estate || []).reduce((sum, property) => {
         return sum + (property.mortgage_balance || 0);
     }, 0);
 
-    return mortgages;
+    const otherLiabilities = (assets.liabilities || []).reduce((sum, liability) => {
+        return sum + (liability.value || 0);
+    }, 0);
+
+    return mortgages + otherLiabilities;
 }
 
 /**

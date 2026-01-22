@@ -37,7 +37,8 @@ export function renderAssetsTab(container) {
         taxable_accounts: [],
         real_estate: [],
         pensions_annuities: [],
-        other_assets: []
+        other_assets: [],
+        liabilities: []
     };
 
     container.innerHTML = `
@@ -85,7 +86,8 @@ export function renderAssetsTab(container) {
             taxable_accounts: [],
             real_estate: [],
             pensions_annuities: [],
-            other_assets: []
+            other_assets: [],
+            liabilities: []
         };
 
         const summaryContainer = container.querySelector('#asset-summary');

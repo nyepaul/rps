@@ -131,6 +131,25 @@ export const FIELD_DEFINITIONS = {
             { value: 'other', label: 'Other' }
         ]},
         { name: 'description', label: 'Description', type: 'textarea', placeholder: 'Optional details about this asset' }
+    ],
+
+    liabilities: [
+        { name: 'name', label: 'Debt Name', type: 'text', required: true, placeholder: 'e.g., Student Loan' },
+        { name: 'type', label: 'Debt Type', type: 'select', required: true, options: [
+            { value: '', label: '-- Select Type --' },
+            { value: 'mortgage', label: 'Mortgage' },
+            { value: 'student_loan', label: 'Student Loan' },
+            { value: 'credit_card', label: 'Credit Card' },
+            { value: 'auto_loan', label: 'Auto Loan' },
+            { value: 'personal_loan', label: 'Personal Loan' },
+            { value: 'other', label: 'Other' }
+        ]},
+        { name: 'institution', label: 'Lender', type: 'text', placeholder: 'e.g., Navient' },
+        { name: 'value', label: 'Current Balance', type: 'currency', required: true, placeholder: '$0' },
+        { name: 'interest_rate', label: 'Interest Rate (%)', type: 'number', min: 0, max: 100, step: 0.01, placeholder: '5.00' },
+        { name: 'monthly_payment', label: 'Monthly Payment', type: 'currency', placeholder: '$0' },
+        { name: 'maturity_date', label: 'Estimated Payoff Date', type: 'date' },
+        { name: 'description', label: 'Description', type: 'textarea', placeholder: 'Optional details' }
     ]
 };
 
@@ -162,7 +181,12 @@ export const ASSET_TYPE_LABELS = {
     trust: 'Trust',
     hsa: 'HSA',
     cryptocurrency: 'Cryptocurrency',
-    other: 'Other'
+    other: 'Other',
+    mortgage: 'Mortgage',
+    student_loan: 'Student Loan',
+    credit_card: 'Credit Card',
+    auto_loan: 'Auto Loan',
+    personal_loan: 'Personal Loan'
 };
 
 /**

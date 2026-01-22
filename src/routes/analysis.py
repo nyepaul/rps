@@ -67,6 +67,24 @@ def transform_assets_to_investment_types(assets_data):
             'name': asset.get('name', '')
         })
 
+    # Process other assets (HSA, Crypto, etc.)
+    for asset in assets_data.get('other_assets', []):
+        asset_type = asset.get('type', '').lower()
+        # Map HSA to Roth (tax-free out), others to Taxable/Traditional
+        if asset_type == 'hsa':
+            account_name = 'Roth IRA'
+        elif asset_type in ['cryptocurrency', 'collectible', 'business_interest']:
+            account_name = 'Taxable Brokerage'
+        else:
+            account_name = 'Taxable Brokerage'
+            
+        investment_types.append({
+            'account': account_name,
+            'value': asset.get('value', 0),
+            'cost_basis': asset.get('cost_basis', asset.get('value', 0)),
+            'name': asset.get('name', '')
+        })
+
     return investment_types
 
 
@@ -200,9 +218,11 @@ def run_analysis():
             future_expenses=[],
             investment_types=investment_types,
             accounts=[],
-            income_streams=[],
+            income_streams=profile_data.get('income_streams', []),
             home_properties=profile_data.get('home_properties', []),
-            budget=profile_data.get('budget')
+            budget=profile_data.get('budget'),
+            annual_ira_contribution=financial_data.get('annual_ira_contribution', 0),
+            savings_allocation=profile_data.get('savings_allocation')
         )
 
         # Create retirement model

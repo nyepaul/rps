@@ -318,10 +318,8 @@ class RetirementModel:
         if assumptions is None:
             assumptions = MarketAssumptions()
             
-        stock_pct = assumptions.stock_allocation
-        returns_mean_adj = stock_pct * assumptions.stock_return_mean + (1 - stock_pct) * assumptions.bond_return_mean
-        returns_std_adj = stock_pct * assumptions.stock_return_std + (1 - stock_pct) * assumptions.bond_return_std
-
+        base_stock_pct = assumptions.stock_allocation
+        
         # 1. Initialize Account Vectors (shape: (simulations,))
         start_cash = 0.0
         start_taxable_val = 0.0
@@ -359,15 +357,11 @@ class RetirementModel:
         roth = np.full(simulations, start_roth)
 
         # 2. Pre-calculate Market Factors (shape: (simulations, years))
-        # Returns
-        market_returns = np.random.normal(returns_mean_adj, returns_std_adj, (simulations, years))
         # Inflation
         inflation_rates = np.random.normal(assumptions.inflation_mean, assumptions.inflation_std, (simulations, years))
         
-        # Calculate cumulative CPI (Inflation Index)
+        # Calculate Returns per year (Dynamic stock pct based on glide path)
         # cpi[:, 0] is 1.0. cpi[:, t] = product(1+inf) up to t-1
-        # We'll calculate year-by-year in the loop for simplicity with other logic, 
-        # or we could cumprod. Let's maintain a 'current_cpi' vector.
         current_cpi = np.ones(simulations)
 
         # 3. Income & Expense Constants
@@ -388,8 +382,6 @@ class RetirementModel:
                 except: pass
 
         # Prepare Homes data structure (Vectorized)
-        # We need to track value, mortgage, costs per simulation
-        # home_props_state: List of dicts, where values are arrays
         home_props_state = []
         if self.profile.home_properties:
             for prop in self.profile.home_properties:
@@ -421,11 +413,9 @@ class RetirementModel:
                 })
 
         # Constants
-        # Note: ORDINARY_TAX kept as fallback but progressive rates used when possible
-        ORDINARY_TAX = effective_tax_rate
         EARLY_PENALTY = 0.10
         CASH_INTEREST = 0.015
-        STANDARD_DEDUCTION_MFJ = 29200  # 2024 MFJ standard deduction
+        STANDARD_DEDUCTION_BASE = 29200  # 2024 MFJ standard deduction
         
         # Result Storage
         all_paths = np.zeros((simulations, years))
@@ -454,9 +444,21 @@ class RetirementModel:
         # 4. Simulation Loop (Year by Year)
         for year_idx in range(years):
             simulation_year = self.current_year + year_idx
-            p1_age = (self.current_year + year_idx) - p1_birth_year
-            p2_age = (self.current_year + year_idx) - p2_birth_year
+            p1_age = simulation_year - p1_birth_year
+            p2_age = simulation_year - p2_birth_year
             
+            # Dynamic Asset Allocation (Glide Path)
+            # Reduce stock pct by 1% each year after 65, down to min 20%
+            stock_pct = base_stock_pct
+            if p1_age > 65:
+                reduction = (p1_age - 65) * 0.01
+                stock_pct = max(0.20, base_stock_pct - reduction)
+            
+            # Calculate annual return based on current allocation
+            ret_mean = stock_pct * assumptions.stock_return_mean + (1 - stock_pct) * assumptions.bond_return_mean
+            ret_std = stock_pct * assumptions.stock_return_std + (1 - stock_pct) * assumptions.bond_return_std
+            annual_returns = np.random.normal(ret_mean, ret_std, simulations)
+
             # Independent Retirement Tracking
             p1_retired = simulation_year >= p1_retirement_year
             p2_retired = simulation_year >= p2_retirement_year
@@ -464,6 +466,9 @@ class RetirementModel:
             # A. Update CPI (except year 0)
             if year_idx > 0:
                 current_cpi *= (1 + inflation_rates[:, year_idx])
+
+            # Inflation-indexed tax thresholds (prevent bracket creep)
+            std_deduction = STANDARD_DEDUCTION_BASE * current_cpi
 
             # B. Calculate Income with Proper Tax Treatment
             # Track income components separately for accurate tax calculations
@@ -522,12 +527,15 @@ class RetirementModel:
 
             # B8. Calculate Total Spendable Income
             # Net SS = Gross SS - Tax on taxable portion
-            # For now, estimate SS tax using effective rate on taxable portion
-            # (We'll refine this when we know total income including withdrawals)
             ss_tax_estimate = np.zeros_like(taxable_ss)
             if np.any(taxable_ss > 0):
-                # Estimate tax rate for SS (will be refined with total income)
-                ss_tax_estimate = taxable_ss * 0.22  # Conservative estimate
+                # Calculate tax on SS portion more accurately using actual brackets
+                # (Pro-rated share of total ordinary tax)
+                taxable_ordinary_temp = np.maximum(0, (taxable_ss + active_pension + other_taxable_income) - std_deduction)
+                total_ord_tax, _ = self._vectorized_federal_tax(taxable_ordinary_temp, 'mfj')
+                # Ratio of SS to total taxable income
+                ss_ratio = np.where(taxable_ordinary_temp > 0, taxable_ss / (taxable_ss + active_pension + other_taxable_income), 0)
+                ss_tax_estimate = total_ord_tax * ss_ratio
 
             net_ss = gross_ss - ss_tax_estimate
 
@@ -536,7 +544,7 @@ class RetirementModel:
             ordinary_income_pretax = active_pension + other_taxable_income
             ordinary_tax_estimate = np.zeros_like(ordinary_income_pretax)
             if np.any(ordinary_income_pretax > 0):
-                taxable_ordinary = np.maximum(0, ordinary_income_pretax - STANDARD_DEDUCTION_MFJ)
+                taxable_ordinary = np.maximum(0, ordinary_income_pretax - std_deduction)
                 ordinary_tax_estimate, _ = self._vectorized_federal_tax(taxable_ordinary, 'mfj')
 
             # Employment income net of taxes
@@ -681,8 +689,8 @@ class RetirementModel:
             if np.any(total_rmd > 0):
                 # Use progressive tax on RMDs (stacked on existing ordinary income)
                 # Calculate tax on total income with RMD vs without
-                taxable_with_rmd = np.maximum(0, year_ordinary_income + total_rmd - STANDARD_DEDUCTION_MFJ)
-                taxable_without_rmd = np.maximum(0, year_ordinary_income - STANDARD_DEDUCTION_MFJ)
+                taxable_with_rmd = np.maximum(0, year_ordinary_income + total_rmd - std_deduction)
+                taxable_without_rmd = np.maximum(0, year_ordinary_income - std_deduction)
                 tax_with_rmd, _ = self._vectorized_federal_tax(taxable_with_rmd, 'mfj')
                 tax_without_rmd, _ = self._vectorized_federal_tax(taxable_without_rmd, 'mfj')
                 rmd_tax = tax_with_rmd - tax_without_rmd
@@ -710,7 +718,7 @@ class RetirementModel:
             mask = (shortfall > 0)
             if np.any(mask) and p1_age < 59.5:
                 # Calculate marginal tax rate based on current ordinary income
-                taxable_now = np.maximum(0, cumulative_ordinary - STANDARD_DEDUCTION_MFJ)
+                taxable_now = np.maximum(0, cumulative_ordinary - std_deduction)
                 _, marginal_rate = self._vectorized_federal_tax(taxable_now, 'mfj')
                 # Estimate effective rate for withdrawal (use marginal as approximation)
                 eff_rate = np.where(marginal_rate > 0, marginal_rate, 0.12)  # Default to 12%
@@ -718,7 +726,7 @@ class RetirementModel:
                 withdrawal = np.minimum(gross_needed, pretax_457)
                 pretax_457 -= withdrawal
                 # Calculate actual tax on withdrawal using stacked income
-                taxable_after = np.maximum(0, cumulative_ordinary + withdrawal - STANDARD_DEDUCTION_MFJ)
+                taxable_after = np.maximum(0, cumulative_ordinary + withdrawal - std_deduction)
                 tax_after, _ = self._vectorized_federal_tax(taxable_after, 'mfj')
                 tax_before, _ = self._vectorized_federal_tax(taxable_now, 'mfj')
                 actual_tax = tax_after - tax_before
@@ -758,7 +766,7 @@ class RetirementModel:
                 penalty = np.where(p1_age < 59.5, EARLY_PENALTY, 0)
 
                 # Calculate marginal rate for estimation
-                taxable_now = np.maximum(0, cumulative_ordinary - STANDARD_DEDUCTION_MFJ)
+                taxable_now = np.maximum(0, cumulative_ordinary - std_deduction)
                 _, marginal_rate = self._vectorized_federal_tax(taxable_now, 'mfj')
                 eff_rate = np.where(marginal_rate > 0, marginal_rate, 0.12) + penalty
 
@@ -767,7 +775,7 @@ class RetirementModel:
                 pretax_std -= withdrawal
 
                 # Calculate actual tax on withdrawal using stacked income
-                taxable_after = np.maximum(0, cumulative_ordinary + withdrawal - STANDARD_DEDUCTION_MFJ)
+                taxable_after = np.maximum(0, cumulative_ordinary + withdrawal - std_deduction)
                 tax_after, _ = self._vectorized_federal_tax(taxable_after, 'mfj')
                 tax_before, _ = self._vectorized_federal_tax(taxable_now, 'mfj')
                 actual_tax = (tax_after - tax_before) + (withdrawal * penalty)
@@ -784,7 +792,7 @@ class RetirementModel:
 
             # H. Growth & Balances
             # Apply growth
-            year_returns = market_returns[:, year_idx]
+            year_returns = annual_returns
             
             cash *= (1 + CASH_INTEREST)
             taxable_val *= (1 + year_returns)
@@ -1066,55 +1074,71 @@ class RetirementModel:
         budget = self.profile.budget
         expenses_section = budget.get('expenses', {})
 
-        # Blended Budget Logic:
-        # Both working -> 100% current
-        # One retired -> 50% current / 50% future
-        # Both retired -> 100% future
-        retirement_weight = 0.0
-        if p1_retired: retirement_weight += 0.5
-        if p2_retired: retirement_weight += 0.5
+        # Define category weights for partial retirement
+        # 1.0 = transition fully when first person retires
+        # 0.5 = transition halfway when first person retires
+        # 0.0 = transition only when both people retire
+        CATEGORY_WEIGHTS = {
+            'transportation': 0.8, # Commuting drops early
+            'food': 0.5,           # Gradual shift
+            'dining_out': 0.5,
+            'travel': 0.3,         # Increases mostly when both retire
+            'healthcare': 0.5,
+            'personal_care': 0.5,
+            'entertainment': 0.4,
+            'utilities': 0.2       # House stays same size
+        }
 
         def get_period_expenses(period):
-            period_total = np.zeros_like(current_cpi)
+            period_data = {}
             period_expenses = expenses_section.get(period, {})
 
-            # Iterate through all categories (including custom ones)
-            for category in period_expenses.keys():
-                cat_data = period_expenses.get(category, {})
+            for category, cat_data in period_expenses.items():
+                category_total = np.zeros_like(current_cpi)
+                expense_items = cat_data if isinstance(cat_data, list) else ([cat_data] if isinstance(cat_data, dict) and cat_data.get('amount') else [])
 
-                # Handle both array (new format) and object (legacy format) structures
-                expense_items = []
-                if isinstance(cat_data, list):
-                    # New format: array of expense items
-                    expense_items = cat_data
-                elif isinstance(cat_data, dict) and cat_data.get('amount'):
-                    # Legacy format: single expense object
-                    expense_items = [cat_data]
-
-                # Process each expense item in this category
                 for item in expense_items:
                     amount = item.get('amount', 0)
                     amount = self._annual_amount(amount, item.get('frequency', 'monthly'))
 
-                    # Check if expense is active in this simulation year
                     if not self._is_expense_active(item, simulation_year):
                         continue
 
                     if category == 'housing' and np.any(housing_costs > 0):
-                        period_total += housing_costs
+                        category_total += housing_costs
                     else:
                         if item.get('inflation_adjusted', True):
-                            period_total += amount * current_cpi
+                            category_total += amount * current_cpi
                         else:
-                            period_total += amount
-            return period_total
+                            category_total += amount
+                period_data[category] = category_total
+            return period_data
 
-        if retirement_weight == 0:
-            return get_period_expenses('current')
-        elif retirement_weight == 1.0:
-            return get_period_expenses('future')
-        else:
-            # Weighted average of current and future budgets
-            current_exp = get_period_expenses('current')
-            future_exp = get_period_expenses('future')
-            return (current_exp * 0.5) + (future_exp * 0.5)
+        if not p1_retired and not p2_retired:
+            # Both working: 100% current
+            current_map = get_period_expenses('current')
+            return sum(current_map.values()) if current_map else np.zeros_like(current_cpi)
+        
+        if p1_retired and p2_retired:
+            # Both retired: 100% future
+            future_map = get_period_expenses('future')
+            return sum(future_map.values()) if future_map else np.zeros_like(current_cpi)
+
+        # Partial Retirement: One is retired, one is working
+        current_map = get_period_expenses('current')
+        future_map = get_period_expenses('future')
+        total_expenses = np.zeros_like(current_cpi)
+        
+        all_categories = set(current_map.keys()) | set(future_map.keys())
+        
+        for cat in all_categories:
+            c_val = current_map.get(cat, np.zeros_like(current_cpi))
+            f_val = future_map.get(cat, np.zeros_like(current_cpi))
+            
+            # Use specific weight or default to 0.5
+            weight = CATEGORY_WEIGHTS.get(cat, 0.5)
+            
+            # Blended value for this category
+            total_expenses += (c_val * (1 - weight)) + (f_val * weight)
+            
+        return total_expenses
