@@ -52,8 +52,10 @@ export function renderWelcomeTab(container) {
                 <h3 style="margin-bottom: var(--space-2); font-size: 14px;">What You Can Do</h3>
                 <ul style="text-align: left; display: inline-block; margin: 0; font-size: 12px; line-height: 1.5;">
                     <li>Run Monte Carlo simulations with 10,000+ scenarios</li>
+                    <li>Professional modeling with dynamic glide paths and indexed taxes</li>
                     <li>Optimize Social Security claiming strategies</li>
                     <li>Analyze Roth conversion opportunities</li>
+                    <li>Track net worth with integrated liability and debt tracking</li>
                     <li>Get AI-powered financial recommendations</li>
                     <li>Create multiple "what-if" scenarios</li>
                     <li>Track action items and progress</li>
@@ -100,10 +102,10 @@ function initializeWizard(container) {
                     <div style="display: flex; align-items: start; gap: var(--space-2);">
                         <div style="min-width: 26px; height: 26px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 13px;">2</div>
                         <div style="flex: 1;">
-                            <strong style="font-size: 13px;">Add Assets, Expenses & Income</strong>
+                            <strong style="font-size: 13px;">Add Assets, Liabilities, Expenses & Income</strong>
                             <p style="font-size: 12px; color: var(--text-secondary); margin: 4px 0 0 0; line-height: 1.4;">
-                                Build your financial picture by adding all your assets (401k, IRA, brokerage accounts, real estate),
-                                income sources (salary, Social Security, pensions), and expenses (current and projected retirement spending).
+                                Build your financial picture by adding all your assets (401k, IRA, brokerage, real estate),
+                                liabilities (mortgages, loans, debts), income sources (salary, SS, pensions), and detailed expenses.
                             </p>
                         </div>
                     </div>
