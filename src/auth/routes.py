@@ -60,6 +60,7 @@ def check_account_lockout(username: str) -> tuple[bool, int]:
 class ResetWithRecoverySchema(BaseModel):
     """Schema for password reset using recovery code."""
     username: str
+    email: EmailStr
     recovery_code: str
     new_password: str
 
@@ -909,9 +910,9 @@ def reset_password_with_recovery():
         return jsonify({'error': 'Invalid request data'}), 400
 
     user = User.get_by_username(data.username)
-    if not user:
-        # Use generic error to avoid enumeration, but practically user needs to know username to use recovery code
-        return jsonify({'error': 'Invalid username or recovery code'}), 400
+    if not user or user.email.lower() != data.email.lower():
+        # Use generic error to avoid enumeration
+        return jsonify({'error': 'Invalid credentials or recovery code'}), 400
 
     if not user.recovery_encrypted_dek or not user.recovery_iv or not user.recovery_salt:
         return jsonify({'error': 'Recovery code not set up for this account. Cannot recover data.'}), 400
