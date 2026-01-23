@@ -740,29 +740,14 @@ function aggregateToAnnual(monthlyData) {
  * Render cash flow chart
  */
 async function renderCashFlowChart(container, profile, months, viewType, scenarioData = null, monthsToLifeExpectancy = 360, lifeExpectancyAge = 95) {
-    // Show loading indicator
+    // Skip loading indicator entirely since Monte Carlo is disabled
+    // Just proceed with synchronous calculation using the existing canvas
     let canvasElement = container.querySelector('#cashflow-chart');
-    const originalContent = canvasElement ? canvasElement.parentElement.innerHTML : '';
-    if (canvasElement && canvasElement.parentElement) {
-        canvasElement.parentElement.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: center; height: 350px; flex-direction: column; gap: 12px;">
-                <div style="font-size: 32px;">⏳</div>
-                <div style="color: var(--text-secondary); font-size: 14px;">Fetching accurate Monte Carlo projections...</div>
-            </div>
-        `;
-    }
 
     // Temporarily disable Monte Carlo fetch to debug chart rendering
     // TODO: Re-enable once basic chart works
     const monteCarloData = null;
     console.log('Using simplified JavaScript projection (Monte Carlo temporarily disabled)');
-
-    // Restore canvas immediately
-    if (canvasElement && canvasElement.parentElement) {
-        canvasElement.parentElement.innerHTML = originalContent;
-        // Re-query the canvas element after restoring
-        canvasElement = container.querySelector('#cashflow-chart');
-    }
 
     // Original Monte Carlo fetch code (disabled):
     /*

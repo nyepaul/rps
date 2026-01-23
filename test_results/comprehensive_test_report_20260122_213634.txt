@@ -1,0 +1,114 @@
+Starting test suites...
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.2, pluggy-1.6.0 -- /home/paul/src/rps/src/venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/paul/src/rps
+configfile: pytest.ini
+plugins: anyio-4.12.1, cov-7.0.0
+collecting ... collected 7 items
+
+tests/comprehensive/test_javascript_quality.py::TestJavaScriptQuality::test_no_duplicate_const_declarations PASSED [ 14%]
+tests/comprehensive/test_javascript_quality.py::TestJavaScriptQuality::test_no_var_declarations PASSED [ 28%]
+tests/comprehensive/test_javascript_quality.py::TestJavaScriptQuality::test_all_imports_are_valid PASSED [ 42%]
+tests/comprehensive/test_javascript_quality.py::TestJavaScriptQuality::test_no_duplicate_element_ids_in_templates FAILED [ 57%]
+tests/comprehensive/test_javascript_quality.py::TestJavaScriptQuality::test_consistent_semicolon_usage PASSED [ 71%]
+tests/comprehensive/test_javascript_quality.py::TestJavaScriptCriticalIssues::test_no_duplicate_settings_modal_sections PASSED [ 85%]
+tests/comprehensive/test_javascript_quality.py::TestJavaScriptCriticalIssues::test_cashflow_tab_has_single_canvas_declaration PASSED [100%]
+
+=================================== FAILURES ===================================
+_______ TestJavaScriptQuality.test_no_duplicate_element_ids_in_templates _______
+tests/comprehensive/test_javascript_quality.py:110: in test_no_duplicate_element_ids_in_templates
+    assert len(issues) == 0, f"Found duplicate element IDs:\n" + "\n".join(issues)
+E   AssertionError: Found duplicate element IDs:
+E     components/admin/group-management.js - Duplicate IDs: ${admin.id}
+E     components/admin/password-requests.js - Duplicate IDs: ${req.id}
+E     components/admin/user-management.js - Duplicate IDs: ${user.id}
+E     components/admin/user-management.js - Duplicate IDs: ${user.id}
+E     components/admin/user-management.js - Duplicate IDs: ${b.id}
+E     components/admin/backup-manager.js - Duplicate IDs: ${group.id}
+E     components/admin/feedback-viewer.js - Duplicate IDs: ${feedback.id}
+E     components/actions/actions-tab.js - Duplicate IDs: ${item.id}
+E     components/settings/user-backups.js - Duplicate IDs: ${backup.id}
+E   assert 9 == 0
+E    +  where 9 = len(['components/admin/group-management.js - Duplicate IDs: ${admin.id}', 'components/admin/password-requests.js - Duplicate IDs: ${req.id}', 'components/admin/user-management.js - Duplicate IDs: ${user.id}', 'components/admin/user-management.js - Duplicate IDs: ${user.id}', 'components/admin/user-management.js - Duplicate IDs: ${b.id}', 'components/admin/backup-manager.js - Duplicate IDs: ${group.id}', 'components/admin/feedback-viewer.js - Duplicate IDs: ${feedback.id}', 'components/actions/actions-tab.js - Duplicate IDs: ${item.id}', 'components/settings/user-backups.js - Duplicate IDs: ${backup.id}'])
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.12.3-final-0 ________________
+
+Name                                        Stmts   Miss  Cover   Missing
+-------------------------------------------------------------------------
+src/__init__.py                                 0      0   100%
+src/__version__.py                              3      0   100%
+src/app.py                                    155    127    18%   35-285, 289-290
+src/auth/__init__.py                            0      0   100%
+src/auth/admin_required.py                     16      8    50%   22-51
+src/auth/decorators.py                         19     19     0%   2-26
+src/auth/models.py                            249    196    21%   18-38, 43, 48, 53, 58, 62, 67-73, 78-84, 89-95, 99-136, 140-142, 146-168, 172-176, 180-234, 246-288, 305-321, 333-344, 355-366, 378-387, 392-403, 407-413, 417-426, 430-442, 446-447, 451-452, 456-457, 461-462, 465, 472-478, 482-488, 492-502, 506-512, 515-519
+src/auth/routes.py                            503    402    20%   28-60, 71-79, 90-94, 98-106, 126-187, 203-326, 342-377, 383-386, 403-404, 411-428, 444-452, 462-514, 525-601, 612-642, 657-665, 675-683, 696-781, 788-841, 852-935, 942-1005, 1012-1035
+src/auth/super_admin_required.py               12      5    58%   17-24
+src/auth/utils.py                               0      0   100%
+src/config.py                                  55      5    91%   11-13, 95-96
+src/database/__init__.py                        0      0   100%
+src/database/audit_logger.py                   71     46    35%   35-64, 69, 74, 79, 84, 105-124, 134-138, 151, 156, 161, 166
+src/database/connection.py                     30     18    40%   17-27, 31-34, 38-41
+src/extensions.py                              31     21    32%   21-55
+src/middleware/__init__.py                      0      0   100%
+src/models/__init__.py                          0      0   100%
+src/models/action_item.py                      88     75    15%   15-30, 35-41, 46-58, 62-96, 100-102, 108-147
+src/models/base.py                              0      0   100%
+src/models/conversation.py                     55     39    29%   12-19, 24-30, 35-41, 46-50, 54-77, 81-83, 89-90, 96-104
+src/models/group.py                            44     30    32%   9-13, 18-21, 26-27, 31-45, 49-51, 55-61, 65-66, 70-71, 75
+src/models/profile.py                          94     69    27%   15-24, 29, 34-41, 47-67, 72, 78-84, 89-95, 100-108, 112-149, 153-157, 162
+src/models/scenario.py                         81     68    16%   13-23, 28-34, 39-43, 47-76, 80-82, 88-127
+src/routes/__init__.py                          0      0   100%
+src/routes/action_items.py                    199    140    30%   27-36, 40-42, 46-48, 52-54, 69-75, 79-81, 85-87, 96-141, 148-183, 190-214, 221-280, 287-362, 369-397
+src/routes/admin.py                          1333   1040    22%   32-34, 49-51, 78-80, 102-162, 176-195, 209-225, 234-286, 300-357, 365-377, 385-424, 432-472, 480-533, 546-583, 595-603, 611-624, 632-649, 657-675, 683-698, 706-725, 733-748, 756-774, 782-797, 805-817, 825-836, 853-912, 920-938, 946-1049, 1070-1139, 1147-1162, 1170-1185, 1193-1238, 1246-1334, 1342-2249, 2267-2319, 2327-2376, 2384-2410, 2418-2468, 2485-2561, 2569-2621, 2629-2681, 2689-2741, 2749-2801, 2809-2858, 2873-2958, 2972-3018, 3041-3199, 3206-3207, 3214, 3225-3258, 3266-3293, 3301-3342, 3354-3371, 3379-3408, 3416-3448, 3456-3479, 3492-3499, 3508-3515, 3524-3538, 3554-3593, 3602-3611, 3626-3672, 3681-3701
+src/routes/ai_services.py                     261    233    11%   17-107, 119-297, 304-333, 343-355, 363-667
+src/routes/analysis.py                        196    160    18%   26-88, 109-111, 118-316, 323-406, 413-501, 508-555
+src/routes/events.py                          158    132    16%   29-63, 83-183, 199-229, 249-349, 368-402
+src/routes/feedback.py                        399    323    19%   28-30, 34-38, 52-66, 71-84, 104-231, 249-310, 324-366, 379-396, 404-420, 435-500, 512-574, 581-616, 630-682, 697-739, 753-797, 805-821, 835-867, 882-915
+src/routes/fingerprint.py                      60     49    18%   17-35, 54-104, 113-185
+src/routes/profiles.py                        357    289    19%   24-35, 39-44, 56-69, 73-78, 85-99, 106-130, 137-189, 196-269, 276-304, 311-387, 394-449, 456-548, 558-564, 571-614, 621-684, 691-729, 734-787, 792-819
+src/routes/reports.py                         132    110    17%   25-64, 69-155, 167-235, 242-298, 305-376
+src/routes/roadmap.py                         170    141    17%   18-22, 29-90, 97-152, 159-195, 202-245, 252-311, 318-342, 349-408
+src/routes/scenarios.py                       126     90    29%   22-26, 37-43, 50-69, 76-100, 107-162, 169-227, 234-262
+src/routes/skills.py                           35     25    29%   13-29, 36-56
+src/routes/tax_optimization.py                248    210    15%   42-111, 118-188, 195-244, 251-302, 309-368, 375-420
+src/routes/user_backups.py                     47     29    38%   16-20, 26-45, 51-74, 80-93
+src/schemas/__init__.py                         0      0   100%
+src/services/__init__.py                        0      0   100%
+src/services/action_item_service.py            86     77    10%   14-268, 273-280
+src/services/asset_service.py                  63     55    13%   20-64, 77-202, 218-313, 327-339
+src/services/audit_narrative_generator.py     284    264     7%   37-59, 75-110, 115-155, 168-358, 363-405, 410-441, 446-469
+src/services/email_service.py                  27     27     0%   2-188
+src/services/encryption_service.py            125     88    30%   25-31, 35-42, 47, 54, 59-66, 71-80, 85-94, 106-116, 132-146, 158-162, 175-181, 193-197, 210-216, 226-239, 245, 251-264, 269, 274-280, 285, 290-296
+src/services/enhanced_audit_logger.py         663    598    10%   91-99, 104-111, 125-168, 173-190, 205-231, 241-286, 294-427, 435-478, 483-514, 519-610, 634-816, 821-838, 843, 857, 862-865, 870, 875, 880, 908-930, 955-976, 993-1050, 1063-1152, 1176-1335, 1345-1402, 1407-1434
+src/services/ip_intelligence.py               132    111    16%   54-111, 120-124, 135-138, 151-201, 214-276, 292-312
+src/services/pdf_service.py                   206    191     7%   17-86, 91-93, 98-100, 105-122, 127-282, 287-433, 438-575
+src/services/pdf_service_elite.py             220    193    12%   44-47, 50-51, 54-59, 63-110, 115-244, 249-323, 328-388, 394-451, 457-506, 511-623
+src/services/pdf_service_pro.py               276    276     0%   2-698
+src/services/pdf_statement_service.py         230    204    11%   41-45, 48-49, 52-57, 61-110, 115-150, 155-181, 186-625, 630
+src/services/rebalancing_service.py            67     61     9%   10, 14-60, 69-102, 111-127
+src/services/retirement_model.py              619    557    10%   22-27, 73-74, 76-77, 95-126, 145-177, 195-225, 244-277, 296-314, 318-849, 869-878, 881-912, 914-960, 962-972, 984-990, 995-1028, 1032-1088, 1092-1165
+src/services/selective_backup_service.py      186    186     0%   5-456
+src/services/tax_optimization_service.py      337    264    22%   183-184, 188-195, 199-211, 220-246, 250-251, 255-276, 283, 293-325, 340-384, 391, 395-398, 407-434, 441-442, 448-465, 474-488, 517-536, 558-570, 594-620, 628-637, 653-693, 737-758, 774-786, 806-812, 829-845, 852-899, 909-915, 919-928, 932-940, 945-1023
+src/services/user_backup_service.py           126    105    17%   21-24, 33-94, 103-108, 113-125, 133-221
+src/utils/__init__.py                           0      0   100%
+src/utils/error_sanitizer.py                   40     36    10%   16-56, 70-87
+-------------------------------------------------------------------------
+TOTAL                                        8914   7392    17%
+Coverage HTML written to dir htmlcov
+=========================== short test summary info ============================
+FAILED tests/comprehensive/test_javascript_quality.py::TestJavaScriptQuality::test_no_duplicate_element_ids_in_templates - AssertionError: Found duplicate element IDs:
+  components/admin/group-management.js - Duplicate IDs: ${admin.id}
+  components/admin/password-requests.js - Duplicate IDs: ${req.id}
+  components/admin/user-management.js - Duplicate IDs: ${user.id}
+  components/admin/user-management.js - Duplicate IDs: ${user.id}
+  components/admin/user-management.js - Duplicate IDs: ${b.id}
+  components/admin/backup-manager.js - Duplicate IDs: ${group.id}
+  components/admin/feedback-viewer.js - Duplicate IDs: ${feedback.id}
+  components/actions/actions-tab.js - Duplicate IDs: ${item.id}
+  components/settings/user-backups.js - Duplicate IDs: ${backup.id}
+assert 9 == 0
+ +  where 9 = len(['components/admin/group-management.js - Duplicate IDs: ${admin.id}', 'components/admin/password-requests.js - Duplicate IDs: ${req.id}', 'components/admin/user-management.js - Duplicate IDs: ${user.id}', 'components/admin/user-management.js - Duplicate IDs: ${user.id}', 'components/admin/user-management.js - Duplicate IDs: ${b.id}', 'components/admin/backup-manager.js - Duplicate IDs: ${group.id}', 'components/admin/feedback-viewer.js - Duplicate IDs: ${feedback.id}', 'components/actions/actions-tab.js - Duplicate IDs: ${item.id}', 'components/settings/user-backups.js - Duplicate IDs: ${backup.id}'])
+========================= 1 failed, 6 passed in 2.79s ==========================
