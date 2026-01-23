@@ -1264,7 +1264,12 @@ function calculateMonthlyCashFlow(profile, months) {
         // Both retired -> 100% future
         let expenses = 0;
 
-        if (budget.expenses && (budget.expenses.current || budget.expenses.future)) {
+        // IMPORTANT: Prioritize financial.annual_expenses if provided (more accurate)
+        if (financial.annual_expenses) {
+            // Use the summary field - it's the source of truth
+            expenses = financial.annual_expenses / 12;
+        } else if (budget.expenses && (budget.expenses.current || budget.expenses.future)) {
+            // Fallback to detailed budget categories only if annual_expenses not provided
             // Determine retirement status for both people
             const person1Retired = retirementDate && currentDate >= retirementDate;
 
@@ -1290,9 +1295,6 @@ function calculateMonthlyCashFlow(profile, months) {
                 const futureExpenses = calculatePeriodExpenses(budget, 'future', currentDate);
                 expenses = (currentExpenses * 0.5) + (futureExpenses * 0.5);
             }
-        } else if (financial.annual_expenses) {
-            // Fallback to financial annual expenses
-            expenses = financial.annual_expenses / 12;
         }
 
         // Combine work income and budget income (rental, consulting, business, other)
@@ -1330,9 +1332,32 @@ function calculateMonthlyCashFlow(profile, months) {
         }
 
         // Add savings to portfolio if positive cash flow before retirement
-        if (!anyoneRetired && totalWorkIncome > expenses) {
-            const monthlySavings = totalWorkIncome - expenses;
-            currentPortfolio += monthlySavings;
+        if (!anyoneRetired) {
+            // Calculate after-tax income (rough approximation)
+            const federalTaxRate = financial.tax_bracket_federal || 0.22;
+            const stateTaxRate = financial.tax_bracket_state || 0;
+            const ficaRate = 0.0765; // Social Security + Medicare
+            const totalTaxRate = federalTaxRate + stateTaxRate + ficaRate;
+
+            // Calculate monthly 401k contribution
+            const annual401kContribution = financial.combined_401k_contribution || 0;
+            const monthly401kContribution = annual401kContribution / 12;
+
+            // Net after-tax income (gross - taxes - 401k)
+            const monthlyTaxes = totalWorkIncome * totalTaxRate;
+            const netIncome = totalWorkIncome - monthlyTaxes - monthly401kContribution;
+
+            // Only add to portfolio if net income exceeds expenses
+            if (netIncome > expenses) {
+                const monthlySavings = netIncome - expenses;
+                currentPortfolio += monthlySavings;
+            } else if (netIncome < expenses) {
+                // If expenses exceed net income, withdraw from portfolio
+                const shortfall = expenses - netIncome;
+                if (currentPortfolio > 0) {
+                    currentPortfolio -= Math.min(shortfall, currentPortfolio);
+                }
+            }
         }
 
         const totalIncome = totalWorkIncome + retirementBenefits + investmentIncome;
