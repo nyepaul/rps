@@ -261,6 +261,18 @@ def get_all_feedback():
     '''
     params = []
 
+    # Local admins can only see feedback from users in their managed groups
+    if not current_user.is_super_admin:
+        query += '''
+            AND f.user_id IN (
+                SELECT ug.user_id 
+                FROM user_groups ug
+                JOIN admin_groups ag ON ug.group_id = ag.group_id
+                WHERE ag.user_id = ?
+            )
+        '''
+        params.append(current_user.id)
+
     if feedback_type:
         query += ' AND f.type = ?'
         params.append(feedback_type)
@@ -283,6 +295,19 @@ def get_all_feedback():
         # Get total count
         count_query = 'SELECT COUNT(*) as count FROM feedback WHERE 1=1'
         count_params = []
+
+        # Apply same scope filter for count
+        if not current_user.is_super_admin:
+            count_query += '''
+                AND user_id IN (
+                    SELECT ug.user_id 
+                    FROM user_groups ug
+                    JOIN admin_groups ag ON ug.group_id = ag.group_id
+                    WHERE ag.user_id = ?
+                )
+            '''
+            count_params.append(current_user.id)
+
         if feedback_type:
             count_query += ' AND type = ?'
             count_params.append(feedback_type)
@@ -347,6 +372,14 @@ def update_feedback_status(feedback_id: int):
     params.append(feedback_id)
 
     try:
+        # Verify permissions before update
+        feedback = db.execute_one('SELECT user_id FROM feedback WHERE id = ?', (feedback_id,))
+        if not feedback:
+            return jsonify({'error': 'Feedback not found'}), 404
+            
+        if not current_user.can_manage_user(feedback['user_id']):
+            return jsonify({'error': 'Access denied'}), 403
+
         with db.get_connection() as conn:
             cursor = conn.cursor()
             query = f"UPDATE feedback SET {', '.join(updates)} WHERE id = ?"
@@ -402,6 +435,14 @@ def get_feedback_content(feedback_id: int):
 def delete_feedback(feedback_id: int):
     """Delete feedback (admin only). Content is cascade deleted automatically."""
     try:
+        # Check permissions
+        feedback = db.execute_one('SELECT user_id FROM feedback WHERE id = ?', (feedback_id,))
+        if not feedback:
+            return jsonify({'error': 'Feedback not found'}), 404
+            
+        if not current_user.can_manage_user(feedback['user_id']):
+            return jsonify({'error': 'Access denied'}), 403
+
         with db.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('DELETE FROM feedback WHERE id = ?', (feedback_id,))
@@ -654,18 +695,27 @@ def add_reply(feedback_id: int):
             owner_id = feedback_row[0]
             status = feedback_row[1]
 
-            # Check permissions: Must be Admin or Owner
-            is_admin = getattr(current_user, 'is_admin', False)
-            if not is_admin and current_user.id != owner_id:
+            # Check permissions: Must be Owner OR Admin who manages the user
+            is_owner = (current_user.id == owner_id)
+            can_manage = current_user.can_manage_user(owner_id)
+            
+            if not is_owner and not can_manage:
                 return jsonify({'error': 'Access denied'}), 403
+            
+            # Is acting as admin?
+            is_acting_admin = can_manage and not is_owner
 
-            # Check if closed
-            if status == 'closed' and not is_admin:
-                return jsonify({'error': 'Cannot reply to closed feedback'}), 400
+            # Check if closed (Admins can reply to closed tickets? Maybe to re-open implicitly or add final note.
+            # But previous requirement said "until closed". Let's stick to strict no-reply if closed unless admin re-opens.)
+            # Actually, standard behavior is usually admins CAN post to closed tickets, users cannot.
+            # But to be safe and consistent with "until closed", let's block everyone unless they open it first.
+            # ...Wait, the prompt said "until the ticket is closed".
+            if status == 'closed':
+                 return jsonify({'error': 'Cannot reply to closed feedback'}), 400
 
-            # Determine privacy (Users cannot make private notes)
+            # Determine privacy (Only admins can make private notes)
             is_private = data.get('is_private', False)
-            if not is_admin:
+            if not is_acting_admin:
                 is_private = False
 
             # Insert reply
@@ -908,6 +958,10 @@ def get_feedback_thread_admin(feedback_id: int):
 
         if not feedback_row:
             return jsonify({'error': 'Feedback not found'}), 404
+
+        # Check permissions
+        if not current_user.can_manage_user(feedback_row['user_id']):
+            return jsonify({'error': 'Access denied'}), 403
 
         feedback = dict(feedback_row)
 
