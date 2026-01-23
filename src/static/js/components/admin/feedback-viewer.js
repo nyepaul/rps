@@ -607,40 +607,35 @@ async function loadFeedback(container) {
         }
 
         listContainer.innerHTML = `
-            <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; flex-direction: column; gap: 8px;">
                 ${feedback.map(item => `
                     <div class="feedback-item" data-feedback='${JSON.stringify(item).replace(/'/g, "&#39;")}' style="
                         background: var(--bg-tertiary);
-                        border: 2px solid var(--border-color);
-                        border-radius: 8px;
-                        padding: 16px;
+                        border: 1px solid var(--border-color);
+                        border-radius: 6px;
+                        padding: 10px 12px;
                         cursor: pointer;
                         transition: all 0.2s;
                     ">
-                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                                 ${getTypeBadge(item.type)}
                                 ${getStatusBadge(item.status)}
+                                <span style="font-size: 12px; color: var(--text-primary); font-weight: 600;">👤 User #${item.user_id}</span>
                                 ${item.reply_count > 0 ? `
                                     <span style="
-                                        padding: 4px 10px;
+                                        padding: 2px 8px;
                                         background: #e7f3ff;
                                         color: #004085;
-                                        border-radius: 12px;
-                                        font-size: 12px;
+                                        border-radius: 10px;
+                                        font-size: 11px;
                                         font-weight: 600;
-                                    ">💬 ${item.reply_count} ${item.reply_count === 1 ? 'reply' : 'replies'}</span>
+                                    ">💬 ${item.reply_count}</span>
                                 ` : ''}
                             </div>
-                            <div style="font-size: 12px; color: var(--text-secondary);">
+                            <div style="font-size: 11px; color: var(--text-secondary); white-space: nowrap;">
                                 ${formatTimestamp(item.created_at)}
                             </div>
-                        </div>
-                        <div style="display: flex; gap: 16px; font-size: 13px; color: var(--text-secondary); flex-wrap: wrap;">
-                            <span>👤 User #${item.user_id}</span>
-                            ${item.ip_address ? `<span>🌐 ${item.ip_address}</span>` : ''}
-                            ${item.browser_name ? `<span>💻 ${item.browser_name}</span>` : ''}
-                            ${item.last_reply_at ? `<span>💬 Last reply: ${formatTimestamp(item.last_reply_at)}</span>` : ''}
                         </div>
                     </div>
                 `).join('')}
