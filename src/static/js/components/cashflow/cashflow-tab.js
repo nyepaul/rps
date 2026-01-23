@@ -281,8 +281,8 @@ async function fetchMonteCarloData(profile) {
         const response = await analysisAPI.runAnalysis(
             profile.name,
             250,  // Use only 250 simulations for fast response (backend runs 3x scenarios = 750 total)
-            'moderate',  // Default to moderate (60/40) allocation
-            'constant_real'
+            null,  // No custom market profile - use defaults
+            'constant_real'  // Spending model
         );
 
         if (response && response.scenarios) {
