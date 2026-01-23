@@ -1908,32 +1908,32 @@ def reset_demo_account():
             ))
             starman_profile_id = cursor.lastrowid
 
-        # --- Create third demo profile: Demo Dudeman (Blue Collar Single) ---
-        dudeman_birth = date(1988, 7, 14)  # age 38 in 2026
-        dudeman_retire = date(2055, 7, 14)  # age 67
+        # --- Create third demo profile: Demo Junior (Junior Employee) ---
+        dudeman_birth = date(2000, 5, 15)  # Born 2000 (approx 26 years old)
+        dudeman_retire = date(2065, 5, 15)  # age 65
 
         dudeman_data = {
             "person": {
-                "name": "Demo Dudeman",
+                "name": "Demo Junior",
                 "birth_date": dudeman_birth.isoformat(),
                 "retirement_date": dudeman_retire.isoformat(),
-                "current_age": 38,
-                "retirement_age": 67,
-                "life_expectancy": 85,
-                "email": "demo.dudeman@example.com",
-                "phone": "(614) 555-7890"
+                "current_age": 26,
+                "retirement_age": 65,
+                "life_expectancy": 95,
+                "email": "demo.junior@example.com",
+                "phone": "(555) 555-5555"
             },
             "spouse": None,  # Single
             "children": [],  # No children
             "address": {
-                "street": "4521 Maple Creek Drive",
-                "city": "Columbus",
-                "state": "OH",
-                "zip": "43228",
+                "street": "123 Starter Apt",
+                "city": "Austin",
+                "state": "TX",
+                "zip": "78701",
                 "country": "USA"
             },
             "financial": {
-                "annual_income": 73000,  # Hourly worker: ~$35/hr + overtime
+                "annual_income": 70000,  # Junior Dev: ~$33.65/hr
                 "annual_expenses": 48000,
                 "social_security_benefit": 2200,  # Monthly at retirement
                 "pension_benefit": 0,
@@ -1948,13 +1948,13 @@ def reset_demo_account():
             },
             "income_streams": [
                 {
-                    "name": "Electrician Wages",
-                    "amount": 6083,  # Monthly ($73k / 12)
+                    "name": "Junior Dev Salary",
+                    "amount": 5833,  # Monthly ($70k / 12)
                     "frequency": "monthly",
-                    "start_date": (today - relativedelta(years=12)).isoformat(),
+                    "start_date": (today - relativedelta(years=2)).isoformat(),
                     "end_date": dudeman_retire.isoformat(),
-                    "type": "hourly",
-                    "description": "Licensed Journeyman Electrician - IBEW Local 683"
+                    "type": "salary",
+                    "description": "Junior Software Developer"
                 }
             ],
             "assets": {
