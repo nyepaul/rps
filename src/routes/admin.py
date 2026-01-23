@@ -186,10 +186,17 @@ def get_log_statistics():
             user_id=current_user.id
         )
 
-        return jsonify({
+        response = jsonify({
             'statistics': stats,
             'period_days': days
-        }), 200
+        })
+
+        # Prevent browser caching of statistics - always fetch fresh data
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+
+        return response, 200
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -216,10 +223,17 @@ def get_ip_locations():
             user_id=current_user.id
         )
 
-        return jsonify({
+        response = jsonify({
             'locations': locations,
             'total': len(locations)
-        }), 200
+        })
+
+        # Prevent browser caching - IP locations change frequently
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+
+        return response, 200
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -3195,10 +3209,17 @@ def get_users_by_location_report():
             user_id=current_user.id
         )
 
-        return jsonify({
+        response = jsonify({
             'summary': summary,
             'users': result
-        }), 200
+        })
+
+        # Prevent browser caching - report data changes frequently
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+
+        return response, 200
 
     except Exception as e:
         print(f"Error generating users-by-location report: {e}")
