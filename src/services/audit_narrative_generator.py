@@ -332,6 +332,24 @@ class AuditNarrativeGenerator:
         elif action == 'ADMIN_ACCESS_DENIED':
             return "Attempted to access admin panel (denied)"
 
+        # Network access
+        elif action == 'NETWORK_ACCESS':
+            endpoint = details.get('endpoint') or log.get('request_endpoint', '')
+            method = details.get('method') or log.get('request_method', '')
+            if endpoint:
+                # Try to make a more readable description
+                if endpoint.startswith('/api/'):
+                    parts = endpoint.split('/')
+                    resource = parts[2] if len(parts) > 2 else 'API'
+                    return f"API request: {method} {endpoint}" if method else f"API request to {endpoint}"
+                elif endpoint == '/' or endpoint == '/index.html':
+                    return "Loaded main application"
+                elif endpoint == '/login':
+                    return "Viewed login page"
+                else:
+                    return f"Requested {method} {endpoint}" if method else f"Requested {endpoint}"
+            return "Network request"
+
         # Report generation
         elif action == 'GENERATE_REPORT':
             report_type = details.get('report_type', 'report')

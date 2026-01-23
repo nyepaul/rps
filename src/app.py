@@ -30,6 +30,74 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 
+def _get_endpoint_description(path, method):
+    """Generate human-readable description for network access based on endpoint."""
+    # API endpoint mappings
+    endpoint_descriptions = {
+        # Auth endpoints
+        ('/api/auth/login', 'POST'): 'User login attempt',
+        ('/api/auth/logout', 'POST'): 'User logout',
+        ('/api/auth/register', 'POST'): 'New user registration',
+        ('/api/auth/check', 'GET'): 'Check authentication status',
+        ('/api/auth/me', 'GET'): 'Get current user info',
+
+        # Profile endpoints
+        ('/api/profiles', 'GET'): 'List user profiles',
+        ('/api/profiles', 'POST'): 'Create new profile',
+
+        # Analysis endpoints
+        ('/api/analysis/run', 'POST'): 'Run retirement simulation',
+        ('/api/analysis/monte-carlo', 'POST'): 'Run Monte Carlo simulation',
+
+        # AI service endpoints
+        ('/api/ai/advice', 'POST'): 'Request AI financial advice',
+        ('/api/ai/chat', 'POST'): 'AI chat conversation',
+
+        # Admin endpoints
+        ('/api/admin/users', 'GET'): 'Admin: List all users',
+        ('/api/admin/audit-logs', 'GET'): 'Admin: View audit logs',
+        ('/api/admin/statistics', 'GET'): 'Admin: View system statistics',
+
+        # Events endpoints
+        ('/api/events/batch', 'POST'): 'Track user interactions',
+
+        # Page loads
+        ('/', 'GET'): 'Load main application',
+        ('/login', 'GET'): 'View login page',
+        ('/register', 'GET'): 'View registration page',
+    }
+
+    # Check for exact match
+    key = (path, method)
+    if key in endpoint_descriptions:
+        return endpoint_descriptions[key]
+
+    # Check for pattern matches
+    if path.startswith('/api/profiles/') and method == 'GET':
+        return 'View profile details'
+    elif path.startswith('/api/profiles/') and method == 'PUT':
+        return 'Update profile'
+    elif path.startswith('/api/profiles/') and method == 'DELETE':
+        return 'Delete profile'
+    elif path.startswith('/api/scenarios'):
+        return f'Scenario management ({method})'
+    elif path.startswith('/api/action-items'):
+        return f'Action items ({method})'
+    elif path.startswith('/api/admin/'):
+        return f'Admin operation: {path.split("/")[-1]}'
+    elif path.startswith('/api/reports'):
+        return f'Generate report ({method})'
+    elif path.startswith('/api/'):
+        # Generic API call
+        parts = path.split('/')
+        resource = parts[2] if len(parts) > 2 else 'unknown'
+        return f'API: {resource} ({method})'
+    elif method == 'GET':
+        return f'Page request: {path}'
+    else:
+        return f'{method} request to {path}'
+
+
 def create_app(config_name='development'):
     """Create and configure Flask application."""
     app = Flask(__name__, static_folder='static', static_url_path='')
@@ -126,13 +194,22 @@ def create_app(config_name='development'):
         if current_user and current_user.is_authenticated:
             user_id = current_user.id
 
-        # Log the network access
+        # Generate human-readable description based on endpoint
+        path = request.path
+        method = request.method
+        description = _get_endpoint_description(path, method)
+
+        # Log the network access with details
         EnhancedAuditLogger.log(
             action='NETWORK_ACCESS',
             table_name=None,
             record_id=None,
             user_id=user_id,
-            details=None,
+            details={
+                'endpoint': path,
+                'method': method,
+                '_description': description
+            },
             status_code=None  # Will be set in after_request
         )
 

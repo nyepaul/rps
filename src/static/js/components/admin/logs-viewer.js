@@ -875,12 +875,12 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
             });
         });
 
-        // Previous button handler (earlier in time = higher index)
-        const prevBtn = modal.querySelector('.prev-log-btn');
-        if (prevBtn) {
+        // Previous button handlers (earlier in time = higher index) - attach to ALL prev buttons
+        const prevBtns = Array.from(modal.querySelectorAll('.prev-log-btn'));
+        for (const prevBtn of prevBtns) {
             // Remove old listeners by cloning
             const newPrevBtn = prevBtn.cloneNode(true);
-            prevBtn.replaceWith(newPrevBtn);
+            prevBtn.parentNode.replaceChild(newPrevBtn, prevBtn);
 
             if (hasPrev) {
                 newPrevBtn.addEventListener('click', () => {
@@ -891,12 +891,12 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
             }
         }
 
-        // Next button handler (later in time = lower index)
-        const nextBtn = modal.querySelector('.next-log-btn');
-        if (nextBtn) {
+        // Next button handlers (later in time = lower index) - attach to ALL next buttons
+        const nextBtns = Array.from(modal.querySelectorAll('.next-log-btn'));
+        for (const nextBtn of nextBtns) {
             // Remove old listeners by cloning
             const newNextBtn = nextBtn.cloneNode(true);
-            nextBtn.replaceWith(newNextBtn);
+            nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
 
             if (hasNext) {
                 newNextBtn.addEventListener('click', () => {
@@ -2381,12 +2381,12 @@ async function showLogDetailsWithNavigation(logIndex) {
             });
         });
 
-        // Previous button handler (earlier in time = higher index)
-        const prevBtn = modal.querySelector('.prev-log-btn');
-        if (prevBtn) {
+        // Previous button handlers (earlier in time = higher index) - attach to ALL prev buttons
+        const prevBtns = Array.from(modal.querySelectorAll('.prev-log-btn'));
+        for (const prevBtn of prevBtns) {
             // Remove old listeners by cloning
             const newPrevBtn = prevBtn.cloneNode(true);
-            prevBtn.replaceWith(newPrevBtn);
+            prevBtn.parentNode.replaceChild(newPrevBtn, prevBtn);
 
             if (hasPrev) {
                 newPrevBtn.addEventListener('click', () => {
@@ -2397,12 +2397,12 @@ async function showLogDetailsWithNavigation(logIndex) {
             }
         }
 
-        // Next button handler (later in time = lower index)
-        const nextBtn = modal.querySelector('.next-log-btn');
-        if (nextBtn) {
+        // Next button handlers (later in time = lower index) - attach to ALL next buttons
+        const nextBtns = Array.from(modal.querySelectorAll('.next-log-btn'));
+        for (const nextBtn of nextBtns) {
             // Remove old listeners by cloning
             const newNextBtn = nextBtn.cloneNode(true);
-            nextBtn.replaceWith(newNextBtn);
+            nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
 
             if (hasNext) {
                 newNextBtn.addEventListener('click', () => {
