@@ -736,10 +736,10 @@ function aggregateToAnnual(monthlyData) {
  */
 async function renderCashFlowChart(container, profile, months, viewType, scenarioData = null, monthsToLifeExpectancy = 360, lifeExpectancyAge = 95) {
     // Show loading indicator
-    const canvas = container.querySelector('#cashflow-chart');
-    const originalContent = canvas ? canvas.parentElement.innerHTML : '';
-    if (canvas && canvas.parentElement) {
-        canvas.parentElement.innerHTML = `
+    let canvasElement = container.querySelector('#cashflow-chart');
+    const originalContent = canvasElement ? canvasElement.parentElement.innerHTML : '';
+    if (canvasElement && canvasElement.parentElement) {
+        canvasElement.parentElement.innerHTML = `
             <div style="display: flex; align-items: center; justify-content: center; height: 350px; flex-direction: column; gap: 12px;">
                 <div style="font-size: 32px;">⏳</div>
                 <div style="color: var(--text-secondary); font-size: 14px;">Fetching accurate Monte Carlo projections...</div>
@@ -751,8 +751,8 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
     const monteCarloData = await fetchMonteCarloData(profile);
 
     // Restore canvas
-    if (canvas && canvas.parentElement) {
-        canvas.parentElement.innerHTML = originalContent;
+    if (canvasElement && canvasElement.parentElement) {
+        canvasElement.parentElement.innerHTML = originalContent;
     }
 
     const monthlyData = calculateMonthlyCashFlow(profile, months);
