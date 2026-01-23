@@ -942,8 +942,27 @@
             }
 
             .tabs {
-                overflow-x: auto;
-                flex-wrap: nowrap;
+                flex-wrap: wrap;
+                overflow: visible;
+                gap: 8px;
+            }
+            
+            .nav-group {
+                width: 100%;
+            }
+            
+            .nav-group-label {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .nav-dropdown {
+                position: static;
+                width: 100%;
+                box-shadow: none;
+                border: 1px solid var(--border-color);
+                border-top: none;
+                padding-left: 10px;
             }
 
             .tab {

@@ -5,8 +5,26 @@
 import { profilesAPI } from '../../api/profiles.js';
 import { store } from '../../state/store.js';
 import { showSuccess, showError, showSpinner, hideSpinner } from '../../utils/dom.js';
+import { setupContextualHelp } from '../../utils/contextual-help.js';
 
 export function renderProfileTab(container) {
+    const profile = store.get('currentProfile');
+    // ... (rest of the file until the Life Expectancy field) ...
+    // Note: I will need to be careful with the replace to target the right spot.
+    // I will replace the imports and then target the Life Expectancy HTML block.
+    // Wait, replacing imports and a specific HTML block in one go is risky if they are far apart.
+    // I will do two replacements. First imports.
+    // Actually, I can do it in one if I match the whole top part, but that's huge.
+    // Better: 
+    // 1. Add import.
+    // 2. Modify Life Expectancy HTML.
+    // 3. Add setup call.
+    // Since `replace` tool takes multiple expected replacements if I configure it, or I can do multiple calls.
+    // The tool definition says "expected_replacements" parameter.
+    // I will try to do it in 3 distinct calls to be safe and precise.
+    
+    // Call 1: Add import
+}
     const profile = store.get('currentProfile');
 
     if (!profile) {
@@ -80,7 +98,7 @@ export function renderProfileTab(container) {
                                 <input type="number" id="retirement_age" value="${person.retirement_age || ''}" class="calculated-field" readonly>
                             </div>
                             <div class="form-group" style="grid-column: span 2;">
-                                <label for="life_expectancy">Life Expectancy (years)</label>
+                                <label for="life_expectancy">Life Expectancy (years) <button type="button" class="help-icon" data-tooltip="Used to calculate how long your portfolio needs to last. Conservative estimates (95-100) are recommended to ensure you don't outlive your money.">?</button></label>
                                 <div style="display: flex; align-items: center; gap: 10px;">
                                     <input type="number" id="life_expectancy" name="life_expectancy" value="${person.life_expectancy || 95}" min="0" max="120" style="flex: 1;">
                                     <span style="font-size: 11px; color: var(--text-secondary); white-space: nowrap;">Default: 95</span>
@@ -300,6 +318,9 @@ export function renderProfileTab(container) {
             }
         </style>
     `;
+
+    // Initialize contextual help
+    setupContextualHelp(container);
 
     // Set up event handlers
     setupProfileFormHandlers(container, profile);
@@ -631,13 +652,31 @@ function setupAgeCalculation(container) {
     // Function to update ages
     const updateAges = () => {
         const birthDate = birthDateField.value;
-        const retirementDate = retirementDateField ? retirementDateField.value : null;
+        let retirementDate = retirementDateField ? retirementDateField.value : null;
 
         if (birthDate) {
             // Calculate current age
             const currentAge = calculateAge(birthDate);
             if (currentAge !== null) {
                 currentAgeField.value = currentAge;
+            }
+
+            // SMART DEFAULT: Auto-fill retirement date if empty
+            if (retirementDateField && !retirementDate) {
+                const birth = new Date(birthDate);
+                // Default to age 67 (SS Full Retirement Age)
+                birth.setFullYear(birth.getFullYear() + 67);
+                // Format as YYYY-MM-DD
+                const defaultDate = birth.toISOString().split('T')[0];
+                retirementDateField.value = defaultDate;
+                retirementDate = defaultDate;
+                
+                // Add visual cue
+                retirementDateField.style.transition = 'background-color 0.5s';
+                retirementDateField.style.backgroundColor = 'var(--info-bg)';
+                setTimeout(() => {
+                    retirementDateField.style.backgroundColor = '';
+                }, 1000);
             }
 
             // Calculate retirement age if retirement date is set
@@ -689,13 +728,30 @@ function setupSpouseAgeCalculation(container) {
     // Function to update spouse ages
     const updateSpouseAges = () => {
         const birthDate = spouseBirthDateField.value;
-        const retirementDate = spouseRetirementDateField ? spouseRetirementDateField.value : null;
+        let retirementDate = spouseRetirementDateField ? spouseRetirementDateField.value : null;
 
         if (birthDate) {
             // Calculate current age
             const currentAge = calculateAge(birthDate);
             if (currentAge !== null) {
                 spouseCurrentAgeField.value = currentAge;
+            }
+
+            // SMART DEFAULT: Auto-fill retirement date if empty
+            if (spouseRetirementDateField && !retirementDate) {
+                const birth = new Date(birthDate);
+                // Default to age 67
+                birth.setFullYear(birth.getFullYear() + 67);
+                const defaultDate = birth.toISOString().split('T')[0];
+                spouseRetirementDateField.value = defaultDate;
+                retirementDate = defaultDate;
+
+                // Add visual cue
+                spouseRetirementDateField.style.transition = 'background-color 0.5s';
+                spouseRetirementDateField.style.backgroundColor = 'var(--info-bg)';
+                setTimeout(() => {
+                    spouseRetirementDateField.style.backgroundColor = '';
+                }, 1000);
             }
 
             // Calculate retirement age if retirement date is set
