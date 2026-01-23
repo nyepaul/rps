@@ -6,6 +6,7 @@
 import { store } from '../../state/store.js';
 import { formatCurrency } from '../../utils/formatters.js';
 import { scenariosAPI } from '../../api/scenarios.js';
+import { analysisAPI } from '../../api/analysis.js';
 
 // Track metric visibility state across chart refreshes
 const metricVisibilityState = {
@@ -131,8 +132,10 @@ export function renderCashFlowTab(container) {
     `;
 
     // Initialize chart and data with default: through life expectancy, annual view
-    renderCashFlowChart(container, profile, monthsToLifeExpectancy, 'annual', null, monthsToLifeExpectancy, lifeExpectancyAge);
-    setupEventHandlers(container, profile, monthsToLifeExpectancy, lifeExpectancyAge);
+    (async () => {
+        await renderCashFlowChart(container, profile, monthsToLifeExpectancy, 'annual', null, monthsToLifeExpectancy, lifeExpectancyAge);
+        setupEventHandlers(container, profile, monthsToLifeExpectancy, lifeExpectancyAge);
+    })();
 
     // Load scenarios for the dropdown
     loadScenarios(container, profile);
@@ -200,13 +203,13 @@ function setupEventHandlers(container, profile, monthsToLifeExpectancy, lifeExpe
             }
         }
 
-        renderCashFlowChart(container, profile, months, viewType, scenarioData, monthsToLifeExpectancy, lifeExpectancyAge);
+        await renderCashFlowChart(container, profile, months, viewType, scenarioData, monthsToLifeExpectancy, lifeExpectancyAge);
     };
 
-    timePeriodSelect.addEventListener('change', refresh);
-    viewTypeSelect.addEventListener('change', refresh);
-    scenarioSelect.addEventListener('change', refresh);
-    refreshBtn.addEventListener('click', refresh);
+    timePeriodSelect.addEventListener('change', () => refresh());
+    viewTypeSelect.addEventListener('change', () => refresh());
+    scenarioSelect.addEventListener('change', () => refresh());
+    refreshBtn.addEventListener('click', () => refresh());
 
     // Reset zoom button
     if (resetZoomBtn) {
@@ -267,6 +270,31 @@ function setupEventHandlers(container, profile, monthsToLifeExpectancy, lifeExpe
 
     // Store handler reference for cleanup
     container._cashflowKeyboardHandler = keyboardZoomHandler;
+}
+
+/**
+ * Fetch Monte Carlo analysis data for accurate projections
+ */
+async function fetchMonteCarloData(profile) {
+    try {
+        console.log('Fetching Monte Carlo analysis for accurate cash flow projections...');
+        const response = await analysisAPI.runAnalysis(
+            profile.name,
+            1000,  // Use 1000 simulations for faster response
+            'moderate',  // Default to moderate (60/40) allocation
+            'constant_real'
+        );
+
+        if (response && response.timeline) {
+            console.log('Monte Carlo data fetched successfully');
+            return response;
+        }
+        console.warn('No timeline data in Monte Carlo response');
+        return null;
+    } catch (error) {
+        console.error('Failed to fetch Monte Carlo data:', error);
+        return null;
+    }
 }
 
 /**
@@ -706,9 +734,47 @@ function aggregateToAnnual(monthlyData) {
 /**
  * Render cash flow chart
  */
-function renderCashFlowChart(container, profile, months, viewType, scenarioData = null, monthsToLifeExpectancy = 360, lifeExpectancyAge = 95) {
+async function renderCashFlowChart(container, profile, months, viewType, scenarioData = null, monthsToLifeExpectancy = 360, lifeExpectancyAge = 95) {
+    // Show loading indicator
+    const canvas = container.querySelector('#cashflow-chart');
+    const originalContent = canvas ? canvas.parentElement.innerHTML : '';
+    if (canvas && canvas.parentElement) {
+        canvas.parentElement.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: center; height: 350px; flex-direction: column; gap: 12px;">
+                <div style="font-size: 32px;">⏳</div>
+                <div style="color: var(--text-secondary); font-size: 14px;">Fetching accurate Monte Carlo projections...</div>
+            </div>
+        `;
+    }
+
+    // Fetch accurate Monte Carlo data for portfolio projections
+    const monteCarloData = await fetchMonteCarloData(profile);
+
+    // Restore canvas
+    if (canvas && canvas.parentElement) {
+        canvas.parentElement.innerHTML = originalContent;
+    }
+
     const monthlyData = calculateMonthlyCashFlow(profile, months);
     const chartData = viewType === 'annual' ? aggregateToAnnual(monthlyData) : monthlyData;
+
+    // Replace portfolio values with accurate Monte Carlo data if available
+    let monteCarloPortfolioData = null;
+    if (monteCarloData && monteCarloData.timeline) {
+        console.log('Using Monte Carlo portfolio projections (accurate)');
+        monteCarloPortfolioData = mapScenarioToChartData(monteCarloData.timeline, chartData, viewType);
+
+        // Update chart data with accurate portfolio values
+        if (monteCarloPortfolioData) {
+            chartData.forEach((period, index) => {
+                if (monteCarloPortfolioData[index] !== null) {
+                    period.portfolioValue = monteCarloPortfolioData[index];
+                }
+            });
+        }
+    } else {
+        console.warn('Using simplified JavaScript projection (less accurate)');
+    }
 
     // Process scenario data if available
     let scenarioMedianData = null;
@@ -879,7 +945,7 @@ function renderCashFlowChart(container, profile, months, viewType, scenarioData 
             plugins: {
                 title: {
                     display: true,
-                    text: `Cash Flow Projection (${viewType === 'annual' ? 'Annual' : 'Monthly'}) - ${Math.floor(months / 12)} years through age ${lifeExpectancyAge} - Scroll or +/- to zoom, drag to pan`,
+                    text: `Cash Flow Projection (${viewType === 'annual' ? 'Annual' : 'Monthly'}) - ${Math.floor(months / 12)} years through age ${lifeExpectancyAge} - ${monteCarloPortfolioData ? 'Monte Carlo Portfolio ✓' : 'Simplified Portfolio'} - Scroll or +/- to zoom, drag to pan`,
                     font: {
                         size: 18,
                         weight: 'bold'
