@@ -33,13 +33,15 @@ def check_account_lockout(username: str) -> tuple[bool, int]:
         cutoff_time = (datetime.utcnow() - timedelta(minutes=LOCKOUT_DURATION_MINUTES)).isoformat()
 
         # Query audit log for failed login attempts
+        # Escape SQL wildcards to prevent injection
+        escaped_username = username.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
         rows = db.execute(
             '''SELECT COUNT(*) as count, MAX(created_at) as last_attempt
                FROM enhanced_audit_log
                WHERE action = 'LOGIN_FAILED'
-               AND details LIKE ?
+               AND details LIKE ? ESCAPE '\\'
                AND created_at > ?''',
-            (f'%"username": "{username}"%', cutoff_time)
+            (f'%"username": "{escaped_username}"%', cutoff_time)
         )
 
         row = rows[0] if rows else None

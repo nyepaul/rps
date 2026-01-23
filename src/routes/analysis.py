@@ -179,21 +179,6 @@ def run_analysis():
         traditional_ira = sum(a.get('value', 0) for a in assets_data.get('retirement_accounts', []) if 'traditional' in a.get('type', '').lower() or '401' in a.get('type', '').lower() or '403' in a.get('type', '').lower())
         roth_ira = sum(a.get('value', 0) for a in assets_data.get('retirement_accounts', []) if 'roth' in a.get('type', '').lower())
 
-        # DEBUG: Print what we're working with
-        print(f"\n=== ANALYSIS DEBUG ===")
-        print(f"Profile name: {profile.name}")
-        print(f"Investment types count: {len(investment_types)}")
-        print(f"Total investment value: {sum(inv.get('value', 0) for inv in investment_types)}")
-        print(f"Liquid assets: {liquid_assets}")
-        print(f"Traditional IRA: {traditional_ira}")
-        print(f"Roth IRA: {roth_ira}")
-        print(f"Annual expenses from financial: {financial_data.get('annual_expenses', 0)}")
-        print(f"Annual income from financial: {financial_data.get('annual_income', 0)}")
-        print(f"Budget exists: {profile_data.get('budget') is not None}")
-        if profile_data.get('budget'):
-            print(f"Budget structure: {list(profile_data.get('budget', {}).keys())}")
-        print(f"===================\n")
-
         # Create financial profile matching the FinancialProfile dataclass
         # Use explicit None checks to preserve valid zero values
         pension_benefit = financial_data.get('pension_benefit') if financial_data.get('pension_benefit') is not None else 0
