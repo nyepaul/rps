@@ -8,6 +8,7 @@ import { showSuccess, showError } from '../../utils/dom.js';
 
 // User mapping for input (username -> user_id)
 let userMapping = {};
+let allUsers = []; // Store full user objects
 
 // Sort state for activity table
 let activitySort = {
@@ -36,16 +37,30 @@ export async function renderUserTimeline(container) {
             <div style="background: var(--bg-secondary); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
                 <h3 style="font-size: 16px; margin-bottom: 15px;">📋 Select User & Filters</h3>
                 <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px; align-items: end;">
-                    <div>
-                        <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">User (auto-loads on selection)</label>
+                    <div style="position: relative;" id="user-select-container">
+                        <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">User (search to select)</label>
                         <input
                             type="text"
                             id="timeline-user-input"
-                            list="timeline-users-datalist"
-                            placeholder="Type or select user..."
+                            placeholder="Type to search users..."
+                            autocomplete="off"
                             style="width: 100%; padding: 10px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);"
                         >
-                        <datalist id="timeline-users-datalist"></datalist>
+                        <div id="user-dropdown-list" style="
+                            display: none;
+                            position: absolute;
+                            top: 100%;
+                            left: 0;
+                            right: 0;
+                            background: var(--bg-tertiary);
+                            border: 1px solid var(--border-color);
+                            border-radius: 6px;
+                            max-height: 300px;
+                            overflow-y: auto;
+                            z-index: 100;
+                            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                            margin-top: 4px;
+                        "></div>
                     </div>
                     <div>
                         <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">Start Date</label>
@@ -83,74 +98,75 @@ export async function renderUserTimeline(container) {
  */
 function setupTimelineHandlers(container) {
     const userInput = container.querySelector('#timeline-user-input');
-    let loadTimeout = null;
-
-    const attemptLoadTimeline = async () => {
-        const userValue = userInput.value.trim();
-        if (!userValue) {
-            return;
-        }
-
-        // Check if it's a number (direct user ID) or username
-        let userId;
-        if (!isNaN(userValue)) {
-            userId = parseInt(userValue);
-        } else {
-            // Look up username in mapping
-            userId = userMapping[userValue.toLowerCase()];
-            if (!userId) {
-                // silently ignore if user not found (might still be typing)
-                return;
-            }
-        }
-
-        await loadUserTimeline(container, userId);
-    };
-
-    // Auto-load on input with debounce
-    userInput.addEventListener('input', () => {
-        // Clear previous timeout
-        if (loadTimeout) {
-            clearTimeout(loadTimeout);
-        }
-
-        // Set new timeout to load after user stops typing
-        loadTimeout = setTimeout(async () => {
-            const userValue = userInput.value.trim();
-            if (userValue && userMapping[userValue.toLowerCase()]) {
-                // Exact match found - auto-load
-                await attemptLoadTimeline();
-            }
-        }, 500); // Wait 500ms after last keystroke
-    });
-
-    // Also load on blur if valid user
-    userInput.addEventListener('blur', async () => {
-        if (loadTimeout) {
-            clearTimeout(loadTimeout);
-        }
-        await attemptLoadTimeline();
-    });
-
-    // Allow Enter key to load timeline immediately
-    userInput.addEventListener('keypress', async (e) => {
-        if (e.key === 'Enter') {
-            if (loadTimeout) {
-                clearTimeout(loadTimeout);
-            }
-            await attemptLoadTimeline();
-        }
-    });
-
-    // Also listen for date changes to reload timeline
+    const dropdown = container.querySelector('#user-dropdown-list');
     const startDateInput = container.querySelector('#timeline-start-date');
     const endDateInput = container.querySelector('#timeline-end-date');
 
-    const reloadIfUserSelected = async () => {
-        const userValue = userInput.value.trim();
-        if (userValue) {
-            // User already selected, reload with new date filters
-            await attemptLoadTimeline();
+    const renderDropdown = (filterText = '') => {
+        const lowerFilter = filterText.toLowerCase();
+        const filtered = allUsers.filter(u => 
+            u.username.toLowerCase().includes(lowerFilter) || 
+            (u.email && u.email.toLowerCase().includes(lowerFilter))
+        );
+
+        if (filtered.length === 0) {
+            dropdown.innerHTML = `<div style="padding: 12px; color: var(--text-secondary); text-align: center; font-size: 13px;">No users found</div>`;
+            return;
+        }
+
+        dropdown.innerHTML = filtered.map(user => `
+            <div class="user-select-row" data-user-id="${user.id}" data-username="${user.username}" style="
+                padding: 10px 12px;
+                border-bottom: 1px solid var(--border-color);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                transition: background 0.2s;
+            " onmouseenter="this.style.background='var(--bg-primary)'" onmouseleave="this.style.background='transparent'">
+                <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">${user.username}</div>
+                <div style="font-size: 12px; color: var(--text-secondary);">${user.email || ''}</div>
+                ${user.is_admin ? '<span style="font-size: 10px; background: #764ba222; color: #764ba2; padding: 2px 6px; border-radius: 4px;">ADMIN</span>' : ''}
+            </div>
+        `).join('');
+
+        // Add click handlers
+        dropdown.querySelectorAll('.user-select-row').forEach(row => {
+            row.addEventListener('click', () => {
+                const userId = row.dataset.userId;
+                const username = row.dataset.username;
+                userInput.value = username;
+                dropdown.style.display = 'none';
+                loadUserTimeline(container, userId);
+            });
+        });
+    };
+
+    // Show dropdown on focus
+    userInput.addEventListener('focus', () => {
+        renderDropdown(userInput.value);
+        dropdown.style.display = 'block';
+    });
+
+    // Filter on input
+    userInput.addEventListener('input', () => {
+        renderDropdown(userInput.value);
+        dropdown.style.display = 'block';
+    });
+
+    // Hide dropdown on outside click
+    document.addEventListener('click', (e) => {
+        if (!userInput.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
+
+    // Date change handlers
+    const reloadIfUserSelected = () => {
+        const username = userInput.value;
+        const userId = userMapping[username.toLowerCase()];
+        if (userId) {
+            loadUserTimeline(container, userId);
         }
     };
 
@@ -159,36 +175,22 @@ function setupTimelineHandlers(container) {
 }
 
 /**
- * Load all users into datalist
+ * Load all users
  */
 async function loadAllUsers(container) {
     try {
         // Get all users from users endpoint (no limit to get all)
         const response = await apiClient.get('/api/admin/users?limit=1000');
-        const users = response.users || [];
-
-        const datalist = container.querySelector('#timeline-users-datalist');
-        if (!users.length) {
-            return;
-        }
+        allUsers = response.users || [];
 
         // Sort users alphabetically by username
-        users.sort((a, b) => a.username.localeCompare(b.username));
+        allUsers.sort((a, b) => a.username.localeCompare(b.username));
 
-        // Build username -> user_id mapping
+        // Build username -> user_id mapping for quick lookup
         userMapping = {};
-        users.forEach(user => {
+        allUsers.forEach(user => {
             userMapping[user.username.toLowerCase()] = user.id;
-            // Also map "username (ID: x)" format
-            userMapping[`${user.username.toLowerCase()} (id: ${user.id})`] = user.id;
         });
-
-        // Populate datalist with all users (no "coward" - timelines are only for registered users)
-        datalist.innerHTML = users.map(user => `
-            <option value="${user.username}">
-                ${user.username} (ID: ${user.id})${user.is_admin ? ' - Admin' : ''}
-            </option>
-        `).join('');
 
     } catch (error) {
         console.error('Error loading users:', error);
