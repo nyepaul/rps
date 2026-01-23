@@ -145,24 +145,43 @@ export async function renderLogsViewer(container) {
  * Setup event handlers for logs viewer
  */
 function setupLogsViewerHandlers(container) {
+    const applyBtn = container.querySelector('#apply-filters-btn');
+    const clearBtn = container.querySelector('#clear-filters-btn');
+    const exportBtn = container.querySelector('#export-logs-btn');
+
+    // Check if elements exist (view might have been switched)
+    if (!applyBtn || !clearBtn || !exportBtn) return;
+
     // Apply filters
-    container.querySelector('#apply-filters-btn').addEventListener('click', async () => {
+    applyBtn.addEventListener('click', async () => {
         await loadLogs(container, 0); // Reset to page 0
     });
 
     // Clear filters
-    container.querySelector('#clear-filters-btn').addEventListener('click', () => {
-        container.querySelector('#filter-user-id').value = '';
-        container.querySelector('#filter-action').value = '';
-        container.querySelector('#filter-table').value = '';
-        container.querySelector('#filter-ip').value = '';
-        container.querySelector('#filter-start-date').value = '';
-        container.querySelector('#filter-end-date').value = '';
+    clearBtn.addEventListener('click', () => {
+        const userIdInput = container.querySelector('#filter-user-id');
+        if (userIdInput) userIdInput.value = '';
+        
+        const actionInput = container.querySelector('#filter-action');
+        if (actionInput) actionInput.value = '';
+        
+        const tableInput = container.querySelector('#filter-table');
+        if (tableInput) tableInput.value = '';
+        
+        const ipInput = container.querySelector('#filter-ip');
+        if (ipInput) ipInput.value = '';
+        
+        const startDate = container.querySelector('#filter-start-date');
+        if (startDate) startDate.value = '';
+        
+        const endDate = container.querySelector('#filter-end-date');
+        if (endDate) endDate.value = '';
+        
         loadLogs(container, 0);
     });
 
     // Export logs
-    container.querySelector('#export-logs-btn').addEventListener('click', async () => {
+    exportBtn.addEventListener('click', async () => {
         await exportLogs(container);
     });
 }
@@ -216,6 +235,7 @@ async function loadUsersFilter(container) {
  */
 async function loadStatistics(container) {
     const statsContainer = container.querySelector('#logs-statistics');
+    if (!statsContainer) return; // View switched
 
     try {
         const response = await apiClient.get('/api/admin/logs/statistics?days=30');
@@ -286,6 +306,8 @@ function getTopAction(byAction) {
 async function loadLogs(container, offset = 0) {
     const tableContainer = container.querySelector('#logs-table-container');
     const paginationContainer = container.querySelector('#logs-pagination');
+
+    if (!tableContainer || !paginationContainer) return; // View switched
 
     // Clear cache when loading new logs
     logDetailsCache.clear();
