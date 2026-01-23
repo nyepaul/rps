@@ -552,8 +552,10 @@ class APIKeySchema(BaseModel):
     """Schema for API key management."""
     claude_api_key: Optional[str] = None
     gemini_api_key: Optional[str] = None
+    openai_api_key: Optional[str] = None
+    grok_api_key: Optional[str] = None
 
-    @validator('claude_api_key', 'gemini_api_key')
+    @validator('claude_api_key', 'gemini_api_key', 'openai_api_key', 'grok_api_key')
     def validate_api_key(cls, v):
         if v is not None:
             v = v.strip()
@@ -592,6 +594,12 @@ def get_api_keys(name: str):
         if api_keys.get('gemini_api_key'):
             result['gemini_api_key'] = api_keys['gemini_api_key'][-4:]
             keys_configured.append('gemini')
+        if api_keys.get('openai_api_key'):
+            result['openai_api_key'] = api_keys['openai_api_key'][-4:]
+            keys_configured.append('openai')
+        if api_keys.get('grok_api_key'):
+            result['grok_api_key'] = api_keys['grok_api_key'][-4:]
+            keys_configured.append('grok')
 
         enhanced_audit_logger.log(
             action='VIEW_API_KEYS',
@@ -655,6 +663,12 @@ def save_api_keys(name: str):
         if data.gemini_api_key:
             data_dict['api_keys']['gemini_api_key'] = data.gemini_api_key
             keys_updated.append('gemini')
+        if data.openai_api_key:
+            data_dict['api_keys']['openai_api_key'] = data.openai_api_key
+            keys_updated.append('openai')
+        if data.grok_api_key:
+            data_dict['api_keys']['grok_api_key'] = data.grok_api_key
+            keys_updated.append('grok')
 
         # Save profile (encryption happens automatically via the data property setter)
         profile.data = data_dict
@@ -712,6 +726,10 @@ def test_api_key():
             return test_claude_api_key(api_key)
         elif provider == 'gemini':
             return test_gemini_api_key(api_key)
+        elif provider == 'openai':
+            return test_openai_api_key(api_key)
+        elif provider == 'grok':
+            return test_grok_api_key(api_key)
         else:
             enhanced_audit_logger.log(
                 action='TEST_API_KEY_UNKNOWN_PROVIDER',
@@ -813,6 +831,70 @@ def test_gemini_api_key(api_key: str):
                 'error': f'API Error: {error_detail}'
             }), 400
 
+    except requests.Timeout:
+        return jsonify({'success': False, 'error': 'Request timed out'}), 408
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
+def test_openai_api_key(api_key: str):
+    """Test OpenAI API key."""
+    try:
+        import requests
+        response = requests.post(
+            'https://api.openai.com/v1/chat/completions',
+            headers={
+                'Authorization': f'Bearer {api_key}',
+                'Content-Type': 'application/json'
+            },
+            json={
+                'model': 'gpt-4o',
+                'messages': [{'role': 'user', 'content': 'Hi'}],
+                'max_tokens': 5
+            },
+            timeout=10
+        )
+        if response.status_code == 200:
+            return jsonify({'success': True, 'message': 'OpenAI API key is valid'}), 200
+        else:
+            error_msg = 'Unknown error'
+            try:
+                error_msg = response.json().get('error', {}).get('message', 'Unknown error')
+            except:
+                pass
+            return jsonify({'success': False, 'error': f"API Error: {error_msg}"}), 400
+    except requests.Timeout:
+        return jsonify({'success': False, 'error': 'Request timed out'}), 408
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
+def test_grok_api_key(api_key: str):
+    """Test Grok (xAI) API key."""
+    try:
+        import requests
+        response = requests.post(
+            'https://api.x.ai/v1/chat/completions',
+            headers={
+                'Authorization': f'Bearer {api_key}',
+                'Content-Type': 'application/json'
+            },
+            json={
+                'model': 'grok-beta',
+                'messages': [{'role': 'user', 'content': 'Hi'}],
+                'max_tokens': 5
+            },
+            timeout=10
+        )
+        if response.status_code == 200:
+            return jsonify({'success': True, 'message': 'Grok API key is valid'}), 200
+        else:
+            error_msg = 'Unknown error'
+            try:
+                error_msg = response.json().get('error', {}).get('message', 'Unknown error')
+            except:
+                pass
+            return jsonify({'success': False, 'error': f"API Error: {error_msg}"}), 400
     except requests.Timeout:
         return jsonify({'success': False, 'error': 'Request timed out'}), 408
     except Exception as e:
