@@ -23,6 +23,7 @@ from src.routes.tax_optimization import tax_optimization_bp
 from src.routes.fingerprint import fingerprint_bp
 from src.routes.events import events_bp
 from src.routes.user_backups import user_backups_bp
+from src.routes.sitemap import sitemap_bp
 from src.__version__ import __version__, __release_date__, __release_notes__
 from src.services.enhanced_audit_logger import EnhancedAuditLogger
 import os
@@ -229,6 +230,7 @@ def create_app(config_name='development'):
     app.register_blueprint(fingerprint_bp)
     app.register_blueprint(events_bp)
     app.register_blueprint(user_backups_bp)
+    app.register_blueprint(sitemap_bp)
 
     # Configure logging
     if not app.debug:

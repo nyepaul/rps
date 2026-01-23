@@ -1,0 +1,32 @@
+{
+  "description": "Comprehensive map of all clickable navigation elements and their targets.",
+  "tabs": [
+    { "id": "welcome", "label": "Welcome", "component": "src/static/js/components/welcome/welcome-tab.js" },
+    { "id": "dashboard", "label": "Dashboard", "component": "src/static/js/components/dashboard/dashboard-tab.js" },
+    { "id": "profile", "label": "Profile", "component": "src/static/js/components/profile/profile-tab.js" },
+    { "id": "aie", "label": "Assets & Income", "component": "src/static/js/components/aie/aie-tab.js" },
+    { "id": "cashflow", "label": "Cashflow", "component": "src/static/js/components/cashflow/cashflow-tab.js" },
+    { "id": "analysis", "label": "Analysis", "component": "src/static/js/components/analysis/analysis-tab.js" },
+    { "id": "actions", "label": "Actions", "component": "src/static/js/components/actions/actions-tab.js" },
+    { "id": "advisor", "label": "Advisor", "component": "src/static/js/components/advisor/advisor-tab.js" },
+    { "id": "accounts", "label": "Accounts", "component": "src/static/js/components/accounts/accounts-tab.js" },
+    { "id": "comparison", "label": "Comparison", "component": "src/static/js/components/comparison/comparison-tab.js" },
+    { "id": "summary", "label": "Summary", "component": "src/static/js/components/summary/summary-tab.js" },
+    { "id": "learn", "label": "Learn", "component": "src/static/js/components/learn/learn-tab.js" },
+    { "id": "tax", "label": "Tax", "component": "src/static/js/components/tax/tax-tab.js" },
+    { "id": "admin", "label": "Admin", "component": "src/static/js/components/admin/admin-tab.js", "role": "admin" }
+  ],
+  "modals": [
+    { "id": "settings", "trigger": "settings-btn", "description": "Global settings modal" },
+    { "id": "feedback", "trigger": "feedback-btn", "description": "Feedback submission modal" },
+    { "id": "setup", "trigger": "setup-btn", "description": "Setup checklist modal" },
+    { "id": "roadmap", "trigger": "view-roadmap-link", "description": "Product roadmap viewer" }
+  ],
+  "admin_subtabs": [
+    { "id": "system", "label": "System", "parent": "admin" },
+    { "id": "logs", "label": "Logs", "parent": "admin" },
+    { "id": "users", "label": "Users", "parent": "admin" },
+    { "id": "config", "label": "Config", "parent": "admin" },
+    { "id": "backups", "label": "Backups", "parent": "admin" }
+  ]
+}
