@@ -117,6 +117,84 @@ export async function renderAPIKeysSettings(container) {
             <div id="gemini-status" style="margin-top: 8px; font-size: 11px;"></div>
         </div>
 
+        <!-- OpenAI API Key -->
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 13px;">
+                🤖 OpenAI API Key
+            </label>
+            <p style="color: var(--text-secondary); font-size: 11px; margin: 0 0 8px 0;">
+                Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" style="color: var(--accent-color);">platform.openai.com</a>
+            </p>
+            <div style="position: relative;">
+                <input
+                    type="password"
+                    id="openai-api-key"
+                    placeholder="sk-..."
+                    style="width: 100%; padding: 10px 40px 10px 10px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-family: 'Courier New', monospace; font-size: 12px;"
+                />
+                <button
+                    id="toggle-openai-key"
+                    type="button"
+                    style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 16px; padding: 4px;"
+                    title="Show/Hide Key"
+                >👁️</button>
+            </div>
+            <div style="margin-top: 8px; display: flex; gap: 8px;">
+                <button
+                    id="test-openai-btn"
+                    style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px;"
+                >
+                    🧪 Test
+                </button>
+                <button
+                    id="clear-openai-btn"
+                    style="padding: 6px 12px; background: transparent; color: var(--danger-color); border: 1px solid var(--danger-color); border-radius: 4px; cursor: pointer; font-size: 12px;"
+                >
+                    🗑️ Clear
+                </button>
+            </div>
+            <div id="openai-status" style="margin-top: 8px; font-size: 11px;"></div>
+        </div>
+
+        <!-- Grok API Key -->
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 13px;">
+                🚀 Grok (xAI) API Key
+            </label>
+            <p style="color: var(--text-secondary); font-size: 11px; margin: 0 0 8px 0;">
+                Get your API key from <a href="https://console.x.ai/" target="_blank" style="color: var(--accent-color);">console.x.ai</a>
+            </p>
+            <div style="position: relative;">
+                <input
+                    type="password"
+                    id="grok-api-key"
+                    placeholder="xai-..."
+                    style="width: 100%; padding: 10px 40px 10px 10px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-family: 'Courier New', monospace; font-size: 12px;"
+                />
+                <button
+                    id="toggle-grok-key"
+                    type="button"
+                    style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 16px; padding: 4px;"
+                    title="Show/Hide Key"
+                >👁️</button>
+            </div>
+            <div style="margin-top: 8px; display: flex; gap: 8px;">
+                <button
+                    id="test-grok-btn"
+                    style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px;"
+                >
+                    🧪 Test
+                </button>
+                <button
+                    id="clear-grok-btn"
+                    style="padding: 6px 12px; background: transparent; color: var(--danger-color); border: 1px solid var(--danger-color); border-radius: 4px; cursor: pointer; font-size: 12px;"
+                >
+                    🗑️ Clear
+                </button>
+            </div>
+            <div id="grok-status" style="margin-top: 8px; font-size: 11px;"></div>
+        </div>
+
         <!-- Save Button -->
         <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color);">
             <button
@@ -172,6 +250,24 @@ function setupAPIKeyHandlers(container, profile) {
         toggleGeminiBtn.textContent = isPassword ? '🙈' : '👁️';
     });
 
+    const toggleOpenAIBtn = container.querySelector('#toggle-openai-key');
+    const openaiInput = container.querySelector('#openai-api-key');
+
+    toggleOpenAIBtn.addEventListener('click', () => {
+        const isPassword = openaiInput.type === 'password';
+        openaiInput.type = isPassword ? 'text' : 'password';
+        toggleOpenAIBtn.textContent = isPassword ? '🙈' : '👁️';
+    });
+
+    const toggleGrokBtn = container.querySelector('#toggle-grok-key');
+    const grokInput = container.querySelector('#grok-api-key');
+
+    toggleGrokBtn.addEventListener('click', () => {
+        const isPassword = grokInput.type === 'password';
+        grokInput.type = isPassword ? 'text' : 'password';
+        toggleGrokBtn.textContent = isPassword ? '🙈' : '👁️';
+    });
+
     // Clear buttons
     container.querySelector('#clear-claude-btn').addEventListener('click', () => {
         claudeInput.value = '';
@@ -183,6 +279,16 @@ function setupAPIKeyHandlers(container, profile) {
         container.querySelector('#gemini-status').textContent = '';
     });
 
+    container.querySelector('#clear-openai-btn').addEventListener('click', () => {
+        openaiInput.value = '';
+        container.querySelector('#openai-status').textContent = '';
+    });
+
+    container.querySelector('#clear-grok-btn').addEventListener('click', () => {
+        grokInput.value = '';
+        container.querySelector('#grok-status').textContent = '';
+    });
+
     // Test connection buttons
     container.querySelector('#test-claude-btn').addEventListener('click', async () => {
         await testAPIKey('claude', claudeInput.value, container.querySelector('#claude-status'));
@@ -192,9 +298,17 @@ function setupAPIKeyHandlers(container, profile) {
         await testAPIKey('gemini', geminiInput.value, container.querySelector('#gemini-status'));
     });
 
+    container.querySelector('#test-openai-btn').addEventListener('click', async () => {
+        await testAPIKey('openai', openaiInput.value, container.querySelector('#openai-status'));
+    });
+
+    container.querySelector('#test-grok-btn').addEventListener('click', async () => {
+        await testAPIKey('grok', grokInput.value, container.querySelector('#grok-status'));
+    });
+
     // Save button
     container.querySelector('#save-api-keys-btn').addEventListener('click', async () => {
-        await saveAPIKeys(profile, claudeInput.value, geminiInput.value, container.querySelector('#api-save-status'), container);
+        await saveAPIKeys(profile, claudeInput.value, geminiInput.value, openaiInput.value, grokInput.value, container.querySelector('#api-save-status'), container);
     });
 }
 
@@ -220,6 +334,20 @@ async function loadExistingKeys(container, profile) {
                 const geminiInput = container.querySelector('#gemini-api-key');
                 geminiInput.placeholder = '••••••••' + data.gemini_api_key.slice(-4);
                 container.querySelector('#gemini-status').innerHTML =
+                    '<span style="color: var(--success-color);">✓ Key configured</span>';
+            }
+
+            if (data.openai_api_key) {
+                const openaiInput = container.querySelector('#openai-api-key');
+                openaiInput.placeholder = '••••••••' + data.openai_api_key.slice(-4);
+                container.querySelector('#openai-status').innerHTML =
+                    '<span style="color: var(--success-color);">✓ Key configured</span>';
+            }
+
+            if (data.grok_api_key) {
+                const grokInput = container.querySelector('#grok-api-key');
+                grokInput.placeholder = '••••••••' + data.grok_api_key.slice(-4);
+                container.querySelector('#grok-status').innerHTML =
                     '<span style="color: var(--success-color);">✓ Key configured</span>';
             }
         }
@@ -267,9 +395,9 @@ async function testAPIKey(provider, apiKey, statusElement) {
 /**
  * Save API keys to backend (encrypted)
  */
-async function saveAPIKeys(profile, claudeKey, geminiKey, statusElement, container) {
+async function saveAPIKeys(profile, claudeKey, geminiKey, openaiKey, grokKey, statusElement, container) {
     // Validate at least one key is provided
-    if (!claudeKey && !geminiKey) {
+    if (!claudeKey && !geminiKey && !openaiKey && !grokKey) {
         statusElement.innerHTML = '<span style="color: var(--danger-color);">⚠️ Enter at least one key</span>';
         return;
     }
@@ -283,6 +411,12 @@ async function saveAPIKeys(profile, claudeKey, geminiKey, statusElement, contain
         }
         if (geminiKey && geminiKey.trim() !== '') {
             payload.gemini_api_key = geminiKey.trim();
+        }
+        if (openaiKey && openaiKey.trim() !== '') {
+            payload.openai_api_key = openaiKey.trim();
+        }
+        if (grokKey && grokKey.trim() !== '') {
+            payload.grok_api_key = grokKey.trim();
         }
 
         const response = await fetch(`/api/profiles/${encodeURIComponent(profile.name)}/api-keys`, {
@@ -303,8 +437,12 @@ async function saveAPIKeys(profile, claudeKey, geminiKey, statusElement, contain
             setTimeout(async () => {
                 const claudeInput = container.querySelector('#claude-api-key');
                 const geminiInput = container.querySelector('#gemini-api-key');
+                const openaiInput = container.querySelector('#openai-api-key');
+                const grokInput = container.querySelector('#grok-api-key');
                 claudeInput.value = '';
                 geminiInput.value = '';
+                openaiInput.value = '';
+                grokInput.value = '';
                 await loadExistingKeys(container, profile);
             }, 1000);
         } else {
