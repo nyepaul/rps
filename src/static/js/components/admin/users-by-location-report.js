@@ -66,7 +66,10 @@ export async function renderUsersByLocationReport(container) {
     `;
 
     // Event listeners
-    document.getElementById('view-map-report-btn').addEventListener('click', () => showIPLocationsMap());
+    document.getElementById('view-map-report-btn').addEventListener('click', () => {
+        const period = document.getElementById('report-period').value;
+        showIPLocationsMap(period);
+    });
     document.getElementById('refresh-report-btn').addEventListener('click', () => loadReport(container));
     document.getElementById('report-period').addEventListener('change', () => loadReport(container));
     document.getElementById('export-report-btn').addEventListener('click', () => exportReport());
@@ -170,7 +173,10 @@ function renderSummary(container, summary) {
     container.querySelectorAll('.summary-card').forEach(el => {
         const index = parseInt(el.dataset.index);
         if (cards[index].clickable) {
-            el.addEventListener('click', () => showIPLocationsMap());
+            el.addEventListener('click', () => {
+                const period = document.getElementById('report-period').value;
+                showIPLocationsMap(period);
+            });
         }
     });
 }

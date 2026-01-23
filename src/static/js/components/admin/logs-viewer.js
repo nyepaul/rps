@@ -1639,10 +1639,14 @@ async function showIPListView() {
 /**
  * Show IP locations map modal
  */
-export async function showIPLocationsMap() {
+export async function showIPLocationsMap(days = null) {
     try {
         // Fetch all unique IP locations directly from the server
-        const response = await apiClient.get('/api/admin/logs/ip-locations');
+        let url = '/api/admin/logs/ip-locations';
+        if (days) {
+            url += `?days=${days}`;
+        }
+        const response = await apiClient.get(url);
         const uniqueIPs = response.locations || [];
 
         if (uniqueIPs.length === 0) {

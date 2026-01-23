@@ -1663,16 +1663,23 @@ class EnhancedAuditLogger:
         return stats
 
     @staticmethod
-    def get_unique_ip_locations():
+    def get_unique_ip_locations(days: int = None):
         """Get all unique IP addresses with geolocation data for mapping."""
-        rows = db.execute(
-            '''SELECT ip_address, geo_location, COUNT(*) as access_count
+        query = '''SELECT ip_address, geo_location, COUNT(*) as access_count
                FROM enhanced_audit_log
                WHERE geo_location IS NOT NULL
-               AND ip_address IS NOT NULL
-               GROUP BY ip_address, geo_location
+               AND ip_address IS NOT NULL'''
+        params = []
+
+        if days:
+            cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
+            query += ' AND created_at >= ?'
+            params.append(cutoff_date)
+
+        query += ''' GROUP BY ip_address, geo_location
                ORDER BY access_count DESC'''
-        )
+
+        rows = db.execute(query, tuple(params))
 
         unique_locations = []
         for row in rows:

@@ -210,16 +210,20 @@ def get_ip_locations():
     """
     Get all unique IP addresses with geolocation data for mapping.
 
+    Query Params:
+        days (int): Optional lookback period in days
+
     Returns:
         List of unique IP locations with coordinates and access counts
     """
     try:
-        locations = enhanced_audit_logger.get_unique_ip_locations()
+        days = request.args.get('days', type=int)
+        locations = enhanced_audit_logger.get_unique_ip_locations(days=days)
 
         # Log admin action
         enhanced_audit_logger.log_admin_action(
             action='VIEW_IP_LOCATIONS',
-            details={'location_count': len(locations)},
+            details={'location_count': len(locations), 'days': days},
             user_id=current_user.id
         )
 
