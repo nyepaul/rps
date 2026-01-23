@@ -33,9 +33,9 @@ export async function renderGroupManagement(container) {
                     ` : ''}
                 </div>
 
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                <div style="display: flex; flex-direction: column; gap: 8px;">
                     ${groups.length === 0 ? `
-                        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; background: var(--bg-secondary); border-radius: 12px;">
+                        <div style="text-align: center; padding: 40px; background: var(--bg-secondary); border-radius: 12px;">
                             <div style="font-size: 48px; margin-bottom: 15px;">📁</div>
                             <div style="color: var(--text-secondary);">No groups found</div>
                         </div>
@@ -67,36 +67,48 @@ export async function renderGroupManagement(container) {
 
 function renderGroupCard(group, currentUser) {
     return `
-        <div class="group-card" data-group-id="${group.id}" data-group-name="${group.name}" style="background: var(--bg-secondary); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 15px; transition: transform 0.2s, box-shadow 0.2s;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                <div>
-                    <h4 style="margin: 0; font-size: 16px;">${group.name}</h4>
-                    <p style="margin: 5px 0 0 0; font-size: 12px; color: var(--text-secondary);">${group.description || 'No description'}</p>
+        <div class="group-card" data-group-id="${group.id}" data-group-name="${group.name}" style="
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+            cursor: pointer;
+        " onmouseover="this.style.borderColor='var(--accent-color)'; this.style.transform='translateX(4px)'" onmouseout="this.style.borderColor='var(--border-color)'; this.style.transform='translateX(0)'">
+            <div style="display: flex; gap: 12px; align-items: center; flex: 1; min-width: 0;">
+                <span style="
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    padding: 2px 8px;
+                    background: #764ba222;
+                    color: #764ba2;
+                    border-radius: 10px;
+                    font-size: 11px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    white-space: nowrap;
+                ">🏗️ Group</span>
+                <div style="min-width: 0; flex: 1;">
+                    <span style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin-right: 8px;">${group.name}</span>
+                    <span style="font-size: 11px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${group.description || 'No description'}</span>
                 </div>
+            </div>
+            
+            <div style="display: flex; gap: 8px; align-items: center; margin-left: 15px;">
+                <button class="view-members-btn" data-group-id="${group.id}" style="padding: 4px 10px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 700; white-space: nowrap;">
+                    👥 Members
+                </button>
                 ${currentUser.is_super_admin ? `
-                    <div style="display: flex; gap: 5px;">
-                        <button class="edit-group-btn" data-group-id="${group.id}" style="background: transparent; border: none; cursor: pointer; font-size: 14px;">✏️</button>
-                        <button class="delete-group-btn" data-group-id="${group.id}" style="background: transparent; border: none; cursor: pointer; font-size: 14px;">🗑️</button>
-                    </div>
-                ` : ''}
-            </div>
-            
-            <div style="flex: 1;">
-                <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px;">Actions</div>
-                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <button class="view-members-btn" data-group-id="${group.id}" style="padding: 6px 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
-                        👥 View Members
+                    <button class="manage-assignments-btn" data-group-id="${group.id}" style="padding: 4px 10px; background: var(--accent-color)20; color: var(--accent-color); border: 1px solid var(--accent-color); border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 700; white-space: nowrap;">
+                        🔗 Assignments
                     </button>
-                    ${currentUser.is_super_admin ? `
-                        <button class="manage-assignments-btn" data-group-id="${group.id}" style="padding: 6px 12px; background: var(--accent-color)20; color: var(--accent-color); border: 1px solid var(--accent-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
-                            🔗 Assignments
-                        </button>
-                    ` : ''}
-                </div>
-            </div>
-            
-            <div style="font-size: 11px; color: var(--text-secondary); border-top: 1px solid var(--border-color); pt: 10px;">
-                Created: ${new Date(group.created_at).toLocaleDateString()}
+                    <button class="edit-group-btn" data-group-id="${group.id}" style="background: transparent; border: none; cursor: pointer; font-size: 14px; padding: 4px;">✏️</button>
+                    <button class="delete-group-btn" data-group-id="${group.id}" style="background: transparent; border: none; cursor: pointer; font-size: 14px; padding: 4px;">🗑️</button>
+                ` : ''}
             </div>
         </div>
     `;
