@@ -397,8 +397,13 @@ function showUserDetails(user) {
 
                 const map = L.map('user-location-map').setView([centerLat, centerLon], 4);
 
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap contributors',
+                const isDarkMode = document.body.classList.contains('dark-mode');
+                const tileLayerUrl = isDarkMode 
+                    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+
+                L.tileLayer(tileLayerUrl, {
+                    attribution: '© OpenStreetMap contributors © CARTO',
                     maxZoom: 19,
                     crossOrigin: true
                 }).addTo(map);

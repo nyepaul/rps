@@ -960,7 +960,12 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
                             10
                         );
 
-                        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                        const isDarkMode = document.body.classList.contains('dark-mode');
+                        const tileLayerUrl = isDarkMode 
+                            ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                            : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+
+                        L.tileLayer(tileLayerUrl, {
                             attribution: '© OpenStreetMap contributors © CARTO',
                             maxZoom: 19,
                             crossOrigin: true
@@ -1221,8 +1226,13 @@ export async function showLogDetails(logId) {
                             10 // zoom level
                         );
 
-                        // Add CartoDB Dark Matter tile layer for dark background
-                        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                        const isDarkMode = document.body.classList.contains('dark-mode');
+                        const tileLayerUrl = isDarkMode 
+                            ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                            : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+
+                        // Add CartoDB tile layer
+                        L.tileLayer(tileLayerUrl, {
                             attribution: '© OpenStreetMap contributors © CARTO',
                             maxZoom: 19,
                             crossOrigin: true
@@ -1716,8 +1726,13 @@ export async function showIPLocationsMap() {
                     // Initialize map
                     const map = L.map('ip-locations-map').setView([centerLat, centerLon], 2);
 
-                    // Add CartoDB Dark Matter tile layer for dark background
-                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                    const isDarkMode = document.body.classList.contains('dark-mode');
+                    const tileLayerUrl = isDarkMode 
+                        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                        : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+
+                    // Add CartoDB tile layer
+                    L.tileLayer(tileLayerUrl, {
                         attribution: '© OpenStreetMap contributors © CARTO',
                         maxZoom: 19,
                         crossOrigin: true
