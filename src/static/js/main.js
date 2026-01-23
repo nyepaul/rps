@@ -843,6 +843,9 @@ async function toggleTheme(theme) {
     // Save to localStorage for immediate persistence
     localStorage.setItem(STORAGE_KEYS.THEME, theme);
 
+    // Dispatch theme changed event for other components (charts, maps)
+    window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme } }));
+
     // Save to server if logged in
     const { currentUser } = store.getState();
     if (currentUser) {

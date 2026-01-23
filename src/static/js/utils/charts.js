@@ -4,6 +4,47 @@
 
 import { formatCurrency, formatCompact } from './formatters.js';
 
+// Keep track of all active chart instances for theme updates
+const activeCharts = new Set();
+
+// Listen for theme changes to update all charts
+window.addEventListener('themeChanged', () => {
+    const style = getComputedStyle(document.body);
+    const successColor = style.getPropertyValue('--success-color').trim() || '#28a745';
+    const dangerColor = style.getPropertyValue('--danger-color').trim() || '#dc3545';
+    const accentColor = style.getPropertyValue('--accent-color').trim() || '#3498db';
+    const textPrimary = style.getPropertyValue('--text-primary').trim() || '#212529';
+    
+    activeCharts.forEach(chart => {
+        // Update chart options
+        if (chart.options.scales.x.ticks) chart.options.scales.x.ticks.color = textPrimary;
+        if (chart.options.scales.x.title) chart.options.scales.x.title.color = textPrimary;
+        if (chart.options.scales.y.ticks) chart.options.scales.y.ticks.color = textPrimary;
+        
+        if (chart.options.plugins.legend && chart.options.plugins.legend.labels) {
+            chart.options.plugins.legend.labels.color = textPrimary;
+        }
+
+        // Update datasets colors if they match standard theme colors
+        // This is a heuristic; for perfect results, we'd store the "intent" of the dataset
+        chart.data.datasets.forEach(dataset => {
+            // We re-apply the standard colors based on the dataset order/label usually used
+            // This assumes the standard timeline chart structure
+            if (dataset.label.includes('95th') || dataset.label.includes('Optimistic')) {
+                dataset.borderColor = successColor;
+                dataset.backgroundColor = successColor + '20';
+            } else if (dataset.label.includes('Median')) {
+                dataset.borderColor = accentColor;
+            } else if (dataset.label.includes('5th') || dataset.label.includes('Conservative')) {
+                dataset.borderColor = dangerColor;
+                dataset.backgroundColor = dangerColor + '20';
+            }
+        });
+
+        chart.update();
+    });
+});
+
 /**
  * Renders a standardized retirement timeline chart
  * 
@@ -202,6 +243,16 @@ export function renderStandardTimelineChart(timeline, canvasOrId, existingInstan
             }
         }
     });
+
+    // Track active instance for theme updates
+    activeCharts.add(chart);
+    
+    // Override destroy to remove from set
+    const originalDestroy = chart.destroy.bind(chart);
+    chart.destroy = () => {
+        activeCharts.delete(chart);
+        originalDestroy();
+    };
 
     if (existingInstances) {
         existingInstances[canvasId] = chart;

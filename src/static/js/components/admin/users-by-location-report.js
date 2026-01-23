@@ -88,6 +88,23 @@ export async function renderUsersByLocationReport(container) {
 }
 
 let currentReportData = null;
+let currentUserMap = null;
+
+// Listen for theme changes
+window.addEventListener('themeChanged', () => {
+    if (currentUserMap) {
+        const isDarkMode = document.body.classList.contains('dark-mode') || document.body.classList.contains('high-contrast-mode');
+        const tileLayerUrl = isDarkMode 
+            ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+            : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+            
+        currentUserMap.eachLayer((layer) => {
+            if (layer instanceof L.TileLayer) {
+                layer.setUrl(tileLayerUrl);
+            }
+        });
+    }
+});
 
 /**
  * Load the users-by-location report
@@ -394,7 +411,13 @@ function showUserDetails(user) {
 
     // Setup close handlers
     modal.querySelectorAll('.close-modal-btn').forEach(btn => {
-        btn.addEventListener('click', () => modal.remove());
+        btn.addEventListener('click', () => {
+            if (currentUserMap) {
+                currentUserMap.remove();
+                currentUserMap = null;
+            }
+            modal.remove();
+        });
     });
 
     // Handle row clicks for drilldown
@@ -409,7 +432,13 @@ function showUserDetails(user) {
     });
 
     modal.addEventListener('click', (e) => {
-        if (e.target === modal) modal.remove();
+        if (e.target === modal) {
+            if (currentUserMap) {
+                currentUserMap.remove();
+                currentUserMap = null;
+            }
+            modal.remove();
+        }
     });
 
     // Initialize map
@@ -423,9 +452,9 @@ function showUserDetails(user) {
                 const centerLat = (Math.min(...lats) + Math.max(...lats)) / 2;
                 const centerLon = (Math.min(...lons) + Math.max(...lons)) / 2;
 
-                const map = L.map('user-location-map').setView([centerLat, centerLon], 4);
+                currentUserMap = L.map('user-location-map').setView([centerLat, centerLon], 4);
 
-                const isDarkMode = document.body.classList.contains('dark-mode');
+                const isDarkMode = document.body.classList.contains('dark-mode') || document.body.classList.contains('high-contrast-mode');
                 const tileLayerUrl = isDarkMode 
                     ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
                     : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
@@ -434,7 +463,7 @@ function showUserDetails(user) {
                     attribution: '© OpenStreetMap contributors © CARTO',
                     maxZoom: 19,
                     crossOrigin: true
-                }).addTo(map);
+                }).addTo(currentUserMap);
 
                 // Add markers
                 const markers = user.locations.map(location => {
@@ -447,7 +476,7 @@ function showUserDetails(user) {
                         iconAnchor: [markerSize / 2, markerSize / 2]
                     });
 
-                    const marker = L.marker([location.lat, location.lon], { icon: customIcon }).addTo(map);
+                    const marker = L.marker([location.lat, location.lon], { icon: customIcon }).addTo(currentUserMap);
 
                     marker.bindPopup(`
                         <div style="text-align: center; padding: 8px; min-width: 200px;">
@@ -477,7 +506,7 @@ function showUserDetails(user) {
                 // Fit map to show all markers
                 if (markers.length > 0) {
                     const group = L.featureGroup(markers);
-                    map.fitBounds(group.getBounds().pad(0.1));
+                    currentUserMap.fitBounds(group.getBounds().pad(0.1));
                 }
 
             } catch (error) {

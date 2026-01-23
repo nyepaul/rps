@@ -29,9 +29,36 @@ let isNavigating = false;
 
 // Store current map instance to properly clean up
 let currentAuditLogMap = null;
+let currentIPMap = null; // For the global IP locations map
 
 // Prefetched data storage
 let prefetchedLogsData = null;
+
+// Helper to update map theme
+function updateMapTheme(map) {
+    if (!map) return;
+    
+    const isDarkMode = document.body.classList.contains('dark-mode') || document.body.classList.contains('high-contrast-mode');
+    const tileLayerUrl = isDarkMode 
+        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+        : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+        
+    map.eachLayer((layer) => {
+        if (layer instanceof L.TileLayer) {
+            layer.setUrl(tileLayerUrl);
+        }
+    });
+}
+
+// Listen for theme changes
+window.addEventListener('themeChanged', () => {
+    updateMapTheme(currentAuditLogMap);
+    updateMapTheme(currentIPMap);
+    // Also update any location-map in log details modal if it exists
+    // (This handles the case where showLogDetails uses a local map variable but we can find it via DOM?)
+    // Actually showLogDetails map is hard to reach if not stored. 
+    // We should update showLogDetails to store its map in a variable or attach to the DOM element.
+});
 
 /**
  * Prefetch logs in the background
@@ -960,7 +987,7 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
                             10
                         );
 
-                        const isDarkMode = document.body.classList.contains('dark-mode');
+                        const isDarkMode = document.body.classList.contains('dark-mode') || document.body.classList.contains('high-contrast-mode');
                         const tileLayerUrl = isDarkMode 
                             ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
                             : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
@@ -1226,7 +1253,7 @@ export async function showLogDetails(logId) {
                             10 // zoom level
                         );
 
-                        const isDarkMode = document.body.classList.contains('dark-mode');
+                        const isDarkMode = document.body.classList.contains('dark-mode') || document.body.classList.contains('high-contrast-mode');
                         const tileLayerUrl = isDarkMode 
                             ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
                             : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
@@ -1706,6 +1733,10 @@ export async function showIPLocationsMap(days = null) {
         // Setup close handlers
         modal.querySelectorAll('.close-modal-btn').forEach(btn => {
             btn.addEventListener('click', () => {
+                if (currentIPMap) {
+                    currentIPMap.remove();
+                    currentIPMap = null;
+                }
                 modal.remove();
             });
         });
@@ -1713,6 +1744,10 @@ export async function showIPLocationsMap(days = null) {
         // Close on backdrop click
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
+                if (currentIPMap) {
+                    currentIPMap.remove();
+                    currentIPMap = null;
+                }
                 modal.remove();
             }
         });
@@ -1720,6 +1755,10 @@ export async function showIPLocationsMap(days = null) {
         // Close on Escape key
         const escHandler = (e) => {
             if (e.key === 'Escape') {
+                if (currentIPMap) {
+                    currentIPMap.remove();
+                    currentIPMap = null;
+                }
                 modal.remove();
                 document.removeEventListener('keydown', escHandler);
             }
@@ -1729,6 +1768,10 @@ export async function showIPLocationsMap(days = null) {
         // Setup "View List" button
         const viewListBtn = modal.querySelector('#view-list-btn');
         viewListBtn.addEventListener('click', async () => {
+            if (currentIPMap) {
+                currentIPMap.remove();
+                currentIPMap = null;
+            }
             modal.remove(); // Close map view
             await showIPListView(days); // Open list view with same filter
         });
@@ -1747,9 +1790,9 @@ export async function showIPLocationsMap(days = null) {
                     const centerLon = (Math.min(...lons) + Math.max(...lons)) / 2;
 
                     // Initialize map
-                    const map = L.map('ip-locations-map').setView([centerLat, centerLon], 2);
+                    currentIPMap = L.map('ip-locations-map').setView([centerLat, centerLon], 2);
 
-                    const isDarkMode = document.body.classList.contains('dark-mode');
+                    const isDarkMode = document.body.classList.contains('dark-mode') || document.body.classList.contains('high-contrast-mode');
                     const tileLayerUrl = isDarkMode 
                         ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
                         : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
@@ -1759,7 +1802,7 @@ export async function showIPLocationsMap(days = null) {
                         attribution: '© OpenStreetMap contributors © CARTO',
                         maxZoom: 19,
                         crossOrigin: true
-                    }).addTo(map);
+                    }).addTo(currentIPMap);
 
                     // Calculate access count thresholds for color coding
                     const accessCounts = uniqueIPs.map(ip => ip.count).sort((a, b) => b - a);
@@ -1800,7 +1843,7 @@ export async function showIPLocationsMap(days = null) {
                             iconAnchor: [markerSize / 2, markerSize / 2]
                         });
 
-                        const marker = L.marker([ipData.lat, ipData.lon], { icon: customIcon }).addTo(map);
+                        const marker = L.marker([ipData.lat, ipData.lon], { icon: customIcon }).addTo(currentIPMap);
 
                         // Add popup with IP details - access count is clickable
                         const popupContent = `
@@ -1834,7 +1877,7 @@ export async function showIPLocationsMap(days = null) {
                     // Fit map to show all markers
                     if (markers.length > 0) {
                         const group = L.featureGroup(markers);
-                        map.fitBounds(group.getBounds().pad(0.1));
+                        currentIPMap.fitBounds(group.getBounds().pad(0.1));
                     }
 
                 } catch (error) {
