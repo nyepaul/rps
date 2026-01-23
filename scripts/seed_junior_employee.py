@@ -176,7 +176,7 @@ def seed_junior_employee():
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             user_id, 
-            "Alex Junior", 
+            "Demo Junior", 
             birth_date, 
             retire_date, 
             encrypted_data, 
@@ -186,7 +186,7 @@ def seed_junior_employee():
         ))
         
         conn.commit()
-        print("✅ Successfully seeded 'Alex Junior' profile.")
+        print("✅ Successfully seeded 'Demo Junior' profile.")
         print("Login: demo / demo")
 
     except Exception as e:
