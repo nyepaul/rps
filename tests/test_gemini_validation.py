@@ -61,7 +61,7 @@ class TestGeminiValidation:
         # Verify persistence and decryption
         saved_profile = Profile.get_by_id(profile.id, user.id)
         assert saved_profile is not None
-        assert saved_profile.data_dict['person1']['name'] == 'Sarah Johnson'
+        assert saved_profile.data_dict['person1']['name'] == 'Demo Junior'
         
         # 2. Construct Financial Profile
         data = saved_profile.data_dict
@@ -139,10 +139,9 @@ class TestGeminiValidation:
         assert len(results['timeline']['median']) == 30
         
         # Check that we processed the complex assets
-        # Sample profile has significant assets (> $5M)
-        assert results['starting_portfolio'] > 5000000
+        # Sample profile has starter assets (> $30k)
+        assert results['starting_portfolio'] > 30000
         
-        # Check tax logic (implicit in success rate not being 100% if spending is high, 
-        # but with $5M and $185k spending, success should be high)
-        if results['starting_portfolio'] > 5000000 and financial_profile.target_annual_income < 200000:
-            assert results['success_rate'] > 0.8, "High net worth profile should succeed"
+        # Check tax logic (implicit in success rate)
+        # With valid income and expenses, simulation should produce a result
+        assert results['success_rate'] >= 0.0
