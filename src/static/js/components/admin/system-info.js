@@ -11,7 +11,20 @@ import { showError } from '../../utils/dom.js';
 export async function renderSystemInfo(container) {
     container.innerHTML = `
         <div style="text-align: center; padding: 40px;">
-            <div style="font-size: 32px; margin-bottom: 10px;">⏳</div>
+            <div class="spinner" style="
+                width: 32px;
+                height: 32px;
+                border: 3px solid var(--border-color);
+                border-top-color: var(--accent-color);
+                border-radius: 50%;
+                animation: spin 0.8s linear infinite;
+                margin: 0 auto 10px;
+            "></div>
+            <style>
+                 spin {
+                    to { transform: rotate(360deg); }
+                }
+            </style>
             <div>Loading system information...</div>
         </div>
     `;
@@ -253,7 +266,20 @@ async function renderDatabaseSchema(container, schema) {
         // Show loading
         diagramDiv.innerHTML = `
             <div style="text-align: center; padding: 40px;">
-                <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
+                <div class="spinner" style="
+                    width: 24px;
+                    height: 24px;
+                    border: 3px solid var(--border-color);
+                    border-top-color: var(--accent-color);
+                    border-radius: 50%;
+                    animation: spin 0.8s linear infinite;
+                    margin: 0 auto 10px;
+                "></div>
+                <style>
+                     spin {
+                        to { transform: rotate(360deg); }
+                    }
+                </style>
                 <div style="color: var(--text-secondary);">Loading diagram...</div>
             </div>
         `;

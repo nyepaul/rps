@@ -141,8 +141,23 @@ export function renderCashFlowTab(container) {
 
     // Initialize chart and data with default: through life expectancy, annual view, moderate scenario
     (async () => {
-        await renderCashFlowChart(container, profile, monthsToLifeExpectancy, 'annual', null, monthsToLifeExpectancy, lifeExpectancyAge, 'moderate');
-        setupEventHandlers(container, profile, monthsToLifeExpectancy, lifeExpectancyAge);
+        try {
+            await renderCashFlowChart(container, profile, monthsToLifeExpectancy, 'annual', null, monthsToLifeExpectancy, lifeExpectancyAge, 'moderate');
+            setupEventHandlers(container, profile, monthsToLifeExpectancy, lifeExpectancyAge);
+        } catch (error) {
+            console.error('Error initializing cash flow chart:', error);
+            const chartContainer = container.querySelector('#cashflow-chart')?.parentElement;
+            if (chartContainer) {
+                chartContainer.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; height: 350px; flex-direction: column; gap: 12px; color: var(--danger-color);">
+                        <div style="font-size: 32px;">⚠️</div>
+                        <div style="font-size: 14px;">Failed to initialize chart</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">${error.message}</div>
+                        <div style="font-size: 11px; color: var(--text-secondary);">Check browser console for details</div>
+                    </div>
+                `;
+            }
+        }
     })();
 
     // Load scenarios for the dropdown
@@ -340,61 +355,12 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
     // Fetch Detailed Ledger for tax transparency
     let detailedLedger = null;
     try {
-        // Show loading state
-        const chartContainer = canvasElement?.parentElement;
-        const originalHTML = chartContainer?.innerHTML;
-
-        if (chartContainer) {
-            chartContainer.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: center; height: 350px; flex-direction: column; gap: 12px;">
-                    <div class="spinner" style="
-                        width: 32px;
-                        height: 32px;
-                        border: 3px solid var(--border-color);
-                        border-top-color: var(--accent-color);
-                        border-radius: 50%;
-                        animation: spin 0.8s linear infinite;
-                    "></div>
-                    <div style="color: var(--text-secondary); font-size: 14px;">Calculating detailed tax projections...</div>
-                    <div style="color: var(--text-secondary); font-size: 11px;">Analysing Federal, State, and FICA impact</div>
-                </div>
-                <style>
-                    @keyframes spin {
-                        to { transform: rotate(360deg); }
-                    }
-                </style>
-            `;
-        }
-
-        // Fetch with 15 second timeout
-        const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Tax projection fetch timeout')), 15000)
-        );
-
-        detailedLedger = await Promise.race([
-            fetchDetailedCashflow(profile, marketScenario),
-            timeoutPromise
-        ]);
-
-        // Restore canvas
-        if (chartContainer && originalHTML) {
-            chartContainer.innerHTML = originalHTML;
-            canvasElement = container.querySelector('#cashflow-chart');
-        }
+        console.log('Fetching detailed cashflow data...');
+        detailedLedger = await fetchDetailedCashflow(profile, marketScenario);
+        console.log('✓ Detailed ledger data received');
     } catch (error) {
-        console.warn('⚠ Tax projection fetch failed, falling back to simplified view:', error.message);
+        console.warn('⚠ Tax projection fetch failed, using simplified view:', error.message);
         detailedLedger = null;
-
-        // Restore canvas even on error
-        const chartContainer = canvasElement?.parentElement || container.querySelector('#cashflow-chart')?.parentElement;
-        if (chartContainer) {
-            const canvas = document.createElement('canvas');
-            canvas.id = 'cashflow-chart';
-            canvas.style.maxHeight = '350px';
-            chartContainer.innerHTML = '';
-            chartContainer.appendChild(canvas);
-            canvasElement = canvas;
-        }
     }
 
     const monthlyData = calculateMonthlyCashFlow(profile, months);
@@ -436,19 +402,34 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
         });
     }
 
-    // Update summary cards
-    renderSummaryCards(container, chartData);
+    // Process scenario data if available (for comparison chart)
+    let scenarioMedianData = null;
+    let monteCarloPortfolioData = null;
 
-    // Update table title
-    const tableTitle = container.querySelector('#table-title');
-    if (tableTitle) {
-        tableTitle.textContent = viewType === 'annual' ? 'Annual Cash Flow Details' : 'Monthly Cash Flow Details';
+    if (scenarioData && scenarioData.results) {
+        console.log('Processing scenario data...');
+
+        // Check if it's a multi-scenario result (has scenarios object)
+        if (scenarioData.results.scenarios) {
+            const scenarios = scenarioData.results.scenarios;
+            const scenarioKeys = Object.keys(scenarios);
+            const selectedKey = scenarios['base'] ? 'base' : scenarioKeys[0];
+
+            if (selectedKey && scenarios[selectedKey]?.timeline) {
+                scenarioMedianData = mapScenarioToChartData(scenarios[selectedKey].timeline, chartData, viewType);
+            }
+        }
+        // Check if it's a single scenario result (direct timeline)
+        else if (scenarioData.results.timeline) {
+            scenarioMedianData = mapScenarioToChartData(scenarioData.results.timeline, chartData, viewType);
+        }
+        // Check if results is the timeline data itself (backward compatibility)
+        else if (scenarioData.results.years && scenarioData.results.median) {
+            scenarioMedianData = mapScenarioToChartData(scenarioData.results, chartData, viewType);
+        }
     }
 
-    // Update table
-    renderCashFlowTable(container, tableData, viewType);
-
-    // Render chart
+    // Render chart first (most critical)
     const canvas = container.querySelector('#cashflow-chart');
     if (!canvas) {
         console.error('Canvas element not found after restoring');
@@ -791,12 +772,41 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
 
     // Setup metric isolation handlers after chart is created
     setupMetricIsolation(container);
+
+    // Update summary cards (after chart is created)
+    try {
+        renderSummaryCards(container, chartData);
+    } catch (error) {
+        console.error('Error rendering summary cards:', error);
+    }
+
+    // Update table title
+    try {
+        const tableTitle = container.querySelector('#table-title');
+        if (tableTitle) {
+            tableTitle.textContent = viewType === 'annual' ? 'Annual Cash Flow Details' : 'Monthly Cash Flow Details';
+        }
+
+        // Prepare table data (use monthly data for more granular table view)
+        const tableData = viewType === 'annual' ? chartData : monthlyData;
+
+        // Update table
+        renderCashFlowTable(container, tableData, viewType);
+    } catch (error) {
+        console.error('Error rendering cash flow table:', error);
+    }
 }
 
 /**
  * Render summary cards
  */
 function renderSummaryCards(container, chartData) {
+    const summaryContainer = container.querySelector('#summary-cards');
+    if (!summaryContainer) {
+        console.warn('Summary cards container not found');
+        return;
+    }
+
     const totalWorkIncome = chartData.reduce((sum, d) => sum + d.workIncome, 0);
     const totalRetirementBenefits = chartData.reduce((sum, d) => sum + d.retirementBenefits, 0);
     const totalInvestmentIncome = chartData.reduce((sum, d) => sum + d.investmentIncome, 0);
@@ -807,7 +817,6 @@ function renderSummaryCards(container, chartData) {
     const avgMonthlyExpenses = totalExpenses / chartData.length;
     const avgMonthlyNet = totalNet / chartData.length;
 
-    const summaryContainer = container.querySelector('#summary-cards');
     summaryContainer.innerHTML = `
         <div class="metric-card" data-metric="work-income" style="background: linear-gradient(135deg, #2ed573, #26d07c); padding: 10px; border-radius: 6px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
             <div style="font-size: 10px; opacity: 0.9; margin-bottom: 2px;">Work Income</div>
@@ -964,6 +973,10 @@ function setupMetricIsolation(container) {
  */
 function renderCashFlowTable(container, displayData, viewType) {
     const tableContainer = container.querySelector('#cashflow-table');
+    if (!tableContainer) {
+        console.warn('Cash flow table container not found');
+        return;
+    }
 
     // Limit display based on view type
     const maxRows = viewType === 'annual' ? 20 : 24;
@@ -1018,4 +1031,438 @@ function renderCashFlowTable(container, displayData, viewType) {
             </div>
         ` : ''}
     `;
+}
+
+/**
+ * Check if an expense/income item is active on a given date
+ */
+function isExpenseActiveOnDate(expense, checkDate) {
+    // If ongoing or no date constraints, it's always active
+    if (expense.ongoing !== false || (!expense.start_date && !expense.end_date)) {
+        return true;
+    }
+
+    const check = checkDate.getTime();
+
+    // Check start date
+    if (expense.start_date) {
+        const start = new Date(expense.start_date).getTime();
+        if (check < start) {
+            return false; // Before start date
+        }
+    }
+
+    // Check end date
+    if (expense.end_date) {
+        const end = new Date(expense.end_date).getTime();
+        if (check > end) {
+            return false; // After end date
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Calculate total monthly expenses for a specific period (current or future)
+ */
+function calculatePeriodExpenses(budget, period, currentDate) {
+    let expenses = 0;
+
+    if (!budget.expenses || !budget.expenses[period]) {
+        return expenses;
+    }
+
+    // All expense categories
+    const categories = ['housing', 'utilities', 'transportation', 'food', 'dining_out', 'healthcare', 'insurance',
+                      'travel', 'entertainment', 'personal_care', 'clothing', 'gifts', 'childcare_education',
+                      'charitable_giving', 'subscriptions', 'pet_care', 'home_maintenance', 'debt_payments',
+                      'taxes', 'discretionary', 'other'];
+
+    categories.forEach(category => {
+        const catData = budget.expenses[period][category];
+
+        if (!catData) {
+            return; // Skip if no data for this category
+        }
+
+        // Handle both array format (multiple instances) and legacy single object format
+        const expenseItems = Array.isArray(catData) ? catData : [catData];
+
+        expenseItems.forEach(expense => {
+            // Check if expense is active on this date
+            if (!isExpenseActiveOnDate(expense, currentDate)) {
+                return; // Skip inactive expenses
+            }
+
+            const amount = expense.amount || 0;
+            const frequency = expense.frequency || 'monthly';
+
+            // Convert to monthly
+            if (frequency === 'monthly') {
+                expenses += amount;
+            } else if (frequency === 'quarterly') {
+                expenses += amount / 3;
+            } else if (frequency === 'annual') {
+                expenses += amount / 12;
+            }
+        });
+    });
+
+    return expenses;
+}
+
+/**
+ * Calculate total monthly income from budget categories for a specific period (current or future)
+ */
+function calculatePeriodIncome(budget, period, currentDate) {
+    let income = 0;
+
+    if (!budget.income || !budget.income[period]) {
+        return income;
+    }
+
+    // Income categories that can have multiple items with start/end dates
+    const categories = ['rental_income', 'part_time_consulting', 'business_income', 'other_income'];
+
+    categories.forEach(category => {
+        const items = budget.income[period][category] || [];
+        if (!Array.isArray(items)) return;
+
+        items.forEach(item => {
+            // Check if this income item is active on this date
+            if (!isExpenseActiveOnDate(item, currentDate)) {
+                return; // Skip inactive income
+            }
+
+            const amount = item.amount || 0;
+            const frequency = item.frequency || 'monthly';
+
+            // Convert to monthly
+            if (frequency === 'monthly') {
+                income += amount;
+            } else if (frequency === 'quarterly') {
+                income += amount / 3;
+            } else if (frequency === 'annual') {
+                income += amount / 12;
+            }
+        });
+    });
+
+    return income;
+}
+
+/**
+ * Calculate monthly cash flow data with portfolio growth projection
+ */
+function calculateMonthlyCashFlow(profile, months) {
+    const data = profile.data || {};
+    const incomeStreams = data.income_streams || [];
+    const financial = data.financial || {};
+    const budget = data.budget || {};
+    const assets = data.assets || {};
+
+    const today = new Date();
+    const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    // Get retirement date
+    const retirementDate = profile.retirement_date ? new Date(profile.retirement_date) : null;
+
+    // Get withdrawal strategy settings
+    const withdrawalStrategy = data.withdrawal_strategy || {};
+    const annualWithdrawalRate = withdrawalStrategy.withdrawal_rate || 0.04; // Default to 4%
+
+    // Portfolio growth assumptions (conservative for planning)
+    const monthlyGrowthRate = 0.06 / 12; // 6% annual return assumption
+    const monthlyInflationRate = 0.03 / 12; // 3% annual inflation
+
+    // Calculate portfolio value by account type for proper withdrawal ordering
+    const portfolioByType = calculatePortfolioByType(assets);
+    let currentPortfolio = portfolioByType.taxable + portfolioByType.taxDeferred + portfolioByType.roth;
+
+    const monthlyData = [];
+
+    for (let i = 0; i < months; i++) {
+        const currentDate = new Date(startDate);
+        currentDate.setMonth(startDate.getMonth() + i);
+
+        const monthLabel = currentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+        const dateStr = currentDate.toISOString().split('T')[0];
+
+        // Check if retired
+        const isRetired = retirementDate && currentDate >= retirementDate;
+
+        // Calculate work income for this month (from income_streams)
+        let workIncome = 0;
+        incomeStreams.forEach(stream => {
+            const streamStart = stream.start_date ? new Date(stream.start_date) : null;
+            const streamEnd = stream.end_date ? new Date(stream.end_date) : null;
+
+            // Check if this income stream is active in this month
+            const isActive = (!streamStart || currentDate >= streamStart) &&
+                           (!streamEnd || currentDate <= streamEnd);
+
+            if (isActive) {
+                workIncome += stream.amount || 0;
+            }
+        });
+
+        // Calculate additional income from budget with retirement blending
+        // (rental, consulting, business, other income)
+        let budgetIncome = 0;
+        if (budget.income && (budget.income.current || budget.income.future)) {
+            // Determine retirement status for both people
+            const person1Retired = retirementDate && currentDate >= retirementDate;
+            const spouseRetirementDate = data.spouse?.retirement_date ? new Date(data.spouse.retirement_date) : null;
+            const person2Retired = spouseRetirementDate && currentDate >= spouseRetirementDate;
+
+            // Calculate retirement weight
+            let retirementWeight = 0.0;
+            if (person1Retired) retirementWeight += 0.5;
+            if (person2Retired) retirementWeight += 0.5;
+
+            // Calculate budget income based on retirement status
+            if (retirementWeight === 0) {
+                // Both working - use current income
+                budgetIncome = calculatePeriodIncome(budget, 'current', currentDate);
+            } else if (retirementWeight === 1.0) {
+                // Both retired - use future income
+                budgetIncome = calculatePeriodIncome(budget, 'future', currentDate);
+            } else {
+                // Transition period (one retired) - blend 50/50
+                const currentIncome = calculatePeriodIncome(budget, 'current', currentDate);
+                const futureIncome = calculatePeriodIncome(budget, 'future', currentDate);
+                budgetIncome = (currentIncome * 0.5) + (futureIncome * 0.5);
+            }
+        }
+
+        // Calculate retirement benefits (Social Security, Pension)
+        // Each person's benefits start when they retire individually
+        let retirementBenefits = 0;
+
+        // Person 1 benefits (start at their retirement date)
+        if (isRetired) {
+            retirementBenefits += financial.social_security_benefit || 0;
+            retirementBenefits += financial.pension_benefit || 0;
+        }
+
+        // Person 2 (spouse) benefits (start at their retirement date)
+        if (data.spouse) {
+            const spouseRetirementDate = data.spouse.retirement_date ? new Date(data.spouse.retirement_date) : null;
+            const spouseIsRetired = spouseRetirementDate && currentDate >= spouseRetirementDate;
+
+            if (spouseIsRetired) {
+                retirementBenefits += data.spouse.social_security_benefit || 0;
+                retirementBenefits += data.spouse.pension_benefit || 0;
+            }
+        }
+
+        // Get expenses from budget with retirement blending
+        // Blended Budget Logic (matching backend retirement_model.py):
+        // Both working -> 100% current
+        // One retired -> 50% current / 50% future
+        // Both retired -> 100% future
+        let expenses = 0;
+
+        if (budget.expenses && (budget.expenses.current || budget.expenses.future)) {
+            // Determine retirement status for both people
+            const person1Retired = retirementDate && currentDate >= retirementDate;
+
+            // Check if there's a spouse and their retirement date
+            const spouseRetirementDate = data.spouse?.retirement_date ? new Date(data.spouse.retirement_date) : null;
+            const person2Retired = spouseRetirementDate && currentDate >= spouseRetirementDate;
+
+            // Calculate retirement weight
+            let retirementWeight = 0.0;
+            if (person1Retired) retirementWeight += 0.5;
+            if (person2Retired) retirementWeight += 0.5;
+
+            // Calculate expenses based on retirement status
+            if (retirementWeight === 0) {
+                // Both working - use current expenses
+                expenses = calculatePeriodExpenses(budget, 'current', currentDate);
+            } else if (retirementWeight === 1.0) {
+                // Both retired - use future expenses
+                expenses = calculatePeriodExpenses(budget, 'future', currentDate);
+            } else {
+                // Transition period (one retired) - blend 50/50
+                const currentExpenses = calculatePeriodExpenses(budget, 'current', currentDate);
+                const futureExpenses = calculatePeriodExpenses(budget, 'future', currentDate);
+                expenses = (currentExpenses * 0.5) + (futureExpenses * 0.5);
+            }
+        } else if (financial.annual_expenses) {
+            // Fallback to financial annual expenses
+            expenses = financial.annual_expenses / 12;
+        }
+
+        // Combine work income and budget income (rental, consulting, business, other)
+        const totalWorkIncome = workIncome + budgetIncome;
+
+        // Calculate investment income needed
+        // After retirement (either person), we withdraw to cover shortfall between expenses and other income
+        let investmentIncome = 0;
+
+        // Check if anyone is retired
+        const spouseRetirementDate = data.spouse?.retirement_date ? new Date(data.spouse.retirement_date) : null;
+        const spouseIsRetired = spouseRetirementDate && currentDate >= spouseRetirementDate;
+        const anyoneRetired = isRetired || spouseIsRetired;
+
+        if (anyoneRetired) {
+            const otherIncome = totalWorkIncome + retirementBenefits;
+            const shortfall = expenses - otherIncome;
+
+            // Only withdraw if there's a shortfall and we have portfolio
+            if (shortfall > 0 && currentPortfolio > 0) {
+                // Use the configured withdrawal rate, but cap at actual need and available portfolio
+                const maxWithdrawal = (currentPortfolio * annualWithdrawalRate) / 12;
+                investmentIncome = Math.min(shortfall, maxWithdrawal);
+
+                // Deduct withdrawal from portfolio
+                currentPortfolio -= investmentIncome;
+            }
+        }
+
+        // Apply portfolio growth (returns on remaining portfolio after withdrawals)
+        // Only apply growth if not retired or if portfolio still has value
+        if (currentPortfolio > 0) {
+            const monthlyGrowth = currentPortfolio * monthlyGrowthRate;
+            currentPortfolio += monthlyGrowth;
+        }
+
+        // Add savings to portfolio if positive cash flow before retirement
+        if (!anyoneRetired && totalWorkIncome > expenses) {
+            const monthlySavings = totalWorkIncome - expenses;
+            currentPortfolio += monthlySavings;
+        }
+
+        const totalIncome = totalWorkIncome + retirementBenefits + investmentIncome;
+        const netCashFlow = totalIncome - expenses;
+
+        monthlyData.push({
+            date: currentDate,
+            label: monthLabel,
+            workIncome: totalWorkIncome,
+            retirementBenefits,
+            investmentIncome,
+            totalIncome,
+            expenses,
+            netCashFlow,
+            portfolioValue: currentPortfolio,
+            isRetired
+        });
+    }
+
+    return monthlyData;
+}
+
+/**
+ * Calculate portfolio value by account type for withdrawal strategy
+ */
+function calculatePortfolioByType(assets) {
+    if (!assets) return { taxable: 0, taxDeferred: 0, roth: 0 };
+
+    let taxable = 0;
+    let taxDeferred = 0;
+    let roth = 0;
+
+    // Taxable accounts (withdraw first - most tax efficient)
+    if (assets.taxable_accounts) {
+        assets.taxable_accounts.forEach(account => {
+            taxable += account.value || account.current_value || 0;
+        });
+    }
+
+    // Retirement accounts - separate into tax-deferred and Roth
+    if (assets.retirement_accounts) {
+        assets.retirement_accounts.forEach(account => {
+            const value = account.value || account.current_value || 0;
+            const accountType = (account.type || '').toLowerCase();
+            const accountName = (account.name || '').toLowerCase();
+
+            // Roth accounts (withdraw last - tax-free growth)
+            if (accountType.includes('roth') || accountName.includes('roth')) {
+                roth += value;
+            } else {
+                // Tax-deferred (withdraw second - Traditional IRA, 401k, etc.)
+                taxDeferred += value;
+            }
+        });
+    }
+
+    return { taxable, taxDeferred, roth };
+}
+
+/**
+ * Map scenario timeline data to chart data format
+ */
+function mapScenarioToChartData(timeline, chartData, viewType) {
+    if (!timeline || !timeline.years || !timeline.median) {
+        return null;
+    }
+
+    const scenarioYears = timeline.years;
+    const scenarioMedian = timeline.median;
+
+    // Create a map of year to median value
+    const yearToMedian = {};
+    scenarioYears.forEach((year, index) => {
+        yearToMedian[year] = scenarioMedian[index];
+    });
+
+    // Map to chart data labels
+    const mappedData = chartData.map(dataPoint => {
+        if (viewType === 'annual') {
+            // For annual view, match by year
+            const year = parseInt(dataPoint.label);
+            return yearToMedian[year] !== undefined ? yearToMedian[year] : null;
+        } else {
+            // For monthly view, extract year from label and use that year's value
+            const year = dataPoint.date ? dataPoint.date.getFullYear() : null;
+            return year && yearToMedian[year] !== undefined ? yearToMedian[year] : null;
+        }
+    });
+
+    return mappedData;
+}
+
+/**
+ * Aggregate monthly data to annual
+ */
+function aggregateToAnnual(monthlyData) {
+    const annualData = [];
+    const yearMap = new Map();
+
+    monthlyData.forEach(month => {
+        const year = month.date.getFullYear();
+        if (!yearMap.has(year)) {
+            yearMap.set(year, {
+                label: year.toString(),
+                workIncome: 0,
+                retirementBenefits: 0,
+                investmentIncome: 0,
+                totalIncome: 0,
+                expenses: 0,
+                netCashFlow: 0,
+                portfolioValue: 0,
+                months: 0
+            });
+        }
+
+        const yearData = yearMap.get(year);
+        yearData.workIncome += month.workIncome;
+        yearData.retirementBenefits += month.retirementBenefits;
+        yearData.investmentIncome += month.investmentIncome;
+        yearData.totalIncome += month.totalIncome;
+        yearData.expenses += month.expenses;
+        yearData.netCashFlow += month.netCashFlow;
+        // Use end-of-year portfolio value (last month of year)
+        yearData.portfolioValue = month.portfolioValue;
+        yearData.months++;
+    });
+
+    yearMap.forEach(yearData => {
+        annualData.push(yearData);
+    });
+
+    return annualData;
 }

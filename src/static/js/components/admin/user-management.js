@@ -16,9 +16,22 @@ export async function renderUserManagement(container) {
 
     container.innerHTML = `
         <div style="text-align: center; padding: 40px;">
-            <div style="font-size: 32px; margin-bottom: 10px;">⏳</div>
+            <div class="spinner" style="
+                width: 32px;
+                height: 32px;
+                border: 3px solid var(--border-color);
+                border-top-color: var(--accent-color);
+                border-radius: 50%;
+                animation: spin 0.8s linear infinite;
+                margin: 0 auto 10px;
+            "></div>
             <div>Loading users...</div>
         </div>
+        <style>
+            @keyframes spin {
+                to { transform: rotate(360deg); }
+            }
+        </style>
     `;
 
     try {
@@ -613,7 +626,23 @@ async function showManageUserBackupsModal(userId, username) {
             </div>
 
             <div id="admin-user-backups-list" style="min-height: 150px;">
-                <div style="text-align: center; padding: 30px;">⏳ Loading...</div>
+                <div style="text-align: center; padding: 30px;">
+                    <div class="spinner" style="
+                        width: 24px;
+                        height: 24px;
+                        border: 3px solid var(--border-color);
+                        border-top-color: var(--accent-color);
+                        border-radius: 50%;
+                        animation: spin 0.8s linear infinite;
+                        margin: 0 auto 10px;
+                    "></div>
+                    <div>Loading...</div>
+                </div>
+                <style>
+                    @keyframes spin {
+                        to { transform: rotate(360deg); }
+                    }
+                </style>
             </div>
 
             <div style="display: flex; justify-content: flex-end; margin-top: 25px; padding-top: 15px; border-top: 1px solid var(--border-color);">

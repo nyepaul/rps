@@ -97,7 +97,20 @@ export async function renderBackupManager(container) {
                 <div id="schedule-status" style="background: var(--bg-secondary); padding: 25px; border-radius: 12px; margin-bottom: 30px;">
                     <h3 style="font-size: 18px; margin-bottom: 15px;">🕐 Automated Backup Schedule</h3>
                     <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
-                        <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
+                        <div class="spinner" style="
+                            width: 24px;
+                            height: 24px;
+                            border: 3px solid var(--border-color);
+                            border-top-color: var(--accent-color);
+                            border-radius: 50%;
+                            animation: spin 0.8s linear infinite;
+                            margin: 0 auto 10px;
+                        "></div>
+                        <style>
+                             spin {
+                                to { transform: rotate(360deg); }
+                            }
+                        </style>
                         Loading schedule information...
                     </div>
                 </div>
@@ -127,7 +140,20 @@ export async function renderBackupManager(container) {
 
                     <div id="backup-list" style="min-height: 200px;">
                         <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
-                            <div style="font-size: 32px; margin-bottom: 10px;">⏳</div>
+                            <div class="spinner" style="
+                                width: 32px;
+                                height: 32px;
+                                border: 3px solid var(--border-color);
+                                border-top-color: var(--accent-color);
+                                border-radius: 50%;
+                                animation: spin 0.8s linear infinite;
+                                margin: 0 auto 10px;
+                            "></div>
+                            <style>
+                                 spin {
+                                    to { transform: rotate(360deg); }
+                                }
+                            </style>
                             Loading backups...
                         </div>
                     </div>
@@ -194,7 +220,20 @@ export async function renderBackupManager(container) {
                     </div>
                     <div id="selective-backup-list" style="min-height: 150px;">
                         <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
-                            <div style="font-size: 32px; margin-bottom: 10px;">⏳</div>
+                            <div class="spinner" style="
+                                width: 32px;
+                                height: 32px;
+                                border: 3px solid var(--border-color);
+                                border-top-color: var(--accent-color);
+                                border-radius: 50%;
+                                animation: spin 0.8s linear infinite;
+                                margin: 0 auto 10px;
+                            "></div>
+                            <style>
+                                 spin {
+                                    to { transform: rotate(360deg); }
+                                }
+                            </style>
                             Loading selective backups...
                         </div>
                     </div>
@@ -487,7 +526,20 @@ async function loadSelectiveBackups(container) {
 
     listContainer.innerHTML = `
         <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
-            <div style="font-size: 32px; margin-bottom: 10px;">⏳</div>
+            <div class="spinner" style="
+                                width: 32px;
+                                height: 32px;
+                                border: 3px solid var(--border-color);
+                                border-top-color: var(--accent-color);
+                                border-radius: 50%;
+                                animation: spin 0.8s linear infinite;
+                                margin: 0 auto 10px;
+                            "></div>
+                            <style>
+                                 spin {
+                                    to { transform: rotate(360deg); }
+                                }
+                            </style>
             Loading backups...
         </div>
     `;
@@ -960,7 +1012,20 @@ async function loadBackups(container, type = 'all') {
     // Show loading
     listContainer.innerHTML = `
         <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
-            <div style="font-size: 32px; margin-bottom: 10px;">⏳</div>
+            <div class="spinner" style="
+                                width: 32px;
+                                height: 32px;
+                                border: 3px solid var(--border-color);
+                                border-top-color: var(--accent-color);
+                                border-radius: 50%;
+                                animation: spin 0.8s linear infinite;
+                                margin: 0 auto 10px;
+                            "></div>
+                            <style>
+                                 spin {
+                                    to { transform: rotate(360deg); }
+                                }
+                            </style>
             Loading backups...
         </div>
     `;
