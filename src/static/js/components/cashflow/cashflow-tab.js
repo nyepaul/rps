@@ -740,37 +740,57 @@ function aggregateToAnnual(monthlyData) {
  * Render cash flow chart
  */
 async function renderCashFlowChart(container, profile, months, viewType, scenarioData = null, monthsToLifeExpectancy = 360, lifeExpectancyAge = 95) {
-    // Skip loading indicator entirely since Monte Carlo is disabled
-    // Just proceed with synchronous calculation using the existing canvas
     let canvasElement = container.querySelector('#cashflow-chart');
 
-    // Temporarily disable Monte Carlo fetch to debug chart rendering
-    // TODO: Re-enable once basic chart works
-    const monteCarloData = null;
-    console.log('Using simplified JavaScript projection (Monte Carlo temporarily disabled)');
-
-    // Original Monte Carlo fetch code (disabled):
-    /*
+    // Fetch Monte Carlo data for accurate portfolio projections
     let monteCarloData = null;
     try {
+        // Show loading state
+        const chartContainer = canvasElement?.parentElement;
+        const originalHTML = chartContainer?.innerHTML;
+
+        if (chartContainer) {
+            chartContainer.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; height: 350px; flex-direction: column; gap: 12px;">
+                    <div style="font-size: 32px;">⏳</div>
+                    <div style="color: var(--text-secondary); font-size: 14px;">Fetching Monte Carlo projections...</div>
+                    <div style="color: var(--text-secondary); font-size: 11px;">This may take a few seconds</div>
+                </div>
+            `;
+        }
+
+        // Fetch with 15 second timeout
         const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Monte Carlo fetch timeout')), 15000)
+            setTimeout(() => reject(new Error('Monte Carlo fetch timeout after 15 seconds')), 15000)
         );
+
         monteCarloData = await Promise.race([
             fetchMonteCarloData(profile),
             timeoutPromise
         ]);
-        console.log('Monte Carlo data received:', monteCarloData);
-    } catch (error) {
-        console.warn('Monte Carlo data fetch failed or timed out, using simplified projection:', error);
-        monteCarloData = null;
-    } finally {
-        if (canvasElement && canvasElement.parentElement) {
-            canvasElement.parentElement.innerHTML = originalContent;
+
+        console.log('✓ Monte Carlo data received:', monteCarloData);
+
+        // Restore canvas
+        if (chartContainer && originalHTML) {
+            chartContainer.innerHTML = originalHTML;
             canvasElement = container.querySelector('#cashflow-chart');
         }
+    } catch (error) {
+        console.warn('⚠ Monte Carlo fetch failed or timed out, using simplified projection:', error.message);
+        monteCarloData = null;
+
+        // Restore canvas even on error
+        const chartContainer = canvasElement?.parentElement || container.querySelector('#cashflow-chart')?.parentElement;
+        if (chartContainer) {
+            const canvas = document.createElement('canvas');
+            canvas.id = 'cashflow-chart';
+            canvas.style.maxHeight = '350px';
+            chartContainer.innerHTML = '';
+            chartContainer.appendChild(canvas);
+            canvasElement = canvas;
+        }
     }
-    */
 
     const monthlyData = calculateMonthlyCashFlow(profile, months);
     const chartData = viewType === 'annual' ? aggregateToAnnual(monthlyData) : monthlyData;
