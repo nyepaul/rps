@@ -199,10 +199,10 @@ async function showTab(tabName) {
     // Load tab content
     const container = document.getElementById('tab-content-container');
 
-    // Setup 300ms loading spinner delay
+    // Setup 500ms loading spinner delay
     let spinnerTimer = setTimeout(() => {
         showSpinner(`Loading ${tabName}...`);
-    }, 300);
+    }, 500);
 
     try {
         await loadTabComponent(tabName, container);
@@ -227,7 +227,7 @@ async function showTab(tabName) {
  */
 async function loadTabComponent(tabName, container) {
     // Note: We don't show an immediate loading state here anymore.
-    // The global spinner will appear if this takes > 300ms.
+    // The global spinner will appear if this takes > 500ms.
 
     // Create container div
     const tabContent = document.createElement('div');
