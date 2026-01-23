@@ -50,6 +50,9 @@ export async function renderAdminTab(container) {
 
             <!-- Admin Sub-Tabs -->
             <div style="display: flex; gap: 4px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 0; overflow-x: visible; align-items: center; background: var(--bg-secondary); border-radius: 6px 6px 0 0; padding: 0 10px;">
+                <button class="admin-subtab active" data-subtab="system" style="padding: 10px 16px; background: transparent; border: none; border-bottom: 2px solid var(--accent-color); cursor: pointer; font-weight: 700; color: var(--accent-color); transition: all 0.2s; white-space: nowrap; font-size: 13px;">
+                    🖥️ System
+                </button>
                 <button class="admin-subtab" data-subtab="logs" style="padding: 10px 16px; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-weight: 700; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap; font-size: 13px;">
                     📋 Logs
                 </button>
@@ -106,9 +109,6 @@ export async function renderAdminTab(container) {
                 ` : ''}
                 <button class="admin-subtab" data-subtab="config" style="padding: 10px 16px; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-weight: 700; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap; font-size: 13px;">
                     ⚙️ Config
-                </button>
-                <button class="admin-subtab active" data-subtab="system" style="padding: 10px 16px; background: transparent; border: none; border-bottom: 2px solid var(--accent-color); cursor: pointer; font-weight: 700; color: var(--accent-color); transition: all 0.2s; white-space: nowrap; font-size: 13px;">
-                    🖥️ System
                 </button>
             </div>
 
