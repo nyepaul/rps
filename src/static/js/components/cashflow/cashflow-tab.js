@@ -434,9 +434,7 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
     }
 
     // Update table
-    renderCashFlowTable(container, tableData, viewType); // Note: tableData logic from original file needs to be preserved or redefined if needed. Assuming local variable scope issue, let's redefine tableData here
-    // Re-define tableData locally to be safe
-    let tableData = chartData;
+    renderCashFlowTable(container, tableData, viewType);
 
     // Render chart
     const canvas = container.querySelector('#cashflow-chart');
