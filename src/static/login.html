@@ -131,11 +131,42 @@
         .hidden {
             display: none;
         }
+
+        .login-spinner {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .login-spinner.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid #e0e0e0;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .spinner-text {
+            color: #666;
+            font-size: 14px;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
     <div class="login-container" style="position: relative;">
-        <div style="position: absolute; top: 10px; right: 15px; font-size: 10px; color: #ccc; font-weight: 500;">v3.8.127</div>
+        <div style="position: absolute; top: 10px; right: 15px; font-size: 10px; color: #ccc; font-weight: 500;">v3.8.128</div>
         <h1 style="margin-bottom: 30px;">Welcome Back</h1>
         
         <div id="message"></div>
@@ -155,8 +186,12 @@
                 <a href="/account-recovery.html" style="color: #667eea; text-decoration: none; font-size: 14px;">Forgot Password?</a>
             </div>
             <button type="submit" id="loginBtn">Login</button>
+            <div class="login-spinner" id="loginSpinner">
+                <div class="spinner"></div>
+                <span class="spinner-text">Validating credentials...</span>
+            </div>
         </form>
-        
+
         <!-- Register Form -->
         <form id="registerForm" class="hidden" action="https://rps.pan2.app/api/auth/register" method="post">
             <input type="hidden" name="site" value="rps.pan2.app">
@@ -175,6 +210,10 @@
                 <small>Min 8 characters, with uppercase, lowercase, and number</small>
             </div>
             <button type="submit" id="registerBtn">Register</button>
+            <div class="login-spinner" id="registerSpinner">
+                <div class="spinner"></div>
+                <span class="spinner-text">Creating account...</span>
+            </div>
         </form>
 
         <!-- Password Reset Request Form -->
@@ -288,24 +327,27 @@
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             clearMessage();
-            
+
             const username = document.getElementById('loginUsername').value;
             const password = document.getElementById('loginPassword').value;
             const btn = document.getElementById('loginBtn');
-            
+            const spinner = document.getElementById('loginSpinner');
+
             btn.disabled = true;
-            btn.textContent = 'Logging in...';
-            
+            btn.style.opacity = '0.6';
+            spinner.classList.add('active');
+
             try {
                 const response = await fetch(`${API_URL}/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (response.ok) {
+                    spinner.querySelector('.spinner-text').textContent = 'Login successful! Redirecting...';
                     showMessage('Login successful! Redirecting...', 'success');
                     setTimeout(() => window.location.href = '/', 1000);
                 } else {
@@ -314,8 +356,11 @@
             } catch (error) {
                 showMessage('Network error. Please try again.', 'error');
             } finally {
-                btn.disabled = false;
-                btn.textContent = 'Login';
+                if (!document.querySelector('.success')) {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    spinner.classList.remove('active');
+                }
             }
         });
         
@@ -323,25 +368,28 @@
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             clearMessage();
-            
+
             const username = document.getElementById('registerUsername').value;
             const email = document.getElementById('registerEmail').value;
             const password = document.getElementById('registerPassword').value;
             const btn = document.getElementById('registerBtn');
-            
+            const spinner = document.getElementById('registerSpinner');
+
             btn.disabled = true;
-            btn.textContent = 'Creating account...';
-            
+            btn.style.opacity = '0.6';
+            spinner.classList.add('active');
+
             try {
                 const response = await fetch(`${API_URL}/auth/register`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, email, password })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (response.ok) {
+                    spinner.querySelector('.spinner-text').textContent = 'Registration successful! Redirecting...';
                     showMessage('Registration successful! Redirecting...', 'success');
                     setTimeout(() => window.location.href = '/', 1000);
                 } else {
@@ -350,8 +398,11 @@
             } catch (error) {
                 showMessage('Network error. Please try again.', 'error');
             } finally {
-                btn.disabled = false;
-                btn.textContent = 'Register';
+                if (!document.querySelector('.success')) {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    spinner.classList.remove('active');
+                }
             }
         });
         
