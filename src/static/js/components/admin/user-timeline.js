@@ -147,7 +147,7 @@ function setupTimelineHandlers(container) {
 
     // Show dropdown on click/focus
     const showDropdown = () => {
-        renderDropdown(userInput.value);
+        renderDropdown(''); // Always show all on click/focus
         dropdown.style.display = 'block';
     };
 
