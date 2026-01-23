@@ -4,7 +4,7 @@
  */
 
 import { apiClient } from '../../api/client.js';
-import { showLogDetails, showIPLocationsMap } from './logs-viewer.js';
+import { showLogDetails, showIPLocationsMap, showIPListView } from './logs-viewer.js';
 
 /**
  * Render the users-by-location report
@@ -27,6 +27,9 @@ export async function renderUsersByLocationReport(container) {
                         <option value="180">Last 180 days</option>
                         <option value="365">Last year</option>
                     </select>
+                    <button id="view-list-report-btn" style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        📋 View List
+                    </button>
                     <button id="view-map-report-btn" style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-weight: 600;">
                         🗺️ View Map
                     </button>
@@ -69,6 +72,10 @@ export async function renderUsersByLocationReport(container) {
     document.getElementById('view-map-report-btn').addEventListener('click', () => {
         const period = document.getElementById('report-period').value;
         showIPLocationsMap(period);
+    });
+    document.getElementById('view-list-report-btn').addEventListener('click', () => {
+        const period = document.getElementById('report-period').value;
+        showIPListView(period);
     });
     document.getElementById('refresh-report-btn').addEventListener('click', () => loadReport(container));
     document.getElementById('report-period').addEventListener('change', () => loadReport(container));
