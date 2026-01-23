@@ -286,7 +286,7 @@ async function loadLogs(container, offset = 0) {
                 margin: 0 auto 10px;
             "></div>
             <style>
-                 spin {
+                @keyframes spin {
                     to { transform: rotate(360deg); }
                 }
             </style>

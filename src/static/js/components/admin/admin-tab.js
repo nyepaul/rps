@@ -230,26 +230,8 @@ function setupSubTabSwitching(container) {
 async function showSubTab(container, subtab) {
     const contentContainer = container.querySelector('#admin-subtab-content');
 
-    // Show loading
-    contentContainer.innerHTML = `
-        <div style="text-align: center; padding: 60px;">
-            <div class="spinner" style="
-                width: 48px;
-                height: 48px;
-                border: 4px solid var(--border-color);
-                border-top-color: var(--accent-color);
-                border-radius: 50%;
-                animation: spin 0.8s linear infinite;
-                margin: 0 auto 20px;
-            "></div>
-            <div>Loading ${subtab}...</div>
-        </div>
-        <style>
-            @keyframes spin {
-                to { transform: rotate(360deg); }
-            }
-        </style>
-    `;
+    // Clear content - each module handles its own loading state
+    contentContainer.innerHTML = '';
 
     try {
         switch (subtab) {
