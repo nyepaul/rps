@@ -3299,7 +3299,7 @@ def get_user_activity_report():
                 SUM(CASE WHEN al.action = 'DELETE' THEN 1 ELSE 0 END) as deletes,
                 SUM(CASE WHEN al.action = 'READ' THEN 1 ELSE 0 END) as reads,
                 SUM(CASE WHEN al.action LIKE 'ADMIN%' THEN 1 ELSE 0 END) as admin_actions
-            FROM audit_log al
+            FROM enhanced_audit_log al
             LEFT JOIN users u ON al.user_id = u.id
             WHERE {where_sql}
             GROUP BY u.id, u.username, u.email
@@ -3315,7 +3315,7 @@ def get_user_activity_report():
             # Get top actions for this user
             top_actions_query = f"""
                 SELECT action, COUNT(*) as count
-                FROM audit_log
+                FROM enhanced_audit_log
                 WHERE user_id = ?
                 AND created_at >= ? AND created_at <= ?
                 {'AND action IN (' + ','.join(['?'] * len(action_types)) + ')' if action_types else ''}
@@ -3333,7 +3333,7 @@ def get_user_activity_report():
             # Get most active tables for this user
             top_tables_query = f"""
                 SELECT table_name, COUNT(*) as count
-                FROM audit_log
+                FROM enhanced_audit_log
                 WHERE user_id = ?
                 AND created_at >= ? AND created_at <= ?
                 AND table_name IS NOT NULL
@@ -3352,7 +3352,7 @@ def get_user_activity_report():
             # Get daily activity pattern
             daily_query = f"""
                 SELECT DATE(created_at) as date, COUNT(*) as count
-                FROM audit_log
+                FROM enhanced_audit_log
                 WHERE user_id = ?
                 AND created_at >= ? AND created_at <= ?
                 {'AND action IN (' + ','.join(['?'] * len(action_types)) + ')' if action_types else ''}
@@ -3380,7 +3380,7 @@ def get_user_activity_report():
         # Get overall action distribution
         action_dist_query = f"""
             SELECT action, COUNT(*) as count
-            FROM audit_log
+            FROM enhanced_audit_log
             WHERE {where_sql}
             GROUP BY action
             ORDER BY count DESC
