@@ -591,7 +591,7 @@ async function showIPLogs(userId, ipAddress, city, country) {
                     <tr style="background: var(--bg-primary); border-bottom: 2px solid var(--border-color); position: sticky; top: 0; z-index: 1;">
                         <th style="padding: 10px; text-align: left; font-weight: 600;">Time</th>
                         <th style="padding: 10px; text-align: left; font-weight: 600;">Action</th>
-                        <th style="padding: 10px; text-align: left; font-weight: 600;">Details</th>
+                        <th style="padding: 10px; text-align: left; font-weight: 600;">Description</th>
                         <th style="padding: 10px; text-align: left; font-weight: 600;">Device</th>
                     </tr>
                 </thead>
@@ -599,6 +599,20 @@ async function showIPLogs(userId, ipAddress, city, country) {
                     ${logs.map(log => {
                         const date = new Date(log.created_at);
                         const dev = log.device_info || {};
+                        
+                        // Determine a good description
+                        let description = log.details?._description || '';
+                        if (!description) {
+                            if (log.action === 'NETWORK_ACCESS' && log.request_endpoint) {
+                                description = `${log.request_method || 'GET'} ${log.request_endpoint}`;
+                            } else if (log.table_name) {
+                                description = `${log.action} on ${log.table_name}`;
+                                if (log.record_id) description += ` (#${log.record_id})`;
+                            } else {
+                                description = log.action;
+                            }
+                        }
+
                         return `
                             <tr class="log-drilldown-row" data-id="${log.id}" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='transparent'">
                                 <td style="padding: 10px; white-space: nowrap;">
@@ -611,8 +625,8 @@ async function showIPLogs(userId, ipAddress, city, country) {
                                     </span>
                                 </td>
                                 <td style="padding: 10px;">
-                                    <div style="font-weight: 500;">${log.table_name || '-'}</div>
-                                    <div style="font-size: 11px; color: var(--text-secondary);">${log.details?._description || ''}</div>
+                                    <div style="font-size: 13px; color: var(--text-primary); line-height: 1.4;">${description}</div>
+                                    ${log.table_name ? `<div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;">Table: ${log.table_name}</div>` : ''}
                                 </td>
                                 <td style="padding: 10px; font-size: 11px; color: var(--text-secondary);">
                                     ${dev.browser || 'Unknown'} on ${dev.os || 'Unknown'}
