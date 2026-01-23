@@ -72,16 +72,6 @@ function renderTable(requests) {
                             <div style="font-size: 11px; color: var(--text-secondary); white-space: nowrap;">
                                 ${new Date(req.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </div>
-                            <button class="reset-req-btn" data-id="${req.id}" data-username="${req.username}" style="
-                                padding: 4px 10px;
-                                background: #f59e0b;
-                                color: white;
-                                border: none;
-                                border-radius: 4px;
-                                cursor: pointer;
-                                font-size: 11px;
-                                font-weight: 700;
-                            ">Process</button>
                         </div>
                     </div>
                 </div>
@@ -94,44 +84,78 @@ function renderTable(requests) {
     container.querySelectorAll('.password-request-item').forEach(item => {
         item.addEventListener('click', () => handleReset(item.dataset.id, item.dataset.username));
     });
-
-    container.querySelectorAll('.reset-req-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            handleReset(btn.dataset.id, btn.dataset.username);
-        });
-    });
 }
 
-async function handleReset(reqId, username) {
-    const newPassword = prompt(`Reset password for user "${username}".\n\nEnter the NEW password (min 8 chars):`);
+function handleReset(reqId, username) {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.cssText = `position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;`;
     
-    if (newPassword === null) return; // Cancelled
-    
-    if (!newPassword || newPassword.length < 8) {
-        showError('Password must be at least 8 characters');
-        return;
-    }
+    modal.innerHTML = `
+        <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; max-width: 450px; width: 90%;">
+            <h3 style="margin-top: 0;">Process Request: ${username}</h3>
+            <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 20px;">
+                Reset the user's password or delete this request.
+            </p>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px;">New Password</label>
+                <input type="text" id="new-password" placeholder="Min 8 chars" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+            </div>
 
-    // Confirm
-    if (!confirm(`Are you sure you want to set the password to "${newPassword}" for ${username}?`)) {
-        return;
-    }
+            <div style="display: flex; gap: 10px; justify-content: space-between; margin-top: 25px;">
+                <button class="delete-req-btn" style="padding: 10px 16px; background: transparent; border: 1px solid var(--danger-color); color: var(--danger-color); border-radius: 6px; cursor: pointer;">Delete Request</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="cancel-modal-btn" style="padding: 10px 16px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">Cancel</button>
+                    <button class="process-reset-btn" style="padding: 10px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Reset Password</button>
+                </div>
+            </div>
+        </div>
+    `;
 
-    try {
-        const result = await apiClient.post(`/api/admin/password-requests/${reqId}/reset`, {
-            new_password: newPassword
-        });
-        
-        let msg = result.message;
-        if (result.recovery_method === 'email_backup') {
-            msg += '\n\n✅ Data Preserved (re-encrypted via email backup key).';
-        } else {
-            msg += '\n\n⚠️ Data LOST (forced reset - no backup available).';
+    document.body.appendChild(modal);
+
+    modal.querySelector('.cancel-modal-btn').addEventListener('click', () => modal.remove());
+
+    // Delete Request
+    modal.querySelector('.delete-req-btn').addEventListener('click', async () => {
+        if (confirm('Delete this password reset request?')) {
+            try {
+                await apiClient.delete(`/api/admin/password-requests/${reqId}`);
+                showSuccess('Request deleted');
+                modal.remove();
+                loadRequests();
+            } catch (error) {
+                showError(error.message);
+            }
         }
-        alert(msg);
-        loadRequests(); // Refresh table
-    } catch (error) {
-        showError(error.message || 'Network error occurred while processing request');
-    }
+    });
+
+    // Reset Password
+    modal.querySelector('.process-reset-btn').addEventListener('click', async () => {
+        const newPassword = modal.querySelector('#new-password').value;
+        
+        if (!newPassword || newPassword.length < 8) {
+            showError('Password must be at least 8 characters');
+            return;
+        }
+
+        try {
+            const result = await apiClient.post(`/api/admin/password-requests/${reqId}/reset`, {
+                new_password: newPassword
+            });
+            
+            let msg = result.message;
+            if (result.recovery_method === 'email_backup') {
+                msg += '\n\n✅ Data Preserved (re-encrypted via email backup key).';
+            } else {
+                msg += '\n\n⚠️ Data LOST (forced reset - no backup available).';
+            }
+            alert(msg);
+            modal.remove();
+            loadRequests();
+        } catch (error) {
+            showError(error.message || 'Network error occurred while processing request');
+        }
+    });
 }

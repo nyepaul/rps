@@ -106,8 +106,6 @@ function renderGroupCard(group, currentUser) {
                     <button class="manage-assignments-btn" data-group-id="${group.id}" style="padding: 4px 10px; background: var(--accent-color)20; color: var(--accent-color); border: 1px solid var(--accent-color); border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 700; white-space: nowrap;">
                         🔗 Assignments
                     </button>
-                    <button class="edit-group-btn" data-group-id="${group.id}" style="background: transparent; border: none; cursor: pointer; font-size: 14px; padding: 4px;">✏️</button>
-                    <button class="delete-group-btn" data-group-id="${group.id}" style="background: transparent; border: none; cursor: pointer; font-size: 14px; padding: 4px;">🗑️</button>
                 ` : ''}
             </div>
         </div>
@@ -121,26 +119,19 @@ function setupGroupActionHandlers(container, currentUser) {
         createBtn.addEventListener('click', () => showGroupModal(container, null));
     }
 
-    // Edit group
-    container.querySelectorAll('.edit-group-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const groupId = btn.dataset.groupId;
-            const response = await apiClient.get(`/api/admin/groups/${groupId}`);
-            showGroupModal(container, response.group);
-        });
-    });
-
-    // Delete group
-    container.querySelectorAll('.delete-group-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const groupId = btn.dataset.groupId;
-            const groupName = btn.closest('.group-card').dataset.groupName;
-            if (confirm(`Are you sure you want to delete group "${groupName}"? This will NOT delete users, only their association with this group.`)) {
-                await apiClient.delete(`/api/admin/groups/${groupId}`);
-                showSuccess('Group deleted');
-                renderGroupManagement(container);
+    // Card click to edit (default action)
+    container.querySelectorAll('.group-card').forEach(card => {
+        card.addEventListener('click', async (e) => {
+            // Don't trigger if clicking inner buttons
+            if (e.target.closest('button')) return;
+            
+            const groupId = card.dataset.groupId;
+            // Fetch latest group details before showing modal
+            try {
+                const response = await apiClient.get(`/api/admin/groups/${groupId}`);
+                showGroupModal(container, response.group);
+            } catch (error) {
+                showError(`Failed to load group: ${error.message}`);
             }
         });
     });
@@ -180,9 +171,14 @@ function showGroupModal(container, group = null) {
                     <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px;">Description</label>
                     <textarea id="group-desc" placeholder="Optional description..." style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); min-height: 80px;">${group?.description || ''}</textarea>
                 </div>
-                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px;">
-                    <button class="cancel-modal-btn" style="padding: 8px 16px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">Cancel</button>
-                    <button class="save-group-btn" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">${isEdit ? 'Save Changes' : 'Create Group'}</button>
+                <div style="display: flex; gap: 10px; justify-content: space-between; margin-top: 20px;">
+                    ${isEdit ? `
+                        <button class="delete-group-btn" style="padding: 8px 16px; background: transparent; border: 1px solid var(--danger-color); color: var(--danger-color); border-radius: 6px; cursor: pointer;">Delete</button>
+                    ` : '<div></div>'}
+                    <div style="display: flex; gap: 10px;">
+                        <button class="cancel-modal-btn" style="padding: 8px 16px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">Cancel</button>
+                        <button class="save-group-btn" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">${isEdit ? 'Save Changes' : 'Create Group'}</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -191,6 +187,23 @@ function showGroupModal(container, group = null) {
     document.body.appendChild(modal);
 
     modal.querySelector('.cancel-modal-btn').addEventListener('click', () => modal.remove());
+    
+    // Delete handler
+    if (isEdit) {
+        modal.querySelector('.delete-group-btn').addEventListener('click', async () => {
+            if (confirm(`Are you sure you want to delete group "${group.name}"? This will NOT delete users, only their association with this group.`)) {
+                try {
+                    await apiClient.delete(`/api/admin/groups/${group.id}`);
+                    showSuccess('Group deleted');
+                    modal.remove();
+                    renderGroupManagement(container);
+                } catch (error) {
+                    showError(error.message);
+                }
+            }
+        });
+    }
+
     modal.querySelector('.save-group-btn').addEventListener('click', async () => {
         const name = modal.querySelector('#group-name').value;
         const description = modal.querySelector('#group-desc').value;
