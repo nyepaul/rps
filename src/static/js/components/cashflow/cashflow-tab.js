@@ -752,26 +752,40 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
         `;
     }
 
-    // Fetch accurate Monte Carlo data for portfolio projections with timeout
+    // Temporarily disable Monte Carlo fetch to debug chart rendering
+    // TODO: Re-enable once basic chart works
+    const monteCarloData = null;
+    console.log('Using simplified JavaScript projection (Monte Carlo temporarily disabled)');
+
+    // Restore canvas immediately
+    if (canvasElement && canvasElement.parentElement) {
+        canvasElement.parentElement.innerHTML = originalContent;
+        // Re-query the canvas element after restoring
+        canvasElement = container.querySelector('#cashflow-chart');
+    }
+
+    // Original Monte Carlo fetch code (disabled):
+    /*
     let monteCarloData = null;
     try {
-        // Add 30-second timeout to prevent infinite hang
         const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Monte Carlo fetch timeout')), 30000)
+            setTimeout(() => reject(new Error('Monte Carlo fetch timeout')), 15000)
         );
         monteCarloData = await Promise.race([
             fetchMonteCarloData(profile),
             timeoutPromise
         ]);
+        console.log('Monte Carlo data received:', monteCarloData);
     } catch (error) {
         console.warn('Monte Carlo data fetch failed or timed out, using simplified projection:', error);
         monteCarloData = null;
+    } finally {
+        if (canvasElement && canvasElement.parentElement) {
+            canvasElement.parentElement.innerHTML = originalContent;
+            canvasElement = container.querySelector('#cashflow-chart');
+        }
     }
-
-    // Restore canvas (always restore, even on error)
-    if (canvasElement && canvasElement.parentElement) {
-        canvasElement.parentElement.innerHTML = originalContent;
-    }
+    */
 
     const monthlyData = calculateMonthlyCashFlow(profile, months);
     const chartData = viewType === 'annual' ? aggregateToAnnual(monthlyData) : monthlyData;
@@ -860,7 +874,16 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
 
     // Render chart
     const canvas = container.querySelector('#cashflow-chart');
+    if (!canvas) {
+        console.error('Canvas element not found after restoring');
+        return;
+    }
+
     const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        console.error('Could not get 2D context from canvas');
+        return;
+    }
 
     // Destroy existing chart if it exists
     if (window.cashFlowChart) {
@@ -947,13 +970,19 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
         });
     }
 
-    window.cashFlowChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: chartData.map(d => d.label),
-            datasets: datasets
-        },
-        options: {
+    try {
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js is not loaded');
+            return;
+        }
+
+        window.cashFlowChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: chartData.map(d => d.label),
+                datasets: datasets
+            },
+            options: {
             responsive: true,
             maintainAspectRatio: true,
             interaction: {
@@ -1133,7 +1162,23 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
             barPercentage: 0.6,
             categoryPercentage: 0.7
         }
-    });
+        });
+
+        console.log('Cash flow chart created successfully');
+    } catch (error) {
+        console.error('Error creating cash flow chart:', error);
+        // Show error message to user
+        if (canvasElement && canvasElement.parentElement) {
+            canvasElement.parentElement.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; height: 350px; flex-direction: column; gap: 12px; color: var(--danger-color);">
+                    <div style="font-size: 32px;">⚠️</div>
+                    <div style="font-size: 14px;">Failed to render chart: ${error.message}</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">Check console for details</div>
+                </div>
+            `;
+        }
+        return;
+    }
 
     // Restore metric visibility state from previous settings
     restoreMetricVisibility();
