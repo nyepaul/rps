@@ -119,36 +119,43 @@ function renderSummary(container, summary) {
             icon: '👥',
             label: 'Total Users',
             value: summary.total_users,
-            color: 'var(--accent-color)'
+            color: 'var(--accent-color)',
+            clickable: true
         },
         {
             icon: '🌐',
             label: 'Unique IP Addresses',
             value: summary.unique_ip_addresses || 0,
-            color: 'var(--info-color)'
+            color: 'var(--info-color)',
+            clickable: true
         },
         {
             icon: '📍',
             label: 'Total Locations',
             value: summary.total_locations,
-            color: 'var(--success-color)'
+            color: 'var(--success-color)',
+            clickable: true
         },
         {
             icon: '🔀',
             label: 'Multi-Location Users',
             value: summary.users_with_multiple_locations,
-            color: 'var(--warning-color)'
+            color: 'var(--warning-color)',
+            clickable: false
         },
         {
             icon: '⚠️',
             label: 'Security Flags',
             value: summary.users_with_security_flags,
-            color: 'var(--danger-color)'
+            color: 'var(--danger-color)',
+            clickable: false
         }
     ];
 
-    container.innerHTML = cards.map(card => `
-        <div style="background: var(--bg-primary); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); border-left: 4px solid ${card.color};">
+    container.innerHTML = cards.map((card, index) => `
+        <div class="summary-card" data-index="${index}" style="background: var(--bg-primary); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); border-left: 4px solid ${card.color}; ${card.clickable ? 'cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;' : ''}"
+            ${card.clickable ? `onmouseenter="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseleave="this.style.transform='translateY(0)'; this.style.boxShadow='none'"` : ''}
+        >
             <div style="display: flex; align-items: center; gap: 12px;">
                 <div style="font-size: 32px;">${card.icon}</div>
                 <div>
@@ -158,6 +165,14 @@ function renderSummary(container, summary) {
             </div>
         </div>
     `).join('');
+
+    // Add click handlers
+    container.querySelectorAll('.summary-card').forEach(el => {
+        const index = parseInt(el.dataset.index);
+        if (cards[index].clickable) {
+            el.addEventListener('click', () => showIPLocationsMap());
+        }
+    });
 }
 
 /**
