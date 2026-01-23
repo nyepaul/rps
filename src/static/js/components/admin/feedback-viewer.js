@@ -116,9 +116,26 @@ function getContentHtml(isSuperAdmin, content, contentLoadError) {
                 border-radius: 8px;
                 text-align: center;
                 color: var(--text-secondary);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
             ">
-                ⏳ Loading content...
+                <div class="spinner" style="
+                    width: 16px;
+                    height: 16px;
+                    border: 2px solid var(--border-color);
+                    border-top-color: var(--accent-color);
+                    border-radius: 50%;
+                    animation: spin 0.8s linear infinite;
+                "></div>
+                <span>Loading content...</span>
             </div>
+            <style>
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+            </style>
         `;
     }
 
@@ -539,9 +556,22 @@ export async function renderFeedbackViewer(container) {
             </div>
             <div id="feedback-list">
                 <div style="text-align: center; padding: 40px;">
-                    <div style="font-size: 32px; margin-bottom: 12px;">⏳</div>
+                    <div class="spinner" style="
+                        width: 32px;
+                        height: 32px;
+                        border: 3px solid var(--border-color);
+                        border-top-color: var(--accent-color);
+                        border-radius: 50%;
+                        animation: spin 0.8s linear infinite;
+                        margin: 0 auto 12px;
+                    "></div>
                     <div>Loading feedback...</div>
                 </div>
+                <style>
+                    @keyframes spin {
+                        to { transform: rotate(360deg); }
+                    }
+                </style>
             </div>
         </div>
     `;

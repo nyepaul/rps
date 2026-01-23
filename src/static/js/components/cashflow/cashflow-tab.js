@@ -297,7 +297,7 @@ async function fetchDetailedCashflow(profile, marketScenario = 'moderate') {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 profile_name: profile.name,
-                simulations: 1, // Not used by this endpoint but good for schema
+                simulations: 1000, // Satisfy backend validator (min 100)
                 spending_model: 'constant_real'
             })
         });
@@ -347,10 +347,22 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
         if (chartContainer) {
             chartContainer.innerHTML = `
                 <div style="display: flex; align-items: center; justify-content: center; height: 350px; flex-direction: column; gap: 12px;">
-                    <div style="font-size: 32px;">⏳</div>
+                    <div class="spinner" style="
+                        width: 32px;
+                        height: 32px;
+                        border: 3px solid var(--border-color);
+                        border-top-color: var(--accent-color);
+                        border-radius: 50%;
+                        animation: spin 0.8s linear infinite;
+                    "></div>
                     <div style="color: var(--text-secondary); font-size: 14px;">Calculating detailed tax projections...</div>
                     <div style="color: var(--text-secondary); font-size: 11px;">Analysing Federal, State, and FICA impact</div>
                 </div>
+                <style>
+                    @keyframes spin {
+                        to { transform: rotate(360deg); }
+                    }
+                </style>
             `;
         }
 
