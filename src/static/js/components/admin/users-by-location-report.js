@@ -120,6 +120,12 @@ function renderSummary(container, summary) {
             color: 'var(--accent-color)'
         },
         {
+            icon: '🌐',
+            label: 'Unique IP Addresses',
+            value: summary.unique_ip_addresses || 0,
+            color: 'var(--info-color)'
+        },
+        {
             icon: '📍',
             label: 'Total Locations',
             value: summary.total_locations,
