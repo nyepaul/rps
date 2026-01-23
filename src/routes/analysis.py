@@ -357,6 +357,158 @@ def run_analysis():
         return jsonify({'error': str(e)}), 500
 
 
+@analysis_bp.route('/analysis/cashflow-details', methods=['POST'])
+@login_required
+def get_cashflow_details():
+    """Run a detailed deterministic projection for cashflow visualization."""
+    try:
+        data = AnalysisRequestSchema(**request.json)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+    try:
+        # Get profile with ownership check
+        profile = Profile.get_by_name(data.profile_name, current_user.id)
+        if not profile:
+            return jsonify({'error': 'Profile not found'}), 404
+
+        profile_data = profile.data_dict
+        if not profile_data:
+            return jsonify({'error': 'Profile data is empty'}), 400
+
+        # Import datetime for date conversion
+        from datetime import datetime
+
+        # Extract person data
+        financial_data = profile_data.get('financial', {})
+        spouse_data = profile_data.get('spouse') or {}
+        children_data = profile_data.get('children') or []
+
+        # Create person1
+        birth_date_str = profile.birth_date if hasattr(profile, 'birth_date') and profile.birth_date else '1980-01-01'
+        retirement_date_str = profile.retirement_date if hasattr(profile, 'retirement_date') and profile.retirement_date else '2045-01-01'
+
+        person1 = Person(
+            name=profile.name or 'Primary',
+            birth_date=datetime.fromisoformat(birth_date_str) if birth_date_str else datetime(1980, 1, 1),
+            retirement_date=datetime.fromisoformat(retirement_date_str) if retirement_date_str else datetime(2045, 1, 1),
+            social_security=financial_data.get('social_security_benefit') or 0
+        )
+
+        # Create person2
+        spouse_birth = spouse_data.get('birth_date') if spouse_data.get('birth_date') else '1980-01-01'
+        spouse_retire = spouse_data.get('retirement_date') if spouse_data.get('retirement_date') else '2045-01-01'
+
+        person2 = Person(
+            name=spouse_data.get('name', 'Spouse'),
+            birth_date=datetime.fromisoformat(spouse_birth) if spouse_birth else datetime(1980, 1, 1),
+            retirement_date=datetime.fromisoformat(spouse_retire) if spouse_retire else datetime(2045, 1, 1),
+            social_security=spouse_data.get('social_security_benefit') or 0
+        )
+
+        # Get assets
+        assets_data = profile_data.get('assets', {})
+        investment_types = transform_assets_to_investment_types(assets_data)
+
+        liquid_assets = sum(a.get('value', 0) for a in assets_data.get('taxable_accounts', []))
+        traditional_ira = sum(a.get('value', 0) for a in assets_data.get('retirement_accounts', []) if 'traditional' in a.get('type', '').lower() or '401' in a.get('type', '').lower() or '403' in a.get('type', '').lower())
+        roth_ira = sum(a.get('value', 0) for a in assets_data.get('retirement_accounts', []) if 'roth' in a.get('type', '').lower())
+
+        pension_benefit = financial_data.get('pension_benefit') if financial_data.get('pension_benefit') is not None else 0
+        annual_expenses = financial_data.get('annual_expenses') if financial_data.get('annual_expenses') is not None else 0
+        annual_income = financial_data.get('annual_income') if financial_data.get('annual_income') is not None else 0
+        liquid_assets_val = liquid_assets if liquid_assets is not None else (financial_data.get('liquid_assets') if financial_data.get('liquid_assets') is not None else 0)
+        retirement_assets_val = traditional_ira if traditional_ira is not None else (financial_data.get('retirement_assets') if financial_data.get('retirement_assets') is not None else 0)
+
+        # Ensure budget has income section
+        budget_data = profile_data.get('budget', {})
+        if budget_data and not budget_data.get('income'):
+            income_streams = profile_data.get('income_streams', [])
+            primary_salary = 0
+            spouse_salary = 0
+            for stream in income_streams:
+                if stream.get('type') == 'salary':
+                    amount = stream.get('amount', 0)
+                    freq = stream.get('frequency', 'monthly')
+                    if freq == 'monthly': annual_amount = amount * 12
+                    elif freq == 'annual': annual_amount = amount
+                    else: annual_amount = amount * 12
+                    if primary_salary == 0: primary_salary = annual_amount
+                    else: spouse_salary = annual_amount
+            if primary_salary > 0 or spouse_salary > 0:
+                budget_data['income'] = {
+                    'current': {'employment': {'primary_person': primary_salary, 'spouse': spouse_salary}},
+                    'future': {}
+                }
+
+        financial_profile = FinancialProfile(
+            person1=person1,
+            person2=person2,
+            children=children_data,
+            liquid_assets=liquid_assets_val,
+            traditional_ira=retirement_assets_val,
+            roth_ira=roth_ira or 0,
+            pension_lump_sum=0,
+            pension_annual=pension_benefit * 12,
+            annual_expenses=annual_expenses,
+            target_annual_income=annual_income,
+            risk_tolerance='moderate',
+            asset_allocation={'stocks': 0.6, 'bonds': 0.4},
+            future_expenses=[],
+            investment_types=investment_types,
+            accounts=[],
+            income_streams=profile_data.get('income_streams', []),
+            home_properties=profile_data.get('home_properties', []),
+            budget=budget_data if budget_data else None,
+            annual_ira_contribution=financial_data.get('annual_ira_contribution', 0),
+            savings_allocation=profile_data.get('savings_allocation')
+        )
+
+        model = RetirementModel(financial_profile)
+        years = max(model.calculate_life_expectancy_years(person1), model.calculate_life_expectancy_years(person2))
+
+        # Use passed market assumptions or defaults
+        base_market_kwargs = {}
+        if data.market_profile:
+            base_market_kwargs = {
+                'stock_return_mean': data.market_profile.stock_return_mean,
+                'stock_return_std': data.market_profile.stock_return_std,
+                'bond_return_mean': data.market_profile.bond_return_mean,
+                'bond_return_std': data.market_profile.bond_return_std,
+                'inflation_mean': data.market_profile.inflation_mean,
+                'inflation_std': data.market_profile.inflation_std
+            }
+        
+        # Use moderate allocation by default for detailed view
+        assumptions = MarketAssumptions(stock_allocation=0.60, **base_market_kwargs)
+        
+        # Run detailed projection
+        detailed_ledger = model.run_detailed_projection(
+            years=years,
+            assumptions=assumptions,
+            spending_model=data.spending_model
+        )
+
+        response = {
+            'profile_name': data.profile_name,
+            'ledger': detailed_ledger
+        }
+
+        enhanced_audit_logger.log(
+            action='RUN_DETAILED_CASHFLOW',
+            table_name='profile',
+            record_id=profile.id,
+            details={'profile_name': data.profile_name},
+            status_code=200
+        )
+        return jsonify(response), 200
+
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
 @analysis_bp.route('/analysis/social-security', methods=['POST'])
 @login_required
 def analyze_social_security():

@@ -13,6 +13,7 @@ import { renderFeedbackViewer } from './feedback-viewer.js';
 import { renderRoadmapPanel } from './roadmap-panel.js';
 import { renderBackupManager } from './backup-manager.js';
 import { renderUsersByLocationReport } from './users-by-location-report.js';
+import { renderUserActivityReport } from './user-activity-report.js';
 import { renderPasswordRequests } from './password-requests.js';
 import { renderDemoManagement } from './demo-management.js';
 import { renderGroupManagement } from './group-management.js';
@@ -87,9 +88,21 @@ export async function renderAdminTab(container) {
                 <button class="admin-subtab" data-subtab="backups" style="padding: 10px 16px; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-weight: 700; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap; font-size: 13px;">
                     💾 Backups
                 </button>
-                <button class="admin-subtab" data-subtab="reports" style="padding: 10px 16px; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-weight: 700; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap; font-size: 13px;">
-                    📊 Reports
-                </button>
+
+                <!-- Reports Section Dropdown -->
+                <div class="admin-reports-dropdown" style="position: relative; display: inline-block;">
+                    <button class="admin-reports-trigger" style="padding: 10px 16px; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-weight: 700; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap; display: flex; align-items: center; gap: 6px; font-size: 13px;">
+                        📊 Reports <span style="font-size: 9px;">▼</span>
+                    </button>
+                    <div class="admin-reports-content" style="display: none; position: absolute; top: 100%; left: 0; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100; min-width: 200px; padding: 4px 0;">
+                        <button class="admin-subtab reports-item" data-subtab="user_activity" style="width: 100%; text-align: left; padding: 8px 16px; background: transparent; border: none; cursor: pointer; color: var(--text-secondary); font-weight: 600; font-size: 12px;">
+                            📊 User Activity
+                        </button>
+                        <button class="admin-subtab reports-item" data-subtab="users_by_location" style="width: 100%; text-align: left; padding: 8px 16px; background: transparent; border: none; cursor: pointer; color: var(--text-secondary); font-weight: 600; font-size: 12px;">
+                            🌍 Users by Location
+                        </button>
+                    </div>
+                </div>
                 ` : ''}
                 <button class="admin-subtab" data-subtab="config" style="padding: 10px 16px; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-weight: 700; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap; font-size: 13px;">
                     ⚙️ Config
@@ -118,31 +131,48 @@ function setupSubTabSwitching(container) {
     const subtabButtons = container.querySelectorAll('.admin-subtab');
     const groupTrigger = container.querySelector('.admin-group-trigger');
     const groupContent = container.querySelector('.admin-group-content');
+    const reportsTrigger = container.querySelector('.admin-reports-trigger');
+    const reportsContent = container.querySelector('.admin-reports-content');
 
-    // Setup dropdown toggle
+    // Setup User dropdown toggle
     if (groupTrigger && groupContent) {
         groupTrigger.addEventListener('click', (e) => {
             e.stopPropagation();
             const isVisible = groupContent.style.display === 'block';
             groupContent.style.display = isVisible ? 'none' : 'block';
-        });
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', () => {
-            groupContent.style.display = 'none';
+            // Close reports dropdown
+            if (reportsContent) reportsContent.style.display = 'none';
         });
     }
+
+    // Setup Reports dropdown toggle
+    if (reportsTrigger && reportsContent) {
+        reportsTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isVisible = reportsContent.style.display === 'block';
+            reportsContent.style.display = isVisible ? 'none' : 'block';
+            // Close user dropdown
+            if (groupContent) groupContent.style.display = 'none';
+        });
+    }
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', () => {
+        if (groupContent) groupContent.style.display = 'none';
+        if (reportsContent) reportsContent.style.display = 'none';
+    });
 
     subtabButtons.forEach(btn => {
         btn.addEventListener('click', async () => {
             const subtab = btn.getAttribute('data-subtab');
             const isGroupItem = btn.classList.contains('group-item');
+            const isReportsItem = btn.classList.contains('reports-item');
 
             // Update active state for all buttons
             subtabButtons.forEach(b => {
                 if (b === btn) {
                     b.classList.add('active');
-                    if (b.classList.contains('group-item')) {
+                    if (b.classList.contains('group-item') || b.classList.contains('reports-item')) {
                         b.style.background = 'var(--bg-tertiary)';
                         b.style.color = 'var(--accent-color)';
                     } else {
@@ -151,7 +181,7 @@ function setupSubTabSwitching(container) {
                     }
                 } else {
                     b.classList.remove('active');
-                    if (b.classList.contains('group-item')) {
+                    if (b.classList.contains('group-item') || b.classList.contains('reports-item')) {
                         b.style.background = 'transparent';
                         b.style.color = 'var(--text-secondary)';
                     } else {
@@ -171,6 +201,20 @@ function setupSubTabSwitching(container) {
                     groupTrigger.style.borderBottomColor = 'transparent';
                     groupTrigger.style.color = 'var(--text-secondary)';
                     groupTrigger.innerHTML = `👥 User <span style="font-size: 10px;">▼</span>`;
+                }
+            }
+
+            // Update reports trigger state if item is inside dropdown
+            if (reportsTrigger) {
+                if (isReportsItem) {
+                    reportsTrigger.style.borderBottomColor = 'var(--accent-color)';
+                    reportsTrigger.style.color = 'var(--accent-color)';
+                    const reportName = btn.textContent.trim().split(' ').slice(1).join(' ');
+                    reportsTrigger.innerHTML = `📊 Reports (${reportName}) <span style="font-size: 10px;">▼</span>`;
+                } else {
+                    reportsTrigger.style.borderBottomColor = 'transparent';
+                    reportsTrigger.style.color = 'var(--text-secondary)';
+                    reportsTrigger.innerHTML = `📊 Reports <span style="font-size: 10px;">▼</span>`;
                 }
             }
 
@@ -214,7 +258,10 @@ async function showSubTab(container, subtab) {
             case 'backups':
                 await renderBackupManager(contentContainer);
                 break;
-            case 'reports':
+            case 'user_activity':
+                await renderUserActivityReport(contentContainer);
+                break;
+            case 'users_by_location':
                 await renderUsersByLocationReport(contentContainer);
                 break;
             case 'config':

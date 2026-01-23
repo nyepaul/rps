@@ -275,40 +275,113 @@
 
         .tabs {
             display: flex;
-            gap: 1px;
+            gap: 5px;
             margin-bottom: 0;
             padding: 0 4px;
             flex-wrap: wrap;
+            align-items: flex-end;
+            position: relative; /* Ensure z-index works */
+            overflow: visible; /* Allow dropdowns to show */
         }
 
-        .tab {
-            padding: 5px 10px;
+        /* Navigation Groups & Dropdowns */
+        .nav-group {
+            position: relative;
+            display: inline-block;
+        }
+
+        .nav-group-label {
+            padding: 6px 12px;
             background: var(--bg-secondary);
             border: 1px solid var(--border-color);
             border-bottom: none;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 13px;
             color: var(--text-secondary);
-            font-weight: 500;
+            font-weight: 600;
             border-top-left-radius: 4px;
             border-top-right-radius: 4px;
             transition: all 0.2s;
-            margin-bottom: -1px;
-            position: relative;
-            z-index: 0;
-            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        .tab:hover {
+        .nav-group:hover .nav-group-label {
             background: var(--bg-tertiary);
             color: var(--text-primary);
         }
 
-        .tab.active {
+        /* Active state for group if any child is active */
+        .nav-group.active .nav-group-label {
             background: var(--bg-secondary);
             color: var(--accent-color);
-            font-weight: 600;
             border-top: 2px solid var(--accent-color);
+            padding-top: 4px; /* Compensate for border */
+        }
+
+        .nav-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: var(--bg-secondary);
+            min-width: 200px;
+            box-shadow: 0 4px 12px var(--shadow);
+            border: 1px solid var(--border-color);
+            border-radius: 0 4px 4px 4px;
+            z-index: 100;
+            padding: 5px 0;
+            animation: fadeIn 0.15s ease-out;
+        }
+
+        .nav-group:hover .nav-dropdown {
+            display: block;
+        }
+
+        /* Individual Tab Buttons (now inside dropdowns or standalone) */
+        .tab {
+            padding: 8px 16px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            display: block;
+            width: 100%;
+            text-align: left;
+            transition: all 0.1s;
+        }
+
+        .tab:hover {
+            background: var(--bg-tertiary);
+            color: var(--accent-color);
+        }
+
+        .tab.active {
+            background: var(--bg-tertiary);
+            color: var(--accent-color);
+            font-weight: 700;
+            border-left: 3px solid var(--accent-color);
+        }
+
+        /* Standalone tabs (not in group) need to look like group labels */
+        .tabs > .tab {
+            width: auto;
+            padding: 6px 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-bottom: none;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+            margin-bottom: -1px; /* Overlap border */
+        }
+
+        .tabs > .tab.active {
+            border-left: 1px solid var(--border-color); /* Reset left border */
+            border-top: 2px solid var(--accent-color);
+            padding-top: 4px;
             z-index: 2;
         }
 
@@ -319,6 +392,9 @@
             border-radius: 0 4px 4px 4px;
             border: 1px solid var(--border-color);
             box-shadow: 0 1px 2px var(--shadow);
+            margin-top: -1px; /* Connect to tabs */
+            position: relative;
+            z-index: 1;
         }
         
         .tab-content.active {

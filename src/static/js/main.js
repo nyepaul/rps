@@ -166,15 +166,24 @@ function setupTabNavigation() {
  * Show specific tab
  */
 async function showTab(tabName) {
-    // Update active button
-    const tabButtons = document.querySelectorAll('.tab[data-tab]');
-    tabButtons.forEach(button => {
-        if (button.getAttribute('data-tab') === tabName) {
-            button.classList.add('active');
-        } else {
-            button.classList.remove('active');
+    // 1. Reset all active states
+    const allTabs = document.querySelectorAll('.tab');
+    const allGroups = document.querySelectorAll('.nav-group');
+    
+    allTabs.forEach(t => t.classList.remove('active'));
+    allGroups.forEach(g => g.classList.remove('active'));
+
+    // 2. Find and activate selected tab
+    const selectedTab = document.querySelector(`.tab[data-tab="${tabName}"]`);
+    if (selectedTab) {
+        selectedTab.classList.add('active');
+
+        // 3. Highlight parent group if applicable
+        const parentGroup = selectedTab.closest('.nav-group');
+        if (parentGroup) {
+            parentGroup.classList.add('active');
         }
-    });
+    }
 
     // Update state
     store.setState({ currentTab: tabName });

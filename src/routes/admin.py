@@ -3228,6 +3228,211 @@ def get_users_by_location_report():
         return jsonify({'error': str(e)}), 500
 
 
+@admin_bp.route('/reports/user-activity', methods=['GET'])
+@login_required
+@admin_required
+@limiter.limit("100 per minute")
+def get_user_activity_report():
+    """
+    Generate comprehensive user activity report with filtering.
+
+    Query Parameters:
+    - user_ids: Comma-separated list of user IDs to filter (optional)
+    - start_date: ISO format start date (optional)
+    - end_date: ISO format end date (optional)
+    - action_types: Comma-separated list of action types to filter (optional)
+    - days: Number of days to look back (default: 30)
+    """
+    try:
+        # Parse query parameters
+        user_ids_param = request.args.get('user_ids', '')
+        user_ids = [int(uid.strip()) for uid in user_ids_param.split(',') if uid.strip().isdigit()] if user_ids_param else []
+
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        action_types_param = request.args.get('action_types', '')
+        action_types = [at.strip() for at in action_types_param.split(',') if at.strip()] if action_types_param else []
+
+        days = int(request.args.get('days', 30))
+        if days < 1 or days > 365:
+            days = 30
+
+        # Calculate date range if not provided
+        if not start_date:
+            start_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
+        if not end_date:
+            end_date = datetime.now().strftime('%Y-%m-%d')
+
+        # Build base query - get activity grouped by user
+        where_clauses = ["al.created_at >= ? AND al.created_at <= ?"]
+        params = [start_date + ' 00:00:00', end_date + ' 23:59:59']
+
+        # Filter by user_ids if provided
+        if user_ids:
+            placeholders = ','.join(['?'] * len(user_ids))
+            where_clauses.append(f"al.user_id IN ({placeholders})")
+            params.extend(user_ids)
+
+        # Filter by action types if provided
+        if action_types:
+            placeholders = ','.join(['?'] * len(action_types))
+            where_clauses.append(f"al.action IN ({placeholders})")
+            params.extend(action_types)
+
+        where_sql = ' AND '.join(where_clauses)
+
+        # Query for user activity summary
+        activity_query = f"""
+            SELECT
+                u.id as user_id,
+                u.username,
+                u.email,
+                COUNT(*) as total_actions,
+                COUNT(DISTINCT DATE(al.created_at)) as active_days,
+                MIN(al.created_at) as first_activity,
+                MAX(al.created_at) as last_activity,
+                COUNT(DISTINCT al.ip_address) as unique_ips,
+                SUM(CASE WHEN al.status_code >= 400 THEN 1 ELSE 0 END) as failed_actions,
+                SUM(CASE WHEN al.action = 'LOGIN_ATTEMPT' THEN 1 ELSE 0 END) as login_attempts,
+                SUM(CASE WHEN al.action = 'CREATE' THEN 1 ELSE 0 END) as creates,
+                SUM(CASE WHEN al.action = 'UPDATE' THEN 1 ELSE 0 END) as updates,
+                SUM(CASE WHEN al.action = 'DELETE' THEN 1 ELSE 0 END) as deletes,
+                SUM(CASE WHEN al.action = 'READ' THEN 1 ELSE 0 END) as reads,
+                SUM(CASE WHEN al.action LIKE 'ADMIN%' THEN 1 ELSE 0 END) as admin_actions
+            FROM audit_log al
+            LEFT JOIN users u ON al.user_id = u.id
+            WHERE {where_sql}
+            GROUP BY u.id, u.username, u.email
+            ORDER BY total_actions DESC
+        """
+
+        user_activity_rows = db.execute(activity_query, params)
+        users_activity = []
+
+        for row in user_activity_rows:
+            user_data = dict(row)
+
+            # Get top actions for this user
+            top_actions_query = f"""
+                SELECT action, COUNT(*) as count
+                FROM audit_log
+                WHERE user_id = ?
+                AND created_at >= ? AND created_at <= ?
+                {'AND action IN (' + ','.join(['?'] * len(action_types)) + ')' if action_types else ''}
+                GROUP BY action
+                ORDER BY count DESC
+                LIMIT 5
+            """
+            top_actions_params = [user_data['user_id'], start_date + ' 00:00:00', end_date + ' 23:59:59']
+            if action_types:
+                top_actions_params.extend(action_types)
+
+            top_actions_rows = db.execute(top_actions_query, top_actions_params)
+            user_data['top_actions'] = [{'action': r['action'], 'count': r['count']} for r in top_actions_rows]
+
+            # Get most active tables for this user
+            top_tables_query = f"""
+                SELECT table_name, COUNT(*) as count
+                FROM audit_log
+                WHERE user_id = ?
+                AND created_at >= ? AND created_at <= ?
+                AND table_name IS NOT NULL
+                {'AND action IN (' + ','.join(['?'] * len(action_types)) + ')' if action_types else ''}
+                GROUP BY table_name
+                ORDER BY count DESC
+                LIMIT 5
+            """
+            top_tables_params = [user_data['user_id'], start_date + ' 00:00:00', end_date + ' 23:59:59']
+            if action_types:
+                top_tables_params.extend(action_types)
+
+            top_tables_rows = db.execute(top_tables_query, top_tables_params)
+            user_data['top_tables'] = [{'table': r['table_name'], 'count': r['count']} for r in top_tables_rows]
+
+            # Get daily activity pattern
+            daily_query = f"""
+                SELECT DATE(created_at) as date, COUNT(*) as count
+                FROM audit_log
+                WHERE user_id = ?
+                AND created_at >= ? AND created_at <= ?
+                {'AND action IN (' + ','.join(['?'] * len(action_types)) + ')' if action_types else ''}
+                GROUP BY DATE(created_at)
+                ORDER BY date DESC
+                LIMIT 30
+            """
+            daily_params = [user_data['user_id'], start_date + ' 00:00:00', end_date + ' 23:59:59']
+            if action_types:
+                daily_params.extend(action_types)
+
+            daily_rows = db.execute(daily_query, daily_params)
+            user_data['daily_activity'] = [{'date': r['date'], 'count': r['count']} for r in daily_rows]
+
+            users_activity.append(user_data)
+
+        # Generate summary statistics
+        total_users = len(users_activity)
+        total_actions = sum(u['total_actions'] for u in users_activity)
+        total_failed = sum(u['failed_actions'] for u in users_activity)
+        total_login_attempts = sum(u['login_attempts'] for u in users_activity)
+        avg_actions_per_user = total_actions / total_users if total_users > 0 else 0
+        most_active_user = users_activity[0] if users_activity else None
+
+        # Get overall action distribution
+        action_dist_query = f"""
+            SELECT action, COUNT(*) as count
+            FROM audit_log
+            WHERE {where_sql}
+            GROUP BY action
+            ORDER BY count DESC
+        """
+        action_dist_rows = db.execute(action_dist_query, params)
+        action_distribution = [{'action': r['action'], 'count': r['count']} for r in action_dist_rows]
+
+        summary = {
+            'total_users': total_users,
+            'total_actions': total_actions,
+            'total_failed_actions': total_failed,
+            'total_login_attempts': total_login_attempts,
+            'avg_actions_per_user': round(avg_actions_per_user, 2),
+            'most_active_user': most_active_user['username'] if most_active_user else None,
+            'most_active_user_actions': most_active_user['total_actions'] if most_active_user else 0,
+            'period_start': start_date,
+            'period_end': end_date,
+            'action_distribution': action_distribution,
+            'generated_at': datetime.now().isoformat()
+        }
+
+        # Log report access
+        enhanced_audit_logger.log_admin_action(
+            action='VIEW_USER_ACTIVITY_REPORT',
+            details={
+                'user_count': total_users,
+                'filtered_user_ids': user_ids if user_ids else 'all',
+                'date_range': f"{start_date} to {end_date}",
+                'action_types': action_types if action_types else 'all'
+            },
+            user_id=current_user.id
+        )
+
+        response = jsonify({
+            'summary': summary,
+            'users': users_activity
+        })
+
+        # Prevent browser caching
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+
+        return response, 200
+
+    except Exception as e:
+        print(f"Error generating user activity report: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 @admin_bp.route('/password-requests', methods=['GET'])
 @admin_required
 def list_password_requests():

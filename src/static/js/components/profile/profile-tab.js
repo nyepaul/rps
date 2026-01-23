@@ -346,6 +346,15 @@ function setupProfileFormHandlers(container, profile) {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        // Check for validation errors
+        const invalidFields = container.querySelectorAll('.is-invalid');
+        if (invalidFields.length > 0) {
+            showError('Please fix the validation errors before saving.');
+            // Scroll to first error
+            invalidFields[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+
         const saveBtn = container.querySelector('#save-btn');
         saveBtn.disabled = true;
         saveBtn.textContent = 'Saving...';
@@ -636,17 +645,28 @@ function setupAgeCalculation(container) {
                 const retirementAge = calculateAge(birthDate, new Date(retirementDate));
                 if (retirementAge !== null) {
                     retirementAgeField.value = retirementAge;
+                    
+                    // VALIDATION: Check if retirement age is reasonable (> 18)
+                    if (retirementAge < 18) {
+                        setFieldError(retirementDateField, 'Retirement date must be at least 18 years after birth date');
+                    } else {
+                        clearFieldError(retirementDateField);
+                    }
                 }
+            } else {
+                clearFieldError(retirementDateField);
             }
         }
     };
 
     // Update ages when birth date changes
     birthDateField.addEventListener('change', updateAges);
+    birthDateField.addEventListener('blur', updateAges);
 
     // Update retirement age when retirement date changes
     if (retirementDateField) {
         retirementDateField.addEventListener('change', updateAges);
+        retirementDateField.addEventListener('blur', updateAges);
     }
 
     // Calculate initial values on load
@@ -683,19 +703,63 @@ function setupSpouseAgeCalculation(container) {
                 const retirementAge = calculateAge(birthDate, new Date(retirementDate));
                 if (retirementAge !== null) {
                     spouseRetirementAgeField.value = retirementAge;
+                    
+                    // VALIDATION: Check if retirement age is reasonable (> 18)
+                    if (retirementAge < 18) {
+                        setFieldError(spouseRetirementDateField, 'Retirement date must be at least 18 years after birth date');
+                    } else {
+                        clearFieldError(spouseRetirementDateField);
+                    }
                 }
+            } else {
+                clearFieldError(spouseRetirementDateField);
             }
         }
     };
 
     // Update ages when birth date changes
     spouseBirthDateField.addEventListener('change', updateSpouseAges);
+    spouseBirthDateField.addEventListener('blur', updateSpouseAges);
 
     // Update retirement age when retirement date changes
     if (spouseRetirementDateField) {
         spouseRetirementDateField.addEventListener('change', updateSpouseAges);
+        spouseRetirementDateField.addEventListener('blur', updateSpouseAges);
     }
 
     // Calculate initial values on load
     updateSpouseAges();
+}
+
+// --- Validation Helpers ---
+
+function setFieldError(inputElement, message) {
+    // Check if error already exists
+    let errorDiv = inputElement.parentElement.querySelector('.field-error');
+    
+    inputElement.style.borderColor = 'var(--danger-color)';
+    
+    if (!errorDiv) {
+        errorDiv = document.createElement('div');
+        errorDiv.className = 'field-error';
+        errorDiv.style.color = 'var(--danger-color)';
+        errorDiv.style.fontSize = '11px';
+        errorDiv.style.marginTop = '4px';
+        inputElement.parentElement.appendChild(errorDiv);
+    }
+    
+    errorDiv.textContent = message;
+    inputElement.classList.add('is-invalid');
+}
+
+function clearFieldError(inputElement) {
+    if (!inputElement) return;
+    
+    const errorDiv = inputElement.parentElement.querySelector('.field-error');
+    if (errorDiv) {
+        errorDiv.remove();
+    }
+    
+    inputElement.style.borderColor = ''; // Reset to default (via CSS)
+    inputElement.classList.remove('is-invalid');
 }
