@@ -187,6 +187,47 @@ def run_analysis():
         liquid_assets_val = liquid_assets if liquid_assets is not None else (financial_data.get('liquid_assets') if financial_data.get('liquid_assets') is not None else 0)
         retirement_assets_val = traditional_ira if traditional_ira is not None else (financial_data.get('retirement_assets') if financial_data.get('retirement_assets') is not None else 0)
 
+        # Fix: Ensure budget has income section populated from income_streams
+        # Many profiles have income_streams but no budget.income section
+        # This causes Monte Carlo to think employment income is $0, draining portfolio
+        budget_data = profile_data.get('budget', {})
+        if budget_data and not budget_data.get('income'):
+            # Calculate employment income from income_streams
+            income_streams = profile_data.get('income_streams', [])
+            primary_salary = 0
+            spouse_salary = 0
+
+            for stream in income_streams:
+                if stream.get('type') == 'salary':
+                    amount = stream.get('amount', 0)
+                    freq = stream.get('frequency', 'monthly')
+                    # Convert to annual
+                    if freq == 'monthly':
+                        annual_amount = amount * 12
+                    elif freq == 'annual':
+                        annual_amount = amount
+                    else:
+                        annual_amount = amount * 12  # Default to monthly
+
+                    # Assign to primary or spouse based on name/order
+                    # First salary goes to primary, second to spouse
+                    if primary_salary == 0:
+                        primary_salary = annual_amount
+                    else:
+                        spouse_salary = annual_amount
+
+            # Populate budget.income.current.employment
+            if primary_salary > 0 or spouse_salary > 0:
+                budget_data['income'] = {
+                    'current': {
+                        'employment': {
+                            'primary_person': primary_salary,
+                            'spouse': spouse_salary
+                        }
+                    },
+                    'future': {}
+                }
+
         financial_profile = FinancialProfile(
             person1=person1,
             person2=person2,
@@ -205,7 +246,7 @@ def run_analysis():
             accounts=[],
             income_streams=profile_data.get('income_streams', []),
             home_properties=profile_data.get('home_properties', []),
-            budget=profile_data.get('budget'),
+            budget=budget_data if budget_data else None,
             annual_ira_contribution=financial_data.get('annual_ira_contribution', 0),
             savings_allocation=profile_data.get('savings_allocation')
         )
