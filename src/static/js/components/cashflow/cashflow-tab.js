@@ -280,15 +280,20 @@ async function fetchMonteCarloData(profile) {
         console.log('Fetching Monte Carlo analysis for accurate cash flow projections...');
         const response = await analysisAPI.runAnalysis(
             profile.name,
-            1000,  // Use 1000 simulations for faster response
+            250,  // Use only 250 simulations for fast response (backend runs 3x scenarios = 750 total)
             'moderate',  // Default to moderate (60/40) allocation
             'constant_real'
         );
 
-        if (response && response.timeline) {
-            console.log('Monte Carlo data fetched successfully');
-            return response;
+        if (response && response.scenarios) {
+            // Extract the moderate scenario timeline
+            const moderateScenario = response.scenarios.moderate;
+            if (moderateScenario && moderateScenario.timeline) {
+                console.log('Monte Carlo data fetched successfully');
+                return moderateScenario;
+            }
         }
+
         console.warn('No timeline data in Monte Carlo response');
         return null;
     } catch (error) {
@@ -747,10 +752,23 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
         `;
     }
 
-    // Fetch accurate Monte Carlo data for portfolio projections
-    const monteCarloData = await fetchMonteCarloData(profile);
+    // Fetch accurate Monte Carlo data for portfolio projections with timeout
+    let monteCarloData = null;
+    try {
+        // Add 30-second timeout to prevent infinite hang
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Monte Carlo fetch timeout')), 30000)
+        );
+        monteCarloData = await Promise.race([
+            fetchMonteCarloData(profile),
+            timeoutPromise
+        ]);
+    } catch (error) {
+        console.warn('Monte Carlo data fetch failed or timed out, using simplified projection:', error);
+        monteCarloData = null;
+    }
 
-    // Restore canvas
+    // Restore canvas (always restore, even on error)
     if (canvasElement && canvasElement.parentElement) {
         canvasElement.parentElement.innerHTML = originalContent;
     }
