@@ -98,6 +98,14 @@ export function renderCashFlowTab(container) {
                     </select>
                 </div>
                 <div>
+                    <label style="display: block; margin-bottom: 2px; font-size: 11px; font-weight: 600; color: var(--text-secondary);">Market Scenario</label>
+                    <select id="market-scenario" style="padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px; min-width: 130px;">
+                        <option value="conservative">Conservative (30/70)</option>
+                        <option value="moderate" selected>Moderate (60/40)</option>
+                        <option value="aggressive">Aggressive (80/20)</option>
+                    </select>
+                </div>
+                <div>
                     <label style="display: block; margin-bottom: 2px; font-size: 11px; font-weight: 600; color: var(--text-secondary);">Compare Scenario</label>
                     <select id="scenario-select" style="padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px; min-width: 150px;">
                         <option value="">None</option>
@@ -131,9 +139,9 @@ export function renderCashFlowTab(container) {
         </div>
     `;
 
-    // Initialize chart and data with default: through life expectancy, annual view
+    // Initialize chart and data with default: through life expectancy, annual view, moderate scenario
     (async () => {
-        await renderCashFlowChart(container, profile, monthsToLifeExpectancy, 'annual', null, monthsToLifeExpectancy, lifeExpectancyAge);
+        await renderCashFlowChart(container, profile, monthsToLifeExpectancy, 'annual', null, monthsToLifeExpectancy, lifeExpectancyAge, 'moderate');
         setupEventHandlers(container, profile, monthsToLifeExpectancy, lifeExpectancyAge);
     })();
 
@@ -178,6 +186,7 @@ async function loadScenarios(container, profile) {
 function setupEventHandlers(container, profile, monthsToLifeExpectancy, lifeExpectancyAge) {
     const timePeriodSelect = container.querySelector('#time-period');
     const viewTypeSelect = container.querySelector('#view-type');
+    const marketScenarioSelect = container.querySelector('#market-scenario');
     const scenarioSelect = container.querySelector('#scenario-select');
     const refreshBtn = container.querySelector('#refresh-chart');
     const resetZoomBtn = container.querySelector('#reset-zoom');
@@ -187,6 +196,7 @@ function setupEventHandlers(container, profile, monthsToLifeExpectancy, lifeExpe
         const periodValue = timePeriodSelect.value;
         const months = periodValue === 'life' ? monthsToLifeExpectancy : parseInt(periodValue);
         const viewType = viewTypeSelect.value;
+        const marketScenario = marketScenarioSelect.value;
         const scenarioId = scenarioSelect.value;
 
         // Load scenario data if selected
@@ -203,11 +213,12 @@ function setupEventHandlers(container, profile, monthsToLifeExpectancy, lifeExpe
             }
         }
 
-        await renderCashFlowChart(container, profile, months, viewType, scenarioData, monthsToLifeExpectancy, lifeExpectancyAge);
+        await renderCashFlowChart(container, profile, months, viewType, scenarioData, monthsToLifeExpectancy, lifeExpectancyAge, marketScenario);
     };
 
     timePeriodSelect.addEventListener('change', () => refresh());
     viewTypeSelect.addEventListener('change', () => refresh());
+    marketScenarioSelect.addEventListener('change', () => refresh());
     scenarioSelect.addEventListener('change', () => refresh());
     refreshBtn.addEventListener('click', () => refresh());
 
@@ -274,10 +285,12 @@ function setupEventHandlers(container, profile, monthsToLifeExpectancy, lifeExpe
 
 /**
  * Fetch Monte Carlo analysis data for accurate projections
+ * @param {Object} profile - The profile to analyze
+ * @param {string} marketScenario - The market scenario: 'conservative', 'moderate', or 'aggressive'
  */
-async function fetchMonteCarloData(profile) {
+async function fetchMonteCarloData(profile, marketScenario = 'moderate') {
     try {
-        console.log('Fetching Monte Carlo analysis for accurate cash flow projections...');
+        console.log(`Fetching Monte Carlo analysis (${marketScenario}) for accurate cash flow projections...`);
         const response = await analysisAPI.runAnalysis(
             profile.name,
             250,  // Use only 250 simulations for fast response (backend runs 3x scenarios = 750 total)
@@ -286,11 +299,11 @@ async function fetchMonteCarloData(profile) {
         );
 
         if (response && response.scenarios) {
-            // Extract the moderate scenario timeline
-            const moderateScenario = response.scenarios.moderate;
-            if (moderateScenario && moderateScenario.timeline) {
-                console.log('Monte Carlo data fetched successfully');
-                return moderateScenario;
+            // Extract the requested scenario timeline
+            const scenarioData = response.scenarios[marketScenario];
+            if (scenarioData && scenarioData.timeline) {
+                console.log(`Monte Carlo data fetched successfully (${marketScenario} scenario)`);
+                return scenarioData;
             }
         }
 
@@ -739,8 +752,16 @@ function aggregateToAnnual(monthlyData) {
 /**
  * Render cash flow chart
  */
-async function renderCashFlowChart(container, profile, months, viewType, scenarioData = null, monthsToLifeExpectancy = 360, lifeExpectancyAge = 95) {
+async function renderCashFlowChart(container, profile, months, viewType, scenarioData = null, monthsToLifeExpectancy = 360, lifeExpectancyAge = 95, marketScenario = 'moderate') {
     let canvasElement = container.querySelector('#cashflow-chart');
+
+    // Get scenario display name for UI
+    const scenarioNames = {
+        'conservative': 'Conservative (30/70)',
+        'moderate': 'Moderate (60/40)',
+        'aggressive': 'Aggressive (80/20)'
+    };
+    const scenarioDisplayName = scenarioNames[marketScenario] || 'Moderate';
 
     // Fetch Monte Carlo data for accurate portfolio projections
     let monteCarloData = null;
@@ -754,7 +775,7 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
                 <div style="display: flex; align-items: center; justify-content: center; height: 350px; flex-direction: column; gap: 12px;">
                     <div style="font-size: 32px;">⏳</div>
                     <div style="color: var(--text-secondary); font-size: 14px;">Fetching Monte Carlo projections...</div>
-                    <div style="color: var(--text-secondary); font-size: 11px;">This may take a few seconds</div>
+                    <div style="color: var(--text-secondary); font-size: 11px;">${scenarioDisplayName} - This may take a few seconds</div>
                 </div>
             `;
         }
@@ -765,7 +786,7 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
         );
 
         monteCarloData = await Promise.race([
-            fetchMonteCarloData(profile),
+            fetchMonteCarloData(profile, marketScenario),
             timeoutPromise
         ]);
 
@@ -997,7 +1018,7 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
             plugins: {
                 title: {
                     display: true,
-                    text: `Cash Flow Projection (${viewType === 'annual' ? 'Annual' : 'Monthly'}) - ${Math.floor(months / 12)} years through age ${lifeExpectancyAge} - ${monteCarloPortfolioData ? 'Monte Carlo Portfolio ✓' : 'Simplified Portfolio'} - Scroll or +/- to zoom, drag to pan`,
+                    text: `Cash Flow Projection (${viewType === 'annual' ? 'Annual' : 'Monthly'}) - ${Math.floor(months / 12)} years through age ${lifeExpectancyAge} - ${monteCarloPortfolioData ? `Monte Carlo (${scenarioDisplayName}) ✓` : 'Simplified Portfolio'} - Scroll or +/- to zoom, drag to pan`,
                     font: {
                         size: 18,
                         weight: 'bold'
