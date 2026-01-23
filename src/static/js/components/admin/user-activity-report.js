@@ -95,6 +95,10 @@ export async function renderUserActivityReport(container) {
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; margin-bottom: 8px; font-size: 13px; font-weight: 600;">Action Types</label>
                     <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                        <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; padding: 4px 8px; background: var(--bg-tertiary); border-radius: 4px; border: 1px solid var(--border-color);">
+                            <input type="checkbox" id="select-all-actions" style="cursor: pointer;">
+                            <span style="font-size: 13px; font-weight: 700;">Select All</span>
+                        </label>
                         <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
                             <input type="checkbox" class="action-type-filter" value="LOGIN_ATTEMPT" style="cursor: pointer;">
                             <span style="font-size: 13px;">Login Attempts</span>
@@ -269,6 +273,28 @@ function setupFilterHandlers(container) {
         }
     });
 
+    // Select All actions logic
+    const selectAllCheckbox = container.querySelector('#select-all-actions');
+    const actionCheckboxes = container.querySelectorAll('.action-type-filter');
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', () => {
+            actionCheckboxes.forEach(cb => {
+                cb.checked = selectAllCheckbox.checked;
+            });
+        });
+
+        // Update Select All state when individual boxes are clicked
+        actionCheckboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+                const allChecked = Array.from(actionCheckboxes).every(c => c.checked);
+                const someChecked = Array.from(actionCheckboxes).some(c => c.checked);
+                selectAllCheckbox.checked = allChecked;
+                selectAllCheckbox.indeterminate = someChecked && !allChecked;
+            });
+        });
+    }
+
     // Apply filters
     container.querySelector('#apply-activity-filters').addEventListener('click', () => {
         loadActivityReport(container);
@@ -290,6 +316,10 @@ function setupFilterHandlers(container) {
 
         // Clear action type filters
         container.querySelectorAll('.action-type-filter').forEach(cb => cb.checked = false);
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+        }
 
         loadActivityReport(container);
     });
