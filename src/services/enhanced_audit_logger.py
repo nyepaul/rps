@@ -8,11 +8,18 @@ from src.database.connection import db
 import re
 from user_agents import parse as parse_user_agent
 from src.services.ip_intelligence import ip_intelligence
+import socket
+import dns.resolver
+import dns.reversename
 
 # Geolocation cache to prevent hitting rate limits
 # Cache structure: {ip_address: {'data': {...}, 'timestamp': datetime}}
 _geo_cache = {}
 _GEO_CACHE_TTL = timedelta(hours=24)  # Cache for 24 hours
+
+# DNS resolution cache to prevent repeated lookups
+_dns_cache = {}
+_DNS_CACHE_TTL = timedelta(hours=12)  # Cache for 12 hours
 
 
 class AuditConfig:
@@ -46,7 +53,12 @@ class AuditConfig:
             'response_timing': True,  # Response time/latency measurement
             'client_fingerprint': True,  # Canvas, WebGL, audio fingerprints from client
             'session_analytics': True,  # Engagement score, scroll depth, clicks
-            'performance_metrics': True  # Page load timing, resource counts
+            'performance_metrics': True,  # Page load timing, resource counts
+            'reverse_dns': True,  # Reverse DNS hostname lookup for IP addresses
+            'asn_lookup': True,  # Autonomous System Number and ISP information
+            'http_protocol': True,  # HTTP/1.1 vs HTTP/2 detection
+            'tls_info': True,  # TLS/SSL connection information if available
+            'network_metadata': True  # Additional TCP/IP connection details
         },
         'display': {
             'ip_address': True,
@@ -73,7 +85,12 @@ class AuditConfig:
             'response_timing': True,  # Show response latency
             'client_fingerprint': True,  # Show canvas/WebGL/audio fingerprints
             'session_analytics': True,  # Show engagement metrics
-            'performance_metrics': True  # Show page load metrics
+            'performance_metrics': True,  # Show page load metrics
+            'reverse_dns': True,  # Show reverse DNS hostname
+            'asn_lookup': True,  # Show ASN and ISP data
+            'http_protocol': True,  # Show HTTP protocol version
+            'tls_info': True,  # Show TLS/SSL info
+            'network_metadata': True  # Show network connection details
         },
         'retention_days': 90,
         'log_read_operations': False,  # Can generate lots of logs
@@ -166,6 +183,222 @@ class EnhancedAuditLogger:
             print(f"Geo-location lookup failed: {e}")
 
         return None
+
+    @staticmethod
+    def _get_reverse_dns(ip_address: str) -> Optional[str]:
+        """
+        Perform reverse DNS lookup to get hostname from IP address.
+        Results are cached for 12 hours to improve performance.
+        """
+        if not ip_address or ip_address in ['127.0.0.1', 'localhost', '::1']:
+            return 'localhost'
+
+        # Check cache first
+        if ip_address in _dns_cache:
+            cached = _dns_cache[ip_address]
+            age = datetime.now() - cached['timestamp']
+            if age < _DNS_CACHE_TTL:
+                return cached['data']
+            else:
+                del _dns_cache[ip_address]
+
+        try:
+            # Try reverse DNS lookup using dnspython
+            addr = dns.reversename.from_address(ip_address)
+            hostname = str(dns.resolver.resolve(addr, 'PTR')[0])
+            # Remove trailing dot if present
+            hostname = hostname.rstrip('.')
+
+            # Cache the result
+            _dns_cache[ip_address] = {
+                'data': hostname,
+                'timestamp': datetime.now()
+            }
+            return hostname
+        except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.exception.Timeout):
+            # No PTR record found or timeout
+            pass
+        except Exception as e:
+            print(f"Reverse DNS lookup failed for {ip_address}: {e}")
+
+        # Fallback to socket.gethostbyaddr with short timeout
+        try:
+            hostname, _, _ = socket.gethostbyaddr(ip_address)
+            _dns_cache[ip_address] = {
+                'data': hostname,
+                'timestamp': datetime.now()
+            }
+            return hostname
+        except (socket.herror, socket.gaierror, socket.timeout):
+            pass
+
+        return None
+
+    @staticmethod
+    def _get_asn_info(ip_address: str) -> Optional[Dict[str, Any]]:
+        """
+        Get ASN (Autonomous System Number) and ISP information for an IP address.
+        This provides network ownership and routing information.
+
+        Note: Requires ASN database file which may not be available.
+        Falls back gracefully if database is not present.
+        """
+        if not ip_address or ip_address in ['127.0.0.1', 'localhost', '::1']:
+            return {'asn': 'Local', 'isp': 'Local Network', 'network': 'Local'}
+
+        try:
+            # Try using ip-api.com which provides ASN data for free
+            import requests
+            response = requests.get(
+                f'http://ip-api.com/json/{ip_address}?fields=status,as,isp,org,asname',
+                timeout=2
+            )
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('status') == 'success':
+                    asn_data = {
+                        'as': data.get('as', 'Unknown'),  # e.g., "AS15169 Google LLC"
+                        'isp': data.get('isp', 'Unknown'),
+                        'org': data.get('org', 'Unknown'),
+                        'asname': data.get('asname', 'Unknown')
+                    }
+
+                    # Extract ASN number from 'as' field (e.g., "AS15169" -> 15169)
+                    as_field = data.get('as', '')
+                    if as_field and as_field.startswith('AS'):
+                        try:
+                            asn_data['asn_number'] = int(as_field.split()[0][2:])
+                        except (ValueError, IndexError):
+                            pass
+
+                    return asn_data
+        except Exception as e:
+            print(f"ASN lookup failed for {ip_address}: {e}")
+
+        return None
+
+    @staticmethod
+    def _get_http_protocol() -> str:
+        """
+        Detect HTTP protocol version (HTTP/1.0, HTTP/1.1, HTTP/2, HTTP/3).
+        """
+        if not has_request_context():
+            return 'Unknown'
+
+        # Check SERVER_PROTOCOL from WSGI environ
+        if request.environ:
+            protocol = request.environ.get('SERVER_PROTOCOL', 'HTTP/1.1')
+
+            # Check for HTTP/2 indicators
+            # Some proxies/load balancers set custom headers
+            if request.headers.get('X-HTTP2-Connection'):
+                return 'HTTP/2'
+
+            # Check wsgi.input_terminated which is set for HTTP/2
+            if request.environ.get('wsgi.input_terminated'):
+                return 'HTTP/2'
+
+            return protocol
+
+        return 'Unknown'
+
+    @staticmethod
+    def _get_network_metadata() -> Dict[str, Any]:
+        """
+        Extract additional network and connection metadata from the request.
+        """
+        if not has_request_context():
+            return {}
+
+        metadata = {}
+
+        # Request timing (if available)
+        if hasattr(request, '_start_time'):
+            metadata['request_start_time'] = request._start_time
+
+        # Connection information from WSGI environ
+        if request.environ:
+            # Remote address and port
+            metadata['remote_addr'] = request.environ.get('REMOTE_ADDR')
+            metadata['remote_port'] = request.environ.get('REMOTE_PORT')
+
+            # Server information
+            metadata['server_name'] = request.environ.get('SERVER_NAME')
+            metadata['server_port'] = request.environ.get('SERVER_PORT')
+            metadata['server_software'] = request.environ.get('SERVER_SOFTWARE')
+
+            # Request method and protocol
+            metadata['request_method'] = request.environ.get('REQUEST_METHOD')
+            metadata['server_protocol'] = request.environ.get('SERVER_PROTOCOL')
+
+            # WSGI URL scheme (http/https)
+            metadata['url_scheme'] = request.environ.get('wsgi.url_scheme')
+
+            # Content length and type
+            metadata['content_length'] = request.environ.get('CONTENT_LENGTH')
+            metadata['content_type'] = request.environ.get('CONTENT_TYPE')
+
+            # Query string
+            metadata['query_string'] = request.environ.get('QUERY_STRING')
+
+            # Path info
+            metadata['path_info'] = request.environ.get('PATH_INFO')
+            metadata['script_name'] = request.environ.get('SCRIPT_NAME')
+
+            # HTTP version
+            metadata['http_version'] = EnhancedAuditLogger._get_http_protocol()
+
+        # Check if connection is via proxy/load balancer
+        proxy_headers = [
+            'X-Forwarded-For',
+            'X-Forwarded-Proto',
+            'X-Forwarded-Host',
+            'X-Real-IP',
+            'Via',
+            'Forwarded'
+        ]
+        proxy_info = {}
+        for header in proxy_headers:
+            value = request.headers.get(header)
+            if value:
+                proxy_info[header] = value
+
+        if proxy_info:
+            metadata['proxy_headers'] = proxy_info
+            metadata['behind_proxy'] = True
+        else:
+            metadata['behind_proxy'] = False
+
+        # TLS/SSL information (if available)
+        if request.is_secure:
+            metadata['is_secure'] = True
+            metadata['tls_enabled'] = True
+
+            # Some WSGI servers provide TLS version info
+            tls_version = request.environ.get('SSL_PROTOCOL')
+            if tls_version:
+                metadata['tls_version'] = tls_version
+
+            # SSL cipher suite
+            ssl_cipher = request.environ.get('SSL_CIPHER')
+            if ssl_cipher:
+                metadata['ssl_cipher'] = ssl_cipher
+        else:
+            metadata['is_secure'] = False
+            metadata['tls_enabled'] = False
+
+        # Connection header (keep-alive vs close)
+        connection_header = request.headers.get('Connection', '')
+        if connection_header:
+            metadata['connection_type'] = connection_header.lower()
+            metadata['keep_alive'] = 'keep-alive' in connection_header.lower()
+
+        # Upgrade-Insecure-Requests header
+        upgrade_insecure = request.headers.get('Upgrade-Insecure-Requests')
+        if upgrade_insecure:
+            metadata['upgrade_insecure_requests'] = upgrade_insecure == '1'
+
+        return metadata
 
     @staticmethod
     def _parse_device_info(user_agent_string: str) -> Dict[str, str]:
@@ -707,6 +940,19 @@ class EnhancedAuditLogger:
                 'vpn_detection': vpn_detection
             }
 
+            # Perform reverse DNS lookup
+            if collect_config.get('reverse_dns', True):
+                reverse_dns = EnhancedAuditLogger._get_reverse_dns(audit_data['ip_address'])
+                if reverse_dns:
+                    ip_intel_data['reverse_dns'] = reverse_dns
+                    ip_intel_data['hostname'] = reverse_dns
+
+            # Perform ASN lookup
+            if collect_config.get('asn_lookup', True):
+                asn_info = EnhancedAuditLogger._get_asn_info(audit_data['ip_address'])
+                if asn_info:
+                    ip_intel_data['asn'] = asn_info
+
             # Add to details
             if audit_data.get('details'):
                 try:
@@ -717,6 +963,21 @@ class EnhancedAuditLogger:
                     pass
             else:
                 audit_data['details'] = json.dumps({'ip_intelligence': ip_intel_data})
+
+        # Collect network metadata
+        if collect_config.get('network_metadata', True):
+            network_meta = EnhancedAuditLogger._get_network_metadata()
+            if network_meta:
+                # Store in details
+                if audit_data.get('details'):
+                    try:
+                        details_dict = json.loads(audit_data['details']) if isinstance(audit_data['details'], str) else {}
+                        details_dict['network'] = network_meta
+                        audit_data['details'] = json.dumps(details_dict)
+                    except:
+                        pass
+                else:
+                    audit_data['details'] = json.dumps({'network': network_meta})
 
         # Collect request information
         if collect_config.get('request_method', True) or collect_config.get('request_endpoint', True):

@@ -30,6 +30,9 @@ python-whois>=0.8.0  # WHOIS lookups for IP investigation
 geoip2>=4.8.0  # MaxMind GeoIP2 for ASN/ISP lookup
 httpagentparser>=1.9.5  # Alternative user agent parser for cross-validation
 ua-parser>=1.0.0  # UA parser for detailed browser/device info
+dnspython>=2.8.0  # DNS resolution and reverse DNS lookups
+pyasn>=1.6.0  # ASN (Autonomous System Number) lookups
+requests-toolbelt>=1.0.0  # Advanced HTTP metrics and utilities
 
 # Database
 alembic>=1.13.0
