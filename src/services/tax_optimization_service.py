@@ -293,16 +293,35 @@ class SocialSecurityAnalyzer:
         provisional_income = agi + (ss_benefit * 0.5) + tax_exempt_interest
 
         if self.filing_status == 'single' or self.filing_status == 'hoh':
-            thresholds = SS_TAXATION_THRESHOLDS_SINGLE
+            threshold_1 = 25000  # Below: 0% taxable
+            threshold_2 = 34000  # Above: up to 85% taxable
         else:
-            thresholds = SS_TAXATION_THRESHOLDS_MFJ
+            threshold_1 = 32000  # MFJ
+            threshold_2 = 44000  # MFJ
 
-        taxable_pct = 0.0
-        for lower, upper, pct in thresholds:
-            if provisional_income > lower:
-                taxable_pct = pct
+        # Implement correct IRS formula
+        taxable_amount = 0.0
 
-        taxable_amount = ss_benefit * taxable_pct
+        if provisional_income <= threshold_1:
+            # Below first threshold: 0% taxable
+            taxable_amount = 0.0
+        elif provisional_income <= threshold_2:
+            # Between thresholds: up to 50% of SS is taxable
+            # Lesser of (50% of SS) or (50% of excess over threshold_1)
+            excess_1 = provisional_income - threshold_1
+            taxable_amount = min(ss_benefit * 0.5, excess_1 * 0.5)
+        else:
+            # Above second threshold: up to 85% of SS is taxable
+            # Calculate base amount from middle tier
+            base_taxable = (threshold_2 - threshold_1) * 0.5  # 50% of middle tier
+            # Add 85% of excess above threshold_2
+            excess_2 = provisional_income - threshold_2
+            additional = excess_2 * 0.85
+            # Lesser of 85% of SS, or base + additional
+            max_85 = ss_benefit * 0.85
+            taxable_amount = min(max_85, base_taxable + additional)
+
+        taxable_pct = (taxable_amount / ss_benefit) if ss_benefit > 0 else 0.0
         return taxable_amount, taxable_pct
 
     def analyze_claiming_ages(self, full_retirement_age: int, pia_at_fra: float,
@@ -658,8 +677,10 @@ class TaxOptimizationService:
         # State tax (simplified)
         state_tax = self.calculator.calculate_state_tax(taxable_income + capital_gains)
 
-        # IRMAA
-        magi = gross_income + capital_gains + social_security
+        # IRMAA - Use MAGI (AGI + tax-exempt interest + excluded foreign income)
+        # For most retirees, MAGI ≈ AGI since they don't have tax-exempt interest or foreign income
+        # IMPORTANT: Use taxable_ss (not total SS) since AGI already includes only taxable portion
+        magi = agi + capital_gains  # AGI already includes taxable SS and other income
         irmaa_surcharge, irmaa_tier, irmaa_info = self.irmaa_calc.calculate_surcharge(magi)
 
         # Total tax

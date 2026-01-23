@@ -456,7 +456,15 @@ class RetirementModel:
             
             # Calculate annual return based on current allocation
             ret_mean = stock_pct * assumptions.stock_return_mean + (1 - stock_pct) * assumptions.bond_return_mean
-            ret_std = stock_pct * assumptions.stock_return_std + (1 - stock_pct) * assumptions.bond_return_std
+
+            # Calculate portfolio volatility using proper variance formula
+            # Assumes 0.3 correlation between stocks and bonds (typical historical correlation)
+            correlation = 0.3
+            stock_variance = (stock_pct * assumptions.stock_return_std) ** 2
+            bond_variance = ((1 - stock_pct) * assumptions.bond_return_std) ** 2
+            covariance = 2 * stock_pct * (1 - stock_pct) * correlation * assumptions.stock_return_std * assumptions.bond_return_std
+            ret_std = np.sqrt(stock_variance + bond_variance + covariance)
+
             annual_returns = np.random.normal(ret_mean, ret_std, simulations)
 
             # Independent Retirement Tracking
@@ -737,9 +745,11 @@ class RetirementModel:
             # 3. Taxable Brokerage (Pay capital gains tax stacked on ordinary income)
             mask = shortfall > 0
             if np.any(mask):
-                denom = np.where(taxable_val > 0, taxable_val, 1.0)
+                # Use large floor value to prevent numerical instability when account near zero
+                STABILITY_FLOOR = 1000.0  # $1000 minimum for stable division
+                denom = np.where(taxable_val > STABILITY_FLOOR, taxable_val, 1e10)
                 gain_ratio = np.maximum(0, (taxable_val - taxable_basis) / denom)
-                gain_ratio = np.where(taxable_val > 0, gain_ratio, 0)
+                gain_ratio = np.where(taxable_val > STABILITY_FLOOR, gain_ratio, 0)
 
                 # Estimate withdrawal needed (iterate once for better estimate)
                 # First pass: estimate with flat 15% LTCG rate
@@ -793,9 +803,20 @@ class RetirementModel:
             # H. Growth & Balances
             # Apply growth
             year_returns = annual_returns
-            
+
             cash *= (1 + CASH_INTEREST)
-            taxable_val *= (1 + year_returns)
+
+            # Taxable accounts: Apply tax drag to account for annual taxes on dividends and capital gains distributions
+            # Assume ~2% dividend yield taxed at 15% LTCG rate = 0.3% drag
+            # Plus ~0.5% from mutual fund capital gains distributions
+            # Total drag: ~15% of positive returns (conservative estimate)
+            TAX_DRAG_RATE = 0.15  # 15% of gains go to taxes annually
+            taxable_growth = np.where(year_returns > 0,
+                                     year_returns * (1 - TAX_DRAG_RATE),  # Reduce positive returns by tax drag
+                                     year_returns)  # Keep losses as-is (tax loss harvesting offset)
+            taxable_val *= (1 + taxable_growth)
+            taxable_basis *= (1 + taxable_growth)  # Basis grows with after-tax returns
+
             pretax_std *= (1 + year_returns)
             pretax_457 *= (1 + year_returns)
             roth *= (1 + year_returns)
