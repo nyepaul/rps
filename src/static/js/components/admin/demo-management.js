@@ -68,7 +68,7 @@ function setupResetDemoButton(container) {
 
         // Disable button and show loading
         resetBtn.disabled = true;
-        resetBtn.innerHTML = '<span style="display: inline-flex; align-items: center; gap: 6px;"><span class="spinner" style="width: 14px; height: 14px; border: 2px solid var(--border-color); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block;"></span>Resetting...</span><style> spin { to { transform: rotate(360deg); }}</style>';
+        resetBtn.textContent = 'Resetting...';
         resultDiv.style.display = 'none';
 
         try {

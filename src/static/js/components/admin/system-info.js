@@ -9,26 +9,6 @@ import { showError } from '../../utils/dom.js';
  * Render system information dashboard
  */
 export async function renderSystemInfo(container) {
-    container.innerHTML = `
-        <div style="text-align: center; padding: 40px;">
-            <div class="spinner" style="
-                width: 32px;
-                height: 32px;
-                border: 3px solid var(--border-color);
-                border-top-color: var(--accent-color);
-                border-radius: 50%;
-                animation: spin 0.8s linear infinite;
-                margin: 0 auto 10px;
-            "></div>
-            <style>
-                 spin {
-                    to { transform: rotate(360deg); }
-                }
-            </style>
-            <div>Loading system information...</div>
-        </div>
-    `;
-
     try {
         // Load both system info and database schema
         const [infoResponse, schemaResponse] = await Promise.all([

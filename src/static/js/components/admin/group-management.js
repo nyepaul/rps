@@ -13,26 +13,6 @@ import { store } from '../../state/store.js';
 export async function renderGroupManagement(container) {
     const currentUser = store.get('currentUser');
 
-    container.innerHTML = `
-        <div style="text-align: center; padding: 40px;">
-            <div class="spinner" style="
-                width: 32px;
-                height: 32px;
-                border: 3px solid var(--border-color);
-                border-top-color: var(--accent-color);
-                border-radius: 50%;
-                animation: spin 0.8s linear infinite;
-                margin: 0 auto 10px;
-            "></div>
-            <div>Loading groups...</div>
-        </div>
-        <style>
-            @keyframes spin {
-                to { transform: rotate(360deg); }
-            }
-        </style>
-    `;
-
     try {
         const response = await apiClient.get('/api/admin/groups');
         const groups = response.groups;

@@ -66,25 +66,6 @@ export async function renderUserTimeline(container) {
                 </div>
             </div>
 
-            <!-- Loading State -->
-            <div id="timeline-loading" style="display: none; text-align: center; padding: 40px; background: var(--bg-secondary); border-radius: 12px;">
-                <div class="spinner" style="
-                    width: 48px;
-                    height: 48px;
-                    border: 4px solid var(--border-color);
-                    border-top-color: var(--accent-color);
-                    border-radius: 50%;
-                    animation: spin 0.8s linear infinite;
-                    margin: 0 auto 15px;
-                "></div>
-                <style>
-                     spin {
-                        to { transform: rotate(360deg); }
-                    }
-                </style>
-                <p style="color: var(--text-secondary);">Loading user timeline...</p>
-            </div>
-
             <!-- Timeline Content -->
             <div id="timeline-content" style="display: none;"></div>
         </div>
@@ -219,13 +200,11 @@ async function loadAllUsers(container) {
  * Load and display user timeline
  */
 async function loadUserTimeline(container, userId) {
-    const loadingDiv = container.querySelector('#timeline-loading');
     const contentDiv = container.querySelector('#timeline-content');
     const startDate = container.querySelector('#timeline-start-date').value;
     const endDate = container.querySelector('#timeline-end-date').value;
 
-    // Show loading
-    loadingDiv.style.display = 'block';
+    // Clear content
     contentDiv.style.display = 'none';
 
     try {
@@ -238,15 +217,13 @@ async function loadUserTimeline(container, userId) {
         // Fetch timeline
         const timeline = await apiClient.get(`/api/admin/users/${userId}/timeline?${params}`);
 
-        // Hide loading
-        loadingDiv.style.display = 'none';
+        // Show content
         contentDiv.style.display = 'block';
 
         // Render timeline
         renderTimeline(contentDiv, timeline);
 
     } catch (error) {
-        loadingDiv.style.display = 'none';
         contentDiv.style.display = 'block';
         contentDiv.innerHTML = `
             <div style="background: var(--danger-bg); padding: 20px; border-radius: 12px; text-align: center;">

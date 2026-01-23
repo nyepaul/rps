@@ -96,23 +96,6 @@ export async function renderBackupManager(container) {
                 <!-- Backup Schedule Status -->
                 <div id="schedule-status" style="background: var(--bg-secondary); padding: 25px; border-radius: 12px; margin-bottom: 30px;">
                     <h3 style="font-size: 18px; margin-bottom: 15px;">🕐 Automated Backup Schedule</h3>
-                    <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
-                        <div class="spinner" style="
-                            width: 24px;
-                            height: 24px;
-                            border: 3px solid var(--border-color);
-                            border-top-color: var(--accent-color);
-                            border-radius: 50%;
-                            animation: spin 0.8s linear infinite;
-                            margin: 0 auto 10px;
-                        "></div>
-                        <style>
-                             spin {
-                                to { transform: rotate(360deg); }
-                            }
-                        </style>
-                        Loading schedule information...
-                    </div>
                 </div>
 
                 <!-- Backup History -->
@@ -523,26 +506,6 @@ async function createSelectiveBackup(container) {
  */
 async function loadSelectiveBackups(container) {
     const listContainer = container.querySelector('#selective-backup-list');
-
-    listContainer.innerHTML = `
-        <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
-            <div class="spinner" style="
-                                width: 32px;
-                                height: 32px;
-                                border: 3px solid var(--border-color);
-                                border-top-color: var(--accent-color);
-                                border-radius: 50%;
-                                animation: spin 0.8s linear infinite;
-                                margin: 0 auto 10px;
-                            "></div>
-                            <style>
-                                 spin {
-                                    to { transform: rotate(360deg); }
-                                }
-                            </style>
-            Loading backups...
-        </div>
-    `;
 
     try {
         const response = await apiClient.get('/api/admin/backup/selective');
@@ -1008,27 +971,6 @@ async function loadScheduleStatus(container) {
  */
 async function loadBackups(container, type = 'all') {
     const listContainer = container.querySelector('#backup-list');
-
-    // Show loading
-    listContainer.innerHTML = `
-        <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
-            <div class="spinner" style="
-                                width: 32px;
-                                height: 32px;
-                                border: 3px solid var(--border-color);
-                                border-top-color: var(--accent-color);
-                                border-radius: 50%;
-                                animation: spin 0.8s linear infinite;
-                                margin: 0 auto 10px;
-                            "></div>
-                            <style>
-                                 spin {
-                                    to { transform: rotate(360deg); }
-                                }
-                            </style>
-            Loading backups...
-        </div>
-    `;
 
     try {
         const response = await apiClient.get(`/api/admin/backups?type=${type}`);
