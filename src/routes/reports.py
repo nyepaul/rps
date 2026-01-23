@@ -3,14 +3,11 @@ from flask import Blueprint, request, jsonify, send_file
 from flask_login import login_required, current_user
 from src.models.profile import Profile
 from src.models.action_item import ActionItem
-from src.services.pdf_service_elite import (
-    generate_elite_analysis_report as generate_analysis_report
-)
-from src.services.pdf_service import (
+from src.services.pdf import (
+    generate_elite_analysis_report as generate_analysis_report,
     generate_portfolio_report,
-    generate_action_plan_report
+    generate_action_plan_report,
 )
-from src.services.pdf_statement_service import generate_statement_report
 from src.services.retirement_model import (
     Person, FinancialProfile, MarketAssumptions, RetirementModel
 )

@@ -1,5 +1,5 @@
 """RPS Version Information"""
 
-__version__ = "3.8.130"
+__version__ = "3.8.132"
 __release_date__ = "2026-01-23"
-__release_notes__ = "Fix duplicate spinners in admin dashboard and CSS keyframes bug in logs viewer"
+__release_notes__ = "Consolidate PDF services into modular package - reduces code duplication by ~17%"

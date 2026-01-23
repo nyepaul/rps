@@ -1,145 +1,47 @@
-"""PDF generation service using ReportLab."""
+"""Report generation functions for PDF reports."""
 import io
 from datetime import datetime
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-    PageBreak, HRFlowable
+    PageBreak, HRFlowable, Image
 )
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 
-
-def create_styles():
-    """Create custom paragraph styles."""
-    styles = getSampleStyleSheet()
-
-    # Helper function to add or update style
-    def add_style(name, **kwargs):
-        if name in styles:
-            # Style exists, don't add again
-            return
-        styles.add(ParagraphStyle(name=name, **kwargs))
-
-    add_style(
-        'ReportTitle',
-        parent=styles['Heading1'],
-        fontSize=24,
-        spaceAfter=30,
-        alignment=TA_CENTER,
-        textColor=colors.HexColor('#2c3e50')
-    )
-
-    add_style(
-        'SectionTitle',
-        parent=styles['Heading2'],
-        fontSize=16,
-        spaceBefore=20,
-        spaceAfter=10,
-        textColor=colors.HexColor('#3498db')
-    )
-
-    add_style(
-        'SubSection',
-        parent=styles['Heading3'],
-        fontSize=13,
-        spaceBefore=15,
-        spaceAfter=8,
-        textColor=colors.HexColor('#34495e')
-    )
-
-    add_style(
-        'ReportBody',  # Renamed to avoid conflict with default BodyText
-        parent=styles['Normal'],
-        fontSize=10,
-        spaceAfter=8,
-        leading=14
-    )
-
-    add_style(
-        'SmallText',
-        parent=styles['Normal'],
-        fontSize=8,
-        textColor=colors.HexColor('#7f8c8d')
-    )
-
-    add_style(
-        'Highlight',
-        parent=styles['Normal'],
-        fontSize=12,
-        textColor=colors.HexColor('#27ae60'),
-        spaceBefore=5,
-        spaceAfter=5
-    )
-
-    add_style(
-        'Warning',
-        parent=styles['Normal'],
-        fontSize=11,
-        textColor=colors.HexColor('#e74c3c'),
-        spaceBefore=5,
-        spaceAfter=5
-    )
-
-    return styles
-
-
-def format_currency(value):
-    """Format a number as currency."""
-    if value is None:
-        return '$0'
-    return f"${value:,.0f}"
-
-
-def format_percent(value):
-    """Format a number as percentage."""
-    if value is None:
-        return '0%'
-    return f"{value:.1f}%"
-
-
-def create_header(profile_name, report_type):
-    """Create report header elements."""
-    styles = create_styles()
-    elements = []
-
-    elements.append(Paragraph(f"{report_type}", styles['ReportTitle']))
-    elements.append(Paragraph(f"Profile: {profile_name}", styles['ReportBody']))
-    elements.append(Paragraph(
-        f"Generated: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}",
-        styles['SmallText']
-    ))
-    elements.append(Paragraph(
-        "<i>RPS - Authored by pan</i>",
-        styles['SmallText']
-    ))
-    elements.append(Spacer(1, 20))
-    elements.append(HRFlowable(width="100%", thickness=0.25, color=colors.HexColor('#bdc3c7')))
-    elements.append(Spacer(1, 20))
-
-    return elements
+from .base import (
+    ColorPalette, NumberedCanvas, format_currency, format_percent, create_document
+)
+from .styles import create_basic_styles, create_elite_styles, get_styles
+from .charts import (
+    create_success_rates_chart, create_portfolio_projection_chart,
+    create_probability_distribution_chart, cleanup_chart_files
+)
+from .components import (
+    create_header, create_elite_cover_page, create_data_table,
+    create_key_metrics_box, create_executive_summary_box, create_disclaimer
+)
 
 
 def generate_analysis_report(profile_data, analysis_results):
-    """Generate Monte Carlo analysis PDF report."""
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(
-        buffer,
-        pagesize=letter,
-        rightMargin=1.0*inch,
-        leftMargin=1.0*inch,
-        topMargin=1.0*inch,
-        bottomMargin=1.0*inch
-    )
+    """Generate Monte Carlo analysis PDF report (basic style).
 
-    styles = create_styles()
+    Args:
+        profile_data: Dict with profile information
+        analysis_results: Dict with analysis results including scenarios
+
+    Returns:
+        BytesIO buffer containing PDF
+    """
+    buffer, doc = create_document(title=f"Analysis Report - {profile_data.get('name', 'Profile')}")
+
+    styles = create_basic_styles()
+    colors_dict = ColorPalette.BASIC
     elements = []
 
     # Header
     profile_name = profile_data.get('name', 'Unnamed Profile')
-    elements.extend(create_header(profile_name, "Retirement Analysis Report"))
+    elements.extend(create_header(profile_name, "Retirement Analysis Report", styles, colors_dict))
 
     # Executive Summary
     elements.append(Paragraph("Executive Summary", styles['SectionTitle']))
@@ -172,16 +74,16 @@ def generate_analysis_report(profile_data, analysis_results):
 
     params_table = Table(params_data, colWidths=[3*inch, 3*inch])
     params_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3498db')),
+        ('BACKGROUND', (0, 0), (-1, 0), colors_dict['secondary']),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, -1), 10),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
         ('TOPPADDING', (0, 0), (-1, 0), 10),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#ecf0f1')),
-        ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#bdc3c7')),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
+        ('BACKGROUND', (0, 1), (-1, -1), colors_dict['bg_light']),
+        ('GRID', (0, 0), (-1, -1), 0.25, colors_dict['border']),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors_dict['bg_alt']]),
         ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
         ('TOPPADDING', (0, 1), (-1, -1), 8),
     ]))
@@ -190,10 +92,7 @@ def generate_analysis_report(profile_data, analysis_results):
 
     # Scenario Results
     elements.append(Paragraph("Scenario Analysis", styles['SectionTitle']))
-    elements.append(Paragraph(
-        "Results across different asset allocation strategies:",
-        styles['ReportBody']
-    ))
+    elements.append(Paragraph("Results across different asset allocation strategies:", styles['ReportBody']))
 
     scenario_data = [
         ['Scenario', 'Success Rate', 'Median Balance', '5th Percentile', '95th Percentile']
@@ -211,7 +110,7 @@ def generate_analysis_report(profile_data, analysis_results):
 
     scenario_table = Table(scenario_data, colWidths=[1.3*inch, 1.1*inch, 1.3*inch, 1.3*inch, 1.3*inch])
     scenario_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3498db')),
+        ('BACKGROUND', (0, 0), (-1, 0), colors_dict['secondary']),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ('ALIGN', (0, 0), (0, -1), 'LEFT'),
@@ -219,13 +118,13 @@ def generate_analysis_report(profile_data, analysis_results):
         ('FONTSIZE', (0, 0), (-1, -1), 9),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
         ('TOPPADDING', (0, 0), (-1, -1), 8),
-        ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#bdc3c7')),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
+        ('GRID', (0, 0), (-1, -1), 0.25, colors_dict['border']),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors_dict['bg_alt']]),
     ]))
     elements.append(scenario_table)
     elements.append(Spacer(1, 20))
 
-    # Interpretation
+    # Understanding Results
     elements.append(Paragraph("Understanding Your Results", styles['SectionTitle']))
 
     interpretations = [
@@ -267,39 +166,257 @@ def generate_analysis_report(profile_data, analysis_results):
         elements.append(Paragraph(f"• {rec}", styles['ReportBody']))
 
     # Disclaimer
-    elements.append(Spacer(1, 30))
-    elements.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor('#bdc3c7')))
-    elements.append(Spacer(1, 10))
-    elements.append(Paragraph(
-        "<i>Disclaimer: This analysis is for informational purposes only and should not be considered financial advice. "
-        "Past performance does not guarantee future results. Please consult with qualified financial professionals "
-        "before making retirement decisions.</i>",
-        styles['SmallText']
-    ))
+    elements.extend(create_disclaimer(styles))
 
     doc.build(elements)
     buffer.seek(0)
     return buffer
 
 
-def generate_portfolio_report(profile_data):
-    """Generate portfolio summary PDF report."""
+def generate_elite_analysis_report(profile_data, analysis_results):
+    """Generate elite professional analysis report with charts.
+
+    Args:
+        profile_data: Dict with profile information
+        analysis_results: Dict with analysis results including scenarios
+
+    Returns:
+        BytesIO buffer containing PDF
+    """
     buffer = io.BytesIO()
+
+    profile_name = profile_data.get('name', 'Client')
+    report_type = "Comprehensive Retirement Analysis"
+
     doc = SimpleDocTemplate(
         buffer,
         pagesize=letter,
         rightMargin=1.0*inch,
         leftMargin=1.0*inch,
-        topMargin=1.0*inch,
-        bottomMargin=1.0*inch
+        topMargin=1.1*inch,
+        bottomMargin=0.95*inch,
+        title=f"{report_type} - {profile_name}"
     )
 
-    styles = create_styles()
+    styles = create_elite_styles()
+    colors_dict = ColorPalette.ELITE
+    elements = []
+    temp_files = []
+
+    # Cover page
+    elements.extend(create_elite_cover_page(profile_name, report_type, styles, colors_dict))
+
+    # Executive Summary
+    elements.append(Paragraph("Executive Summary", styles['SectionHeader']))
+    elements.append(HRFlowable(
+        width="100%",
+        thickness=0.5,
+        color=colors_dict['navy'],
+        spaceBefore=8,
+        spaceAfter=18
+    ))
+
+    total_assets = analysis_results.get('total_assets', 0)
+    scenarios = analysis_results.get('scenarios', {})
+    years = analysis_results.get('years_projected', 30)
+
+    summary_text = (
+        f"This comprehensive retirement analysis presents Monte Carlo simulations across multiple "
+        f"asset allocation scenarios. Based on current assets of <b>${total_assets:,.0f}</b>, "
+        f"we have modeled {analysis_results.get('simulations', 1000):,} simulations over "
+        f"{years} years to project potential outcomes."
+    )
+    elements.append(Paragraph(summary_text, styles['BodyText']))
+    elements.append(Spacer(1, 20))
+
+    # Key Metrics
+    if scenarios:
+        moderate_scenario = scenarios.get('moderate', {})
+        metrics = {
+            'Total Assets': total_assets,
+            'Success Rate': f"{moderate_scenario.get('success_rate', 0):.1f}%",
+            'Median Outcome': moderate_scenario.get('median_ending_wealth', moderate_scenario.get('median_final_value', 0)),
+            'Years Projected': years
+        }
+        elements.extend(create_key_metrics_box("Key Metrics", metrics, styles, colors_dict))
+
+    # Scenario Analysis
+    elements.append(PageBreak())
+    elements.append(Paragraph("Scenario Analysis", styles['SectionHeader']))
+    elements.append(HRFlowable(
+        width="100%",
+        thickness=0.5,
+        color=colors_dict['navy'],
+        spaceBefore=8,
+        spaceAfter=18
+    ))
+
+    # Try to create success rates chart
+    try:
+        chart_path = create_success_rates_chart(scenarios)
+        temp_files.append(chart_path)
+        img = Image(chart_path, width=6*inch, height=3*inch)
+        elements.append(img)
+        elements.append(Spacer(1, 15))
+    except Exception:
+        pass  # Skip chart if generation fails
+
+    # Scenario table
+    scenario_data = []
+    for scenario_key in ['conservative', 'moderate', 'aggressive']:
+        scenario_result = scenarios.get(scenario_key, {})
+        scenario_name = scenario_result.get('scenario_name', scenario_key.title())
+        success_rate = scenario_result.get('success_rate', 0)
+        median_value = scenario_result.get('median_ending_wealth', scenario_result.get('median_final_value', 0))
+        percentile_5 = scenario_result.get('percentile_5', scenario_result.get('percentile_10', 0))
+        percentile_95 = scenario_result.get('percentile_95', scenario_result.get('percentile_90', 0))
+
+        scenario_data.append([
+            scenario_name,
+            f"{success_rate:.1f}%",
+            format_currency(median_value),
+            format_currency(percentile_5),
+            format_currency(percentile_95)
+        ])
+
+    if scenario_data:
+        headers = ['Scenario', 'Success Rate', 'Median Final', '5th Percentile', '95th Percentile']
+        scenario_table = create_data_table(headers, scenario_data, styles, colors_dict,
+                                           col_widths=[1.5, 1.2, 1.3, 1.25, 1.25])
+        elements.append(scenario_table)
+
+    # Portfolio projections
+    elements.append(PageBreak())
+    elements.append(Paragraph("Portfolio Projections", styles['SectionHeader']))
+    elements.append(HRFlowable(
+        width="100%",
+        thickness=0.5,
+        color=colors_dict['navy'],
+        spaceBefore=8,
+        spaceAfter=18
+    ))
+
+    projection_text = """The following analysis illustrates the projected portfolio balance over your
+    retirement timeline under each asset allocation strategy. Results show median (50th percentile) outcomes."""
+    elements.append(Paragraph(projection_text, styles['BodyText']))
+    elements.append(Spacer(1, 15))
+
+    # Try to create portfolio projection chart
+    try:
+        chart_path = create_portfolio_projection_chart(scenarios)
+        temp_files.append(chart_path)
+        img = Image(chart_path, width=6.5*inch, height=4*inch)
+        elements.append(img)
+    except Exception:
+        pass  # Skip chart if generation fails
+
+    # Risk Assessment
+    elements.append(PageBreak())
+    elements.append(Paragraph("Risk Assessment", styles['SectionHeader']))
+    elements.append(HRFlowable(
+        width="100%",
+        thickness=0.5,
+        color=colors_dict['navy'],
+        spaceBefore=8,
+        spaceAfter=18
+    ))
+
+    moderate = scenarios.get('moderate', {})
+    try:
+        chart_path = create_probability_distribution_chart(moderate)
+        temp_files.append(chart_path)
+        img = Image(chart_path, width=6.5*inch, height=3.5*inch)
+        elements.append(img)
+        elements.append(Spacer(1, 10))
+    except Exception:
+        pass
+
+    p5 = moderate.get('percentile_5', 0)
+    p95 = moderate.get('percentile_95', 0)
+    median_val = moderate.get('median_ending_wealth', 0)
+
+    risk_text = f"""This distribution shows the range of possible outcomes under moderate asset allocation:
+
+    <b>• Worst-Case Scenario (5th Percentile):</b> Only 5% of simulations ended below {format_currency(p5)}.
+
+    <b>• Most Likely Outcome (Median):</b> {format_currency(median_val)} represents the middle result.
+
+    <b>• Best-Case Scenario (95th Percentile):</b> Only 5% of simulations exceeded {format_currency(p95)}."""
+    elements.append(Paragraph(risk_text, styles['BodyText']))
+
+    # Methodology
+    elements.append(PageBreak())
+    elements.append(Paragraph("Methodology & Assumptions", styles['SectionHeader']))
+    elements.append(HRFlowable(
+        width="100%",
+        thickness=0.5,
+        color=colors_dict['navy'],
+        spaceBefore=8,
+        spaceAfter=18
+    ))
+
+    methodology_text = f"""<b>Monte Carlo Simulation:</b> This analysis employs Monte Carlo simulation, running
+    {analysis_results.get('simulations', 10000):,} independent scenarios with randomized returns based on historical data.
+
+    <b>Market Assumptions:</b> Returns are modeled using historically-informed probability distributions.
+    Stock returns assume a mean annual return of 8-10% with 15-18% volatility. Bond returns assume 3-5% with 5-7% volatility.
+
+    <b>Inflation:</b> The model adjusts for inflation at approximately 2-3% annually.
+
+    <b>Important Limitations:</b> This analysis makes simplifying assumptions and cannot predict actual market performance.
+    Results should be viewed as directional guidance rather than precise predictions.
+
+    <b>Not Financial Advice:</b> This report provides educational analysis only. Consult qualified professionals."""
+    elements.append(Paragraph(methodology_text, styles['BodyText']))
+
+    # Final disclaimer
+    elements.append(Spacer(1, 40))
+    elements.append(HRFlowable(width="100%", thickness=1, color=colors_dict['border']))
+    elements.append(Spacer(1, 15))
+    elements.append(Paragraph(
+        """<i>IMPORTANT DISCLAIMER: This analysis is for informational and educational purposes only. It is not intended
+        as financial, investment, tax, or legal advice. Past performance does not guarantee future results. Please consult
+        with qualified financial professionals before making any financial decisions.</i>""",
+        styles['SmallText']
+    ))
+
+    # Build PDF with custom canvas
+    doc.build(
+        elements,
+        canvasmaker=lambda *args, **kwargs: NumberedCanvas(
+            *args,
+            **kwargs,
+            profile_name=profile_name,
+            report_type=report_type,
+            colors=colors_dict
+        )
+    )
+
+    # Cleanup temporary chart files
+    cleanup_chart_files(temp_files)
+
+    buffer.seek(0)
+    return buffer
+
+
+def generate_portfolio_report(profile_data):
+    """Generate portfolio summary PDF report.
+
+    Args:
+        profile_data: Dict with profile information including assets
+
+    Returns:
+        BytesIO buffer containing PDF
+    """
+    buffer, doc = create_document(title=f"Portfolio Summary - {profile_data.get('name', 'Profile')}")
+
+    styles = create_basic_styles()
+    colors_dict = ColorPalette.BASIC
     elements = []
 
     # Header
     profile_name = profile_data.get('name', 'Unnamed Profile')
-    elements.extend(create_header(profile_name, "Portfolio Summary Report"))
+    elements.extend(create_header(profile_name, "Portfolio Summary Report", styles, colors_dict))
 
     # Assets Overview
     elements.append(Paragraph("Assets Overview", styles['SectionTitle']))
@@ -314,14 +431,16 @@ def generate_portfolio_report(profile_data):
 
     overview_data = [
         ['Category', 'Value', 'Percentage'],
-        ['Retirement Accounts', format_currency(total_retirement), format_percent(total_retirement / total_assets * 100 if total_assets > 0 else 0)],
-        ['Taxable Accounts', format_currency(total_taxable), format_percent(total_taxable / total_assets * 100 if total_assets > 0 else 0)],
+        ['Retirement Accounts', format_currency(total_retirement),
+         format_percent(total_retirement / total_assets * 100 if total_assets > 0 else 0)],
+        ['Taxable Accounts', format_currency(total_taxable),
+         format_percent(total_taxable / total_assets * 100 if total_assets > 0 else 0)],
         ['Total Portfolio', format_currency(total_assets), '100%'],
     ]
 
     overview_table = Table(overview_data, colWidths=[2.5*inch, 2*inch, 1.5*inch])
     overview_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3498db')),
+        ('BACKGROUND', (0, 0), (-1, 0), colors_dict['secondary']),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
         ('ALIGN', (0, 0), (0, -1), 'LEFT'),
@@ -330,9 +449,9 @@ def generate_portfolio_report(profile_data):
         ('FONTSIZE', (0, 0), (-1, -1), 10),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
         ('TOPPADDING', (0, 0), (-1, -1), 10),
-        ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#bdc3c7')),
-        ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#ecf0f1')),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -2), [colors.white, colors.HexColor('#f8f9fa')]),
+        ('GRID', (0, 0), (-1, -1), 0.25, colors_dict['border']),
+        ('BACKGROUND', (0, -1), (-1, -1), colors_dict['bg_light']),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -2), [colors.white, colors_dict['bg_alt']]),
     ]))
     elements.append(overview_table)
     elements.append(Spacer(1, 25))
@@ -351,15 +470,15 @@ def generate_portfolio_report(profile_data):
 
         retirement_table = Table(retirement_data, colWidths=[2.5*inch, 2*inch, 1.5*inch])
         retirement_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#27ae60')),
+            ('BACKGROUND', (0, 0), (-1, 0), colors_dict['success']),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
             ('ALIGN', (2, 0), (2, -1), 'RIGHT'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, -1), 10),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
             ('TOPPADDING', (0, 0), (-1, -1), 8),
-            ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#bdc3c7')),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
+            ('GRID', (0, 0), (-1, -1), 0.25, colors_dict['border']),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors_dict['bg_alt']]),
         ]))
         elements.append(retirement_table)
         elements.append(Spacer(1, 20))
@@ -385,8 +504,8 @@ def generate_portfolio_report(profile_data):
             ('FONTSIZE', (0, 0), (-1, -1), 10),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
             ('TOPPADDING', (0, 0), (-1, -1), 8),
-            ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#bdc3c7')),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
+            ('GRID', (0, 0), (-1, -1), 0.25, colors_dict['border']),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors_dict['bg_alt']]),
         ]))
         elements.append(taxable_table)
         elements.append(Spacer(1, 20))
@@ -406,21 +525,21 @@ def generate_portfolio_report(profile_data):
 
         financial_table = Table(financial_data, colWidths=[3*inch, 2*inch])
         financial_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3498db')),
+            ('BACKGROUND', (0, 0), (-1, 0), colors_dict['secondary']),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
             ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, -1), 10),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
             ('TOPPADDING', (0, 0), (-1, -1), 8),
-            ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#bdc3c7')),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
+            ('GRID', (0, 0), (-1, -1), 0.25, colors_dict['border']),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors_dict['bg_alt']]),
         ]))
         elements.append(financial_table)
 
     # Disclaimer
     elements.append(Spacer(1, 30))
-    elements.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor('#bdc3c7')))
+    elements.append(HRFlowable(width="100%", thickness=0.5, color=colors_dict['border']))
     elements.append(Spacer(1, 10))
     elements.append(Paragraph(
         "<i>This portfolio summary is for informational purposes only. Values shown may not reflect "
@@ -434,23 +553,24 @@ def generate_portfolio_report(profile_data):
 
 
 def generate_action_plan_report(profile_data, action_items):
-    """Generate action plan PDF report."""
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(
-        buffer,
-        pagesize=letter,
-        rightMargin=1.0*inch,
-        leftMargin=1.0*inch,
-        topMargin=1.0*inch,
-        bottomMargin=1.0*inch
-    )
+    """Generate action plan PDF report.
 
-    styles = create_styles()
+    Args:
+        profile_data: Dict with profile information
+        action_items: List of action item dicts
+
+    Returns:
+        BytesIO buffer containing PDF
+    """
+    buffer, doc = create_document(title=f"Action Plan - {profile_data.get('name', 'Profile')}")
+
+    styles = create_basic_styles()
+    colors_dict = ColorPalette.BASIC
     elements = []
 
     # Header
     profile_name = profile_data.get('name', 'Unnamed Profile')
-    elements.extend(create_header(profile_name, "Action Plan Report"))
+    elements.extend(create_header(profile_name, "Action Plan Report", styles, colors_dict))
 
     # Summary
     elements.append(Paragraph("Action Items Summary", styles['SectionTitle']))
@@ -466,18 +586,16 @@ def generate_action_plan_report(profile_data, action_items):
     elements.append(Paragraph(summary_text, styles['ReportBody']))
     elements.append(Spacer(1, 15))
 
-    # Priority items (Pending and In Progress)
+    # Priority items
     active_items = pending + in_progress
     if active_items:
         elements.append(Paragraph("Priority Items", styles['SectionTitle']))
 
-        # Sort by priority
         priority_order = {'high': 0, 'medium': 1, 'low': 2}
         active_items.sort(key=lambda x: priority_order.get(x.get('priority', 'medium'), 1))
 
         priority_data = [['Priority', 'Status', 'Action Item', 'Due Date']]
         for item in active_items:
-            # Use title if available, otherwise use description
             action_text = item.get('title') or item.get('description', 'Untitled Action')
             priority_data.append([
                 item.get('priority', 'medium').title(),
@@ -488,14 +606,14 @@ def generate_action_plan_report(profile_data, action_items):
 
         priority_table = Table(priority_data, colWidths=[0.8*inch, 1*inch, 3.2*inch, 1*inch])
         priority_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#e74c3c')),
+            ('BACKGROUND', (0, 0), (-1, 0), colors_dict['warning']),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, -1), 9),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
             ('TOPPADDING', (0, 0), (-1, -1), 8),
-            ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#bdc3c7')),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
+            ('GRID', (0, 0), (-1, -1), 0.25, colors_dict['border']),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors_dict['bg_alt']]),
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ]))
         elements.append(priority_table)
@@ -506,14 +624,9 @@ def generate_action_plan_report(profile_data, action_items):
         elements.append(Paragraph("Detailed Action Items", styles['SectionTitle']))
 
         for i, item in enumerate(active_items, 1):
-            # Use title for the heading
             title_text = item.get('title') or item.get('description', 'Untitled Action')
-            elements.append(Paragraph(
-                f"{i}. {title_text}",
-                styles['SubSection']
-            ))
+            elements.append(Paragraph(f"{i}. {title_text}", styles['SubSection']))
 
-            # Show description separately if it exists and is different from title
             description = item.get('description', '')
             if description and description != title_text:
                 elements.append(Paragraph(description, styles['ReportBody']))
@@ -531,8 +644,7 @@ def generate_action_plan_report(profile_data, action_items):
         elements.append(Paragraph("Completed Items", styles['SectionTitle']))
 
         completed_data = [['Action Item', 'Completed']]
-        for item in completed[-10:]:  # Show last 10 completed
-            # Use title if available, otherwise use description
+        for item in completed[-10:]:
             action_text = item.get('title') or item.get('description', 'Untitled Action')
             completed_data.append([
                 action_text[:60] + ('...' if len(action_text) > 60 else ''),
@@ -541,14 +653,14 @@ def generate_action_plan_report(profile_data, action_items):
 
         completed_table = Table(completed_data, colWidths=[5*inch, 1*inch])
         completed_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#27ae60')),
+            ('BACKGROUND', (0, 0), (-1, 0), colors_dict['success']),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, -1), 9),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
             ('TOPPADDING', (0, 0), (-1, -1), 8),
-            ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#bdc3c7')),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
+            ('GRID', (0, 0), (-1, -1), 0.25, colors_dict['border']),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors_dict['bg_alt']]),
         ]))
         elements.append(completed_table)
 
@@ -561,14 +673,7 @@ def generate_action_plan_report(profile_data, action_items):
         ))
 
     # Disclaimer
-    elements.append(Spacer(1, 30))
-    elements.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor('#bdc3c7')))
-    elements.append(Spacer(1, 10))
-    elements.append(Paragraph(
-        "<i>This action plan is generated based on your profile data and should be reviewed "
-        "with qualified financial professionals before implementation.</i>",
-        styles['SmallText']
-    ))
+    elements.extend(create_disclaimer(styles))
 
     doc.build(elements)
     buffer.seek(0)
