@@ -1399,10 +1399,14 @@ async function exportLogs(container) {
 /**
  * Show IP list view modal with drill-down capabilities
  */
-async function showIPListView() {
+export async function showIPListView(days = null) {
     try {
         // Fetch all unique IP locations directly from the server
-        const response = await apiClient.get('/api/admin/logs/ip-locations');
+        let url = '/api/admin/logs/ip-locations';
+        if (days) {
+            url += `?days=${days}`;
+        }
+        const response = await apiClient.get(url);
         const uniqueIPs = response.locations || [];
 
         if (uniqueIPs.length === 0) {
@@ -1602,7 +1606,8 @@ async function showIPListView() {
         // Setup "View Map" button
         const viewMapBtn = modal.querySelector('#view-map-btn');
         viewMapBtn.addEventListener('click', async () => {
-            await showIPLocationsMap();
+            modal.remove(); // Close list view
+            await showIPLocationsMap(days); // Open map view with same filter
         });
         viewMapBtn.addEventListener('mouseenter', () => viewMapBtn.style.opacity = '0.8');
         viewMapBtn.addEventListener('mouseleave', () => viewMapBtn.style.opacity = '1');
@@ -1674,7 +1679,12 @@ export async function showIPLocationsMap(days = null) {
             <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; width: 90%; max-width: 1200px; max-height: 90vh; overflow-y: auto;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 15px;">
                     <h2 style="margin: 0; font-size: 20px;">🗺️ IP Locations Map (${uniqueIPs.length} Unique IPs)</h2>
-                    <button class="close-modal-btn" style="background: transparent; border: none; font-size: 28px; cursor: pointer; color: var(--text-secondary); padding: 0; line-height: 1;">×</button>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button id="view-list-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-weight: 600; transition: opacity 0.2s;">
+                            📋 View List
+                        </button>
+                        <button class="close-modal-btn" style="background: transparent; border: none; font-size: 28px; cursor: pointer; color: var(--text-secondary); padding: 0; line-height: 1;">×</button>
+                    </div>
                 </div>
 
                 <div id="ip-locations-map" style="height: 600px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); margin-bottom: 20px;"></div>
@@ -1715,6 +1725,15 @@ export async function showIPLocationsMap(days = null) {
             }
         };
         document.addEventListener('keydown', escHandler);
+
+        // Setup "View List" button
+        const viewListBtn = modal.querySelector('#view-list-btn');
+        viewListBtn.addEventListener('click', async () => {
+            modal.remove(); // Close map view
+            await showIPListView(days); // Open list view with same filter
+        });
+        viewListBtn.addEventListener('mouseenter', () => viewListBtn.style.background = 'var(--border-color)');
+        viewListBtn.addEventListener('mouseleave', () => viewListBtn.style.background = 'var(--bg-tertiary)');
 
         // Initialize map
         setTimeout(() => {
