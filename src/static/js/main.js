@@ -10,6 +10,7 @@ import { showFeedbackModal } from './components/feedback/feedback-modal.js';
 import { showRoadmapViewer } from './components/roadmap/roadmap-viewer.js';
 import { activityTracker } from './utils/activityTracker.js';
 import { renderUserBackups } from './components/settings/user-backups.js';
+import { showSpinner, hideSpinner } from './utils/dom.js';
 
 /**
  * Initialize application
@@ -198,6 +199,11 @@ async function showTab(tabName) {
     // Load tab content
     const container = document.getElementById('tab-content-container');
 
+    // Setup 300ms loading spinner delay
+    let spinnerTimer = setTimeout(() => {
+        showSpinner(`Loading ${tabName}...`);
+    }, 300);
+
     try {
         await loadTabComponent(tabName, container);
         console.log(`📄 Showing tab: ${tabName}`);
@@ -210,6 +216,9 @@ async function showTab(tabName) {
                 </div>
             </div>
         `;
+    } finally {
+        clearTimeout(spinnerTimer);
+        hideSpinner();
     }
 }
 
@@ -217,15 +226,8 @@ async function showTab(tabName) {
  * Load tab component dynamically
  */
 async function loadTabComponent(tabName, container) {
-    // Show loading state
-    container.innerHTML = `
-        <div class="tab-content active">
-            <div style="text-align: center; padding: 60px;">
-                <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
-                <div>Loading ${tabName}...</div>
-            </div>
-        </div>
-    `;
+    // Note: We don't show an immediate loading state here anymore.
+    // The global spinner will appear if this takes > 300ms.
 
     // Create container div
     const tabContent = document.createElement('div');

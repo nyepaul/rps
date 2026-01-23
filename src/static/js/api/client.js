@@ -3,6 +3,7 @@
  */
 
 import { API_URL } from '../config.js';
+import { showSpinner, hideSpinner } from '../utils/dom.js';
 
 /**
  * Get CSRF token from meta tag or cookie
@@ -47,6 +48,11 @@ class APIClient {
             }
         }
 
+        // Setup 300ms loading spinner delay
+        let spinnerTimer = setTimeout(() => {
+            showSpinner('Loading...');
+        }, 300);
+
         try {
             const response = await fetch(`${this.baseURL}${url}`, config);
 
@@ -74,6 +80,10 @@ class APIClient {
                 throw error;
             }
             throw new APIError(error.message || 'Network error', 0, {});
+        } finally {
+            // Clear timer and hide spinner
+            clearTimeout(spinnerTimer);
+            hideSpinner();
         }
     }
 
