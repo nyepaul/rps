@@ -1,189 +1,57 @@
 {
-  "profile_name": "Sample Family - Complete Demo",
+  "profile_name": "Junior Employee - Alex",
   "person1": {
-    "name": "Sarah Johnson",
-    "birth_date": "1968-03-15",
-    "retirement_date": "2033-07-01",
-    "social_security": 3200
+    "name": "Alex Junior",
+    "birth_date": "2000-05-15",
+    "retirement_date": "2065-05-15",
+    "social_security": 2200
   },
   "person2": {
-    "name": "Michael Johnson",
-    "birth_date": "1965-11-22",
-    "retirement_date": "2030-12-31",
-    "social_security": 3800
+    "name": "",
+    "birth_date": "",
+    "retirement_date": "",
+    "social_security": 0
   },
   "income_streams": [
     {
-      "name": "Sarah's State Pension",
-      "amount": 85000,
-      "start_date": "2033-07-01",
-      "inflation_adjusted": true,
-      "survivor_benefit": 50
-    },
-    {
-      "name": "Michael's Corporate Pension",
-      "amount": 72000,
-      "start_date": "2031-01-01",
-      "inflation_adjusted": true,
-      "survivor_benefit": 75
-    },
-    {
-      "name": "Rental Income - Beach Condo",
-      "amount": 36000,
+      "name": "Salary (Junior Dev)",
+      "type": "salary",
+      "amount": 70000,
       "start_date": "2026-01-01",
+      "end_date": "2065-05-15",
       "inflation_adjusted": true,
-      "survivor_benefit": 100
-    },
-    {
-      "name": "Fixed Annuity",
-      "amount": 24000,
-      "start_date": "2035-01-01",
-      "inflation_adjusted": false,
-      "survivor_benefit": 100
-    },
-    {
-      "name": "Part-time Consulting",
-      "amount": 45000,
-      "start_date": "2031-01-01",
-      "inflation_adjusted": true,
-      "survivor_benefit": 0
+      "growth_rate": 0.03
     }
   ],
   "investment_types": [
     {
-      "name": "Joint Checking Account",
+      "name": "Checking Account",
       "account": "Checking",
-      "value": 35000,
-      "cost_basis": 0
+      "value": 2500,
+      "cost_basis": 2500
     },
     {
-      "name": "Emergency Savings",
+      "name": "Emergency Fund",
       "account": "Savings",
-      "value": 125000,
-      "cost_basis": 0
+      "value": 10000,
+      "cost_basis": 10000
     },
     {
-      "name": "Money Market Fund",
-      "account": "Liquid",
-      "value": 80000,
-      "cost_basis": 80000
-    },
-    {
-      "name": "Vanguard Brokerage Account",
-      "account": "Taxable Brokerage",
-      "value": 875000,
-      "cost_basis": 520000
-    },
-    {
-      "name": "Fidelity Taxable Investment",
-      "account": "Taxable Brokerage",
-      "value": 340000,
-      "cost_basis": 280000
-    },
-    {
-      "name": "Sarah's Traditional IRA",
-      "account": "Traditional IRA",
-      "value": 620000,
-      "cost_basis": 0
-    },
-    {
-      "name": "Michael's Traditional IRA",
-      "account": "Traditional IRA",
-      "value": 485000,
-      "cost_basis": 0
-    },
-    {
-      "name": "Sarah's Rollover IRA",
-      "account": "Traditional IRA",
-      "value": 380000,
-      "cost_basis": 0
-    },
-    {
-      "name": "Sarah's Current 403b",
-      "account": "403b",
-      "value": 1250000,
-      "cost_basis": 0
-    },
-    {
-      "name": "Michael's 401k",
+      "name": "401k - Tech Corp",
       "account": "401k",
-      "value": 1680000,
-      "cost_basis": 0
+      "value": 15000,
+      "cost_basis": 12000
     },
     {
-      "name": "Michael's Old 401k",
-      "account": "401k",
-      "value": 425000,
-      "cost_basis": 0
-    },
-    {
-      "name": "Sarah's 457b Plan",
-      "account": "457b",
-      "value": 340000,
-      "cost_basis": 0
-    },
-    {
-      "name": "Michael's 401a",
-      "account": "401a",
-      "value": 185000,
-      "cost_basis": 0
-    },
-    {
-      "name": "Sarah's Roth IRA",
+      "name": "Roth IRA",
       "account": "Roth IRA",
-      "value": 285000,
-      "cost_basis": 0
-    },
-    {
-      "name": "Michael's Roth IRA",
-      "account": "Roth IRA",
-      "value": 195000,
-      "cost_basis": 0
-    },
-    {
-      "name": "Sarah's Roth Conversion",
-      "account": "Roth IRA",
-      "value": 75000,
-      "cost_basis": 0
+      "value": 5000,
+      "cost_basis": 4000
     }
   ],
-  "home_properties": [
-    {
-      "name": "Primary Residence - Suburban Home",
-      "property_type": "Primary Residence",
-      "current_value": 950000,
-      "purchase_price": 485000,
-      "mortgage_balance": 180000,
-      "annual_costs": 28500,
-      "appreciation_rate": 0.035,
-      "sale_year": 2040,
-      "replacement_cost": 425000
-    },
-    {
-      "name": "Rental Property - Downtown Condo",
-      "property_type": "Rental Property",
-      "current_value": 580000,
-      "purchase_price": 385000,
-      "mortgage_balance": 245000,
-      "annual_costs": 18200,
-      "appreciation_rate": 0.04,
-      "sale_year": 2038,
-      "replacement_cost": 0
-    },
-    {
-      "name": "Vacation Home - Mountain Cabin",
-      "property_type": "Vacation Home",
-      "current_value": 425000,
-      "purchase_price": 320000,
-      "mortgage_balance": 0,
-      "annual_costs": 12600,
-      "appreciation_rate": 0.03,
-      "sale_year": 2045,
-      "replacement_cost": 0
-    }
-  ],
+  "home_properties": [],
   "market_assumptions": {
-    "stock_allocation": 0.60,
+    "stock_allocation": 0.90,
     "stock_return_mean": 0.10,
     "stock_return_std": 0.18,
     "bond_return_mean": 0.04,
@@ -191,7 +59,8 @@
     "inflation_mean": 0.03,
     "inflation_std": 0.012
   },
-  "assumed_tax_rate": 0.24,
-  "target_annual_income": 185000,
-  "description": "Comprehensive sample profile demonstrating all system features: dual-income couple with multiple pensions, diverse investment portfolio across 16 accounts spanning all account types (checking, savings, taxable brokerage, Traditional IRA, 401k, 403b, 401a, 457b, Roth IRA), three real estate properties (primary residence, rental property, vacation home), and multiple income streams including pensions, rental income, annuity, and consulting work."
+  "assumed_tax_rate": 0.22,
+  "target_annual_income": 70000,
+  "annual_expenses": 48000,
+  "description": "Junior Employee profile: Single, Age 26, $70k Salary, Starter Assets."
 }
