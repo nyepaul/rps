@@ -3380,7 +3380,7 @@ def get_user_activity_report():
         # Get overall action distribution
         action_dist_query = f"""
             SELECT action, COUNT(*) as count
-            FROM enhanced_audit_log
+            FROM enhanced_audit_log al
             WHERE {where_sql}
             GROUP BY action
             ORDER BY count DESC
