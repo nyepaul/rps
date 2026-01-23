@@ -336,9 +336,6 @@ def run_analysis():
         return jsonify(response), 200
 
     except KeyError as e:
-        import traceback
-        print(f"KeyError in analysis: {str(e)}")
-        print(traceback.format_exc())
         enhanced_audit_logger.log(
             action='RUN_ANALYSIS_KEY_ERROR',
             details={'profile_name': data.profile_name, 'error': str(e)},
@@ -346,9 +343,6 @@ def run_analysis():
         )
         return jsonify({'error': f'Missing required field: {str(e)}'}), 400
     except Exception as e:
-        import traceback
-        print(f"Exception in analysis: {str(e)}")
-        print(traceback.format_exc())
         enhanced_audit_logger.log(
             action='RUN_ANALYSIS_ERROR',
             details={'profile_name': data.profile_name, 'error': str(e)},
@@ -504,8 +498,6 @@ def get_cashflow_details():
         return jsonify(response), 200
 
     except Exception as e:
-        import traceback
-        print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 

@@ -221,9 +221,6 @@ def generate_analysis():
         )
 
     except Exception as e:
-        import traceback
-        print(f"Error generating analysis report: {str(e)}")
-        print(traceback.format_exc())
         enhanced_audit_logger.log(
             action='GENERATE_ANALYSIS_REPORT_ERROR',
             details={'profile_name': profile_name if 'profile_name' in dir() else None, 'error': str(e)},
@@ -284,9 +281,6 @@ def generate_portfolio():
         )
 
     except Exception as e:
-        import traceback
-        print(f"Error generating portfolio report: {str(e)}")
-        print(traceback.format_exc())
         enhanced_audit_logger.log(
             action='GENERATE_PORTFOLIO_REPORT_ERROR',
             details={'profile_name': profile_name if 'profile_name' in dir() else None, 'error': str(e)},
@@ -362,9 +356,6 @@ def generate_action_plan():
         )
 
     except Exception as e:
-        import traceback
-        print(f"Error generating action plan report: {str(e)}")
-        print(traceback.format_exc())
         enhanced_audit_logger.log(
             action='GENERATE_ACTION_PLAN_REPORT_ERROR',
             details={'profile_name': profile_name if 'profile_name' in dir() else None, 'error': str(e)},

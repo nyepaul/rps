@@ -182,9 +182,6 @@ def analyze_roth_conversion():
         return jsonify(result), 200
 
     except Exception as e:
-        import traceback
-        print(f"Exception in Roth conversion analysis: {str(e)}")
-        print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 
@@ -238,9 +235,6 @@ def analyze_social_security_timing():
         return jsonify(result), 200
 
     except Exception as e:
-        import traceback
-        print(f"Exception in Social Security analysis: {str(e)}")
-        print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 
@@ -296,9 +290,6 @@ def get_tax_snapshot():
         return jsonify(result), 200
 
     except Exception as e:
-        import traceback
-        print(f"Exception in tax snapshot: {str(e)}")
-        print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 
@@ -362,9 +353,6 @@ def compare_states():
         }), 200
 
     except Exception as e:
-        import traceback
-        print(f"Exception in state comparison: {str(e)}")
-        print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 
@@ -414,7 +402,4 @@ def project_rmds():
         return jsonify(result), 200
 
     except Exception as e:
-        import traceback
-        print(f"Exception in RMD projection: {str(e)}")
-        print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500

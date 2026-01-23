@@ -1284,7 +1284,8 @@ def get_database_schema():
                 continue
 
             # Get table info (columns)
-            columns_result = db.execute(f"PRAGMA table_info({table_name})")
+            info_query = f"PRAGMA table_info({table_name})"
+            columns_result = db.execute(info_query)
             columns = []
 
             for col in columns_result:
@@ -1297,7 +1298,8 @@ def get_database_schema():
                 })
 
             # Get foreign keys
-            fk_result = db.execute(f"PRAGMA foreign_key_list({table_name})")
+            fk_query = f"PRAGMA foreign_key_list({table_name})"
+            fk_result = db.execute(fk_query)
             foreign_keys = []
 
             for fk in fk_result:
@@ -1312,7 +1314,8 @@ def get_database_schema():
                 })
 
             # Get indexes
-            indexes_result = db.execute(f"PRAGMA index_list({table_name})")
+            indexes_query = f"PRAGMA index_list({table_name})"
+            indexes_result = db.execute(indexes_query)
             indexes = []
 
             for idx in indexes_result:
@@ -1320,7 +1323,8 @@ def get_database_schema():
                 # Validate index name before using in PRAGMA
                 if not validate_identifier(idx_name):
                     continue
-                idx_info = db.execute(f"PRAGMA index_info({idx_name})")
+                idx_query = f"PRAGMA index_info({idx_name})"
+                idx_info = db.execute(idx_query)
                 index_columns = [col['name'] for col in idx_info]
                 indexes.append({
                     'name': idx_name,

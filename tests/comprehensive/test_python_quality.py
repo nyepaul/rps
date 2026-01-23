@@ -21,6 +21,9 @@ class TestPythonQuality:
         issues = []
 
         for py_file in PY_BASE_DIR.rglob('*.py'):
+            # Skip venv
+            if 'venv' in py_file.parts:
+                continue
             content = py_file.read_text()
 
             # Look for dangerous SQL patterns
@@ -50,6 +53,9 @@ class TestPythonQuality:
         issues = []
 
         for py_file in PY_BASE_DIR.rglob('*.py'):
+            # Skip venv
+            if 'venv' in py_file.parts:
+                continue
             # Skip test files
             if 'test_' in py_file.name or '/tests/' in str(py_file):
                 continue
@@ -76,6 +82,9 @@ class TestPythonQuality:
         issues = []
 
         for py_file in PY_BASE_DIR.rglob('*.py'):
+            # Skip venv
+            if 'venv' in py_file.parts:
+                continue
             try:
                 with open(py_file) as f:
                     tree = ast.parse(f.read(), filename=str(py_file))
@@ -103,6 +112,9 @@ class TestPythonQuality:
         issues = []
 
         for py_file in PY_BASE_DIR.rglob('*.py'):
+            # Skip venv
+            if 'venv' in py_file.parts:
+                continue
             content = py_file.read_text()
             lines = content.split('\n')
 
@@ -170,6 +182,9 @@ class TestPythonCriticalIssues:
         issues = []
 
         for py_file in PY_BASE_DIR.rglob('*.py'):
+            # Skip venv
+            if 'venv' in py_file.parts:
+                continue
             try:
                 content = py_file.read_text()
 
