@@ -618,14 +618,13 @@ def delete_my_feedback(feedback_id: int):
 
 @feedback_bp.route('/<int:feedback_id>/replies', methods=['POST'])
 @login_required
-@admin_required
 def add_reply(feedback_id: int):
     """
-    Add admin reply to feedback.
+    Add reply to feedback (User or Admin).
 
     Request body:
         reply_text: The reply message
-        is_private: Boolean, true for private admin note, false for public reply (default: false)
+        is_private: Boolean (Admin only)
     """
     data = request.json
 
@@ -639,8 +638,6 @@ def add_reply(feedback_id: int):
     if len(reply_text) > 5000:
         return jsonify({'error': 'Reply too long (max 5,000 characters)'}), 400
 
-    is_private = data.get('is_private', False)
-
     # Sanitize reply text
     sanitized_reply = html.escape(reply_text)
 
@@ -648,13 +645,31 @@ def add_reply(feedback_id: int):
         with db.get_connection() as conn:
             cursor = conn.cursor()
 
-            # Verify feedback exists
-            cursor.execute('SELECT user_id FROM feedback WHERE id = ?', (feedback_id,))
+            # Verify feedback exists and check status
+            cursor.execute('SELECT user_id, status FROM feedback WHERE id = ?', (feedback_id,))
             feedback_row = cursor.fetchone()
             if not feedback_row:
                 return jsonify({'error': 'Feedback not found'}), 404
+            
+            owner_id = feedback_row[0]
+            status = feedback_row[1]
+
+            # Check permissions: Must be Admin or Owner
+            is_admin = getattr(current_user, 'is_admin', False)
+            if not is_admin and current_user.id != owner_id:
+                return jsonify({'error': 'Access denied'}), 403
+
+            # Check if closed
+            if status == 'closed' and not is_admin:
+                return jsonify({'error': 'Cannot reply to closed feedback'}), 400
+
+            # Determine privacy (Users cannot make private notes)
+            is_private = data.get('is_private', False)
+            if not is_admin:
+                is_private = False
 
             # Insert reply
+            # We use 'admin_id' column to store the replier's ID (legacy naming)
             cursor.execute('''
                 INSERT INTO feedback_replies (feedback_id, admin_id, reply_text, is_private, created_at)
                 VALUES (?, ?, ?, ?, ?)
@@ -662,7 +677,9 @@ def add_reply(feedback_id: int):
 
             reply_id = cursor.lastrowid
 
-            # Update feedback last_reply_at timestamp
+            # Update feedback timestamps
+            # If user replied, maybe update status to 'pending' if it was 'reviewed'? 
+            # For now, just update timestamps.
             cursor.execute('''
                 UPDATE feedback
                 SET last_reply_at = ?, updated_at = ?

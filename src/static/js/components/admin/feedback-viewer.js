@@ -311,17 +311,20 @@ async function showFeedbackDetails(feedback) {
                             💬 Replies (${thread.replies.length})
                         </h3>
                         <div style="display: flex; flex-direction: column; gap: 12px;">
-                            ${thread.replies.map(reply => `
+                            ${thread.replies.map(reply => {
+                                const isUserReply = reply.admin_id === feedback.user_id;
+                                return `
                                 <div style="
-                                    background: ${reply.is_private ? '#fff3cd' : '#f8f9fa'};
-                                    border-left: 4px solid ${reply.is_private ? '#ffc107' : '#6c757d'};
+                                    background: ${reply.is_private ? '#fff3cd' : (isUserReply ? 'var(--bg-primary)' : 'var(--bg-tertiary)')};
+                                    border-left: 4px solid ${reply.is_private ? '#ffc107' : (isUserReply ? 'var(--text-secondary)' : 'var(--accent-color)')};
                                     padding: 16px;
                                     border-radius: 4px;
+                                    margin-left: ${isUserReply ? '0' : '20px'};
+                                    margin-right: ${isUserReply ? '20px' : '0'};
                                 ">
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                                         <div style="font-weight: 600; display: flex; align-items: center; gap: 8px;">
-                                            ${reply.admin_username || 'System'}
-                                            ${reply.is_private ? '<span style="font-size: 11px; background: #ffc107; color: #856404; padding: 2px 6px; border-radius: 3px;">PRIVATE NOTE</span>' : ''}
+                                            ${reply.is_private ? '🔒 Admin Note' : (isUserReply ? `👤 ${reply.admin_username}` : `🛡️ ${reply.admin_username}`)}
                                         </div>
                                         <div style="font-size: 12px; color: var(--text-secondary);">
                                             ${formatTimestamp(reply.created_at)}
@@ -331,12 +334,13 @@ async function showFeedbackDetails(feedback) {
                                         ${reply.reply_text}
                                     </div>
                                 </div>
-                            `).join('')}
+                            `;}).join('')}
                         </div>
                     </div>
                 ` : ''}
 
                 <!-- Add Reply Form -->
+                ${feedback.status !== 'closed' ? `
                 <div style="margin-bottom: 24px; border-top: 1px solid var(--border-color); padding-top: 20px;">
                     <h3 style="font-size: 16px; font-weight: 600; margin: 0 0 12px 0;">
                         ✍️ Add Reply
@@ -353,7 +357,7 @@ async function showFeedbackDetails(feedback) {
                         font-family: inherit;
                         resize: vertical;
                         margin-bottom: 12px;
-                    " placeholder="Write your reply to the user..."></textarea>
+                    " placeholder="Write your reply..."></textarea>
                     <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
                         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                             <input type="checkbox" id="is-private-reply" style="cursor: pointer;">
@@ -371,6 +375,11 @@ async function showFeedbackDetails(feedback) {
                         color: white;
                     ">Send Reply</button>
                 </div>
+                ` : `
+                <div style="margin-bottom: 24px; border-top: 1px solid var(--border-color); padding-top: 20px; text-align: center; color: var(--text-secondary); font-style: italic;">
+                    🚫 Ticket is closed. Re-open to add replies.
+                </div>
+                `}
 
                 <!-- Admin Actions -->
                 <div style="border-top: 1px solid var(--border-color); padding-top: 20px;">

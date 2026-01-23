@@ -328,28 +328,52 @@ async function viewFeedbackThreadInModal(container, feedbackId) {
 function renderFeedbackThreadInModal(container, thread, originalContent) {
     const typeIcon = getTypeIcon(thread.type);
     const submittedDate = new Date(thread.created_at).toLocaleString();
+    const isClosed = thread.status === 'closed';
 
     let repliesHtml = '';
     if (thread.replies && thread.replies.length > 0) {
         repliesHtml = thread.replies.map(reply => {
             const replyDate = new Date(reply.created_at).toLocaleString();
-            return `
-                <div style="
-                    padding: 12px;
-                    background: var(--bg-secondary);
-                    border-left: 3px solid #1098ad;
-                    border-radius: 0 8px 8px 0;
-                    margin-bottom: 12px;
-                ">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <strong style="color: #1098ad;">Admin Response</strong>
-                        <span style="font-size: 12px; color: var(--text-secondary);">${replyDate}</span>
+            const isUserReply = reply.admin_id === thread.user_id;
+            
+            if (isUserReply) {
+                // User's own reply
+                return `
+                    <div style="
+                        padding: 12px;
+                        background: var(--bg-primary);
+                        border-right: 3px solid var(--text-secondary);
+                        border-radius: 8px 0 0 8px;
+                        margin-bottom: 12px;
+                        margin-left: 20px;
+                        text-align: right;
+                    ">
+                        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 8px;">
+                            <span style="font-size: 12px; color: var(--text-secondary);">${replyDate}</span>
+                            <strong style="color: var(--text-primary);">You</strong>
+                        </div>
+                        <div style="color: var(--text-primary); line-height: 1.5; white-space: pre-wrap;">${reply.reply_text}</div>
                     </div>
-                    <div style="color: var(--text-primary); line-height: 1.5;">
-                        ${reply.reply_text}
+                `;
+            } else {
+                // Admin reply
+                return `
+                    <div style="
+                        padding: 12px;
+                        background: var(--bg-secondary);
+                        border-left: 3px solid #1098ad;
+                        border-radius: 0 8px 8px 0;
+                        margin-bottom: 12px;
+                        margin-right: 20px;
+                    ">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <strong style="color: #1098ad;">Support Team</strong>
+                            <span style="font-size: 12px; color: var(--text-secondary);">${replyDate}</span>
+                        </div>
+                        <div style="color: var(--text-primary); line-height: 1.5; white-space: pre-wrap;">${reply.reply_text}</div>
                     </div>
-                </div>
-            `;
+                `;
+            }
         }).join('');
     } else {
         repliesHtml = `
@@ -403,27 +427,106 @@ function renderFeedbackThreadInModal(container, thread, originalContent) {
                 <div style="color: var(--text-primary); line-height: 1.6; white-space: pre-wrap;">${thread.content}</div>
             </div>
 
-            <div style="margin-bottom: 8px; font-weight: 600; color: var(--text-primary);">Responses</div>
-            ${repliesHtml}
+            <div style="margin-bottom: 8px; font-weight: 600; color: var(--text-primary);">Discussion</div>
+            <div style="margin-bottom: 20px;">
+                ${repliesHtml}
+            </div>
+
+            ${!isClosed ? `
+                <div style="border-top: 1px solid var(--border-color); padding-top: 16px;">
+                    <h4 style="font-size: 14px; margin: 0 0 10px 0;">Add a reply</h4>
+                    <textarea id="user-reply-text" style="
+                        width: 100%;
+                        min-height: 80px;
+                        padding: 10px;
+                        border: 1px solid var(--border-color);
+                        border-radius: 6px;
+                        background: var(--bg-tertiary);
+                        color: var(--text-primary);
+                        font-family: inherit;
+                        font-size: 14px;
+                        resize: vertical;
+                        margin-bottom: 10px;
+                    " placeholder="Type your reply here..."></textarea>
+                    <div style="display: flex; justify-content: flex-end;">
+                        <button id="submit-user-reply" style="
+                            padding: 8px 16px;
+                            background: var(--accent-color);
+                            color: white;
+                            border: none;
+                            border-radius: 6px;
+                            cursor: pointer;
+                            font-weight: 600;
+                            font-size: 13px;
+                        ">Send Reply</button>
+                    </div>
+                </div>
+            ` : `
+                <div style="
+                    padding: 12px;
+                    background: var(--bg-tertiary);
+                    border-radius: 6px;
+                    text-align: center;
+                    color: var(--text-secondary);
+                    font-size: 13px;
+                    font-style: italic;
+                ">
+                    This ticket is closed. Replies are disabled.
+                </div>
+            `}
         </div>
     `;
 
+    // Handle back button
     document.getElementById('back-to-list-btn').addEventListener('click', () => {
         container.innerHTML = originalContent;
-        // Re-attach event listeners
+        // Re-attach event listeners for list items
         container.querySelectorAll('.modal-feedback-item').forEach(item => {
             item.addEventListener('click', async () => {
                 const id = item.getAttribute('data-id');
                 await viewFeedbackThreadInModal(container, id);
             });
-            item.addEventListener('mouseenter', () => {
-                item.style.borderColor = '#1098ad';
-            });
-            item.addEventListener('mouseleave', () => {
-                item.style.borderColor = 'var(--border-color)';
-            });
+            item.addEventListener('mouseenter', () => item.style.borderColor = '#1098ad');
+            item.addEventListener('mouseleave', () => item.style.borderColor = 'var(--border-color)');
         });
     });
+
+    // Handle reply submission
+    const replyBtn = document.getElementById('submit-user-reply');
+    if (replyBtn) {
+        replyBtn.addEventListener('click', async () => {
+            const text = document.getElementById('user-reply-text').value.trim();
+            if (!text) return;
+
+            replyBtn.disabled = true;
+            replyBtn.textContent = 'Sending...';
+
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+                const response = await fetch(`/api/feedback/${thread.id}/replies`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(csrfToken && { 'X-CSRF-Token': csrfToken })
+                    },
+                    body: JSON.stringify({ reply_text: text })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || 'Failed to send reply');
+                }
+
+                // Reload thread
+                await viewFeedbackThreadInModal(container, thread.id);
+
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+                replyBtn.disabled = false;
+                replyBtn.textContent = 'Send Reply';
+            }
+        });
+    }
 }
 
 /**
