@@ -238,7 +238,7 @@ async function testAPIKey(provider, apiKey, statusElement) {
         return;
     }
 
-    statusElement.innerHTML = '<span style="color: var(--text-secondary);">⏳ Testing...</span>';
+    statusElement.innerHTML = '<span style="color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px;"><span class="spinner" style="width: 14px; height: 14px; border: 2px solid var(--border-color); border-top-color: var(--accent-color); border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block;"></span>Testing...</span><style>@keyframes spin { to { transform: rotate(360deg); }}</style>';
 
     try {
         const response = await fetch('/api/test-api-key', {

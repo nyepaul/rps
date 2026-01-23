@@ -68,7 +68,20 @@ export async function renderUserTimeline(container) {
 
             <!-- Loading State -->
             <div id="timeline-loading" style="display: none; text-align: center; padding: 40px; background: var(--bg-secondary); border-radius: 12px;">
-                <div style="font-size: 48px; margin-bottom: 15px;">⏳</div>
+                <div class="spinner" style="
+                    width: 48px;
+                    height: 48px;
+                    border: 4px solid var(--border-color);
+                    border-top-color: var(--accent-color);
+                    border-radius: 50%;
+                    animation: spin 0.8s linear infinite;
+                    margin: 0 auto 15px;
+                "></div>
+                <style>
+                     spin {
+                        to { transform: rotate(360deg); }
+                    }
+                </style>
                 <p style="color: var(--text-secondary);">Loading user timeline...</p>
             </div>
 

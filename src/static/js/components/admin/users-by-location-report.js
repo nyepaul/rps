@@ -84,7 +84,7 @@ async function loadReport(container) {
     const period = document.getElementById('report-period').value;
 
     try {
-        contentDiv.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 400px; color: var(--text-secondary);"><div style="text-align: center;"><div style="font-size: 48px; margin-bottom: 10px;">⏳</div><div>Generating report...</div></div></div>';
+        contentDiv.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 400px; color: var(--text-secondary);"><div style="text-align: center;"><div class="spinner" style="width: 48px; height: 48px; border: 4px solid var(--border-color); border-top-color: var(--accent-color); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 10px;"></div><div>Generating report...</div></div></div><style> spin { to { transform: rotate(360deg); }}</style>';
 
         const response = await apiClient.get(`/api/admin/reports/users-by-location?days=${period}`);
         currentReportData = response;
@@ -552,7 +552,20 @@ async function showIPLogs(userId, ipAddress, city, country) {
 
             <div id="ip-logs-container" style="flex: 1; overflow-y: auto; min-height: 300px;">
                 <div style="text-align: center; padding: 60px;">
-                    <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
+                    <div class="spinner" style="
+                    width: 48px;
+                    height: 48px;
+                    border: 4px solid var(--border-color);
+                    border-top-color: var(--accent-color);
+                    border-radius: 50%;
+                    animation: spin 0.8s linear infinite;
+                    margin: 0 auto 20px;
+                "></div>
+                <style>
+                     spin {
+                        to { transform: rotate(360deg); }
+                    }
+                </style>
                     <div>Loading records...</div>
                 </div>
             </div>
