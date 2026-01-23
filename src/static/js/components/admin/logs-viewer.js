@@ -1629,7 +1629,7 @@ async function showIPListView() {
 /**
  * Show IP locations map modal
  */
-async function showIPLocationsMap() {
+export async function showIPLocationsMap() {
     try {
         // Fetch all unique IP locations directly from the server
         const response = await apiClient.get('/api/admin/logs/ip-locations');
