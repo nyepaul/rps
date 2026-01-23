@@ -48,10 +48,10 @@ class APIClient {
             }
         }
 
-        // Setup 500ms loading spinner delay
+        // Setup 750ms loading spinner delay
         let spinnerTimer = setTimeout(() => {
             showSpinner('Loading...');
-        }, 500);
+        }, 750);
 
         try {
             const response = await fetch(`${this.baseURL}${url}`, config);
