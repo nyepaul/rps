@@ -3,14 +3,14 @@ import { showError, showSuccess } from '../../utils/dom.js';
 
 export function renderPasswordRequests(container) {
     container.innerHTML = `
-        <div class="admin-card" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px;">
+        <div>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h3 style="margin: 0; color: #333;">Password Reset Requests</h3>
-                <button id="refreshRequestsBtn" style="background: #f3f4f6; border: 1px solid #d1d5db; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
-                    ↻ Refresh
+                <h3 style="margin: 0; font-size: 18px; font-weight: 600;">🔑 Password Reset Requests</h3>
+                <button id="refreshRequestsBtn" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 6px; cursor: pointer; color: var(--text-primary); font-size: 13px; font-weight: 600;">
+                    🔄 Refresh
                 </button>
             </div>
-            <div id="requestsTableContainer">Loading...</div>
+            <div id="requestsTableContainer"></div>
         </div>
     `;
     
@@ -23,54 +23,76 @@ async function loadRequests() {
         const requests = await apiClient.get('/api/admin/password-requests');
         renderTable(requests);
     } catch (error) {
-        document.getElementById('requestsTableContainer').innerHTML = `<div class="error" style="color: #dc2626; padding: 10px; background: #fee2e2; border-radius: 4px;">Failed to load requests: ${error.message}</div>`;
+        document.getElementById('requestsTableContainer').innerHTML = `<div class="error" style="color: var(--danger-color); padding: 10px; background: var(--danger-bg); border-radius: 6px; font-size: 13px;">Failed to load requests: ${error.message}</div>`;
     }
 }
 
 function renderTable(requests) {
     const container = document.getElementById('requestsTableContainer');
     if (!Array.isArray(requests) || requests.length === 0) {
-        container.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 20px;">No pending requests.</p>';
+        container.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: var(--text-secondary); background: var(--bg-secondary); border-radius: 12px;">
+                <div style="font-size: 48px; margin-bottom: 15px;">📪</div>
+                <div>No pending password reset requests</div>
+            </div>
+        `;
         return;
     }
 
-    let html = `
-        <div style="overflow-x: auto;">
-        <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 14px;">
-            <thead>
-                <tr style="background: #f9fafb; border-bottom: 2px solid #e5e7eb; text-align: left;">
-                    <th style="padding: 12px; color: #374151; font-weight: 600;">Time</th>
-                    <th style="padding: 12px; color: #374151; font-weight: 600;">User</th>
-                    <th style="padding: 12px; color: #374151; font-weight: 600;">Email</th>
-                    <th style="padding: 12px; color: #374151; font-weight: 600;">IP</th>
-                    <th style="padding: 12px; color: #374151; font-weight: 600;">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
+    const html = `
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+            ${requests.map(req => `
+                <div class="password-request-item" data-id="${req.id}" data-username="${req.username}" style="
+                    background: var(--bg-tertiary);
+                    border: 1px solid var(--border-color);
+                    border-radius: 6px;
+                    padding: 10px 12px;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                " onmouseover="this.style.borderColor='var(--accent-color)'; this.style.transform='translateX(4px)'" onmouseout="this.style.borderColor='var(--border-color)'; this.style.transform='translateX(0)'">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                            <span style="
+                                display: inline-flex;
+                                align-items: center;
+                                gap: 4px;
+                                padding: 2px 8px;
+                                background: #f59e0b22;
+                                color: #f59e0b;
+                                border-radius: 10px;
+                                font-size: 11px;
+                                font-weight: 700;
+                                text-transform: uppercase;
+                            ">🔑 Reset Request</span>
+                            <span style="font-size: 12px; color: var(--text-primary); font-weight: 600;">👤 ${req.username}</span>
+                            <span style="font-size: 11px; color: var(--text-secondary);">(${req.email})</span>
+                            ${req.request_ip ? `<span style="font-size: 11px; color: var(--text-secondary); font-family: monospace; opacity: 0.7;">• ${req.request_ip}</span>` : ''}
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="font-size: 11px; color: var(--text-secondary); white-space: nowrap;">
+                                ${new Date(req.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                            <button class="reset-req-btn" data-id="${req.id}" data-username="${req.username}" style="
+                                padding: 4px 10px;
+                                background: #f59e0b;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 11px;
+                                font-weight: 700;
+                            ">Process</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
     `;
 
-    requests.forEach(req => {
-        html += `
-            <tr class="password-request-row" data-id="${req.id}" data-username="${req.username}" style="border-bottom: 1px solid #e5e7eb; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='transparent'">
-                <td style="padding: 12px; color: #4b5563;">${new Date(req.created_at).toLocaleString()}</td>
-                <td style="padding: 12px; font-weight: 500; color: #111827;">${req.username}</td>
-                <td style="padding: 12px; color: #4b5563;">${req.email}</td>
-                <td style="padding: 12px; color: #6b7280; font-family: monospace;">${req.request_ip || 'N/A'}</td>
-                <td style="padding: 12px;" onclick="event.stopPropagation()">
-                    <button class="action-btn reset-req-btn" data-id="${req.id}" data-username="${req.username}"
-                        style="background: #f59e0b; color: white; padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer; font-weight: 500; transition: background 0.2s;">
-                        Process Reset
-                    </button>
-                </td>
-            </tr>
-        `;
-    });
-
-    html += '</tbody></table></div>';
     container.innerHTML = html;
 
-    container.querySelectorAll('.password-request-row').forEach(row => {
-        row.addEventListener('click', () => handleReset(row.dataset.id, row.dataset.username));
+    container.querySelectorAll('.password-request-item').forEach(item => {
+        item.addEventListener('click', () => handleReset(item.dataset.id, item.dataset.username));
     });
 
     container.querySelectorAll('.reset-req-btn').forEach(btn => {
