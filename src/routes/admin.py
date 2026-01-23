@@ -3048,6 +3048,7 @@ def get_users_by_location_report():
         cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
 
         # Get all users with their access patterns by location
+        # Include all actions with geolocation data to get complete IP/location picture
         query = '''
             SELECT
                 l.user_id,
@@ -3061,7 +3062,7 @@ def get_users_by_location_report():
             WHERE l.created_at >= ?
             AND l.user_id IS NOT NULL
             AND l.geo_location IS NOT NULL
-            AND l.action IN ('LOGIN_SUCCESS', 'NETWORK_ACCESS')
+            AND l.ip_address IS NOT NULL
             GROUP BY l.user_id, l.ip_address, l.geo_location
             ORDER BY l.user_id, access_count DESC
         '''
@@ -3171,9 +3172,16 @@ def get_users_by_location_report():
         result = sorted(users_by_location.values(), key=lambda x: x['total_accesses'], reverse=True)
 
         # Generate summary statistics
+        # Calculate unique IPs across all users
+        all_unique_ips = set()
+        for u in result:
+            all_unique_ips.update(u['unique_ips'] if isinstance(u.get('unique_ips'), set) else
+                                [loc['ip_address'] for loc in u.get('locations', [])])
+
         summary = {
             'total_users': len(result),
             'total_locations': sum(u['unique_locations'] for u in result),
+            'unique_ip_addresses': len(all_unique_ips),
             'users_with_multiple_locations': len([u for u in result if u['unique_locations'] > 1]),
             'users_with_security_flags': len([u for u in result if u['security_flags']]),
             'period_days': days,
