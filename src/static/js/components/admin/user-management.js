@@ -41,7 +41,6 @@ export async function renderUserManagement(container) {
                                 <th style="text-align: center; padding: 12px; font-size: 12px; font-weight: 600;">Super Admin</th>
                                 <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">Created</th>
                                 <th style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600;">Last Login</th>
-                                <th style="text-align: center; padding: 12px; font-size: 12px; font-weight: 600;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -99,41 +98,6 @@ function renderUserRow(user, currentUser) {
             </td>
             <td style="padding: 12px; font-size: 12px; color: var(--text-secondary);">${createdDate}</td>
             <td style="padding: 12px; font-size: 12px; color: var(--text-secondary);">${lastLogin}</td>
-            <td style="padding: 12px; text-align: center;" onclick="event.stopPropagation()">
-                <div style="display: flex; gap: 5px; justify-content: center;">
-                    <button class="toggle-active-btn" data-user-id="${user.id}" data-is-active="${user.is_active}" style="padding: 4px 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px;" title="${user.is_active ? 'Deactivate' : 'Activate'}">
-                        ${user.is_active ? '🚫' : '✅'}
-                    </button>
-                    <button class="toggle-admin-btn" data-user-id="${user.id}" data-is-admin="${user.is_admin}" style="padding: 4px 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px;" title="${user.is_admin ? 'Remove Admin' : 'Make Admin'}">
-                        ${user.is_admin ? '👤' : '👑'}
-                    </button>
-                    ${currentUser && currentUser.is_super_admin ? `
-                        <button class="toggle-super-admin-btn" data-user-id="${user.id}" data-is-super-admin="${user.is_super_admin}" data-is-admin="${user.is_admin}" style="padding: 4px 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px;" title="${user.is_super_admin ? 'Remove Super Admin' : 'Grant Super Admin'}">
-                            ${user.is_super_admin ? '⭐' : '⚪'}
-                        </button>
-                        <button class="manage-user-groups-btn" data-user-id="${user.id}" data-username="${user.username}" style="padding: 4px 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px;" title="Manage Groups">
-                            🔗
-                        </button>
-                        <button class="manage-user-backups-btn" data-user-id="${user.id}" data-username="${user.username}" style="padding: 4px 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px;" title="User Backups">
-                            💾
-                        </button>
-                    ` : ''}
-                    <button class="reset-password-btn" data-user-id="${user.id}" data-username="${user.username}" style="padding: 4px 8px; background: #f59e0b; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;" title="Reset Password">
-                        🔑
-                    </button>
-                    <button class="view-user-profiles-btn" data-user-id="${user.id}" style="padding: 4px 8px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;" title="View Profiles">
-                        📁
-                    </button>
-                    <button class="view-user-report-btn" data-user-id="${user.id}" data-username="${user.username}" style="padding: 4px 8px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;" title="View Activity Report">
-                        📊
-                    </button>
-                    ${currentUser && user.id !== currentUser.id && currentUser.is_admin ? `
-                        <button class="delete-user-btn" data-user-id="${user.id}" data-username="${user.username}" style="padding: 4px 8px; background: var(--danger-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;" title="Delete User">
-                            🗑️
-                        </button>
-                    ` : ''}
-                </div>
-            </td>
         </tr>
     `;
 }
@@ -142,133 +106,173 @@ function renderUserRow(user, currentUser) {
  * Setup user action handlers
  */
 function setupUserActionHandlers(container) {
-    // Row click to view report
+    // Row click to manage user
     container.querySelectorAll('.user-row').forEach(row => {
         row.addEventListener('click', async () => {
             const userId = parseInt(row.getAttribute('data-user-id'));
             const username = row.getAttribute('data-username');
-            await showUserReport(userId, username);
-        });
-    });
-
-    // Toggle active status
-    container.querySelectorAll('.toggle-active-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const userId = parseInt(btn.getAttribute('data-user-id'));
-            const isActive = btn.getAttribute('data-is-active') === 'true';
-
-            if (confirm(`Are you sure you want to ${isActive ? 'deactivate' : 'activate'} this user?`)) {
-                await toggleUserActive(userId, !isActive);
-                await renderUserManagement(container);  // Refresh
+            
+            // Need to fetch full user object including status flags
+            // Alternatively we could put data attributes on the row
+            // Better to fetch fresh data
+            try {
+                const response = await apiClient.get('/api/admin/users');
+                const user = response.users.find(u => u.id === userId);
+                if (user) {
+                    showUserManagementModal(user, store.get('currentUser'), container);
+                }
+            } catch (error) {
+                showError('Failed to load user data');
             }
         });
     });
+}
 
-    // Toggle admin status
-    container.querySelectorAll('.toggle-admin-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const userId = parseInt(btn.getAttribute('data-user-id'));
-            const isAdmin = btn.getAttribute('data-is-admin') === 'true';
+/**
+ * Show User Management Modal
+ */
+function showUserManagementModal(user, currentUser, parentContainer) {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.cssText = `position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;`;
+    
+    // Determine permissions
+    const canManageGroups = currentUser.is_super_admin;
+    const canDelete = currentUser.is_admin && user.id !== currentUser.id;
+    const canToggleAdmin = currentUser.is_admin;
+    const canToggleSuperAdmin = currentUser.is_super_admin;
 
-            if (confirm(`Are you sure you want to ${isAdmin ? 'remove admin privileges from' : 'grant admin privileges to'} this user?`)) {
-                await toggleUserAdmin(userId, !isAdmin);
-                await renderUserManagement(container);  // Refresh
+    modal.innerHTML = `
+        <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
+                <div>
+                    <h3 style="margin: 0;">${user.username}</h3>
+                    <div style="color: var(--text-secondary); font-size: 13px;">${user.email}</div>
+                </div>
+                <button class="close-modal-btn" style="background: transparent; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">×</button>
+            </div>
+
+            <div style="display: grid; gap: 15px;">
+                <!-- Status & Roles -->
+                <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 14px; color: var(--text-secondary);">Account Status</h4>
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                        <button id="toggle-active-btn" style="padding: 8px 12px; background: ${user.is_active ? 'var(--bg-tertiary)' : 'var(--success-color)'}; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; color: ${user.is_active ? 'var(--text-primary)' : 'white'};">
+                            ${user.is_active ? '🚫 Deactivate' : '✅ Activate'}
+                        </button>
+                        ${canToggleAdmin ? `
+                            <button id="toggle-admin-btn" style="padding: 8px 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
+                                ${user.is_admin ? '👤 Remove Admin' : '👑 Make Admin'}
+                            </button>
+                        ` : ''}
+                        ${canToggleSuperAdmin ? `
+                            <button id="toggle-super-admin-btn" style="padding: 8px 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
+                                ${user.is_super_admin ? '⚪ Remove Super Admin' : '⭐ Grant Super Admin'}
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+
+                <!-- Data & Management -->
+                <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 14px; color: var(--text-secondary);">Data & Management</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <button id="view-profiles-btn" style="padding: 8px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            📁 View Profiles
+                        </button>
+                        <button id="view-report-btn" style="padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
+                            📊 Activity Report
+                        </button>
+                        <button id="reset-password-btn" style="padding: 8px; background: #f59e0b; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            🔑 Reset Password
+                        </button>
+                        <button id="manage-backups-btn" style="padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
+                            💾 Backups
+                        </button>
+                        ${canManageGroups ? `
+                            <button id="manage-groups-btn" style="padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; grid-column: span 2;">
+                                🔗 Manage Groups
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+
+                <!-- Danger Zone -->
+                ${canDelete ? `
+                    <div style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+                        <button id="delete-user-btn" style="width: 100%; padding: 10px; background: transparent; border: 1px solid var(--danger-color); color: var(--danger-color); border-radius: 6px; cursor: pointer; font-weight: 600;">
+                            🗑️ Delete User
+                        </button>
+                    </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Event Listeners
+    const close = () => modal.remove();
+    modal.querySelector('.close-modal-btn').onclick = close;
+    modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+
+    modal.querySelector('#toggle-active-btn').onclick = async () => {
+        if (confirm(`Are you sure you want to ${user.is_active ? 'deactivate' : 'activate'} this user?`)) {
+            await toggleUserActive(user.id, !user.is_active);
+            modal.remove();
+            renderUserManagement(parentContainer);
+        }
+    };
+
+    if (canToggleAdmin) {
+        modal.querySelector('#toggle-admin-btn').onclick = async () => {
+            if (confirm(`Are you sure you want to ${user.is_admin ? 'remove admin' : 'make admin'}?`)) {
+                await toggleUserAdmin(user.id, !user.is_admin);
+                modal.remove();
+                renderUserManagement(parentContainer);
             }
-        });
-    });
+        };
+    }
 
-    // Toggle super admin status (only visible to super admins)
-    container.querySelectorAll('.toggle-super-admin-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const userId = parseInt(btn.getAttribute('data-user-id'));
-            const isSuperAdmin = btn.getAttribute('data-is-super-admin') === 'true';
-
-            const action = isSuperAdmin ? 'revoke super admin privileges from' : 'grant super admin privileges to';
-            const message = isSuperAdmin
-                ? `Are you sure you want to ${action} this user?`
-                : `Are you sure you want to ${action} this user? (User will also be promoted to admin if needed)`;
-
-            if (confirm(message)) {
-                await toggleUserSuperAdmin(userId, !isSuperAdmin);
-                await renderUserManagement(container);  // Refresh
+    if (canToggleSuperAdmin) {
+        modal.querySelector('#toggle-super-admin-btn').onclick = async () => {
+            if (confirm(`Are you sure?`)) {
+                await toggleUserSuperAdmin(user.id, !user.is_super_admin);
+                modal.remove();
+                renderUserManagement(parentContainer);
             }
-        });
-    });
+        };
+    }
 
-    // Manage User Groups (Super Admin only)
-    container.querySelectorAll('.manage-user-groups-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const userId = parseInt(btn.getAttribute('data-user-id'));
-            const username = btn.getAttribute('data-username');
-            await showManageUserGroupsModal(userId, username, container);
-        });
-    });
+    modal.querySelector('#view-profiles-btn').onclick = () => viewUserProfiles(user.id);
+    modal.querySelector('#view-report-btn').onclick = () => showUserReport(user.id, user.username);
+    modal.querySelector('#reset-password-btn').onclick = () => resetUserPassword(user.id, user.username);
+    modal.querySelector('#manage-backups-btn').onclick = () => showManageUserBackupsModal(user.id, user.username);
+    
+    if (canManageGroups) {
+        modal.querySelector('#manage-groups-btn').onclick = () => {
+            // We need to pass parentContainer to refresh the table later if needed
+            // But showManageUserGroupsModal refreshes the table itself if passed
+            showManageUserGroupsModal(user.id, user.username, parentContainer);
+        };
+    }
 
-    // Manage User Backups (Admin/Super Admin)
-    container.querySelectorAll('.manage-user-backups-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const userId = parseInt(btn.getAttribute('data-user-id'));
-            const username = btn.getAttribute('data-username');
-            await showManageUserBackupsModal(userId, username);
-        });
-    });
-
-    // Reset password
-    container.querySelectorAll('.reset-password-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const userId = parseInt(btn.getAttribute('data-user-id'));
-            const username = btn.getAttribute('data-username');
-            await resetUserPassword(userId, username);
-        });
-    });
-
-    // View user profiles
-    container.querySelectorAll('.view-user-profiles-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const userId = parseInt(btn.getAttribute('data-user-id'));
-            await viewUserProfiles(userId);
-        });
-    });
-
-    // View user report
-    container.querySelectorAll('.view-user-report-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const userId = parseInt(btn.getAttribute('data-user-id'));
-            const username = btn.getAttribute('data-username');
-            await showUserReport(userId, username);
-        });
-    });
-
-    // Delete user (admin only)
-    container.querySelectorAll('.delete-user-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const userId = parseInt(btn.getAttribute('data-user-id'));
-            const username = btn.getAttribute('data-username');
-
+    if (canDelete) {
+        modal.querySelector('#delete-user-btn').onclick = async () => {
             const confirmed = confirm(
-                `⚠️ WARNING: This will permanently delete user "${username}" and ALL their data including:\n\n` +
-                `• All profiles\n` +
-                `• All scenarios\n` +
-                `• All action items\n` +
-                `• All conversations\n` +
-                `• All feedback submissions\n\n` +
-                `This action CANNOT be undone!\n\n` +
-                `Type the username "${username}" in the next prompt to confirm deletion.`
+                `⚠️ WARNING: This will permanently delete user "${user.username}" and ALL their data.\n\n` +
+                `Type the username "${user.username}" to confirm:`
             );
-
             if (confirmed) {
-                const typedUsername = prompt(`Type "${username}" to confirm deletion:`);
-                if (typedUsername === username) {
-                    await deleteUser(userId, username);
-                    await renderUserManagement(container);  // Refresh
-                } else if (typedUsername !== null) {
-                    showError('Username did not match. Deletion cancelled.');
+                const typed = prompt(`Type "${user.username}" to confirm:`);
+                if (typed === user.username) {
+                    await deleteUser(user.id, user.username);
+                    modal.remove();
+                    renderUserManagement(parentContainer);
                 }
             }
-        });
-    });
+        };
+    }
 }
 
 /**
@@ -605,25 +609,7 @@ async function showManageUserBackupsModal(userId, username) {
                 </button>
             </div>
 
-            <div id="admin-user-backups-list" style="min-height: 150px;">
-                <div style="text-align: center; padding: 30px;">
-                    <div class="spinner" style="
-                        width: 24px;
-                        height: 24px;
-                        border: 3px solid var(--border-color);
-                        border-top-color: var(--accent-color);
-                        border-radius: 50%;
-                        animation: spin 0.8s linear infinite;
-                        margin: 0 auto 10px;
-                    "></div>
-                    <div>Loading...</div>
-                </div>
-                <style>
-                    @keyframes spin {
-                        to { transform: rotate(360deg); }
-                    }
-                </style>
-            </div>
+            <div id="admin-user-backups-list" style="min-height: 150px;"></div>
 
             <div style="display: flex; justify-content: flex-end; margin-top: 25px; padding-top: 15px; border-top: 1px solid var(--border-color);">
                 <button class="close-modal-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-weight: 600;">Close</button>
