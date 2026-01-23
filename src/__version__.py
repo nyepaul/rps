@@ -1,5 +1,5 @@
 """RPS Version Information"""
 
-__version__ = "3.8.111"
+__version__ = "3.8.112"
 __release_date__ = "2026-01-22"
-__release_notes__ = "fix: Remove stuck loading message in Cash Flow tab - skip loading indicator when Monte Carlo is disabled"
+__release_notes__ = "feat: Re-enable Monte Carlo portfolio projections in Cash Flow tab - align with Analysis forecasts"
