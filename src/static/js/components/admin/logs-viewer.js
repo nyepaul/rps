@@ -30,6 +30,23 @@ let isNavigating = false;
 // Store current map instance to properly clean up
 let currentAuditLogMap = null;
 
+// Prefetched data storage
+let prefetchedLogsData = null;
+
+/**
+ * Prefetch logs in the background
+ */
+export async function prefetchLogs() {
+    try {
+        console.log('🔄 Prefetching logs in background...');
+        const response = await apiClient.get('/api/admin/logs?limit=50&offset=0&sort_by=created_at&sort_direction=desc');
+        prefetchedLogsData = response;
+        console.log('✅ Logs prefetched');
+    } catch (error) {
+        console.warn('Failed to prefetch logs:', error);
+    }
+}
+
 /**
  * Render logs viewer with filtering and pagination
  */
@@ -292,29 +309,46 @@ async function loadLogs(container, offset = 0) {
             }
         }
 
+        const actionFilter = container.querySelector('#filter-action').value || undefined;
+        const tableFilter = container.querySelector('#filter-table').value || undefined;
+        const ipFilter = container.querySelector('#filter-ip').value || undefined;
+        const startFilter = container.querySelector('#filter-start-date').value || undefined;
+        const endFilter = container.querySelector('#filter-end-date').value || undefined;
+
         const filters = {
             user_id: userId,
-            action: container.querySelector('#filter-action').value || undefined,
-            table_name: container.querySelector('#filter-table').value || undefined,
-            ip_address: container.querySelector('#filter-ip').value || undefined,
-            start_date: container.querySelector('#filter-start-date').value || undefined,
-            end_date: container.querySelector('#filter-end-date').value || undefined,
+            action: actionFilter,
+            table_name: tableFilter,
+            ip_address: ipFilter,
+            start_date: startFilter,
+            end_date: endFilter,
             sort_by: currentSort.column,
             sort_direction: currentSort.direction,
             limit: 50,
             offset: offset
         };
 
-        // Build query string
-        const params = new URLSearchParams();
-        for (const [key, value] of Object.entries(filters)) {
-            if (value !== undefined) {
-                params.append(key, value);
+        // Check for prefetched data (only if default view: offset 0 and no filters)
+        let response;
+        const isDefaultView = offset === 0 && !userId && !actionFilter && !tableFilter && !ipFilter && !startFilter && !endFilter && currentSort.column === 'created_at' && currentSort.direction === 'desc';
+
+        if (isDefaultView && prefetchedLogsData) {
+            console.log('🚀 Using prefetched logs');
+            response = prefetchedLogsData;
+            prefetchedLogsData = null; // Clear after use
+        } else {
+            // Build query string
+            const params = new URLSearchParams();
+            for (const [key, value] of Object.entries(filters)) {
+                if (value !== undefined) {
+                    params.append(key, value);
+                }
             }
+
+            // Fetch logs
+            response = await apiClient.get(`/api/admin/logs?${params.toString()}`);
         }
 
-        // Fetch logs
-        const response = await apiClient.get(`/api/admin/logs?${params.toString()}`);
         const logs = response.logs;
         const total = response.total;
         const limit = response.limit;

@@ -4,7 +4,7 @@
 
 import { store } from '../../state/store.js';
 import { showError } from '../../utils/dom.js';
-import { renderLogsViewer } from './logs-viewer.js';
+import { renderLogsViewer, prefetchLogs } from './logs-viewer.js';
 import { renderUserTimeline } from './user-timeline.js';
 import { renderConfigEditor } from './config-editor.js';
 import { renderUserManagement } from './user-management.js';
@@ -50,7 +50,7 @@ export async function renderAdminTab(container) {
 
             <!-- Admin Sub-Tabs -->
             <div style="display: flex; gap: 4px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 0; overflow-x: visible; align-items: center; background: var(--bg-secondary); border-radius: 6px 6px 0 0; padding: 0 10px;">
-                <button class="admin-subtab active" data-subtab="logs" style="padding: 10px 16px; background: transparent; border: none; border-bottom: 2px solid var(--accent-color); cursor: pointer; font-weight: 700; color: var(--accent-color); transition: all 0.2s; white-space: nowrap; font-size: 13px;">
+                <button class="admin-subtab" data-subtab="logs" style="padding: 10px 16px; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-weight: 700; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap; font-size: 13px;">
                     📋 Logs
                 </button>
 
@@ -107,7 +107,7 @@ export async function renderAdminTab(container) {
                 <button class="admin-subtab" data-subtab="config" style="padding: 10px 16px; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-weight: 700; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap; font-size: 13px;">
                     ⚙️ Config
                 </button>
-                <button class="admin-subtab" data-subtab="system" style="padding: 10px 16px; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-weight: 700; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap; font-size: 13px;">
+                <button class="admin-subtab active" data-subtab="system" style="padding: 10px 16px; background: transparent; border: none; border-bottom: 2px solid var(--accent-color); cursor: pointer; font-weight: 700; color: var(--accent-color); transition: all 0.2s; white-space: nowrap; font-size: 13px;">
                     🖥️ System
                 </button>
             </div>
@@ -120,8 +120,11 @@ export async function renderAdminTab(container) {
     // Setup sub-tab switching
     setupSubTabSwitching(container);
 
-    // Load default sub-tab (logs)
-    await showSubTab(container, 'logs');
+    // Load default sub-tab (system)
+    await showSubTab(container, 'system');
+
+    // Prefetch logs in background
+    prefetchLogs();
 }
 
 /**
