@@ -38,14 +38,17 @@ export async function renderUserTimeline(container) {
                 <h3 style="font-size: 16px; margin-bottom: 15px;">📋 Select User & Filters</h3>
                 <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px; align-items: end;">
                     <div style="position: relative;" id="user-select-container">
-                        <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">User (search to select)</label>
-                        <input
-                            type="text"
-                            id="timeline-user-input"
-                            placeholder="Type to search users..."
-                            autocomplete="off"
-                            style="width: 100%; padding: 10px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);"
-                        >
+                        <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">User (click to select)</label>
+                        <div style="position: relative;">
+                            <input
+                                type="text"
+                                id="timeline-user-input"
+                                placeholder="Click to select or type to search..."
+                                autocomplete="off"
+                                style="width: 100%; padding: 10px; padding-right: 30px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); cursor: pointer;"
+                            >
+                            <span style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); pointer-events: none;">▼</span>
+                        </div>
                         <div id="user-dropdown-list" style="
                             display: none;
                             position: absolute;
@@ -142,11 +145,14 @@ function setupTimelineHandlers(container) {
         });
     };
 
-    // Show dropdown on focus
-    userInput.addEventListener('focus', () => {
+    // Show dropdown on click/focus
+    const showDropdown = () => {
         renderDropdown(userInput.value);
         dropdown.style.display = 'block';
-    });
+    };
+
+    userInput.addEventListener('focus', showDropdown);
+    userInput.addEventListener('click', showDropdown);
 
     // Filter on input
     userInput.addEventListener('input', () => {
