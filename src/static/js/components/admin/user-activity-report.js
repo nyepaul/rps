@@ -30,15 +30,31 @@ export async function renderUserActivityReport(container) {
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 15px;">
                     <!-- User Selection -->
                     <div>
-                        <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">Select Users</label>
-                        <div style="position: relative;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">Select Users (click to search)</label>
+                        <div style="position: relative;" id="report-user-select-container">
                             <input
                                 type="text"
                                 id="user-search"
-                                placeholder="Search users..."
-                                style="width: 100%; padding: 8px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);"
+                                placeholder="Click to select or type to search..."
+                                autocomplete="off"
+                                style="width: 100%; padding: 8px 30px 8px 8px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); cursor: pointer;"
                             >
-                            <div id="user-dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; max-height: 200px; overflow-y: auto; z-index: 1000; margin-top: 2px;"></div>
+                            <span style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); pointer-events: none; font-size: 10px;">▼</span>
+                            <div id="user-dropdown" style="
+                                display: none;
+                                position: absolute;
+                                top: 100%;
+                                left: 0;
+                                right: 0;
+                                background: var(--bg-tertiary);
+                                border: 1px solid var(--border-color);
+                                border-radius: 6px;
+                                max-height: 250px;
+                                overflow-y: auto;
+                                z-index: 1000;
+                                margin-top: 4px;
+                                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                            "></div>
                         </div>
                         <div id="selected-users" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 5px;"></div>
                     </div>
@@ -170,53 +186,67 @@ function setupFilterHandlers(container) {
     const startDate = container.querySelector('#filter-start-date');
     const endDate = container.querySelector('#filter-end-date');
 
-    // User search with dropdown
-    userSearch.addEventListener('input', (e) => {
-        const searchTerm = e.target.value.toLowerCase();
-
-        if (searchTerm.length < 1) {
-            userDropdown.style.display = 'none';
-            return;
-        }
-
-        const filtered = allUsers.filter(u =>
-            u.username.toLowerCase().includes(searchTerm) ||
-            (u.email && u.email.toLowerCase().includes(searchTerm))
-        ).slice(0, 10);
+    const renderDropdown = (filterText = '') => {
+        const lowerFilter = filterText.toLowerCase();
+        // Filter users: match name/email AND not already selected
+        const filtered = allUsers.filter(u => 
+            !selectedUserIds.has(u.id) && 
+            (u.username.toLowerCase().includes(lowerFilter) || 
+             (u.email && u.email.toLowerCase().includes(lowerFilter)))
+        ).slice(0, 50); // Limit to 50 for performance
 
         if (filtered.length === 0) {
-            userDropdown.style.display = 'none';
+            userDropdown.innerHTML = `<div style="padding: 12px; color: var(--text-secondary); text-align: center; font-size: 13px;">No users found</div>`;
             return;
         }
 
         userDropdown.innerHTML = filtered.map(user => `
-            <div
-                class="user-option"
-                data-user-id="${user.id}"
-                style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--border-color);"
-            >
-                <div style="font-weight: 600;">${escapeHtml(user.username)}</div>
-                ${user.email ? `<div style="font-size: 12px; color: var(--text-secondary);">${escapeHtml(user.email)}</div>` : ''}
+            <div class="user-select-row" data-user-id="${user.id}" style="
+                padding: 8px 12px;
+                border-bottom: 1px solid var(--border-color);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                transition: background 0.2s;
+            " onmouseenter="this.style.background='var(--bg-primary)'" onmouseleave="this.style.background='transparent'">
+                <div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">${escapeHtml(user.username)}</div>
+                <div style="font-size: 11px; color: var(--text-secondary);">${user.email ? escapeHtml(user.email) : ''}</div>
+                ${user.is_admin ? '<span style="font-size: 9px; background: #764ba222; color: #764ba2; padding: 1px 4px; border-radius: 3px;">ADMIN</span>' : ''}
             </div>
         `).join('');
 
-        userDropdown.style.display = 'block';
-
-        // Add hover effect
-        userDropdown.querySelectorAll('.user-option').forEach(opt => {
-            opt.addEventListener('mouseenter', () => {
-                opt.style.background = 'var(--bg-tertiary)';
-            });
-            opt.addEventListener('mouseleave', () => {
-                opt.style.background = '';
-            });
-            opt.addEventListener('click', () => {
-                const userId = parseInt(opt.dataset.userId);
+        // Add click handlers
+        userDropdown.querySelectorAll('.user-select-row').forEach(row => {
+            row.addEventListener('click', () => {
+                const userId = parseInt(row.dataset.userId);
                 addSelectedUser(userId, container);
                 userSearch.value = '';
+                // Keep dropdown open if user wants to select more? No, usually close it.
+                // But for multi-select, sometimes keeping it open is nice. 
+                // Let's close it to be consistent with standard dropdowns.
+                // But wait, if I click again it should open.
+                // Let's hide it and user can click again.
+                // Actually, re-rendering it with updated filter (removing selected) might be better UX?
+                // Let's just hide it for now.
                 userDropdown.style.display = 'none';
             });
         });
+    };
+
+    // Show dropdown on click/focus
+    const showDropdown = () => {
+        renderDropdown(''); // Show all (minus selected)
+        userDropdown.style.display = 'block';
+    };
+
+    userSearch.addEventListener('focus', showDropdown);
+    userSearch.addEventListener('click', showDropdown);
+
+    // Filter on input
+    userSearch.addEventListener('input', () => {
+        renderDropdown(userSearch.value);
+        userDropdown.style.display = 'block';
     });
 
     // Hide dropdown when clicking outside
