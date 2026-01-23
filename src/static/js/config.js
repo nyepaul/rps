@@ -52,7 +52,7 @@ export const API_ENDPOINTS = {
 
 // Application Settings
 export const APP_CONFIG = {
-    VERSION: '3.9.2',
+    VERSION: '3.9.3',
     DEFAULT_SIMULATIONS: 10000,
     MAX_SIMULATIONS: 50000,
     MIN_SIMULATIONS: 100,
