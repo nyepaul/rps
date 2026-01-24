@@ -113,8 +113,8 @@ class RetirementModel:
                 (731200, float('inf'), 0.37),
             ]
 
-        total_tax = np.zeros_like(taxable_income)
-        marginal_rate = np.zeros_like(taxable_income)
+        total_tax = np.zeros_like(taxable_income, dtype=float)
+        marginal_rate = np.zeros_like(taxable_income, dtype=float)
 
         for lower, upper, rate in brackets:
             # Income in this bracket
