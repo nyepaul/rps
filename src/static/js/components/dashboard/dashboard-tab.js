@@ -117,9 +117,26 @@ function renderProfileCard(profile, currentProfile) {
     // Calculate net worth (assets - debts)
     const { netWorth } = calculateNetWorth(assets);
 
-    // Calculate total annual income from income streams
+    // Calculate total annual income from currently active income streams
+    const today = new Date();
+    const retirementDate = profile.retirement_date ? new Date(profile.retirement_date) : null;
+
     const totalAnnualIncome = incomeStreams.reduce((sum, stream) => {
-        return sum + (parseFloat(stream.amount) || 0) * 12;
+        const amount = parseFloat(stream.amount) || 0;
+        if (amount <= 0) return sum;
+
+        // Check if stream has started
+        if (stream.start_date && new Date(stream.start_date) > today) {
+            return sum; // Not started yet
+        }
+
+        // Check if stream has ended (use retirement date if no end date specified)
+        const endDate = stream.end_date ? new Date(stream.end_date) : retirementDate;
+        if (endDate && today > endDate) {
+            return sum; // Already ended
+        }
+
+        return sum + amount * 12;
     }, 0);
 
     // Calculate age
@@ -407,9 +424,26 @@ function showProfileInfoModal(profile) {
     // Calculate net worth and breakdown
     const { netWorth, totalAssets, totalDebts, breakdown } = calculateNetWorth(assets);
 
-    // Calculate total annual income from income streams
+    // Calculate total annual income from currently active income streams
+    const today = new Date();
+    const retirementDate = profile.retirement_date ? new Date(profile.retirement_date) : null;
+
     const totalAnnualIncome = incomeStreams.reduce((sum, stream) => {
-        return sum + (parseFloat(stream.amount) || 0) * 12;
+        const amount = parseFloat(stream.amount) || 0;
+        if (amount <= 0) return sum;
+
+        // Check if stream has started
+        if (stream.start_date && new Date(stream.start_date) > today) {
+            return sum; // Not started yet
+        }
+
+        // Check if stream has ended (use retirement date if no end date specified)
+        const endDate = stream.end_date ? new Date(stream.end_date) : retirementDate;
+        if (endDate && today > endDate) {
+            return sum; // Already ended
+        }
+
+        return sum + amount * 12;
     }, 0);
 
     // Calculate total annual expenses
