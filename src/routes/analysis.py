@@ -327,15 +327,37 @@ def run_analysis():
         # Run simulation for each scenario
         scenario_results = {}
         for scenario_key, scenario_config in scenarios.items():
-            # Use requested allocation if provided in profile, else use scenario default
-            target_stock = base_market_kwargs.get('stock_allocation', scenario_config['stock_allocation'])
-            # But for the scenario comparison loop, we want to vary stocks
-            if not data.market_profile or 'stock_allocation' not in request.json.get('market_profile', {}):
-                target_stock = scenario_config['stock_allocation']
+            # FOR COMPARISON: Always use the scenario's stock allocation
+            target_stock = scenario_config['stock_allocation']
+            
+            # Proportional adjustment for bonds/cash based on new stock target
+            # (If stocks move from 60% to 30%, we need to scale up other assets)
+            remaining = 1.0 - target_stock
+            
+            # Start with base assumptions
+            final_assumptions = {**base_market_kwargs}
+            final_assumptions['stock_allocation'] = target_stock
+            
+            # Simple balancing of bonds/cash if they exist in base
+            if remaining > 0:
+                current_b = base_market_kwargs.get('bond_allocation', 0.4)
+                current_c = base_market_kwargs.get('cash_allocation', 0.1)
+                other_sum = current_b + current_c + base_market_kwargs.get('reit_allocation', 0) + \
+                            base_market_kwargs.get('gold_allocation', 0) + base_market_kwargs.get('crypto_allocation', 0)
+                
+                if other_sum > 0:
+                    scale = remaining / other_sum
+                    final_assumptions['bond_allocation'] = current_b * scale
+                    final_assumptions['cash_allocation'] = current_c * scale
+                    # Scale others too if they were part of the profile
+                    if 'reit_allocation' in final_assumptions: final_assumptions['reit_allocation'] *= scale
+                    if 'gold_allocation' in final_assumptions: final_assumptions['gold_allocation'] *= scale
+                    if 'crypto_allocation' in final_assumptions: final_assumptions['crypto_allocation'] *= scale
+            else:
+                final_assumptions['bond_allocation'] = 0
+                final_assumptions['cash_allocation'] = 0
 
-            market_assumptions = MarketAssumptions(
-                **{**base_market_kwargs, 'stock_allocation': target_stock}
-            )
+            market_assumptions = MarketAssumptions(**final_assumptions)
             scenario_result = model.monte_carlo_simulation(
                 years=years,
                 simulations=data.simulations,
