@@ -142,15 +142,15 @@ function renderTaxAnalysis(container, analysis, profile) {
 
             <!-- Recommendations -->
             ${recommendations && recommendations.length > 0 ? `
-            <div style="background: linear-gradient(135deg, var(--accent-color), var(--info-color)); padding: 12px; border-radius: 8px; margin-bottom: 12px; color: white;">
-                <h2 style="font-size: 15px; margin: 0 0 10px 0; font-weight: 700;">💡 Top Recommendations</h2>
+            <div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--border-color);">
+                <h2 style="font-size: 15px; margin: 0 0 10px 0; font-weight: 700; color: var(--accent-color);">💡 Top Recommendations</h2>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 8px;">
                     ${recommendations.slice(0, 3).map(rec => `
-                        <div style="background: rgba(255,255,255,0.15); padding: 10px; border-radius: 6px; backdrop-filter: blur(10px);">
-                            <div style="font-size: 13px; font-weight: 700; margin-bottom: 2px;">
+                        <div style="background: var(--bg-tertiary); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
+                            <div style="font-size: 13px; font-weight: 700; margin-bottom: 2px; color: var(--text-primary);">
                                 ${rec.title}
                             </div>
-                            <div style="font-size: 11px; opacity: 0.95;">
+                            <div style="font-size: 11px; color: var(--text-secondary);">
                                 ${rec.impact}
                             </div>
                         </div>
