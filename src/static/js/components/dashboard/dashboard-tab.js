@@ -112,9 +112,15 @@ function renderProfileCard(profile, currentProfile) {
     const data = profile.data || {};
     const financial = data.financial || {};
     const assets = data.assets || {};
+    const incomeStreams = data.income_streams || [];
 
     // Calculate net worth (assets - debts)
     const { netWorth } = calculateNetWorth(assets);
+
+    // Calculate total annual income from income streams
+    const totalAnnualIncome = incomeStreams.reduce((sum, stream) => {
+        return sum + (parseFloat(stream.amount) || 0) * 12;
+    }, 0);
 
     // Calculate age
     const calcAge = (dateStr) => {
@@ -159,7 +165,7 @@ function renderProfileCard(profile, currentProfile) {
                 <div style="text-align: left; padding: 4px 6px; background: var(--bg-primary); border-radius: 4px;">
                     <div style="font-size: 8px; color: var(--text-secondary); margin-bottom: 1px;">Income</div>
                     <div style="font-size: 11px; font-weight: 700; color: var(--accent-color);">
-                        ${financial.annual_income ? formatCompact(financial.annual_income) : '--'}
+                        ${totalAnnualIncome > 0 ? formatCompact(totalAnnualIncome) : '--'}
                     </div>
                 </div>
             </div>
@@ -395,9 +401,21 @@ function showProfileInfoModal(profile) {
     const assets = data.assets || {};
     const spouse = data.spouse || {};
     const children = data.children || [];
+    const incomeStreams = data.income_streams || [];
+    const expenseItems = data.expenses || [];
 
     // Calculate net worth and breakdown
     const { netWorth, totalAssets, totalDebts, breakdown } = calculateNetWorth(assets);
+
+    // Calculate total annual income from income streams
+    const totalAnnualIncome = incomeStreams.reduce((sum, stream) => {
+        return sum + (parseFloat(stream.amount) || 0) * 12;
+    }, 0);
+
+    // Calculate total annual expenses
+    const totalAnnualExpenses = expenseItems.reduce((sum, expense) => {
+        return sum + (parseFloat(expense.amount) || 0) * 12;
+    }, 0);
     const retirementTotal = breakdown.retirementAssets;
     const taxableTotal = breakdown.taxableAssets;
     const realEstateEquity = breakdown.realEstateAssets; // This is already equity (value - mortgage)
@@ -494,16 +512,16 @@ function showProfileInfoModal(profile) {
                     <div style="display: grid; gap: 12px;">
                         <div style="display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
                             <span style="font-size: 14px; color: var(--text-secondary);">Annual Income</span>
-                            <span style="font-size: 16px; font-weight: 600;">${financial.annual_income ? formatCurrency(financial.annual_income, 0) : 'Not set'}</span>
+                            <span style="font-size: 16px; font-weight: 600;">${totalAnnualIncome > 0 ? formatCurrency(totalAnnualIncome, 0) : 'Not set'}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
                             <span style="font-size: 14px; color: var(--text-secondary);">Annual Expenses</span>
-                            <span style="font-size: 16px; font-weight: 600;">${financial.annual_expenses ? formatCurrency(financial.annual_expenses, 0) : 'Not set'}</span>
+                            <span style="font-size: 16px; font-weight: 600;">${totalAnnualExpenses > 0 ? formatCurrency(totalAnnualExpenses, 0) : 'Not set'}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between;">
                             <span style="font-size: 14px; color: var(--text-secondary);">Annual Savings</span>
-                            <span style="font-size: 16px; font-weight: 600; color: ${(financial.annual_income - financial.annual_expenses) > 0 ? 'var(--success-color)' : 'var(--danger-color)'};">
-                                ${(financial.annual_income && financial.annual_expenses) ? formatCurrency(financial.annual_income - financial.annual_expenses, 0) : 'N/A'}
+                            <span style="font-size: 16px; font-weight: 600; color: ${(totalAnnualIncome - totalAnnualExpenses) > 0 ? 'var(--success-color)' : 'var(--danger-color)'};">
+                                ${(totalAnnualIncome > 0 || totalAnnualExpenses > 0) ? formatCurrency(totalAnnualIncome - totalAnnualExpenses, 0) : 'N/A'}
                             </span>
                         </div>
                     </div>
