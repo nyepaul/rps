@@ -33,6 +33,7 @@ class Person:
     birth_date: datetime
     retirement_date: datetime
     social_security: float
+    ss_claiming_age: int = 67  # New: Social Security claiming age
     annual_401k_contribution: float = 0.0  # Annual 401k/403b contribution
     employer_match_rate: float = 0.0  # Employer match as % of salary (e.g., 0.06 for 6%)
 @dataclass
@@ -790,9 +791,12 @@ class RetirementModel:
             # Track income components separately for accurate tax calculations
 
             # B1. Social Security Benefits (inflation-adjusted)
-            p1_ss = (self.profile.person1.social_security * 12) if p1_retired else 0
-            p2_ss = (self.profile.person2.social_security * 12) if p2_retired else 0
-            gross_ss = (p1_ss + p2_ss) * current_cpi  # Total SS before taxation
+            p1_ss_eligible = p1_age >= self.profile.person1.ss_claiming_age
+            p2_ss_eligible = p2_age >= self.profile.person2.ss_claiming_age
+            
+            p1_ss_amt = (self.profile.person1.social_security * 12) if p1_ss_eligible else 0
+            p2_ss_amt = (self.profile.person2.social_security * 12) if p2_ss_eligible else 0
+            gross_ss = (p1_ss_amt + p2_ss_amt) * current_cpi  # Total SS before taxation
 
             # B2. Pension Income (taxable as ordinary income)
             active_pension = (base_pension if p1_retired else 0) * current_cpi
@@ -1277,9 +1281,12 @@ class RetirementModel:
             std_deduction = self.get_standard_deduction(current_cpi)
 
             # --- Income Calculation ---
-            p1_ss = (self.profile.person1.social_security * 12) if p1_retired else 0
-            p2_ss = (self.profile.person2.social_security * 12) if p2_retired else 0
-            gross_ss = (p1_ss + p2_ss) * current_cpi
+            p1_ss_eligible = p1_age >= self.profile.person1.ss_claiming_age
+            p2_ss_eligible = p2_age >= self.profile.person2.ss_claiming_age
+            
+            p1_ss_amt = (self.profile.person1.social_security * 12) if p1_ss_eligible else 0
+            p2_ss_amt = (self.profile.person2.social_security * 12) if p2_ss_eligible else 0
+            gross_ss = (p1_ss_amt + p2_ss_amt) * current_cpi
             
             active_pension = (base_pension if p1_retired else 0) * current_cpi
             

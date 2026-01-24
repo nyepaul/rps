@@ -1237,22 +1237,54 @@ function calculateMonthlyCashFlow(profile, months) {
         }
 
         // Calculate retirement benefits (Social Security, Pension)
-        // Each person's benefits start when they retire individually
         let retirementBenefits = 0;
 
-        // Person 1 benefits (start at their retirement date)
-        if (isRetired) {
+        // --- Person 1 Social Security (based on claiming age) ---
+        const p1ClaimingAge = financial.ss_claiming_age || 67;
+        const p1BirthDate = profile.birth_date ? new Date(profile.birth_date) : null;
+        let p1SSStarted = false;
+        
+        if (p1BirthDate) {
+            const p1SSDate = new Date(p1BirthDate);
+            p1SSDate.setFullYear(p1SSDate.getFullYear() + p1ClaimingAge);
+            p1SSStarted = currentDate >= p1SSDate;
+        } else {
+            // Fallback to retirement date if birth date missing
+            p1SSStarted = isRetired;
+        }
+
+        if (p1SSStarted) {
             retirementBenefits += financial.social_security_benefit || 0;
+        }
+        
+        // Pension always starts at retirement
+        if (isRetired) {
             retirementBenefits += financial.pension_benefit || 0;
         }
 
-        // Person 2 (spouse) benefits (start at their retirement date)
+        // --- Person 2 (spouse) Social Security ---
         if (data.spouse) {
+            const p2ClaimingAge = data.spouse.ss_claiming_age || 67;
+            const p2BirthDate = data.spouse.birth_date ? new Date(data.spouse.birth_date) : null;
+            let p2SSStarted = false;
+            
+            if (p2BirthDate) {
+                const p2SSDate = new Date(p2BirthDate);
+                p2SSDate.setFullYear(p2SSDate.getFullYear() + p2ClaimingAge);
+                p2SSStarted = currentDate >= p2SSDate;
+            } else {
+                const spouseRetirementDate = data.spouse.retirement_date ? new Date(data.spouse.retirement_date) : null;
+                p2SSStarted = spouseRetirementDate && currentDate >= spouseRetirementDate;
+            }
+
+            if (p2SSStarted) {
+                retirementBenefits += data.spouse.social_security_benefit || 0;
+            }
+            
+            // Spouse pension starts at their retirement
             const spouseRetirementDate = data.spouse.retirement_date ? new Date(data.spouse.retirement_date) : null;
             const spouseIsRetired = spouseRetirementDate && currentDate >= spouseRetirementDate;
-
             if (spouseIsRetired) {
-                retirementBenefits += data.spouse.social_security_benefit || 0;
                 retirementBenefits += data.spouse.pension_benefit || 0;
             }
         }

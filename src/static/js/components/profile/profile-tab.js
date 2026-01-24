@@ -87,6 +87,18 @@ export function renderProfileTab(container) {
                                     <span style="font-size: 11px; color: var(--text-secondary); white-space: nowrap;">Default: 95</span>
                                 </div>
                             </div>
+                            <div class="form-group">
+                                <label for="ss_benefit">Social Security (Monthly)</label>
+                                <input type="number" id="ss_benefit" name="ss_benefit" value="${financial.social_security_benefit || 0}" placeholder="$0">
+                            </div>
+                            <div class="form-group">
+                                <label for="ss_claiming_age">Claiming Age</label>
+                                <select id="ss_claiming_age" name="ss_claiming_age">
+                                    <option value="62" ${financial.ss_claiming_age == 62 ? 'selected' : ''}>62 (Early)</option>
+                                    <option value="67" ${(!financial.ss_claiming_age || financial.ss_claiming_age == 67) ? 'selected' : ''}>67 (Full)</option>
+                                    <option value="70" ${financial.ss_claiming_age == 70 ? 'selected' : ''}>70 (Max)</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
@@ -207,6 +219,18 @@ export function renderProfileTab(container) {
                                     <input type="number" id="spouse_life_expectancy" name="spouse_life_expectancy" value="${spouse.life_expectancy || 95}" min="0" max="120" style="flex: 1;">
                                     <span style="font-size: 11px; color: var(--text-secondary); white-space: nowrap;">Default: 95</span>
                                 </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="spouse_ss_benefit">Social Security (Monthly)</label>
+                                <input type="number" id="spouse_ss_benefit" name="spouse_ss_benefit" value="${spouse.social_security_benefit || 0}" placeholder="$0">
+                            </div>
+                            <div class="form-group">
+                                <label for="spouse_ss_claiming_age">Claiming Age</label>
+                                <select id="spouse_ss_claiming_age" name="spouse_ss_claiming_age">
+                                    <option value="62" ${spouse.ss_claiming_age == 62 ? 'selected' : ''}>62 (Early)</option>
+                                    <option value="67" ${(!spouse.ss_claiming_age || spouse.ss_claiming_age == 67) ? 'selected' : ''}>67 (Full)</option>
+                                    <option value="70" ${spouse.ss_claiming_age == 70 ? 'selected' : ''}>70 (Max)</option>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -403,10 +427,14 @@ function setupProfileFormHandlers(container, profile) {
                 const spouseLifeExp = formData.get('spouse_life_expectancy');
                 if (spouseLifeExp) spouse.life_expectancy = parseInt(spouseLifeExp, 10);
 
+                // Social Security Fields for Spouse
+                const spouseSS = formData.get('spouse_ss_benefit');
+                if (spouseSS) spouse.social_security_benefit = parseFloat(spouseSS);
+                
+                const spouseSSAge = formData.get('spouse_ss_claiming_age');
+                if (spouseSSAge) spouse.ss_claiming_age = parseInt(spouseSSAge, 10);
+
                 // Preserve existing spouse financial data (managed in Assets tab)
-                if (profile.data?.spouse?.social_security_benefit) {
-                    spouse.social_security_benefit = profile.data.spouse.social_security_benefit;
-                }
                 if (profile.data?.spouse?.pension_benefit) {
                     spouse.pension_benefit = profile.data.spouse.pension_benefit;
                 }
@@ -455,7 +483,11 @@ function setupProfileFormHandlers(container, profile) {
                     spouse: Object.keys(spouse).length > 0 ? spouse : {},
                     children: children,
                     address: Object.keys(address).length > 0 ? address : {},
-                    financial: profile.data?.financial || {}
+                    financial: {
+                        ...(profile.data?.financial || {}),
+                        social_security_benefit: parseFloat(formData.get('ss_benefit') || 0),
+                        ss_claiming_age: parseInt(formData.get('ss_claiming_age') || 67)
+                    }
                 }
             };
 

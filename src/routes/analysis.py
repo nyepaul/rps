@@ -189,7 +189,8 @@ def run_analysis():
             name=profile.name or 'Primary',
             birth_date=datetime.fromisoformat(birth_date_str) if birth_date_str else datetime(1980, 1, 1),
             retirement_date=datetime.fromisoformat(retirement_date_str) if retirement_date_str else datetime(2045, 1, 1),
-            social_security=financial_data.get('social_security_benefit') or 0  # Already monthly
+            social_security=financial_data.get('social_security_benefit') or 0,  # Already monthly
+            ss_claiming_age=financial_data.get('ss_claiming_age') or 67
         )
 
         # Create person2 (spouse) if spouse data exists
@@ -200,7 +201,8 @@ def run_analysis():
             name=spouse_data.get('name', 'Spouse'),
             birth_date=datetime.fromisoformat(spouse_birth) if spouse_birth else datetime(1980, 1, 1),
             retirement_date=datetime.fromisoformat(spouse_retire) if spouse_retire else datetime(2045, 1, 1),
-            social_security=spouse_data.get('social_security_benefit') or 0  # Already monthly
+            social_security=spouse_data.get('social_security_benefit') or 0,  # Already monthly
+            ss_claiming_age=spouse_data.get('ss_claiming_age') or 67
         )
 
         # Get assets from profile and transform to investment_types format
@@ -447,7 +449,8 @@ def get_cashflow_details():
             name=profile.name or 'Primary',
             birth_date=datetime.fromisoformat(birth_date_str) if birth_date_str else datetime(1980, 1, 1),
             retirement_date=datetime.fromisoformat(retirement_date_str) if retirement_date_str else datetime(2045, 1, 1),
-            social_security=financial_data.get('social_security_benefit') or 0
+            social_security=financial_data.get('social_security_benefit') or 0,
+            ss_claiming_age=financial_data.get('ss_claiming_age') or 67
         )
 
         # Create person2
@@ -458,7 +461,8 @@ def get_cashflow_details():
             name=spouse_data.get('name', 'Spouse'),
             birth_date=datetime.fromisoformat(spouse_birth) if spouse_birth else datetime(1980, 1, 1),
             retirement_date=datetime.fromisoformat(spouse_retire) if spouse_retire else datetime(2045, 1, 1),
-            social_security=spouse_data.get('social_security_benefit') or 0
+            social_security=spouse_data.get('social_security_benefit') or 0,
+            ss_claiming_age=spouse_data.get('ss_claiming_age') or 67
         )
 
         # Get assets
