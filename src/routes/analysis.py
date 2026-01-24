@@ -90,12 +90,30 @@ def transform_assets_to_investment_types(assets_data):
 
 class MarketProfileSchema(BaseModel):
     """Schema for market assumptions profile."""
+    # Allocations
+    stock_allocation: Optional[float] = 0.5
+    bond_allocation: Optional[float] = 0.4
+    cash_allocation: Optional[float] = 0.1
+    reit_allocation: Optional[float] = 0.0
+    gold_allocation: Optional[float] = 0.0
+    crypto_allocation: Optional[float] = 0.0
+
+    # Returns
     stock_return_mean: float
     stock_return_std: float
     bond_return_mean: float
     bond_return_std: float
+    cash_return_mean: Optional[float] = 0.015
+    cash_return_std: Optional[float] = 0.005
+    reit_return_mean: Optional[float] = 0.08
+    reit_return_std: Optional[float] = 0.15
+    gold_return_mean: Optional[float] = 0.04
+    gold_return_std: Optional[float] = 0.15
+    crypto_return_mean: Optional[float] = 0.20
+    crypto_return_std: Optional[float] = 0.60
     inflation_mean: float
     inflation_std: float
+    ss_discount_rate: Optional[float] = 0.03
 
 class MarketPeriodSchema(BaseModel):
     """Schema for a single market period."""
@@ -285,14 +303,7 @@ def run_analysis():
         # Create base market assumptions from request or use defaults
         base_market_kwargs = {}
         if data.market_profile:
-            base_market_kwargs = {
-                'stock_return_mean': data.market_profile.stock_return_mean,
-                'stock_return_std': data.market_profile.stock_return_std,
-                'bond_return_mean': data.market_profile.bond_return_mean,
-                'bond_return_std': data.market_profile.bond_return_std,
-                'inflation_mean': data.market_profile.inflation_mean,
-                'inflation_std': data.market_profile.inflation_std
-            }
+            base_market_kwargs = data.market_profile.dict()
 
         # Run multiple scenarios (Conservative, Moderate, Aggressive)
         scenarios = {
@@ -316,9 +327,14 @@ def run_analysis():
         # Run simulation for each scenario
         scenario_results = {}
         for scenario_key, scenario_config in scenarios.items():
+            # Use requested allocation if provided in profile, else use scenario default
+            target_stock = base_market_kwargs.get('stock_allocation', scenario_config['stock_allocation'])
+            # But for the scenario comparison loop, we want to vary stocks
+            if not data.market_profile or 'stock_allocation' not in request.json.get('market_profile', {}):
+                target_stock = scenario_config['stock_allocation']
+
             market_assumptions = MarketAssumptions(
-                stock_allocation=scenario_config['stock_allocation'],
-                **base_market_kwargs
+                **{**base_market_kwargs, 'stock_allocation': target_stock}
             )
             scenario_result = model.monte_carlo_simulation(
                 years=years,
@@ -329,7 +345,7 @@ def run_analysis():
             )
             scenario_result['scenario_name'] = scenario_config['name']
             scenario_result['description'] = scenario_config['description']
-            scenario_result['stock_allocation'] = scenario_config['stock_allocation']
+            scenario_result['stock_allocation'] = target_stock
             scenario_results[scenario_key] = scenario_result
 
         # Prepare response with all scenarios
