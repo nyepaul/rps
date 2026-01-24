@@ -243,6 +243,11 @@ def run_analysis():
                     'future': {}
                 }
 
+        # Get tax settings
+        tax_settings = profile_data.get('tax_settings', {})
+        filing_status = tax_settings.get('filing_status', 'mfj')
+        state = tax_settings.get('state', 'NY')
+
         financial_profile = FinancialProfile(
             person1=person1,
             person2=person2,
@@ -263,7 +268,9 @@ def run_analysis():
             home_properties=profile_data.get('home_properties', []),
             budget=budget_data if budget_data else None,
             annual_ira_contribution=financial_data.get('annual_ira_contribution', 0),
-            savings_allocation=profile_data.get('savings_allocation')
+            savings_allocation=profile_data.get('savings_allocation'),
+            filing_status=filing_status,
+            state=state
         )
 
         # Create retirement model
@@ -451,6 +458,11 @@ def get_cashflow_details():
                     'future': {}
                 }
 
+        # Get tax settings
+        tax_settings = profile_data.get('tax_settings', {})
+        filing_status = tax_settings.get('filing_status', 'mfj')
+        state = tax_settings.get('state', 'NY')
+
         financial_profile = FinancialProfile(
             person1=person1,
             person2=person2,
@@ -471,7 +483,9 @@ def get_cashflow_details():
             home_properties=profile_data.get('home_properties', []),
             budget=budget_data if budget_data else None,
             annual_ira_contribution=financial_data.get('annual_ira_contribution', 0),
-            savings_allocation=profile_data.get('savings_allocation')
+            savings_allocation=profile_data.get('savings_allocation'),
+            filing_status=filing_status,
+            state=state
         )
 
         model = RetirementModel(financial_profile)

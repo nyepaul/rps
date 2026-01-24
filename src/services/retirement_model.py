@@ -57,12 +57,15 @@ class FinancialProfile:
     budget: Dict = None
     annual_ira_contribution: float = 0.0  # Annual IRA contribution
     savings_allocation: Dict[str, float] = None  # How to allocate surplus: {'pretax': 0.7, 'roth': 0.2, 'taxable': 0.1}
+    filing_status: str = 'mfj'  # 'mfj', 'single', 'hoh'
+    state: str = 'NY'  # State for tax calculations
 @dataclass
 class MarketAssumptions:
     """Market and economic assumptions for financial modeling"""
     stock_allocation: float = 0.5
     stock_return_mean: float = 0.10
     bond_return_mean: float = 0.04
+    cash_return_mean: float = 0.015  # New: Configurable cash return
     inflation_mean: float = 0.03
     stock_return_std: float = 0.18
     bond_return_std: float = 0.06
@@ -76,21 +79,35 @@ class RetirementModel:
         age_now = (datetime.now() - person.birth_date).days / 365.25
         return int(target_age - age_now)
 
+    def get_standard_deduction(self, current_cpi: np.ndarray = 1.0) -> np.ndarray:
+        """Get inflation-adjusted standard deduction based on filing status."""
+        filing_status = getattr(self.profile, 'filing_status', 'mfj')
+        if filing_status == 'single':
+            base = 14600
+        elif filing_status == 'hoh':
+            base = 21900
+        else:  # mfj
+            base = 29200
+        return base * current_cpi
+
     # =========================================================================
     # Vectorized Tax Helper Functions
     # =========================================================================
 
     def _vectorized_federal_tax(self, taxable_income: np.ndarray,
-                                filing_status: str = 'mfj') -> tuple:
+                                filing_status: str = None) -> tuple:
         """Calculate federal income tax using progressive brackets.
 
         Args:
             taxable_income: Array of taxable income values (after deductions)
-            filing_status: 'mfj' (married filing jointly), 'single', 'mfs', 'hoh'
+            filing_status: 'mfj', 'single', 'mfs', 'hoh'. If None, use profile default.
 
         Returns:
             Tuple of (total_tax array, marginal_rate array)
         """
+        if filing_status is None:
+            filing_status = getattr(self.profile, 'filing_status', 'mfj')
+
         # 2024 MFJ brackets (default) - can be extended for other statuses
         if filing_status == 'single':
             brackets = [
@@ -100,6 +117,16 @@ class RetirementModel:
                 (100525, 191950, 0.24),
                 (191950, 243725, 0.32),
                 (243725, 609350, 0.35),
+                (609350, float('inf'), 0.37),
+            ]
+        elif filing_status == 'hoh':
+            brackets = [
+                (0, 16550, 0.10),
+                (16550, 63100, 0.12),
+                (63100, 100500, 0.22),
+                (100500, 191950, 0.24),
+                (191950, 243700, 0.32),
+                (243700, 609350, 0.35),
                 (609350, float('inf'), 0.37),
             ]
         else:  # MFJ (default for retired couples)
@@ -127,7 +154,7 @@ class RetirementModel:
 
     def _vectorized_taxable_ss(self, other_income: np.ndarray,
                                ss_benefit: np.ndarray,
-                               filing_status: str = 'mfj') -> np.ndarray:
+                               filing_status: str = None) -> np.ndarray:
         """Calculate taxable portion of Social Security benefits.
 
         Uses provisional income formula:
@@ -141,6 +168,9 @@ class RetirementModel:
         Returns:
             Array of taxable SS amounts (0%, 50%, or 85% of benefits)
         """
+        if filing_status is None:
+            filing_status = getattr(self.profile, 'filing_status', 'mfj')
+
         # Calculate provisional income
         provisional = other_income + (ss_benefit * 0.5)
 
@@ -148,7 +178,7 @@ class RetirementModel:
         if filing_status == 'mfj':
             threshold_1 = 32000  # Below: 0% taxable
             threshold_2 = 44000  # Above: up to 85% taxable
-        else:  # single
+        else:  # single/hoh
             threshold_1 = 25000
             threshold_2 = 34000
 
@@ -178,7 +208,7 @@ class RetirementModel:
 
     def _vectorized_ltcg_tax(self, gains: np.ndarray,
                              ordinary_income: np.ndarray,
-                             filing_status: str = 'mfj') -> np.ndarray:
+                             filing_status: str = None) -> np.ndarray:
         """Calculate long-term capital gains tax with income stacking.
 
         LTCG rates depend on total income (ordinary + gains stacked on top).
@@ -191,11 +221,14 @@ class RetirementModel:
         Returns:
             Array of LTCG tax amounts
         """
+        if filing_status is None:
+            filing_status = getattr(self.profile, 'filing_status', 'mfj')
+
         # 2024 LTCG brackets (thresholds for total taxable income including gains)
         if filing_status == 'mfj':
             threshold_0 = 94050    # 0% up to here
             threshold_15 = 583750  # 15% up to here, 20% above
-        else:  # single
+        else:  # single/hoh
             threshold_0 = 47025
             threshold_15 = 518900
 
@@ -225,7 +258,7 @@ class RetirementModel:
         return ltcg_tax
 
     def _vectorized_irmaa(self, magi: np.ndarray,
-                          filing_status: str = 'mfj',
+                          filing_status: str = None,
                           both_on_medicare: bool = True) -> np.ndarray:
         """Calculate Medicare IRMAA surcharges based on MAGI.
 
@@ -240,6 +273,9 @@ class RetirementModel:
         Returns:
             Array of annual IRMAA surcharges
         """
+        if filing_status is None:
+            filing_status = getattr(self.profile, 'filing_status', 'mfj')
+
         # 2024 IRMAA thresholds and annual surcharges (Part B + Part D combined)
         if filing_status == 'mfj':
             thresholds = [
@@ -250,7 +286,7 @@ class RetirementModel:
                 (386000, 750000, 4612.80), # Tier 4
                 (750000, float('inf'), 5030.40),  # Tier 5
             ]
-        else:  # single
+        else:  # single/hoh
             thresholds = [
                 (0, 103000, 0),
                 (103000, 129000, 839.40),
@@ -277,7 +313,8 @@ class RetirementModel:
         return irmaa
 
     def _calculate_employment_tax(self, gross_income: np.ndarray,
-                                  state_rate: float = 0.05) -> np.ndarray:
+                                  state_rate: float = 0.05,
+                                  current_cpi: np.ndarray = 1.0) -> np.ndarray:
         """Estimate total taxes on employment income.
 
         Includes:
@@ -288,6 +325,7 @@ class RetirementModel:
         Args:
             gross_income: Array of gross employment income
             state_rate: State income tax rate (default 5%)
+            current_cpi: CPI multiplier for standard deduction
 
         Returns:
             Array of estimated total employment taxes
@@ -303,10 +341,9 @@ class RetirementModel:
         fica = ss_tax + medicare_tax
 
         # Estimate federal tax (using progressive brackets on AGI estimate)
-        # Assume standard deduction of $29,200 for MFJ
-        standard_deduction = 29200
-        taxable = np.maximum(0, gross_income - standard_deduction)
-        federal_tax, _ = self._vectorized_federal_tax(taxable, 'mfj')
+        std_deduction = self.get_standard_deduction(current_cpi)
+        taxable = np.maximum(0, gross_income - std_deduction)
+        federal_tax, _ = self._vectorized_federal_tax(taxable)
 
         # State tax (simplified flat rate)
         state_tax = gross_income * state_rate
@@ -590,7 +627,8 @@ class RetirementModel:
                     income_streams_data.append({
                         'amount': safe_float(s.get('amount', 0)),
                         'start_year': start_year,
-                        'inflation_adjusted': s.get('inflation_adjusted', True)
+                        'inflation_adjusted': s.get('inflation_adjusted', True),
+                        'type': s.get('type', 'other')
                     })
                 except: pass
 
@@ -692,7 +730,7 @@ class RetirementModel:
                 current_cpi *= (1 + inflation_rates[:, year_idx])
 
             # Inflation-indexed tax thresholds (prevent bracket creep)
-            std_deduction = STANDARD_DEDUCTION_BASE * current_cpi
+            std_deduction = self.get_standard_deduction(current_cpi)
 
             # B. Calculate Income with Proper Tax Treatment
             # Track income components separately for accurate tax calculations
@@ -705,81 +743,68 @@ class RetirementModel:
             # B2. Pension Income (taxable as ordinary income)
             active_pension = (base_pension if p1_retired else 0) * current_cpi
 
-            # B3. Other Income Streams (pensions, annuities - taxable)
+            # B3. Other Income Streams (pensions, annuities, salary - taxable)
             other_taxable_income = np.zeros(simulations)
+            employment_income_from_streams = np.zeros(simulations)
             for stream in income_streams_data:
                 if simulation_year >= stream['start_year']:
-                    if stream['inflation_adjusted']:
-                        other_taxable_income += stream['amount'] * current_cpi
+                    amount = stream['amount'] * (current_cpi if stream['inflation_adjusted'] else 1.0)
+                    if stream.get('type') == 'salary':
+                        employment_income_from_streams += amount
                     else:
-                        other_taxable_income += stream['amount']
+                        other_taxable_income += amount
 
             # B4. Budget Income (employment, rental, etc.)
-            budget_income = np.zeros(simulations)
-            employment_income_gross = np.zeros(simulations)
+            employment_income_from_budget = np.zeros(simulations)
+            budget_income_other = np.zeros(simulations)
             if self.profile.budget:
-                budget_income = self.calculate_budget_income(simulation_year, current_cpi, p1_retired, p2_retired)
-                # Track employment income separately for tax calculation
-                current_employment = self.profile.budget.get('income', {}).get('current', {}).get('employment', {})
-                if not p1_retired:
-                    employment_income_gross += current_employment.get('primary_person', 0)
-                if not p2_retired:
-                    employment_income_gross += current_employment.get('spouse', 0)
+                budget_income_total, employment_income_from_budget = self.calculate_budget_income(simulation_year, current_cpi, p1_retired, p2_retired)
+                # Budget income that is not employment (rental, etc.)
+                budget_income_other = budget_income_total - employment_income_from_budget
 
-            # B5. Employment Tax Deduction (FICA + Federal + State)
-            # During working years, employment income is reduced by payroll and income taxes
-            employment_tax = np.zeros(simulations)
+            # Combined employment income (Salary from streams + Budget employment)
+            employment_income_gross = employment_income_from_streams + employment_income_from_budget
+            # Combined non-employment ordinary income (Pension + Other Streams + Rental/Other Budget)
+            other_ordinary_income_gross = active_pension + other_taxable_income + budget_income_other
+
+            # --- Tax step 1: FICA and State Tax (Applied to gross income) ---
+            fica_tax = np.zeros(simulations)
+            state_tax_paid = np.zeros(simulations)
+            
+            # FICA only on employment income
             if np.any(employment_income_gross > 0):
-                employment_tax = self._calculate_employment_tax(employment_income_gross)
+                SS_WAGE_BASE = 168600
+                ss_tax = np.minimum(employment_income_gross, SS_WAGE_BASE) * 0.062
+                med_tax = employment_income_gross * 0.0145
+                fica_tax = ss_tax + med_tax
+            
+            # State tax on ALL taxable ordinary income (Simplified flat rate)
+            state_rate = 0.05 # Default
+            state_tax_paid = (employment_income_gross + other_ordinary_income_gross) * state_rate
 
-            # B6. Calculate Taxable Social Security
-            # Provisional income = Other AGI + 50% of SS benefits
-            # Other AGI at this point includes pension + other income (RMDs added later)
-            provisional_income_base = active_pension + other_taxable_income
-            taxable_ss = self._vectorized_taxable_ss(provisional_income_base, gross_ss, 'mfj')
+            # --- Tax Step 2: Social Security Taxation ---
+            taxable_ss = self._vectorized_taxable_ss(employment_income_gross + other_ordinary_income_gross, gross_ss)
 
-            # B7. IRMAA Surcharges for Medicare-eligible retirees (age 65+)
-            # Based on prior year MAGI - we use current income as proxy
+            # --- Tax Step 3: Combined Federal Income Tax ---
+            total_ordinary_taxable_gross = employment_income_gross + other_ordinary_income_gross + taxable_ss
+            taxable_income_federal = np.maximum(0, total_ordinary_taxable_gross - std_deduction)
+            
+            fed_tax_paid, _ = self._vectorized_federal_tax(taxable_income_federal)
+
+            # --- Tax Step 4: IRMAA ---
             irmaa_expense = np.zeros(simulations)
-            p1_medicare_eligible = p1_age >= 65
-            p2_medicare_eligible = p2_age >= 65
-            if p1_medicare_eligible or p2_medicare_eligible:
-                # Estimate MAGI for IRMAA (includes taxable SS, pension, other income)
-                estimated_magi = taxable_ss + active_pension + other_taxable_income
-                both_on_medicare = p1_medicare_eligible and p2_medicare_eligible
-                irmaa_expense = self._vectorized_irmaa(estimated_magi, 'mfj', both_on_medicare)
+            if p1_age >= 65 or p2_age >= 65:
+                # MAGI ≈ AGI (Total Ordinary Taxable Gross)
+                both_on_medicare = (p1_age >= 65) and (p2_age >= 65)
+                irmaa_expense = self._vectorized_irmaa(total_ordinary_taxable_gross, both_on_medicare=both_on_medicare)
 
-            # B8. Calculate Total Spendable Income
-            # Net SS = Gross SS - Tax on taxable portion
-            ss_tax_estimate = np.zeros_like(taxable_ss)
-            if np.any(taxable_ss > 0):
-                # Calculate tax on SS portion more accurately using actual brackets
-                # (Pro-rated share of total ordinary tax)
-                taxable_ordinary_temp = np.maximum(0, (taxable_ss + active_pension + other_taxable_income) - std_deduction)
-                total_ord_tax, _ = self._vectorized_federal_tax(taxable_ordinary_temp, 'mfj')
-                # Ratio of SS to total taxable income
-                ss_ratio = np.where(taxable_ordinary_temp > 0, taxable_ss / (taxable_ss + active_pension + other_taxable_income), 0)
-                ss_tax_estimate = total_ord_tax * ss_ratio
+            # --- Net Cash Available Before Withdrawals ---
+            total_tax_on_income = fed_tax_paid + state_tax_paid + fica_tax
+            total_income = (total_ordinary_taxable_gross + (gross_ss - taxable_ss)) - total_tax_on_income
 
-            net_ss = gross_ss - ss_tax_estimate
+            # Track cumulative ordinary income for stacking withdrawals later
+            cumulative_ordinary_gross = total_ordinary_taxable_gross.copy()
 
-            # Total available income (after taxes)
-            # Pension and other income taxed at ordinary rates (estimated)
-            ordinary_income_pretax = active_pension + other_taxable_income
-            ordinary_tax_estimate = np.zeros_like(ordinary_income_pretax)
-            if np.any(ordinary_income_pretax > 0):
-                taxable_ordinary = np.maximum(0, ordinary_income_pretax - std_deduction)
-                ordinary_tax_estimate, _ = self._vectorized_federal_tax(taxable_ordinary, 'mfj')
-
-            # Employment income net of taxes
-            net_employment = employment_income_gross - employment_tax
-            net_other_budget = budget_income - employment_income_gross  # Non-employment budget income
-
-            total_income = net_ss + (ordinary_income_pretax - ordinary_tax_estimate) + net_employment + net_other_budget
-
-            # Track ordinary income for later tax calculations (RMDs, withdrawals)
-            # This is the taxable ordinary income before additional withdrawals
-            year_ordinary_income = taxable_ss + ordinary_income_pretax
 
             # C. Calculate Expenses
             current_housing_costs = np.zeros(simulations)
@@ -883,7 +908,7 @@ class RetirementModel:
                         exclusion = 500000 if prop['property_type'] == 'Primary Residence' else 0
                         taxable_gain = np.maximum(0, gain - exclusion)
                         # Use income-stacked LTCG tax instead of flat 15%
-                        capital_gains_tax = self._vectorized_ltcg_tax(taxable_gain, year_ordinary_income, 'mfj')
+                        capital_gains_tax = self._vectorized_ltcg_tax(taxable_gain, year_ordinary_income)
                         net_proceeds = gross_proceeds - mortgage_payoff - transaction_costs - capital_gains_tax
                         available_proceeds = net_proceeds - prop['replacement_cost']
                         taxable_val = np.where(active_mask, taxable_val + np.maximum(0, available_proceeds), taxable_val)
@@ -891,10 +916,8 @@ class RetirementModel:
                         prop['values'] = np.where(active_mask, 0, prop['values'])
 
             # F. RMD Logic (Age 73+ for either spouse)
-            # Each spouse's RMD is calculated from their half of pretax assets
-            # IMPORTANT: Use original balance for both calculations to avoid double-counting bug
             total_rmd = np.zeros(simulations)
-            original_pretax = pretax_std.copy()  # Store original balance before RMD calculations
+            original_pretax = pretax_std.copy()
             rmd_factors = {
                 73: 26.5, 74: 25.5, 75: 24.6, 76: 23.7, 77: 22.9,
                 78: 22.0, 79: 21.1, 80: 20.2, 81: 19.4, 82: 18.5,
@@ -904,32 +927,31 @@ class RetirementModel:
             for age in [p1_age, p2_age]:
                 if age >= 73:
                     factor = rmd_factors.get(int(age), 12.2)
-                    # Each spouse's RMD based on their half of original pretax balance
                     curr_rmd = (original_pretax / 2.0) / factor
                     total_rmd += curr_rmd
-            # Deduct total RMD from pretax balance (after both are calculated)
+            
             pretax_std -= total_rmd
             
             if np.any(total_rmd > 0):
-                # Use progressive tax on RMDs (stacked on existing ordinary income)
-                # Calculate tax on total income with RMD vs without
-                taxable_with_rmd = np.maximum(0, year_ordinary_income + total_rmd - std_deduction)
-                taxable_without_rmd = np.maximum(0, year_ordinary_income - std_deduction)
-                tax_with_rmd, _ = self._vectorized_federal_tax(taxable_with_rmd, 'mfj')
-                tax_without_rmd, _ = self._vectorized_federal_tax(taxable_without_rmd, 'mfj')
-                rmd_tax = tax_with_rmd - tax_without_rmd
-                net_rmd = total_rmd - rmd_tax
-                # Update year_ordinary_income to include RMD for future stacking
-                year_ordinary_income = year_ordinary_income + total_rmd
+                # Calculate tax on RMD (Stacked on existing ordinary income)
+                taxable_with_rmd = np.maximum(0, cumulative_ordinary_gross + total_rmd - std_deduction)
+                taxable_without_rmd = np.maximum(0, cumulative_ordinary_gross - std_deduction)
+                tax_with_rmd, _ = self._vectorized_federal_tax(taxable_with_rmd)
+                tax_without_rmd, _ = self._vectorized_federal_tax(taxable_without_rmd)
+                
+                rmd_tax_fed = tax_with_rmd - tax_without_rmd
+                rmd_tax_state = total_rmd * state_rate
+                
+                net_rmd = total_rmd - (rmd_tax_fed + rmd_tax_state)
+                # Update cumulative ordinary income for future stacking
+                cumulative_ordinary_gross += total_rmd
+                
                 used_for_shortfall = np.minimum(shortfall, net_rmd)
                 shortfall -= used_for_shortfall
                 taxable_val += (net_rmd - used_for_shortfall)
 
             # G. Optimized Withdrawal Strategy (Waterfall)
             # Sequence: Cash -> Taxable -> Pre-Tax -> Roth
-            # (457b has special rules allowing early withdrawal without penalty)
-            # Track cumulative taxable income for progressive tax stacking
-            cumulative_ordinary = year_ordinary_income.copy()
 
             # 1. Cash (Already taxed, no growth)
             mask = shortfall > 0
@@ -941,42 +963,43 @@ class RetirementModel:
             # 2. 457b (Special case: No early withdrawal penalty if separated from service)
             mask = (shortfall > 0)
             if np.any(mask) and p1_age < 59.5:
-                # Calculate marginal tax rate based on current ordinary income
-                taxable_now = np.maximum(0, cumulative_ordinary - std_deduction)
-                _, marginal_rate = self._vectorized_federal_tax(taxable_now, 'mfj')
-                # Estimate effective rate for withdrawal (use marginal as approximation)
-                eff_rate = np.where(marginal_rate > 0, marginal_rate, 0.12)  # Default to 12%
-                gross_needed = shortfall / (1 - eff_rate)
+                # Estimate tax rate based on current stacked income
+                taxable_now = np.maximum(0, cumulative_ordinary_gross - std_deduction)
+                _, marginal_rate = self._vectorized_federal_tax(taxable_now)
+                eff_rate = np.maximum(0.10, marginal_rate) + state_rate
+                
+                gross_needed = shortfall / np.maximum(0.01, 1 - eff_rate)
                 withdrawal = np.minimum(gross_needed, pretax_457)
                 pretax_457 -= withdrawal
-                # Calculate actual tax on withdrawal using stacked income
-                taxable_after = np.maximum(0, cumulative_ordinary + withdrawal - std_deduction)
-                tax_after, _ = self._vectorized_federal_tax(taxable_after, 'mfj')
-                tax_before, _ = self._vectorized_federal_tax(taxable_now, 'mfj')
-                actual_tax = tax_after - tax_before
-                net_withdrawal = withdrawal - actual_tax
-                cumulative_ordinary += withdrawal
+                
+                # Actual Tax Calculation
+                tax_after, _ = self._vectorized_federal_tax(np.maximum(0, cumulative_ordinary_gross + withdrawal - std_deduction))
+                tax_before, _ = self._vectorized_federal_tax(taxable_now)
+                actual_fed_tax = tax_after - tax_before
+                actual_state_tax = withdrawal * state_rate
+                
+                net_withdrawal = withdrawal - (actual_fed_tax + actual_state_tax)
+                cumulative_ordinary_gross += withdrawal
                 shortfall -= net_withdrawal
 
             # 3. Taxable Brokerage (Pay capital gains tax stacked on ordinary income)
             mask = shortfall > 0
             if np.any(mask):
                 # Use large floor value to prevent numerical instability when account near zero
-                STABILITY_FLOOR = 1000.0  # $1000 minimum for stable division
+                STABILITY_FLOOR = 1000.0
                 denom = np.where(taxable_val > STABILITY_FLOOR, taxable_val, 1e10)
                 gain_ratio = np.maximum(0, (taxable_val - taxable_basis) / denom)
                 gain_ratio = np.where(taxable_val > STABILITY_FLOOR, gain_ratio, 0)
 
-                # Estimate withdrawal needed (iterate once for better estimate)
-                # First pass: estimate with flat 15% LTCG rate
-                est_tax_rate = gain_ratio * 0.15
+                est_tax_rate = gain_ratio * 0.15 + state_rate
                 gross_needed = shortfall / np.maximum(0.01, 1 - est_tax_rate)
                 withdrawal = np.minimum(gross_needed, taxable_val)
                 gains_realized = withdrawal * gain_ratio
 
-                # Calculate actual LTCG tax using income stacking
-                ltcg_tax = self._vectorized_ltcg_tax(gains_realized, cumulative_ordinary, 'mfj')
-                net_withdrawal = withdrawal - ltcg_tax
+                # Actual LTCG Tax
+                ltcg_tax = self._vectorized_ltcg_tax(gains_realized, cumulative_ordinary_gross)
+                state_gain_tax = gains_realized * state_rate
+                net_withdrawal = withdrawal - (ltcg_tax + state_gain_tax)
 
                 basis_ratio = np.where(taxable_val > 0, taxable_basis / taxable_val, 0)
                 basis_reduction = withdrawal * basis_ratio
@@ -991,22 +1014,23 @@ class RetirementModel:
                 # Apply 10% penalty if under 59.5 (excluding 457b handled above)
                 penalty = np.where(p1_age < 59.5, EARLY_PENALTY, 0)
 
-                # Calculate marginal rate for estimation
-                taxable_now = np.maximum(0, cumulative_ordinary - std_deduction)
-                _, marginal_rate = self._vectorized_federal_tax(taxable_now, 'mfj')
-                eff_rate = np.where(marginal_rate > 0, marginal_rate, 0.12) + penalty
+                # Estimate tax rate based on current stacked income
+                taxable_now = np.maximum(0, cumulative_ordinary_gross - std_deduction)
+                _, marginal_rate = self._vectorized_federal_tax(taxable_now)
+                eff_rate = np.maximum(0.10, marginal_rate) + state_rate + penalty
 
                 gross_needed = shortfall / np.maximum(0.01, 1 - eff_rate)
                 withdrawal = np.minimum(gross_needed, pretax_std)
                 pretax_std -= withdrawal
 
-                # Calculate actual tax on withdrawal using stacked income
-                taxable_after = np.maximum(0, cumulative_ordinary + withdrawal - std_deduction)
-                tax_after, _ = self._vectorized_federal_tax(taxable_after, 'mfj')
-                tax_before, _ = self._vectorized_federal_tax(taxable_now, 'mfj')
-                actual_tax = (tax_after - tax_before) + (withdrawal * penalty)
-                net_withdrawal = withdrawal - actual_tax
-                cumulative_ordinary += withdrawal
+                # Actual Tax Calculation
+                tax_after, _ = self._vectorized_federal_tax(np.maximum(0, cumulative_ordinary_gross + withdrawal - std_deduction))
+                tax_before, _ = self._vectorized_federal_tax(taxable_now)
+                actual_fed_tax = (tax_after - tax_before) + (withdrawal * penalty)
+                actual_state_tax = withdrawal * state_rate
+                
+                net_withdrawal = withdrawal - (actual_fed_tax + actual_state_tax)
+                cumulative_ordinary_gross += withdrawal
                 shortfall -= net_withdrawal
 
             # 5. Roth Assets (Tax-free, last resort to preserve tax-free growth)
@@ -1020,18 +1044,15 @@ class RetirementModel:
             # Apply growth
             year_returns = annual_returns
 
-            cash *= (1 + CASH_INTEREST)
+            cash *= (1 + assumptions.cash_return_mean)
 
-            # Taxable accounts: Apply tax drag to account for annual taxes on dividends and capital gains distributions
-            # Assume ~2% dividend yield taxed at 15% LTCG rate = 0.3% drag
-            # Plus ~0.5% from mutual fund capital gains distributions
-            # Total drag: ~15% of positive returns (conservative estimate)
-            TAX_DRAG_RATE = 0.15  # 15% of gains go to taxes annually
+            # Taxable accounts: Apply tax drag
+            TAX_DRAG_RATE = 0.15
             taxable_growth = np.where(year_returns > 0,
-                                     year_returns * (1 - TAX_DRAG_RATE),  # Reduce positive returns by tax drag
-                                     year_returns)  # Keep losses as-is (tax loss harvesting offset)
+                                     year_returns * (1 - TAX_DRAG_RATE),
+                                     year_returns)
             taxable_val *= (1 + taxable_growth)
-            taxable_basis *= (1 + taxable_growth)  # Basis grows with after-tax returns
+            taxable_basis *= (1 + taxable_growth)
 
             pretax_std *= (1 + year_returns)
             pretax_457 *= (1 + year_returns)
@@ -1039,11 +1060,6 @@ class RetirementModel:
             
             # Grow homes
             for prop in home_props_state:
-                # Only grow if not sold
-                # Generate random appreciation for each sim/home
-                # We can't reuse the main inflation/return matrices directly as home appreciation 
-                # usually tracks inflation + variance, or specific rate.
-                # Let's generate a vector of appreciation for this property/year
                 apprec_mean = prop['appreciation_rate']
                 apprec_std = 0.05
                 apprec_vec = np.random.normal(apprec_mean, apprec_std, simulations)
@@ -1144,6 +1160,7 @@ class RetirementModel:
         base_ss = (self.profile.person1.social_security + self.profile.person2.social_security) * 12
         base_pension = self.profile.pension_annual
 
+        # Prepare Income Streams data structure for fast access
         income_streams_data = []
         if self.profile.income_streams:
             for s in self.profile.income_streams:
@@ -1152,7 +1169,8 @@ class RetirementModel:
                     income_streams_data.append({
                         'amount': safe_float(s.get('amount', 0)),
                         'start_year': start_year,
-                        'inflation_adjusted': s.get('inflation_adjusted', True)
+                        'inflation_adjusted': s.get('inflation_adjusted', True),
+                        'type': s.get('type', 'other')
                     })
                 except: pass
 
@@ -1201,7 +1219,8 @@ class RetirementModel:
             if year_idx > 0:
                 current_cpi *= (1 + assumptions.inflation_mean)
             
-            std_deduction = 29200 * current_cpi
+            # Standard deduction depends on filing status and inflation
+            std_deduction = self.get_standard_deduction(current_cpi)
 
             # --- Income Calculation ---
             p1_ss = (self.profile.person1.social_security * 12) if p1_retired else 0
@@ -1210,76 +1229,72 @@ class RetirementModel:
             
             active_pension = (base_pension if p1_retired else 0) * current_cpi
             
+            # Sum all ordinary income streams
             other_taxable_income = np.zeros(simulations)
+            employment_income_from_streams = np.zeros(simulations)
             for stream in income_streams_data:
                 if simulation_year >= stream['start_year']:
-                    if stream['inflation_adjusted']:
-                        other_taxable_income += stream['amount'] * current_cpi
+                    amount = stream['amount'] * (current_cpi if stream['inflation_adjusted'] else 1.0)
+                    if stream.get('type') == 'salary':
+                        employment_income_from_streams += amount
                     else:
-                        other_taxable_income += stream['amount']
+                        other_taxable_income += amount
 
-            budget_income = np.zeros(simulations)
-            employment_income_gross = np.zeros(simulations)
+            # Budget employment income
+            budget_income_other = np.zeros(simulations)
+            employment_income_from_budget = np.zeros(simulations)
             if self.profile.budget:
-                budget_income = self.calculate_budget_income(simulation_year, current_cpi, p1_retired, p2_retired)
-                current_employment = self.profile.budget.get('income', {}).get('current', {}).get('employment', {})
-                if not p1_retired:
-                    employment_income_gross += current_employment.get('primary_person', 0)
-                if not p2_retired:
-                    employment_income_gross += current_employment.get('spouse', 0)
+                budget_income_total, employment_income_from_budget = self.calculate_budget_income(simulation_year, current_cpi, p1_retired, p2_retired)
+                # Budget income that is not employment (rental, etc.)
+                budget_income_other = budget_income_total - employment_income_from_budget
 
-            # --- Tax Step 1: Employment Taxes (FICA + State) ---
-            employment_tax = np.zeros(simulations)
+            # Combined employment income (Salary from streams + Budget employment)
+            employment_income_gross = employment_income_from_streams + employment_income_from_budget
+            # Combined non-employment ordinary income (Pension + Other Streams + Rental/Other Budget)
+            other_ordinary_income_gross = active_pension + other_taxable_income + budget_income_other
+
+            # --- Tax step 1: FICA and State Tax (Applied to gross income) ---
             fica_tax = np.zeros(simulations)
-            state_income_tax = np.zeros(simulations)
+            state_tax_paid = np.zeros(simulations)
             
+            # FICA only on employment income
             if np.any(employment_income_gross > 0):
-                # Recalculate FICA specifically for display
                 SS_WAGE_BASE = 168600
                 ss_tax = np.minimum(employment_income_gross, SS_WAGE_BASE) * 0.062
                 med_tax = employment_income_gross * 0.0145
                 fica_tax = ss_tax + med_tax
-                
-                # Estimate State Tax (flat 5% for now)
-                state_income_tax = employment_income_gross * 0.05
-                
-                # Full employment tax deduction used in simulation logic
-                employment_tax = self._calculate_employment_tax(employment_income_gross)
+            
+            # State tax on ALL taxable ordinary income (Simplified flat rate)
+            # Use state from profile or default to NY (5%)
+            state_rate = 0.05 # Default
+            # Could use a mapping here if we have more state data
+            state_tax_paid = (employment_income_gross + other_ordinary_income_gross) * state_rate
 
             # --- Tax Step 2: Social Security Taxation ---
-            provisional_income_base = active_pension + other_taxable_income
-            taxable_ss = self._vectorized_taxable_ss(provisional_income_base, gross_ss, 'mfj')
+            # Provisional income = Other AGI + 50% of SS benefits
+            taxable_ss = self._vectorized_taxable_ss(employment_income_gross + other_ordinary_income_gross, gross_ss)
 
-            # --- Tax Step 3: IRMAA ---
+            # --- Tax Step 3: Combined Federal Income Tax ---
+            # IMPORTANT: Calculate tax on TOTAL ordinary income in one pass to avoid deduction fragmentation
+            total_ordinary_taxable_gross = employment_income_gross + other_ordinary_income_gross + taxable_ss
+            taxable_income_federal = np.maximum(0, total_ordinary_taxable_gross - std_deduction)
+            
+            fed_tax_paid, marginal_rate_current = self._vectorized_federal_tax(taxable_income_federal)
+
+            # --- Tax Step 4: IRMAA ---
             irmaa_expense = np.zeros(simulations)
             if p1_age >= 65 or p2_age >= 65:
-                estimated_magi = taxable_ss + active_pension + other_taxable_income
+                # MAGI ≈ AGI (Total Ordinary Taxable Gross)
                 both_on_medicare = (p1_age >= 65) and (p2_age >= 65)
-                irmaa_expense = self._vectorized_irmaa(estimated_magi, 'mfj', both_on_medicare)
+                irmaa_expense = self._vectorized_irmaa(total_ordinary_taxable_gross, both_on_medicare=both_on_medicare)
 
-            # --- Income Netting ---
-            ss_tax_estimate = np.zeros_like(taxable_ss)
-            if np.any(taxable_ss > 0):
-                taxable_ordinary_temp = np.maximum(0, (taxable_ss + active_pension + other_taxable_income) - std_deduction)
-                total_ord_tax, _ = self._vectorized_federal_tax(taxable_ordinary_temp, 'mfj')
-                ss_ratio = np.where(taxable_ordinary_temp > 0, taxable_ss / (taxable_ss + active_pension + other_taxable_income), 0)
-                ss_tax_estimate = total_ord_tax * ss_ratio
+            # --- Net Cash Available Before Withdrawals ---
+            total_tax_on_income = fed_tax_paid + state_tax_paid + fica_tax
+            total_available_cash = (total_ordinary_taxable_gross + (gross_ss - taxable_ss)) - total_tax_on_income
 
-            net_ss = gross_ss - ss_tax_estimate
-            
-            ordinary_income_pretax = active_pension + other_taxable_income
-            ordinary_tax_estimate = np.zeros_like(ordinary_income_pretax)
-            if np.any(ordinary_income_pretax > 0):
-                taxable_ordinary = np.maximum(0, ordinary_income_pretax - std_deduction)
-                ordinary_tax_estimate, _ = self._vectorized_federal_tax(taxable_ordinary, 'mfj')
+            # Track cumulative ordinary income for stacking withdrawals later
+            cumulative_ordinary_gross = total_ordinary_taxable_gross
 
-            net_employment = employment_income_gross - employment_tax
-            net_other_budget = budget_income - employment_income_gross
-
-            total_available_cash = net_ss + (ordinary_income_pretax - ordinary_tax_estimate) + net_employment + net_other_budget
-
-            # Track cumulative ordinary income for stacking
-            year_ordinary_income = taxable_ss + ordinary_income_pretax
 
             # --- Expenses ---
             current_housing_costs = np.zeros(simulations)
@@ -1313,40 +1328,19 @@ class RetirementModel:
             net_cash_flow = total_available_cash - target_spending
             shortfall = np.maximum(0, -net_cash_flow)
             surplus = np.maximum(0, net_cash_flow)
-
-            # --- Track Specific Taxes Paid ---
-            # Start with what we've calculated so far
-            fed_tax_paid = ss_tax_estimate + ordinary_tax_estimate
-            if np.any(employment_income_gross > 0):
-                 # Extract federal portion from employment_tax (which is FICA+Fed+State)
-                 # Re-estimate federal on employment to separate it
-                 taxable_emp = np.maximum(0, employment_income_gross - std_deduction)
-                 fed_emp, _ = self._vectorized_federal_tax(taxable_emp, 'mfj')
-                 fed_tax_paid += fed_emp
-
+            
+            # LTCG tax paid this year
             ltcg_tax_paid = np.zeros(simulations)
 
             # --- Contributions ---
             if not p1_retired or not p2_retired:
-                # (Logic identical to monte_carlo_simulation contribution section)
-                employment_income = 0
-                if self.profile.budget:
-                    current_employment = self.profile.budget.get('income', {}).get('current', {}).get('employment', {})
-                    if not p1_retired: employment_income += current_employment.get('primary_person', 0)
-                    if not p2_retired: employment_income += current_employment.get('spouse', 0)
-
-                if not p1_retired:
-                    p1_401k = safe_float(self.profile.person1.annual_401k_contribution, 0)
-                    if p1_401k > 0:
-                        pretax_std += p1_401k
-                        p1_salary = employment_income if not p2_retired else current_employment.get('primary_person', 0)
-                        pretax_std += p1_salary * safe_float(self.profile.person1.employer_match_rate, 0)
-
+                # IRA contributions
                 ira_contrib = safe_float(self.profile.annual_ira_contribution, 0)
                 if ira_contrib > 0:
                     pretax_std += ira_contrib * 0.5
                     roth += ira_contrib * 0.5
 
+                # surplus allocation
                 if np.any(surplus > 0):
                     savings_alloc = self.profile.savings_allocation or {'pretax': 0.50, 'roth': 0.30, 'taxable': 0.20}
                     pretax_std += surplus * savings_alloc.get('pretax', 0.50)
@@ -1357,37 +1351,42 @@ class RetirementModel:
             # --- RMDs ---
             total_rmd = np.zeros(simulations)
             original_pretax = pretax_std.copy()
-            rmd_factors = {73: 26.5, 74: 25.5, 75: 24.6, 80: 20.2, 85: 16.0, 90: 12.2} # Simplified map
+            rmd_factors = {
+                73: 26.5, 74: 25.5, 75: 24.6, 76: 23.7, 77: 22.9,
+                78: 22.0, 79: 21.1, 80: 20.2, 81: 19.4, 82: 18.5,
+                83: 17.7, 84: 16.8, 85: 16.0, 86: 15.2, 87: 14.4,
+                88: 13.7, 89: 12.2
+            }
             for age in [p1_age, p2_age]:
                 if age >= 73:
-                    factor = 0
-                    # Simple interpolation or lookup
-                    keys = sorted(rmd_factors.keys())
-                    for k in keys:
-                        if age >= k: factor = rmd_factors[k]
-                    if factor == 0: factor = 12.2 # Default old age
+                    factor = rmd_factors.get(int(age), 12.2)
                     curr_rmd = (original_pretax / 2.0) / factor
                     total_rmd += curr_rmd
+            
             pretax_std -= total_rmd
 
             if np.any(total_rmd > 0):
-                taxable_with_rmd = np.maximum(0, year_ordinary_income + total_rmd - std_deduction)
-                taxable_without_rmd = np.maximum(0, year_ordinary_income - std_deduction)
-                tax_with_rmd, _ = self._vectorized_federal_tax(taxable_with_rmd, 'mfj')
-                tax_without_rmd, _ = self._vectorized_federal_tax(taxable_without_rmd, 'mfj')
+                # Calculate tax on RMD (Stacked on existing ordinary income)
+                taxable_with_rmd = np.maximum(0, cumulative_ordinary_gross + total_rmd - std_deduction)
+                taxable_without_rmd = np.maximum(0, cumulative_ordinary_gross - std_deduction)
+                tax_with_rmd, _ = self._vectorized_federal_tax(taxable_with_rmd)
+                tax_without_rmd, _ = self._vectorized_federal_tax(taxable_without_rmd)
                 
-                rmd_tax = tax_with_rmd - tax_without_rmd
-                fed_tax_paid += rmd_tax
+                rmd_tax_fed = tax_with_rmd - tax_without_rmd
+                rmd_tax_state = total_rmd * state_rate
                 
-                net_rmd = total_rmd - rmd_tax
-                year_ordinary_income += total_rmd
+                fed_tax_paid += rmd_tax_fed
+                state_tax_paid += rmd_tax_state
+                
+                net_rmd = total_rmd - (rmd_tax_fed + rmd_tax_state)
+                # Update cumulative ordinary income for future stacking
+                cumulative_ordinary_gross += total_rmd
                 
                 used_for_shortfall = np.minimum(shortfall, net_rmd)
                 shortfall -= used_for_shortfall
                 taxable_val += (net_rmd - used_for_shortfall)
 
             # --- Withdrawals ---
-            cumulative_ordinary = year_ordinary_income.copy()
             total_withdrawals = np.zeros(simulations)
 
             # 1. Cash
@@ -1399,21 +1398,26 @@ class RetirementModel:
 
             # 2. 457b
             if np.any(shortfall > 0) and p1_age < 59.5:
-                taxable_now = np.maximum(0, cumulative_ordinary - std_deduction)
-                _, marginal_rate = self._vectorized_federal_tax(taxable_now, 'mfj')
-                eff_rate = np.where(marginal_rate > 0, marginal_rate, 0.12)
+                # Estimate tax rate based on current stacked income
+                taxable_now = np.maximum(0, cumulative_ordinary_gross - std_deduction)
+                _, marginal_rate = self._vectorized_federal_tax(taxable_now)
+                eff_rate = np.maximum(0.10, marginal_rate) + state_rate
+                
                 gross_needed = shortfall / (1 - eff_rate)
                 w = np.minimum(gross_needed, pretax_457)
                 pretax_457 -= w
                 
-                taxable_after = np.maximum(0, cumulative_ordinary + w - std_deduction)
-                t_after, _ = self._vectorized_federal_tax(taxable_after, 'mfj')
-                t_before, _ = self._vectorized_federal_tax(taxable_now, 'mfj')
-                actual_tax = t_after - t_before
-                fed_tax_paid += actual_tax
+                # Actual Tax Calculation
+                tax_after, _ = self._vectorized_federal_tax(np.maximum(0, cumulative_ordinary_gross + w - std_deduction))
+                tax_before, _ = self._vectorized_federal_tax(taxable_now)
+                actual_fed_tax = tax_after - tax_before
+                actual_state_tax = w * state_rate
                 
-                net_w = w - actual_tax
-                cumulative_ordinary += w
+                fed_tax_paid += actual_fed_tax
+                state_tax_paid += actual_state_tax
+                
+                net_w = w - (actual_fed_tax + actual_state_tax)
+                cumulative_ordinary_gross += w
                 shortfall -= net_w
                 total_withdrawals += w
 
@@ -1424,16 +1428,20 @@ class RetirementModel:
                 gain_ratio = np.maximum(0, (taxable_val - taxable_basis) / denom)
                 gain_ratio = np.where(taxable_val > STABILITY_FLOOR, gain_ratio, 0)
                 
-                est_tax_rate = gain_ratio * 0.15
+                est_tax_rate = gain_ratio * 0.15 + state_rate # Gains tax + State
                 gross_needed = shortfall / np.maximum(0.01, 1 - est_tax_rate)
                 w = np.minimum(gross_needed, taxable_val)
                 gains_realized = w * gain_ratio
                 
-                ltcg = self._vectorized_ltcg_tax(gains_realized, cumulative_ordinary, 'mfj')
+                # Actual LTCG Tax
+                ltcg = self._vectorized_ltcg_tax(gains_realized, cumulative_ordinary_gross)
                 ltcg_tax_paid += ltcg
-                fed_tax_paid += ltcg
+                # State tax on gains (simplified)
+                state_gain_tax = gains_realized * state_rate
                 
-                net_w = w - ltcg
+                state_tax_paid += state_gain_tax
+                
+                net_w = w - (ltcg + state_gain_tax)
                 basis_ratio = np.where(taxable_val > 0, taxable_basis / taxable_val, 0)
                 taxable_val -= w
                 taxable_basis -= w * basis_ratio
@@ -1443,22 +1451,25 @@ class RetirementModel:
             # 4. Pre-Tax
             if np.any(shortfall > 0):
                 penalty = np.where(p1_age < 59.5, 0.10, 0)
-                taxable_now = np.maximum(0, cumulative_ordinary - std_deduction)
-                _, marginal_rate = self._vectorized_federal_tax(taxable_now, 'mfj')
-                eff_rate = np.where(marginal_rate > 0, marginal_rate, 0.12) + penalty
+                taxable_now = np.maximum(0, cumulative_ordinary_gross - std_deduction)
+                _, marginal_rate = self._vectorized_federal_tax(taxable_now)
+                eff_rate = np.maximum(0.10, marginal_rate) + state_rate + penalty
                 
                 gross_needed = shortfall / np.maximum(0.01, 1 - eff_rate)
                 w = np.minimum(gross_needed, pretax_std)
                 pretax_std -= w
                 
-                taxable_after = np.maximum(0, cumulative_ordinary + w - std_deduction)
-                t_after, _ = self._vectorized_federal_tax(taxable_after, 'mfj')
-                t_before, _ = self._vectorized_federal_tax(taxable_now, 'mfj')
-                actual_tax = (t_after - t_before) + (w * penalty)
-                fed_tax_paid += actual_tax
+                # Actual Tax Calculation
+                tax_after, _ = self._vectorized_federal_tax(np.maximum(0, cumulative_ordinary_gross + w - std_deduction))
+                tax_before, _ = self._vectorized_federal_tax(taxable_now)
+                actual_fed_tax = (tax_after - tax_before) + (w * penalty)
+                actual_state_tax = w * state_rate
                 
-                net_w = w - actual_tax
-                cumulative_ordinary += w
+                fed_tax_paid += actual_fed_tax
+                state_tax_paid += actual_state_tax
+                
+                net_w = w - (actual_fed_tax + actual_state_tax)
+                cumulative_ordinary_gross += w
                 shortfall -= net_w
                 total_withdrawals += w
 
@@ -1472,7 +1483,7 @@ class RetirementModel:
             # --- Growth ---
             ret = assumptions.stock_return_mean * assumptions.stock_allocation + assumptions.bond_return_mean * (1 - assumptions.stock_allocation)
             
-            cash *= (1 + 0.015)
+            cash *= (1 + assumptions.cash_return_mean)
             taxable_val *= (1 + ret * 0.85) # Tax drag
             taxable_basis *= (1 + ret * 0.85)
             pretax_std *= (1 + ret)
@@ -1483,15 +1494,17 @@ class RetirementModel:
             detailed_ledger.append({
                 'year': int(simulation_year),
                 'age': int(p1_age),
-                'gross_income': float(total_available_cash[0] + total_withdrawals[0]),
+                'gross_income': float(total_ordinary_taxable_gross[0] + (gross_ss[0] - taxable_ss[0]) + total_withdrawals[0]),
                 'expenses_excluding_tax': float(target_spending[0]),
                 'federal_tax': float(fed_tax_paid[0]),
-                'state_tax': float(state_income_tax[0]),
+                'state_tax': float(state_tax_paid[0]),
                 'fica_tax': float(fica_tax[0]),
                 'ltcg_tax': float(ltcg_tax_paid[0]),
                 'portfolio_balance': float(cash[0] + taxable_val[0] + pretax_std[0] + pretax_457[0] + roth[0]),
                 'withdrawals': float(total_withdrawals[0])
             })
+
+        return detailed_ledger
 
         return detailed_ledger
 
@@ -1657,29 +1670,28 @@ class RetirementModel:
 
         return True
 
-    def calculate_budget_income(self, simulation_year: int, current_cpi: np.ndarray, p1_retired: bool, p2_retired: bool) -> np.ndarray:
-        """Calculate total income from budget categories for a given year (Vectorized)"""
+    def calculate_budget_income(self, simulation_year: int, current_cpi: np.ndarray, p1_retired: bool, p2_retired: bool) -> tuple:
+        """Calculate total income from budget categories for a given year (Vectorized)
+        Returns: (total_income, employment_income)
+        """
         if not self.profile.budget:
-            return np.zeros_like(current_cpi)
+            return np.zeros_like(current_cpi), np.zeros_like(current_cpi)
 
         budget = self.profile.budget
         income_section = budget.get('income', {})
 
-        # Initialize result vector
-        total_income = np.zeros_like(current_cpi)
-
         # 1. Employment income - strictly tied to individual retirement status
+        employment_income = np.zeros_like(current_cpi)
         current_employment = income_section.get('current', {}).get('employment', {})
         if not p1_retired:
-            total_income += current_employment.get('primary_person', 0)
+            employment_income += current_employment.get('primary_person', 0)
         if not p2_retired:
-            total_income += current_employment.get('spouse', 0)
+            employment_income += current_employment.get('spouse', 0)
+
+        # Initialize total result vector
+        total_income = employment_income.copy()
 
         # 2. Dynamic Income Streams with Blended Logic
-        # Blended Budget Logic (matching expense logic):
-        # Both working -> 100% current
-        # One retired -> 50% current / 50% future
-        # Both retired -> 100% future
         retirement_weight = 0.0
         if p1_retired: retirement_weight += 0.5
         if p2_retired: retirement_weight += 0.5
@@ -1715,7 +1727,7 @@ class RetirementModel:
             future_inc = get_period_income('future')
             total_income += (current_inc * 0.5) + (future_inc * 0.5)
 
-        return total_income
+        return total_income, employment_income
 
     def calculate_budget_expenses(self, simulation_year: int, current_cpi: np.ndarray, p1_retired: bool, p2_retired: bool, housing_costs: np.ndarray) -> np.ndarray:
         """Calculate total expenses from budget categories for a given year (Vectorized)"""
