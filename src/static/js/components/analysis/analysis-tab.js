@@ -772,6 +772,18 @@ function setupAnalysisHandlers(container, profile) {
                             <label style="font-size: 11px; margin-bottom: 4px; display: block;">Inflation (%)</label>
                             <input type="number" id="custom-inflation" value="${(selectedProfile.inflation_mean * 100).toFixed(1)}" step="0.1" style="width: 100%; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
                         </div>
+                        <div class="form-group">
+                            <label style="font-size: 11px; margin-bottom: 4px; display: block;">Real Estate (%)</label>
+                            <input type="number" id="custom-reit-return" value="${((selectedProfile.reit_return_mean || 0.08) * 100).toFixed(1)}" step="0.1" style="width: 100%; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
+                        </div>
+                        <div class="form-group">
+                            <label style="font-size: 11px; margin-bottom: 4px; display: block;">Gold (%)</label>
+                            <input type="number" id="custom-gold-return" value="${((selectedProfile.gold_return_mean || 0.04) * 100).toFixed(1)}" step="0.1" style="width: 100%; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
+                        </div>
+                        <div class="form-group">
+                            <label style="font-size: 11px; margin-bottom: 4px; display: block;">Crypto (%)</label>
+                            <input type="number" id="custom-crypto-return" value="${((selectedProfile.crypto_return_mean || 0.20) * 100).toFixed(1)}" step="0.1" style="width: 100%; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
+                        </div>
                     </div>
                 `;
             }
@@ -808,12 +820,18 @@ function setupAnalysisHandlers(container, profile) {
             const customStockReturn = container.querySelector('#custom-stock-return');
             const customBondReturn = container.querySelector('#custom-bond-return');
             const customInflation = container.querySelector('#custom-inflation');
+            const customReitReturn = container.querySelector('#custom-reit-return');
+            const customGoldReturn = container.querySelector('#custom-gold-return');
+            const customCryptoReturn = container.querySelector('#custom-crypto-return');
 
             const marketProfile = {
                 ...templateProfile,
                 stock_return_mean: customStockReturn ? parseFloat(customStockReturn.value) / 100 : templateProfile.stock_return_mean,
                 bond_return_mean: customBondReturn ? parseFloat(customBondReturn.value) / 100 : templateProfile.bond_return_mean,
-                inflation_mean: customInflation ? parseFloat(customInflation.value) / 100 : templateProfile.inflation_mean
+                inflation_mean: customInflation ? parseFloat(customInflation.value) / 100 : templateProfile.inflation_mean,
+                reit_return_mean: customReitReturn ? parseFloat(customReitReturn.value) / 100 : (templateProfile.reit_return_mean || 0.08),
+                gold_return_mean: customGoldReturn ? parseFloat(customGoldReturn.value) / 100 : (templateProfile.gold_return_mean || 0.04),
+                crypto_return_mean: customCryptoReturn ? parseFloat(customCryptoReturn.value) / 100 : (templateProfile.crypto_return_mean || 0.20)
             };
 
             const spendingModel = spendingModelSelect?.value || 'constant_real';
@@ -844,12 +862,7 @@ function setupAnalysisHandlers(container, profile) {
                             start_year: startYear,
                             end_year: endYear,
                             assumptions: {
-                                stock_return_mean: profileData.stock_return_mean,
-                                stock_return_std: profileData.stock_return_std,
-                                bond_return_mean: profileData.bond_return_mean,
-                                bond_return_std: profileData.bond_return_std,
-                                inflation_mean: profileData.inflation_mean,
-                                inflation_std: profileData.inflation_std
+                                ...profileData
                             }
                         });
                     }
@@ -875,12 +888,7 @@ function setupAnalysisHandlers(container, profile) {
                         pattern.push({
                             duration: duration,
                             assumptions: {
-                                stock_return_mean: profileData.stock_return_mean,
-                                stock_return_std: profileData.stock_return_std,
-                                bond_return_mean: profileData.bond_return_mean,
-                                bond_return_std: profileData.bond_return_std,
-                                inflation_mean: profileData.inflation_mean,
-                                inflation_std: profileData.inflation_std
+                                ...profileData
                             }
                         });
                     }

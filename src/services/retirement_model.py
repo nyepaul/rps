@@ -62,13 +62,30 @@ class FinancialProfile:
 @dataclass
 class MarketAssumptions:
     """Market and economic assumptions for financial modeling"""
+    # Allocations (Sum should ideally be 1.0)
     stock_allocation: float = 0.5
+    bond_allocation: float = 0.4
+    cash_allocation: float = 0.1
+    reit_allocation: float = 0.0
+    gold_allocation: float = 0.0
+    crypto_allocation: float = 0.0
+
+    # Returns (Mean)
     stock_return_mean: float = 0.10
     bond_return_mean: float = 0.04
-    cash_return_mean: float = 0.015  # New: Configurable cash return
+    cash_return_mean: float = 0.015
+    reit_return_mean: float = 0.08
+    gold_return_mean: float = 0.04
+    crypto_return_mean: float = 0.20
     inflation_mean: float = 0.03
+
+    # Risk (Std Dev)
     stock_return_std: float = 0.18
     bond_return_std: float = 0.06
+    cash_return_std: float = 0.005
+    reit_return_std: float = 0.15
+    gold_return_std: float = 0.15
+    crypto_return_std: float = 0.60
     inflation_std: float = 0.01
     ss_discount_rate: float = 0.03
 class RetirementModel:
@@ -708,16 +725,53 @@ class RetirementModel:
             # Get market assumptions for this specific year
             year_assumptions = period_assumptions.get(year_idx, assumptions)
 
-            # Calculate annual return based on current allocation and year-specific market conditions
-            ret_mean = stock_pct * year_assumptions.stock_return_mean + (1 - stock_pct) * year_assumptions.bond_return_mean
+            # --- Multi-Asset Portfolio Calculation ---
+            # Basic allocation from assumptions
+            allocs = {
+                'stock': year_assumptions.stock_allocation,
+                'bond': year_assumptions.bond_allocation,
+                'cash': year_assumptions.cash_allocation,
+                'reit': year_assumptions.reit_allocation,
+                'gold': year_assumptions.gold_allocation,
+                'crypto': year_assumptions.crypto_allocation
+            }
+            
+            # Apply Dynamic Glide Path (Equity reduction after 65)
+            if p1_age > 65:
+                reduction = (p1_age - 65) * 0.01
+                old_stock = allocs['stock']
+                new_stock = max(0.20, old_stock - reduction)
+                allocs['stock'] = new_stock
+                
+                # Re-distribute the reduction to bonds (conservative shift)
+                allocs['bond'] += (old_stock - new_stock)
 
-            # Calculate portfolio volatility using proper variance formula
-            # Assumes 0.3 correlation between stocks and bonds (typical historical correlation)
-            correlation = 0.3
-            stock_variance = (stock_pct * year_assumptions.stock_return_std) ** 2
-            bond_variance = ((1 - stock_pct) * year_assumptions.bond_return_std) ** 2
-            covariance = 2 * stock_pct * (1 - stock_pct) * correlation * year_assumptions.stock_return_std * year_assumptions.bond_return_std
-            ret_std = np.sqrt(stock_variance + bond_variance + covariance)
+            # Calculate Portfolio Mean Return
+            ret_mean = (
+                allocs['stock'] * year_assumptions.stock_return_mean +
+                allocs['bond'] * year_assumptions.bond_return_mean +
+                allocs['cash'] * year_assumptions.cash_return_mean +
+                allocs['reit'] * year_assumptions.reit_return_mean +
+                allocs['gold'] * year_assumptions.gold_return_mean +
+                allocs['crypto'] * year_assumptions.crypto_return_mean
+            )
+
+            # Calculate Portfolio Volatility (Variance-Covariance)
+            # Simplification: Use weighted average of variances for additional assets 
+            # to avoid huge correlation matrix requirement. 
+            # Stock/Bond correlation remains 0.3.
+            stock_var = (allocs['stock'] * year_assumptions.stock_return_std) ** 2
+            bond_var = (allocs['bond'] * year_assumptions.bond_return_std) ** 2
+            sb_cov = 2 * allocs['stock'] * allocs['bond'] * 0.3 * year_assumptions.stock_return_std * year_assumptions.bond_return_std
+            
+            other_var = (
+                (allocs['cash'] * year_assumptions.cash_return_std) ** 2 +
+                (allocs['reit'] * year_assumptions.reit_return_std) ** 2 +
+                (allocs['gold'] * year_assumptions.gold_return_std) ** 2 +
+                (allocs['crypto'] * year_assumptions.crypto_return_std) ** 2
+            )
+            
+            ret_std = np.sqrt(stock_var + bond_var + sb_cov + other_var)
 
             annual_returns = np.random.normal(ret_mean, ret_std, simulations)
 
@@ -1481,10 +1535,18 @@ class RetirementModel:
                 total_withdrawals += w
 
             # --- Growth ---
-            ret = assumptions.stock_return_mean * assumptions.stock_allocation + assumptions.bond_return_mean * (1 - assumptions.stock_allocation)
+            # Weighted average return of all asset classes
+            ret = (
+                assumptions.stock_allocation * assumptions.stock_return_mean +
+                assumptions.bond_allocation * assumptions.bond_return_mean +
+                assumptions.cash_allocation * assumptions.cash_return_mean +
+                assumptions.reit_allocation * assumptions.reit_return_mean +
+                assumptions.gold_allocation * assumptions.gold_return_mean +
+                assumptions.crypto_allocation * assumptions.crypto_return_mean
+            )
             
             cash *= (1 + assumptions.cash_return_mean)
-            taxable_val *= (1 + ret * 0.85) # Tax drag
+            taxable_val *= (1 + ret * 0.85) # Tax drag applied to the blended return
             taxable_basis *= (1 + ret * 0.85)
             pretax_std *= (1 + ret)
             pretax_457 *= (1 + ret)

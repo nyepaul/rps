@@ -71,75 +71,92 @@ export const APP_CONFIG = {
         // Base Scenarios
         historical: {
             name: 'Historical Average',
-            description: 'Based on long-term historical market data',
-            stock_return_mean: 0.10,
-            stock_return_std: 0.18,
-            bond_return_mean: 0.04,
-            bond_return_std: 0.06,
-            inflation_mean: 0.03,
-            inflation_std: 0.01
+            description: 'Based on long-term historical market data (60/40 mix)',
+            stock_allocation: 0.60, bond_allocation: 0.40, cash_allocation: 0.0, reit_allocation: 0.0, gold_allocation: 0.0, crypto_allocation: 0.0,
+            stock_return_mean: 0.10, stock_return_std: 0.18,
+            bond_return_mean: 0.04, bond_return_std: 0.06,
+            cash_return_mean: 0.015, cash_return_std: 0.005,
+            inflation_mean: 0.03, inflation_std: 0.01
+        },
+        diversified: {
+            name: 'Modern Diversified',
+            description: 'Multi-asset class portfolio including REITs and Gold',
+            stock_allocation: 0.50, bond_allocation: 0.25, cash_allocation: 0.05, reit_allocation: 0.10, gold_allocation: 0.10, crypto_allocation: 0.0,
+            stock_return_mean: 0.09, stock_return_std: 0.17,
+            bond_return_mean: 0.04, bond_return_std: 0.06,
+            cash_return_mean: 0.02, cash_return_std: 0.005,
+            reit_return_mean: 0.08, reit_return_std: 0.15,
+            gold_return_mean: 0.05, gold_return_std: 0.15,
+            inflation_mean: 0.03, inflation_std: 0.01
+        },
+        'crypto-enthusiast': {
+            name: 'Digital Assets (Aggressive)',
+            description: 'Growth portfolio with 5% Crypto allocation',
+            stock_allocation: 0.60, bond_allocation: 0.20, cash_allocation: 0.05, reit_allocation: 0.05, gold_allocation: 0.05, crypto_allocation: 0.05,
+            stock_return_mean: 0.11, stock_return_std: 0.18,
+            bond_return_mean: 0.04, bond_return_std: 0.06,
+            cash_return_mean: 0.02, cash_return_std: 0.005,
+            reit_return_mean: 0.08, reit_return_std: 0.15,
+            gold_return_mean: 0.05, gold_return_std: 0.15,
+            crypto_return_mean: 0.35, crypto_return_std: 0.70,
+            inflation_mean: 0.03, inflation_std: 0.01
         },
         conservative: {
             name: 'Conservative',
             description: 'Lower risk, more stable returns',
-            stock_return_mean: 0.08,
-            stock_return_std: 0.15,
-            bond_return_mean: 0.04,
-            bond_return_std: 0.05,
-            inflation_mean: 0.025,
-            inflation_std: 0.01
+            stock_allocation: 0.30, bond_allocation: 0.60, cash_allocation: 0.10, reit_allocation: 0.0, gold_allocation: 0.0, crypto_allocation: 0.0,
+            stock_return_mean: 0.07, stock_return_std: 0.14,
+            bond_return_mean: 0.04, bond_return_std: 0.05,
+            cash_return_mean: 0.03, cash_return_std: 0.005,
+            inflation_mean: 0.025, inflation_std: 0.01
         },
         balanced: {
             name: 'Balanced',
             description: 'Moderate risk and returns, well-diversified',
-            stock_return_mean: 0.10,
-            stock_return_std: 0.16,
-            bond_return_mean: 0.04,
-            bond_return_std: 0.06,
-            inflation_mean: 0.03,
-            inflation_std: 0.01
+            stock_allocation: 0.50, bond_allocation: 0.40, cash_allocation: 0.10, reit_allocation: 0.0, gold_allocation: 0.0, crypto_allocation: 0.0,
+            stock_return_mean: 0.09, stock_return_std: 0.16,
+            bond_return_mean: 0.04, bond_return_std: 0.06,
+            cash_return_mean: 0.02, cash_return_std: 0.005,
+            inflation_mean: 0.03, inflation_std: 0.01
         },
         aggressive: {
             name: 'Aggressive Growth',
             description: 'Higher risk, higher expected returns',
-            stock_return_mean: 0.13,
-            stock_return_std: 0.20,
-            bond_return_mean: 0.04,
-            bond_return_std: 0.06,
-            inflation_mean: 0.03,
-            inflation_std: 0.01
+            stock_allocation: 0.80, bond_allocation: 0.20, cash_allocation: 0.0, reit_allocation: 0.0, gold_allocation: 0.0, crypto_allocation: 0.0,
+            stock_return_mean: 0.12, stock_return_std: 0.20,
+            bond_return_mean: 0.04, bond_return_std: 0.06,
+            cash_return_mean: 0.015, cash_return_std: 0.005,
+            inflation_mean: 0.03, inflation_std: 0.01
         },
 
-        // Bear/Crisis Scenarios
+        // Bear/Crisis Scenarios (Stress Tests)
         'bear-market': {
-            name: 'Bear Market',
+            name: 'Bear Market (Stress Test)',
             description: 'Negative returns (-20% to -40% decline)',
-            stock_return_mean: -0.05,
-            stock_return_std: 0.25,
-            bond_return_mean: 0.035,
-            bond_return_std: 0.05,
-            inflation_mean: 0.02,
-            inflation_std: 0.01
+            stock_allocation: 0.60, bond_allocation: 0.40, cash_allocation: 0.0, reit_allocation: 0.0, gold_allocation: 0.0, crypto_allocation: 0.0,
+            stock_return_mean: -0.05, stock_return_std: 0.25,
+            bond_return_mean: 0.035, bond_return_std: 0.05,
+            cash_return_mean: 0.03, cash_return_std: 0.005,
+            inflation_mean: 0.02, inflation_std: 0.01
         },
         recession: {
             name: 'Recession',
             description: 'Economic contraction with low returns',
-            stock_return_mean: 0.02,
-            stock_return_std: 0.22,
-            bond_return_mean: 0.04,
-            bond_return_std: 0.06,
-            inflation_mean: 0.015,
-            inflation_std: 0.01
+            stock_allocation: 0.50, bond_allocation: 0.50, cash_allocation: 0.0, reit_allocation: 0.0, gold_allocation: 0.0, crypto_allocation: 0.0,
+            stock_return_mean: 0.02, stock_return_std: 0.22,
+            bond_return_mean: 0.04, bond_return_std: 0.06,
+            cash_return_mean: 0.03, cash_return_std: 0.005,
+            inflation_mean: 0.015, inflation_std: 0.01
         },
         stagflation: {
             name: 'Stagflation',
             description: 'High inflation with low growth',
-            stock_return_mean: 0.04,
-            stock_return_std: 0.20,
-            bond_return_mean: 0.02,
-            bond_return_std: 0.08,
-            inflation_mean: 0.05,
-            inflation_std: 0.02
+            stock_allocation: 0.40, bond_allocation: 0.40, cash_allocation: 0.10, reit_allocation: 0.0, gold_allocation: 0.10, crypto_allocation: 0.0,
+            stock_return_mean: 0.04, stock_return_std: 0.20,
+            bond_return_mean: 0.02, bond_return_std: 0.08,
+            cash_return_mean: 0.02, cash_return_std: 0.005,
+            gold_return_mean: 0.10, gold_return_std: 0.15,
+            inflation_mean: 0.06, inflation_std: 0.02
         },
         'crisis-2008': {
             name: '2008 Financial Crisis',
