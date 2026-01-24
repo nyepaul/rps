@@ -233,18 +233,11 @@ def run_analysis():
             spouse_salary = 0
 
             employment_types = ['salary', 'hourly', 'wages', 'bonus']
-
             for stream in income_streams:
-
-                                if stream.get('type') in employment_types:
-
-                                    amount = stream.get('amount', 0)
-
-                                    freq = stream.get('frequency', 'monthly')
-
-                                    # Convert to annual
-
-                
+                if stream.get('type') in employment_types:
+                    amount = stream.get('amount', 0)
+                    freq = stream.get('frequency', 'monthly')
+                    # Convert to annual
                     if freq == 'monthly':
                         annual_amount = amount * 12
                     elif freq == 'annual':
@@ -501,11 +494,16 @@ def get_cashflow_details():
                 if stream.get('type') in employment_types:
                     amount = stream.get('amount', 0)
                     freq = stream.get('frequency', 'monthly')
-                    if freq == 'monthly': annual_amount = amount * 12
-                    elif freq == 'annual': annual_amount = amount
-                    else: annual_amount = amount * 12
-                    if primary_salary == 0: primary_salary = annual_amount
-                    else: spouse_salary = annual_amount
+                    if freq == 'monthly':
+                        annual_amount = amount * 12
+                    elif freq == 'annual':
+                        annual_amount = amount
+                    else:
+                        annual_amount = amount * 12
+                    if primary_salary == 0:
+                        primary_salary = annual_amount
+                    else:
+                        spouse_salary = annual_amount
             if primary_salary > 0 or spouse_salary > 0:
                 budget_data['income'] = {
                     'current': {'employment': {'primary_person': primary_salary, 'spouse': spouse_salary}},
