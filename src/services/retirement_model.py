@@ -313,12 +313,222 @@ class RetirementModel:
 
         return fica + federal_tax + state_tax
 
-    def monte_carlo_simulation(self, years: int, simulations: int = 10000, assumptions: MarketAssumptions = None, effective_tax_rate: float = 0.22, spending_model: str = 'constant_real'):
-        """Run Monte Carlo simulation using vectorized NumPy operations for high performance."""
+    def _validate_market_periods(self, years: int, market_periods: Dict = None) -> List[str]:
+        """Validate market periods and return warnings for unrealistic scenarios.
+
+        Args:
+            years: Total years to simulate
+            market_periods: Market period definitions
+
+        Returns:
+            List of warning messages
+        """
+        warnings = []
+
+        if not market_periods:
+            return warnings
+
+        period_type = market_periods.get('type', 'timeline')
+
+        if period_type == 'timeline':
+            periods = market_periods.get('periods', [])
+
+            # Check for unrealistic duration of extreme market conditions
+            for period in periods:
+                duration = period['end_year'] - period['start_year'] + 1
+                assumptions = period.get('assumptions', {})
+
+                # Warn about prolonged recessions (>5 years)
+                stock_return = assumptions.get('stock_return_mean', 0.10)
+                if stock_return < 0.06 and duration > 5:
+                    warnings.append(
+                        f"⚠️ Unrealistic: {duration}-year recession ({period['start_year']}-{period['end_year']}). "
+                        f"Historical recessions typically last 1-3 years."
+                    )
+
+                # Warn about prolonged bull markets (>15 years)
+                if stock_return > 0.12 and duration > 15:
+                    warnings.append(
+                        f"⚠️ Unrealistic: {duration}-year bull market ({period['start_year']}-{period['end_year']}). "
+                        f"Sustained high returns over such long periods are historically rare."
+                    )
+
+                # Warn about extremely long single-period scenarios
+                if duration >= years * 0.8:  # Period covers 80%+ of retirement
+                    warnings.append(
+                        f"⚠️ Warning: Single market condition spans {duration} of {years} years. "
+                        f"Consider modeling multiple market cycles for more realistic projections."
+                    )
+
+            # Check for gaps in timeline
+            sorted_periods = sorted(periods, key=lambda p: p['start_year'])
+            for i in range(len(sorted_periods) - 1):
+                current_end = sorted_periods[i]['end_year']
+                next_start = sorted_periods[i + 1]['start_year']
+                if next_start > current_end + 1:
+                    gap_years = next_start - current_end - 1
+                    warnings.append(
+                        f"ℹ️ Gap detected: {gap_years} years between periods ({current_end + 1}-{next_start - 1}). "
+                        f"Historical market assumptions will be used for these years."
+                    )
+
+        elif period_type == 'cycle':
+            pattern = market_periods.get('pattern', [])
+
+            # Check cycle realism
+            cycle_length = sum(p.get('duration', 0) for p in pattern)
+
+            if cycle_length < 3:
+                warnings.append(
+                    f"⚠️ Very short market cycle ({cycle_length} years). "
+                    f"Real market cycles typically span 7-10 years."
+                )
+
+            # Check for unrealistic pattern elements
+            for idx, pattern_elem in enumerate(pattern):
+                duration = pattern_elem.get('duration', 0)
+                assumptions = pattern_elem.get('assumptions', {})
+                stock_return = assumptions.get('stock_return_mean', 0.10)
+
+                if stock_return < 0.06 and duration > 5:
+                    warnings.append(
+                        f"⚠️ Pattern element {idx + 1}: {duration}-year recession phase is unrealistically long. "
+                        f"Consider 1-3 years for recession phases."
+                    )
+
+        return warnings
+
+    def _build_period_assumptions_lookup(self, years: int, market_periods: Dict = None, default_assumptions: MarketAssumptions = None) -> Dict[int, MarketAssumptions]:
+        """Build a year-by-year lookup of market assumptions from period definitions.
+
+        Args:
+            years: Total number of years to simulate
+            market_periods: Dict with either 'timeline' or 'cycle' periods
+            default_assumptions: Fallback assumptions if no periods defined
+
+        Returns:
+            Dict mapping year_index -> MarketAssumptions for that year
+        """
+        if default_assumptions is None:
+            default_assumptions = MarketAssumptions()
+
+        year_assumptions = {}
+
+        if not market_periods:
+            # No periods defined - use default assumptions for all years
+            for year_idx in range(years):
+                year_assumptions[year_idx] = default_assumptions
+            return year_assumptions
+
+        period_type = market_periods.get('type', 'timeline')
+
+        if period_type == 'timeline':
+            # Timeline: explicit year ranges with specific assumptions
+            periods = market_periods.get('periods', [])
+
+            # Sort periods by start_year
+            sorted_periods = sorted(periods, key=lambda p: p.get('start_year', 0))
+
+            # Build year-by-year lookup
+            for year_idx in range(years):
+                simulation_year = self.current_year + year_idx
+                found_period = False
+
+                # Find which period this year falls into
+                for period in sorted_periods:
+                    if period['start_year'] <= simulation_year <= period['end_year']:
+                        # Use this period's assumptions
+                        period_data = period['assumptions']
+                        year_assumptions[year_idx] = MarketAssumptions(
+                            stock_return_mean=period_data.get('stock_return_mean', default_assumptions.stock_return_mean),
+                            stock_return_std=period_data.get('stock_return_std', default_assumptions.stock_return_std),
+                            bond_return_mean=period_data.get('bond_return_mean', default_assumptions.bond_return_mean),
+                            bond_return_std=period_data.get('bond_return_std', default_assumptions.bond_return_std),
+                            inflation_mean=period_data.get('inflation_mean', default_assumptions.inflation_mean),
+                            inflation_std=period_data.get('inflation_std', default_assumptions.inflation_std),
+                            stock_allocation=default_assumptions.stock_allocation  # Use base allocation
+                        )
+                        found_period = True
+                        break
+
+                # If no period defined for this year, use default
+                if not found_period:
+                    year_assumptions[year_idx] = default_assumptions
+
+        elif period_type == 'cycle':
+            # Cycle: repeating pattern of market conditions
+            pattern = market_periods.get('pattern', [])
+            repeat = market_periods.get('repeat', True)
+
+            if not pattern:
+                # No pattern - use default
+                for year_idx in range(years):
+                    year_assumptions[year_idx] = default_assumptions
+                return year_assumptions
+
+            # Calculate total cycle length
+            cycle_length = sum(p.get('duration', 0) for p in pattern)
+
+            if cycle_length == 0:
+                # Invalid cycle - use default
+                for year_idx in range(years):
+                    year_assumptions[year_idx] = default_assumptions
+                return year_assumptions
+
+            # Build year-by-year lookup
+            for year_idx in range(years):
+                if repeat:
+                    # Repeating cycle - use modulo to wrap around
+                    cycle_position = year_idx % cycle_length
+                else:
+                    # Non-repeating - after cycle completes, use default
+                    if year_idx >= cycle_length:
+                        year_assumptions[year_idx] = default_assumptions
+                        continue
+                    cycle_position = year_idx
+
+                # Find which pattern element this position falls into
+                cumulative_duration = 0
+                for pattern_elem in pattern:
+                    duration = pattern_elem.get('duration', 0)
+                    if cycle_position < cumulative_duration + duration:
+                        # This is the active pattern element
+                        period_data = pattern_elem['assumptions']
+                        year_assumptions[year_idx] = MarketAssumptions(
+                            stock_return_mean=period_data.get('stock_return_mean', default_assumptions.stock_return_mean),
+                            stock_return_std=period_data.get('stock_return_std', default_assumptions.stock_return_std),
+                            bond_return_mean=period_data.get('bond_return_mean', default_assumptions.bond_return_mean),
+                            bond_return_std=period_data.get('bond_return_std', default_assumptions.bond_return_std),
+                            inflation_mean=period_data.get('inflation_mean', default_assumptions.inflation_mean),
+                            inflation_std=period_data.get('inflation_std', default_assumptions.inflation_std),
+                            stock_allocation=default_assumptions.stock_allocation
+                        )
+                        break
+                    cumulative_duration += duration
+
+        return year_assumptions
+
+    def monte_carlo_simulation(self, years: int, simulations: int = 10000, assumptions: MarketAssumptions = None, effective_tax_rate: float = 0.22, spending_model: str = 'constant_real', market_periods: Dict = None):
+        """Run Monte Carlo simulation using vectorized NumPy operations for high performance.
+
+        Args:
+            years: Number of years to simulate
+            simulations: Number of Monte Carlo simulations to run
+            assumptions: Base market assumptions (used if market_periods not provided)
+            effective_tax_rate: Effective tax rate for calculations
+            spending_model: Spending pattern model ('constant_real', 'retirement_smile', 'conservative_decline')
+            market_periods: Optional period-based market conditions (timeline or cycle)
+        """
         if assumptions is None:
             assumptions = MarketAssumptions()
-            
+
         base_stock_pct = assumptions.stock_allocation
+
+        # Validate market periods and collect warnings
+        period_warnings = self._validate_market_periods(years, market_periods)
+
+        # Build year-by-year market assumptions lookup
+        period_assumptions = self._build_period_assumptions_lookup(years, market_periods, assumptions)
         
         # 1. Initialize Account Vectors (shape: (simulations,))
         start_cash = 0.0
@@ -357,8 +567,11 @@ class RetirementModel:
         roth = np.full(simulations, start_roth)
 
         # 2. Pre-calculate Market Factors (shape: (simulations, years))
-        # Inflation
-        inflation_rates = np.random.normal(assumptions.inflation_mean, assumptions.inflation_std, (simulations, years))
+        # Inflation - now period-specific
+        inflation_rates = np.zeros((simulations, years))
+        for year_idx in range(years):
+            year_assumptions = period_assumptions.get(year_idx, assumptions)
+            inflation_rates[:, year_idx] = np.random.normal(year_assumptions.inflation_mean, year_assumptions.inflation_std, simulations)
         
         # Calculate Returns per year (Dynamic stock pct based on glide path)
         # cpi[:, 0] is 1.0. cpi[:, t] = product(1+inf) up to t-1
@@ -453,16 +666,19 @@ class RetirementModel:
             if p1_age > 65:
                 reduction = (p1_age - 65) * 0.01
                 stock_pct = max(0.20, base_stock_pct - reduction)
-            
-            # Calculate annual return based on current allocation
-            ret_mean = stock_pct * assumptions.stock_return_mean + (1 - stock_pct) * assumptions.bond_return_mean
+
+            # Get market assumptions for this specific year
+            year_assumptions = period_assumptions.get(year_idx, assumptions)
+
+            # Calculate annual return based on current allocation and year-specific market conditions
+            ret_mean = stock_pct * year_assumptions.stock_return_mean + (1 - stock_pct) * year_assumptions.bond_return_mean
 
             # Calculate portfolio volatility using proper variance formula
             # Assumes 0.3 correlation between stocks and bonds (typical historical correlation)
             correlation = 0.3
-            stock_variance = (stock_pct * assumptions.stock_return_std) ** 2
-            bond_variance = ((1 - stock_pct) * assumptions.bond_return_std) ** 2
-            covariance = 2 * stock_pct * (1 - stock_pct) * correlation * assumptions.stock_return_std * assumptions.bond_return_std
+            stock_variance = (stock_pct * year_assumptions.stock_return_std) ** 2
+            bond_variance = ((1 - stock_pct) * year_assumptions.bond_return_std) ** 2
+            covariance = 2 * stock_pct * (1 - stock_pct) * correlation * year_assumptions.stock_return_std * year_assumptions.bond_return_std
             ret_std = np.sqrt(stock_variance + bond_variance + covariance)
 
             annual_returns = np.random.normal(ret_mean, ret_std, simulations)
@@ -846,6 +1062,9 @@ class RetirementModel:
         success_count = np.sum(ending_balances > 0)
         success_rate = success_count / simulations
 
+        # Add market period warnings to any other warnings
+        all_warnings = period_warnings.copy() if period_warnings else []
+
         return {
             'success_rate': float(success_rate),
             'median_final_balance': float(np.median(ending_balances)),
@@ -862,7 +1081,7 @@ class RetirementModel:
                 'median': np.median(all_paths, axis=0).tolist(),
                 'p95': np.percentile(all_paths, 95, axis=0).tolist()
             },
-            'warnings': [],
+            'warnings': all_warnings,
             'recommendations': []
         }
 

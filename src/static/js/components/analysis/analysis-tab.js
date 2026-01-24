@@ -74,13 +74,36 @@ export function renderAnalysisTab(container) {
 
             <!-- Analysis Configuration -->
             <div class="analysis-panel" style="padding: 12px; margin-bottom: var(--space-3); border: 1px solid var(--border-color);">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
-                    <!-- Market Assumptions Selector -->
-                    <div>
-                        <label style="display: block; margin-bottom: 4px; font-weight: 700; font-size: 12px; color: var(--accent-color);">
-                            MARKET ASSUMPTIONS
+                <!-- Market Conditions Section -->
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <label style="font-weight: 700; font-size: 14px; color: var(--accent-color);">
+                            📊 MARKET CONDITIONS
                         </label>
-                        <select id="market-profile-select" style="width: 100%; padding: 8px; font-size: 13px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer;">
+                        <button id="market-conditions-help-btn" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 12px; padding: 4px 8px;">
+                            ℹ️ Why This Matters
+                        </button>
+                    </div>
+
+                    <!-- Mode Selector -->
+                    <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+                        <button class="market-mode-btn" data-mode="simple" style="flex: 1; padding: 8px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                            Simple
+                        </button>
+                        <button class="market-mode-btn" data-mode="preset" style="flex: 1; padding: 8px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                            Presets
+                        </button>
+                        <button class="market-mode-btn" data-mode="timeline" style="flex: 1; padding: 8px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                            Timeline
+                        </button>
+                        <button class="market-mode-btn" data-mode="cycle" style="flex: 1; padding: 8px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                            Cycle
+                        </button>
+                    </div>
+
+                    <!-- Simple Mode (Default) -->
+                    <div id="market-mode-simple" class="market-mode-content">
+                        <select id="market-profile-select" style="width: 100%; padding: 8px; font-size: 13px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; margin-bottom: 8px;">
                             ${Object.entries(profileCategories).map(([category, keys]) => `
                                 <optgroup label="${category}">
                                     ${keys.filter(key => APP_CONFIG.MARKET_PROFILES[key]).map(key => {
@@ -91,56 +114,82 @@ export function renderAnalysisTab(container) {
                                 </optgroup>
                             `).join('')}
                         </select>
-                        <div id="market-profile-description" style="margin-top: 8px; padding: 8px; background: var(--bg-primary); border-radius: 4px; border: 1px solid var(--border-color); font-size: 11px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                                <span style="font-weight: 700; color: var(--text-primary);">${marketProfile.name}</span>
-                            </div>
-                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
-                                <div class="form-group">
-                                    <label style="font-size: 9px; margin-bottom: 2px; display: block; opacity: 0.8;">Stock %</label>
-                                    <input type="number" id="custom-stock-return" value="${(marketProfile.stock_return_mean * 100).toFixed(1)}" step="0.1" style="width: 100%; padding: 2px 4px; border-radius: 3px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 11px;">
-                                </div>
-                                <div class="form-group">
-                                    <label style="font-size: 9px; margin-bottom: 2px; display: block; opacity: 0.8;">Bond %</label>
-                                    <input type="number" id="custom-bond-return" value="${(marketProfile.bond_return_mean * 100).toFixed(1)}" step="0.1" style="width: 100%; padding: 2px 4px; border-radius: 3px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 11px;">
-                                </div>
-                                <div class="form-group">
-                                    <label style="font-size: 9px; margin-bottom: 2px; display: block; opacity: 0.8;">Inflation %</label>
-                                    <input type="number" id="custom-inflation" value="${(marketProfile.inflation_mean * 100).toFixed(1)}" step="0.1" style="width: 100%; padding: 2px 4px; border-radius: 3px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 11px;">
-                                </div>
-                            </div>
+                        <div style="background: var(--warning-color); color: white; padding: 8px; border-radius: 4px; font-size: 11px;">
+                            ⚠️ <strong>Note:</strong> Simple mode uses ONE market condition for your ENTIRE retirement (30-40 years). This is unrealistic. Consider using Presets or Timeline for more accurate projections.
                         </div>
                     </div>
 
-                    <!-- Right side: Spending & Run -->
-                    <div style="display: flex; flex-direction: column; gap: 12px;">
-                        <div>
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                                <label style="font-weight: 700; font-size: 12px; color: var(--accent-color);">SPENDING STRATEGY</label>
-                                <button id="spending-strategy-help-btn" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 11px; padding: 0;">ℹ️ Help</button>
-                            </div>
-                            <select id="spending-model-select" style="width: 100%; padding: 8px; font-size: 13px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer;">
-                                <option value="constant_real">Constant (Default)</option>
-                                <option value="retirement_smile">Retirement Smile</option>
-                                <option value="conservative_decline">Conservative Decline</option>
-                            </select>
+                    <!-- Preset Mode -->
+                    <div id="market-mode-preset" class="market-mode-content" style="display: none;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;" id="preset-scenarios-container">
+                            ${Object.entries(APP_CONFIG.PRESET_SCENARIOS).map(([key, preset]) => `
+                                <button class="preset-scenario-btn" data-preset="${key}" style="padding: 12px; background: var(--bg-primary); border: 2px solid var(--border-color); border-radius: 6px; cursor: pointer; text-align: left; transition: all 0.2s;">
+                                    <div style="font-size: 24px; margin-bottom: 4px;">${preset.icon}</div>
+                                    <div style="font-weight: 700; font-size: 13px; margin-bottom: 4px; color: var(--text-primary);">${preset.name}</div>
+                                    <div style="font-size: 11px; color: var(--text-secondary);">${preset.description}</div>
+                                </button>
+                            `).join('')}
                         </div>
+                        <div id="preset-selected-display" style="margin-top: 10px; padding: 10px; background: var(--bg-primary); border-radius: 4px; border: 1px solid var(--accent-color); display: none;">
+                            <strong style="color: var(--accent-color);">Selected:</strong> <span id="preset-selected-name"></span>
+                        </div>
+                    </div>
 
-                        <div style="display: grid; grid-template-columns: 1fr 150px; gap: 10px; align-items: flex-end;">
-                            <div>
-                                <label style="display: block; margin-bottom: 4px; font-weight: 700; font-size: 12px; color: var(--accent-color);">SIMULATIONS</label>
-                                <select id="simulations-select" style="width: 100%; padding: 8px; font-size: 13px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer;">
-                                    <option value="1000" ${parseInt(savedSimulations) === 1000 ? 'selected' : ''}>1,000</option>
-                                    <option value="5000" ${parseInt(savedSimulations) === 5000 ? 'selected' : ''}>5,000</option>
-                                    <option value="10000" ${parseInt(savedSimulations) === 10000 ? 'selected' : ''}>10,000</option>
-                                </select>
-                            </div>
-                            <button id="run-analysis-btn" class="primary-btn" style="padding: 8px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 700; width: 100%;">
-                                RUN ANALYSIS
-                            </button>
+                    <!-- Timeline Mode -->
+                    <div id="market-mode-timeline" class="market-mode-content" style="display: none;">
+                        <div id="timeline-periods-container" style="margin-bottom: 10px;">
+                            <!-- Timeline periods will be added here dynamically -->
                         </div>
+                        <button id="add-timeline-period-btn" style="width: 100%; padding: 8px; background: var(--success-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                            + Add Period
+                        </button>
+                    </div>
+
+                    <!-- Cycle Mode -->
+                    <div id="market-mode-cycle" class="market-mode-content" style="display: none;">
+                        <div style="margin-bottom: 10px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" id="cycle-repeat-checkbox" checked style="cursor: pointer;">
+                                <span style="font-size: 13px; color: var(--text-primary);">Repeat cycle throughout retirement</span>
+                            </label>
+                        </div>
+                        <div id="cycle-pattern-container" style="margin-bottom: 10px;">
+                            <!-- Cycle pattern elements will be added here dynamically -->
+                        </div>
+                        <button id="add-cycle-element-btn" style="width: 100%; padding: 8px; background: var(--success-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                            + Add Phase
+                        </button>
                     </div>
                 </div>
+
+                <!-- Spending Strategy & Run -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: flex-end;">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <label style="font-weight: 700; font-size: 12px; color: var(--accent-color);">SPENDING STRATEGY</label>
+                            <button id="spending-strategy-help-btn" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 11px; padding: 0;">ℹ️ Help</button>
+                        </div>
+                        <select id="spending-model-select" style="width: 100%; padding: 8px; font-size: 13px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer;">
+                            <option value="constant_real">Constant (Default)</option>
+                            <option value="retirement_smile">Retirement Smile</option>
+                            <option value="conservative_decline">Conservative Decline</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label style="display: block; margin-bottom: 4px; font-weight: 700; font-size: 12px; color: var(--accent-color);">SIMULATIONS</label>
+                        <select id="simulations-select" style="width: 100%; padding: 8px; font-size: 13px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer;">
+                            <option value="1000" ${parseInt(savedSimulations) === 1000 ? 'selected' : ''}>1,000</option>
+                            <option value="5000" ${parseInt(savedSimulations) === 5000 ? 'selected' : ''}>5,000</option>
+                            <option value="10000" ${parseInt(savedSimulations) === 10000 ? 'selected' : ''}>10,000</option>
+                        </select>
+                    </div>
+
+                    <button id="run-analysis-btn" class="primary-btn" style="padding: 10px 24px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 700; height: fit-content;">
+                        RUN ANALYSIS
+                    </button>
+                </div>
+
             </div>
 
             <!-- Results Container -->
@@ -156,6 +205,52 @@ export function renderAnalysisTab(container) {
             }
             .primary-btn:hover {
                 background: var(--accent-hover);
+            }
+            .market-mode-btn.active {
+                background: var(--accent-color) !important;
+                color: white !important;
+                border-color: var(--accent-color) !important;
+            }
+            .market-mode-btn:hover {
+                opacity: 0.9;
+            }
+            .preset-scenario-btn:hover {
+                border-color: var(--accent-color);
+                background: var(--bg-secondary);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            }
+            .preset-scenario-btn.selected {
+                border-color: var(--accent-color);
+                border-width: 3px;
+                background: var(--bg-secondary);
+            }
+            .timeline-period {
+                background: var(--bg-primary);
+                padding: 12px;
+                border-radius: 6px;
+                border: 1px solid var(--border-color);
+                margin-bottom: 8px;
+            }
+            .cycle-phase {
+                background: var(--bg-primary);
+                padding: 12px;
+                border-radius: 6px;
+                border: 1px solid var(--border-color);
+                margin-bottom: 8px;
+            }
+            .remove-btn {
+                background: var(--danger-color);
+                color: white;
+                border: none;
+                padding: 4px 12px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 11px;
+                font-weight: 600;
+            }
+            .remove-btn:hover {
+                opacity: 0.9;
             }
             .result-card {
                 background: var(--bg-secondary);
@@ -208,6 +303,7 @@ export function renderAnalysisTab(container) {
     // Set up event handlers
     setupAnalysisHandlers(container, profile);
     setupScenarioLoader(container, profile);
+    setupMarketConditionsHandlers(container, profile);
 }
 
 import { scenariosAPI } from '../../api/scenarios.js';
@@ -289,6 +385,293 @@ async function setupScenarioLoader(container, profile) {
     } catch (error) {
         console.error('Error fetching scenarios:', error);
     }
+}
+
+// Global state for market periods
+let currentMarketMode = 'simple';
+let selectedPreset = null;
+let timelinePeriods = [];
+let cyclePattern = [];
+let timelinePeriodCounter = 0;
+let cyclePhaseCounter = 0;
+
+function setupMarketConditionsHandlers(container, profile) {
+    // Mode switching
+    const modeBtns = container.querySelectorAll('.market-mode-btn');
+    const modeContents = container.querySelectorAll('.market-mode-content');
+
+    modeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const mode = btn.getAttribute('data-mode');
+            currentMarketMode = mode;
+
+            // Update button styles
+            modeBtns.forEach(b => {
+                b.classList.remove('active');
+                b.style.background = 'var(--bg-tertiary)';
+                b.style.color = 'var(--text-primary)';
+                b.style.borderColor = 'var(--border-color)';
+            });
+            btn.classList.add('active');
+
+            // Show/hide content
+            modeContents.forEach(content => {
+                content.style.display = 'none';
+            });
+            const targetContent = container.querySelector(`#market-mode-${mode}`);
+            if (targetContent) {
+                targetContent.style.display = 'block';
+            }
+
+            // Reset selections when switching modes
+            if (mode !== 'preset') {
+                selectedPreset = null;
+            }
+        });
+    });
+
+    // Preset scenario selection
+    const presetBtns = container.querySelectorAll('.preset-scenario-btn');
+    presetBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const presetKey = btn.getAttribute('data-preset');
+            selectedPreset = presetKey;
+
+            // Update button styles
+            presetBtns.forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+
+            // Show selected display
+            const display = container.querySelector('#preset-selected-display');
+            const nameSpan = container.querySelector('#preset-selected-name');
+            if (display && nameSpan) {
+                nameSpan.textContent = APP_CONFIG.PRESET_SCENARIOS[presetKey].name;
+                display.style.display = 'block';
+            }
+        });
+    });
+
+    // Timeline: Add period button
+    const addTimelinePeriodBtn = container.querySelector('#add-timeline-period-btn');
+    if (addTimelinePeriodBtn) {
+        addTimelinePeriodBtn.addEventListener('click', () => {
+            addTimelinePeriod(container, profile);
+        });
+    }
+
+    // Cycle: Add phase button
+    const addCycleElementBtn = container.querySelector('#add-cycle-element-btn');
+    if (addCycleElementBtn) {
+        addCycleElementBtn.addEventListener('click', () => {
+            addCyclePhase(container);
+        });
+    }
+
+    // Market conditions help button
+    const marketConditionsHelpBtn = container.querySelector('#market-conditions-help-btn');
+    if (marketConditionsHelpBtn) {
+        marketConditionsHelpBtn.addEventListener('click', () => {
+            showMarketConditionsExplanationModal();
+        });
+    }
+
+    // Initialize with one timeline period and one cycle phase
+    addTimelinePeriod(container, profile);
+    addCyclePhase(container);
+}
+
+function addTimelinePeriod(container, profile) {
+    const periodsContainer = container.querySelector('#timeline-periods-container');
+    const periodId = timelinePeriodCounter++;
+    const retirementYear = new Date(profile.retirement_date).getFullYear();
+    const currentYear = new Date().getFullYear();
+
+    const periodDiv = document.createElement('div');
+    periodDiv.className = 'timeline-period';
+    periodDiv.setAttribute('data-period-id', periodId);
+    periodDiv.innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; align-items: end;">
+            <div>
+                <label style="font-size: 11px; display: block; margin-bottom: 4px; color: var(--text-secondary);">Start Year</label>
+                <input type="number" class="period-start-year" value="${retirementYear + (timelinePeriods.length * 5)}" min="${currentYear}" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-secondary); color: var(--text-primary); font-size: 12px;">
+            </div>
+            <div>
+                <label style="font-size: 11px; display: block; margin-bottom: 4px; color: var(--text-secondary);">End Year</label>
+                <input type="number" class="period-end-year" value="${retirementYear + (timelinePeriods.length * 5) + 4}" min="${currentYear}" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-secondary); color: var(--text-primary); font-size: 12px;">
+            </div>
+            <div>
+                <label style="font-size: 11px; display: block; margin-bottom: 4px; color: var(--text-secondary);">Market Condition</label>
+                <select class="period-market-profile" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-secondary); color: var(--text-primary); font-size: 12px;">
+                    <option value="historical">Historical Average</option>
+                    <option value="bear-market">Bear Market</option>
+                    <option value="recession">Recession</option>
+                    <option value="great-recession">Great Recession</option>
+                    <option value="bull-market">Bull Market</option>
+                    <option value="post-covid">Post-COVID Recovery</option>
+                    <option value="conservative">Conservative</option>
+                    <option value="balanced">Balanced</option>
+                </select>
+            </div>
+            <button class="remove-btn remove-period-btn" data-period-id="${periodId}" style="padding: 6px 12px;">Remove</button>
+        </div>
+    `;
+
+    periodsContainer.appendChild(periodDiv);
+
+    // Add remove handler
+    const removeBtn = periodDiv.querySelector('.remove-period-btn');
+    removeBtn.addEventListener('click', () => {
+        periodDiv.remove();
+        timelinePeriods = timelinePeriods.filter(p => p.id !== periodId);
+    });
+
+    // Track period
+    timelinePeriods.push({
+        id: periodId,
+        element: periodDiv
+    });
+}
+
+function addCyclePhase(container) {
+    const patternsContainer = container.querySelector('#cycle-pattern-container');
+    const phaseId = cyclePhaseCounter++;
+
+    const phaseDiv = document.createElement('div');
+    phaseDiv.className = 'cycle-phase';
+    phaseDiv.setAttribute('data-phase-id', phaseId);
+    phaseDiv.innerHTML = `
+        <div style="display: grid; grid-template-columns: 120px 1fr auto; gap: 8px; align-items: end;">
+            <div>
+                <label style="font-size: 11px; display: block; margin-bottom: 4px; color: var(--text-secondary);">Duration (years)</label>
+                <input type="number" class="phase-duration" value="${cyclePattern.length === 0 ? 7 : cyclePattern.length === 1 ? 2 : 3}" min="1" max="20" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-secondary); color: var(--text-primary); font-size: 12px;">
+            </div>
+            <div>
+                <label style="font-size: 11px; display: block; margin-bottom: 4px; color: var(--text-secondary);">Market Condition</label>
+                <select class="phase-market-profile" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-secondary); color: var(--text-primary); font-size: 12px;">
+                    <option value="bull-market" ${cyclePattern.length === 0 ? 'selected' : ''}>Bull Market</option>
+                    <option value="recession" ${cyclePattern.length === 1 ? 'selected' : ''}>Recession</option>
+                    <option value="post-covid" ${cyclePattern.length === 2 ? 'selected' : ''}>Recovery</option>
+                    <option value="historical">Historical Average</option>
+                    <option value="bear-market">Bear Market</option>
+                    <option value="conservative">Conservative</option>
+                    <option value="balanced">Balanced</option>
+                </select>
+            </div>
+            <button class="remove-btn remove-phase-btn" data-phase-id="${phaseId}" style="padding: 6px 12px;">Remove</button>
+        </div>
+    `;
+
+    patternsContainer.appendChild(phaseDiv);
+
+    // Add remove handler
+    const removeBtn = phaseDiv.querySelector('.remove-phase-btn');
+    removeBtn.addEventListener('click', () => {
+        phaseDiv.remove();
+        cyclePattern = cyclePattern.filter(p => p.id !== phaseId);
+    });
+
+    // Track phase
+    cyclePattern.push({
+        id: phaseId,
+        element: phaseDiv
+    });
+}
+
+function showMarketConditionsExplanationModal() {
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 10000; padding: 20px;';
+
+    modal.innerHTML = `
+        <div style="background: var(--bg-primary); border-radius: 12px; max-width: 800px; max-height: 90vh; overflow-y: auto; padding: 30px; position: relative;">
+            <button class="close-modal-btn" style="position: absolute; top: 15px; right: 15px; background: var(--bg-tertiary); border: none; color: var(--text-primary); font-size: 24px; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">×</button>
+
+            <h2 style="font-size: 28px; margin-bottom: 20px; color: var(--accent-color);">📊 Why Market Conditions Matter</h2>
+
+            <div style="line-height: 1.8; color: var(--text-primary);">
+                <div style="background: linear-gradient(135deg, var(--danger-color), #e74c3c); padding: 20px; border-radius: 12px; margin-bottom: 20px; color: white;">
+                    <h3 style="font-size: 20px; margin: 0 0 12px 0; font-weight: bold;">🚨 Critical Issue with "Simple" Mode</h3>
+                    <p style="margin: 0; font-size: 15px; line-height: 1.6;">
+                        <strong>Simple mode uses ONE market condition for your ENTIRE 30-40 year retirement.</strong><br><br>
+                        This is fundamentally unrealistic. No retirement experiences 30 years of continuous recession OR continuous bull market. Real retirements span multiple market cycles.
+                    </p>
+                </div>
+
+                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">The Sequence of Returns Risk</h3>
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <p style="margin: 0 0 15px 0; color: var(--text-secondary);">
+                        <strong>The most important risk in retirement:</strong> WHEN market crashes happen matters more than IF they happen.<br><br>
+
+                        • <strong>Early Crash:</strong> A market crash in years 1-5 of retirement can devastate your portfolio because you're withdrawing during the downturn<br>
+                        • <strong>Mid Crash:</strong> Less damaging but still significant<br>
+                        • <strong>Late Crash:</strong> Least impactful since you've already withdrawn most of what you need
+                    </p>
+                </div>
+
+                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">The Four Modes Explained</h3>
+
+                <div style="background: var(--bg-secondary); padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+                    <h4 style="font-size: 16px; margin-bottom: 8px; color: var(--text-primary);">1️⃣ Simple Mode</h4>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">
+                        Uses one market condition for entire retirement. Unrealistic but useful for understanding individual market profiles. Always supplement with Preset or Timeline analysis.
+                    </p>
+                </div>
+
+                <div style="background: var(--bg-secondary); padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+                    <h4 style="font-size: 16px; margin-bottom: 8px; color: var(--success-color);">2️⃣ Preset Scenarios (Recommended)</h4>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">
+                        Pre-configured realistic scenarios modeling sequence of returns risk:<br>
+                        • Early Retirement Crash - Worst case<br>
+                        • Lucky Start - Best case<br>
+                        • Mid-Retirement Crisis<br>
+                        • Realistic Market Cycles - Repeating economic cycles<br>
+                        <strong>Start here if you're unsure!</strong>
+                    </p>
+                </div>
+
+                <div style="background: var(--bg-secondary); padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+                    <h4 style="font-size: 16px; margin-bottom: 8px; color: var(--info-color);">3️⃣ Timeline Mode</h4>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">
+                        Define specific year ranges with different market conditions. Perfect for testing "what if" scenarios:<br>
+                        • What if recession happens in years 2028-2030?<br>
+                        • What if strong bull market in first 10 years?<br>
+                        Gives you precise control over when market conditions occur.
+                    </p>
+                </div>
+
+                <div style="background: var(--bg-secondary); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="font-size: 16px; margin-bottom: 8px; color: var(--warning-color);">4️⃣ Cycle Mode</h4>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">
+                        Define a repeating pattern of market phases:<br>
+                        • 7 years expansion → 2 years recession → 3 years recovery (repeat)<br>
+                        Models realistic economic cycles throughout retirement.
+                    </p>
+                </div>
+
+                <div style="background: var(--accent-color); padding: 15px; border-radius: 8px; margin-top: 20px; color: white;">
+                    <strong>💡 Best Practice:</strong> Run analysis with multiple approaches:<br>
+                    1. Start with "Early Retirement Crash" preset (worst case)<br>
+                    2. Try "Realistic Market Cycles" preset (typical case)<br>
+                    3. Try "Lucky Start" preset (best case)<br><br>
+                    This gives you a realistic range of outcomes instead of a single unrealistic projection.
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="close-modal-bottom-btn" style="padding: 12px 30px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                    Got It!
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const closeModal = () => modal.remove();
+    modal.querySelector('.close-modal-btn').addEventListener('click', closeModal);
+    modal.querySelector('.close-modal-bottom-btn').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
 }
 
 function setupAnalysisHandlers(container, profile) {
@@ -420,19 +803,102 @@ function setupAnalysisHandlers(container, profile) {
         try {
             const selectedKey = marketProfileSelect?.value || localStorage.getItem('rps_market_profile') || 'historical';
             const templateProfile = APP_CONFIG.MARKET_PROFILES[selectedKey];
-            
-            // Create custom market profile from inputs
+
+            // Create custom market profile from inputs (used for simple mode and base assumptions)
+            const customStockReturn = container.querySelector('#custom-stock-return');
+            const customBondReturn = container.querySelector('#custom-bond-return');
+            const customInflation = container.querySelector('#custom-inflation');
+
             const marketProfile = {
                 ...templateProfile,
-                stock_return_mean: parseFloat(container.querySelector('#custom-stock-return').value) / 100,
-                bond_return_mean: parseFloat(container.querySelector('#custom-bond-return').value) / 100,
-                inflation_mean: parseFloat(container.querySelector('#custom-inflation').value) / 100
+                stock_return_mean: customStockReturn ? parseFloat(customStockReturn.value) / 100 : templateProfile.stock_return_mean,
+                bond_return_mean: customBondReturn ? parseFloat(customBondReturn.value) / 100 : templateProfile.bond_return_mean,
+                inflation_mean: customInflation ? parseFloat(customInflation.value) / 100 : templateProfile.inflation_mean
             };
 
             const spendingModel = spendingModelSelect?.value || 'constant_real';
-            
-            // Pass spending model to API
-            const result = await analysisAPI.runAnalysis(profile.name, simulations, marketProfile, spendingModel);
+
+            // Collect market periods based on current mode
+            let marketPeriods = null;
+            const retirementYear = new Date(profile.retirement_date).getFullYear();
+            const currentYear = new Date().getFullYear();
+
+            if (currentMarketMode === 'preset' && selectedPreset) {
+                // Use preset scenario
+                const preset = APP_CONFIG.PRESET_SCENARIOS[selectedPreset];
+                const yearsProjected = 40; // Approximate, actual will be calculated by backend
+                marketPeriods = preset.buildPeriods(currentYear, retirementYear, yearsProjected);
+            } else if (currentMarketMode === 'timeline') {
+                // Build timeline from user input
+                const periods = [];
+                const periodElements = container.querySelectorAll('.timeline-period');
+
+                periodElements.forEach(elem => {
+                    const startYear = parseInt(elem.querySelector('.period-start-year').value);
+                    const endYear = parseInt(elem.querySelector('.period-end-year').value);
+                    const profileKey = elem.querySelector('.period-market-profile').value;
+                    const profileData = APP_CONFIG.MARKET_PROFILES[profileKey];
+
+                    if (profileData && startYear && endYear && startYear <= endYear) {
+                        periods.push({
+                            start_year: startYear,
+                            end_year: endYear,
+                            assumptions: {
+                                stock_return_mean: profileData.stock_return_mean,
+                                stock_return_std: profileData.stock_return_std,
+                                bond_return_mean: profileData.bond_return_mean,
+                                bond_return_std: profileData.bond_return_std,
+                                inflation_mean: profileData.inflation_mean,
+                                inflation_std: profileData.inflation_std
+                            }
+                        });
+                    }
+                });
+
+                if (periods.length > 0) {
+                    marketPeriods = {
+                        type: 'timeline',
+                        periods: periods
+                    };
+                }
+            } else if (currentMarketMode === 'cycle') {
+                // Build cycle pattern from user input
+                const pattern = [];
+                const phaseElements = container.querySelectorAll('.cycle-phase');
+
+                phaseElements.forEach(elem => {
+                    const duration = parseInt(elem.querySelector('.phase-duration').value);
+                    const profileKey = elem.querySelector('.phase-market-profile').value;
+                    const profileData = APP_CONFIG.MARKET_PROFILES[profileKey];
+
+                    if (profileData && duration && duration > 0) {
+                        pattern.push({
+                            duration: duration,
+                            assumptions: {
+                                stock_return_mean: profileData.stock_return_mean,
+                                stock_return_std: profileData.stock_return_std,
+                                bond_return_mean: profileData.bond_return_mean,
+                                bond_return_std: profileData.bond_return_std,
+                                inflation_mean: profileData.inflation_mean,
+                                inflation_std: profileData.inflation_std
+                            }
+                        });
+                    }
+                });
+
+                if (pattern.length > 0) {
+                    const repeatCheckbox = container.querySelector('#cycle-repeat-checkbox');
+                    marketPeriods = {
+                        type: 'cycle',
+                        pattern: pattern,
+                        repeat: repeatCheckbox ? repeatCheckbox.checked : true
+                    };
+                }
+            }
+            // If currentMarketMode === 'simple', marketPeriods remains null (uses base marketProfile)
+
+            // Pass spending model and market periods to API
+            const result = await analysisAPI.runAnalysis(profile.name, simulations, marketProfile, spendingModel, marketPeriods);
 
             // DEBUG: Log the response
             console.log('Analysis API Response:', JSON.stringify(result, null, 2));
@@ -488,6 +954,14 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
             <p style="color: var(--text-secondary); margin-bottom: 20px;">
                 Based on ${(data.simulations || simulations || 10000).toLocaleString()} Monte Carlo simulations
             </p>
+
+            ${data.warnings && data.warnings.length > 0 ? `
+                <div style="background: linear-gradient(135deg, var(--warning-color), #f39c12); padding: 15px; border-radius: 8px; margin-bottom: 20px; color: white;">
+                    <div style="font-weight: bold; margin-bottom: 10px; font-size: 16px;">⚠️ Market Period Warnings</div>
+                    ${data.warnings.map(warning => `<div style="margin-bottom: 8px; font-size: 13px;">• ${warning}</div>`).join('')}
+                </div>
+            ` : ''}
+
             ${totalAssets > 0 ? `
                 <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--accent-color);">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
@@ -674,12 +1148,23 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
     const scenarios = data.scenarios;
     const scenarioOrder = ['conservative', 'moderate', 'aggressive'];
 
+    // Check if any scenario has warnings
+    const anyWarnings = Object.values(scenarios).some(s => s.warnings && s.warnings.length > 0);
+    const allWarnings = anyWarnings ? Object.values(scenarios).flatMap(s => s.warnings || []).filter((v, i, a) => a.indexOf(v) === i) : [];
+
     container.innerHTML = `
         <div class="result-card">
             <h2 style="font-size: 24px; margin-bottom: 10px;">Multi-Scenario Analysis</h2>
             <p style="color: var(--text-secondary); margin-bottom: 20px;">
                 Based on ${(data.simulations || simulations).toLocaleString()} Monte Carlo simulations per scenario
             </p>
+
+            ${allWarnings.length > 0 ? `
+                <div style="background: linear-gradient(135deg, var(--warning-color), #f39c12); padding: 15px; border-radius: 8px; margin-bottom: 20px; color: white;">
+                    <div style="font-weight: bold; margin-bottom: 10px; font-size: 16px;">⚠️ Market Period Warnings</div>
+                    ${allWarnings.map(warning => `<div style="margin-bottom: 8px; font-size: 13px;">• ${warning}</div>`).join('')}
+                </div>
+            ` : ''}
 
             <!-- Starting Balance Highlight -->
             <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--accent-color);">
