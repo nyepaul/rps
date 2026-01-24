@@ -91,6 +91,60 @@ export function calculateTotalDebts(assets) {
 }
 
 /**
+ * Calculate portfolio-wide asset allocation (Stocks, Bonds, Cash)
+ * Returns percentages as decimals (0.0 to 1.0)
+ */
+export function calculateAllocation(assets) {
+    if (!assets) return { stocks: 0.6, bonds: 0.4, cash: 0 }; // Default 60/40
+
+    let totalVal = 0;
+    let totalStockVal = 0;
+    let totalBondVal = 0;
+    let totalCashVal = 0;
+
+    const processCategory = (items) => {
+        if (!items) return;
+        items.forEach(item => {
+            const val = item.value || item.current_value || 0;
+            if (val <= 0) return;
+
+            totalVal += val;
+            
+            // Use provided percentages or defaults based on account type
+            let s = item.stock_pct !== undefined ? item.stock_pct : 
+                    (item.type === 'brokerage' || item.type === '401k' || item.type === 'roth_ira' || item.type === 'traditional_ira' ? 0.6 : 0);
+            let b = item.bond_pct !== undefined ? item.bond_pct : 
+                    (item.type === 'brokerage' || item.type === '401k' || item.type === 'roth_ira' || item.type === 'traditional_ira' ? 0.4 : 0);
+            let c = item.cash_pct !== undefined ? item.cash_pct : 
+                    (['savings', 'checking', 'cash', 'cd', 'money_market'].includes(item.type) ? 1.0 : 0);
+
+            // Normalize if sum > 1.0
+            const sum = s + b + c;
+            if (sum > 0) {
+                totalStockVal += val * (s / sum);
+                totalBondVal += val * (b / sum);
+                totalCashVal += val * (c / sum);
+            } else {
+                // Default to cash if no allocation provided
+                totalCashVal += val;
+            }
+        });
+    };
+
+    processCategory(assets.retirement_accounts);
+    processCategory(assets.taxable_accounts);
+    processCategory(assets.other_assets);
+
+    if (totalVal === 0) return { stocks: 0.6, bonds: 0.4, cash: 0 };
+
+    return {
+        stocks: totalStockVal / totalVal,
+        bonds: totalBondVal / totalVal,
+        cash: totalCashVal / totalVal
+    };
+}
+
+/**
  * Calculate debt-to-asset ratio
  */
 export function calculateDebtToAssetRatio(assets) {
