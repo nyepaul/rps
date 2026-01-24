@@ -305,14 +305,23 @@ function setupEventHandlers(container, profile, monthsToLifeExpectancy, lifeExpe
  */
 async function fetchDetailedCashflow(profile, marketScenario = 'moderate') {
     try {
-        console.log(`Fetching Detailed Cashflow projection for tax visualization...`);
+        console.log(`Fetching Detailed Cashflow projection for tax visualization (${marketScenario})...`);
+        
+        // Map scenario key to profile
+        const profileKey = marketScenario === 'moderate' ? 'balanced' : 
+                          marketScenario === 'conservative' ? 'conservative' : 
+                          marketScenario === 'aggressive' ? 'aggressive' : 'balanced';
+        
+        const marketProfile = APP_CONFIG.MARKET_PROFILES[profileKey];
+
         // Use the new endpoint that returns granular tax data
         const response = await fetch('/api/analysis/cashflow-details', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 profile_name: profile.name,
-                simulations: 1000, // Satisfy backend validator (min 100)
+                simulations: 1000,
+                market_profile: marketProfile,
                 spending_model: 'constant_real'
             })
         });
@@ -382,22 +391,23 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
             const row = ledgerMap[year];
             
             if (row) {
-                // If monthly view, we'd need to divide by 12 (approx), but for now we focus on Annual accuracy
+                // If annual view, use full year values
                 if (viewType === 'annual') {
                     period.federalTax = row.federal_tax + (row.ltcg_tax || 0);
                     period.stateTax = row.state_tax;
                     period.ficaTax = row.fica_tax;
                     period.livingExpenses = row.expenses_excluding_tax;
                     period.totalExpenses = period.federalTax + period.stateTax + period.ficaTax + period.livingExpenses;
-                    // Use backend-calculated portfolio for better accuracy
                     period.portfolioValue = row.portfolio_balance;
+                } else {
+                    // If monthly view, use approximate monthly values from the ledger
+                    period.federalTax = (row.federal_tax + (row.ltcg_tax || 0)) / 12;
+                    period.stateTax = row.state_tax / 12;
+                    period.ficaTax = row.fica_tax / 12;
+                    period.livingExpenses = row.expenses_excluding_tax / 12;
+                    period.totalExpenses = period.federalTax + period.stateTax + period.ficaTax + period.livingExpenses;
+                    // Note: Portfolio value is handled by the month loop
                 }
-            } else {
-                // Fallback if year out of range
-                period.livingExpenses = period.expenses;
-                period.federalTax = 0;
-                period.stateTax = 0;
-                period.ficaTax = 0;
             }
         });
     }
@@ -1363,46 +1373,49 @@ function calculateMonthlyCashFlow(profile, months) {
             currentPortfolio += monthlyGrowth;
         }
 
-        // Add savings to portfolio if positive cash flow before retirement
-        if (!anyoneRetired) {
-            // Calculate after-tax income (rough approximation)
-            const federalTaxRate = financial.tax_bracket_federal || 0.22;
-            const stateTaxRate = financial.tax_bracket_state || 0;
-            const ficaRate = 0.0765; // Social Security + Medicare
-            const totalTaxRate = federalTaxRate + stateTaxRate + ficaRate;
+        // --- Realistic Tax Calculation for Chart ---
+        // (Uses profile tax settings if available)
+        let monthlyFederalTax = 0;
+        let monthlyStateTax = 0;
+        let monthlyFicaTax = 0;
 
-            // Calculate monthly 401k contribution
-            const annual401kContribution = financial.combined_401k_contribution || 0;
-            const monthly401kContribution = annual401kContribution / 12;
+        const fedRate = financial.tax_bracket_federal || 0.12; // Use 12% as a more realistic baseline for retirees
+        const stateRate = financial.tax_bracket_state || 0.05;
+        const ficaRate = 0.0765;
 
-            // Net after-tax income (gross - taxes - 401k)
-            const monthlyTaxes = totalWorkIncome * totalTaxRate;
-            const netIncome = totalWorkIncome - monthlyTaxes - monthly401kContribution;
+        // FICA only on work income
+        monthlyFicaTax = workIncome * ficaRate;
+        
+        // Income stacking for Federal/State (Work + Pension + SS taxable portion)
+        // SS taxation: rough rule of thumb (50% taxable for most)
+        const taxableSS = (isRetired ? (financial.social_security_benefit || 0) * 0.5 : 0);
+        const monthlyTaxableOrdinary = workIncome + (isRetired ? (financial.pension_benefit || 0) : 0) + taxableSS + investmentIncome;
+        
+        // Apply standard deduction (monthly)
+        const filingStatus = financial.filing_status || 'mfj';
+        const stdDeductionMonthly = (filingStatus === 'mfj' ? 29200 : 14600) / 12;
+        
+        const taxableAfterDeduction = Math.max(0, monthlyTaxableOrdinary - stdDeductionMonthly);
+        monthlyFederalTax = taxableAfterDeduction * fedRate;
+        monthlyStateTax = taxableAfterDeduction * stateRate;
 
-            // Only add to portfolio if net income exceeds expenses
-            if (netIncome > expenses) {
-                const monthlySavings = netIncome - expenses;
-                currentPortfolio += monthlySavings;
-            } else if (netIncome < expenses) {
-                // If expenses exceed net income, withdraw from portfolio
-                const shortfall = expenses - netIncome;
-                if (currentPortfolio > 0) {
-                    currentPortfolio -= Math.min(shortfall, currentPortfolio);
-                }
-            }
-        }
-
-        const totalIncome = totalWorkIncome + retirementBenefits + investmentIncome;
-        const netCashFlow = totalIncome - expenses;
+        // Total expenses including taxes
+        const totalExpensesThisMonth = expenses + monthlyFederalTax + monthlyStateTax + monthlyFicaTax;
+        const totalIncome = workIncome + retirementBenefits + investmentIncome;
+        const netCashFlow = totalIncome - totalExpensesThisMonth;
 
         monthlyData.push({
             date: currentDate,
             label: monthLabel,
-            workIncome: totalWorkIncome,
+            workIncome: workIncome,
             retirementBenefits,
             investmentIncome,
             totalIncome,
-            expenses,
+            expenses: totalExpensesThisMonth,
+            federalTax: monthlyFederalTax,
+            stateTax: monthlyStateTax,
+            ficaTax: monthlyFicaTax,
+            livingExpenses: expenses,
             netCashFlow,
             portfolioValue: currentPortfolio,
             isRetired

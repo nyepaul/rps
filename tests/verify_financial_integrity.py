@@ -70,7 +70,7 @@ def run_pennny_track_audit():
     print(f"Gross Income: {format_curr(row['gross_income'])}")
     print(f"Federal Tax:  {format_curr(row['federal_tax'])} (Expected: ~$13,841)")
     print(f"FICA Tax:     {format_curr(row['fica_tax'])} (Expected: $7,650)")
-    print(f"State Tax:    {format_curr(row['state_tax'])} (Expected: $5,000)")
+    print(f"State Tax:    {format_curr(row['state_tax'])} (Expected: $5,850)")
     
     total_tax = row['federal_tax'] + row['fica_tax'] + row['state_tax']
     net_income = row['gross_income'] - total_tax
@@ -83,7 +83,7 @@ def run_pennny_track_audit():
     print(f"Final Port:   {format_curr(row['portfolio_balance'])} (Expected: {format_curr(expected_balance)})")
     
     assert abs(row['fica_tax'] - 7650.0) < 1.0, "FICA calculation error"
-    assert abs(row['state_tax'] - 5000.0) < 1.0, "State tax calculation error"
+    assert abs(row['state_tax'] - 5850.0) < 1.0, "State tax calculation error"
     # Federal tax might vary slightly if standard deduction differs from 2024 base in code
     # Standard deduction in code for single is 14600.
     # 100,000 - 14,600 = 85,400 taxable.

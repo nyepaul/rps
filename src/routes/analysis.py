@@ -263,10 +263,13 @@ def run_analysis():
                     'future': {}
                 }
 
-        # Get tax settings
+        # Get tax settings with proper address fallback
+        address_data = profile_data.get('address', {})
         tax_settings = profile_data.get('tax_settings', {})
-        filing_status = tax_settings.get('filing_status', 'mfj')
-        state = tax_settings.get('state', 'NY')
+        
+        # Priority: explicit tax settings > address state > default NY
+        filing_status = tax_settings.get('filing_status') or 'mfj'
+        state = tax_settings.get('state') or address_data.get('state') or 'NY'
 
         financial_profile = FinancialProfile(
             person1=person1,
@@ -500,10 +503,13 @@ def get_cashflow_details():
                     'future': {}
                 }
 
-        # Get tax settings
+        # Get tax settings with proper address fallback
+        address_data = profile_data.get('address', {})
         tax_settings = profile_data.get('tax_settings', {})
-        filing_status = tax_settings.get('filing_status', 'mfj')
-        state = tax_settings.get('state', 'NY')
+        
+        # Priority: explicit tax settings > address state > default NY
+        filing_status = tax_settings.get('filing_status') or 'mfj'
+        state = tax_settings.get('state') or address_data.get('state') or 'NY'
 
         financial_profile = FinancialProfile(
             person1=person1,
@@ -536,17 +542,11 @@ def get_cashflow_details():
         # Use passed market assumptions or defaults
         base_market_kwargs = {}
         if data.market_profile:
-            base_market_kwargs = {
-                'stock_return_mean': data.market_profile.stock_return_mean,
-                'stock_return_std': data.market_profile.stock_return_std,
-                'bond_return_mean': data.market_profile.bond_return_mean,
-                'bond_return_std': data.market_profile.bond_return_std,
-                'inflation_mean': data.market_profile.inflation_mean,
-                'inflation_std': data.market_profile.inflation_std
-            }
+            base_market_kwargs = data.market_profile.dict()
         
-        # Use moderate allocation by default for detailed view
-        assumptions = MarketAssumptions(stock_allocation=0.60, **base_market_kwargs)
+        # Use provided allocation or moderate default
+        target_stock = base_market_kwargs.get('stock_allocation', 0.60)
+        assumptions = MarketAssumptions(**{**base_market_kwargs, 'stock_allocation': target_stock})
         
         # Run detailed projection
         detailed_ledger = model.run_detailed_projection(

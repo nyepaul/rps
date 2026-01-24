@@ -1314,33 +1314,35 @@ class RetirementModel:
             # Combined non-employment ordinary income (Pension + Other Streams + Rental/Other Budget)
             other_ordinary_income_gross = active_pension + other_taxable_income + budget_income_other
 
-            # --- Tax step 1: FICA and State Tax (Applied to gross income) ---
-            fica_tax = np.zeros(simulations)
-            state_tax_paid = np.zeros(simulations)
-            
-            # FICA only on employment income
-            if np.any(employment_income_gross > 0):
-                SS_WAGE_BASE = 168600
-                ss_tax = np.minimum(employment_income_gross, SS_WAGE_BASE) * 0.062
-                med_tax = employment_income_gross * 0.0145
-                fica_tax = ss_tax + med_tax
-            
-            # State tax on ALL taxable ordinary income (Simplified flat rate)
-            # Use state from profile or default to NY (5%)
-            state_rate = 0.05 # Default
-            # Could use a mapping here if we have more state data
-            state_tax_paid = (employment_income_gross + other_ordinary_income_gross) * state_rate
-
             # --- Tax Step 2: Social Security Taxation ---
-            # Provisional income = Other AGI + 50% of SS benefits
+            # Stacking non-SS ordinary income to see how much SS is taxable
             taxable_ss = self._vectorized_taxable_ss(employment_income_gross + other_ordinary_income_gross, gross_ss)
 
-            # --- Tax Step 3: Combined Federal Income Tax ---
-            # IMPORTANT: Calculate tax on TOTAL ordinary income in one pass to avoid deduction fragmentation
+            # --- Combined Taxable Ordinary Income ---
+            # IMPORTANT: Aggregate all ordinary income components before applying standard deduction
             total_ordinary_taxable_gross = employment_income_gross + other_ordinary_income_gross + taxable_ss
+            
+            # Use profile-specific standard deduction
+            std_deduction = self.get_standard_deduction(current_cpi)
             taxable_income_federal = np.maximum(0, total_ordinary_taxable_gross - std_deduction)
             
+            # Federal and State Tax on the combined ordinary income
             fed_tax_paid, marginal_rate_current = self._vectorized_federal_tax(taxable_income_federal)
+            
+            # State tax - use profile state or default (Simplified)
+            state_rate = 0.05 # Default
+            if getattr(self.profile, 'state', 'NY') == 'NY':
+                state_rate = 0.0585 # NY approx
+                
+            state_tax_paid = (employment_income_gross + other_ordinary_income_gross) * state_rate
+
+            # FICA only on employment income
+            fica_tax = np.zeros(simulations)
+            if np.any(employment_income_gross > 0):
+                SS_WAGE_BASE = 168600
+                ss_fica = np.minimum(employment_income_gross, SS_WAGE_BASE) * 0.062
+                med_fica = employment_income_gross * 0.0145
+                fica_tax = ss_fica + med_fica
 
             # --- Tax Step 4: IRMAA ---
             irmaa_expense = np.zeros(simulations)
@@ -1560,6 +1562,8 @@ class RetirementModel:
             roth *= (1 + ret)
 
             # --- Record Data ---
+            # Total Gross Income = All Ordinary Taxable + Gross SS + LTCG Realized + Penalties
+            # Note: total_withdrawals is the GROSS amount taken from accounts
             detailed_ledger.append({
                 'year': int(simulation_year),
                 'age': int(p1_age),
