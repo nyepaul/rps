@@ -7,6 +7,7 @@ import { store } from '../../state/store.js';
 import { formatCurrency } from '../../utils/formatters.js';
 import { scenariosAPI } from '../../api/scenarios.js';
 import { analysisAPI } from '../../api/analysis.js';
+import { APP_CONFIG } from '../../config.js';
 
 // Track metric visibility state across chart refreshes
 const metricVisibilityState = {
