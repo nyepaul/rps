@@ -8,6 +8,7 @@ import { formatCurrency } from '../../utils/formatters.js';
 import { scenariosAPI } from '../../api/scenarios.js';
 import { analysisAPI } from '../../api/analysis.js';
 import { APP_CONFIG } from '../../config.js';
+import { calculateAllocation } from '../../utils/financial-calculations.js';
 
 // Track metric visibility state across chart refreshes
 const metricVisibilityState = {
@@ -1184,13 +1185,25 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
     const withdrawalStrategy = data.withdrawal_strategy || {};
     const annualWithdrawalRate = withdrawalStrategy.withdrawal_rate || 0.04; // Default to 4%
 
+    // Calculate portfolio value by account type for proper withdrawal ordering
+    const portfolioByType = calculatePortfolioByType(assets);
+    let currentPortfolio = portfolioByType.taxable + portfolioByType.taxDeferred + portfolioByType.roth;
+
     // --- Market-Scenario-Aware Assumptions ---
     const marketProfile = APP_CONFIG.MARKET_PROFILES[marketScenario] || APP_CONFIG.MARKET_PROFILES['balanced'];
     
-    // Calculate blended growth rate based on full asset mix (matching backend)
-    const stockAllocation = marketProfile.stock_allocation || 0.0;
-    const bondAllocation = marketProfile.bond_allocation || 0.0;
-    const cashAllocation = marketProfile.cash_allocation || 0.0;
+    // Get user's ACTUAL allocation from their assets
+    const userAlloc = calculateAllocation(data.assets);
+    const hasAssets = (portfolioByType.taxable + portfolioByType.taxDeferred + portfolioByType.roth) > 0;
+
+    // Calculate blended growth rate
+    // If user has assets, use their REAL mix for Stocks/Bonds/Cash.
+    // If not, use the scenario's suggested mix.
+    const stockAllocation = hasAssets ? userAlloc.stocks : (marketProfile.stock_allocation || 0.6);
+    const bondAllocation = hasAssets ? userAlloc.bonds : (marketProfile.bond_allocation || 0.4);
+    const cashAllocation = hasAssets ? userAlloc.cash : (marketProfile.cash_allocation || 0.0);
+    
+    // Other asset classes (REITs, Gold, Crypto) - use scenario targets as these are often "tactical" 
     const reitAllocation = marketProfile.reit_allocation || 0.0;
     const goldAllocation = marketProfile.gold_allocation || 0.0;
     const cryptoAllocation = marketProfile.crypto_allocation || 0.0;
@@ -1205,10 +1218,6 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
     
     const monthlyGrowthRate = annualGrowthRate / 12;
     const monthlyInflationRate = (marketProfile.inflation_mean || 0.03) / 12;
-
-    // Calculate portfolio value by account type for proper withdrawal ordering
-    const portfolioByType = calculatePortfolioByType(assets);
-    let currentPortfolio = portfolioByType.taxable + portfolioByType.taxDeferred + portfolioByType.roth;
 
     const monthlyData = [];
 
