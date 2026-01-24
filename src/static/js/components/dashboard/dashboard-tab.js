@@ -14,26 +14,8 @@ export async function renderDashboardTab(container) {
     const currentUser = store.get('currentUser');
     const currentProfile = store.get('currentProfile');
 
-    // Show loading state
-    container.innerHTML = `
-        <div style="text-align: center; padding: 60px;">
-            <div class="spinner" style="
-                width: 48px;
-                height: 48px;
-                border: 4px solid var(--border-color);
-                border-top-color: var(--accent-color);
-                border-radius: 50%;
-                animation: spin 0.8s linear infinite;
-                margin: 0 auto 20px;
-            "></div>
-            <div>Loading profiles...</div>
-        </div>
-        <style>
-            @keyframes spin {
-                to { transform: rotate(360deg); }
-            }
-        </style>
-    `;
+    // Clear container while loading (global spinner handles the loading indicator)
+    container.innerHTML = '';
 
     try {
         // Fetch all profiles for the current user
