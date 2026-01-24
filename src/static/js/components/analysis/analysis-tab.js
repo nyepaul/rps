@@ -502,14 +502,9 @@ function addTimelinePeriod(container, profile) {
             <div>
                 <label style="font-size: 11px; display: block; margin-bottom: 4px; color: var(--text-secondary);">Market Condition</label>
                 <select class="period-market-profile" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-secondary); color: var(--text-primary); font-size: 12px;">
-                    <option value="historical">Historical Average</option>
-                    <option value="bear-market">Bear Market</option>
-                    <option value="recession">Recession</option>
-                    <option value="great-recession">Great Recession</option>
-                    <option value="bull-market">Bull Market</option>
-                    <option value="post-covid">Post-COVID Recovery</option>
-                    <option value="conservative">Conservative</option>
-                    <option value="balanced">Balanced</option>
+                    ${Object.keys(APP_CONFIG.MARKET_PROFILES).map(key => `
+                        <option value="${key}">${APP_CONFIG.MARKET_PROFILES[key].name}</option>
+                    `).join('')}
                 </select>
             </div>
             <button class="remove-btn remove-period-btn" data-period-id="${periodId}" style="padding: 6px 12px;">Remove</button>
@@ -545,19 +540,14 @@ function addCyclePhase(container) {
                 <label style="font-size: 11px; display: block; margin-bottom: 4px; color: var(--text-secondary);">Duration (years)</label>
                 <input type="number" class="phase-duration" value="${cyclePattern.length === 0 ? 7 : cyclePattern.length === 1 ? 2 : 3}" min="1" max="20" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-secondary); color: var(--text-primary); font-size: 12px;">
             </div>
-            <div>
-                <label style="font-size: 11px; display: block; margin-bottom: 4px; color: var(--text-secondary);">Market Condition</label>
-                <select class="phase-market-profile" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-secondary); color: var(--text-primary); font-size: 12px;">
-                    <option value="bull-market" ${cyclePattern.length === 0 ? 'selected' : ''}>Bull Market</option>
-                    <option value="recession" ${cyclePattern.length === 1 ? 'selected' : ''}>Recession</option>
-                    <option value="post-covid" ${cyclePattern.length === 2 ? 'selected' : ''}>Recovery</option>
-                    <option value="historical">Historical Average</option>
-                    <option value="bear-market">Bear Market</option>
-                    <option value="conservative">Conservative</option>
-                    <option value="balanced">Balanced</option>
-                </select>
-            </div>
-            <button class="remove-btn remove-phase-btn" data-phase-id="${phaseId}" style="padding: 6px 12px;">Remove</button>
+                        <div>
+                            <label style="font-size: 11px; display: block; margin-bottom: 4px; color: var(--text-secondary);">Market Condition</label>
+                            <select class="phase-market-profile" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-secondary); color: var(--text-primary); font-size: 12px;">
+                                ${Object.keys(APP_CONFIG.MARKET_PROFILES).map(key => `
+                                    <option value="${key}">${APP_CONFIG.MARKET_PROFILES[key].name}</option>
+                                `).join('')}
+                            </select>
+                        </div>            <button class="remove-btn remove-phase-btn" data-phase-id="${phaseId}" style="padding: 6px 12px;">Remove</button>
         </div>
     `;
 
