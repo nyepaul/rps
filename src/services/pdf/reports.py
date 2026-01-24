@@ -575,6 +575,16 @@ def generate_action_plan_report(profile_data, action_items):
     # Summary
     elements.append(Paragraph("Action Items Summary", styles['SectionTitle']))
 
+    # Convert objects to dicts if necessary
+    processed_items = []
+    for item in action_items:
+        if hasattr(item, 'to_dict'):
+            processed_items.append(item.to_dict())
+        else:
+            processed_items.append(item)
+    
+    action_items = processed_items
+
     pending = [a for a in action_items if a.get('status') == 'pending']
     in_progress = [a for a in action_items if a.get('status') == 'in_progress']
     completed = [a for a in action_items if a.get('status') == 'completed']

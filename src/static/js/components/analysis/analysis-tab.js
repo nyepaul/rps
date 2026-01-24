@@ -175,6 +175,13 @@ export function renderAnalysisTab(container) {
                 border-radius: 8px;
                 text-align: center;
                 border: 2px solid var(--border-color);
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            .stat-item:hover {
+                border-color: var(--accent-color);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             }
             .stat-label {
                 font-size: 13px;
@@ -623,6 +630,9 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
         </div>
     `;
 
+    // Add click handlers to stat items for explanations
+    setupStatItemClickHandlers(container);
+
     // Render timeline chart if data available
     if (data.timeline) {
         const chart = renderStandardTimelineChart(data.timeline, 'timeline-chart', timelineChartInstances, { container });
@@ -875,6 +885,9 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
             });
         });
     });
+
+    // Add click handlers to stat items for explanations in all scenarios
+    setupStatItemClickHandlers(container);
 
     // Render timeline charts for each scenario
     console.log('About to render timeline charts...');
@@ -1189,6 +1202,490 @@ function showSpendingStrategyExplanationModal() {
     const closeModal = () => modal.remove();
     modal.querySelector('#close-spending-modal').addEventListener('click', closeModal);
     modal.querySelector('#close-spending-modal-btn').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+}
+
+/**
+ * Setup click handlers on stat items to show explanation modals
+ */
+function setupStatItemClickHandlers(container) {
+    // Find all stat items and attach appropriate click handlers
+    const statItems = container.querySelectorAll('.stat-item');
+
+    statItems.forEach(item => {
+        const label = item.querySelector('.stat-label');
+        if (!label) return;
+
+        const labelText = label.textContent.trim();
+
+        // Determine which modal to show based on label text
+        if (labelText.includes('Success Rate')) {
+            item.addEventListener('click', showSuccessRateModal);
+            item.style.cursor = 'pointer';
+        } else if (labelText.includes('Median Final Balance')) {
+            item.addEventListener('click', showMedianBalanceModal);
+            item.style.cursor = 'pointer';
+        } else if (labelText.includes('10th Percentile')) {
+            item.addEventListener('click', () => showPercentileModal(10));
+            item.style.cursor = 'pointer';
+        } else if (labelText.includes('90th Percentile')) {
+            item.addEventListener('click', () => showPercentileModal(90));
+            item.style.cursor = 'pointer';
+        } else if (labelText.includes('Expected Value')) {
+            item.addEventListener('click', showExpectedValueModal);
+            item.style.cursor = 'pointer';
+        } else if (labelText.includes('Std Deviation')) {
+            item.addEventListener('click', showStdDeviationModal);
+            item.style.cursor = 'pointer';
+        }
+    });
+}
+
+/**
+ * Show modal explaining Success Rate metric
+ */
+function showSuccessRateModal() {
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 10000; padding: 20px;';
+
+    modal.innerHTML = `
+        <div style="background: var(--bg-primary); border-radius: 12px; max-width: 700px; max-height: 90vh; overflow-y: auto; padding: 30px; position: relative;">
+            <button class="close-modal-btn" style="position: absolute; top: 15px; right: 15px; background: var(--bg-tertiary); border: none; color: var(--text-primary); font-size: 24px; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">×</button>
+
+            <h2 style="font-size: 28px; margin-bottom: 20px; color: var(--success-color);">📊 Success Rate</h2>
+
+            <div style="line-height: 1.8; color: var(--text-primary);">
+                <div style="background: linear-gradient(135deg, var(--success-color), #26d07c); padding: 20px; border-radius: 12px; margin-bottom: 20px; color: white;">
+                    <h3 style="font-size: 20px; margin: 0 0 12px 0; font-weight: bold;">🎯 What It Means</h3>
+                    <p style="margin: 0; font-size: 15px; line-height: 1.6;">
+                        The percentage of Monte Carlo simulations where your portfolio lasted through your entire projected retirement without running out of money.
+                    </p>
+                </div>
+
+                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">How It's Calculated</h3>
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <p style="margin: 0 0 15px 0; color: var(--text-secondary);">
+                        1. Run thousands of simulations with randomized market returns<br>
+                        2. Count how many simulations ended with money remaining<br>
+                        3. Divide successful simulations by total simulations<br><br>
+                        <strong>Example:</strong> If 8,500 out of 10,000 simulations didn't run out of money, your success rate is 85%.
+                    </p>
+                </div>
+
+                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">How to Interpret</h3>
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                    <div style="margin-bottom: 15px;">
+                        <strong style="color: var(--success-color);">90%+ (Excellent):</strong>
+                        <p style="margin: 5px 0 0 0; color: var(--text-secondary);">
+                            Very robust plan. You can retire with confidence. Your plan handles most market scenarios including prolonged downturns.
+                        </p>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <strong style="color: var(--warning-color);">75-89% (Good):</strong>
+                        <p style="margin: 5px 0 0 0; color: var(--text-secondary);">
+                            Solid plan with acceptable risk. Consider small adjustments like working 1-2 more years or reducing spending by 5-10%.
+                        </p>
+                    </div>
+                    <div>
+                        <strong style="color: var(--danger-color);">Below 75% (Needs Attention):</strong>
+                        <p style="margin: 5px 0 0 0; color: var(--text-secondary);">
+                            Plan needs adjustments. Consider: delaying retirement, increasing savings, reducing expenses, or adjusting portfolio allocation.
+                        </p>
+                    </div>
+                </div>
+
+                <div style="background: var(--info-color); padding: 15px; border-radius: 8px; margin-top: 20px; color: white;">
+                    <strong>💡 Important Note:</strong> 100% success rate often means you're being too conservative and leaving money on the table. A 85-95% success rate typically represents an optimal balance between security and enjoying your wealth.
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="close-modal-bottom-btn" style="padding: 12px 30px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                    Got It!
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const closeModal = () => modal.remove();
+    modal.querySelector('.close-modal-btn').addEventListener('click', closeModal);
+    modal.querySelector('.close-modal-bottom-btn').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+}
+
+/**
+ * Show modal explaining Median Final Balance metric
+ */
+function showMedianBalanceModal() {
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 10000; padding: 20px;';
+
+    modal.innerHTML = `
+        <div style="background: var(--bg-primary); border-radius: 12px; max-width: 700px; max-height: 90vh; overflow-y: auto; padding: 30px; position: relative;">
+            <button class="close-modal-btn" style="position: absolute; top: 15px; right: 15px; background: var(--bg-tertiary); border: none; color: var(--text-primary); font-size: 24px; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">×</button>
+
+            <h2 style="font-size: 28px; margin-bottom: 20px; color: var(--info-color);">💰 Median Final Balance</h2>
+
+            <div style="line-height: 1.8; color: var(--text-primary);">
+                <div style="background: linear-gradient(135deg, var(--info-color), #5faee3); padding: 20px; border-radius: 12px; margin-bottom: 20px; color: white;">
+                    <h3 style="font-size: 20px; margin: 0 0 12px 0; font-weight: bold;">🎯 What It Means</h3>
+                    <p style="margin: 0; font-size: 15px; line-height: 1.6;">
+                        The middle outcome from all simulations - half of the scenarios ended with more money than this, and half ended with less. This represents your "typical" outcome.
+                    </p>
+                </div>
+
+                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">How It's Calculated</h3>
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <p style="margin: 0 0 15px 0; color: var(--text-secondary);">
+                        1. Collect final portfolio balances from all simulations<br>
+                        2. Sort all outcomes from lowest to highest<br>
+                        3. Take the middle value (50th percentile)<br><br>
+                        <strong>Example:</strong> If you run 10,000 simulations and sort them, the median is the balance at position 5,000.
+                    </p>
+                </div>
+
+                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">Why Median vs Average?</h3>
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                    <p style="margin: 0; color: var(--text-secondary); line-height: 1.6;">
+                        The median is more useful than the average (expected value) because it's not skewed by extreme outcomes. A few very successful simulations can pull the average up significantly, making it less representative of a typical outcome.<br><br>
+                        <strong>Think of it this way:</strong> If you retire 100 times, the median tells you what would happen in the 50th "most typical" retirement.
+                    </p>
+                </div>
+
+                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">How to Interpret</h3>
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                    <div style="margin-bottom: 15px;">
+                        <strong style="color: var(--success-color);">Positive Balance:</strong>
+                        <p style="margin: 5px 0 0 0; color: var(--text-secondary);">
+                            Your plan is likely successful. You'll probably have money left over in a typical scenario.
+                        </p>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <strong style="color: var(--warning-color);">Close to Zero:</strong>
+                        <p style="margin: 5px 0 0 0; color: var(--text-secondary);">
+                            Your plan is cutting it close. Consider adjustments to add a margin of safety.
+                        </p>
+                    </div>
+                    <div>
+                        <strong style="color: var(--danger-color);">Zero or Negative:</strong>
+                        <p style="margin: 5px 0 0 0; color: var(--text-secondary);">
+                            In a typical scenario, you run out of money. Plan needs significant adjustments.
+                        </p>
+                    </div>
+                </div>
+
+                <div style="background: var(--info-color); padding: 15px; border-radius: 8px; margin-top: 20px; color: white;">
+                    <strong>💡 Pro Tip:</strong> A high median final balance suggests you might be able to spend more in retirement or retire earlier. Consider running scenarios with increased spending to optimize your plan.
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="close-modal-bottom-btn" style="padding: 12px 30px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                    Got It!
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const closeModal = () => modal.remove();
+    modal.querySelector('.close-modal-btn').addEventListener('click', closeModal);
+    modal.querySelector('.close-modal-bottom-btn').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+}
+
+/**
+ * Show modal explaining Percentile metrics
+ */
+function showPercentileModal(percentile) {
+    const is10th = percentile === 10;
+    const color = is10th ? 'var(--warning-color)' : 'var(--success-color)';
+    const title = is10th ? '10th Percentile' : '90th Percentile';
+    const emoji = is10th ? '📉' : '📈';
+
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 10000; padding: 20px;';
+
+    modal.innerHTML = `
+        <div style="background: var(--bg-primary); border-radius: 12px; max-width: 700px; max-height: 90vh; overflow-y: auto; padding: 30px; position: relative;">
+            <button class="close-modal-btn" style="position: absolute; top: 15px; right: 15px; background: var(--bg-tertiary); border: none; color: var(--text-primary); font-size: 24px; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">×</button>
+
+            <h2 style="font-size: 28px; margin-bottom: 20px; color: ${color};">${emoji} ${title}</h2>
+
+            <div style="line-height: 1.8; color: var(--text-primary);">
+                <div style="background: linear-gradient(135deg, ${color}, ${is10th ? '#f39c12' : '#26d07c'}); padding: 20px; border-radius: 12px; margin-bottom: 20px; color: white;">
+                    <h3 style="font-size: 20px; margin: 0 0 12px 0; font-weight: bold;">🎯 What It Means</h3>
+                    <p style="margin: 0; font-size: 15px; line-height: 1.6;">
+                        ${is10th
+                            ? 'The "bad luck" scenario. Only 10% of simulations performed worse than this. This represents what happens if markets are poor during your retirement.'
+                            : 'The "good luck" scenario. Only 10% of simulations performed better than this. This represents what happens if markets are favorable during your retirement.'}
+                    </p>
+                </div>
+
+                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">How It's Calculated</h3>
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <p style="margin: 0 0 15px 0; color: var(--text-secondary);">
+                        1. Sort all simulation outcomes from lowest to highest<br>
+                        2. ${is10th ? 'Find the value at the 10% position' : 'Find the value at the 90% position'}<br>
+                        3. ${is10th ? '90% of outcomes are better than this' : '90% of outcomes are worse than this'}<br><br>
+                        <strong>Example:</strong> In 10,000 simulations, the ${title.toLowerCase()} is the balance at position ${is10th ? '1,000' : '9,000'}.
+                    </p>
+                </div>
+
+                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">Real-World Analogy</h3>
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                    <p style="margin: 0; color: var(--text-secondary); line-height: 1.6;">
+                        ${is10th
+                            ? '<strong>Imagine retiring into the Great Recession or a prolonged bear market.</strong><br><br>This scenario captures what happens when you face poor market conditions early in retirement - often called "sequence of returns risk." A recession in your first 5-10 retirement years can have a lasting impact on your portfolio.'
+                            : '<strong>Imagine retiring at the start of a bull market with strong growth.</strong><br><br>This scenario captures what happens when markets perform well during your retirement. While this is the optimistic case, don\'t count on it - plan for the median or 10th percentile instead.'}
+                    </p>
+                </div>
+
+                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">How to Use This Information</h3>
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                    ${is10th
+                        ? `<div style="margin-bottom: 15px;">
+                            <strong style="color: var(--success-color);">Positive Balance:</strong>
+                            <p style="margin: 5px 0 0 0; color: var(--text-secondary);">
+                                Even in the worst 10% of outcomes, you still have money. Very strong plan!
+                            </p>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <strong style="color: var(--warning-color);">Close to Zero:</strong>
+                            <p style="margin: 5px 0 0 0; color: var(--text-secondary);">
+                                If unlucky with market timing, you might just barely make it. Consider adding a buffer.
+                            </p>
+                        </div>
+                        <div>
+                            <strong style="color: var(--danger-color);">Zero:</strong>
+                            <p style="margin: 5px 0 0 0; color: var(--text-secondary);">
+                                Poor market timing would exhaust your portfolio. This is your downside risk - plan accordingly.
+                            </p>
+                        </div>`
+                        : `<div>
+                            <p style="margin: 0; color: var(--text-secondary);">
+                                The 90th percentile shows your upside potential. If markets perform well, you could have significantly more wealth than expected. However, <strong>don't plan around this optimistic scenario</strong> - use it to understand your potential for legacy wealth or charitable giving if markets are favorable.
+                            </p>
+                        </div>`}
+                </div>
+
+                <div style="background: ${color}; padding: 15px; border-radius: 8px; margin-top: 20px; color: white;">
+                    <strong>💡 ${is10th ? 'Risk Management' : 'Opportunity Planning'}:</strong>
+                    ${is10th
+                        ? 'Focus on this metric for risk assessment. If you can survive the 10th percentile scenario comfortably, your plan is robust against market downturns.'
+                        : 'Use this metric to understand your upside. If the 90th percentile is very high, you might consider more aggressive spending or leaving a larger legacy.'}
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="close-modal-bottom-btn" style="padding: 12px 30px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                    Got It!
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const closeModal = () => modal.remove();
+    modal.querySelector('.close-modal-btn').addEventListener('click', closeModal);
+    modal.querySelector('.close-modal-bottom-btn').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+}
+
+/**
+ * Show modal explaining Expected Value metric
+ */
+function showExpectedValueModal() {
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 10000; padding: 20px;';
+
+    modal.innerHTML = `
+        <div style="background: var(--bg-primary); border-radius: 12px; max-width: 700px; max-height: 90vh; overflow-y: auto; padding: 30px; position: relative;">
+            <button class="close-modal-btn" style="position: absolute; top: 15px; right: 15px; background: var(--bg-tertiary); border: none; color: var(--text-primary); font-size: 24px; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">×</button>
+
+            <h2 style="font-size: 28px; margin-bottom: 20px; color: var(--accent-color);">🎲 Expected Value</h2>
+
+            <div style="line-height: 1.8; color: var(--text-primary);">
+                <div style="background: linear-gradient(135deg, var(--accent-color), #5faee3); padding: 20px; border-radius: 12px; margin-bottom: 20px; color: white;">
+                    <h3 style="font-size: 20px; margin: 0 0 12px 0; font-weight: bold;">🎯 What It Means</h3>
+                    <p style="margin: 0; font-size: 15px; line-height: 1.6;">
+                        The mathematical average (mean) of all simulation outcomes. This is the simple average of all final portfolio balances across all simulations.
+                    </p>
+                </div>
+
+                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">How It's Calculated</h3>
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <p style="margin: 0 0 15px 0; color: var(--text-secondary);">
+                        1. Add up all final portfolio balances from every simulation<br>
+                        2. Divide by the total number of simulations<br><br>
+                        <strong>Formula:</strong> Expected Value = Sum of all outcomes ÷ Number of simulations<br><br>
+                        <strong>Example:</strong> If 10,000 simulations average to a total of $50 billion, the expected value is $5 million.
+                    </p>
+                </div>
+
+                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">Why It's Often Higher Than Median</h3>
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                    <p style="margin: 0; color: var(--text-secondary); line-height: 1.6;">
+                        Retirement portfolios have <strong>asymmetric risk</strong>:<br><br>
+                        • <strong>Downside is limited:</strong> You can only lose 100% (portfolio goes to $0)<br>
+                        • <strong>Upside is unlimited:</strong> Strong markets can multiply your wealth many times<br><br>
+                        This means a few very successful simulations (10x or 20x growth in bull markets) can pull the average way up, even though most outcomes cluster around the median.<br><br>
+                        <strong>Result:</strong> The expected value is typically much higher than the median because of these extreme positive outliers.
+                    </p>
+                </div>
+
+                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">How to Interpret</h3>
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                    <div style="margin-bottom: 15px;">
+                        <strong style="color: var(--warning-color);">Don't Plan Around This Number</strong>
+                        <p style="margin: 5px 0 0 0; color: var(--text-secondary);">
+                            The expected value is NOT what you should expect in retirement. It's heavily influenced by unlikely best-case scenarios. Focus on the median instead.
+                        </p>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <strong style="color: var(--info-color);">Use It For Portfolio Growth Understanding</strong>
+                        <p style="margin: 5px 0 0 0; color: var(--text-secondary);">
+                            It shows how much compound growth potential your portfolio has over time. A high expected value relative to starting balance indicates strong growth assumptions.
+                        </p>
+                    </div>
+                    <div>
+                        <strong style="color: var(--success-color);">Legacy and Estate Planning</strong>
+                        <p style="margin: 5px 0 0 0; color: var(--text-secondary);">
+                            If you're interested in leaving wealth to heirs, this metric shows the average amount you might leave behind.
+                        </p>
+                    </div>
+                </div>
+
+                <div style="background: var(--warning-color); padding: 15px; border-radius: 8px; margin-top: 20px; color: white;">
+                    <strong>⚠️ Important Warning:</strong> Because the expected value includes unlikely best-case scenarios, it's often 2-3x higher than the median. Don't mistake this for a typical outcome - use the median for realistic planning.
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="close-modal-bottom-btn" style="padding: 12px 30px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                    Got It!
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const closeModal = () => modal.remove();
+    modal.querySelector('.close-modal-btn').addEventListener('click', closeModal);
+    modal.querySelector('.close-modal-bottom-btn').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+}
+
+/**
+ * Show modal explaining Standard Deviation metric
+ */
+function showStdDeviationModal() {
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 10000; padding: 20px;';
+
+    modal.innerHTML = `
+        <div style="background: var(--bg-primary); border-radius: 12px; max-width: 700px; max-height: 90vh; overflow-y: auto; padding: 30px; position: relative;">
+            <button class="close-modal-btn" style="position: absolute; top: 15px; right: 15px; background: var(--bg-tertiary); border: none; color: var(--text-primary); font-size: 24px; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">×</button>
+
+            <h2 style="font-size: 28px; margin-bottom: 20px; color: #9b59b6;">📊 Standard Deviation</h2>
+
+            <div style="line-height: 1.8; color: var(--text-primary);">
+                <div style="background: linear-gradient(135deg, #9b59b6, #8e44ad); padding: 20px; border-radius: 12px; margin-bottom: 20px; color: white;">
+                    <h3 style="font-size: 20px; margin: 0 0 12px 0; font-weight: bold;">🎯 What It Means</h3>
+                    <p style="margin: 0; font-size: 15px; line-height: 1.6;">
+                        A measure of uncertainty and volatility. It shows how spread out the simulation outcomes are. Higher standard deviation = more uncertainty and wider range of possible outcomes.
+                    </p>
+                </div>
+
+                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">How It's Calculated</h3>
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <p style="margin: 0 0 15px 0; color: var(--text-secondary);">
+                        1. Find the expected value (average)<br>
+                        2. Calculate how far each outcome deviates from the average<br>
+                        3. Square those deviations, average them, then take the square root<br><br>
+                        <strong>Formula:</strong> σ = √[Σ(x - μ)² / n]<br>
+                        Where x = each outcome, μ = mean, n = number of simulations
+                    </p>
+                </div>
+
+                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">What Does This Tell You?</h3>
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                    <div style="margin-bottom: 15px;">
+                        <strong style="color: var(--info-color);">Outcome Uncertainty</strong>
+                        <p style="margin: 5px 0 0 0; color: var(--text-secondary);">
+                            Higher standard deviation means there's a bigger spread between best-case and worst-case scenarios. You have less predictability about your final outcome.
+                        </p>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <strong style="color: var(--warning-color);">Portfolio Volatility Impact</strong>
+                        <p style="margin: 5px 0 0 0; color: var(--text-secondary);">
+                            Aggressive portfolios (80-100% stocks) typically have higher standard deviations. Conservative portfolios (30-40% stocks) have lower standard deviations.
+                        </p>
+                    </div>
+                    <div>
+                        <strong style="color: var(--success-color);">Risk Tolerance Gauge</strong>
+                        <p style="margin: 5px 0 0 0; color: var(--text-secondary);">
+                            A high standard deviation relative to your starting portfolio indicates you're taking on significant risk. Make sure you're comfortable with that level of uncertainty.
+                        </p>
+                    </div>
+                </div>
+
+                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">Real-World Example</h3>
+                <div style="background: var(--accent-color); padding: 20px; border-radius: 8px; margin-bottom: 15px; color: white;">
+                    <p style="margin: 0; line-height: 1.6;">
+                        <strong>Scenario A:</strong> Expected value = $5M, Std Dev = $2M<br>
+                        → Most outcomes fall between $3M and $7M (within 1 standard deviation)<br><br>
+
+                        <strong>Scenario B:</strong> Expected value = $5M, Std Dev = $10M<br>
+                        → Outcomes could range wildly from -$5M (ran out) to $15M+<br><br>
+
+                        Both have the same expected value, but Scenario B has much more uncertainty!
+                    </p>
+                </div>
+
+                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">How to Use This Information</h3>
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                    <p style="margin: 0 0 10px 0; color: var(--text-secondary);">
+                        <strong>Compare Allocation Strategies:</strong> Look at how standard deviation changes between conservative, moderate, and aggressive portfolios. Higher stock allocation = higher standard deviation = more uncertainty.
+                    </p>
+                    <p style="margin: 0; color: var(--text-secondary);">
+                        <strong>Risk-Adjusted Planning:</strong> If you see high standard deviation alongside a low median, that's a red flag - you have high uncertainty AND low typical outcomes. Consider adjusting your plan.
+                    </p>
+                </div>
+
+                <div style="background: #9b59b6; padding: 15px; border-radius: 8px; margin-top: 20px; color: white;">
+                    <strong>💡 Pro Tip:</strong> Don't obsess over this number - it's more of an academic metric. Focus on success rate and median balance for practical planning. Standard deviation is useful mainly for comparing allocation strategies.
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="close-modal-bottom-btn" style="padding: 12px 30px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                    Got It!
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const closeModal = () => modal.remove();
+    modal.querySelector('.close-modal-btn').addEventListener('click', closeModal);
+    modal.querySelector('.close-modal-bottom-btn').addEventListener('click', closeModal);
     modal.addEventListener('click', (e) => {
         if (e.target === modal) closeModal();
     });

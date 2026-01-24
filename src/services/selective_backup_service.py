@@ -312,6 +312,7 @@ class SelectiveBackupService:
                             cursor.execute('DELETE FROM conversations WHERE profile_id = ?', (profile_id,))
 
                             # Update profile
+                                            # Update profile
                             cursor.execute('''
                                 UPDATE profile
                                 SET name = ?, birth_date = ?, retirement_date = ?,
@@ -329,6 +330,7 @@ class SelectiveBackupService:
                             results['profiles_updated'] += 1
                         else:
                             # Merge mode - just update if exists
+                                            # Update profile
                             cursor.execute('''
                                 UPDATE profile
                                 SET name = ?, birth_date = ?, retirement_date = ?,
