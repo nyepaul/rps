@@ -7,6 +7,7 @@ import { getAssetTypeLabel } from './asset-form-fields.js';
 import { makeRowEditable } from './inline-editor.js';
 import { showAssetWizard } from './asset-wizard.js';
 import { store } from '../../state/store.js';
+import { profilesAPI } from '../../api/profiles.js';
 
 /**
  * Render all assets in a simple flat list
@@ -91,10 +92,32 @@ export function renderAssetList(assets, container, onSaveCallback) {
             };
 
             // Open asset wizard with the existing asset
+            // Wrap the callback to handle the full assets object from the wizard
             showAssetWizard(
                 asset.categoryKey,
                 asset,
-                onSaveCallback, // Pass through the save callback from parent
+                async (updatedAssets) => {
+                    // The wizard passes the full assets object, save it
+                    const profile = store.get('currentProfile');
+                    if (!profile) return;
+
+                    const updatedData = {
+                        ...profile.data,
+                        assets: updatedAssets
+                    };
+
+                    const result = await profilesAPI.update(profile.name, {
+                        data: updatedData
+                    });
+
+                    // Update store
+                    store.setState({ currentProfile: result.profile });
+
+                    // Refresh the assets tab
+                    if (window.app && window.app.showTab) {
+                        window.app.showTab('assets');
+                    }
+                },
                 asset.index
             );
         };
