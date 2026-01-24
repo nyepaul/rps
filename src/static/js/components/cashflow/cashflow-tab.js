@@ -123,7 +123,7 @@ export function renderCashFlowTab(container) {
 
             <!-- Chart -->
             <div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--border-color);">
-                <canvas id="cashflow-chart" style="max-height: 350px;"></canvas>
+                <canvas id="cashflow-chart" style="max-height: 700px;"></canvas>
             </div>
 
             <!-- Summary Cards -->
@@ -149,7 +149,7 @@ export function renderCashFlowTab(container) {
             const chartContainer = container.querySelector('#cashflow-chart')?.parentElement;
             if (chartContainer) {
                 chartContainer.innerHTML = `
-                    <div style="display: flex; align-items: center; justify-content: center; height: 350px; flex-direction: column; gap: 12px; color: var(--danger-color);">
+                    <div style="display: flex; align-items: center; justify-content: center; height: 700px; flex-direction: column; gap: 12px; color: var(--danger-color);">
                         <div style="font-size: 32px;">⚠️</div>
                         <div style="font-size: 14px;">Failed to initialize chart</div>
                         <div style="font-size: 12px; color: var(--text-secondary);">${error.message}</div>
