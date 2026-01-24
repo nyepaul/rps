@@ -231,6 +231,44 @@ def submit_feedback():
         return jsonify({'error': 'Failed to save feedback'}), 500
 
 
+@feedback_bp.route('/users', methods=['GET'])
+@login_required
+@admin_required
+def get_feedback_users():
+    """
+    Get list of users who have submitted feedback (admin only).
+    Returns user id, username, and feedback count.
+    """
+    try:
+        if current_user.is_super_admin:
+            rows = db.execute('''
+                SELECT u.id, u.username, COUNT(f.id) as feedback_count
+                FROM users u
+                JOIN feedback f ON u.id = f.user_id
+                GROUP BY u.id
+                ORDER BY feedback_count DESC, u.username ASC
+            ''')
+        else:
+            # Only show users in groups managed by this admin
+            rows = db.execute('''
+                SELECT u.id, u.username, COUNT(f.id) as feedback_count
+                FROM users u
+                JOIN feedback f ON u.id = f.user_id
+                JOIN user_groups ug ON u.id = ug.user_id
+                JOIN admin_groups ag ON ug.group_id = ag.group_id
+                WHERE ag.user_id = ?
+                GROUP BY u.id
+                ORDER BY feedback_count DESC, u.username ASC
+            ''', (current_user.id,))
+
+        users = [dict(row) for row in rows]
+        return jsonify({'users': users}), 200
+
+    except Exception as e:
+        print(f"Error fetching feedback users: {e}")
+        return jsonify({'error': 'Failed to fetch users'}), 500
+
+
 @feedback_bp.route('', methods=['GET'])
 @login_required
 @admin_required
@@ -252,11 +290,12 @@ def get_all_feedback():
     limit = min(int(request.args.get('limit', 100)), 500)
     offset = int(request.args.get('offset', 0))
 
-    # Build query with reply count
+    # Build query with reply count and username
     query = '''
-        SELECT f.*,
+        SELECT f.*, u.username,
             (SELECT COUNT(*) FROM feedback_replies WHERE feedback_id = f.id) as reply_count
         FROM feedback f
+        LEFT JOIN users u ON f.user_id = u.id
         WHERE 1=1
     '''
     params = []
@@ -265,7 +304,7 @@ def get_all_feedback():
     if not current_user.is_super_admin:
         query += '''
             AND f.user_id IN (
-                SELECT ug.user_id 
+                SELECT ug.user_id
                 FROM user_groups ug
                 JOIN admin_groups ag ON ug.group_id = ag.group_id
                 WHERE ag.user_id = ?

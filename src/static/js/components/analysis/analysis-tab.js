@@ -1453,18 +1453,39 @@ async function setupSaveScenarioHandler(container, profile) {
             return;
         }
 
-        // Build comprehensive scenario name from simulation parameters
-        const savedMarketProfileKey = localStorage.getItem('rps_market_profile') || 'historical';
-        const marketProfile = APP_CONFIG.MARKET_PROFILES[savedMarketProfileKey];
-        const marketProfileName = marketProfile?.name || 'Historical';
+        // Build market condition description based on the mode used
+        let marketDescription = '';
+
+        if (currentMarketMode === 'preset' && selectedPreset) {
+            // Preset mode: use the preset name
+            const preset = APP_CONFIG.PRESET_SCENARIOS[selectedPreset];
+            marketDescription = preset?.name || 'Preset';
+        } else if (currentMarketMode === 'timeline') {
+            // Timeline mode: count the periods
+            const periodCount = container.querySelectorAll('.timeline-period').length;
+            marketDescription = `Timeline (${periodCount} period${periodCount !== 1 ? 's' : ''})`;
+        } else if (currentMarketMode === 'cycle') {
+            // Cycle mode: count phases and note repeat setting
+            const phaseCount = container.querySelectorAll('.cycle-phase').length;
+            const repeatCheckbox = container.querySelector('#cycle-repeat-checkbox');
+            const repeats = repeatCheckbox?.checked ? 'repeating' : 'once';
+            marketDescription = `Cycle (${phaseCount} phase${phaseCount !== 1 ? 's' : ''}, ${repeats})`;
+        } else {
+            // Simple mode: use market profile name and stock allocation
+            const savedMarketProfileKey = localStorage.getItem('rps_market_profile') || 'historical';
+            const marketProfile = APP_CONFIG.MARKET_PROFILES[savedMarketProfileKey];
+            const marketProfileName = marketProfile?.name || 'Historical';
+            const stockAllocation = Math.round((marketProfile?.stock_allocation || 0.5) * 100);
+            marketDescription = `${marketProfileName} (${stockAllocation}% stocks)`;
+        }
 
         // Get spending model
         const spendingModelSelect = container.querySelector('#spending-model-select');
         const spendingModelKey = spendingModelSelect?.value || 'constant_real';
         const spendingFullNames = {
-            'constant_real': 'Constant-Inflation-Adjusted',
-            'retirement_smile': 'Retirement-Smile',
-            'conservative_decline': 'Conservative-Decline'
+            'constant_real': 'Constant',
+            'retirement_smile': 'Smile',
+            'conservative_decline': 'Decline'
         };
         const spendingName = spendingFullNames[spendingModelKey] || 'Custom';
 
@@ -1472,12 +1493,9 @@ async function setupSaveScenarioHandler(container, profile) {
         const simulationsSelect = container.querySelector('#simulations-select');
         const simCount = simulationsSelect?.value || lastSimulations || '10000';
 
-        // Get stock allocation
-        const stockAllocation = Math.round((marketProfile?.stock_allocation || 0.5) * 100);
-
         // Build descriptive name with key parameters
         const timestamp = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        const defaultName = `${profile.name} | ${marketProfileName} (${stockAllocation}% stocks) | ${spendingName} | ${simCount} sims | ${timestamp}`;
+        const defaultName = `${profile.name} | ${marketDescription} | ${spendingName} | ${simCount} sims | ${timestamp}`;
 
         const scenarioName = prompt('Enter a name for this scenario:', defaultName);
 
@@ -1520,18 +1538,39 @@ async function setupMultiSaveScenarioHandler(container, profile) {
             return;
         }
 
-        // Build comprehensive multi-scenario name from simulation parameters
-        const savedMarketProfileKey = localStorage.getItem('rps_market_profile') || 'historical';
-        const marketProfile = APP_CONFIG.MARKET_PROFILES[savedMarketProfileKey];
-        const marketProfileName = marketProfile?.name || 'Historical';
+        // Build market condition description based on the mode used
+        let marketDescription = '';
+
+        if (currentMarketMode === 'preset' && selectedPreset) {
+            // Preset mode: use the preset name
+            const preset = APP_CONFIG.PRESET_SCENARIOS[selectedPreset];
+            marketDescription = preset?.name || 'Preset';
+        } else if (currentMarketMode === 'timeline') {
+            // Timeline mode: count the periods
+            const periodCount = container.querySelectorAll('.timeline-period').length;
+            marketDescription = `Timeline (${periodCount} period${periodCount !== 1 ? 's' : ''})`;
+        } else if (currentMarketMode === 'cycle') {
+            // Cycle mode: count phases and note repeat setting
+            const phaseCount = container.querySelectorAll('.cycle-phase').length;
+            const repeatCheckbox = container.querySelector('#cycle-repeat-checkbox');
+            const repeats = repeatCheckbox?.checked ? 'repeating' : 'once';
+            marketDescription = `Cycle (${phaseCount} phase${phaseCount !== 1 ? 's' : ''}, ${repeats})`;
+        } else {
+            // Simple mode: use market profile name and stock allocation
+            const savedMarketProfileKey = localStorage.getItem('rps_market_profile') || 'historical';
+            const marketProfile = APP_CONFIG.MARKET_PROFILES[savedMarketProfileKey];
+            const marketProfileName = marketProfile?.name || 'Historical';
+            const stockAllocation = Math.round((marketProfile?.stock_allocation || 0.5) * 100);
+            marketDescription = `${marketProfileName} (${stockAllocation}% stocks)`;
+        }
 
         // Get spending model
         const spendingModelSelect = container.querySelector('#spending-model-select');
         const spendingModelKey = spendingModelSelect?.value || 'constant_real';
         const spendingFullNames = {
-            'constant_real': 'Constant-Inflation-Adjusted',
-            'retirement_smile': 'Retirement-Smile',
-            'conservative_decline': 'Conservative-Decline'
+            'constant_real': 'Constant',
+            'retirement_smile': 'Smile',
+            'conservative_decline': 'Decline'
         };
         const spendingName = spendingFullNames[spendingModelKey] || 'Custom';
 
@@ -1539,12 +1578,9 @@ async function setupMultiSaveScenarioHandler(container, profile) {
         const simulationsSelect = container.querySelector('#simulations-select');
         const simCount = simulationsSelect?.value || lastSimulations || '10000';
 
-        // Get stock allocation
-        const stockAllocation = Math.round((marketProfile?.stock_allocation || 0.5) * 100);
-
         // Build descriptive name with key parameters
         const timestamp = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        const defaultName = `${profile.name} | Multi-Scenario | ${marketProfileName} (${stockAllocation}% stocks) | ${spendingName} | ${simCount} sims | ${timestamp}`;
+        const defaultName = `${profile.name} | Multi | ${marketDescription} | ${spendingName} | ${simCount} sims | ${timestamp}`;
 
         const scenarioName = prompt('Enter a name for this multi-scenario analysis:', defaultName);
 

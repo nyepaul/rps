@@ -249,8 +249,8 @@ async function showFeedbackDetails(feedback) {
                 <!-- Metadata -->
                 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px;">
                     <div>
-                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">User ID</div>
-                        <div style="font-weight: 600;">${feedback.user_id}</div>
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">User</div>
+                        <div style="font-weight: 600;">${feedback.username || 'Unknown'} (#${feedback.user_id})</div>
                     </div>
                     <div>
                         <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Submitted</div>
@@ -532,11 +532,34 @@ async function showFeedbackDetails(feedback) {
  * Render feedback viewer
  */
 export async function renderFeedbackViewer(container) {
+    // Fetch users who have submitted feedback
+    let feedbackUsers = [];
+    try {
+        const usersData = await apiClient.get('/api/feedback/users');
+        feedbackUsers = usersData.users || [];
+    } catch (error) {
+        console.error('Error fetching feedback users:', error);
+    }
+
     container.innerHTML = `
         <div>
-            <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
                 <h2 style="margin: 0; font-size: 20px; font-weight: 600;">💬 User Feedback</h2>
-                <div style="display: flex; gap: 12px;">
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <select id="filter-user" style="
+                        padding: 8px 12px;
+                        border: 2px solid var(--border-color);
+                        border-radius: 6px;
+                        background: var(--bg-tertiary);
+                        color: var(--text-primary);
+                        font-size: 14px;
+                        min-width: 160px;
+                    ">
+                        <option value="">All Users</option>
+                        ${feedbackUsers.map(u => `
+                            <option value="${u.id}">${u.username} (${u.feedback_count})</option>
+                        `).join('')}
+                    </select>
                     <select id="filter-type" style="
                         padding: 8px 12px;
                         border: 2px solid var(--border-color);
@@ -574,9 +597,11 @@ export async function renderFeedbackViewer(container) {
     await loadFeedback(container);
 
     // Setup filters
+    const filterUser = container.querySelector('#filter-user');
     const filterType = container.querySelector('#filter-type');
     const filterStatus = container.querySelector('#filter-status');
 
+    filterUser.addEventListener('change', () => loadFeedback(container));
     filterType.addEventListener('change', () => loadFeedback(container));
     filterStatus.addEventListener('change', () => loadFeedback(container));
 }
@@ -586,11 +611,13 @@ export async function renderFeedbackViewer(container) {
  */
 async function loadFeedback(container) {
     const listContainer = container.querySelector('#feedback-list');
+    const filterUser = container.querySelector('#filter-user')?.value || '';
     const filterType = container.querySelector('#filter-type')?.value || '';
     const filterStatus = container.querySelector('#filter-status')?.value || '';
 
     try {
         const params = new URLSearchParams();
+        if (filterUser) params.append('user_id', filterUser);
         if (filterType) params.append('type', filterType);
         if (filterStatus) params.append('status', filterStatus);
         params.append('limit', '100');
@@ -624,7 +651,7 @@ async function loadFeedback(container) {
                             <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                                 ${getTypeBadge(item.type)}
                                 ${getStatusBadge(item.status)}
-                                <span style="font-size: 12px; color: var(--text-primary); font-weight: 600;">👤 User #${item.user_id}</span>
+                                <span style="font-size: 12px; color: var(--text-primary); font-weight: 600;">👤 ${item.username || 'User #' + item.user_id}</span>
                                 ${item.reply_count > 0 ? `
                                     <span style="
                                         padding: 2px 8px;
