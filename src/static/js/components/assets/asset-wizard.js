@@ -546,11 +546,13 @@ function setupWizardHandlers(wizard, state, assets, onSave, modal, isEditing) {
             // Check if category needs to change based on new type
             const newCategory = getCategoryForType(newType);
             if (newCategory && newCategory !== state.category) {
-                console.log(`Category change detected: ${state.category} -> ${newCategory}`);
+                console.log(`[Asset Wizard] Category change detected: ${state.category} -> ${newCategory}`);
+                console.log(`[Asset Wizard] Current assetData before category change:`, state.assetData);
 
                 // If editing and category changed, we need to handle moving the asset
                 if (isEditing && state.assetIndex !== null) {
                     // Remove from old category
+                    console.log(`[Asset Wizard] Removing asset from ${state.category} at index ${state.assetIndex}`);
                     assets[state.category].splice(state.assetIndex, 1);
 
                     // Update state to new category
@@ -558,6 +560,7 @@ function setupWizardHandlers(wizard, state, assets, onSave, modal, isEditing) {
 
                     // Asset will be added to new category on save
                     state.assetIndex = null; // No longer editing in old category
+                    console.log(`[Asset Wizard] Asset will be added to ${newCategory} on save`);
                 } else {
                     // Just update category for new assets
                     state.category = newCategory;
@@ -637,8 +640,10 @@ function setupWizardHandlers(wizard, state, assets, onSave, modal, isEditing) {
                 }
 
                 // Merge form data with existing asset data to preserve hidden fields (id, created_at, etc)
+                console.log(`[Asset Wizard] Extracting form data from category: ${state.category}`);
                 const formData = extractFormData(form, state.category);
-                console.log('Extracted form data:', formData);
+                console.log('[Asset Wizard] Extracted form data:', formData);
+                console.log('[Asset Wizard] Existing asset data before merge:', state.assetData);
 
                 const currentAsset = {
                     ...state.assetData,
@@ -649,7 +654,7 @@ function setupWizardHandlers(wizard, state, assets, onSave, modal, isEditing) {
                 currentAsset.id = currentAsset.id || generateId();
                 currentAsset.created_at = currentAsset.created_at || new Date().toISOString();
 
-                console.log('Current asset after merging:', currentAsset);
+                console.log('[Asset Wizard] Current asset after merging:', currentAsset);
 
                 // Check if there are more types to add
                 if (state.currentTypeIndex < state.selectedTypes.length - 1) {
@@ -674,14 +679,20 @@ function setupWizardHandlers(wizard, state, assets, onSave, modal, isEditing) {
     const saveBtn = wizard.querySelector('#save-btn');
     if (saveBtn) {
         saveBtn.addEventListener('click', () => {
+            console.log(`[Asset Wizard] Save button clicked`);
+            console.log(`[Asset Wizard] isEditing: ${isEditing}, category: ${state.category}, assetIndex: ${state.assetIndex}`);
+            console.log(`[Asset Wizard] Asset data to save:`, state.assetData);
+
             if (isEditing) {
                 // Editing single asset
                 // If assetIndex is null, it means category changed and asset was removed from old category
                 // Just add to new category
                 if (state.assetIndex !== null) {
+                    console.log(`[Asset Wizard] Updating asset in place at ${state.category}[${state.assetIndex}]`);
                     assets[state.category][state.assetIndex] = state.assetData;
                 } else {
                     // Category changed, add to new category
+                    console.log(`[Asset Wizard] Adding asset to new category ${state.category}`);
                     assets[state.category].push(state.assetData);
                 }
             } else {
@@ -694,6 +705,8 @@ function setupWizardHandlers(wizard, state, assets, onSave, modal, isEditing) {
                     assets[state.category].push(state.assetData);
                 }
             }
+
+            console.log(`[Asset Wizard] Final assets object being passed to onSave:`, assets);
 
             // Call save callback
             if (onSave) {

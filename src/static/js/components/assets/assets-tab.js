@@ -307,7 +307,7 @@ function setupGeneralHandlers(container, profile, assets, refreshCallback) {
                 await importAssetsCSV(profile.name, (updatedProfile) => {
                     store.setState({ currentProfile: updatedProfile });
                     // Full refresh needed as profile object changed
-                    window.app.showTab('assets'); 
+                    window.app.showTab('aie'); 
                     showSuccess('Assets imported successfully!');
                 });
             } catch (error) {

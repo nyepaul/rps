@@ -393,3 +393,102 @@ export function extractFormData(form, category) {
 export function getAssetTypeLabel(type) {
     return ASSET_TYPE_LABELS[type] || type;
 }
+
+// Account types grouped by visual category for selection UI
+const ACCOUNT_TYPES = {
+    retirement: {
+        label: 'Retirement Accounts',
+        types: [
+            { value: '401k', label: '401(k)', category: 'retirement_accounts' },
+            { value: 'roth_401k', label: 'Roth 401(k)', category: 'retirement_accounts' },
+            { value: 'traditional_ira', label: 'Traditional IRA', category: 'retirement_accounts' },
+            { value: 'roth_ira', label: 'Roth IRA', category: 'retirement_accounts' },
+            { value: 'sep_ira', label: 'SEP IRA', category: 'retirement_accounts' },
+            { value: 'simple_ira', label: 'SIMPLE IRA', category: 'retirement_accounts' },
+            { value: '403b', label: '403(b)', category: 'retirement_accounts' },
+            { value: '457', label: '457', category: 'retirement_accounts' }
+        ]
+    },
+    taxable: {
+        label: 'Bank & Brokerage',
+        types: [
+            { value: 'brokerage', label: 'Brokerage Account', category: 'taxable_accounts' },
+            { value: 'savings', label: 'Savings Account', category: 'taxable_accounts' },
+            { value: 'checking', label: 'Checking Account', category: 'taxable_accounts' },
+            { value: 'money_market', label: 'Money Market', category: 'taxable_accounts' },
+            { value: 'cd', label: 'Certificate of Deposit', category: 'taxable_accounts' },
+            { value: 'cash', label: 'Cash', category: 'taxable_accounts' }
+        ]
+    },
+    real_estate: {
+        label: 'Real Estate',
+        types: [
+            { value: 'primary_residence', label: 'Primary Residence', category: 'real_estate' },
+            { value: 'rental_property', label: 'Rental Property', category: 'real_estate' },
+            { value: 'vacation_home', label: 'Vacation Home', category: 'real_estate' },
+            { value: 'land', label: 'Land', category: 'real_estate' },
+            { value: 'commercial', label: 'Commercial Property', category: 'real_estate' }
+        ]
+    },
+    income: {
+        label: 'Income Streams',
+        types: [
+            { value: 'pension', label: 'Pension', category: 'pensions_annuities' },
+            { value: 'annuity', label: 'Annuity', category: 'pensions_annuities' }
+        ]
+    },
+    other: {
+        label: 'Other Assets',
+        types: [
+            { value: 'hsa', label: 'Health Savings Account (HSA)', category: 'other_assets' },
+            { value: 'business_interest', label: 'Business Interest', category: 'other_assets' },
+            { value: 'cryptocurrency', label: 'Cryptocurrency', category: 'other_assets' },
+            { value: 'trust', label: 'Trust', category: 'other_assets' },
+            { value: 'collectible', label: 'Collectible', category: 'other_assets' },
+            { value: 'other', label: 'Other', category: 'other_assets' }
+        ]
+    },
+    liabilities: {
+        label: 'Debts & Liabilities',
+        types: [
+            { value: 'student_loan', label: 'Student Loan', category: 'liabilities' },
+            { value: 'credit_card', label: 'Credit Card Debt', category: 'liabilities' },
+            { value: 'auto_loan', label: 'Auto Loan', category: 'liabilities' },
+            { value: 'personal_loan', label: 'Personal Loan', category: 'liabilities' },
+            { value: 'other_debt', label: 'Other Debt', category: 'liabilities' }
+        ]
+    }
+};
+
+/**
+ * Get all account type options for cross-category editing
+ */
+export function getAllAccountTypeOptions() {
+    const options = [{ value: '', label: '-- Select Type --' }];
+
+    for (const [groupKey, group] of Object.entries(ACCOUNT_TYPES)) {
+        // Add group header
+        options.push({ value: '', label: `--- ${group.label} ---`, disabled: true });
+
+        // Add types in this group
+        for (const type of group.types) {
+            options.push({ value: type.value, label: type.label });
+        }
+    }
+
+    return options;
+}
+
+/**
+ * Map account type to category
+ */
+export function getCategoryForType(accountType) {
+    for (const group of Object.values(ACCOUNT_TYPES)) {
+        for (const type of group.types) {
+            if (type.value === accountType) {
+                return type.category;
+            }
+        }
+    }
+    return 'other_assets';
+}

@@ -6,6 +6,8 @@ import { store } from '../../state/store.js';
 import { formatCurrency, formatPercent } from '../../utils/formatters.js';
 import { showArticle } from '../learn/learn-tab.js';
 import { analysisAPI } from '../../api/analysis.js';
+import { showAssetWizard } from '../assets/asset-wizard.js';
+import { profilesAPI } from '../../api/profiles.js';
 
 export function renderAccountsTab(container) {
     const profile = store.get('currentProfile');
@@ -676,6 +678,11 @@ function renderAssetList(container, title, assetList) {
     const sortedAssets = [...assetList].sort((a, b) => (b.value || 0) - (a.value || 0));
 
     container.innerHTML = `
+        <div style="padding: 8px 12px; margin-bottom: 8px; background: var(--bg-tertiary); border-radius: 6px; border-left: 3px solid var(--accent-color);">
+            <p style="margin: 0; font-size: 12px; color: var(--text-secondary);">
+                <strong style="color: var(--text-primary);">💡 Tip:</strong> Click on any asset row to edit its details
+            </p>
+        </div>
         <h3 style="margin-bottom: 15px; font-size: 18px; display: flex; justify-content: space-between; align-items: center;">
             ${title}
             <span style="font-size: 14px; font-weight: normal; color: var(--text-secondary);">
@@ -690,11 +697,12 @@ function renderAssetList(container, title, assetList) {
                         <th style="padding: 10px; font-weight: 600;">Type</th>
                         <th style="padding: 10px; font-weight: 600;">Allocation (S/B/C)</th>
                         <th style="padding: 10px; text-align: right; font-weight: 600;">Value</th>
+                        <th style="padding: 10px; text-align: center; font-weight: 600;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    ${sortedAssets.map(asset => `
-                        <tr style="border-bottom: 1px solid var(--border-color); transition: background 0.2s;">
+                    ${sortedAssets.map((asset, index) => `
+                        <tr class="asset-table-row" data-asset-index="${index}" style="border-bottom: 1px solid var(--border-color); transition: background 0.2s; cursor: pointer;">
                             <td style="padding: 12px 10px; font-weight: 500;">${asset.name}</td>
                             <td style="padding: 12px 10px; color: var(--text-secondary); font-size: 14px;">${formatAssetType(asset.type)}</td>
                             <td style="padding: 12px 10px; font-size: 12px; color: var(--text-light);">
@@ -703,12 +711,106 @@ function renderAssetList(container, title, assetList) {
                             <td style="padding: 12px 10px; text-align: right; font-weight: 500; font-family: monospace; font-size: 14px;">
                                 ${formatCurrency(asset.value || 0, 0)}
                             </td>
+                            <td style="padding: 12px 10px; text-align: center;">
+                                <button class="edit-asset-btn" data-asset-index="${index}" style="padding: 4px 8px; background: transparent; color: var(--text-secondary); border: none; cursor: pointer; font-size: 14px;" title="Edit">✏️</button>
+                            </td>
                         </tr>
                     `).join('')}
                 </tbody>
             </table>
         </div>
     `;
+
+    // Add click-to-edit functionality
+    setupAssetEditHandlers(container, sortedAssets);
+}
+
+function setupAssetEditHandlers(container, assetList) {
+    const rows = container.querySelectorAll('.asset-table-row');
+
+    rows.forEach((row, idx) => {
+        const asset = assetList[idx];
+
+        const openEditModal = () => {
+            const profile = store.get('currentProfile');
+            if (!profile) return;
+
+            // Determine which category this asset belongs to
+            const assets = profile.data?.assets || {};
+            let categoryKey = null;
+            let assetIndex = null;
+
+            // Find the asset in the profile's assets structure
+            for (const [category, items] of Object.entries(assets)) {
+                if (!Array.isArray(items)) continue;
+                const foundIndex = items.findIndex(a => a.id === asset.id);
+                if (foundIndex >= 0) {
+                    categoryKey = category;
+                    assetIndex = foundIndex;
+                    break;
+                }
+            }
+
+            if (!categoryKey) {
+                console.error('Could not find asset category');
+                return;
+            }
+
+            // Open asset wizard
+            showAssetWizard(
+                categoryKey,
+                asset,
+                async (updatedAssets) => {
+                    const profile = store.get('currentProfile');
+                    if (!profile) return;
+
+                    const updatedData = {
+                        ...profile.data,
+                        assets: updatedAssets
+                    };
+
+                    const result = await profilesAPI.update(profile.name, {
+                        data: updatedData
+                    });
+
+                    store.setState({ currentProfile: result.profile });
+
+                    // Refresh the accounts tab
+                    if (window.app && window.app.showTab) {
+                        window.app.showTab('accounts');
+                    }
+                },
+                assetIndex
+            );
+        };
+
+        // Click on row to edit
+        row.addEventListener('click', (e) => {
+            // Don't trigger if clicking on edit button (it has its own handler)
+            if (e.target.closest('.edit-asset-btn')) {
+                return;
+            }
+            openEditModal();
+        });
+
+        // Edit button
+        const editBtn = row.querySelector('.edit-asset-btn');
+        if (editBtn) {
+            editBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openEditModal();
+            });
+        }
+
+        // Hover effect
+        row.addEventListener('mouseenter', () => {
+            row.style.background = 'var(--bg-tertiary)';
+        });
+
+        row.addEventListener('mouseleave', () => {
+            row.style.background = '';
+        });
+    });
 }
 
 function formatAssetType(type) {

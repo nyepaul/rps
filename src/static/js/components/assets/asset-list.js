@@ -3,11 +3,11 @@
  */
 
 import { formatCurrency } from '../../utils/formatters.js';
-import { getAssetTypeLabel } from './asset-form-fields.js';
+import { getAssetTypeLabel, generateFormFields, extractFormData, getAllAccountTypeOptions, getCategoryForType } from './asset-form-fields.js';
 import { makeRowEditable } from './inline-editor.js';
-import { showAssetWizard } from './asset-wizard.js';
 import { store } from '../../state/store.js';
 import { profilesAPI } from '../../api/profiles.js';
+import { showError, showSuccess } from '../../utils/dom.js';
 
 /**
  * Render all assets in a simple flat list
@@ -91,35 +91,7 @@ export function renderAssetList(assets, container, onSaveCallback) {
                 liabilities: []
             };
 
-            // Open asset wizard with the existing asset
-            // Wrap the callback to handle the full assets object from the wizard
-            showAssetWizard(
-                asset.categoryKey,
-                asset,
-                async (updatedAssets) => {
-                    // The wizard passes the full assets object, save it
-                    const profile = store.get('currentProfile');
-                    if (!profile) return;
-
-                    const updatedData = {
-                        ...profile.data,
-                        assets: updatedAssets
-                    };
-
-                    const result = await profilesAPI.update(profile.name, {
-                        data: updatedData
-                    });
-
-                    // Update store
-                    store.setState({ currentProfile: result.profile });
-
-                    // Refresh the assets tab
-                    if (window.app && window.app.showTab) {
-                        window.app.showTab('assets');
-                    }
-                },
-                asset.index
-            );
+            showSimpleEditModal(asset, asset.categoryKey, asset.index, assets);
         };
 
         // Click on row to open edit modal
@@ -239,4 +211,176 @@ function renderAssetRow(asset) {
             </div>
         </div>
     `;
+}
+
+/**
+ * Show simple edit modal for an asset
+ */
+function showSimpleEditModal(asset, originalCategory, assetIndex, allAssets) {
+    // Create modal overlay
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 20px;
+    `;
+
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = `
+        background: var(--bg-secondary);
+        border-radius: 12px;
+        max-width: 800px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    `;
+
+    // Track current category (may change if type changes)
+    let currentCategory = originalCategory;
+
+    const renderForm = (category) => {
+        const typeLabel = getAssetTypeLabel(asset.type);
+
+        modalContent.innerHTML = `
+            <div style="padding: 30px;">
+                <h2 style="margin: 0 0 20px 0; font-size: 24px;">✏️ Edit Asset</h2>
+
+                <form id="asset-edit-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                    ${generateFormFields(category, asset, false, getAllAccountTypeOptions())}
+                </form>
+
+                <div style="display: flex; justify-content: space-between; margin-top: 30px; padding-top: 20px; border-top: 2px solid var(--border-color);">
+                    <button id="cancel-btn" style="padding: 12px 24px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                        Cancel
+                    </button>
+                    <button id="save-btn" style="padding: 12px 24px; background: var(--success-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Setup type change handler
+        const typeSelect = modalContent.querySelector('select[name="type"]');
+        if (typeSelect) {
+            typeSelect.addEventListener('change', (e) => {
+                const newType = e.target.value;
+                const form = modalContent.querySelector('#asset-edit-form');
+
+                // Extract current form data
+                const formData = extractFormData(form, currentCategory);
+
+                // Merge with existing asset data
+                Object.assign(asset, formData);
+                asset.type = newType;
+
+                // Check if category changed
+                const newCategory = getCategoryForType(newType);
+                if (newCategory && newCategory !== currentCategory) {
+                    console.log(`[Asset Edit] Category change: ${currentCategory} -> ${newCategory}`);
+                    currentCategory = newCategory;
+                }
+
+                // Re-render form with new fields
+                renderForm(currentCategory);
+            });
+        }
+
+        // Setup cancel button
+        const cancelBtn = modalContent.querySelector('#cancel-btn');
+        cancelBtn.addEventListener('click', () => {
+            modal.remove();
+        });
+
+        // Setup save button
+        const saveBtn = modalContent.querySelector('#save-btn');
+        saveBtn.addEventListener('click', async () => {
+            const form = modalContent.querySelector('#asset-edit-form');
+
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            // Extract form data
+            const formData = extractFormData(form, currentCategory);
+
+            // Merge with existing asset (preserves id, created_at, etc.)
+            const updatedAsset = {
+                ...asset,
+                ...formData,
+                updated_at: new Date().toISOString()
+            };
+
+            console.log(`[Asset Edit] Saving asset:`, updatedAsset);
+            console.log(`[Asset Edit] Original category: ${originalCategory}, Current category: ${currentCategory}`);
+
+            // If category changed, move the asset
+            if (currentCategory !== originalCategory) {
+                // Remove from original category
+                allAssets[originalCategory].splice(assetIndex, 1);
+                // Add to new category
+                allAssets[currentCategory].push(updatedAsset);
+            } else {
+                // Update in place
+                allAssets[originalCategory][assetIndex] = updatedAsset;
+            }
+
+            // Save to backend
+            try {
+                const profile = store.get('currentProfile');
+                if (!profile) {
+                    showError('No profile selected');
+                    return;
+                }
+
+                const updatedData = {
+                    ...profile.data,
+                    assets: allAssets
+                };
+
+                const result = await profilesAPI.update(profile.name, {
+                    data: updatedData
+                });
+
+                // Update store
+                store.setState({ currentProfile: result.profile });
+
+                showSuccess('Asset updated successfully!');
+                modal.remove();
+
+                // Refresh the AIE tab
+                if (window.app && window.app.showTab) {
+                    window.app.showTab('aie');
+                }
+            } catch (error) {
+                console.error('Error saving asset:', error);
+                showError(`Failed to save asset: ${error.message}`);
+            }
+        });
+    };
+
+    renderForm(currentCategory);
+
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+
+    // Close on background click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            if (confirm('Close without saving? Any changes will be lost.')) {
+                modal.remove();
+            }
+        }
+    });
 }
