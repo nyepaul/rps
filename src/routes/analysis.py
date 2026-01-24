@@ -236,10 +236,15 @@ def run_analysis():
 
             for stream in income_streams:
 
-                if stream.get('type') in employment_types:
+                                if stream.get('type') in employment_types:
 
-                    amount = stream.get('amount', 0)                    freq = stream.get('frequency', 'monthly')
-                    # Convert to annual
+                                    amount = stream.get('amount', 0)
+
+                                    freq = stream.get('frequency', 'monthly')
+
+                                    # Convert to annual
+
+                
                     if freq == 'monthly':
                         annual_amount = amount * 12
                     elif freq == 'annual':
