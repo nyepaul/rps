@@ -323,25 +323,38 @@
         .nav-dropdown {
             display: none;
             position: absolute;
-            top: 100%;
+            top: calc(100% - 1px); /* Slight overlap to prevent gap */
             left: 0;
             background: var(--bg-secondary);
-            min-width: 200px;
-            box-shadow: 0 4px 12px var(--shadow);
+            min-width: 220px;
+            box-shadow: 0 4px 16px var(--shadow);
             border: 1px solid var(--border-color);
             border-radius: 0 4px 4px 4px;
-            z-index: 100;
-            padding: 5px 0;
+            z-index: 1000; /* Increased z-index */
+            padding: 8px 0; /* More padding for easier clicking */
             animation: fadeIn 0.15s ease-out;
         }
 
-        .nav-group:hover .nav-dropdown {
+        /* Create a hover bridge - invisible area connecting label to dropdown */
+        .nav-group::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: calc(100% + 10px); /* Extends 10px below label */
+            z-index: 999;
+            pointer-events: auto;
+        }
+
+        .nav-group:hover .nav-dropdown,
+        .nav-group:focus-within .nav-dropdown {
             display: block;
         }
 
         /* Individual Tab Buttons (now inside dropdowns or standalone) */
         .tab {
-            padding: 8px 16px;
+            padding: 10px 16px; /* Increased padding for easier clicking */
             background: transparent;
             border: none;
             cursor: pointer;
@@ -352,11 +365,13 @@
             width: 100%;
             text-align: left;
             transition: all 0.1s;
+            border-left: 3px solid transparent; /* Visual indicator on hover */
         }
 
         .tab:hover {
             background: var(--bg-tertiary);
             color: var(--accent-color);
+            border-left-color: var(--accent-color); /* Show indicator on hover */
         }
 
         .tab.active {
