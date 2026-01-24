@@ -100,9 +100,14 @@ export function renderCashFlowTab(container) {
                 <div>
                     <label style="display: block; margin-bottom: 2px; font-size: 11px; font-weight: 600; color: var(--text-secondary);">Market Scenario</label>
                     <select id="market-scenario" style="padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px; min-width: 130px;">
-                        <option value="conservative">Conservative (30/70)</option>
-                        <option value="moderate" selected>Moderate (60/40)</option>
-                        <option value="aggressive">Aggressive (80/20)</option>
+                        ${Object.keys(APP_CONFIG).includes('MARKET_PROFILES') ? 
+                            Object.keys(APP_CONFIG.MARKET_PROFILES).map(key => `
+                                <option value="${key}" ${key === 'balanced' ? 'selected' : ''}>${APP_CONFIG.MARKET_PROFILES[key].name}</option>
+                            `).join('') : `
+                            <option value="conservative">Conservative (30/70)</option>
+                            <option value="moderate" selected>Moderate (60/40)</option>
+                            <option value="aggressive">Aggressive (80/20)</option>
+                        `}
                     </select>
                 </div>
                 <div>
@@ -142,7 +147,7 @@ export function renderCashFlowTab(container) {
     // Initialize chart and data with default: through life expectancy, annual view, moderate scenario
     (async () => {
         try {
-            await renderCashFlowChart(container, profile, monthsToLifeExpectancy, 'annual', null, monthsToLifeExpectancy, lifeExpectancyAge, 'moderate');
+            await renderCashFlowChart(container, profile, monthsToLifeExpectancy, 'annual', null, monthsToLifeExpectancy, lifeExpectancyAge, 'balanced');
             setupEventHandlers(container, profile, monthsToLifeExpectancy, lifeExpectancyAge);
         } catch (error) {
             console.error('Error initializing cash flow chart:', error);
@@ -303,16 +308,12 @@ function setupEventHandlers(container, profile, monthsToLifeExpectancy, lifeExpe
  * @param {Object} profile - The profile to analyze
  * @param {string} marketScenario - The market scenario: 'conservative', 'moderate', or 'aggressive'
  */
-async function fetchDetailedCashflow(profile, marketScenario = 'moderate') {
+async function fetchDetailedCashflow(profile, marketScenario = 'balanced') {
     try {
         console.log(`Fetching Detailed Cashflow projection for tax visualization (${marketScenario})...`);
         
-        // Map scenario key to profile
-        const profileKey = marketScenario === 'moderate' ? 'balanced' : 
-                          marketScenario === 'conservative' ? 'conservative' : 
-                          marketScenario === 'aggressive' ? 'aggressive' : 'balanced';
-        
-        const marketProfile = APP_CONFIG.MARKET_PROFILES[profileKey];
+        // Use scenario key directly if it exists in MARKET_PROFILES, else fallback to balanced
+        const marketProfile = APP_CONFIG.MARKET_PROFILES[marketScenario] || APP_CONFIG.MARKET_PROFILES['balanced'];
 
         // Use the new endpoint that returns granular tax data
         const response = await fetch('/api/analysis/cashflow-details', {
@@ -350,7 +351,7 @@ async function fetchDetailedCashflow(profile, marketScenario = 'moderate') {
 /**
  * Render cash flow chart
  */
-async function renderCashFlowChart(container, profile, months, viewType, scenarioData = null, monthsToLifeExpectancy = 360, lifeExpectancyAge = 95, marketScenario = 'moderate') {
+async function renderCashFlowChart(container, profile, months, viewType, scenarioData = null, monthsToLifeExpectancy = 360, lifeExpectancyAge = 95, marketScenario = 'balanced') {
     let canvasElement = container.querySelector('#cashflow-chart');
 
     // Get scenario display name for UI
@@ -1165,7 +1166,7 @@ function calculatePeriodIncome(budget, period, currentDate) {
 /**
  * Calculate monthly cash flow data with portfolio growth projection
  */
-function calculateMonthlyCashFlow(profile, months, marketScenario = 'moderate') {
+function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') {
     const data = profile.data || {};
     const incomeStreams = data.income_streams || [];
     const financial = data.financial || {};
@@ -1183,18 +1184,23 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'moderate') 
     const annualWithdrawalRate = withdrawalStrategy.withdrawal_rate || 0.04; // Default to 4%
 
     // --- Market-Scenario-Aware Assumptions ---
-    const profileKey = marketScenario === 'moderate' ? 'balanced' : 
-                      marketScenario === 'conservative' ? 'conservative' : 
-                      marketScenario === 'aggressive' ? 'aggressive' : 'balanced';
+    const marketProfile = APP_CONFIG.MARKET_PROFILES[marketScenario] || APP_CONFIG.MARKET_PROFILES['balanced'];
     
-    const marketProfile = APP_CONFIG.MARKET_PROFILES[profileKey];
+    // Calculate blended growth rate based on full asset mix (matching backend)
+    const stockAllocation = marketProfile.stock_allocation || 0.0;
+    const bondAllocation = marketProfile.bond_allocation || 0.0;
+    const cashAllocation = marketProfile.cash_allocation || 0.0;
+    const reitAllocation = marketProfile.reit_allocation || 0.0;
+    const goldAllocation = marketProfile.gold_allocation || 0.0;
+    const cryptoAllocation = marketProfile.crypto_allocation || 0.0;
     
-    // Calculate blended growth rate based on 60/40 default or profile allocation
-    const stockAllocation = marketProfile.stock_allocation || 0.6;
-    const bondAllocation = marketProfile.bond_allocation || (1 - stockAllocation);
-    
-    const annualGrowthRate = (stockAllocation * marketProfile.stock_return_mean) + 
-                            (bondAllocation * marketProfile.bond_return_mean);
+    const annualGrowthRate = 
+        (stockAllocation * (marketProfile.stock_return_mean || 0.10)) + 
+        (bondAllocation * (marketProfile.bond_return_mean || 0.04)) +
+        (cashAllocation * (marketProfile.cash_return_mean || 0.015)) +
+        (reitAllocation * (marketProfile.reit_return_mean || 0.08)) +
+        (goldAllocation * (marketProfile.gold_return_mean || 0.04)) +
+        (cryptoAllocation * (marketProfile.crypto_return_mean || 0.20));
     
     const monthlyGrowthRate = annualGrowthRate / 12;
     const monthlyInflationRate = (marketProfile.inflation_mean || 0.03) / 12;

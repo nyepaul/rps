@@ -232,10 +232,13 @@ def run_analysis():
             primary_salary = 0
             spouse_salary = 0
 
+            employment_types = ['salary', 'hourly', 'wages', 'bonus']
+
             for stream in income_streams:
-                if stream.get('type') == 'salary':
-                    amount = stream.get('amount', 0)
-                    freq = stream.get('frequency', 'monthly')
+
+                if stream.get('type') in employment_types:
+
+                    amount = stream.get('amount', 0)                    freq = stream.get('frequency', 'monthly')
                     # Convert to annual
                     if freq == 'monthly':
                         annual_amount = amount * 12
@@ -488,8 +491,9 @@ def get_cashflow_details():
             income_streams = profile_data.get('income_streams', [])
             primary_salary = 0
             spouse_salary = 0
+            employment_types = ['salary', 'hourly', 'wages', 'bonus']
             for stream in income_streams:
-                if stream.get('type') == 'salary':
+                if stream.get('type') in employment_types:
                     amount = stream.get('amount', 0)
                     freq = stream.get('frequency', 'monthly')
                     if freq == 'monthly': annual_amount = amount * 12

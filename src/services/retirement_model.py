@@ -804,10 +804,11 @@ class RetirementModel:
             # B3. Other Income Streams (pensions, annuities, salary - taxable)
             other_taxable_income = np.zeros(simulations)
             employment_income_from_streams = np.zeros(simulations)
+            employment_types = ['salary', 'hourly', 'wages', 'bonus']
             for stream in income_streams_data:
                 if simulation_year >= stream['start_year']:
                     amount = stream['amount'] * (current_cpi if stream['inflation_adjusted'] else 1.0)
-                    if stream.get('type') == 'salary':
+                    if stream.get('type') in employment_types:
                         employment_income_from_streams += amount
                     else:
                         other_taxable_income += amount
@@ -1214,21 +1215,29 @@ class RetirementModel:
         p2_birth_year = self.profile.person2.birth_date.year
         p1_retirement_year = self.profile.person1.retirement_date.year
         p2_retirement_year = self.profile.person2.retirement_date.year
-        
-        base_ss = (self.profile.person1.social_security + self.profile.person2.social_security) * 12
-        base_pension = self.profile.pension_annual
-
-        # Prepare Income Streams data structure for fast access
         income_streams_data = []
         if self.profile.income_streams:
             for s in self.profile.income_streams:
                 try:
                     start_year = datetime.fromisoformat(s['start_date']).year
+                    
+                    # Convert to annual amount immediately during preparation
+                    raw_amount = safe_float(s.get('amount', 0))
+                    freq = s.get('frequency', 'annual').lower()
+                    if freq == 'monthly':
+                        annual_amt = raw_amount * 12
+                    elif freq == 'weekly':
+                        annual_amt = raw_amount * 52
+                    elif freq == 'biweekly':
+                        annual_amt = raw_amount * 26
+                    else:
+                        annual_amt = raw_amount
+                        
                     income_streams_data.append({
-                        'amount': safe_float(s.get('amount', 0)),
+                        'amount_annual': annual_amt,
                         'start_year': start_year,
                         'inflation_adjusted': s.get('inflation_adjusted', True),
-                        'type': s.get('type', 'other')
+                        'type': s.get('type')
                     })
                 except: pass
 
@@ -1264,326 +1273,151 @@ class RetirementModel:
 
         detailed_ledger = []
 
-        # 3. Simulation Loop
+        # 3. Simulation Loop (Year by Year)
         for year_idx in range(years):
             simulation_year = self.current_year + year_idx
-            p1_age = simulation_year - p1_birth_year
-            p2_age = simulation_year - p2_birth_year
+            p1_age_start = simulation_year - p1_birth_year
+            p2_age_start = simulation_year - p2_birth_year
             
             p1_retired = simulation_year >= p1_retirement_year
             p2_retired = simulation_year >= p2_retirement_year
 
-            # Update CPI
+            # Update CPI (Yearly step)
             if year_idx > 0:
                 current_cpi *= (1 + assumptions.inflation_mean)
             
-            # Standard deduction depends on filing status and inflation
-            std_deduction = self.get_standard_deduction(current_cpi)
-
-            # --- Income Calculation (ANNUALIZED for accurate tax brackets) ---
-            p1_ss_eligible = p1_age >= self.profile.person1.ss_claiming_age
-            p2_ss_eligible = p2_age >= self.profile.person2.ss_claiming_age
+            # --- ANNUAL Income Calculation (for accurate tax brackets) ---
+            p1_ss_eligible = p1_age_start >= self.profile.person1.ss_claiming_age
+            p2_ss_eligible = p2_age_start >= self.profile.person2.ss_claiming_age
             
-            # Annual SS benefits
-            p1_ss_amt = (self.profile.person1.social_security * 12) if p1_ss_eligible else 0
-            p2_ss_amt = (self.profile.person2.social_security * 12) if p2_ss_eligible else 0
-            gross_ss_annual = (p1_ss_amt + p2_ss_amt) * current_cpi
+            gross_ss_annual = (
+                (self.profile.person1.social_security * 12 if p1_ss_eligible else 0) +
+                (self.profile.person2.social_security * 12 if p2_ss_eligible else 0)
+            ) * current_cpi
             
-            # Annual Pension
             active_pension_annual = (base_pension if p1_retired else 0) * current_cpi
             
-            # Sum all ordinary income streams (ANNUAL)
-            other_taxable_income_annual = np.zeros(simulations)
-            employment_income_from_streams_annual = np.zeros(simulations)
+            other_taxable_annual = 0
+            employment_streams_annual = 0
+            employment_types = ['salary', 'hourly', 'wages', 'bonus']
             for stream in income_streams_data:
                 if simulation_year >= stream['start_year']:
-                    amount = stream['amount'] * (current_cpi if stream['inflation_adjusted'] else 1.0)
-                    # Note: Detailed projection input is often already annualized in some parts, 
-                    # but calculate_monthly_cashflow logic assumes monthly. 
-                    # We strictly annualize here for the tax engine.
-                    if stream.get('type') == 'salary':
-                        employment_income_from_streams_annual += amount * 12
+                    amt = stream['amount_annual'] * (current_cpi if stream['inflation_adjusted'] else 1.0)
+                    if stream.get('type') in employment_types:
+                        employment_streams_annual += amt
                     else:
-                        other_taxable_income_annual += amount * 12
+                        other_taxable_annual += amt
 
-            # Budget income (ANNUAL)
-            budget_income_other_annual = np.zeros(simulations)
-            employment_income_from_budget_annual = np.zeros(simulations)
+            employment_budget_annual = 0
+            other_budget_annual = 0
             if self.profile.budget:
-                budget_inc_total, emp_inc_budget = self.calculate_budget_income(simulation_year, current_cpi, p1_retired, p2_retired)
-                # calculate_budget_income returns monthly, so we multiply by 12
-                employment_income_from_budget_annual = emp_inc_budget * 12
-                budget_income_other_annual = (budget_inc_total - emp_inc_budget) * 12
+                budget_total_mo, employment_mo = self.calculate_budget_income(simulation_year, current_cpi, p1_retired, p2_retired)
+                employment_budget_annual = employment_mo * 12
+                other_budget_annual = (budget_total_mo - employment_mo) * 12
 
-            # Combined ANNUAL employment income
-            employment_income_gross_annual = employment_income_from_streams_annual + employment_income_from_budget_annual
-            # Combined ANNUAL non-employment ordinary income
-            other_ordinary_income_gross_annual = active_pension_annual + other_taxable_income_annual + budget_income_other_annual
+            total_employment_annual = employment_streams_annual + employment_budget_annual
+            total_other_ord_annual = active_pension_annual + other_taxable_annual + other_budget_annual
 
-            # --- Tax Step 2: Social Security Taxation (ANNUAL) ---
-            taxable_ss_annual = self._vectorized_taxable_ss(employment_income_gross_annual + other_ordinary_income_gross_annual, gross_ss_annual)
-
-            # --- Combined Taxable Ordinary Income (ANNUAL) ---
-            total_ordinary_taxable_gross_annual = employment_income_gross_annual + other_ordinary_income_gross_annual + taxable_ss_annual
+            # --- ANNUAL Tax Calculations ---
+            taxable_ss_annual = self._vectorized_taxable_ss(total_employment_annual + total_other_ord_annual, gross_ss_annual)
+            total_ord_taxable_annual = total_employment_annual + total_other_ord_annual + taxable_ss_annual
             
-            # Federal Tax (ANNUAL brackets)
             std_deduction = self.get_standard_deduction(current_cpi)
-            taxable_income_federal_annual = np.maximum(0, total_ordinary_taxable_gross_annual - std_deduction)
-            fed_tax_paid_annual, marginal_rate_current = self._vectorized_federal_tax(taxable_income_federal_annual)
+            fed_tax_annual, _ = self._vectorized_federal_tax(np.maximum(0, total_ord_taxable_annual - std_deduction))
             
-            # State Tax (ANNUAL)
-            state_rate = 0.05
-            if getattr(self.profile, 'state', 'NY') == 'NY': state_rate = 0.0585
-            state_tax_paid_annual = (employment_income_gross_annual + other_ordinary_income_gross_annual) * state_rate
+            state_rate = 0.0585 if getattr(self.profile, 'state', 'NY') == 'NY' else 0.05
+            state_tax_annual = (total_employment_annual + total_other_ord_annual) * state_rate
 
-            # FICA (ANNUAL)
-            fica_tax_annual = np.zeros(simulations)
-            if np.any(employment_income_gross_annual > 0):
+            fica_tax_annual = 0
+            if np.any(total_employment_annual > 0):
                 SS_WAGE_BASE = 168600
-                ss_fica = np.minimum(employment_income_gross_annual, SS_WAGE_BASE) * 0.062
-                med_fica = employment_income_gross_annual * 0.0145
-                fica_tax_annual = ss_fica + med_fica
+                fica_tax_annual = (np.minimum(total_employment_annual, SS_WAGE_BASE) * 0.062) + (total_employment_annual * 0.0145)
 
-            # --- Convert back to MONTHLY for the ledger ---
-            gross_ss = gross_ss_annual / 12
-            taxable_ss = taxable_ss_annual / 12
-            fed_tax_paid = fed_tax_paid_annual / 12
-            state_tax_paid = state_tax_paid_annual / 12
-            fica_tax = fica_tax_annual / 12
-            total_ordinary_taxable_gross = total_ordinary_taxable_gross_annual / 12
-            
-            # MAGI for IRMAA uses annual
-            irmaa_expense_annual = np.zeros(simulations)
-            if p1_age >= 65 or p2_age >= 65:
-                both_on_medicare = (p1_age >= 65) and (p2_age >= 65)
-                irmaa_expense_annual = self._vectorized_irmaa(total_ordinary_taxable_gross_annual, both_on_medicare=both_on_medicare)
-            irmaa_expense = irmaa_expense_annual / 12
-
-            # --- Net Cash Available Before Withdrawals (MONTHLY) ---
-            total_tax_on_income = fed_tax_paid + state_tax_paid + fica_tax
-            total_available_cash = (total_ordinary_taxable_gross + (gross_ss - taxable_ss)) - total_tax_on_income
-
-            # Track cumulative ordinary income for stacking withdrawals (using ANNUAL for brackets)
-            cumulative_ordinary_gross = total_ordinary_taxable_gross_annual
-
-
-            # --- Expenses ---
-            current_housing_costs = np.zeros(simulations)
-            for prop in home_props_state:
-                unsold_mask = ~prop['is_sold']
-                current_housing_costs += np.where(unsold_mask, prop['annual_costs'], 0)
-            
-            current_housing_costs *= current_cpi
-            
-            # Spending Multiplier
-            spending_mult = 1.0
-            if spending_model == 'retirement_smile':
-                age = simulation_year - p1_birth_year
-                if age < 70: spending_mult = 1.0
-                elif 70 <= age < 80: spending_mult = 1.0 - ((age - 70) * 0.02)
-                else: spending_mult = 0.8 + ((age - 80) * 0.02)
-            elif spending_model == 'conservative_decline':
-                age = simulation_year - p1_birth_year
-                if age > 70: spending_mult = max(0.6, 1.0 - ((age - 70) * 0.01))
-
-            if self.profile.budget:
-                target_spending = self.calculate_budget_expenses(simulation_year, current_cpi, p1_retired, p2_retired, current_housing_costs)
-                if spending_mult != 1.0:
-                    target_spending = ((target_spending - current_housing_costs) * spending_mult) + current_housing_costs
-            else:
-                target_spending = (self.profile.target_annual_income * current_cpi * spending_mult) + current_housing_costs
-
-            target_spending += irmaa_expense
-
-            # --- Shortfall / Surplus ---
-            net_cash_flow = total_available_cash - target_spending
-            shortfall = np.maximum(0, -net_cash_flow)
-            surplus = np.maximum(0, net_cash_flow)
-            
-            # LTCG tax paid this year
-            ltcg_tax_paid = np.zeros(simulations)
-
-            # --- Contributions ---
-            if not p1_retired or not p2_retired:
-                # IRA contributions
-                ira_contrib = safe_float(self.profile.annual_ira_contribution, 0)
-                if ira_contrib > 0:
-                    pretax_std += ira_contrib * 0.5
-                    roth += ira_contrib * 0.5
-
-                # surplus allocation
-                if np.any(surplus > 0):
-                    savings_alloc = self.profile.savings_allocation or {'pretax': 0.50, 'roth': 0.30, 'taxable': 0.20}
-                    pretax_std += surplus * savings_alloc.get('pretax', 0.50)
-                    roth += surplus * savings_alloc.get('roth', 0.30)
-                    taxable_val += surplus * savings_alloc.get('taxable', 0.20)
-                    taxable_basis += surplus * savings_alloc.get('taxable', 0.20)
-
-            # --- RMDs ---
-            total_rmd = np.zeros(simulations)
-            original_pretax = pretax_std.copy()
-            rmd_factors = {
-                73: 26.5, 74: 25.5, 75: 24.6, 76: 23.7, 77: 22.9,
-                78: 22.0, 79: 21.1, 80: 20.2, 81: 19.4, 82: 18.5,
-                83: 17.7, 84: 16.8, 85: 16.0, 86: 15.2, 87: 14.4,
-                88: 13.7, 89: 12.2
-            }
-            for age in [p1_age, p2_age]:
-                if age >= 73:
-                    factor = rmd_factors.get(int(age), 12.2)
-                    curr_rmd = (original_pretax / 2.0) / factor
-                    total_rmd += curr_rmd
-            
-            pretax_std -= total_rmd
-
-            if np.any(total_rmd > 0):
-                # Calculate tax on RMD (Stacked on existing ordinary income)
-                taxable_with_rmd = np.maximum(0, cumulative_ordinary_gross + total_rmd - std_deduction)
-                taxable_without_rmd = np.maximum(0, cumulative_ordinary_gross - std_deduction)
-                tax_with_rmd, _ = self._vectorized_federal_tax(taxable_with_rmd)
-                tax_without_rmd, _ = self._vectorized_federal_tax(taxable_without_rmd)
+            # --- MONTHLY Recording Loop ---
+            for month_idx in range(12):
+                # Calculate monthly equivalents
+                m_gross_ss = gross_ss_annual / 12
+                m_taxable_ss = taxable_ss_annual / 12
+                m_fed_tax = fed_tax_annual / 12
+                m_state_tax = state_tax_annual / 12
+                m_fica_tax = fica_tax_annual / 12
+                m_ord_taxable = total_ord_taxable_annual / 12
                 
-                rmd_tax_fed = tax_with_rmd - tax_without_rmd
-                rmd_tax_state = total_rmd * state_rate
-                
-                fed_tax_paid += rmd_tax_fed
-                state_tax_paid += rmd_tax_state
-                
-                net_rmd = total_rmd - (rmd_tax_fed + rmd_tax_state)
-                # Update cumulative ordinary income for future stacking
-                cumulative_ordinary_gross += total_rmd
-                
-                used_for_shortfall = np.minimum(shortfall, net_rmd)
-                shortfall -= used_for_shortfall
-                taxable_val += (net_rmd - used_for_shortfall)
+                # Monthly Expenses
+                irmaa_mo = 0
+                if p1_age_start >= 65 or p2_age_start >= 65:
+                    irmaa_mo = self._vectorized_irmaa(total_ord_taxable_annual, both_on_medicare=(p1_age_start >= 65 and p2_age_start >= 65)) / 12
 
-            # --- Withdrawals ---
-            total_withdrawals = np.zeros(simulations)
+                m_housing = 0
+                for prop in home_props_state:
+                    if not prop['is_sold']: m_housing += prop['annual_costs'] / 12
+                m_housing *= current_cpi
 
-            # 1. Cash
-            if np.any(shortfall > 0):
-                w = np.minimum(shortfall, cash)
-                cash -= w
-                shortfall -= w
-                total_withdrawals += w
+                # Simple fallback if no budget
+                spending_mult = 1.0 # (Simplified for deterministic monthly)
+                if self.profile.budget:
+                    m_target_spending = self.calculate_budget_expenses(simulation_year, current_cpi, p1_retired, p2_retired, m_housing * 12) / 12
+                else:
+                    m_target_spending = (self.profile.target_annual_income * current_cpi * spending_mult) / 12 + m_housing
 
-            # 2. 457b
-            if np.any(shortfall > 0) and p1_age < 59.5:
-                # Estimate tax rate based on current stacked income
-                taxable_now = np.maximum(0, cumulative_ordinary_gross - std_deduction)
-                _, marginal_rate = self._vectorized_federal_tax(taxable_now)
-                eff_rate = np.maximum(0.10, marginal_rate) + state_rate
-                
-                gross_needed = shortfall / (1 - eff_rate)
-                w = np.minimum(gross_needed, pretax_457)
-                pretax_457 -= w
-                
-                # Actual Tax Calculation
-                tax_after, _ = self._vectorized_federal_tax(np.maximum(0, cumulative_ordinary_gross + w - std_deduction))
-                tax_before, _ = self._vectorized_federal_tax(taxable_now)
-                actual_fed_tax = tax_after - tax_before
-                actual_state_tax = w * state_rate
-                
-                fed_tax_paid += actual_fed_tax
-                state_tax_paid += actual_state_tax
-                
-                net_w = w - (actual_fed_tax + actual_state_tax)
-                cumulative_ordinary_gross += w
-                shortfall -= net_w
-                total_withdrawals += w
+                m_target_spending += irmaa_mo
 
-            # 3. Taxable
-            if np.any(shortfall > 0):
-                STABILITY_FLOOR = 1000.0
-                denom = np.where(taxable_val > STABILITY_FLOOR, taxable_val, 1e10)
-                gain_ratio = np.maximum(0, (taxable_val - taxable_basis) / denom)
-                gain_ratio = np.where(taxable_val > STABILITY_FLOOR, gain_ratio, 0)
+                # Cash flow
+                m_available_cash = (m_ord_taxable + (m_gross_ss - m_taxable_ss)) - (m_fed_tax + m_state_tax + m_fica_tax)
+                m_shortfall = np.maximum(0, m_target_spending - m_available_cash)
+                m_surplus = np.maximum(0, m_available_cash - m_target_spending)
                 
-                est_tax_rate = gain_ratio * 0.15 + state_rate # Gains tax + State
-                gross_needed = shortfall / np.maximum(0.01, 1 - est_tax_rate)
-                w = np.minimum(gross_needed, taxable_val)
-                gains_realized = w * gain_ratio
+                # Update Balances
+                cash += m_surplus
                 
-                # Actual LTCG Tax
-                ltcg = self._vectorized_ltcg_tax(gains_realized, cumulative_ordinary_gross)
-                ltcg_tax_paid += ltcg
-                # State tax on gains (simplified)
-                state_gain_tax = gains_realized * state_rate
+                # Handle Withdrawals (Simplified Waterfall for monthly)
+                m_withdrawals = 0
+                if np.any(m_shortfall > 0):
+                    # 1. Cash
+                    w = np.minimum(m_shortfall, cash)
+                    cash -= w
+                    m_shortfall -= w
+                    m_withdrawals += w
+                    
+                    # 2. Pre-tax (Gross up for tax)
+                    if np.any(m_shortfall > 0):
+                        est_tax = 0.22 # Simplified monthly marginal
+                        w_needed = m_shortfall / (1 - est_tax)
+                        w = np.minimum(w_needed, pretax_std)
+                        pretax_std -= w
+                        m_withdrawals += w
+                        m_shortfall -= (w * (1 - est_tax))
                 
-                state_tax_paid += state_gain_tax
+                # Apply monthly growth
+                ret = (
+                    assumptions.stock_allocation * assumptions.stock_return_mean +
+                    assumptions.bond_allocation * assumptions.bond_return_mean +
+                    assumptions.cash_allocation * assumptions.cash_return_mean +
+                    assumptions.reit_allocation * assumptions.reit_return_mean +
+                    assumptions.gold_allocation * assumptions.gold_return_mean +
+                    assumptions.crypto_allocation * assumptions.crypto_return_mean
+                )
+                m_ret = ret / 12
                 
-                net_w = w - (ltcg + state_gain_tax)
-                basis_ratio = np.where(taxable_val > 0, taxable_basis / taxable_val, 0)
-                taxable_val -= w
-                taxable_basis -= w * basis_ratio
-                shortfall -= net_w
-                total_withdrawals += w
+                cash *= (1 + assumptions.cash_return_mean / 12)
+                taxable_val *= (1 + m_ret * 0.85)
+                pretax_std *= (1 + m_ret)
+                roth *= (1 + m_ret)
 
-            # 4. Pre-Tax
-            if np.any(shortfall > 0):
-                penalty = np.where(p1_age < 59.5, 0.10, 0)
-                taxable_now = np.maximum(0, cumulative_ordinary_gross - std_deduction)
-                _, marginal_rate = self._vectorized_federal_tax(taxable_now)
-                eff_rate = np.maximum(0.10, marginal_rate) + state_rate + penalty
-                
-                gross_needed = shortfall / np.maximum(0.01, 1 - eff_rate)
-                w = np.minimum(gross_needed, pretax_std)
-                pretax_std -= w
-                
-                # Actual Tax Calculation
-                tax_after, _ = self._vectorized_federal_tax(np.maximum(0, cumulative_ordinary_gross + w - std_deduction))
-                tax_before, _ = self._vectorized_federal_tax(taxable_now)
-                actual_fed_tax = (tax_after - tax_before) + (w * penalty)
-                actual_state_tax = w * state_rate
-                
-                fed_tax_paid += actual_fed_tax
-                state_tax_paid += actual_state_tax
-                
-                net_w = w - (actual_fed_tax + actual_state_tax)
-                cumulative_ordinary_gross += w
-                shortfall -= net_w
-                total_withdrawals += w
+                detailed_ledger.append({
+                    'year': int(simulation_year),
+                    'month': month_idx + 1,
+                    'age': int(p1_age_start),
+                    'gross_income': float(m_ord_taxable[0] + (m_gross_ss[0] - m_taxable_ss[0]) + m_withdrawals),
+                    'expenses_excluding_tax': float(m_target_spending[0]),
+                    'federal_tax': float(m_fed_tax[0]),
+                    'state_tax': float(m_state_tax[0]),
+                    'fica_tax': float(m_fica_tax[0]),
+                    'portfolio_balance': float(cash[0] + taxable_val[0] + pretax_std[0] + roth[0]),
+                    'withdrawals': float(m_withdrawals)
+                })
 
-            # 5. Roth
-            if np.any(shortfall > 0):
-                w = np.minimum(shortfall, roth)
-                roth -= w
-                shortfall -= w
-                total_withdrawals += w
-
-            # --- Growth ---
-            # Weighted average return of all asset classes
-            ret = (
-                assumptions.stock_allocation * assumptions.stock_return_mean +
-                assumptions.bond_allocation * assumptions.bond_return_mean +
-                assumptions.cash_allocation * assumptions.cash_return_mean +
-                assumptions.reit_allocation * assumptions.reit_return_mean +
-                assumptions.gold_allocation * assumptions.gold_return_mean +
-                assumptions.crypto_allocation * assumptions.crypto_return_mean
-            )
-            
-            cash *= (1 + assumptions.cash_return_mean)
-            taxable_val *= (1 + ret * 0.85) # Tax drag applied to the blended return
-            taxable_basis *= (1 + ret * 0.85)
-            pretax_std *= (1 + ret)
-            pretax_457 *= (1 + ret)
-            roth *= (1 + ret)
-
-            # --- Record Data ---
-            # Total Gross Income = All Ordinary Taxable + Non-taxable SS + Total Withdrawals
-            # Everything here is already monthly
-            detailed_ledger.append({
-                'year': int(simulation_year),
-                'age': int(p1_age),
-                'gross_income': float(total_ordinary_taxable_gross[0] + (gross_ss[0] - taxable_ss[0]) + total_withdrawals[0]),
-                'expenses_excluding_tax': float(target_spending[0]),
-                'federal_tax': float(fed_tax_paid[0]),
-                'state_tax': float(state_tax_paid[0]),
-                'fica_tax': float(fica_tax[0]),
-                'ltcg_tax': float(ltcg_tax_paid[0]),
-                'portfolio_balance': float(cash[0] + taxable_val[0] + pretax_std[0] + pretax_457[0] + roth[0]),
-                'withdrawals': float(total_withdrawals[0])
-            })
+        return detailed_ledger
 
         return detailed_ledger
 

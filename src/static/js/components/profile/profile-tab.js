@@ -480,7 +480,10 @@ function setupProfileFormHandlers(container, profile) {
                         ...(profile.data?.person || {}),
                         ...person
                     },
-                    spouse: Object.keys(spouse).length > 0 ? spouse : {},
+                    spouse: {
+                        ...(profile.data?.spouse || {}),
+                        ...spouse
+                    },
                     children: children,
                     address: Object.keys(address).length > 0 ? address : {},
                     financial: {

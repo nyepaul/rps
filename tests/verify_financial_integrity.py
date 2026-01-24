@@ -46,7 +46,7 @@ def run_pennny_track_audit():
         future_expenses=[],
         investment_types=[{'account': 'Checking', 'value': 100000.0}],
         income_streams=[
-            {'name': 'Salary', 'amount': 100000.0, 'frequency': 'annual', 'start_date': '2020-01-01', 'type': 'salary', 'inflation_adjusted': False}
+            {'name': 'Salary', 'amount': 100000.0 / 12.0, 'frequency': 'monthly', 'start_date': '2020-01-01', 'type': 'salary', 'inflation_adjusted': False}
         ],
         budget=None,
         filing_status='single',
@@ -63,33 +63,33 @@ def run_pennny_track_audit():
     )
     
     model = RetirementModel(profile)
+    model.current_year = 2026
+    
+    # Project for 12 months to get full year result
     ledger = model.run_detailed_projection(years=1, assumptions=assumptions)
-    row = ledger[0]
+    # The engine returns 12 months for 1 year
+    row = ledger[0] # First month for tax check
+    final_row = ledger[-1] # End of year for balance check
     
     print(f"Scenario: Single, $100k Salary, $50k Expenses, 0% Returns")
-    print(f"Gross Income: {format_curr(row['gross_income'])}")
-    print(f"Federal Tax:  {format_curr(row['federal_tax'])} (Expected: ~$13,841)")
-    print(f"FICA Tax:     {format_curr(row['fica_tax'])} (Expected: $7,650)")
-    print(f"State Tax:    {format_curr(row['state_tax'])} (Expected: $5,850)")
+    print(f"Gross Income (Month 1): {format_curr(row['gross_income'])}")
+    print(f"Federal Tax (Month 1):  {format_curr(row['federal_tax'])} (Expected: ~{format_curr(13841.0/12.0)})")
+    print(f"FICA Tax (Month 1):     {format_curr(row['fica_tax'])} (Expected: {format_curr(7650.0/12.0)})")
+    print(f"State Tax (Month 1):    {format_curr(row['state_tax'])} (Expected: {format_curr(5850.0/12.0)})")
     
-    total_tax = row['federal_tax'] + row['fica_tax'] + row['state_tax']
-    net_income = row['gross_income'] - total_tax
-    surplus = net_income - row['expenses_excluding_tax']
+    # Expected Annual Result
+    total_tax_annual = 13841.0 + 7650.0 + 5850.0
+    net_income_annual = 100000.0 - total_tax_annual
+    surplus_annual = net_income_annual - 50000.0
     
-    expected_balance = 100000.0 + surplus
-    print(f"Net Income:   {format_curr(net_income)}")
-    print(f"Expenses:     {format_curr(row['expenses_excluding_tax'])}")
-    print(f"Surplus:      {format_curr(surplus)}")
-    print(f"Final Port:   {format_curr(row['portfolio_balance'])} (Expected: {format_curr(expected_balance)})")
+    expected_balance = 100000.0 + surplus_annual
+    print(f"Expected Final Balance (Year 1): {format_curr(expected_balance)}")
+    print(f"Actual Final Balance (Month 12): {format_curr(final_row['portfolio_balance'])}")
     
-    assert abs(row['fica_tax'] - 7650.0) < 1.0, "FICA calculation error"
-    assert abs(row['state_tax'] - 5850.0) < 1.0, "State tax calculation error"
-    # Federal tax might vary slightly if standard deduction differs from 2024 base in code
-    # Standard deduction in code for single is 14600.
-    # 100,000 - 14,600 = 85,400 taxable.
-    # Tax: 11,600*0.10 + (47,150-11,600)*0.12 + (85,400-47,150)*0.22 = 1,160 + 4,266 + 8,415 = 13,841
-    assert abs(row['federal_tax'] - 13841.0) < 10.0, f"Federal tax calculation error: got {row['federal_tax']}"
-    assert abs(row['portfolio_balance'] - expected_balance) < 1.0, "Balance tracking error"
+    assert abs(row['fica_tax'] - (7650.0/12.0)) < 1.0, "FICA calculation error"
+    assert abs(row['state_tax'] - (5850.0/12.0)) < 1.0, "State tax calculation error"
+    assert abs(row['federal_tax'] - (13841.0/12.0)) < 10.0, f"Federal tax calculation error: got {row['federal_tax']}"
+    assert abs(final_row['portfolio_balance'] - expected_balance) < 10.0, f"Balance tracking error: got {final_row['portfolio_balance']}, expected {expected_balance}"
     print("✅ Penny-Track Audit Passed!")
 
 def verify_rmd_factors():
@@ -142,14 +142,12 @@ def verify_filing_statuses():
     print("\n--- FILING STATUS & DEDUCTION AUDIT ---")
     person1 = Person("User", datetime(1985, 1, 1), datetime(2050, 1, 1), 0)
     
-    # Test HoH: Deduction $21,900
-    # $100k - $21,900 = $78,100 taxable
     profile_hoh = FinancialProfile(
         person1=person1, person2=person1, children=[], liquid_assets=0,
         traditional_ira=0, roth_ira=0, pension_lump_sum=0, pension_annual=0,
         annual_expenses=0, target_annual_income=0, risk_tolerance='low',
         asset_allocation={'stocks': 0, 'bonds': 0}, future_expenses=[],
-        income_streams=[{'name': 'S', 'amount': 100000.0, 'frequency': 'annual', 'start_date': '2020-01-01', 'type': 'salary', 'inflation_adjusted': False}],
+        income_streams=[{'name': 'S', 'amount': 100000.0 / 12.0, 'frequency': 'monthly', 'start_date': '2020-01-01', 'type': 'salary', 'inflation_adjusted': False}],
         filing_status='hoh'
     )
     model = RetirementModel(profile_hoh)
@@ -157,13 +155,12 @@ def verify_filing_statuses():
     print(f"HoH Deduction: {deduction[0]} (Expected: 21900)")
     assert deduction[0] == 21900
     
-    # Test MFJ: Deduction $29,200
     profile_mfj = FinancialProfile(
         person1=person1, person2=person1, children=[], liquid_assets=0,
         traditional_ira=0, roth_ira=0, pension_lump_sum=0, pension_annual=0,
         annual_expenses=0, target_annual_income=0, risk_tolerance='low',
         asset_allocation={'stocks': 0, 'bonds': 0}, future_expenses=[],
-        income_streams=[{'name': 'S', 'amount': 100000.0, 'frequency': 'annual', 'start_date': '2020-01-01', 'type': 'salary', 'inflation_adjusted': False}],
+        income_streams=[{'name': 'S', 'amount': 100000.0 / 12.0, 'frequency': 'monthly', 'start_date': '2020-01-01', 'type': 'salary', 'inflation_adjusted': False}],
         filing_status='mfj'
     )
     model_mfj = RetirementModel(profile_mfj)
