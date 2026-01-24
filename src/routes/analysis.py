@@ -97,11 +97,26 @@ class MarketProfileSchema(BaseModel):
     inflation_mean: float
     inflation_std: float
 
+class MarketPeriodSchema(BaseModel):
+    """Schema for a single market period."""
+    start_year: Optional[int] = None
+    end_year: Optional[int] = None
+    duration: Optional[int] = None
+    assumptions: MarketProfileSchema
+
+class MarketPeriodsSchema(BaseModel):
+    """Schema for period-based market conditions."""
+    type: str  # 'timeline' or 'cycle'
+    periods: Optional[list] = None  # For timeline type
+    pattern: Optional[list] = None  # For cycle type
+    repeat: Optional[bool] = True  # For cycle type
+
 class AnalysisRequestSchema(BaseModel):
     """Schema for analysis request."""
     profile_name: str
     simulations: Optional[int] = 10000
     market_profile: Optional[MarketProfileSchema] = None
+    market_periods: Optional[dict] = None  # New: period-based market conditions
     spending_model: Optional[str] = 'constant_real'
 
     @validator('simulations')
@@ -302,7 +317,8 @@ def run_analysis():
                 years=years,
                 simulations=data.simulations,
                 assumptions=market_assumptions,
-                spending_model=data.spending_model
+                spending_model=data.spending_model,
+                market_periods=data.market_periods  # Pass period-based market conditions
             )
             scenario_result['scenario_name'] = scenario_config['name']
             scenario_result['description'] = scenario_config['description']

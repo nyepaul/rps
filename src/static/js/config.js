@@ -52,7 +52,7 @@ export const API_ENDPOINTS = {
 
 // Application Settings
 export const APP_CONFIG = {
-    VERSION: '3.9.9',
+    VERSION: '3.10.0',
     DEFAULT_SIMULATIONS: 10000,
     MAX_SIMULATIONS: 50000,
     MIN_SIMULATIONS: 100,
@@ -330,6 +330,173 @@ export const APP_CONFIG = {
             bond_return_std: 0.06,
             inflation_mean: 0.035,
             inflation_std: 0.015
+        }
+    },
+
+    // Preset Market Period Scenarios (for sequence of returns risk modeling)
+    PRESET_SCENARIOS: {
+        'early-crash': {
+            name: 'Early Retirement Crash',
+            description: 'Worst case: Market crash in first 3 years of retirement, then recovery',
+            icon: '📉',
+            type: 'timeline',
+            buildPeriods: (currentYear, retirementYear, yearsProjected) => {
+                return {
+                    type: 'timeline',
+                    periods: [
+                        {
+                            start_year: retirementYear,
+                            end_year: retirementYear + 2,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['great-recession']
+                        },
+                        {
+                            start_year: retirementYear + 3,
+                            end_year: retirementYear + 7,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['post-covid']
+                        },
+                        {
+                            start_year: retirementYear + 8,
+                            end_year: retirementYear + yearsProjected,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['historical']
+                        }
+                    ]
+                };
+            }
+        },
+        'lucky-start': {
+            name: 'Lucky Start',
+            description: 'Best case: Strong bull market in first 10 years, then normal markets',
+            icon: '📈',
+            type: 'timeline',
+            buildPeriods: (currentYear, retirementYear, yearsProjected) => {
+                return {
+                    type: 'timeline',
+                    periods: [
+                        {
+                            start_year: retirementYear,
+                            end_year: retirementYear + 9,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['bull-market']
+                        },
+                        {
+                            start_year: retirementYear + 10,
+                            end_year: retirementYear + yearsProjected,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['historical']
+                        }
+                    ]
+                };
+            }
+        },
+        'mid-crisis': {
+            name: 'Mid-Retirement Crisis',
+            description: 'Market crash 10-12 years into retirement, then recovery',
+            icon: '⚠️',
+            type: 'timeline',
+            buildPeriods: (currentYear, retirementYear, yearsProjected) => {
+                return {
+                    type: 'timeline',
+                    periods: [
+                        {
+                            start_year: retirementYear,
+                            end_year: retirementYear + 9,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['historical']
+                        },
+                        {
+                            start_year: retirementYear + 10,
+                            end_year: retirementYear + 12,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['bear-market']
+                        },
+                        {
+                            start_year: retirementYear + 13,
+                            end_year: retirementYear + 18,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['post-covid']
+                        },
+                        {
+                            start_year: retirementYear + 19,
+                            end_year: retirementYear + yearsProjected,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['historical']
+                        }
+                    ]
+                };
+            }
+        },
+        'realistic-cycles': {
+            name: 'Realistic Market Cycles',
+            description: 'Repeating pattern: 7 years expansion, 2 years recession, 3 years recovery',
+            icon: '🔄',
+            type: 'cycle',
+            buildPeriods: (currentYear, retirementYear, yearsProjected) => {
+                return {
+                    type: 'cycle',
+                    repeat: true,
+                    pattern: [
+                        {
+                            duration: 7,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['bull-market']
+                        },
+                        {
+                            duration: 2,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['recession']
+                        },
+                        {
+                            duration: 3,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['post-covid']
+                        }
+                    ]
+                };
+            }
+        },
+        'choppy-markets': {
+            name: 'Choppy Markets',
+            description: 'Alternating short cycles: good and bad years',
+            icon: '〰️',
+            type: 'cycle',
+            buildPeriods: (currentYear, retirementYear, yearsProjected) => {
+                return {
+                    type: 'cycle',
+                    repeat: true,
+                    pattern: [
+                        {
+                            duration: 3,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['bull-market']
+                        },
+                        {
+                            duration: 2,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['conservative']
+                        },
+                        {
+                            duration: 1,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['bear-market']
+                        },
+                        {
+                            duration: 2,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['balanced']
+                        }
+                    ]
+                };
+            }
+        },
+        'slow-decline': {
+            name: 'Slow Economic Decline',
+            description: 'Prolonged period of below-average returns',
+            icon: '📊',
+            type: 'timeline',
+            buildPeriods: (currentYear, retirementYear, yearsProjected) => {
+                return {
+                    type: 'timeline',
+                    periods: [
+                        {
+                            start_year: retirementYear,
+                            end_year: retirementYear + 15,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['conservative']
+                        },
+                        {
+                            start_year: retirementYear + 16,
+                            end_year: retirementYear + yearsProjected,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['historical']
+                        }
+                    ]
+                };
+            }
         }
     },
 };
