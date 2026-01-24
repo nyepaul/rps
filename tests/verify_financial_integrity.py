@@ -131,11 +131,13 @@ def verify_withdrawal_trap():
     model = RetirementModel(profile)
     assumptions = MarketAssumptions(stock_return_mean=0, bond_return_mean=0, inflation_mean=0)
     ledger = model.run_detailed_projection(years=1, assumptions=assumptions)
-    row = ledger[0]
     
-    print(f"Total Withdrawals: {format_curr(row['withdrawals'])}")
-    print(f"Federal Tax Paid:  {format_curr(row['federal_tax'])}")
-    assert row['withdrawals'] > 50000.0
+    total_withdrawals = sum(r['withdrawals'] for r in ledger)
+    total_fed_tax = sum(r['federal_tax'] for r in ledger)
+    
+    print(f"Total Withdrawals: {format_curr(total_withdrawals)}")
+    print(f"Federal Tax Paid:  {format_curr(total_fed_tax)}")
+    assert total_withdrawals > 50000.0
     print("✅ Withdrawal Trap Test Passed!")
 
 def verify_filing_statuses():

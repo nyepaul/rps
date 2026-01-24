@@ -1215,6 +1215,10 @@ class RetirementModel:
         p2_birth_year = self.profile.person2.birth_date.year
         p1_retirement_year = self.profile.person1.retirement_date.year
         p2_retirement_year = self.profile.person2.retirement_date.year
+        
+        base_ss = (self.profile.person1.social_security + self.profile.person2.social_security) * 12
+        base_pension = self.profile.pension_annual
+        
         income_streams_data = []
         if self.profile.income_streams:
             for s in self.profile.income_streams:
@@ -1333,6 +1337,9 @@ class RetirementModel:
                 SS_WAGE_BASE = 168600
                 fica_tax_annual = (np.minimum(total_employment_annual, SS_WAGE_BASE) * 0.062) + (total_employment_annual * 0.0145)
 
+            # Track cumulative ordinary income for stacking withdrawals (ANNUAL)
+            cumulative_ordinary_gross = total_ord_taxable_annual.copy()
+
             # --- MONTHLY Recording Loop ---
             for month_idx in range(12):
                 # Calculate monthly equivalents
@@ -1370,23 +1377,99 @@ class RetirementModel:
                 # Update Balances
                 cash += m_surplus
                 
-                # Handle Withdrawals (Simplified Waterfall for monthly)
+                # --- Handle Withdrawals (Robust Waterfall) ---
                 m_withdrawals = 0
+                m_ltcg_tax = 0
+                
                 if np.any(m_shortfall > 0):
-                    # 1. Cash
+                    # 1. Cash (Already taxed)
                     w = np.minimum(m_shortfall, cash)
                     cash -= w
                     m_shortfall -= w
                     m_withdrawals += w
                     
-                    # 2. Pre-tax (Gross up for tax)
-                    if np.any(m_shortfall > 0):
-                        est_tax = 0.22 # Simplified monthly marginal
-                        w_needed = m_shortfall / (1 - est_tax)
-                        w = np.minimum(w_needed, pretax_std)
-                        pretax_std -= w
+                    # 2. 457b (No penalty before 59.5)
+                    if np.any(m_shortfall > 0) and p1_age_start < 59.5:
+                        taxable_now = np.maximum(0, cumulative_ordinary_gross - std_deduction)
+                        _, marginal_rate = self._vectorized_federal_tax(taxable_now)
+                        eff_rate = np.maximum(0.10, marginal_rate) + state_rate
+                        
+                        gross_needed = m_shortfall / np.maximum(0.01, 1 - eff_rate)
+                        w = np.minimum(gross_needed, pretax_457)
+                        pretax_457 -= w
+                        
+                        # Actual Tax Calculation (Stacking on annual income)
+                        tax_after, _ = self._vectorized_federal_tax(np.maximum(0, cumulative_ordinary_gross + (w * 12) - std_deduction))
+                        tax_before, _ = self._vectorized_federal_tax(taxable_now)
+                        
+                        w_fed_tax = (tax_after - tax_before) / 12
+                        w_state_tax = w * state_rate
+                        
+                        m_fed_tax += w_fed_tax
+                        m_state_tax += w_state_tax
+                        
+                        net_w = w - (w_fed_tax + w_state_tax)
+                        cumulative_ordinary_gross += (w * 12)
+                        m_shortfall -= net_w
                         m_withdrawals += w
-                        m_shortfall -= (w * (1 - est_tax))
+
+                    # 3. Taxable Brokerage (LTCG)
+                    if np.any(m_shortfall > 0):
+                        STABILITY_FLOOR = 1000.0
+                        denom = np.where(taxable_val > STABILITY_FLOOR, taxable_val, 1e10)
+                        gain_ratio = np.maximum(0, (taxable_val - taxable_basis) / denom)
+                        gain_ratio = np.where(taxable_val > STABILITY_FLOOR, gain_ratio, 0)
+                        
+                        est_tax_rate = gain_ratio * 0.15 + state_rate
+                        gross_needed = m_shortfall / np.maximum(0.01, 1 - est_tax_rate)
+                        w = np.minimum(gross_needed, taxable_val)
+                        gains_realized = w * gain_ratio
+                        
+                        # Actual LTCG Tax
+                        ltcg = self._vectorized_ltcg_tax(gains_realized * 12, cumulative_ordinary_gross) / 12
+                        m_ltcg_tax += ltcg
+                        w_state_tax = gains_realized * state_rate
+                        m_state_tax += w_state_tax
+                        
+                        net_w = w - (ltcg + w_state_tax)
+                        basis_ratio = np.where(taxable_val > 0, taxable_basis / taxable_val, 0)
+                        taxable_val -= w
+                        taxable_basis -= w * basis_ratio
+                        m_shortfall -= net_w
+                        m_withdrawals += w
+
+                    # 4. Pre-Tax (Traditional IRA/401k)
+                    if np.any(m_shortfall > 0):
+                        penalty = 0.10 if p1_age_start < 59.5 else 0
+                        taxable_now = np.maximum(0, cumulative_ordinary_gross - std_deduction)
+                        _, marginal_rate = self._vectorized_federal_tax(taxable_now)
+                        eff_rate = np.maximum(0.10, marginal_rate) + state_rate + penalty
+                        
+                        gross_needed = m_shortfall / np.maximum(0.01, 1 - eff_rate)
+                        w = np.minimum(gross_needed, pretax_std)
+                        pretax_std -= w
+                        
+                        # Actual Tax Calculation
+                        tax_after, _ = self._vectorized_federal_tax(np.maximum(0, cumulative_ordinary_gross + (w * 12) - std_deduction))
+                        tax_before, _ = self._vectorized_federal_tax(taxable_now)
+                        
+                        w_fed_tax = ((tax_after - tax_before) + (w * 12 * penalty)) / 12
+                        w_state_tax = w * state_rate
+                        
+                        m_fed_tax += w_fed_tax
+                        m_state_tax += w_state_tax
+                        
+                        net_w = w - (w_fed_tax + w_state_tax)
+                        cumulative_ordinary_gross += (w * 12)
+                        m_shortfall -= net_w
+                        m_withdrawals += w
+
+                    # 5. Roth
+                    if np.any(m_shortfall > 0):
+                        w = np.minimum(m_shortfall, roth)
+                        roth -= w
+                        m_shortfall -= w
+                        m_withdrawals += w
                 
                 # Apply monthly growth
                 ret = (
@@ -1408,12 +1491,13 @@ class RetirementModel:
                     'year': int(simulation_year),
                     'month': month_idx + 1,
                     'age': int(p1_age_start),
-                    'gross_income': float(m_ord_taxable[0] + (m_gross_ss[0] - m_taxable_ss[0]) + m_withdrawals),
-                    'expenses_excluding_tax': float(m_target_spending[0]),
-                    'federal_tax': float(m_fed_tax[0]),
-                    'state_tax': float(m_state_tax[0]),
-                    'fica_tax': float(m_fica_tax[0]),
-                    'portfolio_balance': float(cash[0] + taxable_val[0] + pretax_std[0] + roth[0]),
+                    'gross_income': float(m_ord_taxable + (m_gross_ss - m_taxable_ss) + m_withdrawals),
+                    'expenses_excluding_tax': float(m_target_spending),
+                    'federal_tax': float(m_fed_tax),
+                    'state_tax': float(m_state_tax),
+                    'fica_tax': float(m_fica_tax),
+                    'ltcg_tax': float(m_ltcg_tax),
+                    'portfolio_balance': float(cash + taxable_val + pretax_std + pretax_457 + roth),
                     'withdrawals': float(m_withdrawals)
                 })
 

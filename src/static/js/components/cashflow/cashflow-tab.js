@@ -382,34 +382,62 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
     if (detailedLedger) {
         console.log('Merging detailed tax data into chart...');
         
-        // Map ledger year -> data
+        // Map ledger data for fast lookup
+        // We'll use a string key "year-month" for precise matching
         const ledgerMap = {};
         detailedLedger.forEach(row => {
-            ledgerMap[row.year] = row;
+            const key = `${row.year}-${row.month}`;
+            ledgerMap[key] = row;
         });
+
+        // Create an annual aggregation of the ledger data for the annual view
+        const annualLedgerMap = {};
+        if (viewType === 'annual') {
+            detailedLedger.forEach(row => {
+                if (!annualLedgerMap[row.year]) {
+                    annualLedgerMap[row.year] = {
+                        federal_tax: 0,
+                        state_tax: 0,
+                        fica_tax: 0,
+                        ltcg_tax: 0,
+                        expenses_excluding_tax: 0,
+                        portfolio_balance: 0 // Will take the last one
+                    };
+                }
+                annualLedgerMap[row.year].federal_tax += (row.federal_tax || 0);
+                annualLedgerMap[row.year].state_tax += (row.state_tax || 0);
+                annualLedgerMap[row.year].fica_tax += (row.fica_tax || 0);
+                annualLedgerMap[row.year].ltcg_tax += (row.ltcg_tax || 0);
+                annualLedgerMap[row.year].expenses_excluding_tax += (row.expenses_excluding_tax || 0);
+                annualLedgerMap[row.year].portfolio_balance = row.portfolio_balance; // Year-end balance
+            });
+        }
 
         // Update chartData with tax specifics
         chartData.forEach(period => {
-            const year = viewType === 'annual' ? parseInt(period.label) : period.date.getFullYear();
-            const row = ledgerMap[year];
-            
-            if (row) {
-                // If annual view, use full year values
-                if (viewType === 'annual') {
+            if (viewType === 'annual') {
+                const year = parseInt(period.label);
+                const row = annualLedgerMap[year];
+                if (row) {
                     period.federalTax = row.federal_tax + (row.ltcg_tax || 0);
                     period.stateTax = row.state_tax;
                     period.ficaTax = row.fica_tax;
                     period.livingExpenses = row.expenses_excluding_tax;
                     period.totalExpenses = period.federalTax + period.stateTax + period.ficaTax + period.livingExpenses;
                     period.portfolioValue = row.portfolio_balance;
-                } else {
-                    // If monthly view, use approximate monthly values from the ledger
-                    period.federalTax = (row.federal_tax + (row.ltcg_tax || 0)) / 12;
-                    period.stateTax = row.state_tax / 12;
-                    period.ficaTax = row.fica_tax / 12;
-                    period.livingExpenses = row.expenses_excluding_tax / 12;
+                }
+            } else {
+                const year = period.date.getFullYear();
+                const month = period.date.getMonth() + 1;
+                const key = `${year}-${month}`;
+                const row = ledgerMap[key];
+                if (row) {
+                    period.federalTax = row.federal_tax + (row.ltcg_tax || 0);
+                    period.stateTax = row.state_tax;
+                    period.ficaTax = row.fica_tax;
+                    period.livingExpenses = row.expenses_excluding_tax;
                     period.totalExpenses = period.federalTax + period.stateTax + period.ficaTax + period.livingExpenses;
-                    // Note: Portfolio value is handled by the month loop
+                    period.portfolioValue = row.portfolio_balance;
                 }
             }
         });
@@ -1433,6 +1461,13 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
         const totalIncome = workIncome + retirementBenefits + investmentIncome;
         const netCashFlow = totalIncome - totalExpensesThisMonth;
 
+        // --- Update Portfolio Balance ---
+        // Add surplus or subtract shortfall (remaining after withdrawals)
+        currentPortfolio += netCashFlow;
+
+        // Floor portfolio at 0
+        if (currentPortfolio < 0) currentPortfolio = 0;
+
         monthlyData.push({
             date: currentDate,
             label: monthLabel,
@@ -1484,6 +1519,20 @@ function calculatePortfolioByType(assets) {
             } else {
                 // Tax-deferred (withdraw second - Traditional IRA, 401k, etc.)
                 taxDeferred += value;
+            }
+        });
+    }
+
+    // Other assets (HSA, Crypto, etc.)
+    if (assets.other_assets) {
+        assets.other_assets.forEach(asset => {
+            const value = asset.value || asset.current_value || 0;
+            const type = (asset.type || '').toLowerCase();
+            
+            if (type === 'hsa') {
+                roth += value; // HSA treated like Roth (tax-free out)
+            } else {
+                taxable += value; // Most others treated as taxable
             }
         });
     }
