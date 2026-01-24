@@ -875,13 +875,14 @@ class TaxOptimizationService:
                 elif frequency == 'biweekly':
                     gross_income += amount * 26
 
-        # Get Social Security - try financial first, then person/spouse
-        ss_benefit = (financial.get('social_security_benefit', 0) or 0) * 12
+        # Get Social Security - combine primary from financial and spouse from spouse object
+        primary_ss = (financial.get('social_security_benefit', 0) or 0) * 12
+        spouse_ss = (spouse.get('social_security_benefit', 0) or 0) * 12 if spouse else 0
+        ss_benefit = primary_ss + spouse_ss
 
-        # If no SS in financial, get from person/spouse objects
+        # If still 0, try legacy person object for primary
         if ss_benefit == 0:
             person_ss = (person.get('social_security_benefit', 0) or 0) * 12
-            spouse_ss = (spouse.get('social_security_benefit', 0) or 0) * 12 if spouse else 0
             ss_benefit = person_ss + spouse_ss
 
         # Get pension

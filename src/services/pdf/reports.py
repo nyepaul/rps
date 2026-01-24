@@ -232,12 +232,22 @@ def generate_elite_analysis_report(profile_data, analysis_results):
     # Key Metrics
     if scenarios:
         moderate_scenario = scenarios.get('moderate', {})
+        financial = profile_data.get('financial', {})
+        spouse = profile_data.get('spouse', {})
+        
         metrics = {
             'Total Assets': total_assets,
             'Success Rate': f"{moderate_scenario.get('success_rate', 0):.1f}%",
             'Median Outcome': moderate_scenario.get('median_ending_wealth', moderate_scenario.get('median_final_value', 0)),
-            'Years Projected': years
+            'Years Projected': years,
+            'Social Security': financial.get('social_security_benefit', 0),
+            'Claiming Age': financial.get('ss_claiming_age', 67)
         }
+        
+        if spouse and spouse.get('name'):
+            metrics['Spouse SS'] = spouse.get('social_security_benefit', 0)
+            metrics['Spouse Age'] = spouse.get('ss_claiming_age', 67)
+            
         elements.extend(create_key_metrics_box("Key Metrics", metrics, styles, colors_dict))
 
     # Scenario Analysis
@@ -520,8 +530,16 @@ def generate_portfolio_report(profile_data):
             ['Annual Income', format_currency(financial.get('annual_income', 0))],
             ['Annual Expenses', format_currency(financial.get('annual_expenses', 0))],
             ['Social Security (Monthly)', format_currency(financial.get('social_security_benefit', 0))],
-            ['Pension (Monthly)', format_currency(financial.get('pension_benefit', 0))],
+            ['SS Claiming Age', str(financial.get('ss_claiming_age', 67))],
         ]
+
+        # Add spouse info if exists
+        spouse = profile_data.get('spouse', {})
+        if spouse and spouse.get('name'):
+            financial_data.append(['Spouse SS (Monthly)', format_currency(spouse.get('social_security_benefit', 0))])
+            financial_data.append(['Spouse SS Claiming Age', str(spouse.get('ss_claiming_age', 67))])
+
+        financial_data.append(['Pension (Monthly)', format_currency(financial.get('pension_benefit', 0))])
 
         financial_table = Table(financial_data, colWidths=[3*inch, 2*inch])
         financial_table.setStyle(TableStyle([
