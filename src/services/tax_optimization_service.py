@@ -852,10 +852,39 @@ class TaxOptimizationService:
         financial = profile_data.get('financial', {})
         assets = profile_data.get('assets', {})
         tax_settings = profile_data.get('tax_settings', {})
+        person = profile_data.get('person', {})
+        spouse = profile_data.get('spouse', {})
 
-        # Get income components
+        # Get income components - try financial first, then calculate from income_streams
         gross_income = financial.get('annual_income', 0) or 0
-        ss_benefit = (financial.get('social_security_benefit', 0) or 0) * 12  # Monthly to annual
+
+        # If no annual_income in financial, calculate from income_streams
+        if gross_income == 0:
+            income_streams = profile_data.get('income_streams', [])
+            for stream in income_streams:
+                amount = stream.get('amount', 0)
+                frequency = stream.get('frequency', 'monthly').lower()
+
+                # Convert to annual
+                if frequency == 'monthly':
+                    gross_income += amount * 12
+                elif frequency == 'annual':
+                    gross_income += amount
+                elif frequency == 'weekly':
+                    gross_income += amount * 52
+                elif frequency == 'biweekly':
+                    gross_income += amount * 26
+
+        # Get Social Security - try financial first, then person/spouse
+        ss_benefit = (financial.get('social_security_benefit', 0) or 0) * 12
+
+        # If no SS in financial, get from person/spouse objects
+        if ss_benefit == 0:
+            person_ss = (person.get('social_security_benefit', 0) or 0) * 12
+            spouse_ss = (spouse.get('social_security_benefit', 0) or 0) * 12 if spouse else 0
+            ss_benefit = person_ss + spouse_ss
+
+        # Get pension
         pension = (financial.get('pension_benefit', 0) or 0) * 12
 
         # NOTE: Don't re-read filing_status/state from tax_settings
