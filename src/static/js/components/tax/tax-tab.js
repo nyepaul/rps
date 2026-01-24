@@ -43,7 +43,7 @@ export async function renderTaxTab(container) {
             <div>Analyzing tax optimization strategies...</div>
         </div>
         <style>
-             spin {
+            @keyframes spin {
                 to { transform: rotate(360deg); }
             }
         </style>
