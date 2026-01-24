@@ -352,3 +352,615 @@ class TestFullSimulationIntegration:
         # We just verify it runs and produces reasonable results
         assert result['success_rate'] >= 0
         assert result['median_final_balance'] >= 0
+
+
+# =========================================================================
+# Market Periods Tests (Version 3.10.0)
+# =========================================================================
+
+class TestMarketPeriodsValidation:
+    """Tests for _validate_market_periods function."""
+
+    def test_no_warnings_for_reasonable_timeline(self):
+        """Reasonable timeline periods should produce no warnings."""
+        model = _create_basic_model()
+        periods = {
+            'type': 'timeline',
+            'periods': [
+                {
+                    'start_year': 2024,
+                    'end_year': 2026,
+                    'assumptions': {
+                        'stock_return_mean': 0.02,
+                        'stock_return_std': 0.22,
+                        'bond_return_mean': 0.04,
+                        'bond_return_std': 0.06,
+                        'inflation_mean': 0.015,
+                        'inflation_std': 0.01
+                    }
+                },
+                {
+                    'start_year': 2027,
+                    'end_year': 2035,
+                    'assumptions': {
+                        'stock_return_mean': 0.10,
+                        'stock_return_std': 0.18,
+                        'bond_return_mean': 0.04,
+                        'bond_return_std': 0.06,
+                        'inflation_mean': 0.03,
+                        'inflation_std': 0.01
+                    }
+                }
+            ]
+        }
+        warnings = model._validate_market_periods(30, periods)
+        assert isinstance(warnings, list)
+        assert len(warnings) == 0
+
+    def test_warns_on_prolonged_recession(self):
+        """Should warn about recessions lasting more than 5 years."""
+        model = _create_basic_model()
+        periods = {
+            'type': 'timeline',
+            'periods': [
+                {
+                    'start_year': 2024,
+                    'end_year': 2030,  # 7 years
+                    'assumptions': {
+                        'stock_return_mean': 0.02,  # Low return = recession
+                        'stock_return_std': 0.22,
+                        'bond_return_mean': 0.04,
+                        'bond_return_std': 0.06,
+                        'inflation_mean': 0.015,
+                        'inflation_std': 0.01
+                    }
+                }
+            ]
+        }
+        warnings = model._validate_market_periods(30, periods)
+        assert len(warnings) > 0
+        assert any('recession' in w.lower() for w in warnings)
+
+    def test_warns_on_prolonged_bull_market(self):
+        """Should warn about bull markets lasting more than 15 years."""
+        model = _create_basic_model()
+        periods = {
+            'type': 'timeline',
+            'periods': [
+                {
+                    'start_year': 2024,
+                    'end_year': 2040,  # 17 years
+                    'assumptions': {
+                        'stock_return_mean': 0.18,  # High return = bull market
+                        'stock_return_std': 0.14,
+                        'bond_return_mean': 0.035,
+                        'bond_return_std': 0.05,
+                        'inflation_mean': 0.025,
+                        'inflation_std': 0.01
+                    }
+                }
+            ]
+        }
+        warnings = model._validate_market_periods(30, periods)
+        assert len(warnings) > 0
+        assert any('bull market' in w.lower() for w in warnings)
+
+    def test_warns_on_single_long_period(self):
+        """Should warn when single period covers 80%+ of retirement."""
+        model = _create_basic_model()
+        periods = {
+            'type': 'timeline',
+            'periods': [
+                {
+                    'start_year': 2024,
+                    'end_year': 2050,  # 27 years out of 30 = 90%
+                    'assumptions': {
+                        'stock_return_mean': 0.10,
+                        'stock_return_std': 0.18,
+                        'bond_return_mean': 0.04,
+                        'bond_return_std': 0.06,
+                        'inflation_mean': 0.03,
+                        'inflation_std': 0.01
+                    }
+                }
+            ]
+        }
+        warnings = model._validate_market_periods(30, periods)
+        assert len(warnings) > 0
+        assert any('single market condition' in w.lower() for w in warnings)
+
+    def test_detects_timeline_gaps(self):
+        """Should detect gaps in timeline coverage."""
+        model = _create_basic_model()
+        periods = {
+            'type': 'timeline',
+            'periods': [
+                {
+                    'start_year': 2024,
+                    'end_year': 2026,
+                    'assumptions': {
+                        'stock_return_mean': 0.10,
+                        'stock_return_std': 0.18,
+                        'bond_return_mean': 0.04,
+                        'bond_return_std': 0.06,
+                        'inflation_mean': 0.03,
+                        'inflation_std': 0.01
+                    }
+                },
+                {
+                    'start_year': 2030,  # Gap from 2027-2029
+                    'end_year': 2035,
+                    'assumptions': {
+                        'stock_return_mean': 0.10,
+                        'stock_return_std': 0.18,
+                        'bond_return_mean': 0.04,
+                        'bond_return_std': 0.06,
+                        'inflation_mean': 0.03,
+                        'inflation_std': 0.01
+                    }
+                }
+            ]
+        }
+        warnings = model._validate_market_periods(30, periods)
+        assert len(warnings) > 0
+        assert any('gap' in w.lower() for w in warnings)
+
+    def test_warns_on_short_cycle(self):
+        """Should warn about very short market cycles."""
+        model = _create_basic_model()
+        periods = {
+            'type': 'cycle',
+            'repeat': True,
+            'pattern': [
+                {
+                    'duration': 1,
+                    'assumptions': {
+                        'stock_return_mean': 0.18,
+                        'stock_return_std': 0.14,
+                        'bond_return_mean': 0.035,
+                        'bond_return_std': 0.05,
+                        'inflation_mean': 0.025,
+                        'inflation_std': 0.01
+                    }
+                },
+                {
+                    'duration': 1,
+                    'assumptions': {
+                        'stock_return_mean': 0.02,
+                        'stock_return_std': 0.22,
+                        'bond_return_mean': 0.04,
+                        'bond_return_std': 0.06,
+                        'inflation_mean': 0.015,
+                        'inflation_std': 0.01
+                    }
+                }
+            ]
+        }
+        warnings = model._validate_market_periods(30, periods)
+        assert len(warnings) > 0
+        assert any('short' in w.lower() or 'cycle' in w.lower() for w in warnings)
+
+
+class TestBuildPeriodAssumptionsLookup:
+    """Tests for _build_period_assumptions_lookup function."""
+
+    def test_returns_default_when_no_periods(self):
+        """Should return default assumptions for all years when no periods specified."""
+        model = _create_basic_model()
+        default_assumptions = MarketAssumptions(stock_return_mean=0.10, bond_return_mean=0.04)
+
+        lookup = model._build_period_assumptions_lookup(10, None, default_assumptions)
+
+        assert len(lookup) == 10
+        for year in range(10):
+            assert lookup[year].stock_return_mean == 0.10
+            assert lookup[year].bond_return_mean == 0.04
+
+    def test_timeline_periods_mapped_correctly(self):
+        """Timeline periods should map to correct years."""
+        model = _create_basic_model()
+        current_year = model.current_year
+
+        periods = {
+            'type': 'timeline',
+            'periods': [
+                {
+                    'start_year': current_year,
+                    'end_year': current_year + 2,
+                    'assumptions': {
+                        'stock_return_mean': -0.30,  # Recession
+                        'stock_return_std': 0.38,
+                        'bond_return_mean': 0.055,
+                        'bond_return_std': 0.08,
+                        'inflation_mean': -0.004,
+                        'inflation_std': 0.01
+                    }
+                },
+                {
+                    'start_year': current_year + 3,
+                    'end_year': current_year + 9,
+                    'assumptions': {
+                        'stock_return_mean': 0.18,  # Bull market
+                        'stock_return_std': 0.14,
+                        'bond_return_mean': 0.035,
+                        'bond_return_std': 0.05,
+                        'inflation_mean': 0.025,
+                        'inflation_std': 0.01
+                    }
+                }
+            ]
+        }
+
+        lookup = model._build_period_assumptions_lookup(10, periods, MarketAssumptions())
+
+        # Years 0-2 should have recession assumptions
+        assert lookup[0].stock_return_mean == -0.30
+        assert lookup[1].stock_return_mean == -0.30
+        assert lookup[2].stock_return_mean == -0.30
+
+        # Years 3-9 should have bull market assumptions
+        assert lookup[3].stock_return_mean == 0.18
+        assert lookup[9].stock_return_mean == 0.18
+
+    def test_cycle_pattern_repeats_correctly(self):
+        """Cycle pattern should repeat when repeat=True."""
+        model = _create_basic_model()
+
+        periods = {
+            'type': 'cycle',
+            'repeat': True,
+            'pattern': [
+                {
+                    'duration': 3,
+                    'assumptions': {
+                        'stock_return_mean': 0.18,  # Bull
+                        'stock_return_std': 0.14,
+                        'bond_return_mean': 0.035,
+                        'bond_return_std': 0.05,
+                        'inflation_mean': 0.025,
+                        'inflation_std': 0.01
+                    }
+                },
+                {
+                    'duration': 2,
+                    'assumptions': {
+                        'stock_return_mean': 0.02,  # Recession
+                        'stock_return_std': 0.22,
+                        'bond_return_mean': 0.04,
+                        'bond_return_std': 0.06,
+                        'inflation_mean': 0.015,
+                        'inflation_std': 0.01
+                    }
+                }
+            ]
+        }
+
+        lookup = model._build_period_assumptions_lookup(15, periods, MarketAssumptions())
+
+        # First cycle: years 0-2 bull, 3-4 recession
+        assert lookup[0].stock_return_mean == 0.18
+        assert lookup[2].stock_return_mean == 0.18
+        assert lookup[3].stock_return_mean == 0.02
+        assert lookup[4].stock_return_mean == 0.02
+
+        # Second cycle: years 5-7 bull, 8-9 recession
+        assert lookup[5].stock_return_mean == 0.18
+        assert lookup[7].stock_return_mean == 0.18
+        assert lookup[8].stock_return_mean == 0.02
+        assert lookup[9].stock_return_mean == 0.02
+
+        # Third cycle: years 10-12 bull, 13-14 recession
+        assert lookup[10].stock_return_mean == 0.18
+        assert lookup[13].stock_return_mean == 0.02
+
+    def test_cycle_pattern_stops_when_no_repeat(self):
+        """Cycle pattern should stop after one cycle when repeat=False."""
+        model = _create_basic_model()
+        default_assumptions = MarketAssumptions(stock_return_mean=0.10)
+
+        periods = {
+            'type': 'cycle',
+            'repeat': False,
+            'pattern': [
+                {
+                    'duration': 3,
+                    'assumptions': {
+                        'stock_return_mean': 0.18,
+                        'stock_return_std': 0.14,
+                        'bond_return_mean': 0.035,
+                        'bond_return_std': 0.05,
+                        'inflation_mean': 0.025,
+                        'inflation_std': 0.01
+                    }
+                }
+            ]
+        }
+
+        lookup = model._build_period_assumptions_lookup(10, periods, default_assumptions)
+
+        # First 3 years should use pattern
+        assert lookup[0].stock_return_mean == 0.18
+        assert lookup[2].stock_return_mean == 0.18
+
+        # After cycle completes, should use default
+        assert lookup[3].stock_return_mean == 0.10
+        assert lookup[9].stock_return_mean == 0.10
+
+    def test_fills_gaps_with_default_assumptions(self):
+        """Timeline gaps should be filled with default assumptions."""
+        model = _create_basic_model()
+        default_assumptions = MarketAssumptions(stock_return_mean=0.10, bond_return_mean=0.04)
+        current_year = model.current_year
+
+        periods = {
+            'type': 'timeline',
+            'periods': [
+                {
+                    'start_year': current_year,
+                    'end_year': current_year + 2,
+                    'assumptions': {
+                        'stock_return_mean': 0.18,
+                        'stock_return_std': 0.14,
+                        'bond_return_mean': 0.035,
+                        'bond_return_std': 0.05,
+                        'inflation_mean': 0.025,
+                        'inflation_std': 0.01
+                    }
+                },
+                {
+                    'start_year': current_year + 5,  # Gap in years 3-4
+                    'end_year': current_year + 7,
+                    'assumptions': {
+                        'stock_return_mean': 0.02,
+                        'stock_return_std': 0.22,
+                        'bond_return_mean': 0.04,
+                        'bond_return_std': 0.06,
+                        'inflation_mean': 0.015,
+                        'inflation_std': 0.01
+                    }
+                }
+            ]
+        }
+
+        lookup = model._build_period_assumptions_lookup(10, periods, default_assumptions)
+
+        # Gap years should use default
+        assert lookup[3].stock_return_mean == 0.10
+        assert lookup[4].stock_return_mean == 0.10
+
+
+class TestMonteCarloWithMarketPeriods:
+    """Integration tests for Monte Carlo simulation with market periods."""
+
+    def test_simulation_with_timeline_periods(self):
+        """Simulation should complete successfully with timeline periods."""
+        model = _create_basic_model()
+        current_year = model.current_year
+
+        periods = {
+            'type': 'timeline',
+            'periods': [
+                {
+                    'start_year': current_year,
+                    'end_year': current_year + 4,
+                    'assumptions': {
+                        'stock_return_mean': -0.30,
+                        'stock_return_std': 0.38,
+                        'bond_return_mean': 0.055,
+                        'bond_return_std': 0.08,
+                        'inflation_mean': -0.004,
+                        'inflation_std': 0.01
+                    }
+                },
+                {
+                    'start_year': current_year + 5,
+                    'end_year': current_year + 19,
+                    'assumptions': {
+                        'stock_return_mean': 0.10,
+                        'stock_return_std': 0.18,
+                        'bond_return_mean': 0.04,
+                        'bond_return_std': 0.06,
+                        'inflation_mean': 0.03,
+                        'inflation_std': 0.01
+                    }
+                }
+            ]
+        }
+
+        result = model.monte_carlo_simulation(
+            years=20,
+            simulations=100,
+            assumptions=MarketAssumptions(),
+            market_periods=periods
+        )
+
+        assert 0 <= result['success_rate'] <= 1
+        assert result['starting_portfolio'] > 0
+        assert len(result['timeline']['years']) == 20
+        assert 'warnings' in result
+
+    def test_simulation_with_cycle_periods(self):
+        """Simulation should complete successfully with cycle periods."""
+        model = _create_basic_model()
+
+        periods = {
+            'type': 'cycle',
+            'repeat': True,
+            'pattern': [
+                {
+                    'duration': 5,
+                    'assumptions': {
+                        'stock_return_mean': 0.18,
+                        'stock_return_std': 0.14,
+                        'bond_return_mean': 0.035,
+                        'bond_return_std': 0.05,
+                        'inflation_mean': 0.025,
+                        'inflation_std': 0.01
+                    }
+                },
+                {
+                    'duration': 2,
+                    'assumptions': {
+                        'stock_return_mean': 0.02,
+                        'stock_return_std': 0.22,
+                        'bond_return_mean': 0.04,
+                        'bond_return_std': 0.06,
+                        'inflation_mean': 0.015,
+                        'inflation_std': 0.01
+                    }
+                }
+            ]
+        }
+
+        result = model.monte_carlo_simulation(
+            years=20,
+            simulations=100,
+            assumptions=MarketAssumptions(),
+            market_periods=periods
+        )
+
+        assert 0 <= result['success_rate'] <= 1
+        assert result['starting_portfolio'] > 0
+        assert len(result['timeline']['years']) == 20
+
+    def test_early_crash_worse_than_late_crash(self):
+        """Early retirement crash should produce worse success rate than late crash."""
+        model = _create_basic_model()
+        current_year = model.current_year
+
+        # Early crash scenario
+        early_crash_periods = {
+            'type': 'timeline',
+            'periods': [
+                {
+                    'start_year': current_year,
+                    'end_year': current_year + 2,
+                    'assumptions': {
+                        'stock_return_mean': -0.30,
+                        'stock_return_std': 0.38,
+                        'bond_return_mean': 0.055,
+                        'bond_return_std': 0.08,
+                        'inflation_mean': -0.004,
+                        'inflation_std': 0.01
+                    }
+                },
+                {
+                    'start_year': current_year + 3,
+                    'end_year': current_year + 19,
+                    'assumptions': {
+                        'stock_return_mean': 0.10,
+                        'stock_return_std': 0.18,
+                        'bond_return_mean': 0.04,
+                        'bond_return_std': 0.06,
+                        'inflation_mean': 0.03,
+                        'inflation_std': 0.01
+                    }
+                }
+            ]
+        }
+
+        # Late crash scenario (same crash, but at end)
+        late_crash_periods = {
+            'type': 'timeline',
+            'periods': [
+                {
+                    'start_year': current_year,
+                    'end_year': current_year + 16,
+                    'assumptions': {
+                        'stock_return_mean': 0.10,
+                        'stock_return_std': 0.18,
+                        'bond_return_mean': 0.04,
+                        'bond_return_std': 0.06,
+                        'inflation_mean': 0.03,
+                        'inflation_std': 0.01
+                    }
+                },
+                {
+                    'start_year': current_year + 17,
+                    'end_year': current_year + 19,
+                    'assumptions': {
+                        'stock_return_mean': -0.30,
+                        'stock_return_std': 0.38,
+                        'bond_return_mean': 0.055,
+                        'bond_return_std': 0.08,
+                        'inflation_mean': -0.004,
+                        'inflation_std': 0.01
+                    }
+                }
+            ]
+        }
+
+        np.random.seed(42)
+        early_result = model.monte_carlo_simulation(
+            years=20,
+            simulations=500,
+            assumptions=MarketAssumptions(),
+            market_periods=early_crash_periods
+        )
+
+        np.random.seed(42)
+        late_result = model.monte_carlo_simulation(
+            years=20,
+            simulations=500,
+            assumptions=MarketAssumptions(),
+            market_periods=late_crash_periods
+        )
+
+        # Early crash should have worse success rate (sequence of returns risk)
+        assert early_result['success_rate'] < late_result['success_rate']
+
+    def test_periods_produce_different_results_than_simple(self):
+        """Period-based simulation should produce different results than simple mode."""
+        model = _create_basic_model()
+        current_year = model.current_year
+
+        # Simple mode: recession for entire period (unrealistic)
+        np.random.seed(42)
+        simple_result = model.monte_carlo_simulation(
+            years=20,
+            simulations=200,
+            assumptions=MarketAssumptions(stock_return_mean=0.02, stock_return_std=0.22),
+            market_periods=None
+        )
+
+        # Period mode: realistic cycle
+        periods = {
+            'type': 'cycle',
+            'repeat': True,
+            'pattern': [
+                {
+                    'duration': 7,
+                    'assumptions': {
+                        'stock_return_mean': 0.18,
+                        'stock_return_std': 0.14,
+                        'bond_return_mean': 0.035,
+                        'bond_return_std': 0.05,
+                        'inflation_mean': 0.025,
+                        'inflation_std': 0.01
+                    }
+                },
+                {
+                    'duration': 2,
+                    'assumptions': {
+                        'stock_return_mean': 0.02,
+                        'stock_return_std': 0.22,
+                        'bond_return_mean': 0.04,
+                        'bond_return_std': 0.06,
+                        'inflation_mean': 0.015,
+                        'inflation_std': 0.01
+                    }
+                }
+            ]
+        }
+
+        np.random.seed(42)
+        period_result = model.monte_carlo_simulation(
+            years=20,
+            simulations=200,
+            assumptions=MarketAssumptions(),
+            market_periods=periods
+        )
+
+        # Results should be significantly different
+        # Period mode should have higher success rate (has growth periods)
+        assert period_result['success_rate'] > simple_result['success_rate']
