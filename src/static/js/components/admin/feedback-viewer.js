@@ -453,32 +453,35 @@ async function showFeedbackDetails(feedback) {
     // Event listeners
     modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
 
-    // Add reply handler
-    modal.querySelector('.add-reply').addEventListener('click', async () => {
-        const replyText = modal.querySelector('#reply-text').value.trim();
-        const isPrivate = modal.querySelector('#is-private-reply').checked;
+    // Add reply handler (only if button exists)
+    const addReplyBtn = modal.querySelector('.add-reply');
+    if (addReplyBtn) {
+        addReplyBtn.addEventListener('click', async () => {
+            const replyText = modal.querySelector('#reply-text').value.trim();
+            const isPrivate = modal.querySelector('#is-private-reply').checked;
 
-        if (!replyText) {
-            showError('Please enter a reply message');
-            return;
-        }
-
-        try {
-            await apiClient.post(`/api/feedback/${feedback.id}/replies`, {
-                reply_text: replyText,
-                is_private: isPrivate
-            });
-            showSuccess(isPrivate ? 'Private note added successfully' : 'Reply sent successfully');
-            modal.remove();
-            // Reload feedback list
-            const container = document.querySelector('#admin-subtab-content');
-            if (container) {
-                await renderFeedbackViewer(container);
+            if (!replyText) {
+                showError('Please enter a reply message');
+                return;
             }
-        } catch (error) {
-            showError(`Failed to send reply: ${error.message}`);
-        }
-    });
+
+            try {
+                await apiClient.post(`/api/feedback/${feedback.id}/replies`, {
+                    reply_text: replyText,
+                    is_private: isPrivate
+                });
+                showSuccess(isPrivate ? 'Private note added successfully' : 'Reply sent successfully');
+                modal.remove();
+                // Reload feedback list
+                const container = document.querySelector('#admin-subtab-content');
+                if (container) {
+                    await renderFeedbackViewer(container);
+                }
+            } catch (error) {
+                showError(`Failed to send reply: ${error.message}`);
+            }
+        });
+    }
 
     modal.querySelector('.delete-feedback').addEventListener('click', async () => {
         if (confirm('Are you sure you want to delete this feedback?')) {
