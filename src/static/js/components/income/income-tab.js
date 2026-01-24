@@ -105,6 +105,11 @@ function renderIncomeStreamsList(container, incomeStreams) {
 
     listContainer.innerHTML = `
         <div style="padding: var(--space-3);">
+            <div style="padding: 8px 12px; margin-bottom: 12px; background: var(--bg-tertiary); border-radius: 6px; border-left: 3px solid var(--accent-color);">
+                <p style="margin: 0; font-size: 12px; color: var(--text-secondary);">
+                    <strong style="color: var(--text-primary);">💡 Tip:</strong> Click on any income stream to edit its details inline
+                </p>
+            </div>
             <div style="display: flex; flex-direction: column; gap: var(--space-2);">
                 ${sortedStreams.map((stream, index) => renderIncomeStreamRow(stream, index)).join('')}
             </div>
