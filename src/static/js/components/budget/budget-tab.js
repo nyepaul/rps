@@ -1373,6 +1373,11 @@ function renderExpenseSection(parentContainer) {
                     + New
                 </button>
             </div>
+            <div style="padding: 8px 12px; margin-bottom: 10px; background: var(--bg-tertiary); border-radius: 6px; border-left: 3px solid var(--accent-color);">
+                <p style="margin: 0; font-size: 12px; color: var(--text-secondary);">
+                    <strong style="color: var(--text-primary);">💡 Tip:</strong> Click on any expense item to edit its details
+                </p>
+            </div>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 8px;">
     `;
 
