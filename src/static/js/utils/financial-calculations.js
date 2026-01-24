@@ -110,13 +110,22 @@ export function calculateAllocation(assets) {
 
             totalVal += val;
             
+            const type = (item.type || '').toLowerCase();
+
             // Use provided percentages or defaults based on account type
             let s = item.stock_pct !== undefined ? item.stock_pct : 
-                    (item.type === 'brokerage' || item.type === '401k' || item.type === 'roth_ira' || item.type === 'traditional_ira' ? 0.6 : 0);
+                    (['brokerage', '401k', '403b', 'traditional_ira', 'roth_ira', 'sep_ira', 'simple_ira', 'ira', '401a'].includes(type) ? 0.6 : 0);
             let b = item.bond_pct !== undefined ? item.bond_pct : 
-                    (item.type === 'brokerage' || item.type === '401k' || item.type === 'roth_ira' || item.type === 'traditional_ira' ? 0.4 : 0);
+                    (['brokerage', '401k', '403b', 'traditional_ira', 'roth_ira', 'sep_ira', 'simple_ira', 'ira', '401a'].includes(type) ? 0.4 : 0);
             let c = item.cash_pct !== undefined ? item.cash_pct : 
-                    (['savings', 'checking', 'cash', 'cd', 'money_market'].includes(item.type) ? 1.0 : 0);
+                    (['savings', 'checking', 'cash', 'cd', 'money_market', 'brokerage_cash'].includes(type) ? 1.0 : 0);
+
+            // If it's a known growth account but no % provided and type matching failed above, default to 60/40
+            const isGrowthAccount = ['brokerage', '401k', '403b', 'traditional_ira', 'roth_ira', 'sep_ira', 'simple_ira', 'ira', '401a'].includes(type);
+            if (isGrowthAccount && s === 0 && b === 0 && c === 0) {
+                s = 0.6;
+                b = 0.4;
+            }
 
             // Normalize if sum > 1.0
             const sum = s + b + c;
