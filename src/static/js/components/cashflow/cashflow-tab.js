@@ -1467,6 +1467,11 @@ function aggregateToAnnual(monthlyData) {
                 investmentIncome: 0,
                 totalIncome: 0,
                 expenses: 0,
+                federalTax: 0,
+                stateTax: 0,
+                ficaTax: 0,
+                ltcgTax: 0,
+                livingExpenses: 0,
                 netCashFlow: 0,
                 portfolioValue: 0,
                 months: 0
@@ -1479,6 +1484,11 @@ function aggregateToAnnual(monthlyData) {
         yearData.investmentIncome += month.investmentIncome;
         yearData.totalIncome += month.totalIncome;
         yearData.expenses += month.expenses;
+        yearData.federalTax += (month.federalTax || 0);
+        yearData.stateTax += (month.stateTax || 0);
+        yearData.ficaTax += (month.ficaTax || 0);
+        yearData.ltcgTax += (month.ltcgTax || 0);
+        yearData.livingExpenses += (month.livingExpenses || 0);
         yearData.netCashFlow += month.netCashFlow;
         // Use end-of-year portfolio value (last month of year)
         yearData.portfolioValue = month.portfolioValue;
