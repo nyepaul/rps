@@ -1171,41 +1171,43 @@ class RetirementModel:
         # Use 1D arrays (size 1) to reuse the vectorized tax functions
         simulations = 1
         
-        # 1. Initialize Balances
-        start_cash = 0.0
-        start_taxable_val = 0.0
-        start_taxable_basis = 0.0
-        start_pretax_std = 0.0
-        start_pretax_457 = 0.0
-        start_roth = 0.0
+        # 1. Initialize Balances (Standardized with monte_carlo_simulation)
+        # Use aggregate fields from FinancialProfile for robustness
+        cash = np.full(simulations, self.profile.liquid_assets * 0.10)
+        taxable_val = np.full(simulations, self.profile.liquid_assets * 0.90)
+        taxable_basis = np.full(simulations, self.profile.liquid_assets * 0.90 * 0.80) # Assume 20% gains
+        pretax_std = np.full(simulations, self.profile.traditional_ira)
+        pretax_457 = np.zeros(simulations)
+        roth = np.full(simulations, self.profile.roth_ira)
 
+        # Refine with investment_types details if available
         inv_types = self.profile.investment_types or []
-        for inv in inv_types:
-            acc = inv.get('account', 'Liquid')
-            val = safe_float(inv.get('value', 0))
-            basis = safe_float(inv.get('cost_basis', 0))
+        if inv_types:
+            # Reset to zero if we have detailed types to avoid double counting
+            cash = np.zeros(simulations)
+            taxable_val = np.zeros(simulations)
+            taxable_basis = np.zeros(simulations)
+            pretax_std = np.zeros(simulations)
+            roth = np.zeros(simulations)
             
-            if acc in ['Checking', 'Savings']:
-                start_cash += val
-            elif acc in ['Liquid', 'Taxable Brokerage']:
-                start_taxable_val += val
-                start_taxable_basis += basis
-            elif acc in ['Traditional IRA', '401k', '403b', '401a']:
-                start_pretax_std += val
-            elif acc == '457b':
-                start_pretax_457 += val
-            elif acc == 'Roth IRA':
-                start_roth += val
-            elif acc == 'Pension':
-                start_pretax_std += val
-
-        # Vectors of size 1
-        cash = np.full(simulations, start_cash)
-        taxable_val = np.full(simulations, start_taxable_val)
-        taxable_basis = np.full(simulations, start_taxable_basis)
-        pretax_std = np.full(simulations, start_pretax_std)
-        pretax_457 = np.full(simulations, start_pretax_457)
-        roth = np.full(simulations, start_roth)
+            for inv in inv_types:
+                acc = inv.get('account', 'Liquid')
+                val = safe_float(inv.get('value', 0))
+                basis = safe_float(inv.get('cost_basis', 0))
+                
+                if acc in ['Checking', 'Savings']:
+                    cash += val
+                elif acc in ['Liquid', 'Taxable Brokerage']:
+                    taxable_val += val
+                    taxable_basis += basis
+                elif acc in ['Traditional IRA', '401k', '403b', '401a']:
+                    pretax_std += val
+                elif acc == '457b':
+                    pretax_457 += val
+                elif acc == 'Roth IRA':
+                    roth += val
+                elif acc == 'Pension':
+                    pretax_std += val
 
         # 2. Setup Deterministic Factors
         current_cpi = np.ones(simulations)
