@@ -372,7 +372,7 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
         detailedLedger = null;
     }
 
-    const monthlyData = calculateMonthlyCashFlow(profile, months);
+    const monthlyData = calculateMonthlyCashFlow(profile, months, marketScenario);
     const chartData = viewType === 'annual' ? aggregateToAnnual(monthlyData) : monthlyData;
 
     // Merge Detailed Ledger Data into Chart Data
@@ -1165,7 +1165,7 @@ function calculatePeriodIncome(budget, period, currentDate) {
 /**
  * Calculate monthly cash flow data with portfolio growth projection
  */
-function calculateMonthlyCashFlow(profile, months) {
+function calculateMonthlyCashFlow(profile, months, marketScenario = 'moderate') {
     const data = profile.data || {};
     const incomeStreams = data.income_streams || [];
     const financial = data.financial || {};
@@ -1182,9 +1182,22 @@ function calculateMonthlyCashFlow(profile, months) {
     const withdrawalStrategy = data.withdrawal_strategy || {};
     const annualWithdrawalRate = withdrawalStrategy.withdrawal_rate || 0.04; // Default to 4%
 
-    // Portfolio growth assumptions (conservative for planning)
-    const monthlyGrowthRate = 0.06 / 12; // 6% annual return assumption
-    const monthlyInflationRate = 0.03 / 12; // 3% annual inflation
+    // --- Market-Scenario-Aware Assumptions ---
+    const profileKey = marketScenario === 'moderate' ? 'balanced' : 
+                      marketScenario === 'conservative' ? 'conservative' : 
+                      marketScenario === 'aggressive' ? 'aggressive' : 'balanced';
+    
+    const marketProfile = APP_CONFIG.MARKET_PROFILES[profileKey];
+    
+    // Calculate blended growth rate based on 60/40 default or profile allocation
+    const stockAllocation = marketProfile.stock_allocation || 0.6;
+    const bondAllocation = marketProfile.bond_allocation || (1 - stockAllocation);
+    
+    const annualGrowthRate = (stockAllocation * marketProfile.stock_return_mean) + 
+                            (bondAllocation * marketProfile.bond_return_mean);
+    
+    const monthlyGrowthRate = annualGrowthRate / 12;
+    const monthlyInflationRate = (marketProfile.inflation_mean || 0.03) / 12;
 
     // Calculate portfolio value by account type for proper withdrawal ordering
     const portfolioByType = calculatePortfolioByType(assets);

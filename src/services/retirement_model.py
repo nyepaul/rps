@@ -1280,83 +1280,91 @@ class RetirementModel:
             # Standard deduction depends on filing status and inflation
             std_deduction = self.get_standard_deduction(current_cpi)
 
-            # --- Income Calculation ---
+            # --- Income Calculation (ANNUALIZED for accurate tax brackets) ---
             p1_ss_eligible = p1_age >= self.profile.person1.ss_claiming_age
             p2_ss_eligible = p2_age >= self.profile.person2.ss_claiming_age
             
+            # Annual SS benefits
             p1_ss_amt = (self.profile.person1.social_security * 12) if p1_ss_eligible else 0
             p2_ss_amt = (self.profile.person2.social_security * 12) if p2_ss_eligible else 0
-            gross_ss = (p1_ss_amt + p2_ss_amt) * current_cpi
+            gross_ss_annual = (p1_ss_amt + p2_ss_amt) * current_cpi
             
-            active_pension = (base_pension if p1_retired else 0) * current_cpi
+            # Annual Pension
+            active_pension_annual = (base_pension if p1_retired else 0) * current_cpi
             
-            # Sum all ordinary income streams
-            other_taxable_income = np.zeros(simulations)
-            employment_income_from_streams = np.zeros(simulations)
+            # Sum all ordinary income streams (ANNUAL)
+            other_taxable_income_annual = np.zeros(simulations)
+            employment_income_from_streams_annual = np.zeros(simulations)
             for stream in income_streams_data:
                 if simulation_year >= stream['start_year']:
                     amount = stream['amount'] * (current_cpi if stream['inflation_adjusted'] else 1.0)
+                    # Note: Detailed projection input is often already annualized in some parts, 
+                    # but calculate_monthly_cashflow logic assumes monthly. 
+                    # We strictly annualize here for the tax engine.
                     if stream.get('type') == 'salary':
-                        employment_income_from_streams += amount
+                        employment_income_from_streams_annual += amount * 12
                     else:
-                        other_taxable_income += amount
+                        other_taxable_income_annual += amount * 12
 
-            # Budget employment income
-            budget_income_other = np.zeros(simulations)
-            employment_income_from_budget = np.zeros(simulations)
+            # Budget income (ANNUAL)
+            budget_income_other_annual = np.zeros(simulations)
+            employment_income_from_budget_annual = np.zeros(simulations)
             if self.profile.budget:
-                budget_income_total, employment_income_from_budget = self.calculate_budget_income(simulation_year, current_cpi, p1_retired, p2_retired)
-                # Budget income that is not employment (rental, etc.)
-                budget_income_other = budget_income_total - employment_income_from_budget
+                budget_inc_total, emp_inc_budget = self.calculate_budget_income(simulation_year, current_cpi, p1_retired, p2_retired)
+                # calculate_budget_income returns monthly, so we multiply by 12
+                employment_income_from_budget_annual = emp_inc_budget * 12
+                budget_income_other_annual = (budget_inc_total - emp_inc_budget) * 12
 
-            # Combined employment income (Salary from streams + Budget employment)
-            employment_income_gross = employment_income_from_streams + employment_income_from_budget
-            # Combined non-employment ordinary income (Pension + Other Streams + Rental/Other Budget)
-            other_ordinary_income_gross = active_pension + other_taxable_income + budget_income_other
+            # Combined ANNUAL employment income
+            employment_income_gross_annual = employment_income_from_streams_annual + employment_income_from_budget_annual
+            # Combined ANNUAL non-employment ordinary income
+            other_ordinary_income_gross_annual = active_pension_annual + other_taxable_income_annual + budget_income_other_annual
 
-            # --- Tax Step 2: Social Security Taxation ---
-            # Stacking non-SS ordinary income to see how much SS is taxable
-            taxable_ss = self._vectorized_taxable_ss(employment_income_gross + other_ordinary_income_gross, gross_ss)
+            # --- Tax Step 2: Social Security Taxation (ANNUAL) ---
+            taxable_ss_annual = self._vectorized_taxable_ss(employment_income_gross_annual + other_ordinary_income_gross_annual, gross_ss_annual)
 
-            # --- Combined Taxable Ordinary Income ---
-            # IMPORTANT: Aggregate all ordinary income components before applying standard deduction
-            total_ordinary_taxable_gross = employment_income_gross + other_ordinary_income_gross + taxable_ss
+            # --- Combined Taxable Ordinary Income (ANNUAL) ---
+            total_ordinary_taxable_gross_annual = employment_income_gross_annual + other_ordinary_income_gross_annual + taxable_ss_annual
             
-            # Use profile-specific standard deduction
+            # Federal Tax (ANNUAL brackets)
             std_deduction = self.get_standard_deduction(current_cpi)
-            taxable_income_federal = np.maximum(0, total_ordinary_taxable_gross - std_deduction)
+            taxable_income_federal_annual = np.maximum(0, total_ordinary_taxable_gross_annual - std_deduction)
+            fed_tax_paid_annual, marginal_rate_current = self._vectorized_federal_tax(taxable_income_federal_annual)
             
-            # Federal and State Tax on the combined ordinary income
-            fed_tax_paid, marginal_rate_current = self._vectorized_federal_tax(taxable_income_federal)
-            
-            # State tax - use profile state or default (Simplified)
-            state_rate = 0.05 # Default
-            if getattr(self.profile, 'state', 'NY') == 'NY':
-                state_rate = 0.0585 # NY approx
-                
-            state_tax_paid = (employment_income_gross + other_ordinary_income_gross) * state_rate
+            # State Tax (ANNUAL)
+            state_rate = 0.05
+            if getattr(self.profile, 'state', 'NY') == 'NY': state_rate = 0.0585
+            state_tax_paid_annual = (employment_income_gross_annual + other_ordinary_income_gross_annual) * state_rate
 
-            # FICA only on employment income
-            fica_tax = np.zeros(simulations)
-            if np.any(employment_income_gross > 0):
+            # FICA (ANNUAL)
+            fica_tax_annual = np.zeros(simulations)
+            if np.any(employment_income_gross_annual > 0):
                 SS_WAGE_BASE = 168600
-                ss_fica = np.minimum(employment_income_gross, SS_WAGE_BASE) * 0.062
-                med_fica = employment_income_gross * 0.0145
-                fica_tax = ss_fica + med_fica
+                ss_fica = np.minimum(employment_income_gross_annual, SS_WAGE_BASE) * 0.062
+                med_fica = employment_income_gross_annual * 0.0145
+                fica_tax_annual = ss_fica + med_fica
 
-            # --- Tax Step 4: IRMAA ---
-            irmaa_expense = np.zeros(simulations)
+            # --- Convert back to MONTHLY for the ledger ---
+            gross_ss = gross_ss_annual / 12
+            taxable_ss = taxable_ss_annual / 12
+            fed_tax_paid = fed_tax_paid_annual / 12
+            state_tax_paid = state_tax_paid_annual / 12
+            fica_tax = fica_tax_annual / 12
+            total_ordinary_taxable_gross = total_ordinary_taxable_gross_annual / 12
+            
+            # MAGI for IRMAA uses annual
+            irmaa_expense_annual = np.zeros(simulations)
             if p1_age >= 65 or p2_age >= 65:
-                # MAGI ≈ AGI (Total Ordinary Taxable Gross)
                 both_on_medicare = (p1_age >= 65) and (p2_age >= 65)
-                irmaa_expense = self._vectorized_irmaa(total_ordinary_taxable_gross, both_on_medicare=both_on_medicare)
+                irmaa_expense_annual = self._vectorized_irmaa(total_ordinary_taxable_gross_annual, both_on_medicare=both_on_medicare)
+            irmaa_expense = irmaa_expense_annual / 12
 
-            # --- Net Cash Available Before Withdrawals ---
+            # --- Net Cash Available Before Withdrawals (MONTHLY) ---
             total_tax_on_income = fed_tax_paid + state_tax_paid + fica_tax
             total_available_cash = (total_ordinary_taxable_gross + (gross_ss - taxable_ss)) - total_tax_on_income
 
-            # Track cumulative ordinary income for stacking withdrawals later
-            cumulative_ordinary_gross = total_ordinary_taxable_gross
+            # Track cumulative ordinary income for stacking withdrawals (using ANNUAL for brackets)
+            cumulative_ordinary_gross = total_ordinary_taxable_gross_annual
 
 
             # --- Expenses ---
@@ -1562,8 +1570,8 @@ class RetirementModel:
             roth *= (1 + ret)
 
             # --- Record Data ---
-            # Total Gross Income = All Ordinary Taxable + Gross SS + LTCG Realized + Penalties
-            # Note: total_withdrawals is the GROSS amount taken from accounts
+            # Total Gross Income = All Ordinary Taxable + Non-taxable SS + Total Withdrawals
+            # Everything here is already monthly
             detailed_ledger.append({
                 'year': int(simulation_year),
                 'age': int(p1_age),
