@@ -1,5 +1,5 @@
 {
-    "version": "3.9.34",
+    "version": "3.9.35",
     "release_date": "2026-01-25",
-    "release_notes": "Refactor: Restructured Data and Analysis menus"
+    "release_notes": "Feature: Expense copy/merge and AI-powered data extraction"
 }

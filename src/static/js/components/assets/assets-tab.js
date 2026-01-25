@@ -6,7 +6,7 @@ import { store } from '../../state/store.js';
 import { profilesAPI } from '../../api/profiles.js';
 import { renderAssetList } from './asset-list.js';
 import { showAssetWizard } from './asset-wizard.js';
-import { showAIUploadModal } from './asset-ai-upload.js';
+import { showAIImportModal } from '../ai/ai-import-modal.js';
 import { exportAssetsCSV, importAssetsCSV } from './asset-csv-handler.js';
 import { formatCurrency, parseCurrency } from '../../utils/formatters.js';
 import { showSuccess, showError } from '../../utils/dom.js';
@@ -59,8 +59,8 @@ export function renderAssetsTab(container) {
                     <button id="add-asset-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px;">
                         + Add Asset
                     </button>
-                    <button id="ai-import-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px;">
-                        📷 Import
+                    <button id="ai-import-assets-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 6px; font-weight: 600;">
+                        <span>📷</span> AI Import
                     </button>
                     <div style="display: flex; border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden;">
                         <button id="csv-export-btn" style="padding: 6px 10px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-right: 1px solid var(--border-color); cursor: pointer; font-size: 11px;">
@@ -280,13 +280,39 @@ function setupGeneralHandlers(container, profile, assets, refreshCallback) {
     }
 
     // AI Import button
-    const aiImportBtn = container.querySelector('#ai-import-btn');
+    const aiImportBtn = container.querySelector('#ai-import-assets-btn');
     if (aiImportBtn) {
         aiImportBtn.addEventListener('click', () => {
-            showAIUploadModal(assets, async (updatedAssets) => {
-                await saveAssets(profile, updatedAssets);
+            showAIImportModal('assets', profile.name, async (extractedAssets) => {
+                // Map extracted assets to proper categories
+                for (const item of extractedAssets) {
+                    const type = item.type || 'brokerage';
+                    let category = 'taxable_accounts';
+                    
+                    if (['401k', '403b', '457', 'traditional_ira', 'roth_ira'].includes(type)) {
+                        category = 'retirement_accounts';
+                    } else if (['savings', 'checking', 'brokerage'].includes(type)) {
+                        category = 'taxable_accounts';
+                    }
+                    
+                    if (!assets[category]) assets[category] = [];
+                    
+                    assets[category].push({
+                        id: crypto.randomUUID(),
+                        name: item.name,
+                        type: type,
+                        value: item.value || 0,
+                        cost_basis: item.cost_basis || 0,
+                        institution: item.institution || '',
+                        stock_pct: 0.6, // Defaults
+                        bond_pct: 0.3,
+                        cash_pct: 0.1
+                    });
+                }
+                
+                await saveAssets(profile, assets);
                 if (refreshCallback) refreshCallback();
-            }, profile);
+            });
         });
     }
 
@@ -311,7 +337,7 @@ function setupGeneralHandlers(container, profile, assets, refreshCallback) {
                 await importAssetsCSV(profile.name, (updatedProfile) => {
                     store.setState({ currentProfile: updatedProfile });
                     // Full refresh needed as profile object changed
-                    window.app.showTab('aie'); 
+                    if (refreshCallback) refreshCallback();
                     showSuccess('Assets imported successfully!');
                 });
             } catch (error) {
@@ -346,3 +372,4 @@ async function saveAssets(profile, updatedAssets) {
         return false;
     }
 }
+
