@@ -654,3 +654,92 @@ def extract_assets():
             status_code=500
         )
         return jsonify({'error': str(e)}), 500
+
+
+@ai_services_bp.route('/extract-income', methods=['POST'])
+@login_required
+@limiter.limit("10 per hour")
+def extract_income():
+    """Extract income streams from an uploaded image using AI."""
+    data = request.json
+    image_b64 = data.get('image')
+    provider = data.get('llm_provider', 'gemini')
+    profile_name = data.get('profile_name')
+
+    if not image_b64 or not profile_name:
+        return jsonify({'error': 'image and profile_name are required'}), 400
+
+    # Get API key
+    profile = Profile.get_by_name(profile_name, current_user.id)
+    if not profile: return jsonify({'error': 'Profile not found'}), 404
+    api_key = profile.data_dict.get('api_keys', {}).get('gemini_api_key' if provider == 'gemini' else 'claude_api_key')
+    if not api_key: return jsonify({'error': f'{provider.capitalize()} API key not configured'}), 400
+
+    prompt = """
+    Analyze this image of a pay stub, bank statement, or tax document.
+    Extract a list of regular income streams.
+
+    RULES:
+    1. Extract: "name" (e.g., "Salary", "Rental Income"), "amount" (monthly or per-paycheck), "frequency" ("monthly", "bi-weekly", "annual").
+    2. Clean values: numbers only for amount.
+    3. Return ONLY a JSON array: [{"name": "...", "amount": ..., "frequency": "..."}]
+    """
+
+    try:
+        image_bytes = base64.b64decode(image_b64)
+        if provider == 'gemini':
+            text_response = call_gemini_with_fallback(prompt, api_key, image_data=image_bytes)
+        else:
+            # Simple Claude placeholder for now - consistent with extract_assets
+            return jsonify({'error': 'Claude extraction for income not yet fully implemented'}), 501
+
+        json_str = text_response.replace('```json', '').replace('```', '').strip()
+        extracted_income = json.loads(json_str)
+        
+        return jsonify({'income': extracted_income, 'status': 'success'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@ai_services_bp.route('/extract-expenses', methods=['POST'])
+@login_required
+@limiter.limit("10 per hour")
+def extract_expenses():
+    """Extract expenses from an uploaded image using AI."""
+    data = request.json
+    image_b64 = data.get('image')
+    provider = data.get('llm_provider', 'gemini')
+    profile_name = data.get('profile_name')
+
+    if not image_b64 or not profile_name:
+        return jsonify({'error': 'image and profile_name are required'}), 400
+
+    # Get API key
+    profile = Profile.get_by_name(profile_name, current_user.id)
+    if not profile: return jsonify({'error': 'Profile not found'}), 404
+    api_key = profile.data_dict.get('api_keys', {}).get('gemini_api_key' if provider == 'gemini' else 'claude_api_key')
+    if not api_key: return jsonify({'error': f'{provider.capitalize()} API key not configured'}), 400
+
+    prompt = """
+    Analyze this image of a receipt, credit card statement, or bill.
+    Extract a list of recurring or significant expenses.
+
+    RULES:
+    1. Extract: "name" (e.g., "Electric Bill", "Mortgage"), "amount", "frequency" ("monthly", "annual"), "category" (e.g., "housing", "utilities", "food", "transportation").
+    2. Map categories to one of: housing, utilities, transportation, food, dining_out, healthcare, insurance, travel, entertainment, personal_care, clothing, gifts, childcare_education, charitable_giving, subscriptions, pet_care, home_maintenance, debt_payments, taxes, discretionary, other.
+    3. Return ONLY a JSON array: [{"name": "...", "amount": ..., "frequency": "...", "category": "..."}]
+    """
+
+    try:
+        image_bytes = base64.b64decode(image_b64)
+        if provider == 'gemini':
+            text_response = call_gemini_with_fallback(prompt, api_key, image_data=image_bytes)
+        else:
+            return jsonify({'error': 'Claude extraction for expenses not yet fully implemented'}), 501
+
+        json_str = text_response.replace('```json', '').replace('```', '').strip()
+        extracted_expenses = json.loads(json_str)
+        
+        return jsonify({'expenses': extracted_expenses, 'status': 'success'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

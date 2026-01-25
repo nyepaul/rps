@@ -7,6 +7,7 @@ import { store } from '../../state/store.js';
 import { profilesAPI } from '../../api/profiles.js';
 import { formatCurrency, parseCurrency } from '../../utils/formatters.js';
 import { showError, showSuccess } from '../../utils/dom.js';
+import { showAIImportModal } from '../ai/ai-import-modal.js';
 
 export function renderIncomeTab(container) {
     const profile = store.get('currentProfile');
@@ -49,9 +50,14 @@ export function renderIncomeTab(container) {
                         Tracking <strong>${profile.name}'s</strong> recurring income
                     </p>
                 </div>
-                <button id="add-income-stream-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; flex-shrink: 0;">
-                    + Add Income
-                </button>
+                <div style="display: flex; gap: 8px;">
+                    <button id="ai-import-income-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; display: flex; align-items: center; gap: 6px;">
+                        <span>📷</span> AI Import
+                    </button>
+                    <button id="add-income-stream-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px;">
+                        + Add Income
+                    </button>
+                </div>
             </div>
 
             <!-- Income Streams Table -->
@@ -70,6 +76,28 @@ export function renderIncomeTab(container) {
  */
 function setupIncomeStreamsHandlers(container, profile, incomeStreams) {
     renderIncomeStreamsList(container, incomeStreams);
+
+    // AI Import button
+    const aiBtn = container.querySelector('#ai-import-income-btn');
+    if (aiBtn) {
+        aiBtn.addEventListener('click', () => {
+            showAIImportModal('income', profile.name, async (extractedIncome) => {
+                // Add extracted items to income streams
+                for (const item of extractedIncome) {
+                    incomeStreams.push({
+                        name: item.name,
+                        amount: item.amount || 0,
+                        start_date: new Date().toISOString().split('T')[0],
+                        end_date: profile.retirement_date || null,
+                        description: `Imported via AI | ${item.frequency || ''}`
+                    });
+                }
+                
+                await saveIncomeStreams(profile, incomeStreams);
+                renderIncomeStreamsList(container, incomeStreams);
+            });
+        });
+    }
 
     // Add income stream button
     const addBtn = container.querySelector('#add-income-stream-btn');

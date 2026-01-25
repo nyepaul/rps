@@ -7,6 +7,8 @@ import { store } from '../../state/store.js';
 import { showError, showSuccess, showLoading } from '../../utils/dom.js';
 import { formatCurrency, parseCurrency } from '../../utils/formatters.js';
 import { APP_CONFIG } from '../../config.js';
+import { showAIImportModal } from '../ai/ai-import-modal.js';
+import { apiClient } from '../../api/client.js';
 
 let currentPeriod = 'current';
 let budgetData = null;
@@ -75,11 +77,21 @@ export function renderBudgetTab(container) {
 
     container.innerHTML = `
         <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-2) var(--space-3);">
-            <div style="margin-bottom: var(--space-2);">
-                <h1 style="margin: 0; font-size: var(--font-2xl);">💸 Expense Planning</h1>
-                <p style="color: var(--text-secondary); margin: 0; font-size: 13px;">
-                    Tracking <strong>${profile.name}'s</strong> recurring costs
-                </p>
+            <div style="margin-bottom: var(--space-2); display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                    <h1 style="margin: 0; font-size: var(--font-2xl);">💸 Expense Planning</h1>
+                    <p style="color: var(--text-secondary); margin: 0; font-size: 13px;">
+                        Tracking <strong>${profile.name}'s</strong> recurring costs
+                    </p>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button id="ai-import-expenses-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                        <span>📷</span> AI Import
+                    </button>
+                    <button id="copy-expenses-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; display: ${currentPeriod === 'future' ? 'flex' : 'none'}; align-items: center; gap: 6px;">
+                        <span>📋</span> Copy from Pre-Retirement
+                    </button>
+                </div>
             </div>
 
             <!-- Summary Cards -->
@@ -2023,10 +2035,56 @@ function showExpenseEditorModal(parentContainer, category) {
  * Setup expense event handlers
  */
 function setupBudgetEventHandlers(profile, container) {
+    // AI Import button
+    const aiImportBtn = container.querySelector('#ai-import-expenses-btn');
+    if (aiImportBtn) {
+        aiImportBtn.addEventListener('click', () => {
+            showAIImportModal('expenses', profile.name, async (extractedExpenses) => {
+                // Map extracted expenses to categories and add to budgetData
+                for (const item of extractedExpenses) {
+                    const category = item.category || 'other';
+                    if (!budgetData.expenses[currentPeriod][category]) {
+                        budgetData.expenses[currentPeriod][category] = [];
+                    }
+                    
+                    const newItem = {
+                        name: item.name,
+                        amount: item.amount || 0,
+                        frequency: item.frequency || 'monthly',
+                        inflation_adjusted: true,
+                        ongoing: true,
+                        start_date: null,
+                        end_date: null
+                    };
+                    
+                    budgetData.expenses[currentPeriod][category].push(newItem);
+                }
+                
+                renderExpenseSection(container);
+                renderBudgetSummary(container);
+                await saveBudget(profile, container);
+            });
+        });
+    }
+
+    // Copy Expenses button
+    const copyBtn = container.querySelector('#copy-expenses-btn');
+    if (copyBtn) {
+        copyBtn.addEventListener('click', () => {
+            showCopyExpensesModal(profile, container);
+        });
+    }
+
     // Period toggle
     container.querySelectorAll('.period-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             currentPeriod = e.target.getAttribute('data-period');
+
+            // Show/hide copy button
+            const copyBtn = container.querySelector('#copy-expenses-btn');
+            if (copyBtn) {
+                copyBtn.style.display = currentPeriod === 'future' ? 'flex' : 'none';
+            }
 
             // Update button styles
             container.querySelectorAll('.period-btn').forEach(b => {
@@ -2040,14 +2098,6 @@ function setupBudgetEventHandlers(profile, container) {
                     b.style.color = 'var(--text-primary)';
                 }
             });
-
-            // Update context text
-            const contextSpan = container.querySelector('#period-context');
-            if (contextSpan) {
-                contextSpan.textContent = currentPeriod === 'current'
-                    ? '(Pre-retirement expenses)'
-                    : '(Post-retirement expenses)';
-            }
 
             // Re-render sections
             renderExpenseSection(container);
@@ -2067,6 +2117,79 @@ function setupBudgetEventHandlers(profile, container) {
         } else {
             btn.style.background = 'transparent';
             btn.style.color = 'var(--text-primary)';
+        }
+    });
+}
+
+/**
+ * Show modal for copying expenses
+ */
+function showCopyExpensesModal(profile, container) {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.style.zIndex = '2000';
+
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width: 450px; width: 90%;">
+            <h2 style="margin-top: 0;">📋 Copy Expenses</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;">
+                Copy all expenses from <strong>Pre-Retirement</strong> to <strong>Post-Retirement</strong>.
+            </p>
+
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px;">
+                <label style="display: flex; align-items: flex-start; gap: 12px; padding: 15px; border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; background: var(--bg-primary);">
+                    <input type="radio" name="copy-mode" value="merge" checked style="margin-top: 4px;">
+                    <div>
+                        <div style="font-weight: 600;">Merge with Existing</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">Keep current post-retirement expenses and add missing ones.</div>
+                    </div>
+                </label>
+                <label style="display: flex; align-items: flex-start; gap: 12px; padding: 15px; border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; background: var(--bg-primary);">
+                    <input type="radio" name="copy-mode" value="replace" style="margin-top: 4px;">
+                    <div>
+                        <div style="font-weight: 600; color: var(--danger-color);">Replace Everything</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">Delete all current post-retirement expenses and start fresh from pre-retirement.</div>
+                    </div>
+                </label>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button id="cancel-copy-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">Cancel</button>
+                <button id="confirm-copy-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Copy Now</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.querySelector('#cancel-copy-btn').addEventListener('click', () => modal.remove());
+    
+    modal.querySelector('#confirm-copy-btn').addEventListener('click', async () => {
+        const mode = modal.querySelector('input[name="copy-mode"]:checked').value;
+        
+        try {
+            const response = await apiClient.post('/api/budget/copy-expenses', {
+                profile_name: profile.name,
+                mode: mode
+            });
+
+            budgetData.expenses.future = response.expenses;
+            modal.remove();
+            
+            if (currentPeriod === 'future') {
+                renderExpenseSection(container);
+            }
+            renderBudgetSummary(container);
+            showSuccess(`Successfully copied expenses (${mode})`);
+            
+            // Refresh store with updated profile
+            const { profilesAPI } = await import('../../api/profiles.js');
+            const result = await profilesAPI.get(profile.name);
+            store.setState({ currentProfile: result.profile });
+            
+        } catch (error) {
+            console.error('Copy expenses error:', error);
+            showError('Failed to copy expenses: ' + error.message);
         }
     });
 }
