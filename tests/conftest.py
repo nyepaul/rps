@@ -451,7 +451,7 @@ def test_super_admin(test_db):
 
 
 @pytest.fixture(scope='function')
-def test_profile(test_db, test_user):
+def test_profile(test_db, test_user, encryption_service):
     """Create a test profile."""
     profile = Profile(
         user_id=test_user.id,
@@ -495,4 +495,18 @@ def encryption_service():
     """Create encryption service for testing."""
     # Use fixed key for testing
     test_key = b'0' * 32  # 32 bytes for AES-256
-    return EncryptionService(key=test_key)
+    
+    # Patch the global instance in the module
+    import src.services.encryption_service as es_module
+    original_service = es_module._encryption_service
+    original_get_service = es_module.get_encryption_service
+    
+    service = EncryptionService(key=test_key)
+    es_module._encryption_service = service
+    es_module.get_encryption_service = lambda: service
+    
+    yield service
+    
+    # Restore
+    es_module._encryption_service = original_service
+    es_module.get_encryption_service = original_get_service
