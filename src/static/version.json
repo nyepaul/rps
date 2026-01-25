@@ -1,5 +1,5 @@
 {
-    "version": "3.9.33",
+    "version": "3.9.34",
     "release_date": "2026-01-25",
-    "release_notes": "Refactor: Improved navigation menus and relocated Assets"
+    "release_notes": "Refactor: Restructured Data and Analysis menus"
 }

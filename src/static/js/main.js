@@ -260,9 +260,24 @@ async function loadTabComponent(tabName, container) {
             renderProfileTab(tabContent);
             break;
         }
-        case 'aie': {
-            const { renderAIETab } = await import('./components/aie/aie-tab.js');
-            renderAIETab(tabContent);
+        case 'income': {
+            const { renderIncomeTab } = await import('./components/income/income-tab.js');
+            renderIncomeTab(tabContent);
+            break;
+        }
+        case 'expenses': {
+            const { renderBudgetTab } = await import('./components/budget/budget-tab.js');
+            renderBudgetTab(tabContent);
+            break;
+        }
+        case 'assets': {
+            const { renderAssetsTab } = await import('./components/assets/assets-tab.js');
+            renderAssetsTab(tabContent);
+            break;
+        }
+        case 'withdrawal': {
+            const { renderWithdrawalTab } = await import('./components/withdrawal/withdrawal-tab.js');
+            renderWithdrawalTab(tabContent);
             break;
         }
         case 'cashflow': {
@@ -283,11 +298,6 @@ async function loadTabComponent(tabName, container) {
         case 'advisor': {
             const { renderAdvisorTab } = await import('./components/advisor/advisor-tab.js');
             renderAdvisorTab(tabContent);
-            break;
-        }
-        case 'accounts': {
-            const { renderAccountsTab } = await import('./components/accounts/accounts-tab.js');
-            renderAccountsTab(tabContent);
             break;
         }
         case 'comparison': {
