@@ -582,13 +582,13 @@ def analyze():
 
 if __name__ == '__main__':
     init_db()
-    app.run(host='0.0.0.0', port=8080, debug=False)
+    app.run(host='0.0.0.0', port=5137, debug=False)
 ```
 
 ### Database Schema
 
 ```sql
--- profiles.db
+-- planning.db
 
 CREATE TABLE profiles (
     name TEXT PRIMARY KEY,           -- Profile name (unique identifier)
@@ -939,11 +939,11 @@ open http://127.0.0.1:5137
 uv pip install gunicorn
 
 # Run with Gunicorn
-gunicorn -w 4 -b 0.0.0.0:8080 src.app:app
+gunicorn -w 4 -b 0.0.0.0:5137 src.app:app
 
 # Or use waitress (Windows-compatible)
 uv pip install waitress
-waitress-serve --host=0.0.0.0 --port=8080 src.app:app
+waitress-serve --host=0.0.0.0 --port=5137 src.app:app
 ```
 
 ### Docker Deployment
@@ -961,7 +961,7 @@ COPY src/ ./src/
 COPY skills/ ./skills/
 COPY data/ ./data/
 
-EXPOSE 8080
+EXPOSE 5137
 
 CMD ["python3", "src/app.py"]
 ```
@@ -969,7 +969,7 @@ CMD ["python3", "src/app.py"]
 ```bash
 # Build and run
 docker build -t rps .
-docker run -p 8080:8080 -v $(pwd)/data:/app/data rps
+docker run -p 5137:5137 -v $(pwd)/data:/app/data rps
 ```
 
 ---

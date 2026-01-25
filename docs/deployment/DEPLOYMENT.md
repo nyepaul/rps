@@ -5,7 +5,7 @@ This guide covers deploying RPS to Apache2 with Cloudflare Tunnel.
 ## Prerequisites
 
 - Apache2 installed with mod_proxy and mod_proxy_http enabled
-- Python 3.8+ installed
+- Python 3.12+ installed
 - Cloudflare Tunnel configured for rps.pan2.app
 - Root/sudo access
 

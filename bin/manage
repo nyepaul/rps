@@ -40,14 +40,14 @@ start_docker() {
     echo "Starting container..."
     docker run -d \
         --name retirement-planner \
-        -p 8080:8080 \
+        -p 5137:5137 \
         -v $PROJECT_DIR/data:/app/data \
         retirement-planning
 
     echo ""
     echo "Application started!"
-    echo "API: http://127.0.0.1:8080"
-    echo "Web Interface: http://127.0.0.1:8080"
+    echo "API: http://127.0.0.1:5137"
+    echo "Web Interface: http://127.0.0.1:5137"
     echo ""
 }
 
@@ -79,7 +79,7 @@ start_tunnel() {
         fi
     fi
     
-    cloudflared tunnel --url http://127.0.0.1:8080
+    cloudflared tunnel --url http://127.0.0.1:5137
 }
 
 backup_data() {
@@ -137,7 +137,7 @@ check_status() {
     
     echo ""
     
-    if curl -s http://127.0.0.1:8080/health > /dev/null; then
+    if curl -s http://127.0.0.1:5137/health > /dev/null; then
         echo "Health check: OK"
     else
         echo "Health check: FAILED"

@@ -5,7 +5,7 @@ Project context for Google Gemini AI.
 ## Project: Retirement & Wealth Planning System (RPS)
 
 **Type**: Web Application (Flask/Vanilla JS)
-**Version**: 3.8.x (See `src/__version__.py`)
+**Version**: 3.9.x (See `src/__version__.py`)
 **Location**: `/home/paul/src/rps`
 **Manager**: `bin/manage` (Main CLI entry point)
 
@@ -92,7 +92,7 @@ The system works fully offline but gains capabilities with API keys (Gemini/Clau
 pytest                       # Run test suite
 pytest tests/test_models/    # Run specific tests
 alembic revision --autogenerate -m "msg"  # Create migration
-./bin/bump-version 3.8.X "msg"  # CRITICAL: Version bump before push
+./bin/bump-version 3.9.X "msg"  # CRITICAL: Version bump before push
 ```
 
 ## Documentation Map

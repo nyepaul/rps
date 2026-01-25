@@ -1,5 +1,11 @@
 # RPS (Retirement Planning System) - Complete
 
+> **Note**: This is a historical document from early development. The current application uses:
+> - Port **5137** (not via file://)
+> - `./bin/start` and `./bin/manage` (not ./manage.sh)
+> - Modern structure with `src/` (not webapp/)
+> - See [docs/guides/QUICKSTART.md](../guides/QUICKSTART.md) for current instructions.
+
 ## What I Built For You
 
 A comprehensive retirement and wealth planning system with:

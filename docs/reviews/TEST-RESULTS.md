@@ -137,12 +137,12 @@ sleep 5
 ./test-api.sh
 
 # Access web interface
-open http://127.0.0.1:8080
+open http://127.0.0.1:5137
 ```
 
 ## Next Steps
 
-1. Open the web interface in your browser at http://127.0.0.1:8080
+1. Open the web interface in your browser at http://127.0.0.1:5137
 2. Review the existing profile data
 3. Run a complete analysis to see all results
 4. Check the action items tab for prioritized tasks

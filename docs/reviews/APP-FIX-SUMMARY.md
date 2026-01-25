@@ -1,5 +1,10 @@
 # Application Fixed - "Failed to Fetch" Error Resolved
 
+> **Note**: This is a historical document from early development. The current application uses:
+> - Port **5137** (not 8080)
+> - `./bin/start` (not ./start.sh)
+> - See [docs/guides/QUICKSTART.md](../guides/QUICKSTART.md) for current instructions.
+
 ## What Was Wrong
 
 The HTML file was trying to connect to the Flask backend at `http://127.0.0.1:8080`, but:

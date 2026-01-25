@@ -54,15 +54,17 @@ A local-first financial planning application for Monte Carlo retirement simulati
 - [Security](docs/security/SYSTEM_SECURITY_DOCUMENTATION.md)
 - [Backup & Restore](docs/BACKUP_GUIDE.md)
 
-## Environment Variables
+## Environment Variables (System/Test)
+
+The following variables are used for system-level configuration or testing. **User API keys should be configured via the Web UI for security.**
 
 | Variable | Purpose |
 |----------|---------|
-| `GEMINI_API_KEY` | Google Gemini API access |
-| `ANTHROPIC_API_KEY` | Claude API access |
+| `GEMINI_API_KEY` | Google Gemini API access (Fallback/Test) |
+| `ANTHROPIC_API_KEY` | Claude API access (Fallback/Test) |
 | `SECRET_KEY` | Flask session encryption |
 | `ENCRYPTION_KEY` | Data encryption (required in production) |
 
 ---
 
-**Version**: 3.9 | **Author**: pan
+**Version**: 3.9.28 | **Author**: pan

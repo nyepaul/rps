@@ -12,16 +12,22 @@ RPS supports Google Gemini as an AI provider for strategic retirement advice. Th
 ## Setup
 
 ### API Key Configuration
+
+**Recommended Method (UI):**
+1. Start the application (`./bin/start`).
+2. Log in and go to **Profile & Data**.
+3. Click the **Settings** (gear icon) tab.
+4. Enter your key in the **API Keys** section.
+5. Click **Save Settings**.
+
+**Command Line (Initial Setup):**
 ```bash
 ./bin/setup-api-keys
 ```
+*Note: This script prompts for your key and can configure it for the current session or help you set it up.*
 
-Or manually:
-```bash
-export GEMINI_API_KEY="your-key-here"
-```
-
-Add to `~/.zshrc` or `~/.bashrc` for persistence.
+**Environment Variable (System/Test):**
+You can set `GEMINI_API_KEY` as an environment variable for testing or system-wide overrides, but the per-profile setting in the UI is preferred for multi-user security.
 
 ## Model Configuration
 
@@ -97,8 +103,8 @@ Gemini has rate limits. Wait and retry, or use Claude as an alternative.
 
 ## Security
 
-- API keys stored as environment variables (not in database)
-- Keys never logged or transmitted to frontend
+- API keys stored in encrypted user profile (database)
+- Keys never logged or transmitted to frontend (masked)
 - All AI requests go through the Flask backend
 
 ## Version

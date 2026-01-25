@@ -126,7 +126,7 @@ The sample demonstrates all 11 account types supported by the system:
 ### Via API
 
 ```bash
-curl -X POST http://127.0.0.1:8080/api/load-sample-profile
+curl -X POST http://127.0.0.1:5137/api/load-sample-profile
 ```
 
 Response:

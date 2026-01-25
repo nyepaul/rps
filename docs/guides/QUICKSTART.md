@@ -2,11 +2,17 @@
 
 ## Get Optimized in 5 Minutes
 
-### Step 0: Configure API Keys (One-Time Setup)
+### Step 0: Configure API Keys
+**Option A: Web Interface (Persistent)**
+1. Start the app (`./bin/start`).
+2. Go to **Profile & Data** > **Settings** (gear icon).
+3. Enter your key and click **Save Settings**.
+
+**Option B: Command Line (Quick/One-time)**
 ```bash
 ./bin/setup-api-keys
 ```
-*This interactive script will prompt for your Gemini or Claude API key and configure it as an environment variable.*
+*This script will help you configure your API key for the current session.*
 
 ### Step 1: Start the Application
 ```bash

@@ -4,12 +4,19 @@
 
 The RPS application features enterprise-grade audit logging with extensive data collection capabilities for security monitoring, compliance auditing, fraud detection, and user behavior analytics.
 
-Version: 3.8.21+
+Version: 3.9.x
 Location: `src/services/enhanced_audit_logger.py`
 
 ## Key Features
 
-### 1. Real Client IP Detection
+### 1. Narrative Generator (New)
+**Human-Readable Timelines:**
+- Converts raw audit logs into plain English stories.
+- Accessible via the Admin User Timeline view.
+- Summarizes complex sessions into clear events (e.g., "User logged in from New York, updated their profile, and ran 3 simulations before logging out.").
+- Logic location: `src/services/audit_narrative_generator.py`.
+
+### 2. Real Client IP Detection
 **Behind Cloudflare proxy support:**
 - Priority 1: `CF-Connecting-IP` (Cloudflare's real client IP)
 - Priority 2: `X-Forwarded-For` (standard proxy header)
@@ -424,5 +431,5 @@ For issues or questions:
 
 ---
 
-**Last Updated:** 2026-01-18
-**Version:** 3.8.21
+**Last Updated:** 2026-01-25
+**Version:** 3.9.x

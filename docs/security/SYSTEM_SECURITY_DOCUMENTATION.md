@@ -127,13 +127,16 @@ All sensitive data is encrypted at rest using **AES-256-GCM** (Advanced Encrypti
 
 **PBKDF2 (Password-Based Key Derivation Function 2):**
 - **Hash Function:** SHA-256
-- **Iterations:** 100,000 (configurable)
-- **Salt:** Master salt from environment variable
+- **Iterations:** 600,000 (Current Standard)
+  - Legacy support: 100,000 iterations (auto-migrated on login)
+- **Salt:** 
+  - New: Deterministic user-specific salt (username + email hash)
+  - Legacy: Generic system-wide salt (migrated on login)
 - **Output:** 256-bit encryption key
 
 ```python
 # Key derivation pseudocode
-def derive_key(password, salt, iterations=100000):
+def derive_key(password, salt, iterations=600000):
     key = PBKDF2(
         password=password,
         salt=salt,
@@ -703,5 +706,5 @@ The Retirement & Wealth Planning System implements defense-in-depth security wit
 - ✅ SQL injection prevention via parameterized queries
 - ✅ Production-ready security configuration
 
-**Last Updated:** 2025-01-15
-**Version:** 2.0
+**Last Updated:** 2026-01-25
+**Version:** 3.9.x

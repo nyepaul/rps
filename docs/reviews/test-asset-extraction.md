@@ -94,7 +94,7 @@ The asset extraction system now **preserves existing field values** when process
 
 1. **Start the server:**
    ```bash
-   ./start.sh
+   ./bin/start
    ```
 
 2. **Set API key in Settings tab** (Gemini or Claude)
