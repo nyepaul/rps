@@ -29,13 +29,16 @@ export async function renderDemoManagement(container) {
                     <div style="background: var(--info-bg); padding: 10px; border-radius: 6px; border-left: 3px solid var(--accent-color);">
                         <div style="font-weight: 700; font-size: 11px; margin-bottom: 4px; text-transform: uppercase;">📋 INCLUDED PROFILES:</div>
                         <div style="font-size: 11px; line-height: 1.4; color: var(--text-secondary);">
-                            <strong>1. Demo Thompson (Upper-Class)</strong>
+                            <strong>1. Demo Junior (Entry Level)</strong>
+                            <div style="margin-bottom: 4px;">$70K Income, $27.5K Assets, Single, 26yo.</div>
+
+                            <strong>2. Demo Thompson (Upper-Class)</strong>
                             <div style="margin-bottom: 4px;">$336K Income, $2.3M Portfolio, $1.85M SF Home, Married, 2 College Kids.</div>
 
-                            <strong>2. Demo Starman (Middle-Class)</strong>
+                            <strong>3. Demo Starman (Middle-Class)</strong>
                             <div style="margin-bottom: 4px;">$165K Income, $575K Portfolio, $450K Austin Home, Married, 3 Kids (7-14).</div>
 
-                            <strong>3. Demo Dudeman (Blue Collar)</strong>
+                            <strong>4. Demo Dudeman (Blue Collar)</strong>
                             <div>$73K Income, $79K Portfolio, $220K Columbus Home, Single, IBEW Electrician.</div>
                         </div>
                     </div>
@@ -62,7 +65,7 @@ function setupResetDemoButton(container) {
     if (!resetBtn) return;
 
     resetBtn.addEventListener('click', async () => {
-        if (!confirm('Are you sure you want to reset the demo account? This will delete all existing demo profiles and recreate Thompson, Starman, and Dudeman templates.')) {
+        if (!confirm('Are you sure you want to reset the demo account? This will delete all existing demo profiles and recreate Junior, Thompson, Starman, and Dudeman templates.')) {
             return;
         }
 
