@@ -259,25 +259,16 @@ fi
 
 echo -e "  ✓ RPS service restarted"
 
-# --- 3. FINAL REPORT ---
+# Save current commit for next time
+echo "$CURRENT_COMMIT_FULL" > "$PREV_COMMIT_FILE"
+chown www-data:www-data "$PREV_COMMIT_FILE"
 
-# Get current git info
-cd "$SOURCE_DIR"
-CURRENT_COMMIT_FULL=$(git rev-parse HEAD)
-GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
-GIT_SUBJECT=$(git log -1 --format=%s 2>/dev/null || echo "unknown")
+# --- 3. FINAL REPORT ---
 
 echo ""
 echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${GREEN}║                    DEPLOYMENT COMPLETE                         ║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
-echo ""
-
-echo -e "${GREEN}📦 Version:${NC}      $VERSION"
-echo -e "${GREEN}📅 Released:${NC}     $RELEASE_DATE"
-echo -e "${GREEN}🚀 Deployed:${NC}     $(date '+%Y-%m-%d %H:%M:%S')"
-echo -e "${GREEN}Commit:${NC}       $GIT_COMMIT - $GIT_SUBJECT"
-echo -e "${GREEN}📝 Changes:${NC}      $RELEASE_NOTES"
 echo ""
 
 # --- TECH REPORT SECTION ---
@@ -311,10 +302,6 @@ else
 fi
 echo ""
 
-# Save current commit for next time
-echo "$CURRENT_COMMIT_FULL" > "$PREV_COMMIT_FILE"
-chown www-data:www-data "$PREV_COMMIT_FILE"
-
 # Access URLs
 echo -e "${YELLOW}🌐 Access URLs:${NC}"
 echo "   https://rps.pan2.app                 (Production - via Cloudflare)"
@@ -328,3 +315,12 @@ echo "   sudo systemctl status $SERVICE_NAME"
 echo "   sudo systemctl restart $SERVICE_NAME"
 echo "   sudo journalctl -u $SERVICE_NAME -f"
 echo "   tail -f $TARGET_DIR/logs/rps.log"
+echo ""
+
+# DISPLAY VERSION SUMMARY LAST
+echo -e "${GREEN}📦 Version:${NC}      $VERSION"
+echo -e "${GREEN}📅 Released:${NC}     $RELEASE_DATE"
+echo -e "${GREEN}🚀 Deployed:${NC}     $(date '+%Y-%m-%d %H:%M:%S')"
+echo -e "${GREEN}Commit:${NC}       $GIT_COMMIT - $GIT_SUBJECT"
+echo -e "${GREEN}📝 Changes:${NC}      $RELEASE_NOTES"
+echo ""
