@@ -286,12 +286,11 @@ def create_app(config_name='development'):
         response.headers['Cross-Origin-Resource-Policy'] = 'same-origin'
 
         # Content Security Policy
-        # NOTE: 'unsafe-inline' is still required for current inline scripts
-        # TODO: Move inline scripts to external files and use nonces for better security
+        # NOTE: 'unsafe-inline' removed for scripts, external files required
         csp_directives = [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com",
-            "style-src 'self' 'unsafe-inline' https://unpkg.com",
+            "script-src 'self' https://cdn.jsdelivr.net https://unpkg.com",
+            "style-src 'self' 'unsafe-inline' https://unpkg.com",  # unsafe-inline kept for style attributes
             "img-src 'self' data: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com",
             "font-src 'self' data:",
             "connect-src 'self' https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com",
