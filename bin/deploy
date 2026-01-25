@@ -260,6 +260,8 @@ fi
 echo -e "  ✓ RPS service restarted"
 
 # Save current commit for next time
+GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+GIT_SUBJECT=$(git log -1 --format=%s 2>/dev/null || echo "unknown")
 echo "$CURRENT_COMMIT_FULL" > "$PREV_COMMIT_FILE"
 chown www-data:www-data "$PREV_COMMIT_FILE"
 
@@ -273,6 +275,7 @@ echo ""
 
 # --- TECH REPORT SECTION ---
 echo -e "${YELLOW}📋 Deployment Tech Report (Changelog):${NC}"
+cd "$SOURCE_DIR"
 if [ -n "$PREV_COMMIT" ] && [ "$PREV_COMMIT" != "$CURRENT_COMMIT_FULL" ]; then
      echo "   Changes since last deployment ($PREV_COMMIT):"
      echo "   --------------------------------------------"
