@@ -6,6 +6,9 @@ import json
 import base64
 from io import BytesIO
 from PIL import Image
+import requests
+from google import genai
+from google.genai import types
 from src.services.enhanced_audit_logger import enhanced_audit_logger
 from src.extensions import limiter
 
@@ -14,8 +17,6 @@ ai_services_bp = Blueprint('ai_services', __name__, url_prefix='/api')
 
 def call_gemini_with_fallback(prompt, api_key, image_data=None):
     """Calls Gemini with a prioritized list of models and fallback logic using REST API."""
-    import requests
-
     # Use full model resource names for v1 API - latest models first
     models = [
         'models/gemini-3-flash-preview',         # Latest Gemini 3 Flash (Dec 2025) - balanced speed & intelligence
@@ -187,9 +188,6 @@ def advisor_chat():
         """
 
         # Call Gemini with fallback models
-        from google import genai
-        from google.genai import types
-
         client = genai.Client(api_key=api_key)
 
         # Save user message

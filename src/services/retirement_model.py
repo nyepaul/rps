@@ -1493,20 +1493,15 @@ class RetirementModel:
                     'year': int(simulation_year),
                     'month': month_idx + 1,
                     'age': int(p1_age_start),
-                    'gross_income': float(m_ord_taxable + (m_gross_ss - m_taxable_ss) + m_withdrawals),
-                    'expenses_excluding_tax': float(m_target_spending),
-                    'federal_tax': float(m_fed_tax),
-                    'state_tax': float(m_state_tax),
-                    'fica_tax': float(m_fica_tax),
-                    'ltcg_tax': float(m_ltcg_tax),
-                    'portfolio_balance': float(cash + taxable_val + pretax_std + pretax_457 + roth),
-                    'withdrawals': float(m_withdrawals)
+                    'gross_income': float((m_ord_taxable + (m_gross_ss - m_taxable_ss) + m_withdrawals).item() if hasattr(m_ord_taxable, 'item') else (m_ord_taxable + (m_gross_ss - m_taxable_ss) + m_withdrawals)),
+                    'expenses_excluding_tax': float(m_target_spending.item() if hasattr(m_target_spending, 'item') else m_target_spending),
+                    'federal_tax': float(m_fed_tax.item() if hasattr(m_fed_tax, 'item') else m_fed_tax),
+                    'state_tax': float(m_state_tax.item() if hasattr(m_state_tax, 'item') else m_state_tax),
+                    'fica_tax': float(m_fica_tax.item() if hasattr(m_fica_tax, 'item') else m_fica_tax),
+                    'ltcg_tax': float(m_ltcg_tax.item() if hasattr(m_ltcg_tax, 'item') else m_ltcg_tax),
+                    'portfolio_balance': float((cash + taxable_val + pretax_std + pretax_457 + roth).item() if hasattr(cash, 'item') else (cash + taxable_val + pretax_std + pretax_457 + roth)),
+                    'withdrawals': float(m_withdrawals.item() if hasattr(m_withdrawals, 'item') else m_withdrawals)
                 })
-
-        return detailed_ledger
-
-        return detailed_ledger
-
         return detailed_ledger
 
     def calculate_rmd(self, age: int, ira_balance: float):
