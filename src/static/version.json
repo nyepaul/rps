@@ -1,5 +1,5 @@
 {
-    "version": "3.9.32",
+    "version": "3.9.33",
     "release_date": "2026-01-25",
-    "release_notes": "Refactor: Centralized version configuration"
+    "release_notes": "Refactor: Improved navigation menus and relocated Assets"
 }

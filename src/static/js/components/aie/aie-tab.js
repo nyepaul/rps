@@ -1,8 +1,7 @@
 /**
- * AIE Tab - Assets, Income, Expenses consolidated view
+ * AIE Tab - Income and Expenses consolidated view
  */
 
-import { renderAssetsTab } from '../assets/assets-tab.js';
 import { renderIncomeTab } from '../income/income-tab.js';
 import { renderBudgetTab } from '../budget/budget-tab.js';
 
@@ -10,20 +9,17 @@ import { renderBudgetTab } from '../budget/budget-tab.js';
  * Render AIE tab with sub-navigation
  */
 export function renderAIETab(container) {
-    console.log('AIE: Rendering AIE tab with Assets as default');
+    console.log('AIE: Rendering AIE tab');
 
     container.innerHTML = `
         <div class="aie-container">
             <div class="aie-header">
-                <h2>Assets, Income & Expenses</h2>
+                <h2>Income & Expenses</h2>
                 <p class="help-text">Manage your financial data</p>
             </div>
 
             <div class="aie-subtabs">
-                <button class="aie-subtab active" data-subtab="assets">
-                    💰 Assets
-                </button>
-                <button class="aie-subtab" data-subtab="income">
+                <button class="aie-subtab active" data-subtab="income">
                     💵 Income
                 </button>
                 <button class="aie-subtab" data-subtab="expenses">
@@ -41,12 +37,11 @@ export function renderAIETab(container) {
     // Set up sub-tab navigation (query from container to ensure elements exist)
     setupSubtabNavigation(container);
 
-    console.log('AIE: Event listeners attached, loading default subtab: Assets');
+    console.log('AIE: Event listeners attached, loading default subtab: Income');
 
-    // IMPORTANT: Always load Assets by default when AIE tab is opened
-    // Use setTimeout to ensure DOM is fully ready
+    // Default to Income
     setTimeout(() => {
-        showAIESubtab('assets', container);
+        showAIESubtab('income', container);
     }, 0);
 }
 
@@ -181,10 +176,6 @@ function showAIESubtab(subtabName, parentContainer = null) {
         // Load the appropriate component directly into the container
         // The render functions handle setting innerHTML and event listeners
         switch (subtabName) {
-            case 'assets':
-                console.log('AIE: Loading Assets (default subtab)');
-                renderAssetsTab(contentContainer);
-                break;
             case 'income':
                 renderIncomeTab(contentContainer);
                 break;

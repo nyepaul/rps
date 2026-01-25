@@ -1,5 +1,5 @@
 /**
- * Accounts tab component - Manage accounts and withdrawal strategy
+ * Accounts tab component - Manage assets and withdrawal strategy
  */
 
 import { store } from '../../state/store.js';
@@ -8,6 +8,7 @@ import { showArticle } from '../learn/learn-tab.js';
 import { analysisAPI } from '../../api/analysis.js';
 import { showAssetWizard } from '../assets/asset-wizard.js';
 import { profilesAPI } from '../../api/profiles.js';
+import { renderAssetsTab } from '../assets/assets-tab.js';
 
 export function renderAccountsTab(container) {
     const profile = store.get('currentProfile');
@@ -20,14 +21,130 @@ export function renderAccountsTab(container) {
                 <p style="color: var(--text-secondary); margin-bottom: var(--space-6);">
                     Please create or select a profile to manage accounts.
                 </p>
-                <button onclick="window.app.showTab('welcome')" style="padding: var(--space-3) var(--space-6); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-md);">
+                <button id="go-to-welcome-btn" style="padding: var(--space-3) var(--space-6); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-md);">
                     Go to Welcome
                 </button>
             </div>
         `;
+        setTimeout(() => {
+            const btn = container.querySelector('#go-to-welcome-btn');
+            if (btn) btn.addEventListener('click', () => window.app.showTab('welcome'));
+        }, 0);
         return;
     }
 
+    container.innerHTML = `
+        <div class="accounts-container">
+            <div class="accounts-header">
+                <h1 style="font-size: var(--font-2xl); margin: 0 0 4px 0;">Assets & Accounts</h1>
+                <p style="color: var(--text-secondary); margin: 0; font-size: 13px;">Manage your portfolio and withdrawal strategy</p>
+            </div>
+
+            <div class="accounts-subtabs">
+                <button class="accounts-subtab active" data-subtab="assets">
+                    💰 Assets
+                </button>
+                <button class="accounts-subtab" data-subtab="strategy">
+                    🔄 Withdrawal Strategy
+                </button>
+            </div>
+
+            <div id="accounts-subtab-content"></div>
+        </div>
+    `;
+
+    addAccountsStyles();
+    setupSubtabNavigation(container);
+
+    // Default to Assets subtab
+    setTimeout(() => {
+        showAccountsSubtab('assets', container);
+    }, 0);
+}
+
+function addAccountsStyles() {
+    if (document.getElementById('accounts-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'accounts-styles';
+    style.textContent = `
+        .accounts-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0;
+        }
+        .accounts-header {
+            padding: 12px 16px 8px 16px;
+        }
+        .accounts-subtabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 16px;
+            margin-bottom: 12px;
+            background: var(--bg-secondary);
+        }
+        .accounts-subtab {
+            padding: 8px 16px;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            margin-bottom: -1px;
+        }
+        .accounts-subtab:hover {
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+        }
+        .accounts-subtab.active {
+            color: var(--accent-color);
+            border-bottom-color: var(--accent-color);
+            background: var(--bg-primary);
+        }
+        #accounts-subtab-content {
+            padding: 0 16px 16px 16px;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function setupSubtabNavigation(container) {
+    const buttons = container.querySelectorAll('.accounts-subtab');
+    buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const subtab = btn.getAttribute('data-subtab');
+            showAccountsSubtab(subtab, container);
+        });
+    });
+}
+
+function showAccountsSubtab(subtabName, container) {
+    // Update buttons
+    const buttons = container.querySelectorAll('.accounts-subtab');
+    buttons.forEach(btn => {
+        if (btn.getAttribute('data-subtab') === subtabName) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    const contentContainer = container.querySelector('#accounts-subtab-content');
+    if (!contentContainer) return;
+
+    if (subtabName === 'assets') {
+        renderAssetsTab(contentContainer);
+    } else if (subtabName === 'strategy') {
+        renderWithdrawalStrategy(contentContainer);
+    }
+}
+
+function renderWithdrawalStrategy(container) {
+    const profile = store.get('currentProfile');
     const data = profile.data || {};
     const assets = data.assets || {};
 
@@ -50,14 +167,7 @@ export function renderAccountsTab(container) {
     const totalAssets = liquidAssets + retirementAssets + realEstateAssets + otherAssets;
 
     container.innerHTML = `
-        <div style="max-width: 1200px; margin: 0 auto; padding: var(--space-2) var(--space-3);">
-            <div style="margin-bottom: var(--space-3);">
-                <h1 style="font-size: var(--font-2xl); margin: 0;">Account Management</h1>
-                <p style="color: var(--text-secondary); margin: 0; font-size: 13px;">
-                    Withdrawal strategy and asset allocation for <strong>${profile.name}</strong>
-                </p>
-            </div>
-
+        <div style="max-width: 1200px; margin: 0 auto;">
             <!-- Account Overview -->
             <div style="background: var(--bg-secondary); padding: var(--space-3); border-radius: 8px; margin-bottom: var(--space-3); border: 1px solid var(--border-color);">
                 <h2 style="font-size: 16px; margin-bottom: var(--space-3); color: var(--accent-color);">💰 Account Summary</h2>

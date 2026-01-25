@@ -167,7 +167,17 @@ function setupTabNavigation() {
  * Show specific tab
  */
 async function showTab(tabName) {
-    // 1. Reset all active states
+    // 1. Force close any open dropdowns
+    const dropdowns = document.querySelectorAll('.nav-dropdown');
+    dropdowns.forEach(d => {
+        d.classList.add('force-hide');
+        // Remove the class after a short delay to allow re-opening
+        setTimeout(() => {
+            d.classList.remove('force-hide');
+        }, 300);
+    });
+
+    // 2. Reset all active states
     const allTabs = document.querySelectorAll('.tab');
     const allGroups = document.querySelectorAll('.nav-group');
     

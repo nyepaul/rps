@@ -1087,4 +1087,4 @@
         .accordion-content.expanded {
             max-height: 5000px;
             transition: max-height 0.5s ease-in;
-        }
+        }.force-hide { display: none !important; }

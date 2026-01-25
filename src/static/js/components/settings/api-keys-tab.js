@@ -19,11 +19,15 @@ export function renderAPIKeysTab(container) {
                 <p style="color: var(--text-secondary); margin-bottom: 30px;">
                     Please create or select a profile to manage API keys.
                 </p>
-                <button onclick="window.app.showTab('welcome')" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <button id="go-to-welcome-btn" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
                     Go to Welcome
                 </button>
             </div>
         `;
+        setTimeout(() => {
+            const btn = container.querySelector('#go-to-welcome-btn');
+            if (btn) btn.addEventListener('click', () => window.app.showTab('welcome'));
+        }, 0);
         return;
     }
 
