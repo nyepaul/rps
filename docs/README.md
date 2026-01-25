@@ -6,7 +6,7 @@ Welcome to the rps documentation. This directory contains comprehensive guides f
 
 ### Getting Started
 - **[START-HERE.md](START-HERE.md)** - Welcome guide for new users
-- **[../QUICKSTART.md](../QUICKSTART.md)** - 5-minute quick start guide
+- **[guides/QUICKSTART.md](guides/QUICKSTART.md)** - 5-minute quick start guide
 - **[../README.md](../README.md)** - Project overview and main documentation
 
 ### Architecture & Technical
@@ -70,5 +70,5 @@ rps/
 
 ---
 
-**Last Updated**: January 2026  
-**Structure Version**: 2.0 (Modernized January 2026)
+**Last Updated**: January 2026
+**RPS Version**: 3.9

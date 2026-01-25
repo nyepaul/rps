@@ -8,19 +8,21 @@ This error means the backend Flask server isn't running properly.
 
 **Step 1: Start the server correctly**
 
-    cd rps
-    ./start.sh
+```bash
+cd rps
+./bin/start
+```
 
 You should see:
 ```
 Starting Flask Server...
 Access the application at:
-http://127.0.0.1:8080
+http://127.0.0.1:5137
 ```
 
 **Step 2: Open in browser**
 
-Navigate to: **http://127.0.0.1:8080** (NOT file://)
+Navigate to: **http://127.0.0.1:5137** (NOT file://)
 
 The server MUST be running for the application to work.
 
@@ -32,8 +34,10 @@ The scripts need to be executable.
 
 ### Solution:
 
-    chmod +x start.sh
-    chmod +x manage.sh
+```bash
+chmod +x bin/start
+chmod +x bin/manage
+```
 
 ---
 
@@ -44,35 +48,40 @@ Python 3 is not installed.
 ### Solution:
 
 **macOS:**
-
-    brew install python3
+```bash
+brew install python3
+```
 
 **Linux (Ubuntu/Debian):**
-
-    sudo apt update
-    sudo apt install python3 python3-pip python3-venv
+```bash
+sudo apt update
+sudo apt install python3 python3-pip python3-venv
+```
 
 **Windows:**
-
 Download from: https://www.python.org/downloads/
 
 ---
 
-## Error: Port 8080 already in use
+## Error: Port 5137 already in use
 
-Another application is using port 8080.
+Another application is using port 5137.
 
 ### Solution:
 
 **Option 1: Stop the other application**
 
-**Option 2: Use a different port**
+Find and kill the process:
+```bash
+lsof -i :5137
+kill <PID>
+```
 
-Edit `webapp/app.py`, change last line to:
-
-    app.run(host='0.0.0.0', port=8081, debug=False)
-
-Then access at: http://127.0.0.1:8081
+**Option 2: Stop any existing RPS instance**
+```bash
+./bin/manage stop
+./bin/start
+```
 
 ---
 
@@ -89,7 +98,7 @@ Click "Load Saved Profile" in the Profile tab, or enter your data manually.
 ### Solution:
 
 1. Check your input data in Profile tab
-2. Verify pension lump sum = $120,000 (not annual income)
+2. Verify pension amounts are annual values
 3. Re-run analysis
 
 ---
@@ -99,78 +108,71 @@ Click "Load Saved Profile" in the Profile tab, or enter your data manually.
 ### Solution:
 
 **If pip install fails:**
-
-    python3 -m pip install --upgrade pip
-    python3 -m pip install flask flask-cors sqlalchemy numpy pandas
+```bash
+python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements.txt
+```
 
 **If numpy/pandas fail (missing compiler):**
 
 macOS:
-
-    xcode-select --install
+```bash
+xcode-select --install
+```
 
 Linux:
-
-    sudo apt install build-essential python3-dev
+```bash
+sudo apt install build-essential python3-dev
+```
 
 ---
 
 ## How to completely restart
 
-    cd rps
-    ./manage.sh clean
-    ./start.sh
+```bash
+./bin/manage stop
+./bin/start
+```
 
-This removes all data and starts fresh.
+To reset all data (WARNING: deletes profiles):
+```bash
+rm data/planning.db
+./bin/start
+```
 
 ---
 
 ## Still having issues?
 
 1. **Check Python version:**
-
-       python3 --version
-   
-   Should be 3.8 or higher
+   ```bash
+   python3 --version
+   ```
+   Should be 3.10 or higher
 
 2. **Check if server is running:**
-
-       curl http://127.0.0.1:8080/health
-   
+   ```bash
+   curl http://127.0.0.1:5137/health
+   ```
    Should return: `{"status":"healthy"}`
 
 3. **View server logs:**
-
-   Look at terminal where you ran `./start.sh`
+   Look at terminal where you ran `./bin/start`
    Errors will appear there
 
-4. **Test manually:**
-
-       cd rps/webapp
-       source venv/bin/activate
-       python app.py
+4. **Check logs directory:**
+   ```bash
+   cat logs/app.log
+   ```
 
 ---
 
 ## Quick Reference
 
-**Start server:**
-
-    ./start.sh
-
-**Access application:**
-
-    http://127.0.0.1:8080
-
-**Stop server:**
-
-    Press Ctrl+C in terminal
-
-**Check if running:**
-
-    curl http://127.0.0.1:8080/health
-
-**Clean and restart:**
-
-    ./manage.sh clean
-    ./start.sh
+| Task | Command |
+|------|---------|
+| Start server | `./bin/start` |
+| Stop server | `./bin/manage stop` |
+| Check status | `./bin/manage status` |
+| Access app | http://127.0.0.1:5137 |
+| Backup data | `./bin/backup` |

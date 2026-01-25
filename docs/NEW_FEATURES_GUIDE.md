@@ -1,7 +1,7 @@
 # RPS New Features Guide
 
-**Version:** 2.0
-**Date:** January 13, 2026
+**Version:** 3.9
+**Date:** January 2026
 **Summary:** Welcome Screen, Profile Creation Wizard, Educational Hub, and Level-Based Progression
 
 ---
@@ -166,7 +166,7 @@ GET /api/skills/<filename>
 
 **Request Example:**
 ```bash
-curl http://localhost:8080/api/skills/retirement-planning-SKILL.md
+curl http://127.0.0.1:5137/api/skills/retirement-planning-SKILL.md
 ```
 
 **Response Format:**
@@ -324,7 +324,7 @@ A gamification system that calculates profile completeness, assigns user levels,
 ### File Structure
 
 ```
-/Users/paul/src/rps/
+rps/
 ├── src/
 │   ├── app.py                      # Flask backend (skills endpoint added)
 │   └── static/
@@ -502,7 +502,7 @@ A gamification system that calculates profile completeness, assigns user levels,
 ### Skills Not Loading
 **Symptom:** Learn tab shows "Error loading content"
 **Cause:** Backend server not running or wrong port
-**Solution:** Verify Flask server running on port 8080
+**Solution:** Verify Flask server running on port 5137
 
 ### Progress Not Updating
 **Symptom:** Profile completeness stays at 0%
@@ -549,10 +549,12 @@ A gamification system that calculates profile completeness, assigns user levels,
 For issues, questions, or feature requests, please refer to the project repository or contact the development team.
 
 **Version History:**
-- v2.0 (2026-01-13): Welcome screen, wizard, educational hub, progression system
+- v3.9 (2026-01): Cash Flow improvements, Monte Carlo tax engine fixes
+- v3.8 (2026-01): Admin dashboard, backup/restore, audit logging
+- v2.0 (2026-01): Welcome screen, wizard, educational hub, progression system
 - v1.0 (Previous): Core retirement planning and Monte Carlo analysis
 
 ---
 
-*Generated: January 13, 2026*
-*RPS Enhancement Project*
+*Last Updated: January 2026*
+*RPS Version: 3.9*

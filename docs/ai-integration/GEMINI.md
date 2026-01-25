@@ -1,86 +1,107 @@
-# Retirement & Wealth Planning System
+# Gemini AI Integration Guide
 
-A comprehensive, local-first financial planning application designed for retirement scenario modeling, tax optimization, and estate planning.
+This document covers the Google Gemini integration for the RPS retirement planning system.
 
-## Project Overview
+## Overview
 
-*   **Purpose:** To provide a secure, private environment for modeling complex retirement scenarios (Monte Carlo), optimizing Social Security strategies, planning Roth conversions, and tracking estate planning action items.
-*   **Architecture:**
-    *   **Backend:** Python (Flask) API serving as the calculation engine and data manager.
-    *   **Frontend:** Single-page application (served via `index.html`) interacting with the Flask API.
-    *   **Database:** SQLite (`webapp/data/planning.db`) for local persistence of profiles and scenarios.
-    *   **Knowledge Base:** A "Skills" directory containing markdown files that define the financial logic and best practices.
-*   **Key Features:**
-    *   Monte Carlo Simulation (10,000 runs).
-    *   Social Security Optimization (Claiming age analysis).
-    *   Roth Conversion Strategy (Tax bracket filling).
-    *   Wealth Transfer & Estate Planning tracking.
+RPS supports Google Gemini as an AI provider for strategic retirement advice. The system uses Gemini's API for:
+- Profile analysis and recommendations
+- Self-assessment against best practices
+- Interactive advisor chat
 
-## Building and Running
+## Setup
 
-### Prerequisites
-*   Python 3.x
-*   Docker (optional, for containerized execution)
-
-### Quick Start
-The easiest way to run the application is using the provided shell scripts in the root directory.
-
+### API Key Configuration
 ```bash
-# Make the script executable if needed
-chmod +x start.sh
-
-# Start the application (local Python environment)
-./start.sh
+./bin/setup-api-keys
 ```
 
-The application will be accessible at `http://127.0.0.1:8080`.
-
-### Management Commands
-The `manage.sh` script provides a unified interface for common tasks:
-
+Or manually:
 ```bash
-./manage.sh start           # Start application locally
-./manage.sh start-docker    # Start in Docker container
-./manage.sh stop            # Stop the application
-./manage.sh status          # Check if running
-./manage.sh tunnel          # Expose via Cloudflare tunnel (for sharing)
-./manage.sh backup          # Backup the SQLite database
+export GEMINI_API_KEY="your-key-here"
 ```
 
-### Manual Development Setup
+Add to `~/.zshrc` or `~/.bashrc` for persistence.
 
-1.  **Navigate to webapp:**
-    ```bash
-    cd webapp
-    ```
+## Model Configuration
 
-2.  **Install Dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
+The system uses automatic model fallback:
 
-3.  **Run Flask App:**
-    ```bash
-    python app.py
-    ```
+| Priority | Model | Use Case |
+|----------|-------|----------|
+| 1 | `gemini-2.0-flash` | Primary - fast responses |
+| 2 | `gemini-1.5-flash` | Fallback |
 
-## Directory Structure
+## API Integration
 
-*   `webapp/`: Contains the source code for the application.
-    *   `app.py`: Main Flask application, API endpoints, and financial models.
-    *   `index.html`: The frontend user interface.
-    *   `data/`: Stores the `planning.db` SQLite database.
-    *   `requirements.txt`: Python dependencies.
-*   `skills/`: specific knowledge domains (Markdown format) used for reference and context.
-    *   `retirement-planning-SKILL.md`
-    *   `tax-strategy-SKILL.md`
-    *   `estate-legal-SKILL.md`
-    *   `wealth-transfer-SKILL.md`
-*   `docs/`: Documentation and analysis reports.
-*   `scripts/`: (If present) specific utility scripts.
+### Endpoint
+```
+POST /api/advisor/chat
+POST /api/perform-self-assessment
+```
 
-## Development Conventions
+### Request Format
+```json
+{
+  "message": "Should I delay Social Security?",
+  "profile_name": "main"
+}
+```
 
-*   **Local-First:** All data is stored locally in SQLite to ensure privacy.
-*   **Stateless logic:** Financial calculations (Monte Carlo, etc.) are performed on-the-fly based on the profile data.
-*   **API-Driven:** The frontend communicates strictly via JSON APIs defined in `app.py`.
+### Response Format
+```json
+{
+  "response": "Based on your profile...",
+  "action_data": {
+    "social_security_age_p1": 70
+  }
+}
+```
+
+## Features
+
+### Self-Assessment
+Analyzes the user's profile against 11 skill files in `skills/`:
+- retirement-planning-SKILL.md
+- tax-strategy-SKILL.md
+- estate-legal-SKILL.md
+- And more...
+
+### Quick Apply
+When Gemini returns `action_data`, the frontend shows a "Quick Apply" button to update profile parameters.
+
+### Context Injection
+Each AI request includes:
+- Current profile data
+- Latest analysis results (success rate, projections)
+- Relevant skill documents
+- Active action items
+
+## Usage
+
+1. **Start the server**: `./bin/start`
+2. **Open**: http://127.0.0.1:5137
+3. **Load profile**: Profile & Data tab
+4. **Get advice**: Analysis tab → "AI Recommendations"
+
+## Troubleshooting
+
+### "API key not configured"
+Run `./bin/setup-api-keys` and restart the server.
+
+### "Model not available"
+The system will automatically try fallback models.
+
+### Rate limiting
+Gemini has rate limits. Wait and retry, or use Claude as an alternative.
+
+## Security
+
+- API keys stored as environment variables (not in database)
+- Keys never logged or transmitted to frontend
+- All AI requests go through the Flask backend
+
+## Version
+
+**RPS Version**: 3.9.x
+**Last Updated**: January 2026
