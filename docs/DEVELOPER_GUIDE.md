@@ -16,11 +16,11 @@
 
 ### Design Principles
 
-1. **Single-Page Application**: All UI in one HTML file for simplicity
-2. **Progressive Enhancement**: Features enhance but don't break basic functionality
+1. **Single-Page Application**: Modular ES6 architecture with 60+ JS files
+2. **Component-Based**: UI organized into reusable components (`src/static/js/components/`)
 3. **localStorage for Ephemeral State**: Wizard progress and learning tracking
-4. **Backend for Persistence**: Profiles stored in SQLite
-5. **Security by Default**: Input validation on both client and server
+4. **Backend for Persistence**: Profiles stored in SQLite with AES-256-GCM encryption
+5. **Security by Default**: Pydantic validation on backend, input sanitization on frontend
 
 ---
 
@@ -29,21 +29,26 @@
 ```
 rps/
 ├── src/
-│   ├── app.py                    # Flask backend
+│   ├── app.py                    # Flask application factory
+│   ├── routes/                   # API endpoints (blueprints)
+│   ├── services/                 # Business logic (retirement_model.py)
+│   ├── models/                   # Domain models
+│   ├── schemas/                  # Pydantic validation
 │   └── static/
-│       └── index.html            # Single-page frontend (~7,500 lines)
+│       ├── index.html            # SPA shell (~124 lines)
+│       └── js/
+│           ├── main.js           # Entry point
+│           ├── components/       # UI components (60+ files)
+│           ├── api/              # API client modules
+│           ├── state/            # State management
+│           └── utils/            # Utility functions
 ├── data/
-│   └── planning.db               # SQLite database (auto-created)
-├── skills/                       # Educational markdown files
-│   ├── retirement-planning-SKILL.md
-│   ├── estate-legal-SKILL.md
-│   └── ... (11 total files)
-├── docs/
-│   ├── NEW_FEATURES_GUIDE.md     # User-facing feature docs
-│   ├── QUICK_START_GUIDE.md      # Quick reference for users
-│   └── DEVELOPER_GUIDE.md        # This file
-├── logs/                         # Application logs (auto-created)
-├── .venv/                        # Python virtual environment
+│   └── planning.db               # SQLite database (encrypted)
+├── skills/                       # Educational markdown files (11 total)
+├── docs/                         # Documentation
+├── tests/                        # Test suite
+├── bin/                          # Executable scripts
+├── logs/                         # Application logs
 └── requirements.txt              # Python dependencies
 ```
 
@@ -51,87 +56,66 @@ rps/
 
 ## Frontend Architecture
 
-### HTML Structure
+The frontend uses a modular ES6 architecture with 60+ JavaScript files organized by domain.
 
-```html
-<!-- index.html structure -->
-<html>
-  <head>
-    <title>Retirement Planning System</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-      /* ~1,000 lines of CSS */
-      /* CSS custom properties for theming */
-      /* Responsive layout styles */
-    </style>
-  </head>
-  <body>
-    <!-- Header with logo and settings -->
-    <div class="header">...</div>
+### Module Structure
 
-    <!-- Tab navigation -->
-    <div class="tabs">
-      <button onclick="showTab('welcome')">Welcome</button>
-      <button onclick="showTab('dashboard')">Dashboard</button>
-      <!-- ... more tabs ... -->
-    </div>
+```
+src/static/js/
+├── main.js                 # Application entry point
+├── config.js               # Configuration and version
+├── api/                    # API client modules
+│   ├── client.js           # Base HTTP client
+│   ├── profiles.js         # Profile CRUD
+│   ├── analysis.js         # Monte Carlo analysis
+│   ├── advisor.js          # AI advisor
+│   └── ...
+├── components/             # UI components (one per tab/feature)
+│   ├── dashboard/          # Dashboard tab
+│   ├── analysis/           # Analysis tab
+│   ├── profile/            # Profile tab
+│   ├── admin/              # Admin dashboard
+│   ├── assets/             # Asset management
+│   └── ...
+├── state/
+│   └── store.js            # Global state management
+└── utils/                  # Shared utilities
+    ├── formatters.js       # Number/date formatting
+    ├── charts.js           # Chart.js helpers
+    └── dom.js              # DOM utilities
+```
 
-    <!-- Tab content containers -->
-    <div id="welcome-tab" class="tab-content active">...</div>
-    <div id="dashboard-tab" class="tab-content">...</div>
-    <div id="profile-tab" class="tab-content">...</div>
-    <div id="learn-tab" class="tab-content">...</div>
-    <!-- ... more tabs ... -->
+### Entry Point (main.js)
 
-    <!-- Modal overlays -->
-    <div id="profile-wizard-modal" class="settings-modal">...</div>
-    <div id="settings-modal" class="settings-modal">...</div>
+```javascript
+import { initDashboard } from './components/dashboard/dashboard-tab.js';
+import { initAnalysis } from './components/analysis/analysis-tab.js';
+import { initProfile } from './components/profile/profile-tab.js';
+// ... more imports
 
-    <!-- JavaScript (~6,500 lines) -->
-    <script>
-      // Global state
-      const API_URL = 'http://127.0.0.1:5137/api';
-      let investmentTypes = [];
-      let incomeStreams = [];
-      let homeProperties = [];
-      let wizardData = {};
-      let currentWizardStep = 0;
-      let previousLevel = 0;
+document.addEventListener('DOMContentLoaded', async () => {
+    await initializeApp();
+});
+```
 
-      // Tab system
-      function showTab(tabName) { ... }
+### Component Pattern
 
-      // Profile management
-      async function loadProfile(name) { ... }
-      async function saveCurrentProfile() { ... }
+Each component exports an `init` function and manages its own state:
 
-      // Wizard system
-      async function startProfileWizard() { ... }
-      function renderWizardStep() { ... }
-      function wizardNextStep() { ... }
-      async function completeWizard() { ... }
+```javascript
+// components/dashboard/dashboard-tab.js
+import { apiClient } from '../../api/client.js';
+import { store } from '../../state/store.js';
 
-      // Learning system
-      function selectLevel(level) { ... }
-      async function loadEducationalContent(filename) { ... }
+export function initDashboard() {
+    // Setup event listeners
+    // Render initial state
+}
 
-      // Progression system
-      function calculateProfileCompleteness() { ... }
-      function getUserLevel() { ... }
-      function updateProgressIndicator() { ... }
-      function checkLevelUp() { ... }
-
-      // Analysis
-      async function runAnalysis() { ... }
-
-      // Page load
-      window.addEventListener('DOMContentLoaded', async () => {
-        await fetchProfiles();
-        showTab('welcome');
-      });
-    </script>
-  </body>
-</html>
+export async function runAnalysis() {
+    const result = await apiClient.post('/api/analysis', store.getProfile());
+    renderResults(result);
+}
 ```
 
 ### Key JavaScript Functions
