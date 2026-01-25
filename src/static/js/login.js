@@ -292,4 +292,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         })
         .catch(() => {});
+
+    // Load version info
+    fetch('/version.json')
+        .then(res => res.json())
+        .then(data => {
+            const badge = document.querySelector('.version-badge');
+            if (badge) {
+                badge.textContent = `v${data.version}`;
+                badge.title = `Released: ${data.release_date}\n${data.release_notes}`;
+            }
+        })
+        .catch(() => {});
 });

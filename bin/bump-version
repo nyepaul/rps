@@ -1,5 +1,5 @@
 #!/bin/bash
-# Bump version number for cache-busting during debugging
+# Bump version number in centralized config and cache-busting
 
 if [ $# -eq 0 ]; then
     echo "Usage: ./bin/bump-version <new_version> [release_notes]"
@@ -11,39 +11,28 @@ NEW_VERSION=$1
 RELEASE_NOTES=${2:-"Bug fixes and improvements"}
 RELEASE_DATE=$(date +%Y-%m-%d)
 
-# Update __version__.py
-cat > src/__version__.py <<EOF
-"""RPS Version Information"""
-
-__version__ = "$NEW_VERSION"
-__release_date__ = "$RELEASE_DATE"
-__release_notes__ = "$RELEASE_NOTES"
+# Update centralized version.json
+cat > src/static/version.json <<EOF
+{
+    "version": "$NEW_VERSION",
+    "release_date": "$RELEASE_DATE",
+    "release_notes": "$RELEASE_NOTES"
+}
 EOF
 
-# Update index.html cache-busting parameter
+# Update index.html cache-busting parameter (keep this build-time update)
 sed -i "s|/js/main.js?v=.*\"|/js/main.js?v=$NEW_VERSION\"|g" src/static/index.html
-
-# Update index.html fallback version display (the visible version in footer)
-sed -i "s|<span id=\"app-version\">v[0-9]\+\.[0-9]\+\.[0-9]\+</span>|<span id=\"app-version\">v$NEW_VERSION</span>|g" src/static/index.html
-
-# Update config.js VERSION constant (fallback for when API not loaded yet)
-sed -i "s|VERSION: '[0-9]\+\.[0-9]\+\.[0-9]\+'|VERSION: '$NEW_VERSION'|g" src/static/js/config.js
-
-# Update login.html version display
-sed -i "s|<div class=\"version-badge\">v[0-9]\+\.[0-9]\+\.[0-9]\+</div>|<div class=\"version-badge\">v$NEW_VERSION</div>|g" src/static/login.html
 
 echo "✅ Version bumped to $NEW_VERSION"
 echo "📅 Release date: $RELEASE_DATE"
 echo "📝 Notes: $RELEASE_NOTES"
 echo ""
 echo "Modified files:"
-echo "  - src/__version__.py"
-echo "  - src/static/index.html"
-echo "  - src/static/js/config.js"
-echo "  - src/static/login.html"
+echo "  - src/static/version.json"
+echo "  - src/static/index.html (cache busting)"
 echo ""
 echo "Don't forget to commit and deploy:"
-echo "  git add src/__version__.py src/static/index.html src/static/js/config.js src/static/login.html"
+echo "  git add src/static/version.json src/static/index.html"
 echo "  git commit -m 'chore: bump version to $NEW_VERSION'"
 echo "  git push"
 echo "  sudo ./bin/deploy"
