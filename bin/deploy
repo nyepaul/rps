@@ -69,6 +69,11 @@ sudo -u paul git pull 2>&1 | grep -E "Already up to date|Updating|Fast-forward" 
     echo -e "${RED}  ⚠ Warning: git pull had issues (may have local changes)${NC}"
 }
 
+# Capture git info after pull
+CURRENT_COMMIT_FULL=$(git rev-parse HEAD)
+GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+GIT_SUBJECT=$(git log -1 --format=%s 2>/dev/null || echo "unknown")
+
 # Create target directory if it doesn't exist
 echo -e "${YELLOW}Creating target directory...${NC}"
 mkdir -p "$TARGET_DIR"
@@ -260,8 +265,6 @@ fi
 echo -e "  ✓ RPS service restarted"
 
 # Save current commit for next time
-GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
-GIT_SUBJECT=$(git log -1 --format=%s 2>/dev/null || echo "unknown")
 echo "$CURRENT_COMMIT_FULL" > "$PREV_COMMIT_FILE"
 chown www-data:www-data "$PREV_COMMIT_FILE"
 
