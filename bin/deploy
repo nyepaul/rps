@@ -24,10 +24,10 @@ PREV_COMMIT_FILE="$TARGET_DIR/DEPLOYED_COMMIT"
 VERSION="unknown"
 RELEASE_DATE="unknown"
 RELEASE_NOTES="unknown"
-if [ -f "$SOURCE_DIR/src/__version__.py" ]; then
-    VERSION=$(grep '^__version__' "$SOURCE_DIR/src/__version__.py" | cut -d'"' -f2)
-    RELEASE_DATE=$(grep '^__release_date__' "$SOURCE_DIR/src/__version__.py" | cut -d'"' -f2)
-    RELEASE_NOTES=$(grep '^__release_notes__' "$SOURCE_DIR/src/__version__.py" | cut -d'"' -f2)
+if [ -f "$SOURCE_DIR/src/static/version.json" ]; then
+    VERSION=$(grep '"version":' "$SOURCE_DIR/src/static/version.json" | cut -d'"' -f4)
+    RELEASE_DATE=$(grep '"release_date":' "$SOURCE_DIR/src/static/version.json" | cut -d'"' -f4)
+    RELEASE_NOTES=$(grep '"release_notes":' "$SOURCE_DIR/src/static/version.json" | cut -d'"' -f4)
 fi
 
 echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
