@@ -94,8 +94,8 @@ class TestJavaScriptQuality:
             templates = re.findall(template_pattern, content, re.DOTALL)
 
             for template in templates:
-                # Extract all id attributes
-                id_pattern = r'id=["\']([^"\']+)["\']'
+                # Extract all id attributes (preceded by whitespace to avoid data-id)
+                id_pattern = r'\sid=["\']([^"\']+)["\']'
                 ids = re.findall(id_pattern, template)
 
                 # Check for duplicates

@@ -1,5 +1,5 @@
 {
-    "version": "3.9.35",
+    "version": "3.9.36",
     "release_date": "2026-01-25",
-    "release_notes": "Feature: Expense copy/merge and AI-powered data extraction"
+    "release_notes": "Verification pass, test fixes, and final deployment cycle"
 }

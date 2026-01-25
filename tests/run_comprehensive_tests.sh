@@ -21,16 +21,19 @@ echo " RPS COMPREHENSIVE TEST SUITE"
 echo "================================================================================"
 echo ""
 echo "Project: Retirement Planning System (RPS)"
-echo "Version: $(cat src/__version__.py | grep __version__ | cut -d'"' -f2)"
+echo "Version: $(grep '"version":' src/static/version.json | cut -d'"' -f4)"
 echo "Date: $(date '+%Y-%m-%d %H:%M:%S')"
 echo ""
 echo "================================================================================"
 echo ""
 
 # Activate virtual environment
-if [ -f "src/venv/bin/activate" ]; then
+if [ -f "venv/bin/activate" ]; then
+    source venv/bin/activate
+    echo "✓ Virtual environment activated (venv)"
+elif [ -f "src/venv/bin/activate" ]; then
     source src/venv/bin/activate
-    echo "✓ Virtual environment activated"
+    echo "✓ Virtual environment activated (src/venv)"
 else
     echo "⚠ Virtual environment not found, using system Python"
 fi
@@ -75,38 +78,38 @@ echo "Starting test suites..." | tee "$REPORT_FILE"
 echo "" | tee -a "$REPORT_FILE"
 
 if run_test_suite "tests/comprehensive/test_javascript_quality.py" "JavaScript Quality Tests"; then
-    ((PASSED++))
+    PASSED=$((PASSED + 1))
 else
-    ((FAILED++))
+    FAILED=$((FAILED + 1))
 fi
-((TOTAL++))
+TOTAL=$((TOTAL + 1))
 echo "" | tee -a "$REPORT_FILE"
 
 # Python Quality Tests
 if run_test_suite "tests/comprehensive/test_python_quality.py" "Python Quality Tests"; then
-    ((PASSED++))
+    PASSED=$((PASSED + 1))
 else
-    ((FAILED++))
+    FAILED=$((FAILED + 1))
 fi
-((TOTAL++))
+TOTAL=$((TOTAL + 1))
 echo "" | tee -a "$REPORT_FILE"
 
 # Database Quality Tests
 if run_test_suite "tests/comprehensive/test_database_quality.py" "Database Quality Tests"; then
-    ((PASSED++))
+    PASSED=$((PASSED + 1))
 else
-    ((FAILED++))
+    FAILED=$((FAILED + 1))
 fi
-((TOTAL++))
+TOTAL=$((TOTAL + 1))
 echo "" | tee -a "$REPORT_FILE"
 
 # Financial Calculations Tests
 if run_test_suite "tests/comprehensive/test_financial_calculations.py" "Financial Calculations Tests"; then
-    ((PASSED++))
+    PASSED=$((PASSED + 1))
 else
-    ((FAILED++))
+    FAILED=$((FAILED + 1))
 fi
-((TOTAL++))
+TOTAL=$((TOTAL + 1))
 echo "" | tee -a "$REPORT_FILE"
 
 # Summary
