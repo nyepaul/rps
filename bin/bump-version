@@ -30,7 +30,7 @@ sed -i "s|<span id=\"app-version\">v[0-9]\+\.[0-9]\+\.[0-9]\+</span>|<span id=\"
 sed -i "s|VERSION: '[0-9]\+\.[0-9]\+\.[0-9]\+'|VERSION: '$NEW_VERSION'|g" src/static/js/config.js
 
 # Update login.html version display
-sed -i "s|font-size: 10px; color: #ccc; font-weight: 500;\">v[0-9]\+\.[0-9]\+\.[0-9]\+</div>|font-size: 10px; color: #ccc; font-weight: 500;\">v$NEW_VERSION</div>|g" src/static/login.html
+sed -i "s|<div class=\"version-badge\">v[0-9]\+\.[0-9]\+\.[0-9]\+</div>|<div class=\"version-badge\">v$NEW_VERSION</div>|g" src/static/login.html
 
 echo "✅ Version bumped to $NEW_VERSION"
 echo "📅 Release date: $RELEASE_DATE"
