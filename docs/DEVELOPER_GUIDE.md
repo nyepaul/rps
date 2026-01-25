@@ -9,10 +9,10 @@
 ### Technology Stack
 
 - **Frontend**: Vanilla JavaScript (ES6+), HTML5, CSS3
-- **Backend**: Python 3.14, Flask 3.1
+- **Backend**: Python 3.12+, Flask 3.x
 - **Database**: SQLite3
 - **Charts**: Chart.js 4.x (CDN)
-- **Package Manager**: uv (Python)
+- **Package Manager**: pip (Python)
 
 ### Design Principles
 
@@ -33,7 +33,7 @@ rps/
 │   └── static/
 │       └── index.html            # Single-page frontend (~7,500 lines)
 ├── data/
-│   └── profiles.db               # SQLite database (auto-created)
+│   └── planning.db               # SQLite database (auto-created)
 ├── skills/                       # Educational markdown files
 │   ├── retirement-planning-SKILL.md
 │   ├── estate-legal-SKILL.md
@@ -90,7 +90,7 @@ rps/
     <!-- JavaScript (~6,500 lines) -->
     <script>
       // Global state
-      const API_URL = 'http://localhost:8080/api';
+      const API_URL = 'http://127.0.0.1:5137/api';
       let investmentTypes = [];
       let incomeStreams = [];
       let homeProperties = [];
@@ -945,7 +945,7 @@ source .venv/bin/activate
 python3 src/app.py
 
 # Access
-open http://localhost:8080
+open http://127.0.0.1:5137
 ```
 
 ### Production Deployment

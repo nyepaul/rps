@@ -1,4 +1,4 @@
-# Quick Start Guide (Version 2.0)
+# Quick Start Guide (Version 3.9)
 
 ## Get Optimized in 5 Minutes
 
@@ -24,11 +24,11 @@
 2. Click **Run Complete Analysis**.
 3. Review your Success Rate and Wealth Projection chart.
 
-### Step 4: Use the AI Strategic Advisor 🤖
-1. Click **"🤖 AI Recommendations"** (requires API key from Step 0).
+### Step 4: Use the AI Strategic Advisor
+1. Click **"AI Recommendations"** (requires API key from Step 0).
 2. Read the personalized analysis of your SS strategy and Roth opportunities.
-3. Click **"⚡ Quick Apply"** to instantly test one of the AI's suggestions.
-4. Click **"✅ Convert to Action Items"** to populate your task list.
+3. Click **"Quick Apply"** to instantly test one of the AI's suggestions.
+4. Click **"Convert to Action Items"** to populate your task list.
 
 ### Step 5: Sandbox Your Future
 1. Switch to the **Dashboard** tab.
@@ -38,16 +38,16 @@
 ---
 
 ## Important Disclaimers
-⚠️ **This is NOT financial advice.**
-⚠️ **Consult licensed professionals** (CPA, Attorney, CFP) before taking action.
-⚠️ **Local Privacy**: Your data is stored only on your computer in `data/planning.db`.
+- **This is NOT financial advice.**
+- **Consult licensed professionals** (CPA, Attorney, CFP) before taking action.
+- **Local Privacy**: Your data is stored only on your computer in `data/planning.db`.
 
 ---
 
 ## Common Commands
 - **Stop Server**: `Ctrl+C` in the terminal.
-- **Backup Data**: `./bin/manage backup`
+- **Backup Data**: `./bin/backup`
 - **Configure AI Keys**: Run `./bin/setup-api-keys` to update your API keys.
 
 ## What's Next?
-Read **[docs/guides/YOUR-ACTION-PLAN.md](docs/guides/YOUR-ACTION-PLAN.md)** for your 30-year implementation timeline.
+Read **[docs/guides/YOUR-ACTION-PLAN.md](YOUR-ACTION-PLAN.md)** for your 30-year implementation timeline.
