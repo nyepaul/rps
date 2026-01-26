@@ -1,5 +1,5 @@
 {
-    "version": "3.9.36",
+    "version": "3.9.39",
     "release_date": "2026-01-25",
-    "release_notes": "Verification pass, test fixes, and final deployment cycle"
+    "release_notes": "Improve asset reconciliation with account_number, institution, and type matching"
 }

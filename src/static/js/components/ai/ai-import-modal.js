@@ -26,20 +26,20 @@ export function showAIImportModal(type, profileName, onComplete) {
     modal.innerHTML = `
         <div class="modal-content" style="max-width: 500px; width: 90%;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="margin: 0;">📷 Import ${typeLabels[type]} with AI</h2>
+                <h2 style="margin: 0;">Import ${typeLabels[type]}</h2>
                 <button id="close-ai-modal" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">×</button>
             </div>
 
             <div id="ai-upload-step">
                 <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;">
-                    Upload a screenshot or photo of a financial statement, bill, or dashboard. Our AI will attempt to extract the relevant data for you.
+                    Upload an image, PDF, or CSV file. AI will extract the relevant data for you.
                 </p>
 
                 <div id="drop-zone" style="border: 2px dashed var(--border-color); border-radius: 8px; padding: 40px 20px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--bg-primary);">
                     <div style="font-size: 48px; margin-bottom: 10px;">📄</div>
-                    <div style="font-weight: 600; margin-bottom: 5px;">Click or Drag & Drop Image</div>
-                    <div style="font-size: 12px; color: var(--text-light);">PNG, JPG, or WEBP</div>
-                    <input type="file" id="ai-file-input" accept="image/*" style="display: none;">
+                    <div style="font-weight: 600; margin-bottom: 5px;">Click or Drag & Drop File</div>
+                    <div style="font-size: 12px; color: var(--text-light);">Images, PDF, or CSV</div>
+                    <input type="file" id="ai-file-input" accept="image/*,.pdf,.csv,application/pdf,text/csv" style="display: none;">
                 </div>
 
                 <div style="margin-top: 20px;">
@@ -108,13 +108,19 @@ export function showAIImportModal(type, profileName, onComplete) {
     });
 
     async function processFile(file) {
-        if (!file.type.startsWith('image/')) {
-            showError('Please upload an image file (PNG, JPG, or WEBP).');
+        // Accept images, PDFs, and CSVs
+        const validTypes = ['image/', 'application/pdf', 'text/csv'];
+        const validExtensions = ['.pdf', '.csv'];
+        const isValidType = validTypes.some(t => file.type.startsWith(t)) ||
+                           validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+
+        if (!isValidType) {
+            showError('Please upload an image, PDF, or CSV file.');
             return;
         }
 
         const provider = modal.querySelector('#ai-provider-select').value;
-        
+
         // Show processing state
         uploadStep.style.display = 'none';
         processingStep.style.display = 'block';
@@ -124,12 +130,15 @@ export function showAIImportModal(type, profileName, onComplete) {
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = async () => {
-                const base64Image = reader.result.split(',')[1];
-                
+                const base64Data = reader.result.split(',')[1];
+                const mimeType = file.type || (file.name.endsWith('.csv') ? 'text/csv' : 'application/pdf');
+
                 try {
                     const endpoint = `/api/extract-${type.replace('_accounts', '')}`;
                     const response = await apiClient.post(endpoint, {
-                        image: base64Image,
+                        image: base64Data,
+                        mime_type: mimeType,
+                        file_name: file.name,
                         llm_provider: provider,
                         profile_name: profileName
                     });

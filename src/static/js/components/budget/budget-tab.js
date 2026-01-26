@@ -85,8 +85,8 @@ export function renderBudgetTab(container) {
                     </p>
                 </div>
                 <div style="display: flex; gap: 8px;">
-                    <button id="ai-import-expenses-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
-                        <span>📷</span> AI Import
+                    <button id="ai-import-expenses-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                        Import
                     </button>
                     <button id="copy-expenses-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; display: ${currentPeriod === 'future' ? 'flex' : 'none'}; align-items: center; gap: 6px;">
                         <span>📋</span> Copy from Pre-Retirement
@@ -2040,29 +2040,55 @@ function setupBudgetEventHandlers(profile, container) {
     if (aiImportBtn) {
         aiImportBtn.addEventListener('click', () => {
             showAIImportModal('expenses', profile.name, async (extractedExpenses) => {
-                // Map extracted expenses to categories and add to budgetData
+                let added = 0, updated = 0;
+
+                // Map extracted expenses with reconciliation
                 for (const item of extractedExpenses) {
                     const category = item.category || 'other';
                     if (!budgetData.expenses[currentPeriod][category]) {
                         budgetData.expenses[currentPeriod][category] = [];
                     }
-                    
-                    const newItem = {
-                        name: item.name,
-                        amount: item.amount || 0,
-                        frequency: item.frequency || 'monthly',
-                        inflation_adjusted: true,
-                        ongoing: true,
-                        start_date: null,
-                        end_date: null
-                    };
-                    
-                    budgetData.expenses[currentPeriod][category].push(newItem);
+
+                    // Find existing expense by name in same category (case-insensitive)
+                    const existingIndex = budgetData.expenses[currentPeriod][category].findIndex(
+                        e => e.name?.toLowerCase() === item.name?.toLowerCase()
+                    );
+
+                    if (existingIndex >= 0) {
+                        // Update existing expense - preserve settings, update amount
+                        const existing = budgetData.expenses[currentPeriod][category][existingIndex];
+                        budgetData.expenses[currentPeriod][category][existingIndex] = {
+                            ...existing,
+                            amount: item.amount ?? existing.amount,
+                            frequency: item.frequency || existing.frequency
+                        };
+                        updated++;
+                    } else {
+                        // Add new expense
+                        budgetData.expenses[currentPeriod][category].push({
+                            name: item.name,
+                            amount: item.amount || 0,
+                            frequency: item.frequency || 'monthly',
+                            inflation_adjusted: true,
+                            ongoing: true,
+                            start_date: null,
+                            end_date: null
+                        });
+                        added++;
+                    }
                 }
-                
+
                 renderExpenseSection(container);
                 renderBudgetSummary(container);
                 await saveBudget(profile, container);
+
+                // Show summary
+                const parts = [];
+                if (added > 0) parts.push(`${added} added`);
+                if (updated > 0) parts.push(`${updated} updated`);
+                if (parts.length > 0) {
+                    showSuccess(`Expenses imported: ${parts.join(', ')}`);
+                }
             });
         });
     }

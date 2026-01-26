@@ -59,8 +59,8 @@ export function renderAssetsTab(container) {
                     <button id="add-asset-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px;">
                         + Add Asset
                     </button>
-                    <button id="ai-import-assets-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 6px; font-weight: 600;">
-                        <span>📷</span> AI Import
+                    <button id="ai-import-assets-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                        Import
                     </button>
                     <div style="display: flex; border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden;">
                         <button id="csv-export-btn" style="padding: 6px 10px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-right: 1px solid var(--border-color); cursor: pointer; font-size: 11px;">
@@ -284,34 +284,110 @@ function setupGeneralHandlers(container, profile, assets, refreshCallback) {
     if (aiImportBtn) {
         aiImportBtn.addEventListener('click', () => {
             showAIImportModal('assets', profile.name, async (extractedAssets) => {
-                // Map extracted assets to proper categories
+                let added = 0, updated = 0;
+
+                // Helper: find existing asset across all categories using multiple markers
+                const findExistingAsset = (item) => {
+                    const allCategories = ['retirement_accounts', 'taxable_accounts', 'real_estate', 'pensions_annuities', 'other_assets', 'liabilities'];
+
+                    for (const cat of allCategories) {
+                        if (!assets[cat]) continue;
+
+                        for (let i = 0; i < assets[cat].length; i++) {
+                            const existing = assets[cat][i];
+
+                            // Priority 1: Match by account_number (strongest identifier)
+                            if (item.account_number && existing.account_number &&
+                                item.account_number === existing.account_number) {
+                                return { category: cat, index: i, existing };
+                            }
+
+                            // Priority 2: Match by name + institution (both must match)
+                            if (item.institution && existing.institution &&
+                                item.name?.toLowerCase() === existing.name?.toLowerCase() &&
+                                item.institution.toLowerCase() === existing.institution.toLowerCase()) {
+                                return { category: cat, index: i, existing };
+                            }
+
+                            // Priority 3: Match by name + type
+                            if (item.name?.toLowerCase() === existing.name?.toLowerCase() &&
+                                item.type === existing.type) {
+                                return { category: cat, index: i, existing };
+                            }
+                        }
+                    }
+
+                    // Priority 4: Fallback to name-only match in target category
+                    const type = item.type || 'brokerage';
+                    let targetCat = 'taxable_accounts';
+                    if (['401k', '403b', '457', 'traditional_ira', 'roth_ira'].includes(type)) {
+                        targetCat = 'retirement_accounts';
+                    }
+                    if (assets[targetCat]) {
+                        const idx = assets[targetCat].findIndex(
+                            a => a.name?.toLowerCase() === item.name?.toLowerCase()
+                        );
+                        if (idx >= 0) {
+                            return { category: targetCat, index: idx, existing: assets[targetCat][idx] };
+                        }
+                    }
+
+                    return null;
+                };
+
+                // Process each extracted asset with reconciliation
                 for (const item of extractedAssets) {
                     const type = item.type || 'brokerage';
-                    let category = 'taxable_accounts';
-                    
+                    let targetCategory = 'taxable_accounts';
+
                     if (['401k', '403b', '457', 'traditional_ira', 'roth_ira'].includes(type)) {
-                        category = 'retirement_accounts';
+                        targetCategory = 'retirement_accounts';
                     } else if (['savings', 'checking', 'brokerage'].includes(type)) {
-                        category = 'taxable_accounts';
+                        targetCategory = 'taxable_accounts';
                     }
-                    
-                    if (!assets[category]) assets[category] = [];
-                    
-                    assets[category].push({
-                        id: crypto.randomUUID(),
-                        name: item.name,
-                        type: type,
-                        value: item.value || 0,
-                        cost_basis: item.cost_basis || 0,
-                        institution: item.institution || '',
-                        stock_pct: 0.6, // Defaults
-                        bond_pct: 0.3,
-                        cash_pct: 0.1
-                    });
+
+                    if (!assets[targetCategory]) assets[targetCategory] = [];
+
+                    const match = findExistingAsset(item);
+
+                    if (match) {
+                        // Update existing asset - preserve id and allocation, update value/cost_basis
+                        assets[match.category][match.index] = {
+                            ...match.existing,
+                            value: item.value ?? match.existing.value,
+                            cost_basis: item.cost_basis ?? match.existing.cost_basis,
+                            institution: item.institution || match.existing.institution,
+                            account_number: item.account_number || match.existing.account_number
+                        };
+                        updated++;
+                    } else {
+                        // Add new asset
+                        assets[targetCategory].push({
+                            id: crypto.randomUUID(),
+                            name: item.name,
+                            type: type,
+                            value: item.value || 0,
+                            cost_basis: item.cost_basis || 0,
+                            institution: item.institution || '',
+                            account_number: item.account_number || '',
+                            stock_pct: 0.6,
+                            bond_pct: 0.3,
+                            cash_pct: 0.1
+                        });
+                        added++;
+                    }
                 }
-                
+
                 await saveAssets(profile, assets);
                 if (refreshCallback) refreshCallback();
+
+                // Show summary of what happened
+                const parts = [];
+                if (added > 0) parts.push(`${added} added`);
+                if (updated > 0) parts.push(`${updated} updated`);
+                if (parts.length > 0) {
+                    showSuccess(`Assets imported: ${parts.join(', ')}`);
+                }
             });
         });
     }
