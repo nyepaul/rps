@@ -133,7 +133,7 @@ from src.models.profile import Profile
 from src.models.conversation import Conversation
 from flask_login import current_user
 
-def call_llm(provider, prompt, api_key, history=None, system_prompt=None, ollama_url=None):
+def call_llm(provider, prompt, api_key, history=None, system_prompt=None, ollama_url=None, lmstudio_url=None, localai_url=None):
     """Unified interface to call various LLM providers."""
     if provider == 'gemini':
         return call_gemini(prompt, api_key, history, system_prompt)
@@ -141,6 +141,10 @@ def call_llm(provider, prompt, api_key, history=None, system_prompt=None, ollama
         return call_claude(prompt, api_key, history, system_prompt)
     elif provider == 'ollama':
         return call_ollama(prompt, ollama_url, history, system_prompt)
+    elif provider == 'lmstudio':
+        return call_lmstudio(prompt, lmstudio_url, history, system_prompt)
+    elif provider == 'localai':
+        return call_localai(prompt, localai_url, history, system_prompt)
     else:
         # OpenAI-compatible providers
         return call_openai_compatible(provider, prompt, api_key, history, system_prompt)
@@ -295,6 +299,66 @@ def call_ollama(prompt, url, history=None, system_prompt=None):
         raise Exception(f"Failed to connect to Ollama at {url}: {str(e)}")
 
 
+def call_lmstudio(prompt, url, history=None, system_prompt=None):
+    """Calls local LM Studio API (OpenAI compatible)."""
+    if not url:
+        url = "http://localhost:1234"
+    
+    messages = []
+    if system_prompt:
+        messages.append({'role': 'system', 'content': system_prompt})
+    if history:
+        for msg in history:
+            messages.append({'role': msg.role, 'content': msg.content})
+    messages.append({'role': 'user', 'content': prompt})
+
+    try:
+        response = requests.post(
+            f"{url}/v1/chat/completions",
+            json={
+                'messages': messages,
+                'temperature': 0.7
+            },
+            timeout=120
+        )
+        if response.status_code == 200:
+            return response.json()['choices'][0]['message']['content']
+        else:
+            raise Exception(f"LM Studio error: {response.text}")
+    except Exception as e:
+        raise Exception(f"Failed to connect to LM Studio at {url}: {str(e)}")
+
+
+def call_localai(prompt, url, history=None, system_prompt=None):
+    """Calls local LocalAI API (OpenAI compatible)."""
+    if not url:
+        url = "http://localhost:8080"
+    
+    messages = []
+    if system_prompt:
+        messages.append({'role': 'system', 'content': system_prompt})
+    if history:
+        for msg in history:
+            messages.append({'role': msg.role, 'content': msg.content})
+    messages.append({'role': 'user', 'content': prompt})
+
+    try:
+        response = requests.post(
+            f"{url}/v1/chat/completions",
+            json={
+                'messages': messages,
+                'temperature': 0.7
+            },
+            timeout=120
+        )
+        if response.status_code == 200:
+            return response.json()['choices'][0]['message']['content']
+        else:
+            raise Exception(f"LocalAI error: {response.text}")
+    except Exception as e:
+        raise Exception(f"Failed to connect to LocalAI at {url}: {str(e)}")
+
+
 @ai_services_bp.route('/advisor/chat', methods=['POST'])
 @login_required
 @limiter.limit("20 per hour")
@@ -322,8 +386,8 @@ def advisor_chat():
         
         # If no preferred provider, find first available key
         if not provider:
-            for p in ['gemini', 'claude', 'openai', 'openrouter', 'deepseek', 'ollama']:
-                key_name = f"{p}_api_key" if p != 'ollama' else "ollama_url"
+            for p in ['gemini', 'claude', 'openai', 'openrouter', 'deepseek', 'ollama', 'lmstudio', 'localai']:
+                key_name = f"{p}_api_key" if p not in ['ollama', 'lmstudio', 'localai'] else f"{p}_url"
                 if api_keys.get(key_name):
                     provider = p
                     break
@@ -334,8 +398,10 @@ def advisor_chat():
         # Get the appropriate key/url
         api_key = api_keys.get(f"{provider}_api_key")
         ollama_url = api_keys.get("ollama_url")
+        lmstudio_url = api_keys.get("lmstudio_url")
+        localai_url = api_keys.get("localai_url")
 
-        if not api_key and provider != 'ollama':
+        if not api_key and provider not in ['ollama', 'lmstudio', 'localai']:
             return jsonify({
                 'error': f'{provider.capitalize()} API key not configured. Please configure in AI Settings.'
             }), 400
@@ -381,7 +447,7 @@ def advisor_chat():
         user_msg.save()
 
         # Call the selected LLM
-        assistant_text = call_llm(provider, user_message, api_key, history, system_prompt, ollama_url)
+        assistant_text = call_llm(provider, user_message, api_key, history, system_prompt, ollama_url, lmstudio_url, localai_url)
 
         # Save assistant message
         assistant_msg = Conversation(

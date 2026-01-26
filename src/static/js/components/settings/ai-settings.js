@@ -79,30 +79,73 @@ export async function renderAPIKeysSettings(container) {
                 <option value="together">🤝 Together AI</option>
                 <option value="huggingface">🤗 Hugging Face</option>
                 <option value="ollama">🏠 Local Ollama</option>
+                <option value="lmstudio">💻 LM Studio</option>
+                <option value="localai">🤖 LocalAI</option>
             </select>
         </div>
 
         <!-- Local AI Section -->
         <div style="margin-top: 20px; padding: 15px; background: var(--bg-primary); border-radius: 8px; border: 1px solid var(--border-color);">
             <h3 style="font-size: 14px; margin: 0 0 10px 0; display: flex; align-items: center; gap: 8px;">
-                🏠 Local AI (Ollama)
+                🏠 Local AI & Privacy Tools
                 <span style="font-size: 10px; font-weight: normal; background: var(--success-color); color: white; padding: 2px 6px; border-radius: 10px;">Privacy First</span>
             </h3>
             <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 12px;">
-                Run AI models locally on your own hardware using Ollama. No data ever leaves your machine.
+                Run AI models locally on your own hardware. No data ever leaves your machine.
             </p>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <input
-                    type="text"
-                    id="ollama-url"
-                    placeholder="http://localhost:11434"
-                    style="flex: 1; padding: 8px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 12px;"
-                />
-                <button id="test-ollama-btn" style="padding: 8px 15px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 12px;">
-                    🧪 Test Connection
-                </button>
+            
+            <div style="display: grid; grid-template-columns: 1fr; gap: 15px;">
+                <!-- Ollama -->
+                <div>
+                    <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px;">Ollama URL</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input
+                            type="text"
+                            id="ollama-url"
+                            placeholder="http://localhost:11434"
+                            style="flex: 1; padding: 8px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 12px;"
+                        />
+                        <button class="test-local-btn" data-provider="ollama" style="padding: 8px 15px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 12px;">
+                            🧪 Test
+                        </button>
+                    </div>
+                    <div id="ollama-status" style="margin-top: 4px; font-size: 10px;"></div>
+                </div>
+
+                <!-- LM Studio -->
+                <div>
+                    <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px;">LM Studio URL</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input
+                            type="text"
+                            id="lmstudio-url"
+                            placeholder="http://localhost:1234"
+                            style="flex: 1; padding: 8px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 12px;"
+                        />
+                        <button class="test-local-btn" data-provider="lmstudio" style="padding: 8px 15px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 12px;">
+                            🧪 Test
+                        </button>
+                    </div>
+                    <div id="lmstudio-status" style="margin-top: 4px; font-size: 10px;"></div>
+                </div>
+
+                <!-- LocalAI -->
+                <div>
+                    <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px;">LocalAI URL</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input
+                            type="text"
+                            id="localai-url"
+                            placeholder="http://localhost:8080"
+                            style="flex: 1; padding: 8px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 12px;"
+                        />
+                        <button class="test-local-btn" data-provider="localai" style="padding: 8px 15px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 12px;">
+                            🧪 Test
+                        </button>
+                    </div>
+                    <div id="localai-status" style="margin-top: 4px; font-size: 10px;"></div>
+                </div>
             </div>
-            <div id="ollama-status" style="margin-top: 8px; font-size: 11px;"></div>
         </div>
 
         <!-- Save Button -->
@@ -194,11 +237,14 @@ function setupHandlers(container, profile) {
         });
     });
 
-    // Ollama test
-    container.querySelector('#test-ollama-btn').addEventListener('click', async () => {
-        const url = container.querySelector('#ollama-url').value;
-        const status = container.querySelector('#ollama-status');
-        await testKey('ollama', url, status, profile, container);
+    // Local AI tests
+    container.querySelectorAll('.test-local-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const provider = btn.dataset.provider;
+            const url = container.querySelector(`#${provider}-url`).value;
+            const status = container.querySelector(`#${provider}-status`);
+            await testKey(provider, url, status, profile, container);
+        });
     });
 
     // Save button
@@ -258,6 +304,14 @@ async function loadExistingKeys(container, profile) {
                 container.querySelector('#ollama-url').value = data.ollama_url;
                 container.querySelector('#ollama-status').innerHTML = '<span style="color: var(--success-color);">✓ Connected</span>';
             }
+            if (data.lmstudio_url) {
+                container.querySelector('#lmstudio-url').value = data.lmstudio_url;
+                container.querySelector('#lmstudio-status').innerHTML = '<span style="color: var(--success-color);">✓ Connected</span>';
+            }
+            if (data.localai_url) {
+                container.querySelector('#localai-url').value = data.localai_url;
+                container.querySelector('#localai-status').innerHTML = '<span style="color: var(--success-color);">✓ Connected</span>';
+            }
 
             if (data.preferred_ai_provider) {
                 container.querySelector('#preferred-ai-provider').value = data.preferred_ai_provider;
@@ -285,6 +339,12 @@ async function saveAllSettings(container, profile, silent = false) {
 
     const ollamaUrl = container.querySelector('#ollama-url').value.trim();
     if (ollamaUrl) payload.ollama_url = ollamaUrl;
+
+    const lmstudioUrl = container.querySelector('#lmstudio-url').value.trim();
+    if (lmstudioUrl) payload.lmstudio_url = lmstudioUrl;
+
+    const localaiUrl = container.querySelector('#localai-url').value.trim();
+    if (localaiUrl) payload.localai_url = localaiUrl;
 
     const preferredProvider = container.querySelector('#preferred-ai-provider').value;
     payload.preferred_ai_provider = preferredProvider;
