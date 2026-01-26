@@ -31,7 +31,7 @@ def sanitize_url(url, default_url):
     return url
 
 
-def process_pdf_content(pdf_bytes, max_pages=50):
+def process_pdf_content(pdf_bytes, max_pages=150):
     """
     Intelligently processes PDF content for LLMs.
     Returns (chunks, content_type) where chunks is a list of strings or images.
@@ -45,7 +45,7 @@ def process_pdf_content(pdf_bytes, max_pages=50):
             raise Exception("PDF has no pages.")
         
         # 1. Try text extraction first
-        # We'll group pages into chunks of 5 to keep context manageable for local LLMs
+        # We'll group pages into chunks of 10 to keep context manageable but efficient
         text_chunks = []
         current_chunk = ""
         pages_in_chunk = 0
@@ -56,8 +56,8 @@ def process_pdf_content(pdf_bytes, max_pages=50):
                 current_chunk += f"--- Page {i+1} ---\n{page_text}\n\n"
                 pages_in_chunk += 1
                 
-                # Close chunk every 5 pages or if it gets very large
-                if pages_in_chunk >= 5 or len(current_chunk) > 10000:
+                # Close chunk every 10 pages or if it gets very large
+                if pages_in_chunk >= 10 or len(current_chunk) > 15000:
                     text_chunks.append(current_chunk)
                     current_chunk = ""
                     pages_in_chunk = 0
@@ -929,7 +929,7 @@ def extract_assets():
                     if content_type == "images":
                         payload['messages'][0]['images'] = [chunk]
 
-                    response = requests.post(f"{ollama_url}/api/chat", json=payload, timeout=300)
+                    response = requests.post(f"{ollama_url}/api/chat", json=payload, timeout=600)
                     if response.status_code == 200:
                         chunk_text = response.json()['message']['content']
                         chunk_items = resilient_parse_llm_json(chunk_text, 'assets')
@@ -1077,7 +1077,7 @@ def extract_income():
                     if content_type == "images":
                         payload['messages'][0]['images'] = [chunk]
 
-                    response = requests.post(f"{ollama_url}/api/chat", json=payload, timeout=300)
+                    response = requests.post(f"{ollama_url}/api/chat", json=payload, timeout=600)
                     if response.status_code == 200:
                         chunk_text = response.json()['message']['content']
                         chunk_items = resilient_parse_llm_json(chunk_text, 'income')
@@ -1220,7 +1220,7 @@ def extract_expenses():
                     if content_type == "images":
                         payload['messages'][0]['images'] = [chunk]
 
-                    response = requests.post(f"{ollama_url}/api/chat", json=payload, timeout=300)
+                    response = requests.post(f"{ollama_url}/api/chat", json=payload, timeout=600)
                     if response.status_code == 200:
                         chunk_text = response.json()['message']['content']
                         chunk_items = resilient_parse_llm_json(chunk_text, 'expenses')
