@@ -1,4 +1,3 @@
-
 import pytest
 import base64
 import json
@@ -41,6 +40,17 @@ def auth_client(client, app):
                     sess['_fresh'] = True
                 yield client
 
+def parse_stream(response):
+    """Helper to parse NDJSON stream from response."""
+    results = []
+    full_data = {}
+    for line in response.data.decode('utf-8').split('\n'):
+        if line.strip():
+            data = json.loads(line)
+            results.append(data)
+            full_data.update(data)
+    return full_data
+
 def test_extract_assets_ollama(auth_client):
     """Test asset extraction with Ollama vision."""
     mock_response = MagicMock()
@@ -60,7 +70,7 @@ def test_extract_assets_ollama(auth_client):
         })
         
         assert response.status_code == 200
-        data = response.get_json()
+        data = parse_stream(response)
         assert 'assets' in data
         assert data['assets'][0]['name'] == '401k'
 
@@ -75,7 +85,7 @@ def test_extract_assets_gemini(auth_client):
         })
         
         assert response.status_code == 200
-        data = response.get_json()
+        data = parse_stream(response)
         assert 'assets' in data
         assert data['assets'][0]['name'] == 'Roth IRA'
 
@@ -90,7 +100,7 @@ def test_extract_assets_claude(auth_client):
         })
         
         assert response.status_code == 200
-        data = response.get_json()
+        data = parse_stream(response)
         assert data['assets'][0]['name'] == 'Savings'
 
 def test_extract_assets_openai(auth_client):
@@ -104,5 +114,5 @@ def test_extract_assets_openai(auth_client):
         })
         
         assert response.status_code == 200
-        data = response.get_json()
+        data = parse_stream(response)
         assert data['assets'][0]['name'] == 'Brokerage'

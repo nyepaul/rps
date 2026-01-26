@@ -143,6 +143,22 @@ export function showAIImportModal(type, profileName, onComplete) {
         // Show processing state
         uploadStep.style.display = 'none';
         processingStep.style.display = 'block';
+        const progressMessage = processingStep.querySelector('p');
+        const progressBarContainer = document.createElement('div');
+        progressBarContainer.style.width = '100%';
+        progressBarContainer.style.background = 'var(--bg-tertiary)';
+        progressBarContainer.style.borderRadius = '8px';
+        progressBarContainer.style.height = '10px';
+        progressBarContainer.style.marginTop = '15px';
+        const progressBar = document.createElement('div');
+        progressBar.style.width = '0%';
+        progressBar.style.background = 'var(--accent-color)';
+        progressBar.style.borderRadius = '8px';
+        progressBar.style.height = '100%';
+        progressBar.style.transition = 'width 0.1s ease-in-out';
+        progressBarContainer.appendChild(progressBar);
+        processingStep.appendChild(progressBarContainer);
+
 
         try {
             // Convert to base64
@@ -154,20 +170,39 @@ export function showAIImportModal(type, profileName, onComplete) {
 
                 try {
                     const endpoint = `/api/extract-${type.replace('_accounts', '')}`;
-                    const response = await apiClient.post(endpoint, {
+                    
+                    const updateProgress = (data) => {
+                        if (data.progress !== undefined) {
+                            progressBar.style.width = `${data.progress}%`;
+                            progressMessage.textContent = data.message || `Processing... ${data.progress}%`;
+                        } else if (data.message) {
+                            progressMessage.textContent = data.message;
+                        }
+                    };
+
+                    const finalResponse = await apiClient.streamRequest(endpoint, {
                         image: base64Data,
                         mime_type: mimeType,
                         file_name: file.name,
                         llm_provider: provider,
                         profile_name: profileName
-                    });
+                    }, updateProgress);
 
-                    extractedData = response[type] || response.income || response.expenses || [];
+                    if (finalResponse && finalResponse.error) {
+                        showError(finalResponse.error);
+                        uploadStep.style.display = 'block';
+                        processingStep.style.display = 'none';
+                        progressBarContainer.remove();
+                        return;
+                    }
+
+                    extractedData = finalResponse[type] || finalResponse.income || finalResponse.expenses || [];
                     
                     if (extractedData.length === 0) {
                         showError('AI could not find any items in this image. Please try a different screenshot or add manually.');
                         uploadStep.style.display = 'block';
                         processingStep.style.display = 'none';
+                        progressBarContainer.remove();
                         return;
                     }
 
@@ -177,12 +212,14 @@ export function showAIImportModal(type, profileName, onComplete) {
                     showError(error.message || 'AI extraction failed.');
                     uploadStep.style.display = 'block';
                     processingStep.style.display = 'none';
+                    progressBarContainer.remove();
                 }
             };
         } catch (error) {
             showError('Failed to read file.');
             uploadStep.style.display = 'block';
             processingStep.style.display = 'none';
+            progressBarContainer.remove();
         }
     }
 

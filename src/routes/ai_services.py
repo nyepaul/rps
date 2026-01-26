@@ -4,7 +4,7 @@ import json
 import requests
 import os
 from io import BytesIO
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, Response
 from flask_login import login_required, current_user
 from PIL import Image
 try:
@@ -214,9 +214,15 @@ def call_gemini_with_fallback(prompt, api_key, image_data=None, mime_type=None):
                     }]
                 }
 
-            # Call Gemini REST API v1 (stable)
+            # Determine which API version to use
+            # v1 is stable for images, but v1beta is required for PDF/Document support via inline_data
+            api_version = 'v1'
+            if mime_type == 'application/pdf' or (isinstance(image_data, bytes) and image_data[:4] == b'%PDF'):
+                api_version = 'v1beta'
+
+            # Call Gemini REST API
             # Model name should already include 'models/' prefix in the path
-            url = f'https://generativelanguage.googleapis.com/v1/{model_name}:generateContent?key={api_key}'
+            url = f'https://generativelanguage.googleapis.com/{api_version}/{model_name}:generateContent?key={api_key}'
 
             response = requests.post(url, json=payload, timeout=60)
 
@@ -885,98 +891,103 @@ def extract_assets():
     except Exception as e:
         return jsonify({'error': f'Error loading AI configuration: {str(e)}'}), 500
 
-    try:
-        # Extraction prompt
-        prompt = """
-        Analyze this financial document. Extract a list of investment accounts or assets.
-        Return ONLY a JSON array of objects with the structure:
-        [{"name": "...", "type": "...", "value": ..., "cost_basis": null, "institution": "...", "account_number": null}]
-        Clean all values: remove symbols and commas. 
-        Supported types: "traditional_ira", "roth_ira", "401k", "403b", "457", "brokerage", "savings", "checking".
-        """
+    prompt = """
+    Analyze this financial document. Extract a list of investment accounts or assets.
+    Return ONLY a JSON array of objects with the structure:
+    [{"name": "...", "type": "...", "value": ..., "cost_basis": null, "institution": "...", "account_number": null}]
+    Clean all values: remove symbols and commas. 
+    Supported types: "traditional_ira", "roth_ira", "401k", "403b", "457", "brokerage", "savings", "checking".
+    """
 
-        text_response = ""
-
-        if provider == 'gemini':
-            file_bytes = base64.b64decode(image_b64)
-            text_response = call_gemini_with_fallback(prompt, api_key, image_data=file_bytes, mime_type=mime_type)
-        elif provider == 'claude':
-            text_response = call_claude_with_vision(prompt, api_key, image_b64, mime_type)
-        elif provider == 'openai':
-            text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type)
-        elif provider == 'ollama':
-            # Local Vision/Text support via Ollama
-            all_extracted = []
-            
+    def generate():
+        try:
             if mime_type == 'application/pdf' or image_b64.startswith('JVBERi'):
-                print("Processing multi-page PDF for Ollama...")
+                # Handle multi-page PDF for ALL providers
+                all_extracted = []
+                print(f"Processing multi-page PDF for {provider}...")
                 file_bytes = base64.b64decode(image_b64)
                 chunks, content_type = process_pdf_content(file_bytes)
                 
-                # Process each chunk individually
+                num_chunks = len(chunks)
                 for idx, chunk in enumerate(chunks):
-                    print(f"Processing chunk {idx+1}/{len(chunks)}...")
+                    progress = int(((idx) / num_chunks) * 100)
+                    yield json.dumps({'status': 'processing', 'progress': progress, 'message': f'Analyzing page group {idx+1}/{num_chunks}...'}) + '\n'
                     
-                    payload = {
-                        'model': ollama_model,
-                        'messages': [{
-                            'role': 'user',
-                            'content': prompt if content_type == "images" else f"{prompt}\n\nDocument Text (Chunk {idx+1}):\n{chunk}",
-                        }],
-                        'stream': False,
-                        'format': 'json'
-                    }
-                    if content_type == "images":
-                        payload['messages'][0]['images'] = [chunk]
+                    chunk_text_response = ""
+                    if provider == 'gemini':
+                        image_data = base64.b64decode(chunk) if content_type == "images" else None
+                        current_prompt = prompt if content_type == "images" else f"{prompt}\n\nDocument Text (Chunk {idx+1}):\n{chunk}"
+                        chunk_text_response = call_gemini_with_fallback(current_prompt, api_key, image_data=image_data, mime_type="image/png" if content_type == "images" else None)
+                    elif provider == 'claude':
+                        if content_type == "images":
+                            chunk_text_response = call_claude_with_vision(prompt, api_key, chunk, "image/png")
+                    elif provider == 'openai':
+                        if content_type == "images":
+                            chunk_text_response = call_openai_with_vision(prompt, api_key, chunk, "image/png")
+                    elif provider == 'ollama':
+                        payload = {
+                            'model': ollama_model,
+                            'messages': [{
+                                'role': 'user',
+                                'content': prompt if content_type == "images" else f"{prompt}\n\nDocument Text (Chunk {idx+1}):\n{chunk}",
+                            }],
+                            'stream': False,
+                            'format': 'json'
+                        }
+                        if content_type == "images":
+                            payload['messages'][0]['images'] = [chunk]
 
-                    response = requests.post(f"{ollama_url}/api/chat", json=payload, timeout=600)
-                    if response.status_code == 200:
-                        chunk_text = response.json()['message']['content']
-                        chunk_items = resilient_parse_llm_json(chunk_text, 'assets')
+                        response = requests.post(f"{ollama_url}/api/chat", json=payload, timeout=600)
+                        if response.status_code == 200:
+                            chunk_text_response = response.json()['message']['content']
+                        else:
+                            print(f"Warning: Chunk {idx+1} failed: {response.text}")
+
+                    if chunk_text_response:
+                        chunk_items = resilient_parse_llm_json(chunk_text_response, 'assets')
                         all_extracted.extend(chunk_items)
-                    else:
-                        print(f"Warning: Chunk {idx+1} failed: {response.text}")
                 
-                return jsonify({'assets': all_extracted, 'status': 'success'}), 200
+                yield json.dumps({'assets': all_extracted, 'status': 'success', 'progress': 100}) + '\n'
             else:
-                # Single image case
-                response = requests.post(
-                    f"{ollama_url}/api/chat",
-                    json={
-                        'model': ollama_model,
-                        'messages': [{'role': 'user', 'content': prompt, 'images': [image_b64]}],
-                        'stream': False,
-                        'format': 'json'
-                    },
-                    timeout=180
-                )
-                if response.status_code == 200:
-                    text_response = response.json()['message']['content']
-                else:
-                    raise Exception(f"Ollama Vision error: {response.text}")
-            if response.status_code == 200:
-                text_response = response.json()['message']['content']
-            else:
-                raise Exception(f"Ollama Vision error: {response.text}")
+                # Standard single-shot path
+                text_response = ""
+                if provider == 'gemini':
+                    file_bytes = base64.b64decode(image_b64)
+                    text_response = call_gemini_with_fallback(prompt, api_key, image_data=file_bytes, mime_type=mime_type)
+                elif provider == 'claude':
+                    text_response = call_claude_with_vision(prompt, api_key, image_b64, mime_type)
+                elif provider == 'openai':
+                    text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type)
+                elif provider == 'ollama':
+                    # Single image case
+                    response = requests.post(
+                        f"{ollama_url}/api/chat",
+                        json={
+                            'model': ollama_model,
+                            'messages': [{'role': 'user', 'content': prompt, 'images': [image_b64]}],
+                            'stream': False,
+                            'format': 'json'
+                        },
+                        timeout=180
+                    )
+                    if response.status_code == 200:
+                        text_response = response.json()['message']['content']
+                    else:
+                        raise Exception(f"Ollama Vision error: {response.text}")
 
-        # Use resilient parsing to extract the list of assets
-        extracted_assets = resilient_parse_llm_json(text_response, 'assets')
-        
-        return jsonify({'assets': extracted_assets, 'status': 'success'}), 200
-    except Exception as e:
-        print(f"Failed to parse AI response: {str(e)}")
-        return jsonify({'error': f'Failed to parse AI response: {str(e)}', 'raw': text_response[:200] if 'text_response' in locals() else "No response"}), 500
+                extracted_assets = resilient_parse_llm_json(text_response, 'assets')
+                yield json.dumps({'assets': extracted_assets, 'status': 'success', 'progress': 100}) + '\n'
 
-    except Exception as e:
-        print(f"Extract assets error: {str(e)}")
-        enhanced_audit_logger.log(
-            action='EXTRACT_ASSETS_ERROR',
-            details={'profile_name': profile_name, 'error': str(e)},
-            status_code=500
-        )
-        return jsonify({'error': str(e)}), 500
+        except Exception as e:
+            print(f"Extract assets error: {str(e)}")
+            enhanced_audit_logger.log(
+                action='EXTRACT_ASSETS_ERROR',
+                details={'profile_name': profile_name, 'error': str(e)},
+                status_code=500
+            )
+            yield json.dumps({'error': str(e)}) + '\n'
 
-        return jsonify({'error': str(e)}), 500
+    return Response(generate(), mimetype='application/x-ndjson')
 
 
 @ai_services_bp.route('/extract-income', methods=['POST'])
@@ -1004,6 +1015,13 @@ def extract_income():
     provider = requested_provider or data_dict.get('preferred_ai_provider') or 'gemini'
     
     api_key = None
+    ollama_url = sanitize_url(api_keys.get('ollama_url'), 'http://localhost:11434')
+    # Use llama3.2-vision for extraction if using Ollama, as it's specifically for this task
+    configured_model = api_keys.get('ollama_model', '')
+    if 'vision' in configured_model.lower() or 'vl' in configured_model.lower():
+        ollama_model = configured_model
+    else:
+        ollama_model = 'llama3.2-vision'
     
     if provider == 'gemini':
         api_key = api_keys.get('gemini_api_key')
@@ -1036,86 +1054,96 @@ def extract_income():
     3. If frequency is unclear, default to "monthly" for regular income, "annual" for one-time or tax documents.
     4. Return ONLY a JSON array: [{"name": "...", "amount": ..., "frequency": "..."}]
     """
-
-    try:
-        if provider == 'gemini':
-            file_bytes = base64.b64decode(image_b64)
-            text_response = call_gemini_with_fallback(prompt, api_key, image_data=file_bytes, mime_type=mime_type)
-        elif provider == 'claude':
-            text_response = call_claude_with_vision(prompt, api_key, image_b64, mime_type)
-        elif provider == 'openai':
-            text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type)
-        elif provider == 'ollama':
-            ollama_url = sanitize_url(api_keys.get('ollama_url'), 'http://localhost:11434')
-            configured_model = api_keys.get('ollama_model', '')
-            if 'vision' in configured_model.lower() or 'vl' in configured_model.lower():
-                ollama_model = configured_model
-            else:
-                ollama_model = 'llama3.2-vision'
-            
-            # Local Vision/Text support via Ollama
-            all_extracted = []
-            
+    
+    def generate():
+        try:
             if mime_type == 'application/pdf' or image_b64.startswith('JVBERi'):
-                print("Processing multi-page PDF for Ollama...")
+                # Handle multi-page PDF for ALL providers
+                all_extracted = []
+                print(f"Processing multi-page PDF for {provider}...")
                 file_bytes = base64.b64decode(image_b64)
                 chunks, content_type = process_pdf_content(file_bytes)
                 
-                # Process each chunk individually
+                num_chunks = len(chunks)
                 for idx, chunk in enumerate(chunks):
-                    print(f"Processing chunk {idx+1}/{len(chunks)}...")
+                    progress = int(((idx) / num_chunks) * 100)
+                    yield json.dumps({'status': 'processing', 'progress': progress, 'message': f'Analyzing page group {idx+1}/{num_chunks}...'}) + '\n'
                     
-                    payload = {
-                        'model': ollama_model,
-                        'messages': [{
-                            'role': 'user',
-                            'content': prompt if content_type == "images" else f"{prompt}\n\nDocument Text (Chunk {idx+1}):\n{chunk}",
-                        }],
-                        'stream': False,
-                        'format': 'json'
-                    }
-                    if content_type == "images":
-                        payload['messages'][0]['images'] = [chunk]
+                    chunk_text_response = ""
+                    if provider == 'gemini':
+                        image_data = base64.b64decode(chunk) if content_type == "images" else None
+                        current_prompt = prompt if content_type == "images" else f"{prompt}\n\nDocument Text (Chunk {idx+1}):\n{chunk}"
+                        chunk_text_response = call_gemini_with_fallback(current_prompt, api_key, image_data=image_data, mime_type="image/png" if content_type == "images" else None)
+                    elif provider == 'claude':
+                        if content_type == "images":
+                            chunk_text_response = call_claude_with_vision(prompt, api_key, chunk, "image/png")
+                    elif provider == 'openai':
+                        if content_type == "images":
+                            chunk_text_response = call_openai_with_vision(prompt, api_key, chunk, "image/png")
+                    elif provider == 'ollama':
+                        payload = {
+                            'model': ollama_model,
+                            'messages': [{
+                                'role': 'user',
+                                'content': prompt if content_type == "images" else f"{prompt}\n\nDocument Text (Chunk {idx+1}):\n{chunk}",
+                            }],
+                            'stream': False,
+                            'format': 'json'
+                        }
+                        if content_type == "images":
+                            payload['messages'][0]['images'] = [chunk]
 
-                    response = requests.post(f"{ollama_url}/api/chat", json=payload, timeout=600)
-                    if response.status_code == 200:
-                        chunk_text = response.json()['message']['content']
-                        chunk_items = resilient_parse_llm_json(chunk_text, 'income')
+                        response = requests.post(f"{ollama_url}/api/chat", json=payload, timeout=600)
+                        if response.status_code == 200:
+                            chunk_text_response = response.json()['message']['content']
+                        else:
+                            print(f"Warning: Chunk {idx+1} failed: {response.text}")
+
+                    if chunk_text_response:
+                        chunk_items = resilient_parse_llm_json(chunk_text_response, 'income')
                         all_extracted.extend(chunk_items)
-                    else:
-                        print(f"Warning: Chunk {idx+1} failed: {response.text}")
                 
-                return jsonify({'income': all_extracted, 'status': 'success'}), 200
+                yield json.dumps({'income': all_extracted, 'status': 'success', 'progress': 100}) + '\n'
             else:
-                # Single image case
-                response = requests.post(
-                    f"{ollama_url}/api/chat",
-                    json={
-                        'model': ollama_model,
-                        'messages': [{'role': 'user', 'content': prompt, 'images': [image_b64]}],
-                        'stream': False,
-                        'format': 'json'
-                    },
-                    timeout=180
-                )
-                if response.status_code == 200:
-                    text_response = response.json()['message']['content']
-                else:
-                    raise Exception(f"Ollama Vision error: {response.text}")
+                # Standard single-shot path
+                text_response = ""
+                if provider == 'gemini':
+                    file_bytes = base64.b64decode(image_b64)
+                    text_response = call_gemini_with_fallback(prompt, api_key, image_data=file_bytes, mime_type=mime_type)
+                elif provider == 'claude':
+                    text_response = call_claude_with_vision(prompt, api_key, image_b64, mime_type)
+                elif provider == 'openai':
+                    text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type)
+                elif provider == 'ollama':
+                    # Single image case
+                    response = requests.post(
+                        f"{ollama_url}/api/chat",
+                        json={
+                            'model': ollama_model,
+                            'messages': [{'role': 'user', 'content': prompt, 'images': [image_b64]}],
+                            'stream': False,
+                            'format': 'json'
+                        },
+                        timeout=180
+                    )
+                    if response.status_code == 200:
+                        text_response = response.json()['message']['content']
+                    else:
+                        raise Exception(f"Ollama Vision error: {response.text}")
 
+                extracted_income = resilient_parse_llm_json(text_response, 'income')
+                yield json.dumps({'income': extracted_income, 'status': 'success', 'progress': 100}) + '\n'
 
-        # Use resilient parsing to extract the list of income items
-        extracted_income = resilient_parse_llm_json(text_response, 'income')
-        
-        return jsonify({'income': extracted_income, 'status': 'success'}), 200
-    except Exception as e:
-        print(f"Extract income error: {str(e)}")
-        enhanced_audit_logger.log(
-            action='EXTRACT_INCOME_ERROR',
-            details={'profile_name': profile_name, 'error': str(e)},
-            status_code=500
-        )
-        return jsonify({'error': str(e)}), 500
+        except Exception as e:
+            print(f"Extract income error: {str(e)}")
+            enhanced_audit_logger.log(
+                action='EXTRACT_INCOME_ERROR',
+                details={'profile_name': profile_name, 'error': str(e)},
+                status_code=500
+            )
+            yield json.dumps({'error': str(e)}) + '\n'
+    
+    return Response(generate(), mimetype='application/x-ndjson')
 
 
 @ai_services_bp.route('/extract-expenses', methods=['POST'])
@@ -1143,6 +1171,13 @@ def extract_expenses():
     provider = requested_provider or data_dict.get('preferred_ai_provider') or 'gemini'
     
     api_key = None
+    ollama_url = sanitize_url(api_keys.get('ollama_url'), 'http://localhost:11434')
+    # Use llama3.2-vision for extraction if using Ollama, as it's specifically for this task
+    configured_model = api_keys.get('ollama_model', '')
+    if 'vision' in configured_model.lower() or 'vl' in configured_model.lower():
+        ollama_model = configured_model
+    else:
+        ollama_model = 'llama3.2-vision'
     
     if provider == 'gemini':
         api_key = api_keys.get('gemini_api_key')
@@ -1180,84 +1215,93 @@ def extract_expenses():
     4. Return ONLY a JSON array: [{"name": "...", "amount": ..., "frequency": "...", "category": "..."}]
     """
 
-    try:
-        if provider == 'gemini':
-            file_bytes = base64.b64decode(image_b64)
-            text_response = call_gemini_with_fallback(prompt, api_key, image_data=file_bytes, mime_type=mime_type)
-        elif provider == 'claude':
-            text_response = call_claude_with_vision(prompt, api_key, image_b64, mime_type)
-        elif provider == 'openai':
-            text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type)
-        elif provider == 'ollama':
-            ollama_url = sanitize_url(api_keys.get('ollama_url'), 'http://localhost:11434')
-            configured_model = api_keys.get('ollama_model', '')
-            if 'vision' in configured_model.lower() or 'vl' in configured_model.lower():
-                ollama_model = configured_model
-            else:
-                ollama_model = 'llama3.2-vision'
-            
-            # Local Vision/Text support via Ollama
-            all_extracted = []
-            
+    def generate():
+        try:
             if mime_type == 'application/pdf' or image_b64.startswith('JVBERi'):
-                print("Processing multi-page PDF for Ollama...")
+                # Handle multi-page PDF for ALL providers
+                all_extracted = []
+                print(f"Processing multi-page PDF for {provider}...")
                 file_bytes = base64.b64decode(image_b64)
                 chunks, content_type = process_pdf_content(file_bytes)
                 
-                # Process each chunk individually to avoid context limits
+                num_chunks = len(chunks)
                 for idx, chunk in enumerate(chunks):
-                    print(f"Processing chunk {idx+1}/{len(chunks)}...")
+                    progress = int(((idx) / num_chunks) * 100)
+                    yield json.dumps({'status': 'processing', 'progress': progress, 'message': f'Analyzing page group {idx+1}/{num_chunks}...'}) + '\n'
                     
-                    payload = {
-                        'model': ollama_model,
-                        'messages': [{
-                            'role': 'user',
-                            'content': prompt if content_type == "images" else f"{prompt}\n\nDocument Text (Chunk {idx+1}):\n{chunk}",
-                        }],
-                        'stream': False,
-                        'format': 'json'
-                    }
-                    if content_type == "images":
-                        payload['messages'][0]['images'] = [chunk]
+                    chunk_text_response = ""
+                    if provider == 'gemini':
+                        # For Gemini, if it's images, we pass as image data. If text, we pass as text.
+                        image_data = base64.b64decode(chunk) if content_type == "images" else None
+                        current_prompt = prompt if content_type == "images" else f"{prompt}\n\nDocument Text (Chunk {idx+1}):\n{chunk}"
+                        chunk_text_response = call_gemini_with_fallback(current_prompt, api_key, image_data=image_data, mime_type="image/png" if content_type == "images" else None)
+                    elif provider == 'claude':
+                        if content_type == "images":
+                            chunk_text_response = call_claude_with_vision(prompt, api_key, chunk, "image/png")
+                    elif provider == 'openai':
+                        if content_type == "images":
+                            chunk_text_response = call_openai_with_vision(prompt, api_key, chunk, "image/png")
+                    elif provider == 'ollama':
+                        payload = {
+                            'model': ollama_model,
+                            'messages': [{
+                                'role': 'user',
+                                'content': prompt if content_type == "images" else f"{prompt}\n\nDocument Text (Chunk {idx+1}):\n{chunk}",
+                            }],
+                            'stream': False,
+                            'format': 'json'
+                        }
+                        if content_type == "images":
+                            payload['messages'][0]['images'] = [chunk]
 
-                    response = requests.post(f"{ollama_url}/api/chat", json=payload, timeout=600)
-                    if response.status_code == 200:
-                        chunk_text = response.json()['message']['content']
-                        chunk_items = resilient_parse_llm_json(chunk_text, 'expenses')
+                        response = requests.post(f"{ollama_url}/api/chat", json=payload, timeout=600)
+                        if response.status_code == 200:
+                            chunk_text_response = response.json()['message']['content']
+                        else:
+                            print(f"Warning: Chunk {idx+1} failed: {response.text}")
+
+                    if chunk_text_response:
+                        chunk_items = resilient_parse_llm_json(chunk_text_response, 'expenses')
                         all_extracted.extend(chunk_items)
-                    else:
-                        print(f"Warning: Chunk {idx+1} failed: {response.text}")
                 
-                # Convert aggregated result back to text_response format for the common parser
-                return jsonify({'expenses': all_extracted, 'status': 'success'}), 200
+                yield json.dumps({'expenses': all_extracted, 'status': 'success', 'progress': 100}) + '\n'
             else:
-                # Single image case
-                response = requests.post(
-                    f"{ollama_url}/api/chat",
-                    json={
-                        'model': ollama_model,
-                        'messages': [{'role': 'user', 'content': prompt, 'images': [image_b64]}],
-                        'stream': False,
-                        'format': 'json'
-                    },
-                    timeout=180
-                )
-                if response.status_code == 200:
-                    text_response = response.json()['message']['content']
-                else:
-                    raise Exception(f"Ollama Vision error: {response.text}")
-        else:
-            return jsonify({'error': f'Provider {provider} not supported for expense extraction yet.'}), 400
+                # Standard single-shot path for images/CSVs
+                text_response = ""
+                if provider == 'gemini':
+                    file_bytes = base64.b64decode(image_b64)
+                    text_response = call_gemini_with_fallback(prompt, api_key, image_data=file_bytes, mime_type=mime_type)
+                elif provider == 'claude':
+                    text_response = call_claude_with_vision(prompt, api_key, image_b64, mime_type)
+                elif provider == 'openai':
+                    text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type)
+                elif provider == 'ollama':
+                    # Single image case
+                    response = requests.post(
+                        f"{ollama_url}/api/chat",
+                        json={
+                            'model': ollama_model,
+                            'messages': [{'role': 'user', 'content': prompt, 'images': [image_b64]}],
+                            'stream': False,
+                            'format': 'json'
+                        },
+                        timeout=180
+                    )
+                    if response.status_code == 200:
+                        text_response = response.json()['message']['content']
+                    else:
+                        raise Exception(f"Ollama Vision error: {response.text}")
 
-        # Use resilient parsing to extract the list of expenses
-        extracted_expenses = resilient_parse_llm_json(text_response, 'expenses')
-        
-        return jsonify({'expenses': extracted_expenses, 'status': 'success'}), 200
-    except Exception as e:
-        print(f"Extract expenses error: {str(e)}")
-        enhanced_audit_logger.log(
-            action='EXTRACT_EXPENSES_ERROR',
-            details={'profile_name': profile_name, 'error': str(e)},
-            status_code=500
-        )
-        return jsonify({'error': str(e)}), 500
+                extracted_expenses = resilient_parse_llm_json(text_response, 'expenses')
+                yield json.dumps({'expenses': extracted_expenses, 'status': 'success', 'progress': 100}) + '\n'
+
+        except Exception as e:
+            print(f"Extract expenses error: {str(e)}")
+            enhanced_audit_logger.log(
+                action='EXTRACT_EXPENSES_ERROR',
+                details={'profile_name': profile_name, 'error': str(e)},
+                status_code=500
+            )
+            yield json.dumps({'error': str(e)}) + '\n'
+    
+    return Response(generate(), mimetype='application/x-ndjson')

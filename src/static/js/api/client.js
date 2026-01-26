@@ -133,6 +133,62 @@ class APIClient {
     async delete(url, options = {}) {
         return this.request(url, { ...options, method: 'DELETE' });
     }
+
+    /**
+     * Specialized request for streaming progress updates
+     */
+    async streamRequest(url, data, onProgress) {
+        const config = {
+            method: 'POST',
+            headers: {
+                ...this.defaultHeaders,
+            },
+            body: JSON.stringify(data),
+            credentials: 'include',
+        };
+
+        const csrfToken = getCSRFToken();
+        if (csrfToken) {
+            config.headers['X-CSRF-Token'] = csrfToken;
+        }
+
+        try {
+            const response = await fetch(`${this.baseURL}${url}`, config);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new APIError(errorData.error || `HTTP ${response.status}`, response.status, errorData);
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let result = null;
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (!line.trim()) continue;
+                    try {
+                        const data = JSON.parse(line);
+                        if (data.progress !== undefined || data.status === 'processing') {
+                            if (onProgress) onProgress(data);
+                        } else {
+                            result = data; // Final result
+                        }
+                    } catch (e) {
+                        console.warn('Failed to parse stream line:', line);
+                    }
+                }
+            }
+            return result;
+        } catch (error) {
+            throw error;
+        }
+    }
 }
 
 /**
