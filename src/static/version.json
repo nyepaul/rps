@@ -1,5 +1,5 @@
 {
-    "version": "3.9.44",
+    "version": "3.9.45",
     "release_date": "2026-01-25",
-    "release_notes": "Rename API Settings to AI Settings and expand to support 10+ AI providers including free tools and local Ollama"
+    "release_notes": "Add support for local LLM tools including LM Studio and LocalAI with OpenAI-compatible APIs"
 }

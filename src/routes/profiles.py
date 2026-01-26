@@ -560,6 +560,8 @@ class APIKeySchema(BaseModel):
     together_api_key: Optional[str] = None
     huggingface_api_key: Optional[str] = None
     ollama_url: Optional[str] = None
+    lmstudio_url: Optional[str] = None
+    localai_url: Optional[str] = None
     preferred_ai_provider: Optional[str] = None
 
     @validator('claude_api_key', 'gemini_api_key', 'openai_api_key', 'grok_api_key', 
@@ -574,12 +576,12 @@ class APIKeySchema(BaseModel):
                 raise ValueError('API key is too long')
         return v
 
-    @validator('ollama_url')
-    def validate_ollama_url(cls, v):
+    @validator('ollama_url', 'lmstudio_url', 'localai_url')
+    def validate_local_urls(cls, v):
         if v is not None:
             v = v.strip()
             if not v.startswith(('http://', 'https://')):
-                raise ValueError('Ollama URL must start with http:// or https://')
+                raise ValueError('URL must start with http:// or https://')
         return v
 
 
@@ -635,6 +637,12 @@ def get_api_keys(name: str):
         if api_keys.get('ollama_url'):
             result['ollama_url'] = api_keys['ollama_url']
             keys_configured.append('ollama')
+        if api_keys.get('lmstudio_url'):
+            result['lmstudio_url'] = api_keys['lmstudio_url']
+            keys_configured.append('lmstudio')
+        if api_keys.get('localai_url'):
+            result['localai_url'] = api_keys['localai_url']
+            keys_configured.append('localai')
         
         if data_dict.get('preferred_ai_provider'):
             result['preferred_ai_provider'] = data_dict['preferred_ai_provider']
@@ -725,6 +733,12 @@ def save_api_keys(name: str):
         if data.ollama_url:
             data_dict['api_keys']['ollama_url'] = data.ollama_url
             keys_updated.append('ollama')
+        if data.lmstudio_url:
+            data_dict['api_keys']['lmstudio_url'] = data.lmstudio_url
+            keys_updated.append('lmstudio')
+        if data.localai_url:
+            data_dict['api_keys']['localai_url'] = data.localai_url
+            keys_updated.append('localai')
         
         if data.preferred_ai_provider:
             data_dict['preferred_ai_provider'] = data.preferred_ai_provider
@@ -802,6 +816,10 @@ def test_api_key():
             return test_huggingface_api_key(api_key)
         elif provider == 'ollama':
             return test_ollama_api_key(api_key)
+        elif provider == 'lmstudio':
+            return test_lmstudio_api_key(api_key)
+        elif provider == 'localai':
+            return test_localai_api_key(api_key)
         else:
             enhanced_audit_logger.log(
                 action='TEST_API_KEY_UNKNOWN_PROVIDER',
@@ -1080,5 +1098,43 @@ def test_ollama_api_key(url: str):
             }), 200
         else:
             return jsonify({'success': False, 'error': f"Ollama Error: {response.status_code}"}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Connection failed: {str(e)}"}), 400
+
+
+def test_lmstudio_api_key(url: str):
+    """Test LM Studio connection."""
+    try:
+        import requests
+        # LM Studio is OpenAI compatible, test /v1/models
+        response = requests.get(f'{url}/v1/models', timeout=5)
+        if response.status_code == 200:
+            models = response.json().get('data', [])
+            return jsonify({
+                'success': True, 
+                'message': f'Connected to LM Studio ({len(models)} models found)',
+                'model': models[0]['id'] if models else 'lmstudio'
+            }), 200
+        else:
+            return jsonify({'success': False, 'error': f"LM Studio Error: {response.status_code}"}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Connection failed: {str(e)}"}), 400
+
+
+def test_localai_api_key(url: str):
+    """Test LocalAI connection."""
+    try:
+        import requests
+        # LocalAI is OpenAI compatible, test /v1/models
+        response = requests.get(f'{url}/v1/models', timeout=5)
+        if response.status_code == 200:
+            models = response.json().get('data', [])
+            return jsonify({
+                'success': True, 
+                'message': f'Connected to LocalAI ({len(models)} models found)',
+                'model': models[0]['id'] if models else 'localai'
+            }), 200
+        else:
+            return jsonify({'success': False, 'error': f"LocalAI Error: {response.status_code}"}), 400
     except Exception as e:
         return jsonify({'success': False, 'error': f"Connection failed: {str(e)}"}), 400
