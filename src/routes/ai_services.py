@@ -22,37 +22,53 @@ from src.extensions import limiter
 ai_services_bp = Blueprint('ai_services', __name__, url_prefix='/api')
 
 
-def convert_pdf_to_image(pdf_bytes):
-    """Converts the first page of a PDF to a base64 encoded PNG for vision models."""
+def process_pdf_content(pdf_bytes, max_pages=30):
+    """
+    Intelligently processes PDF content for LLMs.
+    1. Attempts to extract text from all pages.
+    2. If little/no text found (scanned PDF), renders pages to images.
+    Returns (content, content_type) where content_type is "text" or "images".
+    """
     if not fitz:
-        raise Exception("PyMuPDF (fitz) is not installed. PDF conversion not available.")
+        raise Exception("PyMuPDF (fitz) is not installed. PDF processing not available.")
     
     try:
-        # Open PDF from bytes
         pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
         if pdf_document.page_count == 0:
             raise Exception("PDF has no pages.")
         
-        # Get first page
-        page = pdf_document[0]
+        # 1. Try text extraction first
+        full_text = ""
+        for i in range(min(pdf_document.page_count, max_pages)):
+            full_text += f"--- Page {i+1} ---\n"
+            full_text += pdf_document[i].get_text()
         
-        # Render page to pixmap (image)
-        # Increase resolution slightly for better OCR (zoom=2.0)
-        zoom = 2.0
-        mat = fitz.Matrix(zoom, zoom)
-        pix = page.get_pixmap(matrix=mat)
+        # If we extracted significant text, return it
+        if len(full_text.strip()) > 200:
+            print(f"Extracted {len(full_text)} characters of text from PDF.")
+            pdf_document.close()
+            return full_text, "text"
         
-        # Convert to PIL Image to save as PNG
-        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-        
-        buffered = BytesIO()
-        img.save(buffered, format="PNG")
-        img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+        # 2. Fallback to images (scanned PDF)
+        print("Scanned PDF detected or text extraction failed. Rendering pages to images...")
+        images = []
+        # Limit image conversion to prevent massive request sizes
+        # 10 pages is usually enough for most statements
+        for i in range(min(pdf_document.page_count, 10)):
+            page = pdf_document[i]
+            zoom = 2.0
+            mat = fitz.Matrix(zoom, zoom)
+            pix = page.get_pixmap(matrix=mat)
+            
+            img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            buffered = BytesIO()
+            img.save(buffered, format="PNG")
+            images.append(base64.b64encode(buffered.getvalue()).decode('utf-8'))
         
         pdf_document.close()
-        return img_str
+        return images, "images"
     except Exception as e:
-        print(f"PDF to Image conversion error: {str(e)}")
+        print(f"PDF processing error: {str(e)}")
         raise Exception(f"Failed to process PDF: {str(e)}")
 
 
@@ -868,27 +884,32 @@ def extract_assets():
         elif provider == 'openai':
             text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type)
         elif provider == 'ollama':
-            # Local Vision support via Ollama
-            # Ollama requires images (PNG/JPEG), not PDFs. Convert if necessary.
-            processed_image_b64 = image_b64
-            if mime_type == 'application/pdf' or image_b64.startswith('JVBERi'): # PDF magic bytes in base64
-                print("Converting PDF to image for Ollama vision...")
+            # Local Vision/Text support via Ollama
+            processed_content = image_b64
+            content_type = "image"
+            
+            if mime_type == 'application/pdf' or image_b64.startswith('JVBERi'):
+                print("Processing multi-page PDF for Ollama...")
                 file_bytes = base64.b64decode(image_b64)
-                processed_image_b64 = convert_pdf_to_image(file_bytes)
+                processed_content, content_type = process_pdf_content(file_bytes)
+
+            payload = {
+                'model': ollama_model,
+                'messages': [{
+                    'role': 'user',
+                    'content': prompt if content_type == "images" else f"{prompt}\n\nDocument Text:\n{processed_content}",
+                }],
+                'stream': False,
+                'format': 'json'
+            }
+            
+            if content_type == "images":
+                payload['messages'][0]['images'] = processed_content
 
             response = requests.post(
                 f"{ollama_url}/api/chat",
-                json={
-                    'model': ollama_model,
-                    'messages': [{
-                        'role': 'user',
-                        'content': prompt,
-                        'images': [processed_image_b64]
-                    }],
-                    'stream': False,
-                    'format': 'json'
-                },
-                timeout=180
+                json=payload,
+                timeout=300 # Increased timeout for multi-page processing
             )
             if response.status_code == 200:
                 text_response = response.json()['message']['content']
@@ -989,29 +1010,33 @@ def extract_income():
             else:
                 ollama_model = 'llama3.2-vision'
             
-            # Ollama requires images (PNG/JPEG), not PDFs. Convert if necessary.
-            processed_image_b64 = image_b64
+            # Local Vision/Text support via Ollama
+            processed_content = image_b64
+            content_type = "image"
+            
             if mime_type == 'application/pdf' or image_b64.startswith('JVBERi'):
-                print("Converting PDF to image for Ollama vision...")
+                print("Processing multi-page PDF for Ollama...")
                 file_bytes = base64.b64decode(image_b64)
-                processed_image_b64 = convert_pdf_to_image(file_bytes)
+                processed_content, content_type = process_pdf_content(file_bytes)
+
+            payload = {
+                'model': ollama_model,
+                'messages': [{
+                    'role': 'user',
+                    'content': prompt if content_type == "images" else f"{prompt}\n\nDocument Text:\n{processed_content}",
+                }],
+                'stream': False,
+                'format': 'json'
+            }
+            
+            if content_type == "images":
+                payload['messages'][0]['images'] = processed_content
 
             response = requests.post(
                 f"{ollama_url}/api/chat",
-                json={
-                    'model': ollama_model,
-                    'messages': [{'role': 'user', 'content': prompt, 'images': [processed_image_b64]}],
-                    'stream': False,
-                    'format': 'json'
-                },
-                timeout=180
+                json=payload,
+                timeout=300
             )
-            if response.status_code == 200:
-                text_response = response.json()['message']['content']
-            else:
-                raise Exception(f"Ollama Vision error: {response.text}")
-        else:
-            return jsonify({'error': f'Provider {provider} not supported for income extraction yet.'}), 400
 
 
         # Use resilient parsing to extract the list of income items
@@ -1106,22 +1131,32 @@ def extract_expenses():
             else:
                 ollama_model = 'llama3.2-vision'
             
-            # Ollama requires images (PNG/JPEG), not PDFs. Convert if necessary.
-            processed_image_b64 = image_b64
+            # Local Vision/Text support via Ollama
+            processed_content = image_b64
+            content_type = "image"
+            
             if mime_type == 'application/pdf' or image_b64.startswith('JVBERi'):
-                print("Converting PDF to image for Ollama vision...")
+                print("Processing multi-page PDF for Ollama...")
                 file_bytes = base64.b64decode(image_b64)
-                processed_image_b64 = convert_pdf_to_image(file_bytes)
+                processed_content, content_type = process_pdf_content(file_bytes)
+
+            payload = {
+                'model': ollama_model,
+                'messages': [{
+                    'role': 'user',
+                    'content': prompt if content_type == "images" else f"{prompt}\n\nDocument Text:\n{processed_content}",
+                }],
+                'stream': False,
+                'format': 'json'
+            }
+            
+            if content_type == "images":
+                payload['messages'][0]['images'] = processed_content
 
             response = requests.post(
                 f"{ollama_url}/api/chat",
-                json={
-                    'model': ollama_model,
-                    'messages': [{'role': 'user', 'content': prompt, 'images': [processed_image_b64]}],
-                    'stream': False,
-                    'format': 'json'
-                },
-                timeout=180
+                json=payload,
+                timeout=300
             )
             if response.status_code == 200:
                 text_response = response.json()['message']['content']
