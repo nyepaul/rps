@@ -82,7 +82,7 @@ def process_pdf_content(pdf_bytes, max_pages=150):
             pix = page.get_pixmap(matrix=mat)
             img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
             buffered = BytesIO()
-            img.save(buffered, format="PNG")
+            img.save(buffered, format="JPEG", quality=80)
             images.append(base64.b64encode(buffered.getvalue()).decode('utf-8'))
         
         pdf_document.close()
@@ -993,12 +993,23 @@ def extract_assets():
                 elif provider == 'openai':
                     text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type)
                 elif provider == 'ollama':
-                    # Single image case
+                    # Single image case - ensure standard format
+                    try:
+                        img = Image.open(BytesIO(base64.b64decode(image_b64)))
+                        if img.mode != 'RGB':
+                            img = img.convert('RGB')
+                        buffered = BytesIO()
+                        img.save(buffered, format="JPEG", quality=85)
+                        image_payload = base64.b64encode(buffered.getvalue()).decode('utf-8')
+                    except Exception as e:
+                        print(f"Ollama image normalization failed: {str(e)}")
+                        image_payload = image_b64
+
                     response = requests.post(
                         f"{ollama_url}/api/chat",
                         json={
                             'model': ollama_model,
-                            'messages': [{'role': 'user', 'content': prompt, 'images': [image_b64]}],
+                            'messages': [{'role': 'user', 'content': prompt, 'images': [image_payload]}],
                             'stream': False,
                             'format': 'json'
                         },
@@ -1149,12 +1160,23 @@ def extract_income():
                 elif provider == 'openai':
                     text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type)
                 elif provider == 'ollama':
-                    # Single image case
+                    # Single image case - ensure standard format
+                    try:
+                        img = Image.open(BytesIO(base64.b64decode(image_b64)))
+                        if img.mode != 'RGB':
+                            img = img.convert('RGB')
+                        buffered = BytesIO()
+                        img.save(buffered, format="JPEG", quality=85)
+                        image_payload = base64.b64encode(buffered.getvalue()).decode('utf-8')
+                    except Exception as e:
+                        print(f"Ollama image normalization failed: {str(e)}")
+                        image_payload = image_b64
+
                     response = requests.post(
                         f"{ollama_url}/api/chat",
                         json={
                             'model': ollama_model,
-                            'messages': [{'role': 'user', 'content': prompt, 'images': [image_b64]}],
+                            'messages': [{'role': 'user', 'content': prompt, 'images': [image_payload]}],
                             'stream': False,
                             'format': 'json'
                         },
@@ -1310,12 +1332,23 @@ def extract_expenses():
                 elif provider == 'openai':
                     text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type)
                 elif provider == 'ollama':
-                    # Single image case
+                    # Single image case - ensure standard format
+                    try:
+                        img = Image.open(BytesIO(base64.b64decode(image_b64)))
+                        if img.mode != 'RGB':
+                            img = img.convert('RGB')
+                        buffered = BytesIO()
+                        img.save(buffered, format="JPEG", quality=85)
+                        image_payload = base64.b64encode(buffered.getvalue()).decode('utf-8')
+                    except Exception as e:
+                        print(f"Ollama image normalization failed: {str(e)}")
+                        image_payload = image_b64
+
                     response = requests.post(
                         f"{ollama_url}/api/chat",
                         json={
                             'model': ollama_model,
-                            'messages': [{'role': 'user', 'content': prompt, 'images': [image_b64]}],
+                            'messages': [{'role': 'user', 'content': prompt, 'images': [image_payload]}],
                             'stream': False,
                             'format': 'json'
                         },
