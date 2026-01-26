@@ -191,6 +191,13 @@ export function showAIImportModal(type, profileName, onComplete) {
         previewStep.style.display = 'block';
         
         const list = modal.querySelector('#ai-extracted-list');
+        
+        // Defensive check: ensure extractedData is an array
+        if (!Array.isArray(extractedData)) {
+            console.error('Expected array for extractedData, got:', typeof extractedData, extractedData);
+            extractedData = [];
+        }
+
         list.innerHTML = extractedData.map((item, index) => `
             <div style="padding: 10px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--bg-secondary);">
                 <div>
