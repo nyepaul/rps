@@ -45,7 +45,7 @@ def process_pdf_content(pdf_bytes, max_pages=150):
             raise Exception("PDF has no pages.")
         
         # 1. Try text extraction first
-        # We'll group pages into chunks of 10 to keep context manageable but efficient
+        # We'll group pages into larger chunks to keep context manageable but efficient
         text_chunks = []
         current_chunk = ""
         pages_in_chunk = 0
@@ -56,8 +56,8 @@ def process_pdf_content(pdf_bytes, max_pages=150):
                 current_chunk += f"--- Page {i+1} ---\n{page_text}\n\n"
                 pages_in_chunk += 1
                 
-                # Close chunk every 10 pages or if it gets very large
-                if pages_in_chunk >= 10 or len(current_chunk) > 15000:
+                # Close chunk every 50 pages or if it gets very large (30k chars)
+                if pages_in_chunk >= 50 or len(current_chunk) > 30000:
                     text_chunks.append(current_chunk)
                     current_chunk = ""
                     pages_in_chunk = 0
@@ -67,15 +67,15 @@ def process_pdf_content(pdf_bytes, max_pages=150):
         
         # If we extracted significant text, return chunks
         if any(len(c.strip()) > 50 for c in text_chunks):
-            print(f"Extracted text chunks from {pdf_document.page_count} pages.")
+            print(f"Extracted {len(text_chunks)} text chunks from {pdf_document.page_count} pages.")
             pdf_document.close()
             return text_chunks, "text"
         
         # 2. Fallback to images (scanned PDF)
         print("Scanned PDF detected. Rendering pages to images...")
         images = []
-        # Limit image conversion to 10 pages for stability
-        for i in range(min(pdf_document.page_count, 10)):
+        # Limit image conversion to 20 pages for more data coverage
+        for i in range(min(pdf_document.page_count, 20)):
             page = pdf_document[i]
             zoom = 2.0
             mat = fitz.Matrix(zoom, zoom)
@@ -266,35 +266,52 @@ def call_claude_with_vision(prompt, api_key, image_b64, mime_type):
         'content-type': 'application/json'
     }
     
-    # Map mime_type to Anthropic supported types
-    # Anthropic supports image/jpeg, image/png, image/gif, and image/webp
-    anthropic_mime = mime_type
-    if mime_type == 'image/jpg':
-        anthropic_mime = 'image/jpeg'
-
-    payload = {
-        'model': 'claude-3-5-sonnet-20241022',
-        'max_tokens': 4096,
-        'messages': [
-            {
-                'role': 'user',
-                'content': [
+    # Handle CSV case: Include as text in the prompt instead of an image
+    if mime_type == 'text/csv':
+        try:
+            csv_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
+            payload = {
+                'model': 'claude-3-5-sonnet-20241022',
+                'max_tokens': 4096,
+                'messages': [
                     {
-                        'type': 'image',
-                        'source': {
-                            'type': 'base64',
-                            'media_type': anthropic_mime,
-                            'data': image_b64,
-                        },
-                    },
-                    {
-                        'type': 'text',
-                        'text': prompt
+                        'role': 'user',
+                        'content': f"{prompt}\n\nCSV Data:\n```\n{csv_content}\n```"
                     }
-                ],
+                ]
             }
-        ]
-    }
+        except Exception as e:
+            raise Exception(f"Failed to decode CSV data: {str(e)}")
+    else:
+        # Map mime_type to Anthropic supported types
+        # Anthropic supports image/jpeg, image/png, image/gif, and image/webp
+        anthropic_mime = mime_type
+        if mime_type == 'image/jpg':
+            anthropic_mime = 'image/jpeg'
+
+        payload = {
+            'model': 'claude-3-5-sonnet-20241022',
+            'max_tokens': 4096,
+            'messages': [
+                {
+                    'role': 'user',
+                    'content': [
+                        {
+                            'type': 'image',
+                            'source': {
+                                'type': 'base64',
+                                'media_type': anthropic_mime,
+                                'data': image_b64,
+                            },
+                        },
+                        {
+                            'type': 'text',
+                            'text': prompt
+                        }
+                    ],
+                }
+            ]
+        }
     
     try:
         response = requests.post(url, headers=headers, json=payload, timeout=60)
@@ -314,24 +331,41 @@ def call_openai_with_vision(prompt, api_key, image_b64, mime_type):
         "Authorization": f"Bearer {api_key}"
     }
     
-    payload = {
-        "model": "gpt-4o",
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": prompt},
+    # Handle CSV case: Include as text in the prompt instead of an image URL
+    if mime_type == 'text/csv':
+        try:
+            csv_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
+            payload = {
+                "model": "gpt-4o",
+                "messages": [
                     {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:{mime_type};base64,{image_b64}"
-                        }
+                        "role": "user",
+                        "content": f"{prompt}\n\nCSV Data:\n```\n{csv_content}\n```"
                     }
-                ]
+                ],
+                "max_tokens": 4000
             }
-        ],
-        "max_tokens": 1000
-    }
+        except Exception as e:
+            raise Exception(f"Failed to decode CSV data: {str(e)}")
+    else:
+        payload = {
+            "model": "gpt-4o",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:{mime_type};base64,{image_b64}"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "max_tokens": 1000
+        }
     
     try:
         response = requests.post(url, headers=headers, json=payload, timeout=60)
@@ -828,7 +862,7 @@ def pull_ollama_model():
 
 @ai_services_bp.route('/extract-assets', methods=['POST'])
 @login_required
-@limiter.limit("10 per hour")
+@limiter.limit("50 per hour")
 def extract_assets():
     """Extract assets from an uploaded file (image, PDF, or CSV) using AI."""
     print("Received extract-assets request")
@@ -901,7 +935,7 @@ def extract_assets():
 
     def generate():
         try:
-            if mime_type == 'application/pdf' or image_b64.startswith('JVBERi'):
+            if (mime_type == 'application/pdf' or image_b64.startswith('JVBERi')) and mime_type != 'text/csv':
                 # Handle multi-page PDF for ALL providers
                 all_extracted = []
                 print(f"Processing multi-page PDF for {provider}...")
@@ -992,7 +1026,7 @@ def extract_assets():
 
 @ai_services_bp.route('/extract-income', methods=['POST'])
 @login_required
-@limiter.limit("10 per hour")
+@limiter.limit("50 per hour")
 def extract_income():
     """Extract income streams from an uploaded file (image, PDF, or CSV) using AI."""
     data = request.json
@@ -1057,7 +1091,7 @@ def extract_income():
     
     def generate():
         try:
-            if mime_type == 'application/pdf' or image_b64.startswith('JVBERi'):
+            if (mime_type == 'application/pdf' or image_b64.startswith('JVBERi')) and mime_type != 'text/csv':
                 # Handle multi-page PDF for ALL providers
                 all_extracted = []
                 print(f"Processing multi-page PDF for {provider}...")
@@ -1148,7 +1182,7 @@ def extract_income():
 
 @ai_services_bp.route('/extract-expenses', methods=['POST'])
 @login_required
-@limiter.limit("10 per hour")
+@limiter.limit("50 per hour")
 def extract_expenses():
     """Extract expenses from an uploaded file (image, PDF, or CSV) using AI."""
     data = request.json
@@ -1217,7 +1251,7 @@ def extract_expenses():
 
     def generate():
         try:
-            if mime_type == 'application/pdf' or image_b64.startswith('JVBERi'):
+            if (mime_type == 'application/pdf' or image_b64.startswith('JVBERi')) and mime_type != 'text/csv':
                 # Handle multi-page PDF for ALL providers
                 all_extracted = []
                 print(f"Processing multi-page PDF for {provider}...")
