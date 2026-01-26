@@ -1,18 +1,60 @@
 """AI services routes for image extraction and analysis."""
-from flask import Blueprint, request, jsonify
-from flask_login import login_required
-import os
-import json
 import base64
-from io import BytesIO
-from PIL import Image
+import json
 import requests
+import os
+from io import BytesIO
+from flask import Blueprint, request, jsonify
+from flask_login import login_required, current_user
+from PIL import Image
+try:
+    import fitz  # PyMuPDF
+except ImportError:
+    fitz = None
+
+from src.models.profile import Profile
+from src.models.conversation import Conversation
 from google import genai
 from google.genai import types
 from src.services.enhanced_audit_logger import enhanced_audit_logger
 from src.extensions import limiter
 
 ai_services_bp = Blueprint('ai_services', __name__, url_prefix='/api')
+
+
+def convert_pdf_to_image(pdf_bytes):
+    """Converts the first page of a PDF to a base64 encoded PNG for vision models."""
+    if not fitz:
+        raise Exception("PyMuPDF (fitz) is not installed. PDF conversion not available.")
+    
+    try:
+        # Open PDF from bytes
+        pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
+        if pdf_document.page_count == 0:
+            raise Exception("PDF has no pages.")
+        
+        # Get first page
+        page = pdf_document[0]
+        
+        # Render page to pixmap (image)
+        # Increase resolution slightly for better OCR (zoom=2.0)
+        zoom = 2.0
+        mat = fitz.Matrix(zoom, zoom)
+        pix = page.get_pixmap(matrix=mat)
+        
+        # Convert to PIL Image to save as PNG
+        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+        
+        buffered = BytesIO()
+        img.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+        
+        pdf_document.close()
+        return img_str
+    except Exception as e:
+        print(f"PDF to Image conversion error: {str(e)}")
+        raise Exception(f"Failed to process PDF: {str(e)}")
+
 
 
 def call_gemini_with_fallback(prompt, api_key, image_data=None, mime_type=None):
@@ -784,6 +826,13 @@ def extract_assets():
             text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type)
         elif provider == 'ollama':
             # Local Vision support via Ollama
+            # Ollama requires images (PNG/JPEG), not PDFs. Convert if necessary.
+            processed_image_b64 = image_b64
+            if mime_type == 'application/pdf' or image_b64.startswith('JVBERi'): # PDF magic bytes in base64
+                print("Converting PDF to image for Ollama vision...")
+                file_bytes = base64.b64decode(image_b64)
+                processed_image_b64 = convert_pdf_to_image(file_bytes)
+
             response = requests.post(
                 f"{ollama_url}/api/chat",
                 json={
@@ -791,7 +840,7 @@ def extract_assets():
                     'messages': [{
                         'role': 'user',
                         'content': prompt,
-                        'images': [image_b64]
+                        'images': [processed_image_b64]
                     }],
                     'stream': False,
                     'format': 'json'
@@ -900,11 +949,19 @@ def extract_income():
                 ollama_model = configured_model
             else:
                 ollama_model = 'llama3.2-vision'
+            
+            # Ollama requires images (PNG/JPEG), not PDFs. Convert if necessary.
+            processed_image_b64 = image_b64
+            if mime_type == 'application/pdf' or image_b64.startswith('JVBERi'):
+                print("Converting PDF to image for Ollama vision...")
+                file_bytes = base64.b64decode(image_b64)
+                processed_image_b64 = convert_pdf_to_image(file_bytes)
+
             response = requests.post(
                 f"{ollama_url}/api/chat",
                 json={
                     'model': ollama_model,
-                    'messages': [{'role': 'user', 'content': prompt, 'images': [image_b64]}],
+                    'messages': [{'role': 'user', 'content': prompt, 'images': [processed_image_b64]}],
                     'stream': False,
                     'format': 'json'
                 },
@@ -1009,11 +1066,19 @@ def extract_expenses():
                 ollama_model = configured_model
             else:
                 ollama_model = 'llama3.2-vision'
+            
+            # Ollama requires images (PNG/JPEG), not PDFs. Convert if necessary.
+            processed_image_b64 = image_b64
+            if mime_type == 'application/pdf' or image_b64.startswith('JVBERi'):
+                print("Converting PDF to image for Ollama vision...")
+                file_bytes = base64.b64decode(image_b64)
+                processed_image_b64 = convert_pdf_to_image(file_bytes)
+
             response = requests.post(
                 f"{ollama_url}/api/chat",
                 json={
                     'model': ollama_model,
-                    'messages': [{'role': 'user', 'content': prompt, 'images': [image_b64]}],
+                    'messages': [{'role': 'user', 'content': prompt, 'images': [processed_image_b64]}],
                     'stream': False,
                     'format': 'json'
                 },
