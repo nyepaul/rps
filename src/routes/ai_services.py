@@ -56,6 +56,49 @@ def convert_pdf_to_image(pdf_bytes):
         raise Exception(f"Failed to process PDF: {str(e)}")
 
 
+def resilient_parse_llm_json(text_response, list_key):
+    """
+    Robustly parses LLM response to extract a list.
+    Handles markdown blocks, nested objects, and common wrappers.
+    """
+    try:
+        # 1. Strip markdown code blocks
+        clean_text = text_response.strip()
+        if "```json" in clean_text:
+            clean_text = clean_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in clean_text:
+            clean_text = clean_text.split("```")[1].split("```")[0].strip()
+        
+        # 2. Parse JSON
+        data = json.loads(clean_text)
+        
+        # 3. If it's already a list, return it
+        if isinstance(data, list):
+            return data
+            
+        # 4. If it's a dict, look for common list keys
+        if isinstance(data, dict):
+            # Check the expected key first (e.g. 'assets', 'income')
+            if list_key in data and isinstance(data[list_key], list):
+                return data[list_key]
+            
+            # Check other common keys
+            for key in ['items', 'data', 'results', 'list']:
+                if key in data and isinstance(data[key], list):
+                    return data[key]
+            
+            # If it's a single object that matches the expected structure but not in a list, wrap it
+            # (Heuristic: if it has a 'name' and 'value'/'amount')
+            if 'name' in data and ('value' in data or 'amount' in data):
+                return [data]
+                
+        return []
+    except Exception as e:
+        print(f"LLM JSON Parse Error: {str(e)}")
+        # If all else fails, try a regex approach or return empty
+        return []
+
+
 
 def call_gemini_with_fallback(prompt, api_key, image_data=None, mime_type=None):
     """Calls Gemini with a prioritized list of models and fallback logic using REST API."""
@@ -852,17 +895,13 @@ def extract_assets():
             else:
                 raise Exception(f"Ollama Vision error: {response.text}")
 
-        # Common JSON parsing logic
-        try:
-            json_str = text_response.replace('```json', '').replace('```', '').strip()
-            extracted_assets = json.loads(json_str)
-            # Handle case where model returns an object with an 'assets' key instead of a raw array
-            if isinstance(extracted_assets, dict) and 'assets' in extracted_assets:
-                extracted_assets = extracted_assets['assets']
-            
-            return jsonify({'assets': extracted_assets, 'status': 'success'}), 200
-        except Exception as e:
-            return jsonify({'error': f'Failed to parse AI response: {str(e)}', 'raw': text_response[:200]}), 500
+        # Use resilient parsing to extract the list of assets
+        extracted_assets = resilient_parse_llm_json(text_response, 'assets')
+        
+        return jsonify({'assets': extracted_assets, 'status': 'success'}), 200
+    except Exception as e:
+        print(f"Failed to parse AI response: {str(e)}")
+        return jsonify({'error': f'Failed to parse AI response: {str(e)}', 'raw': text_response[:200] if 'text_response' in locals() else "No response"}), 500
 
     except Exception as e:
         print(f"Extract assets error: {str(e)}")
@@ -975,8 +1014,8 @@ def extract_income():
             return jsonify({'error': f'Provider {provider} not supported for income extraction yet.'}), 400
 
 
-        json_str = text_response.replace('```json', '').replace('```', '').strip()
-        extracted_income = json.loads(json_str)
+        # Use resilient parsing to extract the list of income items
+        extracted_income = resilient_parse_llm_json(text_response, 'income')
         
         return jsonify({'income': extracted_income, 'status': 'success'}), 200
     except Exception as e:
@@ -1091,8 +1130,8 @@ def extract_expenses():
         else:
             return jsonify({'error': f'Provider {provider} not supported for expense extraction yet.'}), 400
 
-        json_str = text_response.replace('```json', '').replace('```', '').strip()
-        extracted_expenses = json.loads(json_str)
+        # Use resilient parsing to extract the list of expenses
+        extracted_expenses = resilient_parse_llm_json(text_response, 'expenses')
         
         return jsonify({'expenses': extracted_expenses, 'status': 'success'}), 200
     except Exception as e:

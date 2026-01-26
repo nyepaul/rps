@@ -1,5 +1,5 @@
 {
-    "version": "3.9.50",
+    "version": "3.9.51",
     "release_date": "2026-01-25",
-    "release_notes": "Add automatic PDF to image conversion for Ollama vision processing"
+    "release_notes": "Fix extractedData.map error with resilient LLM response parsing"
 }
