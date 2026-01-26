@@ -1,0 +1,515 @@
+Starting test suites...
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.2, pluggy-1.6.0 -- /home/paul/src/rps/venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/paul/src/rps
+configfile: pytest.ini
+plugins: anyio-4.12.1, cov-7.0.0
+collecting ... collected 7 items
+
+tests/comprehensive/test_javascript_quality.py::TestJavaScriptQuality::test_no_duplicate_const_declarations PASSED [ 14%]
+tests/comprehensive/test_javascript_quality.py::TestJavaScriptQuality::test_no_var_declarations PASSED [ 28%]
+tests/comprehensive/test_javascript_quality.py::TestJavaScriptQuality::test_all_imports_are_valid PASSED [ 42%]
+tests/comprehensive/test_javascript_quality.py::TestJavaScriptQuality::test_no_duplicate_element_ids_in_templates PASSED [ 57%]
+tests/comprehensive/test_javascript_quality.py::TestJavaScriptQuality::test_consistent_semicolon_usage PASSED [ 71%]
+tests/comprehensive/test_javascript_quality.py::TestJavaScriptCriticalIssues::test_no_duplicate_settings_modal_sections PASSED [ 85%]
+tests/comprehensive/test_javascript_quality.py::TestJavaScriptCriticalIssues::test_cashflow_tab_has_single_canvas_declaration PASSED [100%]
+
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.12.3-final-0 ________________
+
+Name                                        Stmts   Miss  Cover   Missing
+-------------------------------------------------------------------------
+src/__init__.py                                 0      0   100%
+src/__version__.py                             13      4    69%   13-16
+src/app.py                                    188    157    16%   38-100, 105-365, 369-370
+src/auth/__init__.py                            0      0   100%
+src/auth/admin_required.py                     16      8    50%   22-51
+src/auth/decorators.py                         19     19     0%   2-26
+src/auth/models.py                            249    196    21%   18-38, 43, 48, 53, 58, 62, 67-73, 78-84, 89-95, 99-136, 140-142, 146-168, 172-176, 180-234, 246-288, 305-321, 333-344, 355-366, 378-387, 392-403, 407-413, 417-426, 430-442, 446-447, 451-452, 456-457, 461-462, 465, 472-478, 482-488, 492-502, 506-512, 515-519
+src/auth/routes.py                            503    402    20%   28-60, 71-79, 90-94, 98-106, 126-187, 203-326, 342-377, 383-386, 403-404, 411-428, 444-452, 462-514, 525-601, 612-642, 657-665, 675-683, 696-781, 788-841, 852-935, 942-1005, 1012-1035
+src/auth/super_admin_required.py               12      5    58%   17-24
+src/auth/utils.py                               0      0   100%
+src/config.py                                  55      5    91%   11-13, 95-96
+src/database/__init__.py                        0      0   100%
+src/database/audit_logger.py                   71     46    35%   35-64, 69, 74, 79, 84, 105-124, 134-138, 151, 156, 161, 166
+src/database/connection.py                     30     18    40%   17-27, 31-34, 38-41
+src/extensions.py                              31     21    32%   21-55
+src/middleware/__init__.py                      0      0   100%
+src/models/__init__.py                          0      0   100%
+src/models/action_item.py                      88     75    15%   15-30, 35-41, 46-58, 62-96, 100-102, 108-147
+src/models/conversation.py                     55     39    29%   12-19, 24-30, 35-41, 46-50, 54-77, 81-83, 89-90, 96-104
+src/models/group.py                            44     30    32%   9-13, 18-21, 26-27, 31-45, 49-51, 55-61, 65-66, 70-71, 75
+src/models/profile.py                         102     77    25%   15-24, 29, 34-41, 47-67, 72, 78-84, 89-95, 100-108, 112-149, 153-157, 162-174
+src/models/scenario.py                         81     68    16%   13-23, 28-34, 39-43, 47-76, 80-82, 88-127
+src/routes/__init__.py                          0      0   100%
+src/routes/action_items.py                    199    140    30%   27-36, 40-42, 46-48, 52-54, 69-75, 79-81, 85-87, 96-141, 148-183, 190-214, 221-280, 287-362, 369-397
+src/routes/admin.py                          1364   1066    22%   32-34, 49-51, 78-80, 102-162, 176-202, 219-243, 252-304, 318-375, 383-395, 403-442, 450-490, 498-551, 564-601, 613-621, 629-642, 650-667, 675-693, 701-716, 724-743, 751-766, 774-792, 800-815, 823-835, 843-854, 871-930, 938-956, 964-1067, 1088-1157, 1165-1180, 1188-1203, 1211-1256, 1264-1356, 1364-1404, 1422-1474, 1482-1531, 1539-1565, 1573-1623, 1640-1716, 1724-1776, 1784-1836, 1844-1896, 1904-1956, 1964-2013, 2028-2113, 2127-2173, 2196-2369, 2387-2574, 2581-2582, 2589, 2600-2633, 2641-2668, 2676-2717, 2729-2746, 2754-2783, 2791-2823, 2831-2854, 2867-2874, 2883-2890, 2899-2913, 2929-2968, 2977-2986, 3001-3047, 3056-3076
+src/routes/ai_services.py                     304    265    13%   21-108, 120-295, 302-331, 341-353, 361-656, 664-701, 709-745
+src/routes/analysis.py                        329    264    20%   26-88, 142-144, 151-418, 425-580, 587-670, 677-765, 772-819
+src/routes/budget.py                           51     42    18%   13-80, 83-84
+src/routes/events.py                          158    132    16%   29-63, 83-183, 199-229, 249-349, 368-402
+src/routes/feedback.py                        440    361    18%   28-30, 34-38, 52-66, 71-84, 104-231, 242-269, 287-374, 388-438, 451-468, 476-500, 515-580, 592-654, 661-696, 709-788, 803-845, 859-903, 911-927, 941-973, 988-1025
+src/routes/fingerprint.py                      60     49    18%   17-35, 54-104, 113-185
+src/routes/profiles.py                        407    335    18%   24-35, 39-44, 56-69, 73-78, 85-99, 106-130, 137-189, 196-269, 276-304, 311-387, 394-449, 456-548, 560-566, 573-622, 629-698, 705-747, 752-805, 810-837, 842-869, 874-901
+src/routes/reports.py                         121    101    17%   22-61, 66-152, 164-229, 236-289, 296-364
+src/routes/roadmap.py                         170    141    17%   18-22, 29-90, 97-152, 159-195, 202-245, 252-311, 318-342, 349-408
+src/routes/scenarios.py                       126     90    29%   22-26, 37-43, 50-69, 76-100, 107-162, 169-227, 234-262
+src/routes/sitemap.py                          16     10    38%   25-37
+src/routes/skills.py                           35     25    29%   13-29, 36-56
+src/routes/tax_optimization.py                233    195    16%   42-111, 118-185, 192-238, 245-293, 300-356, 363-405
+src/routes/user_backups.py                     47     29    38%   16-20, 26-45, 51-74, 80-93
+src/services/__init__.py                        0      0   100%
+src/services/action_item_service.py            86     77    10%   14-268, 273-280
+src/services/asset_service.py                  63     55    13%   20-64, 77-202, 218-313, 327-339
+src/services/audit_narrative_generator.py     298    278     7%   37-59, 75-110, 115-155, 168-376, 381-423, 428-459, 464-487
+src/services/email_service.py                  27     27     0%   2-188
+src/services/encryption_service.py            125     88    30%   25-31, 35-42, 47, 54, 59-66, 71-80, 85-94, 106-116, 132-146, 158-162, 175-181, 193-197, 210-216, 226-239, 245, 251-264, 269, 274-280, 285, 290-296
+src/services/enhanced_audit_logger.py         806    728    10%   108-116, 121-128, 142-185, 193-235, 246-278, 285-303, 310-401, 406-423, 438-464, 474-519, 527-660, 668-711, 716-747, 752-843, 867-1077, 1082-1099, 1104, 1118, 1123-1126, 1131, 1136, 1141, 1169-1191, 1216-1237, 1254-1311, 1324-1413, 1437-1596, 1606-1663, 1668-1702
+src/services/ip_intelligence.py               132    111    16%   54-111, 120-124, 135-138, 151-201, 214-276, 292-312
+src/services/pdf/__init__.py                    8      0   100%
+src/services/pdf/base.py                       80     61    24%   78-87, 100-102, 115-119, 129-134, 137-138, 141-146, 150-189, 203-220
+src/services/pdf/charts.py                    139    125    10%   23-71, 84-119, 132-174, 187-218, 231-258, 267-272
+src/services/pdf/components.py                126    113    10%   25-43, 58-94, 109-186, 202-246, 261-322, 337-355, 367-377
+src/services/pdf/reports.py                   274    260     5%   36-173, 186-409, 421-570, 583-708
+src/services/pdf/styles.py                     67     60    10%   17-87, 99-219, 231-421, 434-441
+src/services/rebalancing_service.py            67     61     9%   10, 14-60, 69-102, 111-127
+src/services/retirement_model.py              958    876     9%   22-27, 94-95, 97-98, 102-109, 126-171, 189-225, 242-276, 294-331, 352-369, 381-454, 467-564, 577-1143, 1168-1505, 1508-1517, 1520-1551, 1553-1599, 1601-1611, 1623-1629, 1634-1667, 1673-1726, 1730-1803
+src/services/selective_backup_service.py      186    186     0%   5-458
+src/services/tax_optimization_service.py      357    284    20%   183-184, 188-195, 199-211, 220-246, 250-251, 255-276, 283, 293-325, 340-384, 391, 395-398, 407-434, 441-442, 448-465, 474-488, 517-536, 558-570, 594-620, 628-637, 653-693, 737-758, 774-786, 806-812, 829-845, 852-929, 939-945, 949-958, 962-970, 975-1053
+src/services/user_backup_service.py           126    105    17%   21-24, 33-94, 103-108, 113-125, 133-221
+src/utils/__init__.py                           0      0   100%
+src/utils/error_sanitizer.py                   40     36    10%   16-56, 70-87
+-------------------------------------------------------------------------
+TOTAL                                        9582   7946    17%
+Coverage HTML written to dir htmlcov
+============================== 7 passed in 2.08s ===============================
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.2, pluggy-1.6.0 -- /home/paul/src/rps/venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/paul/src/rps
+configfile: pytest.ini
+plugins: anyio-4.12.1, cov-7.0.0
+collecting ... collected 7 items
+
+tests/comprehensive/test_python_quality.py::TestPythonQuality::test_no_sql_injection_vulnerabilities PASSED [ 14%]
+tests/comprehensive/test_python_quality.py::TestPythonQuality::test_no_debug_print_statements PASSED [ 28%]
+tests/comprehensive/test_python_quality.py::TestPythonQuality::test_all_imports_are_valid PASSED [ 42%]
+tests/comprehensive/test_python_quality.py::TestPythonQuality::test_no_bare_except_clauses FAILED [ 57%]
+tests/comprehensive/test_python_quality.py::TestPythonQuality::test_proper_error_handling_in_routes PASSED [ 71%]
+tests/comprehensive/test_python_quality.py::TestPythonCriticalIssues::test_no_sql_like_injection_in_auth PASSED [ 85%]
+tests/comprehensive/test_python_quality.py::TestPythonCriticalIssues::test_no_undefined_variables_in_error_handlers FAILED [100%]
+
+=================================== FAILURES ===================================
+________________ TestPythonQuality.test_no_bare_except_clauses _________________
+tests/comprehensive/test_python_quality.py:128: in test_no_bare_except_clauses
+    assert len(issues) <= max_bare_excepts, f"Too many bare except clauses:\n" + "\n".join(issues)
+E   AssertionError: Too many bare except clauses:
+E     routes/admin.py:1549 - Bare except clause (should catch specific exceptions)
+E     routes/admin.py:1586 - Bare except clause (should catch specific exceptions)
+E     routes/ai_services.py:57 - Bare except clause (should catch specific exceptions)
+E     routes/ai_services.py:532 - Bare except clause (should catch specific exceptions)
+E     routes/profiles.py:863 - Bare except clause (should catch specific exceptions)
+E     routes/profiles.py:895 - Bare except clause (should catch specific exceptions)
+E     auth/routes.py:867 - Bare except clause (should catch specific exceptions)
+E     auth/routes.py:879 - Bare except clause (should catch specific exceptions)
+E     services/enhanced_audit_logger.py:496 - Bare except clause (should catch specific exceptions)
+E     services/enhanced_audit_logger.py:962 - Bare except clause (should catch specific exceptions)
+E     services/enhanced_audit_logger.py:977 - Bare except clause (should catch specific exceptions)
+E     services/enhanced_audit_logger.py:1020 - Bare except clause (should catch specific exceptions)
+E     services/enhanced_audit_logger.py:1053 - Bare except clause (should catch specific exceptions)
+E     services/enhanced_audit_logger.py:1066 - Bare except clause (should catch specific exceptions)
+E     services/enhanced_audit_logger.py:1544 - Bare except clause (should catch specific exceptions)
+E     services/enhanced_audit_logger.py:1552 - Bare except clause (should catch specific exceptions)
+E     services/enhanced_audit_logger.py:1583 - Bare except clause (should catch specific exceptions)
+E     services/enhanced_audit_logger.py:1591 - Bare except clause (should catch specific exceptions)
+E     services/enhanced_audit_logger.py:1659 - Bare except clause (should catch specific exceptions)
+E     services/email_service.py:187 - Bare except clause (should catch specific exceptions)
+E     services/retirement_model.py:651 - Bare except clause (should catch specific exceptions)
+E     services/retirement_model.py:670 - Bare except clause (should catch specific exceptions)
+E     services/retirement_model.py:1248 - Bare except clause (should catch specific exceptions)
+E     services/retirement_model.py:1266 - Bare except clause (should catch specific exceptions)
+E     services/retirement_model.py:1569 - Bare except clause (should catch specific exceptions)
+E     services/retirement_model.py:1647 - Bare except clause (should catch specific exceptions)
+E     services/retirement_model.py:1658 - Bare except clause (should catch specific exceptions)
+E     services/retirement_model.py:1711 - Bare except clause (should catch specific exceptions)
+E     services/audit_narrative_generator.py:125 - Bare except clause (should catch specific exceptions)
+E     services/audit_narrative_generator.py:400 - Bare except clause (should catch specific exceptions)
+E     services/audit_narrative_generator.py:414 - Bare except clause (should catch specific exceptions)
+E     services/audit_narrative_generator.py:476 - Bare except clause (should catch specific exceptions)
+E   assert 32 <= 5
+E    +  where 32 = len(['routes/admin.py:1549 - Bare except clause (should catch specific exceptions)', 'routes/admin.py:1586 - Bare except clause (should catch specific exceptions)', 'routes/ai_services.py:57 - Bare except clause (should catch specific exceptions)', 'routes/ai_services.py:532 - Bare except clause (should catch specific exceptions)', 'routes/profiles.py:863 - Bare except clause (should catch specific exceptions)', 'routes/profiles.py:895 - Bare except clause (should catch specific exceptions)', 'auth/routes.py:867 - Bare except clause (should catch specific exceptions)', 'auth/routes.py:879 - Bare except clause (should catch specific exceptions)', 'services/enhanced_audit_logger.py:496 - Bare except clause (should catch specific exceptions)', 'services/enhanced_audit_logger.py:962 - Bare except clause (should catch specific exceptions)', 'services/enhanced_audit_logger.py:977 - Bare except clause (should catch specific exceptions)', 'services/enhanced_audit_logger.py:1020 - Bare except clause (should catch specific exceptions)', 'services/enhanced_audit_logger.py:1053 - Bare except clause (should catch specific exceptions)', 'services/enhanced_audit_logger.py:1066 - Bare except clause (should catch specific exceptions)', 'services/enhanced_audit_logger.py:1544 - Bare except clause (should catch specific exceptions)', 'services/enhanced_audit_logger.py:1552 - Bare except clause (should catch specific exceptions)', 'services/enhanced_audit_logger.py:1583 - Bare except clause (should catch specific exceptions)', 'services/enhanced_audit_logger.py:1591 - Bare except clause (should catch specific exceptions)', 'services/enhanced_audit_logger.py:1659 - Bare except clause (should catch specific exceptions)', 'services/email_service.py:187 - Bare except clause (should catch specific exceptions)', 'services/retirement_model.py:651 - Bare except clause (should catch specific exceptions)', 'services/retirement_model.py:670 - Bare except clause (should catch specific exceptions)', 'services/retirement_model.py:1248 - Bare except clause (should catch specific exceptions)', 'services/retirement_model.py:1266 - Bare except clause (should catch specific exceptions)', 'services/retirement_model.py:1569 - Bare except clause (should catch specific exceptions)', 'services/retirement_model.py:1647 - Bare except clause (should catch specific exceptions)', 'services/retirement_model.py:1658 - Bare except clause (should catch specific exceptions)', 'services/retirement_model.py:1711 - Bare except clause (should catch specific exceptions)', 'services/audit_narrative_generator.py:125 - Bare except clause (should catch specific exceptions)', 'services/audit_narrative_generator.py:400 - Bare except clause (should catch specific exceptions)', 'services/audit_narrative_generator.py:414 - Bare except clause (should catch specific exceptions)', 'services/audit_narrative_generator.py:476 - Bare except clause (should catch specific exceptions)'])
+____ TestPythonCriticalIssues.test_no_undefined_variables_in_error_handlers ____
+tests/comprehensive/test_python_quality.py:208: in test_no_undefined_variables_in_error_handlers
+    assert len(issues) == 0, f"Found potential undefined variable references:\n" + "\n".join(issues)
+E   AssertionError: Found potential undefined variable references:
+E     routes/analysis.py - May reference undefined 'data' in except block
+E     routes/analysis.py - May reference undefined 'data' in except block
+E     routes/analysis.py - May reference undefined 'data' in except block
+E     routes/analysis.py - May reference undefined 'data' in except block
+E     routes/action_items.py - May reference undefined 'data' in except block
+E     routes/action_items.py - May reference undefined 'data' in except block
+E     routes/scenarios.py - May reference undefined 'data' in except block
+E     routes/scenarios.py - May reference undefined 'data' in except block
+E     routes/scenarios.py - May reference undefined 'data' in except block
+E     routes/profiles.py - May reference undefined 'data' in except block
+E     routes/profiles.py - May reference undefined 'data' in except block
+E     routes/profiles.py - May reference undefined 'data' in except block
+E     routes/profiles.py - May reference undefined 'data' in except block
+E     routes/tax_optimization.py - May reference undefined 'data' in except block
+E     routes/tax_optimization.py - May reference undefined 'data' in except block
+E     routes/tax_optimization.py - May reference undefined 'data' in except block
+E     routes/feedback.py - May reference undefined 'data' in except block
+E     routes/feedback.py - May reference undefined 'data' in except block
+E     auth/routes.py - May reference undefined 'data' in except block
+E     auth/routes.py - May reference undefined 'data' in except block
+E     auth/routes.py - May reference undefined 'data' in except block
+E     auth/routes.py - May reference undefined 'data' in except block
+E     auth/routes.py - May reference undefined 'data' in except block
+E     auth/routes.py - May reference undefined 'data' in except block
+E     auth/routes.py - May reference undefined 'data' in except block
+E     auth/routes.py - May reference undefined 'data' in except block
+E     auth/routes.py - May reference undefined 'data' in except block
+E     auth/routes.py - May reference undefined 'data' in except block
+E     auth/routes.py - May reference undefined 'data' in except block
+E     auth/routes.py - May reference undefined 'data' in except block
+E   assert 30 == 0
+E    +  where 30 = len(["routes/analysis.py - May reference undefined 'data' in except block", "routes/analysis.py - May reference undefined 'data' in except block", "routes/analysis.py - May reference undefined 'data' in except block", "routes/analysis.py - May reference undefined 'data' in except block", "routes/action_items.py - May reference undefined 'data' in except block", "routes/action_items.py - May reference undefined 'data' in except block", "routes/scenarios.py - May reference undefined 'data' in except block", "routes/scenarios.py - May reference undefined 'data' in except block", "routes/scenarios.py - May reference undefined 'data' in except block", "routes/profiles.py - May reference undefined 'data' in except block", "routes/profiles.py - May reference undefined 'data' in except block", "routes/profiles.py - May reference undefined 'data' in except block", "routes/profiles.py - May reference undefined 'data' in except block", "routes/tax_optimization.py - May reference undefined 'data' in except block", "routes/tax_optimization.py - May reference undefined 'data' in except block", "routes/tax_optimization.py - May reference undefined 'data' in except block", "routes/feedback.py - May reference undefined 'data' in except block", "routes/feedback.py - May reference undefined 'data' in except block", "auth/routes.py - May reference undefined 'data' in except block", "auth/routes.py - May reference undefined 'data' in except block", "auth/routes.py - May reference undefined 'data' in except block", "auth/routes.py - May reference undefined 'data' in except block", "auth/routes.py - May reference undefined 'data' in except block", "auth/routes.py - May reference undefined 'data' in except block", "auth/routes.py - May reference undefined 'data' in except block", "auth/routes.py - May reference undefined 'data' in except block", "auth/routes.py - May reference undefined 'data' in except block", "auth/routes.py - May reference undefined 'data' in except block", "auth/routes.py - May reference undefined 'data' in except block", "auth/routes.py - May reference undefined 'data' in except block"])
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.12.3-final-0 ________________
+
+Name                                        Stmts   Miss  Cover   Missing
+-------------------------------------------------------------------------
+src/__init__.py                                 0      0   100%
+src/__version__.py                             13      4    69%   13-16
+src/app.py                                    188    157    16%   38-100, 105-365, 369-370
+src/auth/__init__.py                            0      0   100%
+src/auth/admin_required.py                     16      8    50%   22-51
+src/auth/decorators.py                         19     19     0%   2-26
+src/auth/models.py                            249    196    21%   18-38, 43, 48, 53, 58, 62, 67-73, 78-84, 89-95, 99-136, 140-142, 146-168, 172-176, 180-234, 246-288, 305-321, 333-344, 355-366, 378-387, 392-403, 407-413, 417-426, 430-442, 446-447, 451-452, 456-457, 461-462, 465, 472-478, 482-488, 492-502, 506-512, 515-519
+src/auth/routes.py                            503    402    20%   28-60, 71-79, 90-94, 98-106, 126-187, 203-326, 342-377, 383-386, 403-404, 411-428, 444-452, 462-514, 525-601, 612-642, 657-665, 675-683, 696-781, 788-841, 852-935, 942-1005, 1012-1035
+src/auth/super_admin_required.py               12      5    58%   17-24
+src/auth/utils.py                               0      0   100%
+src/config.py                                  55      5    91%   11-13, 95-96
+src/database/__init__.py                        0      0   100%
+src/database/audit_logger.py                   71     46    35%   35-64, 69, 74, 79, 84, 105-124, 134-138, 151, 156, 161, 166
+src/database/connection.py                     30     18    40%   17-27, 31-34, 38-41
+src/extensions.py                              31     21    32%   21-55
+src/middleware/__init__.py                      0      0   100%
+src/models/__init__.py                          0      0   100%
+src/models/action_item.py                      88     75    15%   15-30, 35-41, 46-58, 62-96, 100-102, 108-147
+src/models/conversation.py                     55     39    29%   12-19, 24-30, 35-41, 46-50, 54-77, 81-83, 89-90, 96-104
+src/models/group.py                            44     30    32%   9-13, 18-21, 26-27, 31-45, 49-51, 55-61, 65-66, 70-71, 75
+src/models/profile.py                         102     77    25%   15-24, 29, 34-41, 47-67, 72, 78-84, 89-95, 100-108, 112-149, 153-157, 162-174
+src/models/scenario.py                         81     68    16%   13-23, 28-34, 39-43, 47-76, 80-82, 88-127
+src/routes/__init__.py                          0      0   100%
+src/routes/action_items.py                    199    140    30%   27-36, 40-42, 46-48, 52-54, 69-75, 79-81, 85-87, 96-141, 148-183, 190-214, 221-280, 287-362, 369-397
+src/routes/admin.py                          1364   1066    22%   32-34, 49-51, 78-80, 102-162, 176-202, 219-243, 252-304, 318-375, 383-395, 403-442, 450-490, 498-551, 564-601, 613-621, 629-642, 650-667, 675-693, 701-716, 724-743, 751-766, 774-792, 800-815, 823-835, 843-854, 871-930, 938-956, 964-1067, 1088-1157, 1165-1180, 1188-1203, 1211-1256, 1264-1356, 1364-1404, 1422-1474, 1482-1531, 1539-1565, 1573-1623, 1640-1716, 1724-1776, 1784-1836, 1844-1896, 1904-1956, 1964-2013, 2028-2113, 2127-2173, 2196-2369, 2387-2574, 2581-2582, 2589, 2600-2633, 2641-2668, 2676-2717, 2729-2746, 2754-2783, 2791-2823, 2831-2854, 2867-2874, 2883-2890, 2899-2913, 2929-2968, 2977-2986, 3001-3047, 3056-3076
+src/routes/ai_services.py                     304    265    13%   21-108, 120-295, 302-331, 341-353, 361-656, 664-701, 709-745
+src/routes/analysis.py                        329    264    20%   26-88, 142-144, 151-418, 425-580, 587-670, 677-765, 772-819
+src/routes/budget.py                           51     42    18%   13-80, 83-84
+src/routes/events.py                          158    132    16%   29-63, 83-183, 199-229, 249-349, 368-402
+src/routes/feedback.py                        440    361    18%   28-30, 34-38, 52-66, 71-84, 104-231, 242-269, 287-374, 388-438, 451-468, 476-500, 515-580, 592-654, 661-696, 709-788, 803-845, 859-903, 911-927, 941-973, 988-1025
+src/routes/fingerprint.py                      60     49    18%   17-35, 54-104, 113-185
+src/routes/profiles.py                        407    335    18%   24-35, 39-44, 56-69, 73-78, 85-99, 106-130, 137-189, 196-269, 276-304, 311-387, 394-449, 456-548, 560-566, 573-622, 629-698, 705-747, 752-805, 810-837, 842-869, 874-901
+src/routes/reports.py                         121    101    17%   22-61, 66-152, 164-229, 236-289, 296-364
+src/routes/roadmap.py                         170    141    17%   18-22, 29-90, 97-152, 159-195, 202-245, 252-311, 318-342, 349-408
+src/routes/scenarios.py                       126     90    29%   22-26, 37-43, 50-69, 76-100, 107-162, 169-227, 234-262
+src/routes/sitemap.py                          16     10    38%   25-37
+src/routes/skills.py                           35     25    29%   13-29, 36-56
+src/routes/tax_optimization.py                233    195    16%   42-111, 118-185, 192-238, 245-293, 300-356, 363-405
+src/routes/user_backups.py                     47     29    38%   16-20, 26-45, 51-74, 80-93
+src/services/__init__.py                        0      0   100%
+src/services/action_item_service.py            86     77    10%   14-268, 273-280
+src/services/asset_service.py                  63     55    13%   20-64, 77-202, 218-313, 327-339
+src/services/audit_narrative_generator.py     298    278     7%   37-59, 75-110, 115-155, 168-376, 381-423, 428-459, 464-487
+src/services/email_service.py                  27     27     0%   2-188
+src/services/encryption_service.py            125     88    30%   25-31, 35-42, 47, 54, 59-66, 71-80, 85-94, 106-116, 132-146, 158-162, 175-181, 193-197, 210-216, 226-239, 245, 251-264, 269, 274-280, 285, 290-296
+src/services/enhanced_audit_logger.py         806    728    10%   108-116, 121-128, 142-185, 193-235, 246-278, 285-303, 310-401, 406-423, 438-464, 474-519, 527-660, 668-711, 716-747, 752-843, 867-1077, 1082-1099, 1104, 1118, 1123-1126, 1131, 1136, 1141, 1169-1191, 1216-1237, 1254-1311, 1324-1413, 1437-1596, 1606-1663, 1668-1702
+src/services/ip_intelligence.py               132    111    16%   54-111, 120-124, 135-138, 151-201, 214-276, 292-312
+src/services/pdf/__init__.py                    8      0   100%
+src/services/pdf/base.py                       80     61    24%   78-87, 100-102, 115-119, 129-134, 137-138, 141-146, 150-189, 203-220
+src/services/pdf/charts.py                    139    125    10%   23-71, 84-119, 132-174, 187-218, 231-258, 267-272
+src/services/pdf/components.py                126    113    10%   25-43, 58-94, 109-186, 202-246, 261-322, 337-355, 367-377
+src/services/pdf/reports.py                   274    260     5%   36-173, 186-409, 421-570, 583-708
+src/services/pdf/styles.py                     67     60    10%   17-87, 99-219, 231-421, 434-441
+src/services/rebalancing_service.py            67     61     9%   10, 14-60, 69-102, 111-127
+src/services/retirement_model.py              958    876     9%   22-27, 94-95, 97-98, 102-109, 126-171, 189-225, 242-276, 294-331, 352-369, 381-454, 467-564, 577-1143, 1168-1505, 1508-1517, 1520-1551, 1553-1599, 1601-1611, 1623-1629, 1634-1667, 1673-1726, 1730-1803
+src/services/selective_backup_service.py      186    186     0%   5-458
+src/services/tax_optimization_service.py      357    284    20%   183-184, 188-195, 199-211, 220-246, 250-251, 255-276, 283, 293-325, 340-384, 391, 395-398, 407-434, 441-442, 448-465, 474-488, 517-536, 558-570, 594-620, 628-637, 653-693, 737-758, 774-786, 806-812, 829-845, 852-929, 939-945, 949-958, 962-970, 975-1053
+src/services/user_backup_service.py           126    105    17%   21-24, 33-94, 103-108, 113-125, 133-221
+src/utils/__init__.py                           0      0   100%
+src/utils/error_sanitizer.py                   40     36    10%   16-56, 70-87
+-------------------------------------------------------------------------
+TOTAL                                        9582   7946    17%
+Coverage HTML written to dir htmlcov
+=========================== short test summary info ============================
+FAILED tests/comprehensive/test_python_quality.py::TestPythonQuality::test_no_bare_except_clauses - AssertionError: Too many bare except clauses:
+  routes/admin.py:1549 - Bare except clause (should catch specific exceptions)
+  routes/admin.py:1586 - Bare except clause (should catch specific exceptions)
+  routes/ai_services.py:57 - Bare except clause (should catch specific exceptions)
+  routes/ai_services.py:532 - Bare except clause (should catch specific exceptions)
+  routes/profiles.py:863 - Bare except clause (should catch specific exceptions)
+  routes/profiles.py:895 - Bare except clause (should catch specific exceptions)
+  auth/routes.py:867 - Bare except clause (should catch specific exceptions)
+  auth/routes.py:879 - Bare except clause (should catch specific exceptions)
+  services/enhanced_audit_logger.py:496 - Bare except clause (should catch specific exceptions)
+  services/enhanced_audit_logger.py:962 - Bare except clause (should catch specific exceptions)
+  services/enhanced_audit_logger.py:977 - Bare except clause (should catch specific exceptions)
+  services/enhanced_audit_logger.py:1020 - Bare except clause (should catch specific exceptions)
+  services/enhanced_audit_logger.py:1053 - Bare except clause (should catch specific exceptions)
+  services/enhanced_audit_logger.py:1066 - Bare except clause (should catch specific exceptions)
+  services/enhanced_audit_logger.py:1544 - Bare except clause (should catch specific exceptions)
+  services/enhanced_audit_logger.py:1552 - Bare except clause (should catch specific exceptions)
+  services/enhanced_audit_logger.py:1583 - Bare except clause (should catch specific exceptions)
+  services/enhanced_audit_logger.py:1591 - Bare except clause (should catch specific exceptions)
+  services/enhanced_audit_logger.py:1659 - Bare except clause (should catch specific exceptions)
+  services/email_service.py:187 - Bare except clause (should catch specific exceptions)
+  services/retirement_model.py:651 - Bare except clause (should catch specific exceptions)
+  services/retirement_model.py:670 - Bare except clause (should catch specific exceptions)
+  services/retirement_model.py:1248 - Bare except clause (should catch specific exceptions)
+  services/retirement_model.py:1266 - Bare except clause (should catch specific exceptions)
+  services/retirement_model.py:1569 - Bare except clause (should catch specific exceptions)
+  services/retirement_model.py:1647 - Bare except clause (should catch specific exceptions)
+  services/retirement_model.py:1658 - Bare except clause (should catch specific exceptions)
+  services/retirement_model.py:1711 - Bare except clause (should catch specific exceptions)
+  services/audit_narrative_generator.py:125 - Bare except clause (should catch specific exceptions)
+  services/audit_narrative_generator.py:400 - Bare except clause (should catch specific exceptions)
+  services/audit_narrative_generator.py:414 - Bare except clause (should catch specific exceptions)
+  services/audit_narrative_generator.py:476 - Bare except clause (should catch specific exceptions)
+assert 32 <= 5
+ +  where 32 = len(['routes/admin.py:1549 - Bare except clause (should catch specific exceptions)', 'routes/admin.py:1586 - Bare except clause (should catch specific exceptions)', 'routes/ai_services.py:57 - Bare except clause (should catch specific exceptions)', 'routes/ai_services.py:532 - Bare except clause (should catch specific exceptions)', 'routes/profiles.py:863 - Bare except clause (should catch specific exceptions)', 'routes/profiles.py:895 - Bare except clause (should catch specific exceptions)', 'auth/routes.py:867 - Bare except clause (should catch specific exceptions)', 'auth/routes.py:879 - Bare except clause (should catch specific exceptions)', 'services/enhanced_audit_logger.py:496 - Bare except clause (should catch specific exceptions)', 'services/enhanced_audit_logger.py:962 - Bare except clause (should catch specific exceptions)', 'services/enhanced_audit_logger.py:977 - Bare except clause (should catch specific exceptions)', 'services/enhanced_audit_logger.py:1020 - Bare except clause (should catch specific exceptions)', 'services/enhanced_audit_logger.py:1053 - Bare except clause (should catch specific exceptions)', 'services/enhanced_audit_logger.py:1066 - Bare except clause (should catch specific exceptions)', 'services/enhanced_audit_logger.py:1544 - Bare except clause (should catch specific exceptions)', 'services/enhanced_audit_logger.py:1552 - Bare except clause (should catch specific exceptions)', 'services/enhanced_audit_logger.py:1583 - Bare except clause (should catch specific exceptions)', 'services/enhanced_audit_logger.py:1591 - Bare except clause (should catch specific exceptions)', 'services/enhanced_audit_logger.py:1659 - Bare except clause (should catch specific exceptions)', 'services/email_service.py:187 - Bare except clause (should catch specific exceptions)', 'services/retirement_model.py:651 - Bare except clause (should catch specific exceptions)', 'services/retirement_model.py:670 - Bare except clause (should catch specific exceptions)', 'services/retirement_model.py:1248 - Bare except clause (should catch specific exceptions)', 'services/retirement_model.py:1266 - Bare except clause (should catch specific exceptions)', 'services/retirement_model.py:1569 - Bare except clause (should catch specific exceptions)', 'services/retirement_model.py:1647 - Bare except clause (should catch specific exceptions)', 'services/retirement_model.py:1658 - Bare except clause (should catch specific exceptions)', 'services/retirement_model.py:1711 - Bare except clause (should catch specific exceptions)', 'services/audit_narrative_generator.py:125 - Bare except clause (should catch specific exceptions)', 'services/audit_narrative_generator.py:400 - Bare except clause (should catch specific exceptions)', 'services/audit_narrative_generator.py:414 - Bare except clause (should catch specific exceptions)', 'services/audit_narrative_generator.py:476 - Bare except clause (should catch specific exceptions)'])
+FAILED tests/comprehensive/test_python_quality.py::TestPythonCriticalIssues::test_no_undefined_variables_in_error_handlers - AssertionError: Found potential undefined variable references:
+  routes/analysis.py - May reference undefined 'data' in except block
+  routes/analysis.py - May reference undefined 'data' in except block
+  routes/analysis.py - May reference undefined 'data' in except block
+  routes/analysis.py - May reference undefined 'data' in except block
+  routes/action_items.py - May reference undefined 'data' in except block
+  routes/action_items.py - May reference undefined 'data' in except block
+  routes/scenarios.py - May reference undefined 'data' in except block
+  routes/scenarios.py - May reference undefined 'data' in except block
+  routes/scenarios.py - May reference undefined 'data' in except block
+  routes/profiles.py - May reference undefined 'data' in except block
+  routes/profiles.py - May reference undefined 'data' in except block
+  routes/profiles.py - May reference undefined 'data' in except block
+  routes/profiles.py - May reference undefined 'data' in except block
+  routes/tax_optimization.py - May reference undefined 'data' in except block
+  routes/tax_optimization.py - May reference undefined 'data' in except block
+  routes/tax_optimization.py - May reference undefined 'data' in except block
+  routes/feedback.py - May reference undefined 'data' in except block
+  routes/feedback.py - May reference undefined 'data' in except block
+  auth/routes.py - May reference undefined 'data' in except block
+  auth/routes.py - May reference undefined 'data' in except block
+  auth/routes.py - May reference undefined 'data' in except block
+  auth/routes.py - May reference undefined 'data' in except block
+  auth/routes.py - May reference undefined 'data' in except block
+  auth/routes.py - May reference undefined 'data' in except block
+  auth/routes.py - May reference undefined 'data' in except block
+  auth/routes.py - May reference undefined 'data' in except block
+  auth/routes.py - May reference undefined 'data' in except block
+  auth/routes.py - May reference undefined 'data' in except block
+  auth/routes.py - May reference undefined 'data' in except block
+  auth/routes.py - May reference undefined 'data' in except block
+assert 30 == 0
+ +  where 30 = len(["routes/analysis.py - May reference undefined 'data' in except block", "routes/analysis.py - May reference undefined 'data' in except block", "routes/analysis.py - May reference undefined 'data' in except block", "routes/analysis.py - May reference undefined 'data' in except block", "routes/action_items.py - May reference undefined 'data' in except block", "routes/action_items.py - May reference undefined 'data' in except block", "routes/scenarios.py - May reference undefined 'data' in except block", "routes/scenarios.py - May reference undefined 'data' in except block", "routes/scenarios.py - May reference undefined 'data' in except block", "routes/profiles.py - May reference undefined 'data' in except block", "routes/profiles.py - May reference undefined 'data' in except block", "routes/profiles.py - May reference undefined 'data' in except block", "routes/profiles.py - May reference undefined 'data' in except block", "routes/tax_optimization.py - May reference undefined 'data' in except block", "routes/tax_optimization.py - May reference undefined 'data' in except block", "routes/tax_optimization.py - May reference undefined 'data' in except block", "routes/feedback.py - May reference undefined 'data' in except block", "routes/feedback.py - May reference undefined 'data' in except block", "auth/routes.py - May reference undefined 'data' in except block", "auth/routes.py - May reference undefined 'data' in except block", "auth/routes.py - May reference undefined 'data' in except block", "auth/routes.py - May reference undefined 'data' in except block", "auth/routes.py - May reference undefined 'data' in except block", "auth/routes.py - May reference undefined 'data' in except block", "auth/routes.py - May reference undefined 'data' in except block", "auth/routes.py - May reference undefined 'data' in except block", "auth/routes.py - May reference undefined 'data' in except block", "auth/routes.py - May reference undefined 'data' in except block", "auth/routes.py - May reference undefined 'data' in except block", "auth/routes.py - May reference undefined 'data' in except block"])
+========================= 2 failed, 5 passed in 3.51s ==========================
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.2, pluggy-1.6.0 -- /home/paul/src/rps/venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/paul/src/rps
+configfile: pytest.ini
+plugins: anyio-4.12.1, cov-7.0.0
+collecting ... collected 13 items
+
+tests/comprehensive/test_database_quality.py::TestDatabaseSchema::test_no_orphaned_scenarios PASSED [  7%]
+tests/comprehensive/test_database_quality.py::TestDatabaseSchema::test_no_orphaned_action_items PASSED [ 15%]
+tests/comprehensive/test_database_quality.py::TestDatabaseSchema::test_no_orphaned_conversations PASSED [ 23%]
+tests/comprehensive/test_database_quality.py::TestDatabaseSchema::test_all_profiles_have_valid_users PASSED [ 30%]
+tests/comprehensive/test_database_quality.py::TestDatabaseSchema::test_foreign_keys_are_enabled PASSED [ 38%]
+tests/comprehensive/test_database_quality.py::TestDatabaseSchema::test_all_tables_exist PASSED [ 46%]
+tests/comprehensive/test_database_quality.py::TestDatabaseSchema::test_critical_indexes_exist PASSED [ 53%]
+tests/comprehensive/test_database_quality.py::TestDatabaseSchema::test_profile_data_is_encrypted PASSED [ 61%]
+tests/comprehensive/test_database_quality.py::TestDatabaseSchema::test_no_duplicate_profile_names_per_user PASSED [ 69%]
+tests/comprehensive/test_database_quality.py::TestDatabaseSchema::test_all_timestamps_are_valid PASSED [ 76%]
+tests/comprehensive/test_database_quality.py::TestDatabaseIntegrity::test_cascade_delete_scenarios_with_profile PASSED [ 84%]
+tests/comprehensive/test_database_quality.py::TestDatabaseIntegrity::test_cascade_delete_action_items_with_profile PASSED [ 92%]
+tests/comprehensive/test_database_quality.py::TestDatabaseIntegrity::test_user_id_foreign_keys_are_consistent PASSED [100%]
+
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.12.3-final-0 ________________
+
+Name                                        Stmts   Miss  Cover   Missing
+-------------------------------------------------------------------------
+src/__init__.py                                 0      0   100%
+src/__version__.py                             13      4    69%   13-16
+src/app.py                                    188    157    16%   38-100, 105-365, 369-370
+src/auth/__init__.py                            0      0   100%
+src/auth/admin_required.py                     16      8    50%   22-51
+src/auth/decorators.py                         19     19     0%   2-26
+src/auth/models.py                            249    196    21%   18-38, 43, 48, 53, 58, 62, 67-73, 78-84, 89-95, 99-136, 140-142, 146-168, 172-176, 180-234, 246-288, 305-321, 333-344, 355-366, 378-387, 392-403, 407-413, 417-426, 430-442, 446-447, 451-452, 456-457, 461-462, 465, 472-478, 482-488, 492-502, 506-512, 515-519
+src/auth/routes.py                            503    402    20%   28-60, 71-79, 90-94, 98-106, 126-187, 203-326, 342-377, 383-386, 403-404, 411-428, 444-452, 462-514, 525-601, 612-642, 657-665, 675-683, 696-781, 788-841, 852-935, 942-1005, 1012-1035
+src/auth/super_admin_required.py               12      5    58%   17-24
+src/auth/utils.py                               0      0   100%
+src/config.py                                  55      5    91%   11-13, 95-96
+src/database/__init__.py                        0      0   100%
+src/database/audit_logger.py                   71     46    35%   35-64, 69, 74, 79, 84, 105-124, 134-138, 151, 156, 161, 166
+src/database/connection.py                     30      7    77%   23-25, 38-41
+src/extensions.py                              31     21    32%   21-55
+src/middleware/__init__.py                      0      0   100%
+src/models/__init__.py                          0      0   100%
+src/models/action_item.py                      88     75    15%   15-30, 35-41, 46-58, 62-96, 100-102, 108-147
+src/models/conversation.py                     55     39    29%   12-19, 24-30, 35-41, 46-50, 54-77, 81-83, 89-90, 96-104
+src/models/group.py                            44     30    32%   9-13, 18-21, 26-27, 31-45, 49-51, 55-61, 65-66, 70-71, 75
+src/models/profile.py                         102     77    25%   15-24, 29, 34-41, 47-67, 72, 78-84, 89-95, 100-108, 112-149, 153-157, 162-174
+src/models/scenario.py                         81     68    16%   13-23, 28-34, 39-43, 47-76, 80-82, 88-127
+src/routes/__init__.py                          0      0   100%
+src/routes/action_items.py                    199    140    30%   27-36, 40-42, 46-48, 52-54, 69-75, 79-81, 85-87, 96-141, 148-183, 190-214, 221-280, 287-362, 369-397
+src/routes/admin.py                          1364   1066    22%   32-34, 49-51, 78-80, 102-162, 176-202, 219-243, 252-304, 318-375, 383-395, 403-442, 450-490, 498-551, 564-601, 613-621, 629-642, 650-667, 675-693, 701-716, 724-743, 751-766, 774-792, 800-815, 823-835, 843-854, 871-930, 938-956, 964-1067, 1088-1157, 1165-1180, 1188-1203, 1211-1256, 1264-1356, 1364-1404, 1422-1474, 1482-1531, 1539-1565, 1573-1623, 1640-1716, 1724-1776, 1784-1836, 1844-1896, 1904-1956, 1964-2013, 2028-2113, 2127-2173, 2196-2369, 2387-2574, 2581-2582, 2589, 2600-2633, 2641-2668, 2676-2717, 2729-2746, 2754-2783, 2791-2823, 2831-2854, 2867-2874, 2883-2890, 2899-2913, 2929-2968, 2977-2986, 3001-3047, 3056-3076
+src/routes/ai_services.py                     304    265    13%   21-108, 120-295, 302-331, 341-353, 361-656, 664-701, 709-745
+src/routes/analysis.py                        329    264    20%   26-88, 142-144, 151-418, 425-580, 587-670, 677-765, 772-819
+src/routes/budget.py                           51     42    18%   13-80, 83-84
+src/routes/events.py                          158    132    16%   29-63, 83-183, 199-229, 249-349, 368-402
+src/routes/feedback.py                        440    361    18%   28-30, 34-38, 52-66, 71-84, 104-231, 242-269, 287-374, 388-438, 451-468, 476-500, 515-580, 592-654, 661-696, 709-788, 803-845, 859-903, 911-927, 941-973, 988-1025
+src/routes/fingerprint.py                      60     49    18%   17-35, 54-104, 113-185
+src/routes/profiles.py                        407    335    18%   24-35, 39-44, 56-69, 73-78, 85-99, 106-130, 137-189, 196-269, 276-304, 311-387, 394-449, 456-548, 560-566, 573-622, 629-698, 705-747, 752-805, 810-837, 842-869, 874-901
+src/routes/reports.py                         121    101    17%   22-61, 66-152, 164-229, 236-289, 296-364
+src/routes/roadmap.py                         170    141    17%   18-22, 29-90, 97-152, 159-195, 202-245, 252-311, 318-342, 349-408
+src/routes/scenarios.py                       126     90    29%   22-26, 37-43, 50-69, 76-100, 107-162, 169-227, 234-262
+src/routes/sitemap.py                          16     10    38%   25-37
+src/routes/skills.py                           35     25    29%   13-29, 36-56
+src/routes/tax_optimization.py                233    195    16%   42-111, 118-185, 192-238, 245-293, 300-356, 363-405
+src/routes/user_backups.py                     47     29    38%   16-20, 26-45, 51-74, 80-93
+src/services/__init__.py                        0      0   100%
+src/services/action_item_service.py            86     77    10%   14-268, 273-280
+src/services/asset_service.py                  63     55    13%   20-64, 77-202, 218-313, 327-339
+src/services/audit_narrative_generator.py     298    278     7%   37-59, 75-110, 115-155, 168-376, 381-423, 428-459, 464-487
+src/services/email_service.py                  27     27     0%   2-188
+src/services/encryption_service.py            125     88    30%   25-31, 35-42, 47, 54, 59-66, 71-80, 85-94, 106-116, 132-146, 158-162, 175-181, 193-197, 210-216, 226-239, 245, 251-264, 269, 274-280, 285, 290-296
+src/services/enhanced_audit_logger.py         806    728    10%   108-116, 121-128, 142-185, 193-235, 246-278, 285-303, 310-401, 406-423, 438-464, 474-519, 527-660, 668-711, 716-747, 752-843, 867-1077, 1082-1099, 1104, 1118, 1123-1126, 1131, 1136, 1141, 1169-1191, 1216-1237, 1254-1311, 1324-1413, 1437-1596, 1606-1663, 1668-1702
+src/services/ip_intelligence.py               132    111    16%   54-111, 120-124, 135-138, 151-201, 214-276, 292-312
+src/services/pdf/__init__.py                    8      0   100%
+src/services/pdf/base.py                       80     61    24%   78-87, 100-102, 115-119, 129-134, 137-138, 141-146, 150-189, 203-220
+src/services/pdf/charts.py                    139    125    10%   23-71, 84-119, 132-174, 187-218, 231-258, 267-272
+src/services/pdf/components.py                126    113    10%   25-43, 58-94, 109-186, 202-246, 261-322, 337-355, 367-377
+src/services/pdf/reports.py                   274    260     5%   36-173, 186-409, 421-570, 583-708
+src/services/pdf/styles.py                     67     60    10%   17-87, 99-219, 231-421, 434-441
+src/services/rebalancing_service.py            67     61     9%   10, 14-60, 69-102, 111-127
+src/services/retirement_model.py              958    876     9%   22-27, 94-95, 97-98, 102-109, 126-171, 189-225, 242-276, 294-331, 352-369, 381-454, 467-564, 577-1143, 1168-1505, 1508-1517, 1520-1551, 1553-1599, 1601-1611, 1623-1629, 1634-1667, 1673-1726, 1730-1803
+src/services/selective_backup_service.py      186    186     0%   5-458
+src/services/tax_optimization_service.py      357    284    20%   183-184, 188-195, 199-211, 220-246, 250-251, 255-276, 283, 293-325, 340-384, 391, 395-398, 407-434, 441-442, 448-465, 474-488, 517-536, 558-570, 594-620, 628-637, 653-693, 737-758, 774-786, 806-812, 829-845, 852-929, 939-945, 949-958, 962-970, 975-1053
+src/services/user_backup_service.py           126    105    17%   21-24, 33-94, 103-108, 113-125, 133-221
+src/utils/__init__.py                           0      0   100%
+src/utils/error_sanitizer.py                   40     36    10%   16-56, 70-87
+-------------------------------------------------------------------------
+TOTAL                                        9582   7935    17%
+Coverage HTML written to dir htmlcov
+============================== 13 passed in 1.76s ==============================
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.2, pluggy-1.6.0 -- /home/paul/src/rps/venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/paul/src/rps
+configfile: pytest.ini
+plugins: anyio-4.12.1, cov-7.0.0
+collecting ... collected 3 items
+
+tests/comprehensive/test_financial_calculations.py::TestFinancialCalculations::test_starting_portfolio_matches_assets PASSED [ 33%]
+tests/comprehensive/test_financial_calculations.py::TestFinancialCalculations::test_timeline_includes_contributions PASSED [ 66%]
+tests/comprehensive/test_financial_calculations.py::TestFinancialCalculations::test_success_rates_are_reasonable PASSED [100%]
+
+=============================== warnings summary ===============================
+tests/comprehensive/test_financial_calculations.py::TestFinancialCalculations::test_starting_portfolio_matches_assets
+tests/comprehensive/test_financial_calculations.py::TestFinancialCalculations::test_timeline_includes_contributions
+tests/comprehensive/test_financial_calculations.py::TestFinancialCalculations::test_success_rates_are_reasonable
+  /home/paul/src/rps/tests/../src/services/retirement_model.py:1063: RuntimeWarning: invalid value encountered in divide
+    basis_ratio = np.where(taxable_val > 0, taxable_basis / taxable_val, 0)
+
+tests/comprehensive/test_financial_calculations.py::TestFinancialCalculations::test_timeline_includes_contributions
+  /home/paul/src/rps/tests/../src/services/retirement_model.py:1063: RuntimeWarning: divide by zero encountered in divide
+    basis_ratio = np.where(taxable_val > 0, taxable_basis / taxable_val, 0)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.12.3-final-0 ________________
+
+Name                                        Stmts   Miss  Cover   Missing
+-------------------------------------------------------------------------
+src/__init__.py                                 0      0   100%
+src/__version__.py                             13      4    69%   13-16
+src/app.py                                    188    111    41%   38-100, 117-118, 125-175, 182-205, 239-253, 260-306, 311-315, 319, 324-336, 342, 346, 350, 354, 359, 369-370
+src/auth/__init__.py                            0      0   100%
+src/auth/admin_required.py                     16      8    50%   22-51
+src/auth/decorators.py                         19     19     0%   2-26
+src/auth/models.py                            249    196    21%   18-38, 43, 48, 53, 58, 62, 67-73, 78-84, 89-95, 99-136, 140-142, 146-168, 172-176, 180-234, 246-288, 305-321, 333-344, 355-366, 378-387, 392-403, 407-413, 417-426, 430-442, 446-447, 451-452, 456-457, 461-462, 465, 472-478, 482-488, 492-502, 506-512, 515-519
+src/auth/routes.py                            503    402    20%   28-60, 71-79, 90-94, 98-106, 126-187, 203-326, 342-377, 383-386, 403-404, 411-428, 444-452, 462-514, 525-601, 612-642, 657-665, 675-683, 696-781, 788-841, 852-935, 942-1005, 1012-1035
+src/auth/super_admin_required.py               12      5    58%   17-24
+src/auth/utils.py                               0      0   100%
+src/config.py                                  55      5    91%   11-13, 95-96
+src/database/__init__.py                        0      0   100%
+src/database/audit_logger.py                   71     46    35%   35-64, 69, 74, 79, 84, 105-124, 134-138, 151, 156, 161, 166
+src/database/connection.py                     30      3    90%   23-25
+src/extensions.py                              31      1    97%   55
+src/middleware/__init__.py                      0      0   100%
+src/models/__init__.py                          0      0   100%
+src/models/action_item.py                      88     75    15%   15-30, 35-41, 46-58, 62-96, 100-102, 108-147
+src/models/conversation.py                     55     39    29%   12-19, 24-30, 35-41, 46-50, 54-77, 81-83, 89-90, 96-104
+src/models/group.py                            44     30    32%   9-13, 18-21, 26-27, 31-45, 49-51, 55-61, 65-66, 70-71, 75
+src/models/profile.py                         102     55    46%   29, 34-41, 48, 55-57, 64-67, 72, 84, 89-95, 100-108, 112-149, 153-157, 162-174
+src/models/scenario.py                         81     68    16%   13-23, 28-34, 39-43, 47-76, 80-82, 88-127
+src/routes/__init__.py                          0      0   100%
+src/routes/action_items.py                    199    140    30%   27-36, 40-42, 46-48, 52-54, 69-75, 79-81, 85-87, 96-141, 148-183, 190-214, 221-280, 287-362, 369-397
+src/routes/admin.py                          1364   1066    22%   32-34, 49-51, 78-80, 102-162, 176-202, 219-243, 252-304, 318-375, 383-395, 403-442, 450-490, 498-551, 564-601, 613-621, 629-642, 650-667, 675-693, 701-716, 724-743, 751-766, 774-792, 800-815, 823-835, 843-854, 871-930, 938-956, 964-1067, 1088-1157, 1165-1180, 1188-1203, 1211-1256, 1264-1356, 1364-1404, 1422-1474, 1482-1531, 1539-1565, 1573-1623, 1640-1716, 1724-1776, 1784-1836, 1844-1896, 1904-1956, 1964-2013, 2028-2113, 2127-2173, 2196-2369, 2387-2574, 2581-2582, 2589, 2600-2633, 2641-2668, 2676-2717, 2729-2746, 2754-2783, 2791-2823, 2831-2854, 2867-2874, 2883-2890, 2899-2913, 2929-2968, 2977-2986, 3001-3047, 3056-3076
+src/routes/ai_services.py                     304    265    13%   21-108, 120-295, 302-331, 341-353, 361-656, 664-701, 709-745
+src/routes/analysis.py                        329    264    20%   26-88, 142-144, 151-418, 425-580, 587-670, 677-765, 772-819
+src/routes/budget.py                           51     42    18%   13-80, 83-84
+src/routes/events.py                          158    132    16%   29-63, 83-183, 199-229, 249-349, 368-402
+src/routes/feedback.py                        440    361    18%   28-30, 34-38, 52-66, 71-84, 104-231, 242-269, 287-374, 388-438, 451-468, 476-500, 515-580, 592-654, 661-696, 709-788, 803-845, 859-903, 911-927, 941-973, 988-1025
+src/routes/fingerprint.py                      60     49    18%   17-35, 54-104, 113-185
+src/routes/profiles.py                        407    335    18%   24-35, 39-44, 56-69, 73-78, 85-99, 106-130, 137-189, 196-269, 276-304, 311-387, 394-449, 456-548, 560-566, 573-622, 629-698, 705-747, 752-805, 810-837, 842-869, 874-901
+src/routes/reports.py                         121    101    17%   22-61, 66-152, 164-229, 236-289, 296-364
+src/routes/roadmap.py                         170    141    17%   18-22, 29-90, 97-152, 159-195, 202-245, 252-311, 318-342, 349-408
+src/routes/scenarios.py                       126     90    29%   22-26, 37-43, 50-69, 76-100, 107-162, 169-227, 234-262
+src/routes/sitemap.py                          16     10    38%   25-37
+src/routes/skills.py                           35     25    29%   13-29, 36-56
+src/routes/tax_optimization.py                233    195    16%   42-111, 118-185, 192-238, 245-293, 300-356, 363-405
+src/routes/user_backups.py                     47     29    38%   16-20, 26-45, 51-74, 80-93
+src/services/__init__.py                        0      0   100%
+src/services/action_item_service.py            86     77    10%   14-268, 273-280
+src/services/asset_service.py                  63     55    13%   20-64, 77-202, 218-313, 327-339
+src/services/audit_narrative_generator.py     298    278     7%   37-59, 75-110, 115-155, 168-376, 381-423, 428-459, 464-487
+src/services/email_service.py                  27     27     0%   2-188
+src/services/encryption_service.py            125     61    51%   47, 54, 59-66, 71-80, 85-94, 106-116, 133, 144-146, 158-162, 175-181, 193-197, 210-216, 229-231, 245, 254-264, 269, 275, 280, 285, 290-296
+src/services/enhanced_audit_logger.py         806    728    10%   108-116, 121-128, 142-185, 193-235, 246-278, 285-303, 310-401, 406-423, 438-464, 474-519, 527-660, 668-711, 716-747, 752-843, 867-1077, 1082-1099, 1104, 1118, 1123-1126, 1131, 1136, 1141, 1169-1191, 1216-1237, 1254-1311, 1324-1413, 1437-1596, 1606-1663, 1668-1702
+src/services/ip_intelligence.py               132    111    16%   54-111, 120-124, 135-138, 151-201, 214-276, 292-312
+src/services/pdf/__init__.py                    8      0   100%
+src/services/pdf/base.py                       80     61    24%   78-87, 100-102, 115-119, 129-134, 137-138, 141-146, 150-189, 203-220
+src/services/pdf/charts.py                    139    125    10%   23-71, 84-119, 132-174, 187-218, 231-258, 267-272
+src/services/pdf/components.py                126    113    10%   25-43, 58-94, 109-186, 202-246, 261-322, 337-355, 367-377
+src/services/pdf/reports.py                   274    260     5%   36-173, 186-409, 421-570, 583-708
+src/services/pdf/styles.py                     67     60    10%   17-87, 99-219, 231-421, 434-441
+src/services/rebalancing_service.py            67     61     9%   10, 14-60, 69-102, 111-127
+src/services/retirement_model.py              958    447    53%   26-27, 104, 106, 131, 141, 200-201, 250-251, 308, 352-369, 386-454, 468, 478-564, 578, 613-614, 656-672, 699-706, 708-711, 871-872, 886-889, 922-926, 940-941, 960-975, 1122-1127, 1168-1505, 1508-1517, 1520-1551, 1553-1599, 1601-1611, 1629, 1647-1651, 1658-1659, 1663, 1674, 1701-1712, 1731, 1767, 1772
+src/services/selective_backup_service.py      186    186     0%   5-458
+src/services/tax_optimization_service.py      357    284    20%   183-184, 188-195, 199-211, 220-246, 250-251, 255-276, 283, 293-325, 340-384, 391, 395-398, 407-434, 441-442, 448-465, 474-488, 517-536, 558-570, 594-620, 628-637, 653-693, 737-758, 774-786, 806-812, 829-845, 852-929, 939-945, 949-958, 962-970, 975-1053
+src/services/user_backup_service.py           126    105    17%   21-24, 33-94, 103-108, 113-125, 133-221
+src/utils/__init__.py                           0      0   100%
+src/utils/error_sanitizer.py                   40     36    10%   16-56, 70-87
+-------------------------------------------------------------------------
+TOTAL                                        9582   7387    23%
+Coverage HTML written to dir htmlcov
+======================== 3 passed, 4 warnings in 3.37s =========================
+
+================================================================================
+ TEST SUITE SUMMARY
+================================================================================
+
+Total Test Suites: 4
+Passed: 4
+Failed: 0
+
+[0;32m✓ ALL TEST SUITES PASSED[0m
+
+The RPS application has passed all comprehensive quality checks.
