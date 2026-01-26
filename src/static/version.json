@@ -1,5 +1,5 @@
 {
-    "version": "3.9.42",
+    "version": "3.9.43",
     "release_date": "2026-01-25",
-    "release_notes": "Auto-save API keys after successful test"
+    "release_notes": "Fix Gemini model list and improve quota error messages"
 }

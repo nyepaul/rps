@@ -17,14 +17,14 @@ ai_services_bp = Blueprint('ai_services', __name__, url_prefix='/api')
 
 def call_gemini_with_fallback(prompt, api_key, image_data=None, mime_type=None):
     """Calls Gemini with a prioritized list of models and fallback logic using REST API."""
-    # Use full model resource names for v1 API - latest models first
+    # Use full model resource names for v1 API
+    # Prioritize Flash models (higher free tier quotas) over Pro models
     models = [
-        'models/gemini-3-flash-preview',         # Latest Gemini 3 Flash (Dec 2025) - balanced speed & intelligence
-        'models/gemini-2.5-pro',                 # Gemini 2.5 Pro - best reasoning for complex analysis
-        'models/gemini-2.5-flash',               # Gemini 2.5 Flash - stable production, best price-performance
-        'models/gemini-2.0-flash-exp',           # Gemini 2.0 experimental (fallback)
-        'models/gemini-1.5-flash-latest',        # Legacy stable 1.5 flash (fallback)
-        'models/gemini-1.5-pro-latest'           # Legacy stable 1.5 pro (fallback)
+        'models/gemini-2.0-flash',               # Gemini 2.0 Flash - latest stable, good for vision
+        'models/gemini-1.5-flash',               # Gemini 1.5 Flash - reliable, high quota
+        'models/gemini-1.5-flash-latest',        # Gemini 1.5 Flash latest alias
+        'models/gemini-1.5-pro',                 # Gemini 1.5 Pro - better quality, lower quota
+        'models/gemini-1.5-pro-latest',          # Gemini 1.5 Pro latest alias
     ]
 
     last_error = None
@@ -115,11 +115,18 @@ def call_gemini_with_fallback(prompt, api_key, image_data=None, mime_type=None):
             error_str = str(e)
             print(f"Model {model_name} failed: {error_str}")
 
+            # Check for quota errors - don't retry other models if quota exceeded
+            if '429' in error_str or 'quota' in error_str.lower() or 'RESOURCE_EXHAUSTED' in error_str:
+                raise Exception("Gemini API quota exceeded. Please wait a few minutes or upgrade your API plan.")
+
             # Continue trying other models
             continue
 
     # If all models failed
-    raise Exception(f"All Gemini models failed. Last error: {str(last_error)}")
+    last_error_str = str(last_error)
+    if '429' in last_error_str or 'quota' in last_error_str.lower():
+        raise Exception("Gemini API quota exceeded. Please wait a few minutes or upgrade your API plan.")
+    raise Exception(f"All Gemini models failed. Last error: {last_error_str}")
 
 
 from src.models.profile import Profile
