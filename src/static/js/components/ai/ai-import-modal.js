@@ -47,6 +47,7 @@ export function showAIImportModal(type, profileName, onComplete) {
                     <select id="ai-provider-select" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
                         <option value="gemini">Google Gemini (Recommended for Vision)</option>
                         <option value="claude">Anthropic Claude</option>
+                        <option value="ollama">Local Ollama (Requires llama3.2-vision)</option>
                     </select>
                 </div>
             </div>
