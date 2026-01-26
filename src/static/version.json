@@ -1,5 +1,5 @@
 {
-    "version": "3.9.39",
+    "version": "3.9.40",
     "release_date": "2026-01-25",
-    "release_notes": "Improve asset reconciliation with account_number, institution, and type matching"
+    "release_notes": "Improve AI frequency detection for recurring income and expenses"
 }

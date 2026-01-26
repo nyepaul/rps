@@ -1,0 +1,104 @@
+#!/bin/bash
+###############################################################################
+# RPS Restore Test Script
+#
+# Automates the verification of the backup/restore cycle.
+# 1. Creates a fresh backup
+# 2. Restores it to a temporary location
+# 3. Verifies database integrity
+#
+# Usage: ./bin/test-restore
+###############################################################################
+
+set -euo pipefail
+
+# Configuration
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+LOG_DIR="${PROJECT_ROOT}/logs"
+TEMP_RESTORE_DIR="/tmp/rps_restore_test_$(date +%s)"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+# Logging
+log() {
+    echo -e "${BLUE}[TEST]${NC} $1"
+}
+
+success() {
+    echo -e "${GREEN}[PASS]${NC} $1"
+}
+
+fail() {
+    echo -e "${RED}[FAIL]${NC} $1"
+    exit 1
+}
+
+cleanup() {
+    if [[ -d "${TEMP_RESTORE_DIR}" ]]; then
+        log "Cleaning up temporary files..."
+        rm -rf "${TEMP_RESTORE_DIR}"
+    fi
+}
+trap cleanup EXIT
+
+main() {
+    log "Starting Automated Restore Test..."
+
+    # Step 1: Trigger a fresh backup
+    log "Step 1: Creating fresh backup..."
+    if ! "${PROJECT_ROOT}/bin/backup" --verify; then
+        fail "Backup creation failed"
+    fi
+
+    # Find the latest backup
+    LATEST_BACKUP=$(ls -t "${PROJECT_ROOT}/backups"/rps_backup_*.tar.gz 2>/dev/null | head -n1)
+    if [[ -z "${LATEST_BACKUP}" ]]; then
+        fail "No backup file found after backup run"
+    fi
+    success "Backup created: $(basename ${LATEST_BACKUP})"
+
+    # Step 2: Restore to temp directory
+    log "Step 2: Restoring to temporary location..."
+    mkdir -p "${TEMP_RESTORE_DIR}"
+    
+    if ! tar -xzf "${LATEST_BACKUP}" -C "${TEMP_RESTORE_DIR}"; then
+        fail "Failed to extract backup archive"
+    fi
+
+    # Locate the extracted data
+    # The tar structure is usually rps_backup_TIMESTAMP/data/planning.db
+    EXTRACTED_ROOT=$(ls -d "${TEMP_RESTORE_DIR}"/rps_backup_* | head -n1)
+    DB_FILE="${EXTRACTED_ROOT}/data/planning.db"
+
+    if [[ ! -f "${DB_FILE}" ]]; then
+        fail "Restored database file not found at ${DB_FILE}"
+    fi
+    success "Backup extracted successfully"
+
+    # Step 3: Verify Integrity
+    log "Step 3: Verifying database integrity..."
+    
+    # Run PRAGMA integrity_check
+    INTEGRITY=$(sqlite3 "${DB_FILE}" "PRAGMA integrity_check;")
+    if [[ "${INTEGRITY}" != "ok" ]]; then
+        fail "Database integrity check failed: ${INTEGRITY}"
+    fi
+    success "PRAGMA integrity_check passed"
+
+    # Verify tables exist (sanity check)
+    TABLE_COUNT=$(sqlite3 "${DB_FILE}" "SELECT count(*) FROM sqlite_master WHERE type='table';")
+    if [[ "${TABLE_COUNT}" -lt 1 ]]; then
+        fail "Database appears empty (0 tables found)"
+    fi
+    success "Database structure verified (${TABLE_COUNT} tables)"
+
+    echo ""
+    echo -e "${GREEN}✅ RESTORE TEST COMPLETED SUCCESSFULLY${NC}"
+}
+
+main

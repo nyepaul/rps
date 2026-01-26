@@ -696,10 +696,22 @@ def extract_income():
     Analyze this financial document (image, PDF, or CSV data) of a pay stub, bank statement, or tax document.
     Extract a list of regular income streams.
 
+    FREQUENCY DETECTION - Look for these patterns:
+    - Keywords: "monthly", "bi-weekly", "weekly", "annual", "yearly", "quarterly", "semi-monthly"
+    - Pay stubs: Check pay period dates. If ~2 weeks apart = "bi-weekly", ~1 month = "monthly"
+    - Bank statements: Look for recurring deposits on similar dates each month
+    - Tax documents (W-2, 1099): Annual amounts - set frequency to "annual"
+    - Salary/wages typically: "bi-weekly" or "semi-monthly" (24 pay periods/year)
+    - Rental income, dividends, Social Security: typically "monthly"
+
     RULES:
-    1. Extract: "name" (e.g., "Salary", "Rental Income"), "amount" (monthly or per-paycheck), "frequency" ("monthly", "bi-weekly", "annual").
-    2. Clean values: numbers only for amount.
-    3. Return ONLY a JSON array: [{"name": "...", "amount": ..., "frequency": "..."}]
+    1. Extract for each income source:
+       - "name": Descriptive name (e.g., "Salary - Acme Corp", "Rental Income - 123 Main St", "Social Security")
+       - "amount": The per-period amount as a number (not annual total unless frequency is "annual")
+       - "frequency": One of "weekly", "bi-weekly", "semi-monthly", "monthly", "quarterly", "annual"
+    2. Clean values: numbers only for amount, no $ or commas.
+    3. If frequency is unclear, default to "monthly" for regular income, "annual" for one-time or tax documents.
+    4. Return ONLY a JSON array: [{"name": "...", "amount": ..., "frequency": "..."}]
     """
 
     try:
@@ -742,10 +754,26 @@ def extract_expenses():
     Analyze this financial document (image, PDF, or CSV data) of a receipt, credit card statement, or bill.
     Extract a list of recurring or significant expenses.
 
+    FREQUENCY DETECTION - Look for these patterns:
+    - Keywords on bills: "monthly", "annual", "yearly", "quarterly", "weekly", "due monthly"
+    - Subscriptions (Netflix, Spotify, gym): typically "monthly" or "annual"
+    - Utilities (electric, gas, water, internet): typically "monthly"
+    - Insurance premiums: check if "monthly", "quarterly", "semi-annual", or "annual"
+    - Mortgage/rent: typically "monthly"
+    - Property taxes: typically "annual" or "semi-annual"
+    - Car payments, loan payments: typically "monthly"
+    - Credit card statements: Look for recurring charges on similar dates
+    - Bank statements: Identify repeating transactions with same payee/amount
+
     RULES:
-    1. Extract: "name" (e.g., "Electric Bill", "Mortgage"), "amount", "frequency" ("monthly", "annual"), "category" (e.g., "housing", "utilities", "food", "transportation").
-    2. Map categories to one of: housing, utilities, transportation, food, dining_out, healthcare, insurance, travel, entertainment, personal_care, clothing, gifts, childcare_education, charitable_giving, subscriptions, pet_care, home_maintenance, debt_payments, taxes, discretionary, other.
-    3. Return ONLY a JSON array: [{"name": "...", "amount": ..., "frequency": "...", "category": "..."}]
+    1. Extract for each expense:
+       - "name": Descriptive name (e.g., "Electric Bill - PG&E", "Netflix Subscription", "Mortgage - Chase")
+       - "amount": The per-period amount as a number
+       - "frequency": One of "weekly", "bi-weekly", "monthly", "quarterly", "semi-annual", "annual"
+       - "category": Map to one of: housing, utilities, transportation, food, dining_out, healthcare, insurance, travel, entertainment, personal_care, clothing, gifts, childcare_education, charitable_giving, subscriptions, pet_care, home_maintenance, debt_payments, taxes, discretionary, other
+    2. Clean values: numbers only for amount, no $ or commas.
+    3. If frequency is unclear: utilities/subscriptions/rent default to "monthly", insurance/taxes consider "annual".
+    4. Return ONLY a JSON array: [{"name": "...", "amount": ..., "frequency": "...", "category": "..."}]
     """
 
     try:
