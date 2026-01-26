@@ -180,13 +180,20 @@ export function showAIImportModal(type, profileName, onComplete) {
                         }
                     };
 
-                    const finalResponse = await apiClient.streamRequest(endpoint, {
+                    // Add a safety timeout for long-running PDF extractions (Cloudflare limit is ~100s)
+                    const timeoutPromise = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('TIMEOUT')), 95000)
+                    );
+
+                    const requestPromise = apiClient.streamRequest(endpoint, {
                         image: base64Data,
                         mime_type: mimeType,
                         file_name: file.name,
                         llm_provider: provider,
                         profile_name: profileName
                     }, updateProgress);
+
+                    const finalResponse = await Promise.race([requestPromise, timeoutPromise]);
 
                     if (finalResponse && finalResponse.error) {
                         showError(finalResponse.error);
@@ -209,7 +216,11 @@ export function showAIImportModal(type, profileName, onComplete) {
                     showPreview();
                 } catch (error) {
                     console.error('AI Extraction error:', error);
-                    showError(error.message || 'AI extraction failed.');
+                    if (error.message === 'TIMEOUT') {
+                        showError('The document is very large and taking longer than expected. It is still processing in the background. Please try again in 2 minutes.');
+                    } else {
+                        showError(error.message || 'AI extraction failed.');
+                    }
                     uploadStep.style.display = 'block';
                     processingStep.style.display = 'none';
                     progressBarContainer.remove();
