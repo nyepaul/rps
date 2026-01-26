@@ -385,14 +385,24 @@ async function loadExistingKeys(container, profile) {
                 if (key) {
                     const input = container.querySelector(`#${p}-api-key`);
                     if (input) {
+                        // For sensitive keys, use placeholder. Do NOT put bullets in the actual value.
                         input.placeholder = `••••••••${key}`;
+                        input.value = ''; // Ensure value is empty so we don't accidentally save bullets
                         container.querySelector(`#${p}-status`).innerHTML = '<span style="color: var(--success-color);">✓ Configured</span>';
                     }
                 }
             });
 
             if (data.ollama_url) {
-                container.querySelector('#ollama-url').value = data.ollama_url;
+                // Local URLs should NOT be masked. If we see bullets, ignore them and use default or empty.
+                const url = data.ollama_url;
+                const input = container.querySelector('#ollama-url');
+                if (url.includes('•')) {
+                    input.value = 'http://localhost:11434';
+                } else {
+                    input.value = url;
+                }
+                
                 if (data.ollama_model) {
                     container.querySelector('#ollama-model').value = data.ollama_model;
                 }
@@ -428,20 +438,21 @@ async function saveAllSettings(container, profile, silent = false) {
 
     providers.forEach(p => {
         const val = container.querySelector(`#${p}-api-key`).value.trim();
-        if (val) payload[`${p}_api_key`] = val;
+        // NEVER save strings containing bullets (masked indicators)
+        if (val && !val.includes('•')) payload[`${p}_api_key`] = val;
     });
 
     const ollamaUrl = container.querySelector('#ollama-url').value.trim();
-    if (ollamaUrl) payload.ollama_url = ollamaUrl;
+    if (ollamaUrl && !ollamaUrl.includes('•')) payload.ollama_url = ollamaUrl;
 
     const ollamaModel = container.querySelector('#ollama-model').value.trim();
-    if (ollamaModel) payload.ollama_model = ollamaModel;
+    if (ollamaModel && !ollamaModel.includes('•')) payload.ollama_model = ollamaModel;
 
     const lmstudioUrl = container.querySelector('#lmstudio-url').value.trim();
-    if (lmstudioUrl) payload.lmstudio_url = lmstudioUrl;
+    if (lmstudioUrl && !lmstudioUrl.includes('•')) payload.lmstudio_url = lmstudioUrl;
 
     const localaiUrl = container.querySelector('#localai-url').value.trim();
-    if (localaiUrl) payload.localai_url = localaiUrl;
+    if (localaiUrl && !localaiUrl.includes('•')) payload.localai_url = localaiUrl;
 
     const preferredProvider = container.querySelector('#preferred-ai-provider').value;
     payload.preferred_ai_provider = preferredProvider;
