@@ -1,5 +1,5 @@
 {
-    "version": "3.9.54",
+    "version": "3.9.55",
     "release_date": "2026-01-25",
-    "release_notes": "Implement backend URL sanitization to handle corrupted masked URLs"
+    "release_notes": "Implement Chunked Processing for multi-page PDFs to improve extraction accuracy with local LLMs"
 }

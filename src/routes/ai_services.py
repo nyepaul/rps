@@ -31,12 +31,10 @@ def sanitize_url(url, default_url):
     return url
 
 
-def process_pdf_content(pdf_bytes, max_pages=30):
+def process_pdf_content(pdf_bytes, max_pages=50):
     """
     Intelligently processes PDF content for LLMs.
-    1. Attempts to extract text from all pages.
-    2. If little/no text found (scanned PDF), renders pages to images.
-    Returns (content, content_type) where content_type is "text" or "images".
+    Returns (chunks, content_type) where chunks is a list of strings or images.
     """
     if not fitz:
         raise Exception("PyMuPDF (fitz) is not installed. PDF processing not available.")
@@ -47,34 +45,48 @@ def process_pdf_content(pdf_bytes, max_pages=30):
             raise Exception("PDF has no pages.")
         
         # 1. Try text extraction first
-        full_text = ""
-        for i in range(min(pdf_document.page_count, max_pages)):
-            full_text += f"--- Page {i+1} ---\n"
-            full_text += pdf_document[i].get_text()
+        # We'll group pages into chunks of 5 to keep context manageable for local LLMs
+        text_chunks = []
+        current_chunk = ""
+        pages_in_chunk = 0
         
-        # If we extracted significant text, return it
-        if len(full_text.strip()) > 200:
-            print(f"Extracted {len(full_text)} characters of text from PDF.")
+        for i in range(min(pdf_document.page_count, max_pages)):
+            page_text = pdf_document[i].get_text().strip()
+            if page_text:
+                current_chunk += f"--- Page {i+1} ---\n{page_text}\n\n"
+                pages_in_chunk += 1
+                
+                # Close chunk every 5 pages or if it gets very large
+                if pages_in_chunk >= 5 or len(current_chunk) > 10000:
+                    text_chunks.append(current_chunk)
+                    current_chunk = ""
+                    pages_in_chunk = 0
+        
+        if current_chunk:
+            text_chunks.append(current_chunk)
+        
+        # If we extracted significant text, return chunks
+        if any(len(c.strip()) > 50 for c in text_chunks):
+            print(f"Extracted text chunks from {pdf_document.page_count} pages.")
             pdf_document.close()
-            return full_text, "text"
+            return text_chunks, "text"
         
         # 2. Fallback to images (scanned PDF)
-        print("Scanned PDF detected or text extraction failed. Rendering pages to images...")
+        print("Scanned PDF detected. Rendering pages to images...")
         images = []
-        # Limit image conversion to prevent massive request sizes
-        # 10 pages is usually enough for most statements
+        # Limit image conversion to 10 pages for stability
         for i in range(min(pdf_document.page_count, 10)):
             page = pdf_document[i]
             zoom = 2.0
             mat = fitz.Matrix(zoom, zoom)
             pix = page.get_pixmap(matrix=mat)
-            
             img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
             buffered = BytesIO()
             img.save(buffered, format="PNG")
             images.append(base64.b64encode(buffered.getvalue()).decode('utf-8'))
         
         pdf_document.close()
+        # For images, each image is its own chunk
         return images, "images"
     except Exception as e:
         print(f"PDF processing error: {str(e)}")
@@ -894,32 +906,54 @@ def extract_assets():
             text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type)
         elif provider == 'ollama':
             # Local Vision/Text support via Ollama
-            processed_content = image_b64
-            content_type = "image"
+            all_extracted = []
             
             if mime_type == 'application/pdf' or image_b64.startswith('JVBERi'):
                 print("Processing multi-page PDF for Ollama...")
                 file_bytes = base64.b64decode(image_b64)
-                processed_content, content_type = process_pdf_content(file_bytes)
+                chunks, content_type = process_pdf_content(file_bytes)
+                
+                # Process each chunk individually
+                for idx, chunk in enumerate(chunks):
+                    print(f"Processing chunk {idx+1}/{len(chunks)}...")
+                    
+                    payload = {
+                        'model': ollama_model,
+                        'messages': [{
+                            'role': 'user',
+                            'content': prompt if content_type == "images" else f"{prompt}\n\nDocument Text (Chunk {idx+1}):\n{chunk}",
+                        }],
+                        'stream': False,
+                        'format': 'json'
+                    }
+                    if content_type == "images":
+                        payload['messages'][0]['images'] = [chunk]
 
-            payload = {
-                'model': ollama_model,
-                'messages': [{
-                    'role': 'user',
-                    'content': prompt if content_type == "images" else f"{prompt}\n\nDocument Text:\n{processed_content}",
-                }],
-                'stream': False,
-                'format': 'json'
-            }
-            
-            if content_type == "images":
-                payload['messages'][0]['images'] = processed_content
-
-            response = requests.post(
-                f"{ollama_url}/api/chat",
-                json=payload,
-                timeout=300 # Increased timeout for multi-page processing
-            )
+                    response = requests.post(f"{ollama_url}/api/chat", json=payload, timeout=300)
+                    if response.status_code == 200:
+                        chunk_text = response.json()['message']['content']
+                        chunk_items = resilient_parse_llm_json(chunk_text, 'assets')
+                        all_extracted.extend(chunk_items)
+                    else:
+                        print(f"Warning: Chunk {idx+1} failed: {response.text}")
+                
+                return jsonify({'assets': all_extracted, 'status': 'success'}), 200
+            else:
+                # Single image case
+                response = requests.post(
+                    f"{ollama_url}/api/chat",
+                    json={
+                        'model': ollama_model,
+                        'messages': [{'role': 'user', 'content': prompt, 'images': [image_b64]}],
+                        'stream': False,
+                        'format': 'json'
+                    },
+                    timeout=180
+                )
+                if response.status_code == 200:
+                    text_response = response.json()['message']['content']
+                else:
+                    raise Exception(f"Ollama Vision error: {response.text}")
             if response.status_code == 200:
                 text_response = response.json()['message']['content']
             else:
@@ -1020,32 +1054,54 @@ def extract_income():
                 ollama_model = 'llama3.2-vision'
             
             # Local Vision/Text support via Ollama
-            processed_content = image_b64
-            content_type = "image"
+            all_extracted = []
             
             if mime_type == 'application/pdf' or image_b64.startswith('JVBERi'):
                 print("Processing multi-page PDF for Ollama...")
                 file_bytes = base64.b64decode(image_b64)
-                processed_content, content_type = process_pdf_content(file_bytes)
+                chunks, content_type = process_pdf_content(file_bytes)
+                
+                # Process each chunk individually
+                for idx, chunk in enumerate(chunks):
+                    print(f"Processing chunk {idx+1}/{len(chunks)}...")
+                    
+                    payload = {
+                        'model': ollama_model,
+                        'messages': [{
+                            'role': 'user',
+                            'content': prompt if content_type == "images" else f"{prompt}\n\nDocument Text (Chunk {idx+1}):\n{chunk}",
+                        }],
+                        'stream': False,
+                        'format': 'json'
+                    }
+                    if content_type == "images":
+                        payload['messages'][0]['images'] = [chunk]
 
-            payload = {
-                'model': ollama_model,
-                'messages': [{
-                    'role': 'user',
-                    'content': prompt if content_type == "images" else f"{prompt}\n\nDocument Text:\n{processed_content}",
-                }],
-                'stream': False,
-                'format': 'json'
-            }
-            
-            if content_type == "images":
-                payload['messages'][0]['images'] = processed_content
-
-            response = requests.post(
-                f"{ollama_url}/api/chat",
-                json=payload,
-                timeout=300
-            )
+                    response = requests.post(f"{ollama_url}/api/chat", json=payload, timeout=300)
+                    if response.status_code == 200:
+                        chunk_text = response.json()['message']['content']
+                        chunk_items = resilient_parse_llm_json(chunk_text, 'income')
+                        all_extracted.extend(chunk_items)
+                    else:
+                        print(f"Warning: Chunk {idx+1} failed: {response.text}")
+                
+                return jsonify({'income': all_extracted, 'status': 'success'}), 200
+            else:
+                # Single image case
+                response = requests.post(
+                    f"{ollama_url}/api/chat",
+                    json={
+                        'model': ollama_model,
+                        'messages': [{'role': 'user', 'content': prompt, 'images': [image_b64]}],
+                        'stream': False,
+                        'format': 'json'
+                    },
+                    timeout=180
+                )
+                if response.status_code == 200:
+                    text_response = response.json()['message']['content']
+                else:
+                    raise Exception(f"Ollama Vision error: {response.text}")
 
 
         # Use resilient parsing to extract the list of income items
@@ -1141,36 +1197,55 @@ def extract_expenses():
                 ollama_model = 'llama3.2-vision'
             
             # Local Vision/Text support via Ollama
-            processed_content = image_b64
-            content_type = "image"
+            all_extracted = []
             
             if mime_type == 'application/pdf' or image_b64.startswith('JVBERi'):
                 print("Processing multi-page PDF for Ollama...")
                 file_bytes = base64.b64decode(image_b64)
-                processed_content, content_type = process_pdf_content(file_bytes)
+                chunks, content_type = process_pdf_content(file_bytes)
+                
+                # Process each chunk individually to avoid context limits
+                for idx, chunk in enumerate(chunks):
+                    print(f"Processing chunk {idx+1}/{len(chunks)}...")
+                    
+                    payload = {
+                        'model': ollama_model,
+                        'messages': [{
+                            'role': 'user',
+                            'content': prompt if content_type == "images" else f"{prompt}\n\nDocument Text (Chunk {idx+1}):\n{chunk}",
+                        }],
+                        'stream': False,
+                        'format': 'json'
+                    }
+                    if content_type == "images":
+                        payload['messages'][0]['images'] = [chunk]
 
-            payload = {
-                'model': ollama_model,
-                'messages': [{
-                    'role': 'user',
-                    'content': prompt if content_type == "images" else f"{prompt}\n\nDocument Text:\n{processed_content}",
-                }],
-                'stream': False,
-                'format': 'json'
-            }
-            
-            if content_type == "images":
-                payload['messages'][0]['images'] = processed_content
-
-            response = requests.post(
-                f"{ollama_url}/api/chat",
-                json=payload,
-                timeout=300
-            )
-            if response.status_code == 200:
-                text_response = response.json()['message']['content']
+                    response = requests.post(f"{ollama_url}/api/chat", json=payload, timeout=300)
+                    if response.status_code == 200:
+                        chunk_text = response.json()['message']['content']
+                        chunk_items = resilient_parse_llm_json(chunk_text, 'expenses')
+                        all_extracted.extend(chunk_items)
+                    else:
+                        print(f"Warning: Chunk {idx+1} failed: {response.text}")
+                
+                # Convert aggregated result back to text_response format for the common parser
+                return jsonify({'expenses': all_extracted, 'status': 'success'}), 200
             else:
-                raise Exception(f"Ollama Vision error: {response.text}")
+                # Single image case
+                response = requests.post(
+                    f"{ollama_url}/api/chat",
+                    json={
+                        'model': ollama_model,
+                        'messages': [{'role': 'user', 'content': prompt, 'images': [image_b64]}],
+                        'stream': False,
+                        'format': 'json'
+                    },
+                    timeout=180
+                )
+                if response.status_code == 200:
+                    text_response = response.json()['message']['content']
+                else:
+                    raise Exception(f"Ollama Vision error: {response.text}")
         else:
             return jsonify({'error': f'Provider {provider} not supported for expense extraction yet.'}), 400
 
