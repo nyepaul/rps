@@ -286,13 +286,19 @@ function setupAPIKeyHandlers(container, profile) {
         container.querySelector('#gemini-status').textContent = '';
     });
 
-    // Test connection buttons
+    // Test connection buttons - auto-save on success
     container.querySelector('#test-claude-btn').addEventListener('click', async () => {
-        await testAPIKey('claude', claudeInput.value, container.querySelector('#claude-status'));
+        const success = await testAPIKey('claude', claudeInput.value, container.querySelector('#claude-status'));
+        if (success) {
+            await saveAPIKeys(profile, claudeInput.value, geminiInput.value, container.querySelector('#save-status'));
+        }
     });
 
     container.querySelector('#test-gemini-btn').addEventListener('click', async () => {
-        await testAPIKey('gemini', geminiInput.value, container.querySelector('#gemini-status'));
+        const success = await testAPIKey('gemini', geminiInput.value, container.querySelector('#gemini-status'));
+        if (success) {
+            await saveAPIKeys(profile, claudeInput.value, geminiInput.value, container.querySelector('#save-status'));
+        }
     });
 
     // Save button
@@ -334,14 +340,15 @@ async function loadExistingKeys(container, profile) {
 
 /**
  * Test API key connection
+ * @returns {boolean} true if test succeeded
  */
 async function testAPIKey(provider, apiKey, statusElement) {
     if (!apiKey || apiKey.trim() === '') {
         statusElement.innerHTML = '<span style="color: var(--danger-color);">⚠️ Please enter an API key</span>';
-        return;
+        return false;
     }
 
-    statusElement.innerHTML = '<span style="color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px;"><span class="spinner" style="width: 14px; height: 14px; border: 2px solid var(--border-color); border-top-color: var(--accent-color); border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block;"></span>Testing connection...</span><style> spin { to { transform: rotate(360deg); }}</style>';
+    statusElement.innerHTML = '<span style="color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px;"><span class="spinner" style="width: 14px; height: 14px; border: 2px solid var(--border-color); border-top-color: var(--accent-color); border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block;"></span>Testing connection...</span><style>@keyframes spin { to { transform: rotate(360deg); }}</style>';
 
     try {
         const response = await fetch('/api/test-api-key', {
@@ -358,12 +365,15 @@ async function testAPIKey(provider, apiKey, statusElement) {
         const result = await response.json();
 
         if (response.ok && result.success) {
-            statusElement.innerHTML = `<span style="color: var(--success-color);">✓ Connection successful! ${result.model || ''}</span>`;
+            statusElement.innerHTML = `<span style="color: var(--success-color);">✓ Success! ${result.model || ''} (auto-saving...)</span>`;
+            return true;
         } else {
             statusElement.innerHTML = `<span style="color: var(--danger-color);">✗ ${result.error || 'Connection failed'}</span>`;
+            return false;
         }
     } catch (error) {
         statusElement.innerHTML = `<span style="color: var(--danger-color);">✗ Error: ${error.message}</span>`;
+        return false;
     }
 }
 
