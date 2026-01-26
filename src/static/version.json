@@ -1,5 +1,5 @@
 {
-    "version": "3.9.53",
+    "version": "3.9.54",
     "release_date": "2026-01-25",
-    "release_notes": "Fix masked URL saving and prevent corrupted settings from being persisted"
+    "release_notes": "Implement backend URL sanitization to handle corrupted masked URLs"
 }

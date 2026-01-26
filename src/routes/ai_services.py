@@ -22,6 +22,15 @@ from src.extensions import limiter
 ai_services_bp = Blueprint('ai_services', __name__, url_prefix='/api')
 
 
+def sanitize_url(url, default_url):
+    """Clean up corrupted URLs that might contain masking bullets."""
+    if not url or not isinstance(url, str):
+        return default_url
+    if '•' in url:
+        return default_url
+    return url
+
+
 def process_pdf_content(pdf_bytes, max_pages=30):
     """
     Intelligently processes PDF content for LLMs.
@@ -587,11 +596,11 @@ def advisor_chat():
 
         # Get the appropriate key/url
         api_key = api_keys.get(f"{provider}_api_key")
-        ollama_url = api_keys.get("ollama_url")
+        ollama_url = sanitize_url(api_keys.get("ollama_url"), "http://localhost:11434")
         # Use model from request if provided (e.g. from chat selector), else use profile default
         ollama_model = data.get('ollama_model') or api_keys.get("ollama_model")
-        lmstudio_url = api_keys.get("lmstudio_url")
-        localai_url = api_keys.get("localai_url")
+        lmstudio_url = sanitize_url(api_keys.get("lmstudio_url"), "http://localhost:1234")
+        localai_url = sanitize_url(api_keys.get("localai_url"), "http://localhost:8080")
 
         if not api_key and provider not in ['ollama', 'lmstudio', 'localai']:
             return jsonify({
@@ -771,7 +780,7 @@ def list_ollama_models():
 def pull_ollama_model():
     """Pull/update a model in local Ollama instance."""
     data = request.json
-    url = data.get('url', 'http://localhost:11434')
+    url = sanitize_url(data.get('url'), 'http://localhost:11434')
     model = data.get('model')
     
     if not model:
@@ -834,7 +843,7 @@ def extract_assets():
         print(f"Provider: {provider}, MIME type: {mime_type}, Data length: {len(image_b64) if image_b64 else 0}")
 
         api_key = None
-        ollama_url = api_keys.get('ollama_url', 'http://localhost:11434')
+        ollama_url = sanitize_url(api_keys.get('ollama_url'), 'http://localhost:11434')
         # Use llama3.2-vision for extraction if using Ollama, as it's specifically for this task
         # We prefer the setting if it contains 'vision' or 'vl', otherwise default to llama3.2-vision
         configured_model = api_keys.get('ollama_model', '')
@@ -1003,7 +1012,7 @@ def extract_income():
         elif provider == 'openai':
             text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type)
         elif provider == 'ollama':
-            ollama_url = api_keys.get('ollama_url', 'http://localhost:11434')
+            ollama_url = sanitize_url(api_keys.get('ollama_url'), 'http://localhost:11434')
             configured_model = api_keys.get('ollama_model', '')
             if 'vision' in configured_model.lower() or 'vl' in configured_model.lower():
                 ollama_model = configured_model
@@ -1124,7 +1133,7 @@ def extract_expenses():
         elif provider == 'openai':
             text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type)
         elif provider == 'ollama':
-            ollama_url = api_keys.get('ollama_url', 'http://localhost:11434')
+            ollama_url = sanitize_url(api_keys.get('ollama_url'), 'http://localhost:11434')
             configured_model = api_keys.get('ollama_model', '')
             if 'vision' in configured_model.lower() or 'vl' in configured_model.lower():
                 ollama_model = configured_model
