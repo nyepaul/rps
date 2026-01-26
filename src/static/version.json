@@ -1,5 +1,5 @@
 {
-    "version": "3.9.51",
+    "version": "3.9.52",
     "release_date": "2026-01-25",
-    "release_notes": "Fix extractedData.map error with resilient LLM response parsing"
+    "release_notes": "Enhance PDF processing to support multi-page documents and text extraction for Ollama"
 }
