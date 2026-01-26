@@ -129,6 +129,92 @@ def call_gemini_with_fallback(prompt, api_key, image_data=None, mime_type=None):
     raise Exception(f"All Gemini models failed. Last error: {last_error_str}")
 
 
+def call_claude_with_vision(prompt, api_key, image_b64, mime_type):
+    """Calls Anthropic Claude with vision support."""
+    url = 'https://api.anthropic.com/v1/messages'
+    headers = {
+        'x-api-key': api_key,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json'
+    }
+    
+    # Map mime_type to Anthropic supported types
+    # Anthropic supports image/jpeg, image/png, image/gif, and image/webp
+    anthropic_mime = mime_type
+    if mime_type == 'image/jpg':
+        anthropic_mime = 'image/jpeg'
+
+    payload = {
+        'model': 'claude-3-5-sonnet-20241022',
+        'max_tokens': 4096,
+        'messages': [
+            {
+                'role': 'user',
+                'content': [
+                    {
+                        'type': 'image',
+                        'source': {
+                            'type': 'base64',
+                            'media_type': anthropic_mime,
+                            'data': image_b64,
+                        },
+                    },
+                    {
+                        'type': 'text',
+                        'text': prompt
+                    }
+                ],
+            }
+        ]
+    }
+    
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=60)
+        if response.status_code == 200:
+            return response.json()['content'][0]['text']
+        else:
+            raise Exception(f"Claude Vision error: {response.status_code} {response.text}")
+    except Exception as e:
+        raise Exception(f"Failed to call Claude Vision: {str(e)}")
+
+
+def call_openai_with_vision(prompt, api_key, image_b64, mime_type):
+    """Calls OpenAI GPT-4o with vision support."""
+    url = "https://api.openai.com/v1/chat/completions"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}"
+    }
+    
+    payload = {
+        "model": "gpt-4o",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{mime_type};base64,{image_b64}"
+                        }
+                    }
+                ]
+            }
+        ],
+        "max_tokens": 1000
+    }
+    
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=60)
+        if response.status_code == 200:
+            return response.json()['choices'][0]['message']['content']
+        else:
+            raise Exception(f"OpenAI Vision error: {response.status_code} {response.text}")
+    except Exception as e:
+        raise Exception(f"Failed to call OpenAI Vision: {str(e)}")
+
+
 from src.models.profile import Profile
 from src.models.conversation import Conversation
 from flask_login import current_user
@@ -231,7 +317,8 @@ def call_openai_compatible(provider, prompt, api_key, history=None, system_promp
         'grok': ('https://api.x.ai/v1/chat/completions', 'grok-beta'),
         'mistral': ('https://api.mistral.ai/v1/chat/completions', 'mistral-large-latest'),
         'together': ('https://api.together.xyz/v1/chat/completions', 'mistralai/Mixtral-8x7B-Instruct-v0.1'),
-        'huggingface': ('https://api-inference.huggingface.co/v1/chat/completions', 'meta-llama/Llama-3-70b-chat-hf')
+        'huggingface': ('https://api-inference.huggingface.co/v1/chat/completions', 'meta-llama/Llama-3-70b-chat-hf'),
+        'zhipu': ('https://open.bigmodel.cn/api/paas/v4/chat/completions', 'glm-4-flash')
     }
     
     url, default_model = endpoints.get(provider, (None, None))
@@ -388,7 +475,7 @@ def advisor_chat():
         
         # If no preferred provider, find first available key
         if not provider:
-            for p in ['gemini', 'claude', 'openai', 'openrouter', 'deepseek', 'ollama', 'lmstudio', 'localai']:
+            for p in ['gemini', 'claude', 'openai', 'openrouter', 'deepseek', 'ollama', 'zhipu', 'lmstudio', 'localai']:
                 key_name = f"{p}_api_key" if p not in ['ollama', 'lmstudio', 'localai'] else f"{p}_url"
                 if api_keys.get(key_name):
                     provider = p
@@ -400,7 +487,8 @@ def advisor_chat():
         # Get the appropriate key/url
         api_key = api_keys.get(f"{provider}_api_key")
         ollama_url = api_keys.get("ollama_url")
-        ollama_model = api_keys.get("ollama_model")
+        # Use model from request if provided (e.g. from chat selector), else use profile default
+        ollama_model = data.get('ollama_model') or api_keys.get("ollama_model")
         lmstudio_url = api_keys.get("lmstudio_url")
         localai_url = api_keys.get("localai_url")
 
@@ -553,6 +641,7 @@ def clear_advisor_history(profile_id: int):
 
 @ai_services_bp.route('/ollama/models', methods=['GET'])
 @login_required
+@limiter.exempt
 def list_ollama_models():
     """List available models from local Ollama instance."""
     url = request.args.get('url', 'http://localhost:11434')
@@ -560,13 +649,24 @@ def list_ollama_models():
         response = requests.get(f"{url}/api/tags", timeout=5)
         if response.status_code == 200:
             return jsonify(response.json()), 200
+        enhanced_audit_logger.log(
+            action='OLLAMA_MODELS_FETCH_FAILED',
+            details={'status_code': response.status_code, 'url': url},
+            status_code=response.status_code
+        )
         return jsonify({'error': f'Ollama error: {response.status_code}'}), response.status_code
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='OLLAMA_MODELS_CONNECTION_ERROR',
+            details={'error': str(e), 'url': url},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
 @ai_services_bp.route('/ollama/pull', methods=['POST'])
 @login_required
+@limiter.exempt
 def pull_ollama_model():
     """Pull/update a model in local Ollama instance."""
     data = request.json
@@ -578,11 +678,23 @@ def pull_ollama_model():
         
     try:
         # We use stream=True because pulling can take a long time
-        response = requests.post(f"{url}/api/pull", json={'name': model, 'stream': False}, timeout=300)
+        # Using a longer timeout for pulls as they involve large downloads
+        response = requests.post(f"{url}/api/pull", json={'name': model, 'stream': False}, timeout=600)
         if response.status_code == 200:
             return jsonify({'status': 'success', 'message': f'Model {model} updated successfully'}), 200
-        return jsonify({'error': f'Ollama error: {response.status_code}'}), response.status_code
+        
+        enhanced_audit_logger.log(
+            action='OLLAMA_PULL_FAILED',
+            details={'status_code': response.status_code, 'model': model, 'response': response.text},
+            status_code=response.status_code
+        )
+        return jsonify({'error': f'Ollama error: {response.status_code}', 'details': response.text}), response.status_code
     except Exception as e:
+        enhanced_audit_logger.log(
+            action='OLLAMA_PULL_EXCEPTION',
+            details={'error': str(e), 'model': model},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -596,11 +708,9 @@ def extract_assets():
     data = request.json
     image_b64 = data.get('image')
     mime_type = data.get('mime_type')
-    provider = data.get('llm_provider', 'gemini')
+    requested_provider = data.get('llm_provider')
     existing_assets = data.get('existing_assets', [])
     profile_name = data.get('profile_name')
-
-    print(f"Provider: {provider}, MIME type: {mime_type}, Data length: {len(image_b64) if image_b64 else 0}")
 
     if not image_b64:
         return jsonify({'error': 'No image data provided'}), 400
@@ -616,10 +726,21 @@ def extract_assets():
 
         data_dict = profile.data_dict
         api_keys = data_dict.get('api_keys', {})
+        
+        # Determine provider: priority = request > profile preference > Gemini (fallback)
+        provider = requested_provider or data_dict.get('preferred_ai_provider') or 'gemini'
+        
+        print(f"Provider: {provider}, MIME type: {mime_type}, Data length: {len(image_b64) if image_b64 else 0}")
 
         api_key = None
         ollama_url = api_keys.get('ollama_url', 'http://localhost:11434')
-        ollama_model = api_keys.get('ollama_model', 'llama3.2-vision')
+        # Use llama3.2-vision for extraction if using Ollama, as it's specifically for this task
+        # We prefer the setting if it contains 'vision' or 'vl', otherwise default to llama3.2-vision
+        configured_model = api_keys.get('ollama_model', '')
+        if 'vision' in configured_model.lower() or 'vl' in configured_model.lower():
+            ollama_model = configured_model
+        else:
+            ollama_model = 'llama3.2-vision'
 
         if provider == 'gemini':
             api_key = api_keys.get('gemini_api_key')
@@ -629,6 +750,10 @@ def extract_assets():
             api_key = api_keys.get('claude_api_key')
             if not api_key:
                 return jsonify({'error': 'Claude API key not configured. Please configure in AI Settings.'}), 400
+        elif provider == 'openai':
+            api_key = api_keys.get('openai_api_key')
+            if not api_key:
+                return jsonify({'error': 'OpenAI API key not configured. Please configure in AI Settings.'}), 400
         elif provider == 'ollama':
             # Ollama doesn't need an API key
             pass
@@ -654,9 +779,9 @@ def extract_assets():
             file_bytes = base64.b64decode(image_b64)
             text_response = call_gemini_with_fallback(prompt, api_key, image_data=file_bytes, mime_type=mime_type)
         elif provider == 'claude':
-            # Existing Claude logic (omitted for brevity in this replace call, but preserved in actual file)
-            # For local execution, I will implement Ollama vision support
-            pass 
+            text_response = call_claude_with_vision(prompt, api_key, image_b64, mime_type)
+        elif provider == 'openai':
+            text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type)
         elif provider == 'ollama':
             # Local Vision support via Ollama
             response = requests.post(
@@ -691,15 +816,14 @@ def extract_assets():
             return jsonify({'error': f'Failed to parse AI response: {str(e)}', 'raw': text_response[:200]}), 500
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-    except Exception as e:
         print(f"Extract assets error: {str(e)}")
         enhanced_audit_logger.log(
             action='EXTRACT_ASSETS_ERROR',
             details={'profile_name': profile_name, 'error': str(e)},
             status_code=500
         )
+        return jsonify({'error': str(e)}), 500
+
         return jsonify({'error': str(e)}), 500
 
 
@@ -711,7 +835,7 @@ def extract_income():
     data = request.json
     image_b64 = data.get('image')
     mime_type = data.get('mime_type')
-    provider = data.get('llm_provider', 'gemini')
+    requested_provider = data.get('llm_provider')
     profile_name = data.get('profile_name')
 
     if not image_b64 or not profile_name:
@@ -720,8 +844,24 @@ def extract_income():
     # Get API key
     profile = Profile.get_by_name(profile_name, current_user.id)
     if not profile: return jsonify({'error': 'Profile not found'}), 404
-    api_key = profile.data_dict.get('api_keys', {}).get('gemini_api_key' if provider == 'gemini' else 'claude_api_key')
-    if not api_key: return jsonify({'error': f'{provider.capitalize()} API key not configured'}), 400
+    
+    data_dict = profile.data_dict
+    api_keys = data_dict.get('api_keys', {})
+    
+    # Determine provider: priority = request > profile preference > Gemini (fallback)
+    provider = requested_provider or data_dict.get('preferred_ai_provider') or 'gemini'
+    
+    api_key = None
+    
+    if provider == 'gemini':
+        api_key = api_keys.get('gemini_api_key')
+    elif provider == 'claude':
+        api_key = api_keys.get('claude_api_key')
+    elif provider == 'openai':
+        api_key = api_keys.get('openai_api_key')
+        
+    if not api_key and provider not in ['ollama', 'lmstudio', 'localai']: 
+        return jsonify({'error': f'{provider.capitalize()} API key not configured. Please configure in AI Settings.'}), 400
 
     prompt = """
     Analyze this financial document (image, PDF, or CSV data) of a pay stub, bank statement, or tax document.
@@ -746,18 +886,49 @@ def extract_income():
     """
 
     try:
-        file_bytes = base64.b64decode(image_b64)
         if provider == 'gemini':
+            file_bytes = base64.b64decode(image_b64)
             text_response = call_gemini_with_fallback(prompt, api_key, image_data=file_bytes, mime_type=mime_type)
+        elif provider == 'claude':
+            text_response = call_claude_with_vision(prompt, api_key, image_b64, mime_type)
+        elif provider == 'openai':
+            text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type)
+        elif provider == 'ollama':
+            ollama_url = api_keys.get('ollama_url', 'http://localhost:11434')
+            configured_model = api_keys.get('ollama_model', '')
+            if 'vision' in configured_model.lower() or 'vl' in configured_model.lower():
+                ollama_model = configured_model
+            else:
+                ollama_model = 'llama3.2-vision'
+            response = requests.post(
+                f"{ollama_url}/api/chat",
+                json={
+                    'model': ollama_model,
+                    'messages': [{'role': 'user', 'content': prompt, 'images': [image_b64]}],
+                    'stream': False,
+                    'format': 'json'
+                },
+                timeout=180
+            )
+            if response.status_code == 200:
+                text_response = response.json()['message']['content']
+            else:
+                raise Exception(f"Ollama Vision error: {response.text}")
         else:
-            # Simple Claude placeholder for now - consistent with extract_assets
-            return jsonify({'error': 'Claude extraction for income not yet fully implemented'}), 501
+            return jsonify({'error': f'Provider {provider} not supported for income extraction yet.'}), 400
+
 
         json_str = text_response.replace('```json', '').replace('```', '').strip()
         extracted_income = json.loads(json_str)
         
         return jsonify({'income': extracted_income, 'status': 'success'}), 200
     except Exception as e:
+        print(f"Extract income error: {str(e)}")
+        enhanced_audit_logger.log(
+            action='EXTRACT_INCOME_ERROR',
+            details={'profile_name': profile_name, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -769,7 +940,7 @@ def extract_expenses():
     data = request.json
     image_b64 = data.get('image')
     mime_type = data.get('mime_type')
-    provider = data.get('llm_provider', 'gemini')
+    requested_provider = data.get('llm_provider')
     profile_name = data.get('profile_name')
 
     if not image_b64 or not profile_name:
@@ -778,8 +949,24 @@ def extract_expenses():
     # Get API key
     profile = Profile.get_by_name(profile_name, current_user.id)
     if not profile: return jsonify({'error': 'Profile not found'}), 404
-    api_key = profile.data_dict.get('api_keys', {}).get('gemini_api_key' if provider == 'gemini' else 'claude_api_key')
-    if not api_key: return jsonify({'error': f'{provider.capitalize()} API key not configured'}), 400
+    
+    data_dict = profile.data_dict
+    api_keys = data_dict.get('api_keys', {})
+    
+    # Determine provider: priority = request > profile preference > Gemini (fallback)
+    provider = requested_provider or data_dict.get('preferred_ai_provider') or 'gemini'
+    
+    api_key = None
+    
+    if provider == 'gemini':
+        api_key = api_keys.get('gemini_api_key')
+    elif provider == 'claude':
+        api_key = api_keys.get('claude_api_key')
+    elif provider == 'openai':
+        api_key = api_keys.get('openai_api_key')
+        
+    if not api_key and provider not in ['ollama', 'lmstudio', 'localai']: 
+        return jsonify({'error': f'{provider.capitalize()} API key not configured. Please configure in AI Settings.'}), 400
 
     prompt = """
     Analyze this financial document (image, PDF, or CSV data) of a receipt, credit card statement, or bill.
@@ -808,15 +995,46 @@ def extract_expenses():
     """
 
     try:
-        file_bytes = base64.b64decode(image_b64)
         if provider == 'gemini':
+            file_bytes = base64.b64decode(image_b64)
             text_response = call_gemini_with_fallback(prompt, api_key, image_data=file_bytes, mime_type=mime_type)
+        elif provider == 'claude':
+            text_response = call_claude_with_vision(prompt, api_key, image_b64, mime_type)
+        elif provider == 'openai':
+            text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type)
+        elif provider == 'ollama':
+            ollama_url = api_keys.get('ollama_url', 'http://localhost:11434')
+            configured_model = api_keys.get('ollama_model', '')
+            if 'vision' in configured_model.lower() or 'vl' in configured_model.lower():
+                ollama_model = configured_model
+            else:
+                ollama_model = 'llama3.2-vision'
+            response = requests.post(
+                f"{ollama_url}/api/chat",
+                json={
+                    'model': ollama_model,
+                    'messages': [{'role': 'user', 'content': prompt, 'images': [image_b64]}],
+                    'stream': False,
+                    'format': 'json'
+                },
+                timeout=180
+            )
+            if response.status_code == 200:
+                text_response = response.json()['message']['content']
+            else:
+                raise Exception(f"Ollama Vision error: {response.text}")
         else:
-            return jsonify({'error': 'Claude extraction for expenses not yet fully implemented'}), 501
+            return jsonify({'error': f'Provider {provider} not supported for expense extraction yet.'}), 400
 
         json_str = text_response.replace('```json', '').replace('```', '').strip()
         extracted_expenses = json.loads(json_str)
         
         return jsonify({'expenses': extracted_expenses, 'status': 'success'}), 200
     except Exception as e:
+        print(f"Extract expenses error: {str(e)}")
+        enhanced_audit_logger.log(
+            action='EXTRACT_EXPENSES_ERROR',
+            details={'profile_name': profile_name, 'error': str(e)},
+            status_code=500
+        )
         return jsonify({'error': str(e)}), 500

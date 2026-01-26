@@ -59,6 +59,7 @@ export async function renderAPIKeysSettings(container) {
                 ${renderKeyInput('mistral', '🌀 Mistral AI', '...', 'https://console.mistral.ai/')}
                 ${renderKeyInput('together', '🤝 Together AI', '...', 'https://api.together.xyz/')}
                 ${renderKeyInput('huggingface', '🤗 Hugging Face', 'hf_...', 'https://huggingface.co/settings/tokens')}
+                ${renderKeyInput('zhipu', '🇨🇳 Zhipu AI (GLM)', '...', 'https://open.bigmodel.cn/')}
             </div>
         </div>
 
@@ -78,6 +79,7 @@ export async function renderAPIKeysSettings(container) {
                 <option value="mistral">🌀 Mistral AI</option>
                 <option value="together">🤝 Together AI</option>
                 <option value="huggingface">🤗 Hugging Face</option>
+                <option value="zhipu">🇨🇳 Zhipu AI (GLM)</option>
                 <option value="ollama">🏠 Local Ollama</option>
                 <option value="lmstudio">💻 LM Studio</option>
                 <option value="localai">🤖 LocalAI</option>
@@ -375,7 +377,7 @@ async function loadExistingKeys(container, profile) {
             const data = await response.json();
             const providers = [
                 'gemini', 'claude', 'openai', 'grok', 'openrouter', 
-                'deepseek', 'mistral', 'together', 'huggingface'
+                'deepseek', 'mistral', 'together', 'huggingface', 'zhipu'
             ];
 
             providers.forEach(p => {
@@ -421,7 +423,7 @@ async function saveAllSettings(container, profile, silent = false) {
     const payload = {};
     const providers = [
         'gemini', 'claude', 'openai', 'grok', 'openrouter', 
-        'deepseek', 'mistral', 'together', 'huggingface'
+        'deepseek', 'mistral', 'together', 'huggingface', 'zhipu'
     ];
 
     providers.forEach(p => {
@@ -455,7 +457,14 @@ async function saveAllSettings(container, profile, silent = false) {
             if (!silent) {
                 status.innerHTML = '<span style="color: var(--success-color);">✓ Saved successfully</span>';
                 showSuccess('AI configuration saved');
-                setTimeout(() => loadExistingKeys(container, profile), 1000);
+                
+                // Close modal after a short delay
+                setTimeout(() => {
+                    const modal = container.closest('.modal-overlay');
+                    if (modal) {
+                        modal.remove();
+                    }
+                }, 800);
             }
         } else {
             const err = await response.json();

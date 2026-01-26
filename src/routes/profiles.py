@@ -8,6 +8,7 @@ from src.models.profile import Profile
 from src.services.asset_service import assets_to_csv, csv_to_assets, merge_assets, sync_legacy_arrays
 from src.services.encryption_service import get_encryption_service
 from src.services.enhanced_audit_logger import enhanced_audit_logger
+from src.extensions import limiter
 
 profiles_bp = Blueprint('profiles', __name__, url_prefix='/api')
 
@@ -559,6 +560,7 @@ class APIKeySchema(BaseModel):
     mistral_api_key: Optional[str] = None
     together_api_key: Optional[str] = None
     huggingface_api_key: Optional[str] = None
+    zhipu_api_key: Optional[str] = None
     ollama_url: Optional[str] = None
     ollama_model: Optional[str] = None
     lmstudio_url: Optional[str] = None
@@ -567,7 +569,7 @@ class APIKeySchema(BaseModel):
 
     @validator('claude_api_key', 'gemini_api_key', 'openai_api_key', 'grok_api_key', 
                'openrouter_api_key', 'deepseek_api_key', 'mistral_api_key', 
-               'together_api_key', 'huggingface_api_key')
+               'together_api_key', 'huggingface_api_key', 'zhipu_api_key')
     def validate_api_key(cls, v):
         if v is not None:
             v = v.strip()
@@ -732,6 +734,9 @@ def save_api_keys(name: str):
         if data.huggingface_api_key:
             data_dict['api_keys']['huggingface_api_key'] = data.huggingface_api_key
             keys_updated.append('huggingface')
+        if data.zhipu_api_key:
+            data_dict['api_keys']['zhipu_api_key'] = data.zhipu_api_key
+            keys_updated.append('zhipu')
         if data.ollama_url:
             data_dict['api_keys']['ollama_url'] = data.ollama_url
             if data.ollama_model:
@@ -778,6 +783,7 @@ def save_api_keys(name: str):
 
 @profiles_bp.route('/test-api-key', methods=['POST'])
 @login_required
+@limiter.exempt
 def test_api_key():
     """Test an API key to verify it works."""
     try:
@@ -818,6 +824,8 @@ def test_api_key():
             return test_together_api_key(api_key)
         elif provider == 'huggingface':
             return test_huggingface_api_key(api_key)
+        elif provider == 'zhipu':
+            return test_zhipu_api_key(api_key)
         elif provider == 'ollama':
             return test_ollama_api_key(api_key, data.get('ollama_model'))
         elif provider == 'lmstudio':
@@ -1084,6 +1092,35 @@ def test_huggingface_api_key(api_key: str):
             return jsonify({'success': True, 'message': 'Hugging Face API key is valid'}), 200
         else:
             return jsonify({'success': False, 'error': f"API Error: {response.text}"}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
+def test_zhipu_api_key(api_key: str):
+    """Test Zhipu AI GLM API key."""
+    try:
+        import requests
+        response = requests.post(
+            'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+            headers={
+                'Authorization': f'Bearer {api_key}',
+                'Content-Type': 'application/json'
+            },
+            json={
+                'model': 'glm-4-flash',
+                'messages': [{'role': 'user', 'content': 'Hi'}],
+                'max_tokens': 10
+            },
+            timeout=10
+        )
+        if response.status_code == 200:
+            return jsonify({
+                'success': True,
+                'message': 'Zhipu AI API key is valid (tested with glm-4-flash)',
+                'model': 'glm-4-flash'
+            }), 200
+        else:
+            return jsonify({'success': False, 'error': f"Zhipu Error: {response.text}"}), 400
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 400
 

@@ -35,11 +35,19 @@ export function renderAdvisorTab(container) {
 
     container.innerHTML = `
         <div style="max-width: 1000px; margin: 0 auto; padding: 20px; height: calc(100vh - 200px); display: flex; flex-direction: column;">
-            <div style="margin-bottom: 20px;">
-                <h1 style="font-size: 36px; margin-bottom: 10px;">AI Retirement Advisor</h1>
-                <p style="color: var(--text-secondary);">
-                    Profile: <strong>${profile.name}</strong> | Get personalized advice powered by AI
-                </p>
+            <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1 style="font-size: 36px; margin-bottom: 10px;">AI Retirement Advisor</h1>
+                    <p style="color: var(--text-secondary);">
+                        Profile: <strong>${profile.name}</strong> | Get personalized advice powered by AI
+                    </p>
+                </div>
+                <div id="ollama-model-selector-container" style="display: none;">
+                    <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 4px;">Ollama Model</label>
+                    <select id="chat-ollama-model" style="padding: 6px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 13px;">
+                        <option value="">(Loading...)</option>
+                    </select>
+                </div>
             </div>
 
             <!-- Chat Container -->
@@ -265,8 +273,35 @@ function setupAdvisorHandlers(container, profile) {
     const chatInput = container.querySelector('#chat-input');
     const sendBtn = container.querySelector('#send-btn');
     const chatContainer = container.querySelector('#chat-container');
+    const modelSelectorContainer = container.querySelector('#ollama-model-selector-container');
+    const modelSelect = container.querySelector('#chat-ollama-model');
 
     if (!chatInput || !sendBtn || !chatContainer) return;
+
+    // Check if we should show the Ollama model selector
+    const initModelSelector = async () => {
+        try {
+            const response = await apiClient.get(`/api/profiles/${encodeURIComponent(profile.name)}/api-keys`);
+            if (response && response.preferred_ai_provider === 'ollama') {
+                modelSelectorContainer.style.display = 'block';
+                
+                // Fetch available models
+                const ollamaUrl = response.ollama_url || 'http://localhost:11434';
+                const modelsRes = await apiClient.get(`/api/ollama/models?url=${encodeURIComponent(ollamaUrl)}`);
+                
+                if (modelsRes && modelsRes.models) {
+                    modelSelect.innerHTML = modelsRes.models.map(m => 
+                        `<option value="${m.name}" ${m.name === response.ollama_model ? 'selected' : ''}>${m.name}</option>`
+                    ).join('');
+                } else {
+                    modelSelect.innerHTML = `<option value="${response.ollama_model || 'qwen:latest'}">${response.ollama_model || 'qwen:latest'}</option>`;
+                }
+            }
+        } catch (error) {
+            console.warn('Could not initialize Ollama model selector:', error);
+        }
+    };
+    initModelSelector();
 
     // Troubleshoot button
     const troubleshootBtn = container.querySelector('#troubleshoot-btn');
@@ -324,10 +359,14 @@ async function sendMessage(profile, chatInput, chatContainer) {
 
     // Show typing indicator
     const typingId = showTypingIndicator(chatContainer);
+    
+    // Get selected model if selector exists
+    const modelSelect = document.getElementById('chat-ollama-model');
+    const selectedModel = modelSelect ? modelSelect.value : null;
 
     try {
         // Send to API
-        const response = await advisorAPI.chat(profile.name, message, currentConversationId);
+        const response = await advisorAPI.chat(profile.name, message, currentConversationId, selectedModel);
 
         // Update conversation ID if provided
         if (response.conversation_id) {

@@ -8,11 +8,12 @@ export const advisorAPI = {
     /**
      * Send chat message to AI advisor
      */
-    async chat(profileName, message, conversationId = null) {
+    async chat(profileName, message, conversationId = null, model = null) {
         return apiClient.post('/api/advisor/chat', {
             profile_name: profileName,
             message,
-            conversation_id: conversationId
+            conversation_id: conversationId,
+            ollama_model: model
         });
     },
 

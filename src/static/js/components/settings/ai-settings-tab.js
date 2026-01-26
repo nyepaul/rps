@@ -137,6 +137,45 @@ export function renderAPIKeysTab(container) {
                     <div id="gemini-status" style="margin-top: 10px; font-size: 12px;"></div>
                 </div>
 
+                <!-- Zhipu AI (GLM) API Key -->
+                <div style="margin-bottom: 25px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px;">
+                        🇨🇳 Zhipu AI (GLM) API Key
+                    </label>
+                    <p style="color: var(--text-secondary); font-size: 12px; margin: 0 0 10px 0;">
+                        Get your API key from <a href="https://open.bigmodel.cn/" target="_blank" style="color: var(--accent-color);">open.bigmodel.cn</a>
+                    </p>
+                    <div style="position: relative;">
+                        <input
+                            type="password"
+                            id="zhipu-api-key"
+                            placeholder="..."
+                            style="width: 100%; padding: 12px 45px 12px 12px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-family: 'Courier New', monospace; font-size: 13px;"
+                        />
+                        <button
+                            id="toggle-zhipu-key"
+                            type="button"
+                            style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 18px; padding: 5px;"
+                            title="Show/Hide Key"
+                        >👁️</button>
+                    </div>
+                    <div style="margin-top: 10px; display: flex; gap: 10px;">
+                        <button
+                            id="test-zhipu-btn"
+                            style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s;"
+                        >
+                            🧪 Test Connection
+                        </button>
+                        <button
+                            id="clear-zhipu-btn"
+                            style="padding: 8px 16px; background: transparent; color: var(--danger-color); border: 1px solid var(--danger-color); border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s;"
+                        >
+                            🗑️ Clear
+                        </button>
+                    </div>
+                    <div id="zhipu-status" style="margin-top: 10px; font-size: 12px;"></div>
+                </div>
+
                 <!-- Save Button -->
                 <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border-color);">
                     <button
@@ -256,23 +295,27 @@ export function renderAPIKeysTab(container) {
  * Setup event handlers for API key management
  */
 function setupAPIKeyHandlers(container, profile) {
-    // Toggle visibility buttons
-    const toggleClaudeBtn = container.querySelector('#toggle-claude-key');
     const claudeInput = container.querySelector('#claude-api-key');
+    const geminiInput = container.querySelector('#gemini-api-key');
+    const zhipuInput = container.querySelector('#zhipu-api-key');
 
-    toggleClaudeBtn.addEventListener('click', () => {
+    // Toggle visibility buttons
+    container.querySelector('#toggle-claude-key').addEventListener('click', (e) => {
         const isPassword = claudeInput.type === 'password';
         claudeInput.type = isPassword ? 'text' : 'password';
-        toggleClaudeBtn.textContent = isPassword ? '🙈' : '👁️';
+        e.target.textContent = isPassword ? '🙈' : '👁️';
     });
 
-    const toggleGeminiBtn = container.querySelector('#toggle-gemini-key');
-    const geminiInput = container.querySelector('#gemini-api-key');
-
-    toggleGeminiBtn.addEventListener('click', () => {
+    container.querySelector('#toggle-gemini-key').addEventListener('click', (e) => {
         const isPassword = geminiInput.type === 'password';
         geminiInput.type = isPassword ? 'text' : 'password';
-        toggleGeminiBtn.textContent = isPassword ? '🙈' : '👁️';
+        e.target.textContent = isPassword ? '🙈' : '👁️';
+    });
+
+    container.querySelector('#toggle-zhipu-key').addEventListener('click', (e) => {
+        const isPassword = zhipuInput.type === 'password';
+        zhipuInput.type = isPassword ? 'text' : 'password';
+        e.target.textContent = isPassword ? '🙈' : '👁️';
     });
 
     // Clear buttons
@@ -286,24 +329,36 @@ function setupAPIKeyHandlers(container, profile) {
         container.querySelector('#gemini-status').textContent = '';
     });
 
+    container.querySelector('#clear-zhipu-btn').addEventListener('click', () => {
+        zhipuInput.value = '';
+        container.querySelector('#zhipu-status').textContent = '';
+    });
+
     // Test connection buttons - auto-save on success
     container.querySelector('#test-claude-btn').addEventListener('click', async () => {
         const success = await testAPIKey('claude', claudeInput.value, container.querySelector('#claude-status'));
         if (success) {
-            await saveAPIKeys(profile, claudeInput.value, geminiInput.value, container.querySelector('#save-status'));
+            await saveAPIKeys(profile, claudeInput.value, geminiInput.value, zhipuInput.value, container.querySelector('#save-status'));
         }
     });
 
     container.querySelector('#test-gemini-btn').addEventListener('click', async () => {
         const success = await testAPIKey('gemini', geminiInput.value, container.querySelector('#gemini-status'));
         if (success) {
-            await saveAPIKeys(profile, claudeInput.value, geminiInput.value, container.querySelector('#save-status'));
+            await saveAPIKeys(profile, claudeInput.value, geminiInput.value, zhipuInput.value, container.querySelector('#save-status'));
+        }
+    });
+
+    container.querySelector('#test-zhipu-btn').addEventListener('click', async () => {
+        const success = await testAPIKey('zhipu', zhipuInput.value, container.querySelector('#zhipu-status'));
+        if (success) {
+            await saveAPIKeys(profile, claudeInput.value, geminiInput.value, zhipuInput.value, container.querySelector('#save-status'));
         }
     });
 
     // Save button
     container.querySelector('#save-api-keys-btn').addEventListener('click', async () => {
-        await saveAPIKeys(profile, claudeInput.value, geminiInput.value, container.querySelector('#save-status'));
+        await saveAPIKeys(profile, claudeInput.value, geminiInput.value, zhipuInput.value, container.querySelector('#save-status'));
     });
 }
 
@@ -331,10 +386,16 @@ async function loadExistingKeys(container, profile) {
                 container.querySelector('#gemini-status').innerHTML =
                     '<span style="color: var(--success-color);">✓ Key configured</span>';
             }
+
+            if (data.zhipu_api_key) {
+                const zhipuInput = container.querySelector('#zhipu-api-key');
+                zhipuInput.placeholder = '••••••••' + data.zhipu_api_key.slice(-4);
+                container.querySelector('#zhipu-status').innerHTML =
+                    '<span style="color: var(--success-color);">✓ Key configured</span>';
+            }
         }
     } catch (error) {
         console.error('Error loading API keys:', error);
-        // Silently fail - not having keys is normal for new profiles
     }
 }
 
@@ -348,7 +409,7 @@ async function testAPIKey(provider, apiKey, statusElement) {
         return false;
     }
 
-    statusElement.innerHTML = '<span style="color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px;"><span class="spinner" style="width: 14px; height: 14px; border: 2px solid var(--border-color); border-top-color: var(--accent-color); border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block;"></span>Testing connection...</span><style>@keyframes spin { to { transform: rotate(360deg); }}</style>';
+    statusElement.innerHTML = '<span style="color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px;"><span class="spinner" style="width: 14px; height: 14px; border: 2px solid var(--border-color); border-top-color: var(--accent-color); border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block;"></span>Testing connection...</span>';
 
     try {
         const response = await fetch('/api/test-api-key', {
@@ -380,9 +441,9 @@ async function testAPIKey(provider, apiKey, statusElement) {
 /**
  * Save API keys to backend (encrypted)
  */
-async function saveAPIKeys(profile, claudeKey, geminiKey, statusElement) {
+async function saveAPIKeys(profile, claudeKey, geminiKey, zhipuKey, statusElement) {
     // Validate at least one key is provided
-    if (!claudeKey && !geminiKey) {
+    if (!claudeKey && !geminiKey && !zhipuKey) {
         statusElement.innerHTML = '<span style="color: var(--danger-color);">⚠️ Please enter at least one API key</span>';
         return;
     }
@@ -397,6 +458,9 @@ async function saveAPIKeys(profile, claudeKey, geminiKey, statusElement) {
         if (geminiKey && geminiKey.trim() !== '') {
             payload.gemini_api_key = geminiKey.trim();
         }
+        if (zhipuKey && zhipuKey.trim() !== '') {
+            payload.zhipu_api_key = zhipuKey.trim();
+        }
 
         const response = await fetch(`/api/profiles/${encodeURIComponent(profile.name)}/api-keys`, {
             method: 'POST',
@@ -406,17 +470,16 @@ async function saveAPIKeys(profile, claudeKey, geminiKey, statusElement) {
             body: JSON.stringify(payload)
         });
 
-        const result = await response.json();
-
         if (response.ok) {
             statusElement.innerHTML = '<span style="color: var(--success-color);">✓ API keys saved successfully</span>';
             showSuccess('API keys saved and encrypted');
 
             // Clear inputs and reload masked versions
             setTimeout(() => {
-                location.reload(); // Reload to show masked keys
+                location.reload(); 
             }, 1500);
         } else {
+            const result = await response.json();
             statusElement.innerHTML = `<span style="color: var(--danger-color);">✗ ${result.error || 'Failed to save'}</span>`;
             showError(result.error || 'Failed to save API keys');
         }

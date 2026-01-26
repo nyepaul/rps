@@ -1,5 +1,5 @@
 {
-    "version": "3.9.47",
+    "version": "3.9.49",
     "release_date": "2026-01-25",
-    "release_notes": "Enable local model management and Ollama vision support for asset extraction"
+    "release_notes": "Enhance Ollama integration with automatic vision switching and advisor model selector"
 }

@@ -47,7 +47,8 @@ export function showAIImportModal(type, profileName, onComplete) {
                     <select id="ai-provider-select" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
                         <option value="gemini">Google Gemini (Recommended for Vision)</option>
                         <option value="claude">Anthropic Claude</option>
-                        <option value="ollama">Local Ollama (Requires llama3.2-vision)</option>
+                        <option value="openai">OpenAI (GPT-4o)</option>
+                        <option value="ollama">Local Ollama (Uses model from settings)</option>
                     </select>
                 </div>
             </div>
@@ -78,7 +79,24 @@ export function showAIImportModal(type, profileName, onComplete) {
     const uploadStep = modal.querySelector('#ai-upload-step');
     const processingStep = modal.querySelector('#ai-processing-step');
     const previewStep = modal.querySelector('#ai-preview-step');
+    const providerSelect = modal.querySelector('#ai-provider-select');
     let extractedData = null;
+
+    // Pre-select preferred provider if available
+    const initProvider = async () => {
+        try {
+            const response = await apiClient.get(`/api/profiles/${encodeURIComponent(profileName)}/api-keys`);
+            if (response && response.preferred_ai_provider) {
+                providerSelect.value = response.preferred_ai_provider;
+            } else if (response && response.ollama_url && !response.gemini_api_key) {
+                // If Ollama is configured but Gemini isn't, default to Ollama
+                providerSelect.value = 'ollama';
+            }
+        } catch (error) {
+            console.warn('Could not load preferred AI provider, defaulting to Gemini', error);
+        }
+    };
+    initProvider();
 
     // Handle close
     const closeModal = () => modal.remove();
