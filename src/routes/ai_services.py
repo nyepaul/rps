@@ -15,7 +15,7 @@ from src.extensions import limiter
 ai_services_bp = Blueprint('ai_services', __name__, url_prefix='/api')
 
 
-def call_gemini_with_fallback(prompt, api_key, image_data=None):
+def call_gemini_with_fallback(prompt, api_key, image_data=None, mime_type=None):
     """Calls Gemini with a prioritized list of models and fallback logic using REST API."""
     # Use full model resource names for v1 API - latest models first
     models = [
@@ -35,41 +35,55 @@ def call_gemini_with_fallback(prompt, api_key, image_data=None):
 
             # Build request based on whether we have image data
             if image_data:
-                # Image extraction case
+                # File extraction case (images, PDFs, etc.)
                 if isinstance(image_data, str):
-                    image_bytes = base64.b64decode(image_data)
+                    file_bytes = base64.b64decode(image_data)
                 else:
-                    image_bytes = image_data
+                    file_bytes = image_data
 
-                # Convert image to base64 for API
-                image_b64 = base64.b64encode(image_bytes).decode('utf-8')
+                # Convert to base64 for API
+                file_b64 = base64.b64encode(file_bytes).decode('utf-8')
 
-                # Determine MIME type
-                mime_type = 'image/png'
-                try:
-                    img = Image.open(BytesIO(image_bytes))
-                    if img.format == 'JPEG':
-                        mime_type = 'image/jpeg'
-                    elif img.format == 'PNG':
-                        mime_type = 'image/png'
-                    elif img.format == 'WEBP':
-                        mime_type = 'image/webp'
-                except:
-                    pass
+                # Determine MIME type if not provided
+                if not mime_type:
+                    mime_type = 'image/png'
+                    try:
+                        img = Image.open(BytesIO(file_bytes))
+                        if img.format == 'JPEG':
+                            mime_type = 'image/jpeg'
+                        elif img.format == 'PNG':
+                            mime_type = 'image/png'
+                        elif img.format == 'WEBP':
+                            mime_type = 'image/webp'
+                    except:
+                        # If it's not an image, check for PDF magic bytes
+                        if file_bytes[:4] == b'%PDF':
+                            mime_type = 'application/pdf'
 
-                payload = {
-                    'contents': [{
-                        'parts': [
-                            {'text': prompt},
-                            {
-                                'inline_data': {
-                                    'mime_type': mime_type,
-                                    'data': image_b64
+                # For CSV files, include content as text in the prompt
+                if mime_type == 'text/csv':
+                    csv_content = file_bytes.decode('utf-8', errors='replace')
+                    enhanced_prompt = f"{prompt}\n\nCSV Data:\n```\n{csv_content}\n```"
+                    payload = {
+                        'contents': [{
+                            'parts': [{'text': enhanced_prompt}]
+                        }]
+                    }
+                else:
+                    # Images and PDFs can be sent as inline_data
+                    payload = {
+                        'contents': [{
+                            'parts': [
+                                {'text': prompt},
+                                {
+                                    'inline_data': {
+                                        'mime_type': mime_type,
+                                        'data': file_b64
+                                    }
                                 }
-                            }
-                        ]
-                    }]
-                }
+                            ]
+                        }]
+                    }
             else:
                 # Text-only case
                 payload = {
@@ -357,16 +371,17 @@ def clear_advisor_history(profile_id: int):
 @login_required
 @limiter.limit("10 per hour")
 def extract_assets():
-    """Extract assets from an uploaded image using AI."""
+    """Extract assets from an uploaded file (image, PDF, or CSV) using AI."""
     print("Received extract-assets request")
 
     data = request.json
     image_b64 = data.get('image')
+    mime_type = data.get('mime_type')
     provider = data.get('llm_provider', 'gemini')
     existing_assets = data.get('existing_assets', [])
     profile_name = data.get('profile_name')
 
-    print(f"Provider: {provider}, Image data length: {len(image_b64) if image_b64 else 0}")
+    print(f"Provider: {provider}, MIME type: {mime_type}, Data length: {len(image_b64) if image_b64 else 0}")
 
     if not image_b64:
         enhanced_audit_logger.log(
@@ -406,12 +421,12 @@ def extract_assets():
         return jsonify({'error': f'Error loading API key: {str(e)}'}), 500
 
     try:
-        # Decode base64 image
-        image_bytes = base64.b64decode(image_b64)
+        # Decode base64 file data
+        file_bytes = base64.b64decode(image_b64)
 
-        # Extraction prompt
+        # Extraction prompt - works with images, PDFs, and CSVs
         prompt = """
-        Analyze this image of a financial statement or dashboard.
+        Analyze this financial document (image, PDF, or CSV data).
         Extract a list of investment accounts or assets.
 
         CRITICAL RULES - ONLY UPDATE VERIFIABLE FIELDS:
@@ -420,19 +435,20 @@ def extract_assets():
         3. For each asset, extract ONLY the fields you can clearly see and verify:
            - "name": The specific name (e.g., "Cash & Money Market", "Vanguard 500"). REQUIRED.
            - "type": One of: "traditional_ira", "roth_ira", "401k", "403b", "457", "brokerage", "savings", "checking".
-             ⚠️ ONLY include "type" if it is EXPLICITLY stated in the image (e.g., "IRA", "401k" visible in account name/label).
+             ⚠️ ONLY include "type" if it is EXPLICITLY stated (e.g., "IRA", "401k" visible in account name/label).
              If the account type is not clearly visible, set "type" to "brokerage".
            - "value": The current balance as a number. REQUIRED if visible.
            - "cost_basis": Only include if explicitly shown (rare). Otherwise set to null.
            - "institution": The financial institution name if visible (e.g., "Wells Fargo", "Vanguard").
+           - "account_number": The last 4 digits of the account number if visible (e.g., "1234"). Otherwise null.
 
         4. DO NOT GUESS or INFER field values. If a field is not clearly visible, use null or default.
         5. Return ONLY a JSON array of objects with the structure:
-           [{"name": "...", "type": "...", "value": ..., "cost_basis": null or ..., "institution": "..."}]
+           [{"name": "...", "type": "...", "value": ..., "cost_basis": null, "institution": "...", "account_number": null or "1234"}]
         """
 
         if provider == 'gemini':
-            text_response = call_gemini_with_fallback(prompt, api_key, image_data=image_bytes)
+            text_response = call_gemini_with_fallback(prompt, api_key, image_data=file_bytes, mime_type=mime_type)
 
             try:
                 # Clean markdown code blocks
@@ -660,9 +676,10 @@ def extract_assets():
 @login_required
 @limiter.limit("10 per hour")
 def extract_income():
-    """Extract income streams from an uploaded image using AI."""
+    """Extract income streams from an uploaded file (image, PDF, or CSV) using AI."""
     data = request.json
     image_b64 = data.get('image')
+    mime_type = data.get('mime_type')
     provider = data.get('llm_provider', 'gemini')
     profile_name = data.get('profile_name')
 
@@ -676,7 +693,7 @@ def extract_income():
     if not api_key: return jsonify({'error': f'{provider.capitalize()} API key not configured'}), 400
 
     prompt = """
-    Analyze this image of a pay stub, bank statement, or tax document.
+    Analyze this financial document (image, PDF, or CSV data) of a pay stub, bank statement, or tax document.
     Extract a list of regular income streams.
 
     RULES:
@@ -686,9 +703,9 @@ def extract_income():
     """
 
     try:
-        image_bytes = base64.b64decode(image_b64)
+        file_bytes = base64.b64decode(image_b64)
         if provider == 'gemini':
-            text_response = call_gemini_with_fallback(prompt, api_key, image_data=image_bytes)
+            text_response = call_gemini_with_fallback(prompt, api_key, image_data=file_bytes, mime_type=mime_type)
         else:
             # Simple Claude placeholder for now - consistent with extract_assets
             return jsonify({'error': 'Claude extraction for income not yet fully implemented'}), 501
@@ -705,9 +722,10 @@ def extract_income():
 @login_required
 @limiter.limit("10 per hour")
 def extract_expenses():
-    """Extract expenses from an uploaded image using AI."""
+    """Extract expenses from an uploaded file (image, PDF, or CSV) using AI."""
     data = request.json
     image_b64 = data.get('image')
+    mime_type = data.get('mime_type')
     provider = data.get('llm_provider', 'gemini')
     profile_name = data.get('profile_name')
 
@@ -721,7 +739,7 @@ def extract_expenses():
     if not api_key: return jsonify({'error': f'{provider.capitalize()} API key not configured'}), 400
 
     prompt = """
-    Analyze this image of a receipt, credit card statement, or bill.
+    Analyze this financial document (image, PDF, or CSV data) of a receipt, credit card statement, or bill.
     Extract a list of recurring or significant expenses.
 
     RULES:
@@ -731,9 +749,9 @@ def extract_expenses():
     """
 
     try:
-        image_bytes = base64.b64decode(image_b64)
+        file_bytes = base64.b64decode(image_b64)
         if provider == 'gemini':
-            text_response = call_gemini_with_fallback(prompt, api_key, image_data=image_bytes)
+            text_response = call_gemini_with_fallback(prompt, api_key, image_data=file_bytes, mime_type=mime_type)
         else:
             return jsonify({'error': 'Claude extraction for expenses not yet fully implemented'}), 501
 
