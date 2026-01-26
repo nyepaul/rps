@@ -560,6 +560,7 @@ class APIKeySchema(BaseModel):
     together_api_key: Optional[str] = None
     huggingface_api_key: Optional[str] = None
     ollama_url: Optional[str] = None
+    ollama_model: Optional[str] = None
     lmstudio_url: Optional[str] = None
     localai_url: Optional[str] = None
     preferred_ai_provider: Optional[str] = None
@@ -636,6 +637,7 @@ def get_api_keys(name: str):
             keys_configured.append('huggingface')
         if api_keys.get('ollama_url'):
             result['ollama_url'] = api_keys['ollama_url']
+            result['ollama_model'] = api_keys.get('ollama_model', 'qwen:latest')
             keys_configured.append('ollama')
         if api_keys.get('lmstudio_url'):
             result['lmstudio_url'] = api_keys['lmstudio_url']
@@ -732,6 +734,8 @@ def save_api_keys(name: str):
             keys_updated.append('huggingface')
         if data.ollama_url:
             data_dict['api_keys']['ollama_url'] = data.ollama_url
+            if data.ollama_model:
+                data_dict['api_keys']['ollama_model'] = data.ollama_model
             keys_updated.append('ollama')
         if data.lmstudio_url:
             data_dict['api_keys']['lmstudio_url'] = data.lmstudio_url
@@ -815,7 +819,7 @@ def test_api_key():
         elif provider == 'huggingface':
             return test_huggingface_api_key(api_key)
         elif provider == 'ollama':
-            return test_ollama_api_key(api_key)
+            return test_ollama_api_key(api_key, data.get('ollama_model'))
         elif provider == 'lmstudio':
             return test_lmstudio_api_key(api_key)
         elif provider == 'localai':
@@ -1084,10 +1088,12 @@ def test_huggingface_api_key(api_key: str):
         return jsonify({'success': False, 'error': str(e)}), 400
 
 
-def test_ollama_api_key(url: str):
+def test_ollama_api_key(url: str, model: str = None):
     """Test Ollama connection (URL instead of key)."""
     try:
         import requests
+        if not model:
+            model = 'qwen:latest'
         response = requests.get(f'{url}/api/tags', timeout=5)
         if response.status_code == 200:
             models = response.json().get('models', [])

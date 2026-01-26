@@ -133,14 +133,14 @@ from src.models.profile import Profile
 from src.models.conversation import Conversation
 from flask_login import current_user
 
-def call_llm(provider, prompt, api_key, history=None, system_prompt=None, ollama_url=None, lmstudio_url=None, localai_url=None):
+def call_llm(provider, prompt, api_key, history=None, system_prompt=None, ollama_url=None, lmstudio_url=None, localai_url=None, ollama_model=None):
     """Unified interface to call various LLM providers."""
     if provider == 'gemini':
         return call_gemini(prompt, api_key, history, system_prompt)
     elif provider == 'claude':
         return call_claude(prompt, api_key, history, system_prompt)
     elif provider == 'ollama':
-        return call_ollama(prompt, ollama_url, history, system_prompt)
+        return call_ollama(prompt, ollama_url, history, system_prompt, ollama_model)
     elif provider == 'lmstudio':
         return call_lmstudio(prompt, lmstudio_url, history, system_prompt)
     elif provider == 'localai':
@@ -268,10 +268,12 @@ def call_openai_compatible(provider, prompt, api_key, history=None, system_promp
         raise Exception(f"Failed to call {provider}: {str(e)}")
 
 
-def call_ollama(prompt, url, history=None, system_prompt=None):
+def call_ollama(prompt, url, history=None, system_prompt=None, model=None):
     """Calls local Ollama API."""
     if not url:
         url = "http://localhost:11434"
+    if not model:
+        model = "qwen:latest"
     
     messages = []
     if system_prompt:
@@ -285,7 +287,7 @@ def call_ollama(prompt, url, history=None, system_prompt=None):
         response = requests.post(
             f"{url}/api/chat",
             json={
-                'model': 'llama3', # Default to llama3
+                'model': model,
                 'messages': messages,
                 'stream': False
             },
@@ -398,6 +400,7 @@ def advisor_chat():
         # Get the appropriate key/url
         api_key = api_keys.get(f"{provider}_api_key")
         ollama_url = api_keys.get("ollama_url")
+        ollama_model = api_keys.get("ollama_model")
         lmstudio_url = api_keys.get("lmstudio_url")
         localai_url = api_keys.get("localai_url")
 
@@ -428,7 +431,7 @@ def advisor_chat():
         ASSETS:
         Retirement: ${sum(a.get('value', 0) for a in assets.get('retirement_accounts', [])):,}
         Taxable: ${sum(a.get('value', 0) for a in assets.get('taxable_accounts', [])):,}
-        Real Estate: ${sum(a.get('value', 0) for a in assets.get('real_estate', [])):,}
+        Real estate: ${sum(a.get('value', 0) for a in assets.get('real_estate', [])):,}
         """
 
         system_prompt = f"""You are an expert financial advisor specializing in retirement planning, tax optimization, and estate planning.
@@ -447,7 +450,7 @@ def advisor_chat():
         user_msg.save()
 
         # Call the selected LLM
-        assistant_text = call_llm(provider, user_message, api_key, history, system_prompt, ollama_url, lmstudio_url, localai_url)
+        assistant_text = call_llm(provider, user_message, api_key, history, system_prompt, ollama_url, lmstudio_url, localai_url, ollama_model)
 
         # Save assistant message
         assistant_msg = Conversation(

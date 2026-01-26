@@ -1,5 +1,5 @@
 {
-    "version": "3.9.45",
+    "version": "3.9.46",
     "release_date": "2026-01-25",
-    "release_notes": "Add support for local LLM tools including LM Studio and LocalAI with OpenAI-compatible APIs"
+    "release_notes": "Add configurable Ollama model support and update default to qwen:latest"
 }

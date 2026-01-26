@@ -97,12 +97,18 @@ export async function renderAPIKeysSettings(container) {
             <div style="display: grid; grid-template-columns: 1fr; gap: 15px;">
                 <!-- Ollama -->
                 <div>
-                    <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px;">Ollama URL</label>
-                    <div style="display: flex; gap: 10px; align-items: center;">
+                    <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px;">Ollama Configuration</label>
+                    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
                         <input
                             type="text"
                             id="ollama-url"
                             placeholder="http://localhost:11434"
+                            style="flex: 2; padding: 8px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 12px;"
+                        />
+                        <input
+                            type="text"
+                            id="ollama-model"
+                            placeholder="qwen:latest"
                             style="flex: 1; padding: 8px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 12px;"
                         />
                         <button class="test-local-btn" data-provider="ollama" style="padding: 8px 15px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 12px;">
@@ -260,10 +266,18 @@ async function testKey(provider, key, statusElement, profile, container) {
     statusElement.innerHTML = '<span style="color: var(--text-secondary);">Testing...</span>';
 
     try {
+        const payload = { provider, api_key: key };
+        
+        // Add Ollama model if testing Ollama
+        if (provider === 'ollama') {
+            const model = container.querySelector('#ollama-model').value.trim();
+            if (model) payload.ollama_model = model;
+        }
+
         const response = await fetch('/api/test-api-key', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ provider, api_key: key })
+            body: JSON.stringify(payload)
         });
 
         const result = await response.json();
@@ -302,6 +316,9 @@ async function loadExistingKeys(container, profile) {
 
             if (data.ollama_url) {
                 container.querySelector('#ollama-url').value = data.ollama_url;
+                if (data.ollama_model) {
+                    container.querySelector('#ollama-model').value = data.ollama_model;
+                }
                 container.querySelector('#ollama-status').innerHTML = '<span style="color: var(--success-color);">✓ Connected</span>';
             }
             if (data.lmstudio_url) {
@@ -339,6 +356,9 @@ async function saveAllSettings(container, profile, silent = false) {
 
     const ollamaUrl = container.querySelector('#ollama-url').value.trim();
     if (ollamaUrl) payload.ollama_url = ollamaUrl;
+
+    const ollamaModel = container.querySelector('#ollama-model').value.trim();
+    if (ollamaModel) payload.ollama_model = ollamaModel;
 
     const lmstudioUrl = container.querySelector('#lmstudio-url').value.trim();
     if (lmstudioUrl) payload.lmstudio_url = lmstudioUrl;
