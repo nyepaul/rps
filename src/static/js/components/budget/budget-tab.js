@@ -79,18 +79,38 @@ export function renderBudgetTab(container) {
         <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-2) var(--space-3);">
             <div style="margin-bottom: var(--space-2); display: flex; justify-content: space-between; align-items: flex-end;">
                 <div>
-                    <h1 style="margin: 0; font-size: var(--font-2xl);">💸 Expense Planning</h1>
+                    <h1 style="margin: 0; font-size: var(--font-2xl);">💸 Expense Management</h1>
                     <p style="color: var(--text-secondary); margin: 0; font-size: 13px;">
                         Tracking <strong>${profile.name}'s</strong> recurring costs
                     </p>
                 </div>
-                <div style="display: flex; gap: 8px;">
+                <div style="display: flex; gap: 8px; align-items: center;">
                     <button id="ai-import-expenses-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
                         Import
                     </button>
-                    <button id="copy-expenses-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; display: ${currentPeriod === 'future' ? 'flex' : 'none'}; align-items: center; gap: 6px;">
-                        <span>📋</span> Copy from Pre-Retirement
+                    <button id="export-expenses-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                        Export
                     </button>
+                    <div style="position: relative;">
+                        <button id="expense-actions-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                            Actions ▾
+                        </button>
+                        <div id="expense-actions-menu" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 200px; z-index: 100;">
+                            <button class="action-menu-item" data-action="copy-to-post" style="width: 100%; padding: 10px 14px; border: none; background: none; text-align: left; cursor: pointer; font-size: 13px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                                📋 Copy Pre → Post Retirement
+                            </button>
+                            <button class="action-menu-item" data-action="copy-to-pre" style="width: 100%; padding: 10px 14px; border: none; background: none; text-align: left; cursor: pointer; font-size: 13px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                                📋 Copy Post → Pre Retirement
+                            </button>
+                            <div style="height: 1px; background: var(--border-color); margin: 4px 0;"></div>
+                            <button class="action-menu-item" data-action="clear-current" style="width: 100%; padding: 10px 14px; border: none; background: none; text-align: left; cursor: pointer; font-size: 13px; color: var(--danger-color); display: flex; align-items: center; gap: 8px;">
+                                🗑️ Clear Current Period
+                            </button>
+                            <button class="action-menu-item" data-action="clear-all" style="width: 100%; padding: 10px 14px; border: none; background: none; text-align: left; cursor: pointer; font-size: 13px; color: var(--danger-color); display: flex; align-items: center; gap: 8px;">
+                                🗑️ Clear All Expenses
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -2093,11 +2113,58 @@ function setupBudgetEventHandlers(profile, container) {
         });
     }
 
-    // Copy Expenses button
-    const copyBtn = container.querySelector('#copy-expenses-btn');
-    if (copyBtn) {
-        copyBtn.addEventListener('click', () => {
-            showCopyExpensesModal(profile, container);
+    // Export button
+    const exportBtn = container.querySelector('#export-expenses-btn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', () => exportExpensesCSV(profile));
+    }
+
+    // Actions dropdown menu
+    const actionsBtn = container.querySelector('#expense-actions-btn');
+    const actionsMenu = container.querySelector('#expense-actions-menu');
+    if (actionsBtn && actionsMenu) {
+        // Toggle menu
+        actionsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            actionsMenu.style.display = actionsMenu.style.display === 'none' ? 'block' : 'none';
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', () => {
+            actionsMenu.style.display = 'none';
+        });
+
+        // Menu item hover effects
+        actionsMenu.querySelectorAll('.action-menu-item').forEach(item => {
+            item.addEventListener('mouseenter', () => {
+                item.style.background = 'var(--bg-tertiary)';
+            });
+            item.addEventListener('mouseleave', () => {
+                item.style.background = 'none';
+            });
+        });
+
+        // Handle menu actions
+        actionsMenu.querySelectorAll('.action-menu-item').forEach(item => {
+            item.addEventListener('click', async () => {
+                const action = item.dataset.action;
+                actionsMenu.style.display = 'none';
+
+                switch (action) {
+                    case 'copy-to-post':
+                        showCopyExpensesModal(profile, container, 'current', 'future');
+                        break;
+                    case 'copy-to-pre':
+                        showCopyExpensesModal(profile, container, 'future', 'current');
+                        break;
+                    case 'clear-current':
+                        showClearExpensesModal(profile, container, currentPeriod);
+                        break;
+                    case 'clear-all':
+                        showClearExpensesModal(profile, container, 'all');
+                        break;
+                }
+            });
         });
     }
 
@@ -2105,12 +2172,6 @@ function setupBudgetEventHandlers(profile, container) {
     container.querySelectorAll('.period-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             currentPeriod = e.target.getAttribute('data-period');
-
-            // Show/hide copy button
-            const copyBtn = container.querySelector('#copy-expenses-btn');
-            if (copyBtn) {
-                copyBtn.style.display = currentPeriod === 'future' ? 'flex' : 'none';
-            }
 
             // Update button styles
             container.querySelectorAll('.period-btn').forEach(b => {
@@ -2148,9 +2209,13 @@ function setupBudgetEventHandlers(profile, container) {
 }
 
 /**
- * Show modal for copying expenses
+ * Show modal for copying expenses between periods
  */
-function showCopyExpensesModal(profile, container) {
+function showCopyExpensesModal(profile, container, fromPeriod = 'current', toPeriod = 'future') {
+    const periodLabels = { current: 'Pre-Retirement', future: 'Post-Retirement' };
+    const fromLabel = periodLabels[fromPeriod];
+    const toLabel = periodLabels[toPeriod];
+
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.style.zIndex = '2000';
@@ -2159,7 +2224,7 @@ function showCopyExpensesModal(profile, container) {
         <div class="modal-content" style="max-width: 450px; width: 90%;">
             <h2 style="margin-top: 0;">📋 Copy Expenses</h2>
             <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;">
-                Copy all expenses from <strong>Pre-Retirement</strong> to <strong>Post-Retirement</strong>.
+                Copy all expenses from <strong>${fromLabel}</strong> to <strong>${toLabel}</strong>.
             </p>
 
             <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px;">
@@ -2167,14 +2232,14 @@ function showCopyExpensesModal(profile, container) {
                     <input type="radio" name="copy-mode" value="merge" checked style="margin-top: 4px;">
                     <div>
                         <div style="font-weight: 600;">Merge with Existing</div>
-                        <div style="font-size: 12px; color: var(--text-secondary);">Keep current post-retirement expenses and add missing ones.</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">Keep current ${toLabel.toLowerCase()} expenses and add missing ones.</div>
                     </div>
                 </label>
                 <label style="display: flex; align-items: flex-start; gap: 12px; padding: 15px; border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; background: var(--bg-primary);">
                     <input type="radio" name="copy-mode" value="replace" style="margin-top: 4px;">
                     <div>
                         <div style="font-weight: 600; color: var(--danger-color);">Replace Everything</div>
-                        <div style="font-size: 12px; color: var(--text-secondary);">Delete all current post-retirement expenses and start fresh from pre-retirement.</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">Delete all ${toLabel.toLowerCase()} expenses and start fresh.</div>
                     </div>
                 </label>
             </div>
@@ -2189,35 +2254,153 @@ function showCopyExpensesModal(profile, container) {
     document.body.appendChild(modal);
 
     modal.querySelector('#cancel-copy-btn').addEventListener('click', () => modal.remove());
-    
+
     modal.querySelector('#confirm-copy-btn').addEventListener('click', async () => {
         const mode = modal.querySelector('input[name="copy-mode"]:checked').value;
-        
-        try {
-            const response = await apiClient.post('/api/budget/copy-expenses', {
-                profile_name: profile.name,
-                mode: mode
-            });
 
-            budgetData.expenses.future = response.expenses;
-            modal.remove();
-            
-            if (currentPeriod === 'future') {
-                renderExpenseSection(container);
+        try {
+            // Perform copy locally
+            const sourceExpenses = budgetData.expenses[fromPeriod] || {};
+
+            if (mode === 'replace') {
+                // Deep clone source to target
+                budgetData.expenses[toPeriod] = JSON.parse(JSON.stringify(sourceExpenses));
+            } else {
+                // Merge: add missing items
+                Object.keys(sourceExpenses).forEach(category => {
+                    if (!budgetData.expenses[toPeriod][category]) {
+                        budgetData.expenses[toPeriod][category] = [];
+                    }
+                    const targetItems = budgetData.expenses[toPeriod][category];
+                    (sourceExpenses[category] || []).forEach(srcItem => {
+                        const exists = targetItems.some(t => t.name?.toLowerCase() === srcItem.name?.toLowerCase());
+                        if (!exists) {
+                            targetItems.push(JSON.parse(JSON.stringify(srcItem)));
+                        }
+                    });
+                });
             }
+
+            modal.remove();
+            renderExpenseSection(container);
             renderBudgetSummary(container);
-            showSuccess(`Successfully copied expenses (${mode})`);
-            
-            // Refresh store with updated profile
-            const { profilesAPI } = await import('../../api/profiles.js');
-            const result = await profilesAPI.get(profile.name);
-            store.setState({ currentProfile: result.profile });
-            
+            await saveBudget(profile, container);
+            showSuccess(`Copied expenses from ${fromLabel} to ${toLabel} (${mode})`);
+
         } catch (error) {
             console.error('Copy expenses error:', error);
             showError('Failed to copy expenses: ' + error.message);
         }
     });
+}
+
+/**
+ * Show modal for clearing expenses
+ */
+function showClearExpensesModal(profile, container, period) {
+    const periodLabels = { current: 'Pre-Retirement', future: 'Post-Retirement', all: 'All' };
+    const label = periodLabels[period] || period;
+
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.style.zIndex = '2000';
+
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width: 400px; width: 90%;">
+            <h2 style="margin-top: 0; color: var(--danger-color);">🗑️ Clear Expenses</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;">
+                ${period === 'all'
+                    ? 'This will delete <strong>ALL</strong> expenses from both Pre-Retirement and Post-Retirement periods.'
+                    : `This will delete all expenses from <strong>${label}</strong>.`}
+            </p>
+            <p style="color: var(--danger-color); font-weight: 600; margin-bottom: 20px;">
+                This action cannot be undone!
+            </p>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button id="cancel-clear-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">Cancel</button>
+                <button id="confirm-clear-btn" style="padding: 10px 20px; background: var(--danger-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Clear ${label}</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.querySelector('#cancel-clear-btn').addEventListener('click', () => modal.remove());
+
+    modal.querySelector('#confirm-clear-btn').addEventListener('click', async () => {
+        try {
+            if (period === 'all') {
+                budgetData.expenses.current = {};
+                budgetData.expenses.future = {};
+            } else {
+                budgetData.expenses[period] = {};
+            }
+
+            modal.remove();
+            renderExpenseSection(container);
+            renderBudgetSummary(container);
+            await saveBudget(profile, container);
+            showSuccess(`Cleared ${label.toLowerCase()} expenses`);
+
+        } catch (error) {
+            console.error('Clear expenses error:', error);
+            showError('Failed to clear expenses: ' + error.message);
+        }
+    });
+}
+
+/**
+ * Export expenses to CSV
+ */
+function exportExpensesCSV(profile) {
+    const rows = [['Period', 'Category', 'Name', 'Amount', 'Frequency', 'Inflation Adjusted', 'Ongoing']];
+
+    const periodLabels = { current: 'Pre-Retirement', future: 'Post-Retirement' };
+    const categoryLabels = {
+        housing: 'Housing', utilities: 'Utilities', transportation: 'Transportation',
+        food: 'Food & Groceries', dining_out: 'Dining Out', healthcare: 'Healthcare',
+        insurance: 'Insurance', travel: 'Travel & Vacation', entertainment: 'Entertainment',
+        personal_care: 'Personal Care', clothing: 'Clothing', gifts: 'Gifts & Donations',
+        childcare_education: 'Childcare & Education', charitable_giving: 'Charitable Giving',
+        subscriptions: 'Subscriptions', pet_care: 'Pet Care', home_maintenance: 'Home Maintenance',
+        debt_payments: 'Debt Payments', taxes: 'Taxes', discretionary: 'Discretionary', other: 'Other'
+    };
+
+    ['current', 'future'].forEach(period => {
+        const expenses = budgetData.expenses[period] || {};
+        Object.keys(expenses).forEach(category => {
+            (expenses[category] || []).forEach(item => {
+                rows.push([
+                    periodLabels[period],
+                    categoryLabels[category] || category,
+                    item.name || '',
+                    item.amount || 0,
+                    item.frequency || 'monthly',
+                    item.inflation_adjusted ? 'Yes' : 'No',
+                    item.ongoing ? 'Yes' : 'No'
+                ]);
+            });
+        });
+    });
+
+    // Generate CSV content
+    const csvContent = rows.map(row =>
+        row.map(cell => {
+            const str = String(cell);
+            return str.includes(',') || str.includes('"') ? `"${str.replace(/"/g, '""')}"` : str;
+        }).join(',')
+    ).join('\n');
+
+    // Download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${profile.name}_expenses_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+
+    showSuccess('Expenses exported to CSV');
 }
 
 /**

@@ -1,5 +1,5 @@
 {
-    "version": "3.9.40",
+    "version": "3.9.41",
     "release_date": "2026-01-25",
-    "release_notes": "Improve AI frequency detection for recurring income and expenses"
+    "release_notes": "Rename Expense Planning to Expense Management, add Clear All, Copy To/From, Export"
 }
