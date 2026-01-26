@@ -479,7 +479,7 @@ async function openSettings(defaultTab = 'general', focusElementId = null) {
                     🛡️ Security
                 </button>
                 <button class="settings-tab" data-settings-tab="api-keys" style="padding: 10px 20px; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: all 0.2s;">
-                    🔐 API Keys
+                    🤖 AI Settings
                 </button>
             </div>
 
@@ -677,9 +677,10 @@ async function openSettings(defaultTab = 'general', focusElementId = null) {
     });
 
     // Load API Keys content
-    const { renderAPIKeysSettings } = await import('./components/settings/api-keys-settings.js');
-    const apiKeysContent = modal.querySelector('#api-keys-content');
-    await renderAPIKeysSettings(apiKeysContent);
+        const apiKeysContent = modal.querySelector('#settings-api-keys');
+        const { renderAPIKeysSettings } = await import('./components/settings/ai-settings.js');
+        await renderAPIKeysSettings(apiKeysContent);
+
 
     // Focus on specific element if requested
     if (focusElementId) {

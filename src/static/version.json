@@ -1,5 +1,5 @@
 {
-    "version": "3.9.43",
+    "version": "3.9.44",
     "release_date": "2026-01-25",
-    "release_notes": "Fix Gemini model list and improve quota error messages"
+    "release_notes": "Rename API Settings to AI Settings and expand to support 10+ AI providers including free tools and local Ollama"
 }

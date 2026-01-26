@@ -133,6 +133,168 @@ from src.models.profile import Profile
 from src.models.conversation import Conversation
 from flask_login import current_user
 
+def call_llm(provider, prompt, api_key, history=None, system_prompt=None, ollama_url=None):
+    """Unified interface to call various LLM providers."""
+    if provider == 'gemini':
+        return call_gemini(prompt, api_key, history, system_prompt)
+    elif provider == 'claude':
+        return call_claude(prompt, api_key, history, system_prompt)
+    elif provider == 'ollama':
+        return call_ollama(prompt, ollama_url, history, system_prompt)
+    else:
+        # OpenAI-compatible providers
+        return call_openai_compatible(provider, prompt, api_key, history, system_prompt)
+
+
+def call_gemini(prompt, api_key, history=None, system_prompt=None):
+    """Calls Gemini using the official client."""
+    client = genai.Client(api_key=api_key)
+    
+    contents = []
+    if history:
+        for msg in history:
+            role = 'user' if msg.role == 'user' else 'model'
+            msg_content = msg.to_dict().get('content', '')
+            if msg_content:
+                contents.append(types.Content(role=role, parts=[types.Part(text=msg_content)]))
+    
+    contents.append(types.Content(role='user', parts=[types.Part(text=prompt)]))
+
+    models_to_try = [
+        'models/gemini-2.0-flash', 
+        'models/gemini-1.5-flash',
+        'models/gemini-1.5-pro'
+    ]
+
+    for model_name in models_to_try:
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_prompt,
+                    temperature=0.7
+                )
+            )
+            return response.text
+        except Exception as e:
+            if '429' in str(e) or 'quota' in str(e).lower():
+                continue
+            raise e
+    raise Exception("All Gemini models failed or rate limited.")
+
+
+def call_claude(prompt, api_key, history=None, system_prompt=None):
+    """Calls Anthropic Claude API."""
+    messages = []
+    if history:
+        for msg in history:
+            messages.append({'role': msg.role, 'content': msg.content})
+    messages.append({'role': 'user', 'content': prompt})
+
+    models = ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229']
+    
+    for model in models:
+        try:
+            response = requests.post(
+                'https://api.anthropic.com/v1/messages',
+                headers={
+                    'x-api-key': api_key,
+                    'anthropic-version': '2023-06-01',
+                    'content-type': 'application/json'
+                },
+                json={
+                    'model': model,
+                    'max_tokens': 4096,
+                    'system': system_prompt,
+                    'messages': messages
+                },
+                timeout=60
+            )
+            if response.status_code == 200:
+                return response.json()['content'][0]['text']
+        except Exception:
+            continue
+    raise Exception("Claude API call failed.")
+
+
+def call_openai_compatible(provider, prompt, api_key, history=None, system_prompt=None):
+    """Calls OpenAI-compatible APIs (OpenAI, DeepSeek, OpenRouter, etc.)."""
+    endpoints = {
+        'openai': ('https://api.openai.com/v1/chat/completions', 'gpt-4o'),
+        'deepseek': ('https://api.deepseek.com/chat/completions', 'deepseek-chat'),
+        'openrouter': ('https://openrouter.ai/api/v1/chat/completions', 'google/gemini-2.0-flash-001'),
+        'grok': ('https://api.x.ai/v1/chat/completions', 'grok-beta'),
+        'mistral': ('https://api.mistral.ai/v1/chat/completions', 'mistral-large-latest'),
+        'together': ('https://api.together.xyz/v1/chat/completions', 'mistralai/Mixtral-8x7B-Instruct-v0.1'),
+        'huggingface': ('https://api-inference.huggingface.co/v1/chat/completions', 'meta-llama/Llama-3-70b-chat-hf')
+    }
+    
+    url, default_model = endpoints.get(provider, (None, None))
+    if not url:
+        raise Exception(f"Unsupported provider: {provider}")
+
+    messages = []
+    if system_prompt:
+        messages.append({'role': 'system', 'content': system_prompt})
+    if history:
+        for msg in history:
+            messages.append({'role': msg.role, 'content': msg.content})
+    messages.append({'role': 'user', 'content': prompt})
+
+    try:
+        response = requests.post(
+            url,
+            headers={
+                'Authorization': f'Bearer {api_key}',
+                'Content-Type': 'application/json'
+            },
+            json={
+                'model': default_model,
+                'messages': messages,
+                'temperature': 0.7
+            },
+            timeout=60
+        )
+        if response.status_code == 200:
+            return response.json()['choices'][0]['message']['content']
+        else:
+            raise Exception(f"{provider.capitalize()} API error: {response.text}")
+    except Exception as e:
+        raise Exception(f"Failed to call {provider}: {str(e)}")
+
+
+def call_ollama(prompt, url, history=None, system_prompt=None):
+    """Calls local Ollama API."""
+    if not url:
+        url = "http://localhost:11434"
+    
+    messages = []
+    if system_prompt:
+        messages.append({'role': 'system', 'content': system_prompt})
+    if history:
+        for msg in history:
+            messages.append({'role': msg.role, 'content': msg.content})
+    messages.append({'role': 'user', 'content': prompt})
+
+    try:
+        response = requests.post(
+            f"{url}/api/chat",
+            json={
+                'model': 'llama3', # Default to llama3
+                'messages': messages,
+                'stream': False
+            },
+            timeout=120
+        )
+        if response.status_code == 200:
+            return response.json()['message']['content']
+        else:
+            raise Exception(f"Ollama error: {response.text}")
+    except Exception as e:
+        raise Exception(f"Failed to connect to Ollama at {url}: {str(e)}")
+
+
 @ai_services_bp.route('/advisor/chat', methods=['POST'])
 @login_required
 @limiter.limit("20 per hour")
@@ -142,39 +304,40 @@ def advisor_chat():
     profile_name = data.get('profile_name')
     user_message = data.get('message')
     conversation_id = data.get('conversation_id')
+    requested_provider = data.get('provider') # Optional provider selection
 
     if not profile_name or not user_message:
-        enhanced_audit_logger.log(
-            action='AI_ADVISOR_VALIDATION_ERROR',
-            details={'profile_name': profile_name, 'error': 'profile_name and message are required'},
-            status_code=400
-        )
         return jsonify({'error': 'profile_name and message are required'}), 400
 
     try:
-        # Get profile with ownership check
         profile = Profile.get_by_name(profile_name, current_user.id)
         if not profile:
-            enhanced_audit_logger.log(
-                action='AI_ADVISOR_PROFILE_NOT_FOUND',
-                details={'profile_name': profile_name},
-                status_code=404
-            )
             return jsonify({'error': 'Profile not found'}), 404
 
-        # Get API key from profile
         data_dict = profile.data_dict
         api_keys = data_dict.get('api_keys', {})
-        api_key = api_keys.get('gemini_api_key')
+        
+        # Determine provider: priority = request > profile preference > Gemini (if key exists)
+        provider = requested_provider or data_dict.get('preferred_ai_provider')
+        
+        # If no preferred provider, find first available key
+        if not provider:
+            for p in ['gemini', 'claude', 'openai', 'openrouter', 'deepseek', 'ollama']:
+                key_name = f"{p}_api_key" if p != 'ollama' else "ollama_url"
+                if api_keys.get(key_name):
+                    provider = p
+                    break
+        
+        if not provider:
+            provider = 'gemini' # Fallback to gemini
 
-        if not api_key:
-            enhanced_audit_logger.log(
-                action='AI_ADVISOR_NO_API_KEY',
-                details={'profile_name': profile_name},
-                status_code=400
-            )
+        # Get the appropriate key/url
+        api_key = api_keys.get(f"{provider}_api_key")
+        ollama_url = api_keys.get("ollama_url")
+
+        if not api_key and provider != 'ollama':
             return jsonify({
-                'error': 'Gemini API key not configured. Please configure in Settings.'
+                'error': f'{provider.capitalize()} API key not configured. Please configure in AI Settings.'
             }), 400
 
         # Get conversation history
@@ -208,9 +371,6 @@ def advisor_chat():
         Provide professional, clear, and actionable advice. Always include a disclaimer that you are an AI and the user should consult with a human professional for final decisions.
         """
 
-        # Call Gemini with fallback models
-        client = genai.Client(api_key=api_key)
-
         # Save user message
         user_msg = Conversation(
             user_id=current_user.id,
@@ -220,65 +380,8 @@ def advisor_chat():
         )
         user_msg.save()
 
-        # Format history for Gemini using proper Content objects
-        contents = []
-        try:
-            for msg in history:
-                role = 'user' if msg.role == 'user' else 'model'
-                msg_content = msg.to_dict().get('content', '')
-                if msg_content:  # Only add non-empty messages
-                    contents.append(types.Content(role=role, parts=[types.Part(text=msg_content)]))
-        except Exception as e:
-            print(f"Warning: Error loading conversation history: {e}. Starting fresh conversation.")
-            contents = []
-
-        # Add current user message
-        contents.append(types.Content(role='user', parts=[types.Part(text=user_message)]))
-
-        # Try models with fallback for rate limits - latest models first
-        models_to_try = [
-            'models/gemini-3-flash-preview',         # Latest Gemini 3 Flash (Dec 2025) - balanced speed & intelligence
-            'models/gemini-2.5-pro',                 # Gemini 2.5 Pro - best reasoning for complex analysis
-            'models/gemini-2.5-flash',               # Gemini 2.5 Flash - stable production, best price-performance
-            'models/gemini-2.0-flash-exp',           # Gemini 2.0 experimental (fallback)
-            'models/gemini-1.5-flash-latest',        # Legacy stable 1.5 flash (fallback)
-            'models/gemini-1.5-pro-latest'           # Legacy stable 1.5 pro (fallback)
-        ]
-
-        last_error = None
-        response = None
-
-        for model_name in models_to_try:
-            try:
-                print(f"Attempting Gemini model: {model_name}")
-                response = client.models.generate_content(
-                    model=model_name,
-                    contents=contents,
-                    config=types.GenerateContentConfig(
-                        system_instruction=system_prompt,
-                        temperature=0.7
-                    )
-                )
-                print(f"Success with model: {model_name}")
-                break  # Success, exit loop
-            except Exception as e:
-                error_str = str(e)
-                print(f"Model {model_name} failed: {error_str}")
-                last_error = e
-
-                # If it's a rate limit error, try next model immediately
-                if '429' in error_str or 'RESOURCE_EXHAUSTED' in error_str or 'quota' in error_str.lower():
-                    print(f"Rate limit hit for {model_name}, trying next model...")
-                    continue
-                else:
-                    # For other errors, re-raise immediately
-                    raise e
-
-        if response is None:
-            # All models failed
-            raise Exception(f"All Gemini models failed or rate limited. Last error: {str(last_error)}")
-        
-        assistant_text = response.text
+        # Call the selected LLM
+        assistant_text = call_llm(provider, user_message, api_key, history, system_prompt, ollama_url)
 
         # Save assistant message
         assistant_msg = Conversation(
@@ -295,16 +398,21 @@ def advisor_chat():
             record_id=profile.id,
             details={
                 'profile_name': profile_name,
+                'provider': provider,
                 'message_length': len(user_message),
-                'response_length': len(assistant_text),
-                'history_count': len(history)
+                'response_length': len(assistant_text)
             },
             status_code=200
         )
         return jsonify({
             'response': assistant_text,
+            'provider': provider,
             'status': 'success'
         }), 200
+
+    except Exception as e:
+        print(f"Advisor chat error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
     except Exception as e:
         print(f"Advisor chat error: {str(e)}")

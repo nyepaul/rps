@@ -554,15 +554,32 @@ class APIKeySchema(BaseModel):
     gemini_api_key: Optional[str] = None
     openai_api_key: Optional[str] = None
     grok_api_key: Optional[str] = None
+    openrouter_api_key: Optional[str] = None
+    deepseek_api_key: Optional[str] = None
+    mistral_api_key: Optional[str] = None
+    together_api_key: Optional[str] = None
+    huggingface_api_key: Optional[str] = None
+    ollama_url: Optional[str] = None
+    preferred_ai_provider: Optional[str] = None
 
-    @validator('claude_api_key', 'gemini_api_key', 'openai_api_key', 'grok_api_key')
+    @validator('claude_api_key', 'gemini_api_key', 'openai_api_key', 'grok_api_key', 
+               'openrouter_api_key', 'deepseek_api_key', 'mistral_api_key', 
+               'together_api_key', 'huggingface_api_key')
     def validate_api_key(cls, v):
         if v is not None:
             v = v.strip()
-            if len(v) < 10:
-                raise ValueError('API key must be at least 10 characters')
+            if len(v) < 8:  # Some keys might be short
+                raise ValueError('API key must be at least 8 characters')
             if len(v) > 500:
                 raise ValueError('API key is too long')
+        return v
+
+    @validator('ollama_url')
+    def validate_ollama_url(cls, v):
+        if v is not None:
+            v = v.strip()
+            if not v.startswith(('http://', 'https://')):
+                raise ValueError('Ollama URL must start with http:// or https://')
         return v
 
 
@@ -600,6 +617,27 @@ def get_api_keys(name: str):
         if api_keys.get('grok_api_key'):
             result['grok_api_key'] = api_keys['grok_api_key'][-4:]
             keys_configured.append('grok')
+        if api_keys.get('openrouter_api_key'):
+            result['openrouter_api_key'] = api_keys['openrouter_api_key'][-4:]
+            keys_configured.append('openrouter')
+        if api_keys.get('deepseek_api_key'):
+            result['deepseek_api_key'] = api_keys['deepseek_api_key'][-4:]
+            keys_configured.append('deepseek')
+        if api_keys.get('mistral_api_key'):
+            result['mistral_api_key'] = api_keys['mistral_api_key'][-4:]
+            keys_configured.append('mistral')
+        if api_keys.get('together_api_key'):
+            result['together_api_key'] = api_keys['together_api_key'][-4:]
+            keys_configured.append('together')
+        if api_keys.get('huggingface_api_key'):
+            result['huggingface_api_key'] = api_keys['huggingface_api_key'][-4:]
+            keys_configured.append('huggingface')
+        if api_keys.get('ollama_url'):
+            result['ollama_url'] = api_keys['ollama_url']
+            keys_configured.append('ollama')
+        
+        if data_dict.get('preferred_ai_provider'):
+            result['preferred_ai_provider'] = data_dict['preferred_ai_provider']
 
         enhanced_audit_logger.log(
             action='VIEW_API_KEYS',
@@ -669,6 +707,28 @@ def save_api_keys(name: str):
         if data.grok_api_key:
             data_dict['api_keys']['grok_api_key'] = data.grok_api_key
             keys_updated.append('grok')
+        if data.openrouter_api_key:
+            data_dict['api_keys']['openrouter_api_key'] = data.openrouter_api_key
+            keys_updated.append('openrouter')
+        if data.deepseek_api_key:
+            data_dict['api_keys']['deepseek_api_key'] = data.deepseek_api_key
+            keys_updated.append('deepseek')
+        if data.mistral_api_key:
+            data_dict['api_keys']['mistral_api_key'] = data.mistral_api_key
+            keys_updated.append('mistral')
+        if data.together_api_key:
+            data_dict['api_keys']['together_api_key'] = data.together_api_key
+            keys_updated.append('together')
+        if data.huggingface_api_key:
+            data_dict['api_keys']['huggingface_api_key'] = data.huggingface_api_key
+            keys_updated.append('huggingface')
+        if data.ollama_url:
+            data_dict['api_keys']['ollama_url'] = data.ollama_url
+            keys_updated.append('ollama')
+        
+        if data.preferred_ai_provider:
+            data_dict['preferred_ai_provider'] = data.preferred_ai_provider
+            keys_updated.append('preferred_provider')
 
         # Save profile (encryption happens automatically via the data property setter)
         profile.data = data_dict
@@ -730,6 +790,18 @@ def test_api_key():
             return test_openai_api_key(api_key)
         elif provider == 'grok':
             return test_grok_api_key(api_key)
+        elif provider == 'openrouter':
+            return test_openrouter_api_key(api_key)
+        elif provider == 'deepseek':
+            return test_deepseek_api_key(api_key)
+        elif provider == 'mistral':
+            return test_mistral_api_key(api_key)
+        elif provider == 'together':
+            return test_together_api_key(api_key)
+        elif provider == 'huggingface':
+            return test_huggingface_api_key(api_key)
+        elif provider == 'ollama':
+            return test_ollama_api_key(api_key)
         else:
             enhanced_audit_logger.log(
                 action='TEST_API_KEY_UNKNOWN_PROVIDER',
@@ -899,3 +971,114 @@ def test_grok_api_key(api_key: str):
         return jsonify({'success': False, 'error': 'Request timed out'}), 408
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 400
+
+
+def test_openrouter_api_key(api_key: str):
+    """Test OpenRouter API key."""
+    try:
+        import requests
+        response = requests.get(
+            'https://openrouter.ai/api/v1/models',
+            headers={'Authorization': f'Bearer {api_key}'},
+            timeout=10
+        )
+        if response.status_code == 200:
+            return jsonify({'success': True, 'message': 'OpenRouter API key is valid'}), 200
+        else:
+            return jsonify({'success': False, 'error': f"API Error: {response.text}"}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
+def test_deepseek_api_key(api_key: str):
+    """Test DeepSeek API key."""
+    try:
+        import requests
+        response = requests.post(
+            'https://api.deepseek.com/chat/completions',
+            headers={
+                'Authorization': f'Bearer {api_key}',
+                'Content-Type': 'application/json'
+            },
+            json={
+                'model': 'deepseek-chat',
+                'messages': [{'role': 'user', 'content': 'Hi'}],
+                'max_tokens': 5
+            },
+            timeout=10
+        )
+        if response.status_code == 200:
+            return jsonify({'success': True, 'message': 'DeepSeek API key is valid'}), 200
+        else:
+            return jsonify({'success': False, 'error': f"API Error: {response.text}"}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
+def test_mistral_api_key(api_key: str):
+    """Test Mistral API key."""
+    try:
+        import requests
+        response = requests.get(
+            'https://api.mistral.ai/v1/models',
+            headers={'Authorization': f'Bearer {api_key}'},
+            timeout=10
+        )
+        if response.status_code == 200:
+            return jsonify({'success': True, 'message': 'Mistral API key is valid'}), 200
+        else:
+            return jsonify({'success': False, 'error': f"API Error: {response.text}"}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
+def test_together_api_key(api_key: str):
+    """Test Together AI API key."""
+    try:
+        import requests
+        response = requests.get(
+            'https://api.together.xyz/v1/models',
+            headers={'Authorization': f'Bearer {api_key}'},
+            timeout=10
+        )
+        if response.status_code == 200:
+            return jsonify({'success': True, 'message': 'Together AI API key is valid'}), 200
+        else:
+            return jsonify({'success': False, 'error': f"API Error: {response.text}"}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
+def test_huggingface_api_key(api_key: str):
+    """Test Hugging Face API key."""
+    try:
+        import requests
+        response = requests.get(
+            'https://huggingface.co/api/whoami-v2',
+            headers={'Authorization': f'Bearer {api_key}'},
+            timeout=10
+        )
+        if response.status_code == 200:
+            return jsonify({'success': True, 'message': 'Hugging Face API key is valid'}), 200
+        else:
+            return jsonify({'success': False, 'error': f"API Error: {response.text}"}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
+def test_ollama_api_key(url: str):
+    """Test Ollama connection (URL instead of key)."""
+    try:
+        import requests
+        response = requests.get(f'{url}/api/tags', timeout=5)
+        if response.status_code == 200:
+            models = response.json().get('models', [])
+            return jsonify({
+                'success': True, 
+                'message': f'Connected to Ollama ({len(models)} models found)',
+                'model': models[0]['name'] if models else 'ollama'
+            }), 200
+        else:
+            return jsonify({'success': False, 'error': f"Ollama Error: {response.status_code}"}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Connection failed: {str(e)}"}), 400

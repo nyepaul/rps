@@ -350,9 +350,9 @@ async function sendMessage(profile, chatInput, chatContainer) {
 
         // Check if this is an API key error
         if (isApiKeyError) {
-            const errorMsg = `Sorry, API key not configured. ${errorMessage}<br><br>
+            const errorMsg = `Sorry, AI provider not configured. ${errorMessage}<br><br>
                 <button onclick="window.app.openSettings('api-keys', 'gemini-api-key')" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
-                    🔐 Configure API Keys
+                    🤖 Configure AI Settings
                 </button>`;
             addMessage(chatContainer, 'assistant', errorMsg, true);
             
