@@ -1,5 +1,5 @@
 {
-    "version": "3.9.55",
+    "version": "3.9.56",
     "release_date": "2026-01-25",
-    "release_notes": "Implement Chunked Processing for multi-page PDFs to improve extraction accuracy with local LLMs"
+    "release_notes": "Further optimize chunked PDF processing and increase timeouts for very large documents (135+ pages)"
 }
