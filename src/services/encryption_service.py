@@ -81,7 +81,12 @@ class EncryptionService:
 
     @staticmethod
     def get_email_kek(email: str, salt: bytes, iterations: int = 600000) -> bytes:
-        """Derive a Key Encryption Key (KEK) from an email address."""
+        """Derive a Key Encryption Key (KEK) from an email address.
+        
+        Uses a server-side pepper to prevent offline brute-force attacks if the DB is leaked.
+        """
+        pepper = os.environ.get('BACKUP_KEY_PEPPER', 'default-pepper-change-in-production')
+        
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
@@ -91,7 +96,9 @@ class EncryptionService:
         )
         # Normalize email (lowercase, strip)
         normalized_email = email.lower().strip()
-        return kdf.derive(normalized_email.encode('utf-8'))
+        # Combine email + pepper
+        combined_secret = f"{normalized_email}:{pepper}"
+        return kdf.derive(combined_secret.encode('utf-8'))
 
     def encrypt(self, plaintext: str) -> Tuple[str, str]:
         """

@@ -1,5 +1,5 @@
 {
-    "version": "3.9.58",
+    "version": "3.9.59",
     "release_date": "2026-01-26",
-    "release_notes": "Added fallback to local sendmail binary for robust email delivery"
+    "release_notes": "Implemented JWT-based password reset tokens and server-peppered backup keys"
 }

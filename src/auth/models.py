@@ -321,16 +321,38 @@ class User(UserMixin):
         return dek_was_lost
 
     def generate_reset_token(self, expiry_hours=1):
-        """Generate a secure password reset token.
+        """Generate a secure, signed password reset token (JWT).
 
         Args:
             expiry_hours: Number of hours until token expires (default 1 hour)
 
         Returns:
-            str: The generated reset token
+            str: The generated reset token (JWT)
         """
-        # Generate a secure random token (32 bytes = 64 hex characters)
-        token = secrets.token_urlsafe(32)
+        import jwt
+        from flask import current_app
+        import secrets
+
+        # Generate a random JTI (Token ID) to allow revocation
+        jti = secrets.token_urlsafe(16)
+        
+        payload = {
+            'user_id': self.id,
+            'exp': datetime.utcnow() + timedelta(hours=expiry_hours),
+            'iat': datetime.utcnow(),
+            'jti': jti,
+            'purpose': 'password_reset'
+        }
+        
+        token = jwt.encode(
+            payload,
+            current_app.config['SECRET_KEY'],
+            algorithm='HS256'
+        )
+        
+        # Store JTI/Hash in DB for revocation (optional but good practice)
+        # For now, we store the full token to maintain compatibility with existing flow
+        # but the verification relies on the signature.
         self.reset_token = token
         self.reset_token_expires = (datetime.now() + timedelta(hours=expiry_hours)).isoformat()
 
@@ -344,7 +366,7 @@ class User(UserMixin):
         return token
 
     def is_reset_token_valid(self, token):
-        """Check if a reset token is valid and not expired.
+        """Check if a reset token is valid, signed, and not expired.
 
         Args:
             token: The token to validate
@@ -352,18 +374,40 @@ class User(UserMixin):
         Returns:
             bool: True if token is valid and not expired
         """
-        if not self.reset_token or not self.reset_token_expires:
+        import jwt
+        from flask import current_app
+
+        if not self.reset_token:
             return False
 
+        # 1. Database check (Revocation check)
+        # If the token in DB doesn't match, it means a new one was requested or password changed
         if self.reset_token != token:
             return False
 
-        # Check if token has expired
-        expiry_time = datetime.fromisoformat(self.reset_token_expires)
-        if datetime.now() > expiry_time:
+        # 2. Signature and Expiration check (JWT)
+        try:
+            payload = jwt.decode(
+                token,
+                current_app.config['SECRET_KEY'],
+                algorithms=['HS256']
+            )
+            
+            # Verify purpose
+            if payload.get('purpose') != 'password_reset':
+                return False
+                
+            # Verify user ID matches
+            if payload.get('user_id') != self.id:
+                return False
+                
+            return True
+        except jwt.ExpiredSignatureError:
             return False
-
-        return True
+        except jwt.InvalidTokenError:
+            return False
+        except Exception:
+            return False
 
     @staticmethod
     def get_by_reset_token(token):
