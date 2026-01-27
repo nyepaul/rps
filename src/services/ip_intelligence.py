@@ -113,14 +113,36 @@ class IPIntelligence:
     @staticmethod
     def reverse_dns_lookup(ip_address: str) -> Optional[str]:
         """
-        Perform reverse DNS lookup.
+        Perform reverse DNS lookup with timeout.
 
         Returns hostname if found, None otherwise.
         """
         try:
-            hostname = socket.gethostbyaddr(ip_address)[0]
-            return hostname
-        except (socket.herror, socket.gaierror, socket.timeout):
+            # Try using dnspython with timeout if available
+            import dns.resolver
+            import dns.reversename
+            
+            resolver = dns.resolver.Resolver()
+            resolver.timeout = 2
+            resolver.lifetime = 2
+            
+            addr = dns.reversename.from_address(ip_address)
+            hostname = str(resolver.resolve(addr, 'PTR')[0])
+            return hostname.rstrip('.')
+            
+        except ImportError:
+            # Fallback to socket if dnspython not installed
+            try:
+                # Set a default timeout for socket operations
+                old_timeout = socket.getdefaulttimeout()
+                socket.setdefaulttimeout(2)
+                hostname = socket.gethostbyaddr(ip_address)[0]
+                socket.setdefaulttimeout(old_timeout)
+                return hostname
+            except (socket.herror, socket.gaierror, socket.timeout, Exception):
+                return None
+        except Exception:
+            # Fallback for any dnspython errors
             return None
 
     @staticmethod
