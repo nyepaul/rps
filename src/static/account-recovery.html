@@ -399,545 +399,475 @@
         </div>
     </div>
 
-        <script>
+            <script>
 
-            // Global Error Handler for debugging
+                // Global Error Handler
 
-            window.onerror = function(msg, url, line, col, error) {
+                window.onerror = function(msg, url, line, col, error) {
 
-                alert("System Error: " + msg + "\nLine: " + line);
+                    console.error("Global Error:", msg, line, error);
 
-                return false;
+                    // alert("System Error: " + msg); // Uncomment for aggressive debugging
 
-            };
-
-    
-
-            document.addEventListener('DOMContentLoaded', () => {
-
-                // State
-
-                let state = {
-
-                    step: 1,
-
-                    method: null,
-
-                    subMethod: null,
-
-                    username: '',
-
-                    email: '',
-
-                    token: null,
-
-                    recoveryCode: '',
-
-                    oldPassword: '',
-
-                    hasEncryptedData: false,
-
-                    canRecoverViaEmail: false
+                    return false;
 
                 };
 
-    
+        
 
-                // DOM Elements
+                document.addEventListener('DOMContentLoaded', () => {
 
-                const views = {
+                    console.log("Account Recovery Script Loaded");
 
-                    methods: document.getElementById('view-methods'),
+        
 
-                    identity: document.getElementById('view-identity'),
+                    // State
 
-                    reset: document.getElementById('view-reset'),
+                    const state = {
 
-                    success: document.getElementById('view-success')
+                        step: 1,
 
-                };
+                        method: null,
 
-    
+                        subMethod: 'email', // Default
 
-                const components = {
+                        username: '',
 
-                    title: document.getElementById('title'),
+                        email: '',
 
-                    subtitle: document.getElementById('subtitle'),
+                        token: null,
 
-                    message: document.getElementById('message-container'),
+                        recoveryCode: '',
 
-                    methodAlert: document.getElementById('method-alert'),
+                        oldPassword: '',
 
-                    resetAlert: document.getElementById('reset-alert'),
+                        hasEncryptedData: false,
 
-                    dots: document.querySelectorAll('.step-dot'),
+                        canRecoverViaEmail: false
 
-                    accessChoice: document.getElementById('access-choice-field'),
+                    };
 
-                    emailField: document.getElementById('email-field'),
+        
 
-                    tokenField: document.getElementById('token-field'),
+                    // DOM Helpers
 
-                    btnEmail: document.getElementById('btn-choice-email'),
+                    const get = (id) => document.getElementById(id);
 
-                    btnToken: document.getElementById('btn-choice-token')
+                    const show = (id) => { const el = get(id); if (el) el.classList.remove('hidden'); };
 
-                };
+                    const hide = (id) => { const el = get(id); if (el) el.classList.add('hidden'); };
 
-    
+                    const setHtml = (id, html) => { const el = get(id); if (el) el.innerHTML = html; };
 
-                // Validation
+                    const setText = (id, text) => { const el = get(id); if (el) el.textContent = text; };
 
-                for (const [key, el] of Object.entries(components)) {
+        
 
-                    if (!el && key !== 'dots') {
+                    // Views
 
-                        console.error(`Missing component: ${key}`);
-
-                        alert(`Critical Error: UI component '${key}' is missing. Please refresh.`);
-
-                    }
-
-                }
-
-    
-
-                // Initialize from URL token if present
-
-                const urlParams = new URLSearchParams(window.location.search);
-
-                const urlToken = urlParams.get('token');
-
-                if (urlToken) {
-
-                    state.token = urlToken;
-
-                    state.method = 'access';
-
-                    state.subMethod = 'token';
-
-                    validateToken(urlToken);
-
-                }
-
-    
-
-                // --- Navigation ---
-
-    
-
-                function showView(viewName) {
-
-                    Object.values(views).forEach(v => v.classList.remove('active'));
-
-                    views[viewName].classList.add('active');
+                    const views = ['view-methods', 'view-identity', 'view-reset', 'view-success'];
 
                     
 
-                    // Update dots
+                    function switchView(activeViewId) {
 
-                    const stepMap = { methods: 1, identity: 2, reset: 3, success: 3 };
+                        console.log("Switching to view:", activeViewId);
 
-                    state.step = stepMap[viewName];
+                        views.forEach(id => {
 
-                    components.dots.forEach(dot => {
+                            const el = get(id);
 
-                        dot.classList.toggle('active', parseInt(dot.dataset.step) === state.step);
+                            if (el) {
 
-                    });
+                                el.classList.remove('active');
 
-    
-
-                    // Scroll to top of card
-
-                    document.querySelector('.recovery-card').scrollTop = 0;
-
-                }
-
-    
-
-                function showAlert(message, type = 'info', container = components.message) {
-
-                    container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
-
-                }
-
-    
-
-                function clearAlerts() {
-
-                    components.message.innerHTML = '';
-
-                }
-
-    
-
-                // --- Step 1: Method Selection ---
-
-    
-
-                document.querySelectorAll('.method-option').forEach(opt => {
-
-                    opt.addEventListener('click', () => {
-
-                        try {
-
-                            state.method = opt.dataset.method;
-
-                            state.subMethod = null;
-
-                            setupIdentityView();
-
-                            showView('identity');
-
-                        } catch (e) {
-
-                            console.error("Navigation error:", e);
-
-                            alert("An error occurred: " + e.message);
-
-                        }
-
-                    });
-
-                });
-
-    
-
-                if (components.btnEmail) {
-
-                    components.btnEmail.addEventListener('click', () => {
-
-                        state.subMethod = 'email';
-
-                        updateAccessSubMethod();
-
-                    });
-
-                }
-
-    
-
-                if (components.btnToken) {
-
-                    components.btnToken.addEventListener('click', () => {
-
-                        state.subMethod = 'token';
-
-                        updateAccessSubMethod();
-
-                    });
-
-                }
-
-    
-
-                function updateAccessSubMethod() {
-
-                    components.emailField.classList.toggle('hidden', state.subMethod !== 'email');
-
-                    components.tokenField.classList.toggle('hidden', state.subMethod !== 'token');
-
-                    const usernameField = document.getElementById('username-field');
-
-                    if (usernameField) {
-
-                        usernameField.classList.toggle('hidden', state.subMethod === 'token');
-
-                    }
-
-                    
-
-                    components.btnEmail.style.background = state.subMethod === 'email' ? 'var(--primary)' : '#f3f4f6';
-
-                    components.btnEmail.style.color = state.subMethod === 'email' ? 'white' : '#374151';
-
-                    components.btnToken.style.background = state.subMethod === 'token' ? 'var(--primary)' : '#f3f4f6';
-
-                    components.btnToken.style.color = state.subMethod === 'token' ? 'white' : '#374151';
-
-    
-
-                    const submitBtn = document.getElementById('identity-submit');
-
-                    if (state.subMethod === 'email') {
-
-                        submitBtn.textContent = 'Send Reset Link';
-
-                        document.getElementById('email').required = true;
-
-                        document.getElementById('manual-token').required = false;
-
-                    } else {
-
-                        submitBtn.textContent = 'Verify Token';
-
-                        document.getElementById('email').required = false;
-
-                        document.getElementById('manual-token').required = true;
-
-                    }
-
-                }
-
-    
-
-                function setupIdentityView() {
-
-                    clearAlerts();
-
-                    const usernameField = document.getElementById('username-field');
-
-                    const oldPasswordField = document.getElementById('old-password-field');
-
-                    const codeField = document.getElementById('recovery-code-field');
-
-                    const submitBtn = document.getElementById('identity-submit');
-
-    
-
-                    // Reset fields
-
-                    if (usernameField) usernameField.classList.remove('hidden');
-
-                    components.accessChoice.classList.add('hidden');
-
-                    components.emailField.classList.add('hidden');
-
-                    components.tokenField.classList.add('hidden');
-
-                    if (oldPasswordField) oldPasswordField.classList.add('hidden');
-
-                    if (codeField) codeField.classList.add('hidden');
-
-                    
-
-                    document.getElementById('username').required = true;
-
-                    document.getElementById('email').required = false;
-
-                    document.getElementById('manual-token').required = false;
-
-                    document.getElementById('old-password').required = false;
-
-                    document.getElementById('recovery-code').required = false;
-
-    
-
-                    if (state.method === 'access') {
-
-                        components.title.textContent = 'Access Token';
-
-                        components.subtitle.textContent = 'Restore account access';
-
-                        components.accessChoice.classList.remove('hidden');
-
-                        state.subMethod = state.subMethod || 'email';
-
-                        updateAccessSubMethod();
-
-                        components.methodAlert.innerHTML = '<strong>🎟️ Identity:</strong> Prove you own the account to set a new password. Data may be lost unless you have a recovery key.';
-
-                    } else if (state.method === 'code') {
-
-                        components.title.textContent = 'Recovery Code';
-
-                        components.subtitle.textContent = 'Restore your data';
-
-                        components.emailField.classList.remove('hidden');
-
-                        if (codeField) codeField.classList.remove('hidden');
-
-                        document.getElementById('email').required = true;
-
-                        document.getElementById('recovery-code').required = true;
-
-                        components.methodAlert.innerHTML = '<strong>🛡️ Zero-Knowledge:</strong> Enter your registered email and the 16-character recovery code to restore your encrypted data.';
-
-                        submitBtn.textContent = 'Verify Code';
-
-                    } else if (state.method === 'password') {
-
-                        components.title.textContent = 'Previous Password';
-
-                        components.subtitle.textContent = 'Identity Verification';
-
-                        components.emailField.classList.remove('hidden');
-
-                        if (oldPasswordField) oldPasswordField.classList.remove('hidden');
-
-                        document.getElementById('email').required = true;
-
-                        document.getElementById('old-password').required = true;
-
-                        components.methodAlert.innerHTML = '<strong>🔄 Password Rotation:</strong> Use your previous credentials to securely set a new password.';
-
-                        submitBtn.textContent = 'Continue';
-
-                    }
-
-                }
-
-    
-
-                // --- Step 2: Identity Processing ---
-
-    
-
-                document.getElementById('identity-back').addEventListener('click', () => {
-
-                    components.title.textContent = 'Account Recovery';
-
-                    components.subtitle.textContent = 'Select a method to regain access';
-
-                    showView('methods');
-
-                });
-
-    
-
-                document.getElementById('identity-form').addEventListener('submit', async (e) => {
-
-                    e.preventDefault();
-
-                    const btn = document.getElementById('identity-submit');
-
-                    const originalText = btn.textContent;
-
-                    
-
-                    state.username = document.getElementById('username').value;
-
-                    state.email = document.getElementById('email').value;
-
-                    state.oldPassword = document.getElementById('old-password').value;
-
-                    state.recoveryCode = document.getElementById('recovery-code').value.trim().toUpperCase();
-
-                    const manualToken = document.getElementById('manual-token').value.trim();
-
-    
-
-                    btn.disabled = true;
-
-                    btn.innerHTML = `<div class="spinner"></div> Processing...`;
-
-                    clearAlerts();
-
-    
-
-                    try {
-
-                        if (state.method === 'access') {
-
-                            if (state.subMethod === 'email') {
-
-                                await requestEmailReset();
-
-                            } else {
-
-                                state.token = manualToken;
-
-                                await validateToken(manualToken);
+                                if (id === activeViewId) el.classList.add('active');
 
                             }
 
-                        } else if (state.method === 'code') {
+                        });
 
-                            setupResetView();
+        
 
-                            showView('reset');
+                        // Update dots
 
-                        } else if (state.method === 'password') {
+                        const stepMap = { 'view-methods': 1, 'view-identity': 2, 'view-reset': 3, 'view-success': 3 };
 
-                            setupResetView();
+                        const currentStep = stepMap[activeViewId] || 1;
 
-                            showView('reset');
+                        document.querySelectorAll('.step-dot').forEach(dot => {
 
-                        }
+                            dot.classList.toggle('active', parseInt(dot.dataset.step) === currentStep);
 
-                    } catch (error) {
-
-                        showAlert(error.message || 'Verification failed', 'danger');
-
-                    } finally {
-
-                        btn.disabled = false;
-
-                        btn.textContent = originalText;
+                        });
 
                     }
 
-                });
+        
 
-    
+                    // --- Step 1: Selection ---
 
-                async function requestEmailReset() {
+        
 
-                    const response = await fetch('/api/auth/password-reset/request', {
+                    // Event Delegation for Method Selection
 
-                        method: 'POST',
+                    const methodGrid = document.querySelector('.method-grid');
 
-                        headers: { 'Content-Type': 'application/json' },
+                    if (methodGrid) {
 
-                        body: JSON.stringify({ username: state.username, email: state.email })
+                        methodGrid.addEventListener('click', (e) => {
 
-                    });
+                            const option = e.target.closest('.method-option');
 
-                    const data = await response.json();
+                            if (!option) return;
 
-                    if (!response.ok) throw new Error(data.error);
+        
 
-    
+                            const method = option.dataset.method;
 
-                    if (data.token) {
+                            console.log("Method selected:", method);
 
-                        // Dev mode
+                            state.method = method;
 
-                        state.token = data.token;
+                            state.subMethod = 'email'; // Reset sub-method
 
-                        showAlert('<strong>Dev Mode:</strong> Reset token generated! In production, this would be emailed.', 'success');
+                            
 
-                        setTimeout(() => validateToken(data.token), 2000);
+                            try {
 
-                    } else if (data.email_sent === false) {
+                                setupIdentityView();
 
-                        showAlert('<strong>⚠️ Email Unavailable:</strong> Account identified, but the email service is currently offline. <br><br>Please use a <strong>Recovery Code</strong> or contact an administrator for a reset token.', 'warning');
+                                switchView('view-identity');
+
+                            } catch (err) {
+
+                                console.error(err);
+
+                                alert("Error initializing view: " + err.message);
+
+                            }
+
+                        });
 
                     } else {
 
-                        showAlert('Success! If the account exists, a reset link has been sent to your email.', 'success');
+                        console.error("Method grid not found");
 
                     }
 
-                }
+        
 
-    
+                    // --- Step 2: Identity Setup ---
 
-                // --- Step 3: Token Validation & Reset ---
+        
 
-    
+                    function setupIdentityView() {
 
-                async function validateToken(token) {
+                        // Reset all fields first
 
-                    showView('identity'); // Show identity while validating
+                        ['username-field', 'access-choice-field', 'email-field', 'token-field', 'old-password-field', 'recovery-code-field']
 
-                    const btn = document.getElementById('identity-submit');
+                            .forEach(hide);
 
-                    if (btn) {
+                        
 
-                        btn.disabled = true;
+                        // Clear required attributes
 
-                        btn.innerHTML = `<div class="spinner"></div> Validating...`;
+                        ['username', 'email', 'manual-token', 'old-password', 'recovery-code']
+
+                            .forEach(id => { const el = get(id); if (el) el.required = false; });
+
+        
+
+                        const submitBtn = get('identity-submit');
+
+                        show('username-field');
+
+                        const usernameInput = get('username');
+
+                        if (usernameInput) usernameInput.required = true;
+
+        
+
+                        if (state.method === 'access') {
+
+                            setText('title', 'Access Token');
+
+                            setText('subtitle', 'Restore account access');
+
+                            setHtml('method-alert', '<strong>🎟️ Identity:</strong> Prove ownership via Email link or Admin token.');
+
+                            
+
+                            show('access-choice-field');
+
+                            updateAccessSubMethod(); // Sets up email vs token fields
+
+        
+
+                        } else if (state.method === 'code') {
+
+                            setText('title', 'Recovery Code');
+
+                            setText('subtitle', 'Restore your data');
+
+                            setHtml('method-alert', '<strong>🛡️ Zero-Knowledge:</strong> Enter your registered email and 16-char recovery code.');
+
+                            
+
+                            show('email-field');
+
+                            get('email').required = true;
+
+                            show('recovery-code-field');
+
+                            get('recovery-code').required = true;
+
+                            if (submitBtn) submitBtn.textContent = 'Verify Code';
+
+        
+
+                        } else if (state.method === 'password') {
+
+                            setText('title', 'Previous Password');
+
+                            setText('subtitle', 'Identity Verification');
+
+                            setHtml('method-alert', '<strong>🔄 Password Rotation:</strong> Use your old password to securely set a new one.');
+
+                            
+
+                            show('email-field');
+
+                            get('email').required = true;
+
+                            show('old-password-field');
+
+                            get('old-password').required = true;
+
+                            if (submitBtn) submitBtn.textContent = 'Continue';
+
+                        }
 
                     }
 
-    
+        
 
-                    try {
+                    function updateAccessSubMethod() {
 
-                        const response = await fetch('/api/auth/password-reset/validate-token', {
+                        const submitBtn = get('identity-submit');
+
+                        const btnEmail = get('btn-choice-email');
+
+                        const btnToken = get('btn-choice-token');
+
+        
+
+                        if (state.subMethod === 'email') {
+
+                            show('email-field');
+
+                            hide('token-field');
+
+                            show('username-field');
+
+                            if (get('email')) get('email').required = true;
+
+                            if (submitBtn) submitBtn.textContent = 'Send Reset Link';
+
+                            
+
+                            if (btnEmail) { btnEmail.style.background = 'var(--primary)'; btnEmail.style.color = 'white'; }
+
+                            if (btnToken) { btnToken.style.background = '#f3f4f6'; btnToken.style.color = '#374151'; }
+
+                        } else {
+
+                            hide('email-field');
+
+                            show('token-field');
+
+                            hide('username-field'); // Token is enough
+
+                            if (get('manual-token')) get('manual-token').required = true;
+
+                            if (submitBtn) submitBtn.textContent = 'Verify Token';
+
+        
+
+                            if (btnEmail) { btnEmail.style.background = '#f3f4f6'; btnEmail.style.color = '#374151'; }
+
+                            if (btnToken) { btnToken.style.background = 'var(--primary)'; btnToken.style.color = 'white'; }
+
+                        }
+
+                    }
+
+        
+
+                    // Sub-method buttons
+
+                    const btnEmail = get('btn-choice-email');
+
+                    if (btnEmail) btnEmail.addEventListener('click', () => { state.subMethod = 'email'; updateAccessSubMethod(); });
+
+                    
+
+                    const btnToken = get('btn-choice-token');
+
+                    if (btnToken) btnToken.addEventListener('click', () => { state.subMethod = 'token'; updateAccessSubMethod(); });
+
+        
+
+                    const btnBack = get('identity-back');
+
+                    if (btnBack) btnBack.addEventListener('click', () => {
+
+                        setText('title', 'Account Recovery');
+
+                        setText('subtitle', 'Select a method to regain access');
+
+                        switchView('view-methods');
+
+                    });
+
+        
+
+                    // Form Submission
+
+                    const formIdentity = get('identity-form');
+
+                    if (formIdentity) {
+
+                        formIdentity.addEventListener('submit', async (e) => {
+
+                            e.preventDefault();
+
+                            const btn = get('identity-submit');
+
+                            const originalText = btn.textContent;
+
+                            btn.disabled = true;
+
+                            btn.innerHTML = 'Processing...';
+
+                            setHtml('message-container', ''); // Clear alerts
+
+        
+
+                            // Harvest Values
+
+                            state.username = get('username') ? get('username').value : '';
+
+                            state.email = get('email') ? get('email').value : '';
+
+                            state.oldPassword = get('old-password') ? get('old-password').value : '';
+
+                            state.recoveryCode = get('recovery-code') ? get('recovery-code').value.trim().toUpperCase() : '';
+
+                            const manualToken = get('manual-token') ? get('manual-token').value.trim() : '';
+
+        
+
+                            try {
+
+                                if (state.method === 'access') {
+
+                                    if (state.subMethod === 'email') {
+
+                                        await apiRequestEmail();
+
+                                    } else {
+
+                                        state.token = manualToken;
+
+                                        await apiValidateToken(manualToken);
+
+                                    }
+
+                                } else {
+
+                                    // Code or Password methods move to Reset View directly (validated there or here?)
+
+                                    // Actually, logic was: move to Reset view, then submit calls API.
+
+                                    // But for recovery code, we might want to validate first? 
+
+                                    // The original code moved to Reset view immediately.
+
+                                    setupResetView();
+
+                                    switchView('view-reset');
+
+                                }
+
+                            } catch (error) {
+
+                                showAlert('danger', error.message);
+
+                            } finally {
+
+                                btn.disabled = false;
+
+                                btn.textContent = originalText;
+
+                            }
+
+                        });
+
+                    }
+
+        
+
+                    // --- Step 3: API Calls & Reset ---
+
+        
+
+                    async function apiRequestEmail() {
+
+                        const res = await fetch('/api/auth/password-reset/request', {
+
+                            method: 'POST',
+
+                            headers: { 'Content-Type': 'application/json' },
+
+                            body: JSON.stringify({ username: state.username, email: state.email })
+
+                        });
+
+                        const data = await res.json();
+
+                        if (!res.ok) throw new Error(data.error || 'Request failed');
+
+                        
+
+                        if (data.token) { // Dev mode
+
+                            showAlert('success', '<strong>Dev Mode:</strong> Token generated: ' + data.token);
+
+                            state.token = data.token;
+
+                            // Auto-advance for convenience
+
+                            // setTimeout(() => apiValidateToken(data.token), 2000); 
+
+                        } else if (data.email_sent === false) {
+
+                            showAlert('warning', 'Account found, but email service is offline. Contact admin.');
+
+                        } else {
+
+                            showAlert('success', 'Reset link sent to your email.');
+
+                        }
+
+                    }
+
+        
+
+                    async function apiValidateToken(token) {
+
+                        const res = await fetch('/api/auth/password-reset/validate-token', {
 
                             method: 'POST',
 
@@ -947,13 +877,11 @@
 
                         });
 
-                        const data = await response.json();
-
-                        
+                        const data = await res.json();
 
                         if (!data.valid) throw new Error(data.error || 'Invalid token');
 
-    
+        
 
                         state.username = data.username;
 
@@ -961,250 +889,178 @@
 
                         state.canRecoverViaEmail = data.can_recover_via_email;
 
-    
+        
 
                         setupResetView();
 
-                        showView('reset');
-
-                    } catch (error) {
-
-                        showAlert(error.message, 'danger');
-
-                        state.method = null;
-
-                        state.token = null;
-
-                        setTimeout(() => showView('methods'), 3000);
-
-                    } finally {
-
-                        if (btn) {
-
-                            btn.disabled = false;
-
-                            btn.textContent = 'Continue';
-
-                        }
+                        switchView('view-reset');
 
                     }
 
-                }
+        
 
-    
+                    function setupResetView() {
 
-                function setupResetView(customWarning = null) {
+                        setText('title', 'Set New Password');
 
-                    components.title.textContent = 'Set New Password';
-
-                    components.subtitle.textContent = `For account: ${state.username}`;
-
-    
-
-                    let warning = '';
-
-                    if (state.method === 'access') {
-
-                        if (state.canRecoverViaEmail) {
-
-                            warning = '<div class="alert alert-success"><strong>✅ Data Recovery:</strong> Your encrypted data will be restored automatically via email backup.</div>';
-
-                        } else if (state.hasEncryptedData) {
-
-                            warning = '<div class="alert alert-danger"><strong>⚠️ Data Loss Warning:</strong> Resetting your password via token will PERMANENTLY DELETE your encrypted profile data because no backup was found.</div>';
-
-                        } else {
-
-                            warning = '<div class="alert alert-info"><strong>💡 Note:</strong> Your account has no encrypted data yet, so no data will be lost.</div>';
-
-                        }
-
-                    } else if (state.method === 'code') {
-
-                        warning = '<div class="alert alert-success"><strong>✅ Data Preservation:</strong> Using your recovery code will preserve all your encrypted profile data.</div>';
-
-                    } else if (state.method === 'password') {
-
-                        warning = '<div class="alert alert-success"><strong>✅ Secure Rotation:</strong> Your data will be re-encrypted with your new password.</div>';
-
-                    }
-
-    
-
-                    components.resetAlert.innerHTML = warning;
-
-                }
-
-    
-
-                document.getElementById('reset-form').addEventListener('submit', async (e) => {
-
-                    e.preventDefault();
-
-                    const password = document.getElementById('new-password').value;
-
-                    const confirm = document.getElementById('confirm-password').value;
-
-    
-
-                    if (password !== confirm) {
-
-                        showAlert('Passwords do not match', 'danger', components.resetAlert);
-
-                        return;
-
-                    }
-
-    
-
-                    const btn = document.getElementById('reset-submit');
-
-                    btn.disabled = true;
-
-                    btn.innerHTML = `<div class="spinner"></div> Resetting...`;
-
-    
-
-                    try {
-
-                        let endpoint, body;
+                        setText('subtitle', `For account: ${state.username}`);
 
                         
 
-                        if (state.method === 'code') {
+                        let msg = '';
 
-                            endpoint = '/api/auth/password-reset/recovery';
+                        if (state.method === 'access') {
 
-                            body = { username: state.username, email: state.email, recovery_code: state.recoveryCode, new_password: password };
+                            if (state.canRecoverViaEmail) msg = '<div class="alert alert-success">✅ Data will be recovered via email backup.</div>';
 
-                        } else if (state.method === 'password') {
+                            else if (state.hasEncryptedData) msg = '<div class="alert alert-danger">⚠️ Warning: Data will be LOST (no backup).</div>';
 
-                            endpoint = '/api/auth/password/offline-change';
+                            else msg = '<div class="alert alert-info">Note: No encrypted data to lose.</div>';
 
-                            body = { username: state.username, email: state.email, old_password: state.oldPassword, new_password: password };
+                        } else if (state.method === 'code') {
 
-                        } else {
-
-                            // Standard email token reset
-
-                            endpoint = '/api/auth/password-reset/reset';
-
-                            body = { token: state.token, password: password };
-
-                        }
-
-    
-
-                        const response = await fetch(endpoint, {
-
-                            method: 'POST',
-
-                            headers: { 'Content-Type': 'application/json' },
-
-                            body: JSON.stringify(body)
-
-                        });
-
-                        const data = await response.json();
-
-    
-
-                        if (!response.ok) throw new Error(data.error);
-
-    
-
-                        if (data.dek_lost) {
-
-                            document.getElementById('success-message').innerHTML = 'Password updated. <span style="color: var(--danger)">Note: Encrypted data was lost.</span>';
+                            msg = '<div class="alert alert-success">✅ Recovery Code accepted. Data will be preserved.</div>';
 
                         } else {
 
-                            document.getElementById('success-message').textContent = 'Password updated and data preserved successfully.';
+                            msg = '<div class="alert alert-success">✅ Password will be securely rotated.</div>';
 
                         }
 
-    
-
-                        showView('success');
-
-                        components.title.textContent = 'Success!';
-
-                        components.subtitle.textContent = 'Account recovered';
-
-                        document.getElementById('footer-links').classList.add('hidden');
-
-                    } catch (error) {
-
-                        showAlert(error.message, 'danger', components.resetAlert);
-
-                    } finally {
-
-                        btn.disabled = false;
-
-                        btn.textContent = 'Reset Password';
+                        setHtml('reset-alert', msg);
 
                     }
 
-                });
+        
 
-    
+                    // Final Reset Submission
 
-                // Admin Help
+                    const formReset = get('reset-form');
 
-                document.getElementById('admin-help-link').addEventListener('click', (e) => {
+                    if (formReset) {
 
-                    e.preventDefault();
+                        formReset.addEventListener('submit', async (e) => {
 
-                    const username = prompt('Enter your username for the administrator to review:');
+                            e.preventDefault();
 
-                    const email = prompt('Enter your registered email:');
+                            const p1 = get('new-password').value;
 
-                    
+                            const p2 = get('confirm-password').value;
 
-                    if (username && email) {
+                            if (p1 !== p2) return showAlert('danger', 'Passwords do not match', 'reset-alert');
 
-                        fetch('/api/auth/request-admin-reset', {
+        
 
-                            method: 'POST',
+                            const btn = get('reset-submit');
 
-                            headers: { 'Content-Type': 'application/json' },
+                            btn.disabled = true;
 
-                            body: JSON.stringify({ username, email })
+                            btn.textContent = 'Updating...';
 
-                        }).then(r => r.json()).then(data => {
+        
 
-                            if (data.support_token) {
+                            try {
 
-                                alert(
+                                let endpoint, body;
 
-                                    `✅ Request Submitted!\n\n` +
+                                if (state.method === 'code') {
 
-                                    `Please contact your administrator and provide this verification code:\n\n` +
+                                    endpoint = '/api/auth/password-reset/recovery';
 
-                                    `👉 ${data.support_token}\n\n` +
+                                    body = { username: state.username, email: state.email, recovery_code: state.recoveryCode, new_password: p1 };
 
-                                    `The administrator can use this code to generate a secure reset link for you.`
+                                } else if (state.method === 'password') {
 
-                                );
+                                    endpoint = '/api/auth/password/offline-change';
 
-                            } else {
+                                    body = { username: state.username, email: state.email, old_password: state.oldPassword, new_password: p1 };
 
-                                alert(data.message || 'Request submitted.');
+                                } else {
+
+                                    endpoint = '/api/auth/password-reset/reset';
+
+                                    body = { token: state.token, password: p1 };
+
+                                }
+
+        
+
+                                const res = await fetch(endpoint, {
+
+                                    method: 'POST',
+
+                                    headers: { 'Content-Type': 'application/json' },
+
+                                    body: JSON.stringify(body)
+
+                                });
+
+                                const data = await res.json();
+
+                                if (!res.ok) throw new Error(data.error || 'Reset failed');
+
+        
+
+                                // Success
+
+                                switchView('view-success');
+
+                                setText('title', 'Success!');
+
+                                setText('subtitle', 'Account Recovered');
+
+                                const msg = data.dek_lost ? 'Password updated, but encrypted data was lost.' : 'Password updated and data recovered!';
+
+                                setText('success-message', msg);
+
+                                hide('footer-links');
+
+        
+
+                            } catch (err) {
+
+                                setHtml('reset-alert', `<div class="alert alert-danger">${err.message}</div>`);
+
+                            } finally {
+
+                                btn.disabled = false;
+
+                                btn.textContent = 'Reset Password';
 
                             }
 
-                        }).catch(err => {
-
-                            alert('Error submitting request: ' + err.message);
-
                         });
+
+                    }
+
+        
+
+                    // Helpers
+
+                    function showAlert(type, msg, containerId = 'message-container') {
+
+                        setHtml(containerId, `<div class="alert alert-${type}">${msg}</div>`);
+
+                    }
+
+        
+
+                    // Check URL token on load
+
+                    if (urlParams.get('token')) {
+
+                        state.method = 'access';
+
+                        state.subMethod = 'token';
+
+                        state.token = urlParams.get('token');
+
+                        apiValidateToken(state.token);
 
                     }
 
                 });
 
-            });
-
-        </script>
+            </script>
 </body>
 </html>
