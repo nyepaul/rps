@@ -14,7 +14,8 @@ class User(UserMixin):
                  created_at=None, last_login=None, updated_at=None, encrypted_dek=None, dek_iv=None,
                  reset_token=None, reset_token_expires=None, is_super_admin=False,
                  recovery_encrypted_dek=None, recovery_iv=None, recovery_salt=None,
-                 email_encrypted_dek=None, email_iv=None, email_salt=None, preferences=None):
+                 email_encrypted_dek=None, email_iv=None, email_salt=None, preferences=None,
+                 email_verified=False):
         self.id = id
         self.username = username
         self.email = email
@@ -36,6 +37,7 @@ class User(UserMixin):
         self.email_iv = email_iv
         self.email_salt = email_salt
         self.preferences = preferences
+        self.email_verified = bool(email_verified) if email_verified is not None else False
 
     @property
     def is_active(self):
@@ -94,6 +96,54 @@ class User(UserMixin):
             return User(**dict(row))
         return None
     
+    def generate_verification_token(self, expiry_hours=24):
+        """Generate a secure, signed email verification token (JWT)."""
+        import jwt
+        from flask import current_app
+        
+        payload = {
+            'user_id': self.id,
+            'email': self.email,
+            'exp': datetime.utcnow() + timedelta(hours=expiry_hours),
+            'iat': datetime.utcnow(),
+            'purpose': 'email_verification'
+        }
+        
+        token = jwt.encode(
+            payload,
+            current_app.config['SECRET_KEY'],
+            algorithm='HS256'
+        )
+        return token
+
+    def confirm_email(self, token):
+        """Verify the email verification token."""
+        import jwt
+        from flask import current_app
+        
+        try:
+            payload = jwt.decode(
+                token,
+                current_app.config['SECRET_KEY'],
+                algorithms=['HS256']
+            )
+            
+            if payload.get('purpose') != 'email_verification':
+                return False
+                
+            if payload.get('user_id') != self.id:
+                return False
+                
+            if payload.get('email') != self.email:
+                return False
+                
+            self.email_verified = True
+            self.save()
+            return True
+            
+        except Exception:
+            return False
+
     def save(self):
         """Save or update user in database."""
         with db.get_connection() as conn:
@@ -103,8 +153,8 @@ class User(UserMixin):
                 cursor.execute('''
                     INSERT INTO users (username, email, password_hash, is_active, is_admin, is_super_admin, created_at, updated_at, 
                                      encrypted_dek, dek_iv, recovery_encrypted_dek, recovery_iv, recovery_salt,
-                                     email_encrypted_dek, email_iv, email_salt, preferences)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                     email_encrypted_dek, email_iv, email_salt, preferences, email_verified)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (self.username, self.email, self.password_hash,
                       1 if self._is_active else 0,
                       1 if self._is_admin else 0,
@@ -113,7 +163,8 @@ class User(UserMixin):
                       self.encrypted_dek, self.dek_iv,
                       self.recovery_encrypted_dek, self.recovery_iv, self.recovery_salt,
                       self.email_encrypted_dek, self.email_iv, self.email_salt,
-                      self.preferences))
+                      self.preferences,
+                      1 if self.email_verified else 0)) # Default to 0 for new, but if set explicitly respect it
                 self.id = cursor.lastrowid
             else:
                 # Update existing user
@@ -122,7 +173,8 @@ class User(UserMixin):
                     SET username = ?, email = ?, password_hash = ?, is_active = ?,
                         is_admin = ?, is_super_admin = ?, last_login = ?, encrypted_dek = ?, dek_iv = ?,
                         recovery_encrypted_dek = ?, recovery_iv = ?, recovery_salt = ?,
-                        email_encrypted_dek = ?, email_iv = ?, email_salt = ?, preferences = ?
+                        email_encrypted_dek = ?, email_iv = ?, email_salt = ?, preferences = ?,
+                        email_verified = ?
                     WHERE id = ?
                 ''', (self.username, self.email, self.password_hash,
                       1 if self._is_active else 0,
@@ -132,6 +184,7 @@ class User(UserMixin):
                       self.recovery_encrypted_dek, self.recovery_iv, self.recovery_salt,
                       self.email_encrypted_dek, self.email_iv, self.email_salt,
                       self.preferences,
+                      1 if self.email_verified else 0,
                       self.id))
         return self
     

@@ -9,6 +9,70 @@ class EmailService:
     """Service for sending emails."""
 
     @staticmethod
+    def send_verification_email(email: str, token: str, base_url: str = None):
+        """Send email verification link.
+
+        Args:
+            email: Recipient email address
+            token: Verification token
+            base_url: Base URL of the application
+
+        Returns:
+            bool: True if email sent successfully
+        """
+        if not base_url:
+            base_url = os.getenv('APP_BASE_URL', 'http://localhost:5137')
+
+        verification_link = f"{base_url}/verify-email.html?token={token}"
+        subject = "Verify your RPS Account"
+
+        html_body = f"""
+        <!DOCTYPE html>
+        <html>
+        <body style="font-family: sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #2563eb;">Welcome to RPS!</h2>
+                <p>Please verify your email address to activate your account.</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{verification_link}" style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Verify Email</a>
+                </div>
+                <p>Or paste this link: <br><code>{verification_link}</code></p>
+                <p>This link expires in 24 hours.</p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        text_body = f"Welcome to RPS!\n\nPlease verify your email: {verification_link}\n\nThis link expires in 24 hours."
+
+        try:
+            # Try standard Flask-Mail (SMTP) first
+            msg = Message(subject=subject, recipients=[email], html=html_body, body=text_body)
+            mail.send(msg)
+            return True
+        except Exception as e:
+            print(f"Flask-Mail SMTP failed: {e}")
+            # Fallback to local sendmail binary
+            try:
+                import subprocess
+                from email.mime.text import MIMEText
+                from email.mime.multipart import MIMEMultipart
+                sender = current_app.config.get('MAIL_DEFAULT_SENDER', 'rps@pan2.app')
+                mime_msg = MIMEMultipart('alternative')
+                mime_msg['Subject'] = subject
+                mime_msg['From'] = sender
+                mime_msg['To'] = email
+                mime_msg.attach(MIMEText(text_body, 'plain'))
+                mime_msg.attach(MIMEText(html_body, 'html'))
+                
+                process = subprocess.Popen(['/usr/sbin/sendmail', '-t'], stdin=subprocess.PIPE)
+                process.communicate(input=mime_msg.as_bytes())
+                return process.returncode == 0
+            except Exception as ex:
+                print(f"Sendmail fallback failed: {ex}")
+                return False
+
+    @staticmethod
     def send_password_reset_email(email: str, token: str, base_url: str = None):
         """Send password reset email with token link.
 
