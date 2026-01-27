@@ -160,6 +160,15 @@ def register():
     user.dek_iv = dek_iv
     user.save()
 
+    # Send verification email
+    try:
+        from src.services.email_service import EmailService
+        token = user.generate_verification_token()
+        EmailService.send_verification_email(user.email, token)
+    except Exception as e:
+        print(f"Failed to send verification email: {e}")
+        # We still create the account, user can resend later
+
     # Log the registration
     EnhancedAuditLogger.log(
         action='USER_REGISTER',
@@ -173,27 +182,53 @@ def register():
         status_code=201
     )
 
-    # Log user in
-    login_user(user)
-
-    # Initialize session with last activity timestamp for inactivity timeout
-    from datetime import datetime
-    session.permanent = True
-    session['last_activity'] = datetime.utcnow().isoformat()
-
-    # Store decrypted DEK in session (base64)
-    session['user_dek'] = base64.b64encode(dek).decode('utf-8')
-
+    # DO NOT log user in immediately. Require verification.
     return jsonify({
-        'message': 'Registration successful',
+        'message': 'Registration successful. Please check your email to verify your account.',
         'user': {
-            'id': user.id,
             'username': user.username,
-            'email': user.email,
-            'is_admin': user.is_admin,
-            'is_super_admin': user.is_super_admin
+            'email': user.email
         }
     }), 201
+
+
+@auth_bp.route('/verify-email', methods=['POST'])
+@limiter.limit("5 per minute")
+def verify_email():
+    """Verify email address using token."""
+    try:
+        token = request.json.get('token')
+        if not token:
+            return jsonify({'error': 'Token required'}), 400
+            
+        # We need to decode the token to find the user first to call confirm_email
+        # Or simpler: verify token signature first using static method? 
+        # Actually User model instance method is better.
+        
+        # Decode token manually to get user_id
+        import jwt
+        from flask import current_app
+        payload = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
+        user_id = payload.get('user_id')
+        
+        user = User.get_by_id(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+            
+        if user.confirm_email(token):
+            EnhancedAuditLogger.log(
+                action='EMAIL_VERIFIED',
+                table_name='users',
+                user_id=user.id,
+                details=json.dumps({'email': user.email}),
+                status_code=200
+            )
+            return jsonify({'message': 'Email verified successfully. You can now log in.'}), 200
+        else:
+            return jsonify({'error': 'Invalid or expired token'}), 400
+            
+    except Exception as e:
+        return jsonify({'error': 'Invalid token'}), 400
 
 
 @auth_bp.route('/login', methods=['POST'])
@@ -257,6 +292,13 @@ def login():
             error_message='Account is disabled'
         )
         return jsonify({'error': 'Account is disabled'}), 401
+
+    # Check email verification (Legacy users might have NULL, treat as verified)
+    # email_verified: 1=Verified, 0=Unverified
+    # If attribute doesn't exist yet on model (migration lag), assume verified
+    is_verified = getattr(user, 'email_verified', 1) 
+    if is_verified == 0:
+         return jsonify({'error': 'Email not verified. Please check your inbox.'}), 403
 
     # Decrypt user's DEK or generate one for old users
     if user.encrypted_dek and user.dek_iv:
