@@ -755,7 +755,18 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, email })
                 }).then(r => r.json()).then(data => {
-                    alert(data.message || 'Request submitted.');
+                    if (data.support_token) {
+                        alert(
+                            `✅ Request Submitted!\n\n` +
+                            `Please contact your administrator and provide this verification code:\n\n` +
+                            `👉 ${data.support_token}\n\n` +
+                            `The administrator can use this code to generate a secure reset link for you.`
+                        );
+                    } else {
+                        alert(data.message || 'Request submitted.');
+                    }
+                }).catch(err => {
+                    alert('Error submitting request: ' + err.message);
                 });
             }
         });

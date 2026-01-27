@@ -1022,14 +1022,18 @@ def request_admin_reset():
         return jsonify({'message': 'If the account exists, a request has been submitted.'}), 200
 
     # Create request
-    PasswordResetRequest.create(user.id, request.remote_addr)
+    request_id, support_token = PasswordResetRequest.create(user.id, request.remote_addr)
 
     EnhancedAuditLogger.log(
         action='PASSWORD_RESET_REQUEST_SUBMITTED',
         table_name='users',
         user_id=user.id,
-        details=json.dumps({'type': 'admin_manual'}),
+        details=json.dumps({'type': 'admin_manual', 'support_token': support_token}),
         status_code=200
     )
 
-    return jsonify({'message': 'Your request has been submitted to the administrator.'}), 200
+    return jsonify({
+        'message': 'Your request has been submitted.',
+        'support_token': support_token,
+        'instruction': 'Please contact your administrator and provide this Support Token to verify your identity.'
+    }), 200

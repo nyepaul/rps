@@ -1,5 +1,5 @@
 {
-    "version": "3.9.59",
+    "version": "3.9.60",
     "release_date": "2026-01-26",
-    "release_notes": "Implemented JWT-based password reset tokens and server-peppered backup keys"
+    "release_notes": "Implemented secure Admin-Assisted Password Reset flow with Support Tokens"
 }

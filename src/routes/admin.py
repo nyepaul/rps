@@ -2582,11 +2582,89 @@ def list_password_requests():
     return jsonify(requests), 200
 
 @admin_bp.route('/password-requests/<int:request_id>/reset', methods=['POST'])
+@login_required
 @admin_required
 def process_password_reset(request_id):
-    """Process a password reset request."""
-    # ... existing implementation ...
-    pass # placeholder for search match
+    """
+    Process a password reset request.
+    
+    Actions:
+    - manual_reset: Admin sets a new password (data loss likely)
+    - generate_link: Admin gets a reset link to give to user (user sets password)
+    
+    Request body:
+        - action: 'manual_reset' or 'generate_link'
+        - new_password: (required for manual_reset)
+    """
+    try:
+        data = request.json
+        action = data.get('action', 'manual_reset')
+        
+        req = PasswordResetRequest.get_by_id(request_id)
+        if not req:
+            return jsonify({'error': 'Request not found'}), 404
+            
+        if req.status != 'pending':
+            return jsonify({'error': 'Request already processed'}), 400
+            
+        user = User.get_by_id(req.user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+            
+        if action == 'generate_link':
+            # Generate a standard secure reset token (JWT)
+            token = user.generate_reset_token(expiry_hours=24) # 24 hours for admin assisted
+            
+            # Construct the link
+            base_url = current_app.config.get('APP_BASE_URL', 'https://rps.pan2.app')
+            reset_link = f"{base_url}/account-recovery.html?token={token}"
+            
+            # Mark request as processed
+            req.mark_processed(current_user.id)
+            
+            enhanced_audit_logger.log_admin_action(
+                action='ADMIN_GENERATED_RESET_LINK',
+                details={'target_user': user.username, 'request_id': request_id},
+                user_id=current_user.id
+            )
+            
+            return jsonify({
+                'message': 'Reset link generated successfully',
+                'reset_link': reset_link,
+                'instruction': 'Send this link to the user via a secure channel. It expires in 24 hours.'
+            }), 200
+            
+        elif action == 'manual_reset':
+            new_password = data.get('new_password')
+            if not new_password or len(new_password) < 8:
+                return jsonify({'error': 'Password must be at least 8 characters'}), 400
+                
+            # Force reset (Data loss warning should be handled by UI)
+            dek_was_lost = user.force_password_reset(new_password)
+            
+            req.mark_processed(current_user.id)
+            
+            enhanced_audit_logger.log_admin_action(
+                action='ADMIN_RESET_PASSWORD',
+                details={'target_user': user.username, 'dek_lost': dek_was_lost},
+                user_id=current_user.id
+            )
+            
+            msg = 'Password reset successfully.'
+            if dek_was_lost:
+                msg += ' Warning: Encrypted data was lost (no old password available).'
+                
+            return jsonify({
+                'message': msg,
+                'dek_lost': dek_was_lost
+            }), 200
+            
+        else:
+            return jsonify({'error': 'Invalid action'}), 400
+
+    except Exception as e:
+        print(f"Error processing password reset: {e}")
+        return jsonify({'error': str(e)}), 500
 
 # ============================================================================
 # User Backup Summary & Bulk Operations

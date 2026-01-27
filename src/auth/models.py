@@ -512,7 +512,7 @@ class User(UserMixin):
 class PasswordResetRequest:
     """Model for admin password reset requests."""
     
-    def __init__(self, id, user_id, status='pending', request_ip=None, created_at=None, processed_at=None, processed_by=None):
+    def __init__(self, id, user_id, status='pending', request_ip=None, created_at=None, processed_at=None, processed_by=None, support_token=None, expires_at=None):
         self.id = id
         self.user_id = user_id
         self.status = status
@@ -520,16 +520,29 @@ class PasswordResetRequest:
         self.created_at = created_at or datetime.now().isoformat()
         self.processed_at = processed_at
         self.processed_by = processed_by
+        self.support_token = support_token
+        self.expires_at = expires_at
 
     @staticmethod
     def create(user_id, ip_address=None):
+        import secrets
+        import string
+        
+        # Generate a short, readable support token (e.g., "A7X-29P")
+        chars = string.ascii_uppercase + string.digits.replace('0', '').replace('1', '').replace('I', '').replace('O', '') # Ambiguity reduction
+        token_part1 = ''.join(secrets.choice(chars) for _ in range(3))
+        token_part2 = ''.join(secrets.choice(chars) for _ in range(3))
+        support_token = f"{token_part1}-{token_part2}"
+        
+        expires_at = (datetime.now() + timedelta(hours=48)).isoformat()
+        
         with db.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO password_reset_requests (user_id, status, request_ip, created_at)
-                VALUES (?, 'pending', ?, ?)
-            ''', (user_id, ip_address, datetime.now().isoformat()))
-            return cursor.lastrowid
+                INSERT INTO password_reset_requests (user_id, status, request_ip, created_at, support_token, expires_at)
+                VALUES (?, 'pending', ?, ?, ?, ?)
+            ''', (user_id, ip_address, datetime.now().isoformat(), support_token, expires_at))
+            return cursor.lastrowid, support_token
 
     @staticmethod
     def get_pending():
