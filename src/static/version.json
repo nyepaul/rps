@@ -1,5 +1,5 @@
 {
-    "version": "3.9.63",
+    "version": "3.9.64",
     "release_date": "2026-01-27",
-    "release_notes": "Extracted account recovery script to external file to fix CSP blocking"
+    "release_notes": "Fixed admin tab loading error by adding copyToClipboard to dom.js"
 }

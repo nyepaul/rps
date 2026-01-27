@@ -195,3 +195,41 @@ export function hideSpinner() {
         spinner.remove();
     }
 }
+
+/**
+ * Copy text to clipboard
+ */
+export async function copyToClipboard(text, message = 'Copied to clipboard!') {
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(text);
+            showSuccess(message);
+        } else {
+            // Fallback
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-9999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showSuccess(message);
+                } else {
+                    showError('Failed to copy to clipboard');
+                }
+            } catch (err) {
+                console.error('Fallback copy failed', err);
+                showError('Failed to copy to clipboard');
+            }
+            
+            document.body.removeChild(textArea);
+        }
+    } catch (err) {
+        console.error('Failed to copy:', err);
+        showError('Failed to copy to clipboard');
+    }
+}
