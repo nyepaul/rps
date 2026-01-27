@@ -889,6 +889,8 @@ def extract_assets():
     existing_assets = data.get('existing_assets', [])
     profile_name = data.get('profile_name')
 
+    print(f"Extraction request: file={file_name}, provider={requested_provider}, model={requested_model}, profile={profile_name}")
+
     # Detect CSV from filename if mime_type is missing or wrong
     if file_name.lower().endswith('.csv') or mime_type in ['text/csv', 'application/csv', 'application/vnd.ms-excel']:
         mime_type = 'text/csv'
@@ -956,6 +958,7 @@ def extract_assets():
     """
 
     def generate():
+        print(f"Starting generator for {provider} extraction...")
         try:
             if (mime_type == 'application/pdf' or image_b64.startswith('JVBERi')) and mime_type != 'text/csv':
                 # Handle multi-page PDF for ALL providers
@@ -1079,6 +1082,7 @@ def extract_assets():
 @limiter.limit("50 per hour")
 def extract_income():
     """Extract income streams from an uploaded file (image, PDF, or CSV) using AI."""
+    print("Received extract-income request")
     data = request.json
     image_b64 = data.get('image')
     mime_type = data.get('mime_type')
@@ -1086,6 +1090,8 @@ def extract_income():
     requested_provider = data.get('llm_provider')
     requested_model = data.get('llm_model')
     profile_name = data.get('profile_name')
+
+    print(f"Extraction request (income): file={file_name}, provider={requested_provider}, model={requested_model}, profile={profile_name}")
 
     # Detect CSV from filename if mime_type is missing or wrong
     if file_name.lower().endswith('.csv') or mime_type in ['text/csv', 'application/csv', 'application/vnd.ms-excel']:
@@ -1148,8 +1154,9 @@ def extract_income():
     3. If frequency is unclear, default to "monthly" for regular income, "annual" for one-time or tax documents.
     4. Return ONLY a JSON array: [{"name": "...", "amount": ..., "frequency": "..."}]
     """
-    
+
     def generate():
+        print(f"Starting generator for income extraction (provider={provider})...")
         try:
             if (mime_type == 'application/pdf' or image_b64.startswith('JVBERi')) and mime_type != 'text/csv':
                 # Handle multi-page PDF for ALL providers
@@ -1273,6 +1280,7 @@ def extract_income():
 @limiter.limit("50 per hour")
 def extract_expenses():
     """Extract expenses from an uploaded file (image, PDF, or CSV) using AI."""
+    print("Received extract-expenses request")
     data = request.json
     image_b64 = data.get('image')
     mime_type = data.get('mime_type')
@@ -1280,6 +1288,8 @@ def extract_expenses():
     requested_provider = data.get('llm_provider')
     requested_model = data.get('llm_model')
     profile_name = data.get('profile_name')
+
+    print(f"Extraction request (expenses): file={file_name}, provider={requested_provider}, model={requested_model}, profile={profile_name}")
 
     # Detect CSV from filename if mime_type is missing or wrong
     if file_name.lower().endswith('.csv') or mime_type in ['text/csv', 'application/csv', 'application/vnd.ms-excel']:
@@ -1348,6 +1358,7 @@ def extract_expenses():
     """
 
     def generate():
+        print(f"Starting generator for expenses extraction (provider={provider})...")
         try:
             if (mime_type == 'application/pdf' or image_b64.startswith('JVBERi')) and mime_type != 'text/csv':
                 # Handle multi-page PDF for ALL providers
