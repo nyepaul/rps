@@ -51,7 +51,43 @@ class TestAIServices:
         assert mock_post.called
         # Verify it called the first model in the list
         args, kwargs = mock_post.call_args
-        assert 'gemini-3-flash-preview' in args[0]
+        assert 'gemini-2.0-flash' in args[0]
+
+    @patch('src.routes.ai_services.requests.post')
+    def test_call_gemini_specific_model(self, mock_post, client, test_user, test_profile, encryption_service):
+        """Test extract-assets with a specific requested model."""
+        
+        # Mock response
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            'candidates': [{'content': {'parts': [{'text': '[]'}]}}]
+        }
+        mock_post.return_value = mock_response
+
+        # Setup profile
+        test_profile.data = {
+            'api_keys': {'gemini_api_key': 'test_key'},
+            'assets': {'taxable_accounts': []}
+        }
+        test_profile.save()
+
+        # Login
+        client.post('/api/auth/login', json={'username': 'testuser', 'password': 'TestPass123'})
+
+        # Request a specific model
+        response = client.post('/api/extract-assets', json={
+            'image': 'SGVsbG8=',
+            'llm_provider': 'gemini',
+            'llm_model': 'gemini-1.5-pro',
+            'profile_name': test_profile.name
+        })
+
+        assert response.status_code == 200
+        assert mock_post.called
+        # Verify it called the requested model
+        args, kwargs = mock_post.call_args
+        assert 'gemini-1.5-pro' in args[0]
 
     @patch('src.routes.ai_services.requests.post')
     def test_call_gemini_fallback_failover(self, mock_post, client, test_user, test_profile, encryption_service):
@@ -91,8 +127,8 @@ class TestAIServices:
         
         # Check call args
         calls = mock_post.call_args_list
-        assert 'gemini-3-flash-preview' in calls[0][0][0]
-        assert 'gemini-2.5-pro' in calls[1][0][0]
+        assert 'gemini-2.0-flash' in calls[0][0][0]
+        assert 'gemini-1.5-flash' in calls[1][0][0]
 
     @patch('src.routes.ai_services.genai')
     def test_advisor_chat_success(self, mock_genai, client, test_user, test_profile, encryption_service):
@@ -150,7 +186,7 @@ class TestAIServices:
 
         assert response.status_code == 400
         data = response.get_json()
-        assert 'configure in Settings' in data['error']
+        assert 'configure in AI Settings' in data['error']
 
     def test_extract_assets_input_validation(self, client, test_user):
         """Test validation for extract-assets."""

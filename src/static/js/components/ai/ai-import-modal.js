@@ -23,6 +23,24 @@ export function showAIImportModal(type, profileName, onComplete) {
         'expenses': 'Expenses'
     };
 
+    const MODELS = {
+        'gemini': [
+            { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Fastest)' },
+            { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Reliable)' },
+            { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Best Quality)' }
+        ],
+        'claude': [
+            { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet' },
+            { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku' },
+            { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus' }
+        ],
+        'openai': [
+            { id: 'gpt-4o', name: 'GPT-4o (Standard)' },
+            { id: 'gpt-4o-mini', name: 'GPT-4o-mini (Fast)' }
+        ],
+        'ollama': [] // Populated from server if available
+    };
+
     modal.innerHTML = `
         <div class="modal-content" style="max-width: 500px; width: 90%;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -42,14 +60,22 @@ export function showAIImportModal(type, profileName, onComplete) {
                     <input type="file" id="ai-file-input" accept="image/*,.pdf,.csv,application/pdf,text/csv" style="display: none;">
                 </div>
 
-                <div style="margin-top: 20px;">
-                    <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px;">AI Provider</label>
-                    <select id="ai-provider-select" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
-                        <option value="gemini">Google Gemini (Recommended for Vision)</option>
-                        <option value="claude">Anthropic Claude</option>
-                        <option value="openai">OpenAI (GPT-4o)</option>
-                        <option value="ollama">Local Ollama (Uses model from settings)</option>
-                    </select>
+                <div style="margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px;">AI Provider</label>
+                        <select id="ai-provider-select" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
+                            <option value="gemini">Google Gemini</option>
+                            <option value="claude">Anthropic Claude</option>
+                            <option value="openai">OpenAI (GPT-4o)</option>
+                            <option value="ollama">Local Ollama</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px;">Model</label>
+                        <select id="ai-model-select" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
+                            <!-- Models will be populated here -->
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -80,7 +106,48 @@ export function showAIImportModal(type, profileName, onComplete) {
     const processingStep = modal.querySelector('#ai-processing-step');
     const previewStep = modal.querySelector('#ai-preview-step');
     const providerSelect = modal.querySelector('#ai-provider-select');
+    const modelSelect = modal.querySelector('#ai-model-select');
     let extractedData = null;
+
+    const updateModelList = async (provider) => {
+        modelSelect.innerHTML = '';
+        
+        if (provider === 'ollama') {
+            try {
+                // Try to fetch local models from backend
+                const response = await apiClient.get('/api/ollama/models');
+                if (response && response.models) {
+                    MODELS.ollama = response.models.map(m => ({ id: m.name, name: m.name }));
+                }
+            } catch (e) {
+                console.warn('Could not fetch Ollama models', e);
+            }
+            
+            if (MODELS.ollama.length === 0) {
+                // Add a default if nothing found
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'Auto (llama3.2-vision)';
+                modelSelect.appendChild(option);
+                return;
+            }
+        }
+
+        const providerModels = MODELS[provider] || [];
+        providerModels.forEach(m => {
+            const option = document.createElement('option');
+            option.value = m.id;
+            option.textContent = m.name;
+            modelSelect.appendChild(option);
+        });
+
+        if (providerModels.length === 0) {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'Default Model';
+            modelSelect.appendChild(option);
+        }
+    };
 
     // Pre-select preferred provider if available
     const initProvider = async () => {
@@ -92,11 +159,20 @@ export function showAIImportModal(type, profileName, onComplete) {
                 // If Ollama is configured but Gemini isn't, default to Ollama
                 providerSelect.value = 'ollama';
             }
+            await updateModelList(providerSelect.value);
+            
+            // For Ollama, if we have a preferred model in settings, try to select it
+            if (providerSelect.value === 'ollama' && response && response.ollama_model) {
+                modelSelect.value = response.ollama_model;
+            }
         } catch (error) {
             console.warn('Could not load preferred AI provider, defaulting to Gemini', error);
+            await updateModelList('gemini');
         }
     };
     initProvider();
+
+    providerSelect.addEventListener('change', () => updateModelList(providerSelect.value));
 
     // Handle close
     const closeModal = () => modal.remove();
@@ -168,6 +244,7 @@ export function showAIImportModal(type, profileName, onComplete) {
         }
 
         const provider = modal.querySelector('#ai-provider-select').value;
+        const model = modal.querySelector('#ai-model-select').value;
 
         // Show processing state
         uploadStep.style.display = 'none';
@@ -219,6 +296,7 @@ export function showAIImportModal(type, profileName, onComplete) {
                         mime_type: mimeType,
                         file_name: file.name,
                         llm_provider: provider,
+                        llm_model: model,
                         profile_name: profileName
                     }, updateProgress);
 
