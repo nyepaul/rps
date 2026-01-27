@@ -94,7 +94,9 @@ def test_db(test_db_dir, request):
                 email_encrypted_dek TEXT,
                 email_iv TEXT,
                 email_salt TEXT,
-                preferences TEXT
+                preferences TEXT,
+                email_verified BOOLEAN DEFAULT 0,
+                email_verification_sent_at TEXT
             )
         ''')
 
@@ -415,7 +417,8 @@ def test_user(test_db):
         id=None,
         username='testuser',
         email='test@example.com',
-        password_hash=User.hash_password('TestPass123')
+        password_hash=User.hash_password('TestPass123'),
+        email_verified=True
     )
     user.save()
     return user
@@ -429,7 +432,8 @@ def test_admin(test_db):
         username='admin',
         email='admin@example.com',
         password_hash=User.hash_password('AdminPass123'),
-        is_admin=True
+        is_admin=True,
+        email_verified=True
     )
     user.save()
     return user
@@ -444,7 +448,8 @@ def test_super_admin(test_db):
         email='super@example.com',
         password_hash=User.hash_password('SuperPass123'),
         is_admin=True,
-        is_super_admin=True
+        is_super_admin=True,
+        email_verified=True
     )
     user.save()
     return user

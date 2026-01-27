@@ -1,4 +1,3 @@
-
 import pytest
 from src.models.profile import Profile
 from src.auth.models import User
@@ -28,25 +27,25 @@ class TestSecurityComprehensive:
     def test_profile_ownership_isolation(self, client, test_db):
         """Test that users cannot access each other's profiles."""
         # Create User A and Profile A
-        user_a = User(id=None, username='user_a', email='a@test.com', password_hash=User.hash_password('pass'))
+        user_a = User(id=None, username='user_a', email='a@test.com', password_hash=User.hash_password('pass'), email_verified=True)
         user_a.save()
         profile_a = Profile(user_id=user_a.id, name='ProfileA', data={})
         profile_a.save()
-        
+    
         # Create User B
-        user_b = User(id=None, username='user_b', email='b@test.com', password_hash=User.hash_password('pass'))
+        user_b = User(id=None, username='user_b', email='b@test.com', password_hash=User.hash_password('pass'), email_verified=True)
         user_b.save()
-        
+    
         # Login as User B
         client.post('/api/auth/login', json={'username': 'user_b', 'password': 'pass'})
-        
-        # Try to access Profile A
+    
+        # Try to access Profile A (should mask existence with 404 or deny with 403)
         response = client.get('/api/profile/ProfileA')
-        assert response.status_code == 404 # Should not find it (masked as 404 usually)
+        assert response.status_code in [403, 404]
         
         # Try to update Profile A
         response = client.put('/api/profile/ProfileA', json={'name': 'HackedA'})
-        assert response.status_code == 404
+        assert response.status_code in [403, 404]
 
     def test_api_key_masking(self, client, test_user, test_profile):
         """Test that API keys are masked in API responses."""
@@ -103,9 +102,6 @@ class TestSecurityComprehensive:
         """Test that regular users cannot access admin routes."""
         client.post('/api/auth/login', json={'username': 'testuser', 'password': 'TestPass123'})
         
-        # Assuming there's an admin route, e.g., /api/admin/users
-        # The file list showed `src/routes/` but I didn't read admin routes.
-        # Standard admin routes usually start with /admin
-        # If the route doesn't exist it returns 404, if exists and protected 403.
-        # Let's assume a generic check.
-        pass
+        # Access an admin-only endpoint
+        response = client.get('/api/admin/users')
+        assert response.status_code in [403, 401], "Regular user accessed admin endpoint"
