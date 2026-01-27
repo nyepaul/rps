@@ -219,6 +219,18 @@ StandardError=append:$TARGET_DIR/logs/rps-error.log
 WantedBy=multi-user.target
 EOF
 
+# Cleanup port 5137 to prevent "Address already in use" errors
+echo -e "${YELLOW}→ Cleaning up port 5137...${NC}"
+if command -v fuser >/dev/null 2>&1; then
+    fuser -k 5137/tcp >/dev/null 2>&1 || true
+elif command -v lsof >/dev/null 2>&1; then
+    # shellcheck disable=SC2046
+    PID=$(lsof -t -i :5137)
+    if [ -n "$PID" ]; then
+        kill -9 "$PID" >/dev/null 2>&1 || true
+    fi
+fi
+
 # Validate application can start (with timeout)
 echo -e "${YELLOW}→ Validating application...${NC}"
 cd "$TARGET_DIR"
