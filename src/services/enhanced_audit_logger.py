@@ -157,6 +157,7 @@ class EnhancedAuditLogger:
             # Using ip-api.com free tier (no API key required)
             # Free tier limit: 45 requests/minute
             # Added lat/lon for map visualization
+            # Use short timeout to prevent blocking
             response = requests.get(
                 f'http://ip-api.com/json/{ip_address}?fields=status,country,countryCode,region,regionName,city,timezone,lat,lon',
                 timeout=2
@@ -180,7 +181,9 @@ class EnhancedAuditLogger:
                     }
                     return geo_data
         except Exception as e:
-            print(f"Geo-location lookup failed: {e}")
+            # Silently fail or log debug
+            # print(f"Geo-location lookup failed: {e}")
+            pass
 
         return None
 
