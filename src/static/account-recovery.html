@@ -475,10 +475,15 @@
 
         document.querySelectorAll('.method-option').forEach(opt => {
             opt.addEventListener('click', () => {
-                state.method = opt.dataset.method;
-                state.subMethod = null;
-                setupIdentityView();
-                showView('identity');
+                try {
+                    state.method = opt.dataset.method;
+                    state.subMethod = null;
+                    setupIdentityView();
+                    showView('identity');
+                } catch (e) {
+                    console.error("Navigation error:", e);
+                    alert("An error occurred: " + e.message);
+                }
             });
         });
 
