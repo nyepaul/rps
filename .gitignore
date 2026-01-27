@@ -48,3 +48,5 @@ backups/system/rps_system_*
 
 # Log files in root (should be in logs/)
 /*.log
+.coverage
+scripts/test_email_config.py
