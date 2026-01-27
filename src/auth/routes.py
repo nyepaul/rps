@@ -524,6 +524,14 @@ def request_password_reset():
             'email_sent': False
         }), 200
 
+    # Check email verification status
+    is_verified = getattr(user, 'email_verified', 1)
+    if is_verified == 0:
+        return jsonify({
+            'error': 'Email not verified. Please verify your email first.',
+            'email_sent': False
+        }), 400
+
     # Generate reset token
     token = user.generate_reset_token(expiry_hours=1)
 

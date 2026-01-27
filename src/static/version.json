@@ -1,5 +1,5 @@
 {
-    "version": "3.9.61",
+    "version": "3.9.62",
     "release_date": "2026-01-26",
-    "release_notes": "Implemented email verification flow on registration"
+    "release_notes": "Enforced email verification check in password reset flow"
 }
