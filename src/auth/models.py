@@ -15,7 +15,7 @@ class User(UserMixin):
                  reset_token=None, reset_token_expires=None, is_super_admin=False,
                  recovery_encrypted_dek=None, recovery_iv=None, recovery_salt=None,
                  email_encrypted_dek=None, email_iv=None, email_salt=None, preferences=None,
-                 email_verified=False):
+                 email_verified=False, email_verification_sent_at=None):
         self.id = id
         self.username = username
         self.email = email
@@ -38,6 +38,7 @@ class User(UserMixin):
         self.email_salt = email_salt
         self.preferences = preferences
         self.email_verified = bool(email_verified) if email_verified is not None else False
+        self.email_verification_sent_at = email_verification_sent_at
 
     @property
     def is_active(self):
