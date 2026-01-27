@@ -174,16 +174,29 @@ class APIClient {
                     if (!line.trim()) continue;
                     try {
                         const data = JSON.parse(line);
+                        // Check for error in the data object itself
+                        if (data.error) {
+                            throw new APIError(data.error, response.status, data);
+                        }
+                        
                         if (data.progress !== undefined || data.status === 'processing') {
                             if (onProgress) onProgress(data);
                         } else {
                             result = data; // Final result
                         }
                     } catch (e) {
-                        console.warn('Failed to parse stream line:', line);
+                        if (e instanceof APIError) throw e;
+                        console.warn('Failed to parse stream line:', line, e);
                     }
                 }
             }
+            
+            if (!result && response.ok) {
+                // If we finished but never got a final result object, check if we had any progress
+                // If we have nothing, maybe the backend failed silently
+                console.warn('Stream finished without a final result object');
+            }
+            
             return result;
         } catch (error) {
             throw error;
