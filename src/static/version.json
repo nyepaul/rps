@@ -1,5 +1,5 @@
 {
-    "version": "3.9.67",
+    "version": "3.9.68",
     "release_date": "2026-01-27",
-    "release_notes": "fix: CSV import now works for Ollama and improved CSV detection for all AI providers"
+    "release_notes": "fix: Ollama CSV import now uses vision model for text (works with llama3.2-vision)"
 }

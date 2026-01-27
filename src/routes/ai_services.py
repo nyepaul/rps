@@ -1002,10 +1002,12 @@ def extract_assets():
                     if mime_type == 'text/csv':
                         csv_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
                         enhanced_prompt = f"{prompt}\n\nCSV Data:\n```\n{csv_content}\n```"
+                        # For CSV, vision models work fine with text-only input
+                        print(f"Ollama CSV extraction using model: {ollama_model}")
                         response = requests.post(
                             f"{ollama_url}/api/chat",
                             json={
-                                'model': ollama_model.replace('-vision', '').replace(':latest', '') or 'llama3.2',
+                                'model': ollama_model,
                                 'messages': [{'role': 'user', 'content': enhanced_prompt}],
                                 'stream': False,
                                 'format': 'json'
@@ -1038,7 +1040,7 @@ def extract_assets():
                     if response.status_code == 200:
                         text_response = response.json()['message']['content']
                     else:
-                        raise Exception(f"Ollama error: {response.text}")
+                        raise Exception(f"Ollama error ({response.status_code}): {response.text}")
 
                 extracted_assets = resilient_parse_llm_json(text_response, 'assets')
                 yield json.dumps({'assets': extracted_assets, 'status': 'success', 'progress': 100}) + '\n'
@@ -1189,10 +1191,12 @@ def extract_income():
                     if mime_type == 'text/csv':
                         csv_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
                         enhanced_prompt = f"{prompt}\n\nCSV Data:\n```\n{csv_content}\n```"
+                        # For CSV, vision models work fine with text-only input
+                        print(f"Ollama CSV extraction using model: {ollama_model}")
                         response = requests.post(
                             f"{ollama_url}/api/chat",
                             json={
-                                'model': ollama_model.replace('-vision', '').replace(':latest', '') or 'llama3.2',
+                                'model': ollama_model,
                                 'messages': [{'role': 'user', 'content': enhanced_prompt}],
                                 'stream': False,
                                 'format': 'json'
@@ -1225,7 +1229,7 @@ def extract_income():
                     if response.status_code == 200:
                         text_response = response.json()['message']['content']
                     else:
-                        raise Exception(f"Ollama error: {response.text}")
+                        raise Exception(f"Ollama error ({response.status_code}): {response.text}")
 
                 extracted_income = resilient_parse_llm_json(text_response, 'income')
                 yield json.dumps({'income': extracted_income, 'status': 'success', 'progress': 100}) + '\n'
@@ -1381,10 +1385,12 @@ def extract_expenses():
                     if mime_type == 'text/csv':
                         csv_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
                         enhanced_prompt = f"{prompt}\n\nCSV Data:\n```\n{csv_content}\n```"
+                        # For CSV, vision models work fine with text-only input
+                        print(f"Ollama CSV extraction using model: {ollama_model}")
                         response = requests.post(
                             f"{ollama_url}/api/chat",
                             json={
-                                'model': ollama_model.replace('-vision', '').replace(':latest', '') or 'llama3.2',
+                                'model': ollama_model,
                                 'messages': [{'role': 'user', 'content': enhanced_prompt}],
                                 'stream': False,
                                 'format': 'json'
@@ -1417,7 +1423,7 @@ def extract_expenses():
                     if response.status_code == 200:
                         text_response = response.json()['message']['content']
                     else:
-                        raise Exception(f"Ollama error: {response.text}")
+                        raise Exception(f"Ollama error ({response.status_code}): {response.text}")
 
                 extracted_expenses = resilient_parse_llm_json(text_response, 'expenses')
                 yield json.dumps({'expenses': extracted_expenses, 'status': 'success', 'progress': 100}) + '\n'
