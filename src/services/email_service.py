@@ -162,6 +162,7 @@ class EmailService:
         """
 
         try:
+            # Try standard Flask-Mail (SMTP) first
             msg = Message(
                 subject=subject,
                 recipients=[email],
@@ -171,7 +172,46 @@ class EmailService:
             mail.send(msg)
             return True
         except Exception as e:
-            print(f"Failed to send password reset email: {e}")
+            print(f"Flask-Mail SMTP failed: {e}")
+            
+            # Fallback: Try direct local sendmail binary if on localhost
+            # This bypasses SMTP/TLS issues common with local Postfix configurations
+            server = current_app.config.get('MAIL_SERVER')
+            if server in ['localhost', '127.0.0.1']:
+                try:
+                    print("Attempting fallback to local sendmail binary...")
+                    import subprocess
+                    from email.mime.text import MIMEText
+                    from email.mime.multipart import MIMEMultipart
+
+                    sender = current_app.config.get('MAIL_DEFAULT_SENDER', 'rps@pan2.app')
+                    
+                    mime_msg = MIMEMultipart('alternative')
+                    mime_msg['Subject'] = subject
+                    mime_msg['From'] = sender
+                    mime_msg['To'] = email
+
+                    part1 = MIMEText(text_body, 'plain')
+                    part2 = MIMEText(html_body, 'html')
+                    mime_msg.attach(part1)
+                    mime_msg.attach(part2)
+
+                    process = subprocess.Popen(
+                        ['/usr/sbin/sendmail', '-t'],
+                        stdin=subprocess.PIPE,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE
+                    )
+                    stdout, stderr = process.communicate(input=mime_msg.as_bytes())
+                    
+                    if process.returncode == 0:
+                        print("Fallback to sendmail binary succeeded.")
+                        return True
+                    else:
+                        print(f"Sendmail binary failed: {stderr.decode()}")
+                except Exception as ex:
+                    print(f"Sendmail fallback exception: {ex}")
+
             return False
 
     @staticmethod

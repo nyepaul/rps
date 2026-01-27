@@ -1,5 +1,5 @@
 {
-    "version": "3.9.57",
+    "version": "3.9.58",
     "release_date": "2026-01-26",
-    "release_notes": "Corrected version regression and configured local sendmail for rps@pan2.app"
+    "release_notes": "Added fallback to local sendmail binary for robust email delivery"
 }
