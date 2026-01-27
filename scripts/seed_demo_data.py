@@ -37,7 +37,7 @@ def seed_demo_data():
         # 1. Setup Demo User & Keys
         username = 'demo'
         email = 'demo@example.com'
-        password = 'demo'
+        password = 'Demo1234'
         
         # Generate Salt & Hash Password
         password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -282,7 +282,7 @@ def seed_demo_data():
 
         conn.commit()
         print(f"✅ Successfully seeded {len(profiles)} demo profiles.")
-        print("Login: demo / demo")
+        print("Login: demo / Demo1234")
 
     except Exception as e:
         conn.rollback()

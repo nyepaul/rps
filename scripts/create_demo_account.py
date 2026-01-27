@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 import bcrypt
 
-def create_demo_account(db_path, source_username='paul', demo_username='demo', demo_password='demo'):
+def create_demo_account(db_path, source_username='paul', demo_username='demo', demo_password='Demo1234'):
     """Create demo account and copy all data from source user."""
 
     conn = sqlite3.connect(db_path)

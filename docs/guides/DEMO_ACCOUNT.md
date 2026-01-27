@@ -7,7 +7,7 @@ A demo account has been created with all data copied from paul's account.
 ## Login Credentials
 
 - **Username**: `demo`
-- **Password**: `demo`
+- **Password**: `Demo1234`
 - **Email**: `demo@example.com`
 
 ## Data Copied
@@ -60,14 +60,14 @@ The following data was copied from paul's account to the demo account:
 1. **Via Web Interface**:
    - Go to http://localhost:5137/login (or your deployed URL)
    - Enter username: `demo`
-   - Enter password: `demo`
+   - Enter password: `Demo1234`
    - You should see the dashboard with Paul's profile and scenarios
 
 2. **Via API** (if needed):
    ```bash
    curl -X POST http://localhost:5137/api/auth/login \
      -H "Content-Type: application/json" \
-     -d '{"username": "demo", "password": "demo"}'
+     -d '{"username": "demo", "password": "Demo1234"}'
    ```
 
 ## Recreating the Demo Account

@@ -1395,7 +1395,7 @@ def reset_demo_account():
         return jsonify({
             'message': 'Demo account reset successfully',
             'username': 'demo',
-            'password': 'demo',
+            'password': 'Demo1234',
             'profiles': ['Demo Junior', 'Demo Thompson', 'Demo Starman', 'Demo Dudeman']
         }), 200
 

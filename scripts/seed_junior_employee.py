@@ -37,7 +37,7 @@ def seed_junior_employee():
         # 1. Setup Demo User
         username = 'demo'
         email = 'demo@example.com'
-        password = 'demo'
+        password = 'Demo1234'
         
         # Generate Salt & Hash Password
         password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -187,7 +187,7 @@ def seed_junior_employee():
         
         conn.commit()
         print("✅ Successfully seeded 'Demo Junior' profile.")
-        print("Login: demo / demo")
+        print("Login: demo / Demo1234")
 
     except Exception as e:
         conn.rollback()

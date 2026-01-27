@@ -23,7 +23,7 @@ export async function renderDemoManagement(container) {
                         <div style="font-weight: 700; font-size: 11px; margin-bottom: 4px; text-transform: uppercase;">DEMO ACCOUNT DETAILS:</div>
                         <div style="font-size: 12px; font-family: monospace;">
                             <div>Username: <strong>demo</strong></div>
-                            <div>Password: <strong>demo1234</strong></div>
+                            <div>Password: <strong>Demo1234</strong></div>
                         </div>
                     </div>
                     <div style="background: var(--info-bg); padding: 10px; border-radius: 6px; border-left: 3px solid var(--accent-color);">

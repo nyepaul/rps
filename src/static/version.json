@@ -1,5 +1,5 @@
 {
-    "version": "3.9.64",
+    "version": "3.9.65",
     "release_date": "2026-01-27",
-    "release_notes": "Fixed admin tab loading error by adding copyToClipboard to dom.js"
+    "release_notes": "Updated default demo user password to Demo1234 for resets"
 }
