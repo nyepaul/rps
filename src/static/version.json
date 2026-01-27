@@ -1,5 +1,5 @@
 {
-    "version": "3.8.105",
+    "version": "3.9.57",
     "release_date": "2026-01-26",
-    "release_notes": "Configured local sendmail for rps@pan2.app"
+    "release_notes": "Corrected version regression and configured local sendmail for rps@pan2.app"
 }
