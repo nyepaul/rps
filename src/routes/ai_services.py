@@ -137,7 +137,7 @@ def resilient_parse_llm_json(text_response, list_key):
 
 
 
-def call_gemini_with_fallback(prompt, api_key, image_data=None, mime_type=None):
+def call_gemini_with_fallback(prompt, api_key, image_data=None, mime_type=None, model=None):
     """Calls Gemini with a prioritized list of models and fallback logic using REST API."""
     # Use full model resource names for v1 API
     # Prioritize Flash models (higher free tier quotas) over Pro models
@@ -148,6 +148,13 @@ def call_gemini_with_fallback(prompt, api_key, image_data=None, mime_type=None):
         'models/gemini-1.5-pro',                 # Gemini 1.5 Pro - better quality, lower quota
         'models/gemini-1.5-pro-latest',          # Gemini 1.5 Pro latest alias
     ]
+
+    # If specific model requested, try it first
+    if model:
+        # Add 'models/' prefix if missing
+        if not model.startswith('models/'):
+            model = f'models/{model}'
+        models.insert(0, model)
 
     last_error = None
 
@@ -257,7 +264,7 @@ def call_gemini_with_fallback(prompt, api_key, image_data=None, mime_type=None):
     raise Exception(f"All Gemini models failed. Last error: {last_error_str}")
 
 
-def call_claude_with_vision(prompt, api_key, image_b64, mime_type):
+def call_claude_with_vision(prompt, api_key, image_b64, mime_type, model=None):
     """Calls Anthropic Claude with vision support."""
     url = 'https://api.anthropic.com/v1/messages'
     headers = {
@@ -266,12 +273,15 @@ def call_claude_with_vision(prompt, api_key, image_b64, mime_type):
         'content-type': 'application/json'
     }
     
+    # Use requested model or default
+    model_name = model if model else 'claude-3-5-sonnet-20241022'
+
     # Handle CSV case: Include as text in the prompt instead of an image
     if mime_type == 'text/csv':
         try:
             csv_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
             payload = {
-                'model': 'claude-3-5-sonnet-20241022',
+                'model': model_name,
                 'max_tokens': 4096,
                 'messages': [
                     {
@@ -290,7 +300,7 @@ def call_claude_with_vision(prompt, api_key, image_b64, mime_type):
             anthropic_mime = 'image/jpeg'
 
         payload = {
-            'model': 'claude-3-5-sonnet-20241022',
+            'model': model_name,
             'max_tokens': 4096,
             'messages': [
                 {
@@ -323,7 +333,7 @@ def call_claude_with_vision(prompt, api_key, image_b64, mime_type):
         raise Exception(f"Failed to call Claude Vision: {str(e)}")
 
 
-def call_openai_with_vision(prompt, api_key, image_b64, mime_type):
+def call_openai_with_vision(prompt, api_key, image_b64, mime_type, model=None):
     """Calls OpenAI GPT-4o with vision support."""
     url = "https://api.openai.com/v1/chat/completions"
     headers = {
@@ -331,12 +341,15 @@ def call_openai_with_vision(prompt, api_key, image_b64, mime_type):
         "Authorization": f"Bearer {api_key}"
     }
     
+    # Use requested model or default
+    model_name = model if model else 'gpt-4o'
+
     # Handle CSV case: Include as text in the prompt instead of an image URL
     if mime_type == 'text/csv':
         try:
             csv_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
             payload = {
-                "model": "gpt-4o",
+                "model": model_name,
                 "messages": [
                     {
                         "role": "user",
@@ -349,7 +362,7 @@ def call_openai_with_vision(prompt, api_key, image_b64, mime_type):
             raise Exception(f"Failed to decode CSV data: {str(e)}")
     else:
         payload = {
-            "model": "gpt-4o",
+            "model": model_name,
             "messages": [
                 {
                     "role": "user",
@@ -872,6 +885,7 @@ def extract_assets():
     mime_type = data.get('mime_type')
     file_name = data.get('file_name', '')
     requested_provider = data.get('llm_provider')
+    requested_model = data.get('llm_model')
     existing_assets = data.get('existing_assets', [])
     profile_name = data.get('profile_name')
 
@@ -901,13 +915,16 @@ def extract_assets():
 
         api_key = None
         ollama_url = sanitize_url(api_keys.get('ollama_url'), 'http://localhost:11434')
-        # Use llama3.2-vision for extraction if using Ollama, as it's specifically for this task
-        # We prefer the setting if it contains 'vision' or 'vl', otherwise default to llama3.2-vision
-        configured_model = api_keys.get('ollama_model', '')
-        if 'vision' in configured_model.lower() or 'vl' in configured_model.lower():
-            ollama_model = configured_model
+        
+        # Determine Ollama model: request > profile vision-check > default
+        if requested_model and provider == 'ollama':
+            ollama_model = requested_model
         else:
-            ollama_model = 'llama3.2-vision'
+            configured_model = api_keys.get('ollama_model', '')
+            if 'vision' in configured_model.lower() or 'vl' in configured_model.lower():
+                ollama_model = configured_model
+            else:
+                ollama_model = 'llama3.2-vision'
 
         if provider == 'gemini':
             api_key = api_keys.get('gemini_api_key')
@@ -943,7 +960,7 @@ def extract_assets():
             if (mime_type == 'application/pdf' or image_b64.startswith('JVBERi')) and mime_type != 'text/csv':
                 # Handle multi-page PDF for ALL providers
                 all_extracted = []
-                print(f"Processing multi-page PDF for {provider}...")
+                print(f"Processing multi-page PDF for {provider} using model {requested_model or 'default'}...")
                 file_bytes = base64.b64decode(image_b64)
                 chunks, content_type = process_pdf_content(file_bytes)
                 
@@ -956,13 +973,13 @@ def extract_assets():
                     if provider == 'gemini':
                         image_data = base64.b64decode(chunk) if content_type == "images" else None
                         current_prompt = prompt if content_type == "images" else f"{prompt}\n\nDocument Text (Chunk {idx+1}):\n{chunk}"
-                        chunk_text_response = call_gemini_with_fallback(current_prompt, api_key, image_data=image_data, mime_type="image/png" if content_type == "images" else None)
+                        chunk_text_response = call_gemini_with_fallback(current_prompt, api_key, image_data=image_data, mime_type="image/png" if content_type == "images" else None, model=requested_model)
                     elif provider == 'claude':
                         if content_type == "images":
-                            chunk_text_response = call_claude_with_vision(prompt, api_key, chunk, "image/png")
+                            chunk_text_response = call_claude_with_vision(prompt, api_key, chunk, "image/png", model=requested_model)
                     elif provider == 'openai':
                         if content_type == "images":
-                            chunk_text_response = call_openai_with_vision(prompt, api_key, chunk, "image/png")
+                            chunk_text_response = call_openai_with_vision(prompt, api_key, chunk, "image/png", model=requested_model)
                     elif provider == 'ollama':
                         payload = {
                             'model': ollama_model,
@@ -992,11 +1009,11 @@ def extract_assets():
                 text_response = ""
                 if provider == 'gemini':
                     file_bytes = base64.b64decode(image_b64)
-                    text_response = call_gemini_with_fallback(prompt, api_key, image_data=file_bytes, mime_type=mime_type)
+                    text_response = call_gemini_with_fallback(prompt, api_key, image_data=file_bytes, mime_type=mime_type, model=requested_model)
                 elif provider == 'claude':
-                    text_response = call_claude_with_vision(prompt, api_key, image_b64, mime_type)
+                    text_response = call_claude_with_vision(prompt, api_key, image_b64, mime_type, model=requested_model)
                 elif provider == 'openai':
-                    text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type)
+                    text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type, model=requested_model)
                 elif provider == 'ollama':
                     # Handle CSV as text, images as vision
                     if mime_type == 'text/csv':
@@ -1067,6 +1084,7 @@ def extract_income():
     mime_type = data.get('mime_type')
     file_name = data.get('file_name', '')
     requested_provider = data.get('llm_provider')
+    requested_model = data.get('llm_model')
     profile_name = data.get('profile_name')
 
     # Detect CSV from filename if mime_type is missing or wrong
@@ -1088,12 +1106,16 @@ def extract_income():
     
     api_key = None
     ollama_url = sanitize_url(api_keys.get('ollama_url'), 'http://localhost:11434')
-    # Use llama3.2-vision for extraction if using Ollama, as it's specifically for this task
-    configured_model = api_keys.get('ollama_model', '')
-    if 'vision' in configured_model.lower() or 'vl' in configured_model.lower():
-        ollama_model = configured_model
+    
+    # Determine Ollama model: request > profile vision-check > default
+    if requested_model and provider == 'ollama':
+        ollama_model = requested_model
     else:
-        ollama_model = 'llama3.2-vision'
+        configured_model = api_keys.get('ollama_model', '')
+        if 'vision' in configured_model.lower() or 'vl' in configured_model.lower():
+            ollama_model = configured_model
+        else:
+            ollama_model = 'llama3.2-vision'
     
     if provider == 'gemini':
         api_key = api_keys.get('gemini_api_key')
@@ -1132,7 +1154,7 @@ def extract_income():
             if (mime_type == 'application/pdf' or image_b64.startswith('JVBERi')) and mime_type != 'text/csv':
                 # Handle multi-page PDF for ALL providers
                 all_extracted = []
-                print(f"Processing multi-page PDF for {provider}...")
+                print(f"Processing multi-page PDF for {provider} using model {requested_model or 'default'}...")
                 file_bytes = base64.b64decode(image_b64)
                 chunks, content_type = process_pdf_content(file_bytes)
                 
@@ -1145,13 +1167,13 @@ def extract_income():
                     if provider == 'gemini':
                         image_data = base64.b64decode(chunk) if content_type == "images" else None
                         current_prompt = prompt if content_type == "images" else f"{prompt}\n\nDocument Text (Chunk {idx+1}):\n{chunk}"
-                        chunk_text_response = call_gemini_with_fallback(current_prompt, api_key, image_data=image_data, mime_type="image/png" if content_type == "images" else None)
+                        chunk_text_response = call_gemini_with_fallback(current_prompt, api_key, image_data=image_data, mime_type="image/png" if content_type == "images" else None, model=requested_model)
                     elif provider == 'claude':
                         if content_type == "images":
-                            chunk_text_response = call_claude_with_vision(prompt, api_key, chunk, "image/png")
+                            chunk_text_response = call_claude_with_vision(prompt, api_key, chunk, "image/png", model=requested_model)
                     elif provider == 'openai':
                         if content_type == "images":
-                            chunk_text_response = call_openai_with_vision(prompt, api_key, chunk, "image/png")
+                            chunk_text_response = call_openai_with_vision(prompt, api_key, chunk, "image/png", model=requested_model)
                     elif provider == 'ollama':
                         payload = {
                             'model': ollama_model,
@@ -1181,11 +1203,11 @@ def extract_income():
                 text_response = ""
                 if provider == 'gemini':
                     file_bytes = base64.b64decode(image_b64)
-                    text_response = call_gemini_with_fallback(prompt, api_key, image_data=file_bytes, mime_type=mime_type)
+                    text_response = call_gemini_with_fallback(prompt, api_key, image_data=file_bytes, mime_type=mime_type, model=requested_model)
                 elif provider == 'claude':
-                    text_response = call_claude_with_vision(prompt, api_key, image_b64, mime_type)
+                    text_response = call_claude_with_vision(prompt, api_key, image_b64, mime_type, model=requested_model)
                 elif provider == 'openai':
-                    text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type)
+                    text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type, model=requested_model)
                 elif provider == 'ollama':
                     # Handle CSV as text, images as vision
                     if mime_type == 'text/csv':
@@ -1256,6 +1278,7 @@ def extract_expenses():
     mime_type = data.get('mime_type')
     file_name = data.get('file_name', '')
     requested_provider = data.get('llm_provider')
+    requested_model = data.get('llm_model')
     profile_name = data.get('profile_name')
 
     # Detect CSV from filename if mime_type is missing or wrong
@@ -1277,12 +1300,16 @@ def extract_expenses():
     
     api_key = None
     ollama_url = sanitize_url(api_keys.get('ollama_url'), 'http://localhost:11434')
-    # Use llama3.2-vision for extraction if using Ollama, as it's specifically for this task
-    configured_model = api_keys.get('ollama_model', '')
-    if 'vision' in configured_model.lower() or 'vl' in configured_model.lower():
-        ollama_model = configured_model
+    
+    # Determine Ollama model: request > profile vision-check > default
+    if requested_model and provider == 'ollama':
+        ollama_model = requested_model
     else:
-        ollama_model = 'llama3.2-vision'
+        configured_model = api_keys.get('ollama_model', '')
+        if 'vision' in configured_model.lower() or 'vl' in configured_model.lower():
+            ollama_model = configured_model
+        else:
+            ollama_model = 'llama3.2-vision'
     
     if provider == 'gemini':
         api_key = api_keys.get('gemini_api_key')
@@ -1325,7 +1352,7 @@ def extract_expenses():
             if (mime_type == 'application/pdf' or image_b64.startswith('JVBERi')) and mime_type != 'text/csv':
                 # Handle multi-page PDF for ALL providers
                 all_extracted = []
-                print(f"Processing multi-page PDF for {provider}...")
+                print(f"Processing multi-page PDF for {provider} using model {requested_model or 'default'}...")
                 file_bytes = base64.b64decode(image_b64)
                 chunks, content_type = process_pdf_content(file_bytes)
                 
@@ -1339,13 +1366,13 @@ def extract_expenses():
                         # For Gemini, if it's images, we pass as image data. If text, we pass as text.
                         image_data = base64.b64decode(chunk) if content_type == "images" else None
                         current_prompt = prompt if content_type == "images" else f"{prompt}\n\nDocument Text (Chunk {idx+1}):\n{chunk}"
-                        chunk_text_response = call_gemini_with_fallback(current_prompt, api_key, image_data=image_data, mime_type="image/png" if content_type == "images" else None)
+                        chunk_text_response = call_gemini_with_fallback(current_prompt, api_key, image_data=image_data, mime_type="image/png" if content_type == "images" else None, model=requested_model)
                     elif provider == 'claude':
                         if content_type == "images":
-                            chunk_text_response = call_claude_with_vision(prompt, api_key, chunk, "image/png")
+                            chunk_text_response = call_claude_with_vision(prompt, api_key, chunk, "image/png", model=requested_model)
                     elif provider == 'openai':
                         if content_type == "images":
-                            chunk_text_response = call_openai_with_vision(prompt, api_key, chunk, "image/png")
+                            chunk_text_response = call_openai_with_vision(prompt, api_key, chunk, "image/png", model=requested_model)
                     elif provider == 'ollama':
                         payload = {
                             'model': ollama_model,
@@ -1375,11 +1402,11 @@ def extract_expenses():
                 text_response = ""
                 if provider == 'gemini':
                     file_bytes = base64.b64decode(image_b64)
-                    text_response = call_gemini_with_fallback(prompt, api_key, image_data=file_bytes, mime_type=mime_type)
+                    text_response = call_gemini_with_fallback(prompt, api_key, image_data=file_bytes, mime_type=mime_type, model=requested_model)
                 elif provider == 'claude':
-                    text_response = call_claude_with_vision(prompt, api_key, image_b64, mime_type)
+                    text_response = call_claude_with_vision(prompt, api_key, image_b64, mime_type, model=requested_model)
                 elif provider == 'openai':
-                    text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type)
+                    text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type, model=requested_model)
                 elif provider == 'ollama':
                     # Handle CSV as text, images as vision
                     if mime_type == 'text/csv':
