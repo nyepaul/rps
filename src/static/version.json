@@ -1,5 +1,5 @@
 {
-    "version": "3.9.65",
+    "version": "3.9.67",
     "release_date": "2026-01-27",
-    "release_notes": "Updated default demo user password to Demo1234 for resets"
+    "release_notes": "fix: CSV import now works for Ollama and improved CSV detection for all AI providers"
 }

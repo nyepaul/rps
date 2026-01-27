@@ -870,9 +870,14 @@ def extract_assets():
     data = request.json
     image_b64 = data.get('image')
     mime_type = data.get('mime_type')
+    file_name = data.get('file_name', '')
     requested_provider = data.get('llm_provider')
     existing_assets = data.get('existing_assets', [])
     profile_name = data.get('profile_name')
+
+    # Detect CSV from filename if mime_type is missing or wrong
+    if file_name.lower().endswith('.csv') or mime_type in ['text/csv', 'application/csv', 'application/vnd.ms-excel']:
+        mime_type = 'text/csv'
 
     if not image_b64:
         return jsonify({'error': 'No image data provided'}), 400
@@ -993,32 +998,47 @@ def extract_assets():
                 elif provider == 'openai':
                     text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type)
                 elif provider == 'ollama':
-                    # Single image case - ensure standard format
-                    try:
-                        img = Image.open(BytesIO(base64.b64decode(image_b64)))
-                        if img.mode != 'RGB':
-                            img = img.convert('RGB')
-                        buffered = BytesIO()
-                        img.save(buffered, format="JPEG", quality=85)
-                        image_payload = base64.b64encode(buffered.getvalue()).decode('utf-8')
-                    except Exception as e:
-                        print(f"Ollama image normalization failed: {str(e)}")
-                        image_payload = image_b64
+                    # Handle CSV as text, images as vision
+                    if mime_type == 'text/csv':
+                        csv_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
+                        enhanced_prompt = f"{prompt}\n\nCSV Data:\n```\n{csv_content}\n```"
+                        response = requests.post(
+                            f"{ollama_url}/api/chat",
+                            json={
+                                'model': ollama_model.replace('-vision', '').replace(':latest', '') or 'llama3.2',
+                                'messages': [{'role': 'user', 'content': enhanced_prompt}],
+                                'stream': False,
+                                'format': 'json'
+                            },
+                            timeout=180
+                        )
+                    else:
+                        # Single image case - ensure standard format
+                        try:
+                            img = Image.open(BytesIO(base64.b64decode(image_b64)))
+                            if img.mode != 'RGB':
+                                img = img.convert('RGB')
+                            buffered = BytesIO()
+                            img.save(buffered, format="JPEG", quality=85)
+                            image_payload = base64.b64encode(buffered.getvalue()).decode('utf-8')
+                        except Exception as e:
+                            print(f"Ollama image normalization failed: {str(e)}")
+                            image_payload = image_b64
 
-                    response = requests.post(
-                        f"{ollama_url}/api/chat",
-                        json={
-                            'model': ollama_model,
-                            'messages': [{'role': 'user', 'content': prompt, 'images': [image_payload]}],
-                            'stream': False,
-                            'format': 'json'
-                        },
-                        timeout=180
-                    )
+                        response = requests.post(
+                            f"{ollama_url}/api/chat",
+                            json={
+                                'model': ollama_model,
+                                'messages': [{'role': 'user', 'content': prompt, 'images': [image_payload]}],
+                                'stream': False,
+                                'format': 'json'
+                            },
+                            timeout=180
+                        )
                     if response.status_code == 200:
                         text_response = response.json()['message']['content']
                     else:
-                        raise Exception(f"Ollama Vision error: {response.text}")
+                        raise Exception(f"Ollama error: {response.text}")
 
                 extracted_assets = resilient_parse_llm_json(text_response, 'assets')
                 yield json.dumps({'assets': extracted_assets, 'status': 'success', 'progress': 100}) + '\n'
@@ -1043,8 +1063,13 @@ def extract_income():
     data = request.json
     image_b64 = data.get('image')
     mime_type = data.get('mime_type')
+    file_name = data.get('file_name', '')
     requested_provider = data.get('llm_provider')
     profile_name = data.get('profile_name')
+
+    # Detect CSV from filename if mime_type is missing or wrong
+    if file_name.lower().endswith('.csv') or mime_type in ['text/csv', 'application/csv', 'application/vnd.ms-excel']:
+        mime_type = 'text/csv'
 
     if not image_b64 or not profile_name:
         return jsonify({'error': 'image and profile_name are required'}), 400
@@ -1160,32 +1185,47 @@ def extract_income():
                 elif provider == 'openai':
                     text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type)
                 elif provider == 'ollama':
-                    # Single image case - ensure standard format
-                    try:
-                        img = Image.open(BytesIO(base64.b64decode(image_b64)))
-                        if img.mode != 'RGB':
-                            img = img.convert('RGB')
-                        buffered = BytesIO()
-                        img.save(buffered, format="JPEG", quality=85)
-                        image_payload = base64.b64encode(buffered.getvalue()).decode('utf-8')
-                    except Exception as e:
-                        print(f"Ollama image normalization failed: {str(e)}")
-                        image_payload = image_b64
+                    # Handle CSV as text, images as vision
+                    if mime_type == 'text/csv':
+                        csv_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
+                        enhanced_prompt = f"{prompt}\n\nCSV Data:\n```\n{csv_content}\n```"
+                        response = requests.post(
+                            f"{ollama_url}/api/chat",
+                            json={
+                                'model': ollama_model.replace('-vision', '').replace(':latest', '') or 'llama3.2',
+                                'messages': [{'role': 'user', 'content': enhanced_prompt}],
+                                'stream': False,
+                                'format': 'json'
+                            },
+                            timeout=180
+                        )
+                    else:
+                        # Single image case - ensure standard format
+                        try:
+                            img = Image.open(BytesIO(base64.b64decode(image_b64)))
+                            if img.mode != 'RGB':
+                                img = img.convert('RGB')
+                            buffered = BytesIO()
+                            img.save(buffered, format="JPEG", quality=85)
+                            image_payload = base64.b64encode(buffered.getvalue()).decode('utf-8')
+                        except Exception as e:
+                            print(f"Ollama image normalization failed: {str(e)}")
+                            image_payload = image_b64
 
-                    response = requests.post(
-                        f"{ollama_url}/api/chat",
-                        json={
-                            'model': ollama_model,
-                            'messages': [{'role': 'user', 'content': prompt, 'images': [image_payload]}],
-                            'stream': False,
-                            'format': 'json'
-                        },
-                        timeout=180
-                    )
+                        response = requests.post(
+                            f"{ollama_url}/api/chat",
+                            json={
+                                'model': ollama_model,
+                                'messages': [{'role': 'user', 'content': prompt, 'images': [image_payload]}],
+                                'stream': False,
+                                'format': 'json'
+                            },
+                            timeout=180
+                        )
                     if response.status_code == 200:
                         text_response = response.json()['message']['content']
                     else:
-                        raise Exception(f"Ollama Vision error: {response.text}")
+                        raise Exception(f"Ollama error: {response.text}")
 
                 extracted_income = resilient_parse_llm_json(text_response, 'income')
                 yield json.dumps({'income': extracted_income, 'status': 'success', 'progress': 100}) + '\n'
@@ -1210,8 +1250,13 @@ def extract_expenses():
     data = request.json
     image_b64 = data.get('image')
     mime_type = data.get('mime_type')
+    file_name = data.get('file_name', '')
     requested_provider = data.get('llm_provider')
     profile_name = data.get('profile_name')
+
+    # Detect CSV from filename if mime_type is missing or wrong
+    if file_name.lower().endswith('.csv') or mime_type in ['text/csv', 'application/csv', 'application/vnd.ms-excel']:
+        mime_type = 'text/csv'
 
     if not image_b64 or not profile_name:
         return jsonify({'error': 'image and profile_name are required'}), 400
@@ -1332,32 +1377,47 @@ def extract_expenses():
                 elif provider == 'openai':
                     text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type)
                 elif provider == 'ollama':
-                    # Single image case - ensure standard format
-                    try:
-                        img = Image.open(BytesIO(base64.b64decode(image_b64)))
-                        if img.mode != 'RGB':
-                            img = img.convert('RGB')
-                        buffered = BytesIO()
-                        img.save(buffered, format="JPEG", quality=85)
-                        image_payload = base64.b64encode(buffered.getvalue()).decode('utf-8')
-                    except Exception as e:
-                        print(f"Ollama image normalization failed: {str(e)}")
-                        image_payload = image_b64
+                    # Handle CSV as text, images as vision
+                    if mime_type == 'text/csv':
+                        csv_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
+                        enhanced_prompt = f"{prompt}\n\nCSV Data:\n```\n{csv_content}\n```"
+                        response = requests.post(
+                            f"{ollama_url}/api/chat",
+                            json={
+                                'model': ollama_model.replace('-vision', '').replace(':latest', '') or 'llama3.2',
+                                'messages': [{'role': 'user', 'content': enhanced_prompt}],
+                                'stream': False,
+                                'format': 'json'
+                            },
+                            timeout=180
+                        )
+                    else:
+                        # Single image case - ensure standard format
+                        try:
+                            img = Image.open(BytesIO(base64.b64decode(image_b64)))
+                            if img.mode != 'RGB':
+                                img = img.convert('RGB')
+                            buffered = BytesIO()
+                            img.save(buffered, format="JPEG", quality=85)
+                            image_payload = base64.b64encode(buffered.getvalue()).decode('utf-8')
+                        except Exception as e:
+                            print(f"Ollama image normalization failed: {str(e)}")
+                            image_payload = image_b64
 
-                    response = requests.post(
-                        f"{ollama_url}/api/chat",
-                        json={
-                            'model': ollama_model,
-                            'messages': [{'role': 'user', 'content': prompt, 'images': [image_payload]}],
-                            'stream': False,
-                            'format': 'json'
-                        },
-                        timeout=180
-                    )
+                        response = requests.post(
+                            f"{ollama_url}/api/chat",
+                            json={
+                                'model': ollama_model,
+                                'messages': [{'role': 'user', 'content': prompt, 'images': [image_payload]}],
+                                'stream': False,
+                                'format': 'json'
+                            },
+                            timeout=180
+                        )
                     if response.status_code == 200:
                         text_response = response.json()['message']['content']
                     else:
-                        raise Exception(f"Ollama Vision error: {response.text}")
+                        raise Exception(f"Ollama error: {response.text}")
 
                 extracted_expenses = resilient_parse_llm_json(text_response, 'expenses')
                 yield json.dumps({'expenses': extracted_expenses, 'status': 'success', 'progress': 100}) + '\n'

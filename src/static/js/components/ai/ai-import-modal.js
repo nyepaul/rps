@@ -35,10 +35,10 @@ export function showAIImportModal(type, profileName, onComplete) {
                     Upload an image, PDF, or CSV file. AI will extract the relevant data for you.
                 </p>
 
-                <div id="drop-zone" style="border: 2px dashed var(--border-color); border-radius: 8px; padding: 40px 20px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--bg-primary);">
+                <div id="drop-zone" tabindex="0" style="border: 2px dashed var(--border-color); border-radius: 8px; padding: 40px 20px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--bg-primary);">
                     <div style="font-size: 48px; margin-bottom: 10px;">📄</div>
-                    <div style="font-weight: 600; margin-bottom: 5px;">Click or Drag & Drop File</div>
-                    <div style="font-size: 12px; color: var(--text-light);">Images, PDF, or CSV</div>
+                    <div style="font-weight: 600; margin-bottom: 5px;">Click, Drop, or Paste (Ctrl+V)</div>
+                    <div style="font-size: 12px; color: var(--text-light);">Screenshots, Images, PDF, or CSV</div>
                     <input type="file" id="ai-file-input" accept="image/*,.pdf,.csv,application/pdf,text/csv" style="display: none;">
                 </div>
 
@@ -55,8 +55,8 @@ export function showAIImportModal(type, profileName, onComplete) {
 
             <div id="ai-processing-step" style="display: none; text-align: center; padding: 40px 20px;">
                 <div class="spinner" style="margin: 0 auto 20px auto; width: 40px; height: 40px; border-width: 4px;"></div>
-                <div style="font-weight: 600; margin-bottom: 10px;">Analyzing image...</div>
-                <p style="color: var(--text-secondary); font-size: 13px;">This usually takes 5-10 seconds.</p>
+                <div style="font-weight: 600; margin-bottom: 10px;">Analyzing document...</div>
+                <p style="color: var(--text-secondary); font-size: 13px;">This usually takes 5-15 seconds.</p>
             </div>
 
             <div id="ai-preview-step" style="display: none;">
@@ -123,8 +123,37 @@ export function showAIImportModal(type, profileName, onComplete) {
 
     dropZone.addEventListener('drop', (e) => {
         e.preventDefault();
+        dropZone.style.borderColor = 'var(--border-color)';
+        dropZone.style.background = 'var(--bg-primary)';
         if (e.dataTransfer.files.length > 0) processFile(e.dataTransfer.files[0]);
     });
+
+    // Clipboard paste support (Ctrl+V / Cmd+V)
+    const handlePaste = async (e) => {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+
+        for (const item of items) {
+            // Handle pasted images
+            if (item.type.startsWith('image/')) {
+                e.preventDefault();
+                const blob = item.getAsFile();
+                if (blob) {
+                    // Convert blob to File with a name
+                    const file = new File([blob], `pasted-image.${item.type.split('/')[1] || 'png'}`, { type: item.type });
+                    processFile(file);
+                    return;
+                }
+            }
+        }
+    };
+
+    // Listen for paste on the modal and drop zone
+    modal.addEventListener('paste', handlePaste);
+    dropZone.addEventListener('paste', handlePaste);
+
+    // Focus drop zone so paste works immediately
+    setTimeout(() => dropZone.focus(), 100);
 
     async function processFile(file) {
         // Accept images, PDFs, and CSVs
