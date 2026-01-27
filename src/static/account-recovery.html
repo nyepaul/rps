@@ -545,7 +545,7 @@
             } else if (state.method === 'code') {
                 components.title.textContent = 'Recovery Code';
                 components.subtitle.textContent = 'Restore your data';
-                emailField.classList.remove('hidden');
+                components.emailField.classList.remove('hidden');
                 codeField.classList.remove('hidden');
                 document.getElementById('email').required = true;
                 document.getElementById('recovery-code').required = true;
