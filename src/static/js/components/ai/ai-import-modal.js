@@ -291,7 +291,6 @@ export function showAIImportModal(type, profileName, onComplete) {
                         setTimeout(() => reject(new Error('TIMEOUT')), 95000)
                     );
 
-                    console.log(`Sending extraction request to ${endpoint} with provider=${provider}, model=${model}`);
                     const requestPromise = apiClient.streamRequest(endpoint, {
                         image: base64Data,
                         mime_type: mimeType,
@@ -302,7 +301,6 @@ export function showAIImportModal(type, profileName, onComplete) {
                     }, updateProgress);
 
                     const finalResponse = await Promise.race([requestPromise, timeoutPromise]);
-                    console.log('Extraction final response:', finalResponse);
 
                     if (!finalResponse) {
                         throw new Error('AI returned no data. The document might be too complex or the model is unavailable.');

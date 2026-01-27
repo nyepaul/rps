@@ -95,45 +95,106 @@ def process_pdf_content(pdf_bytes, max_pages=150):
 
 def resilient_parse_llm_json(text_response, list_key):
     """
-    Robustly parses LLM response to extract a list.
-    Handles markdown blocks, nested objects, and common wrappers.
+    Extremely robust LLM JSON parser.
+    Handles markdown, preamble text, trailing text, single objects, and common wrappers.
     """
+    if not text_response or not isinstance(text_response, str):
+        return []
+
+    clean_text = text_response.strip()
+    
+    # 1. Try direct JSON parse first (fastest)
     try:
-        # 1. Strip markdown code blocks
-        clean_text = text_response.strip()
-        if "```json" in clean_text:
-            clean_text = clean_text.split("```json")[1].split("```")[0].strip()
-        elif "```" in clean_text:
-            clean_text = clean_text.split("```")[1].split("```")[0].strip()
-        
-        # 2. Parse JSON
         data = json.loads(clean_text)
+        return normalize_to_list(data, list_key)
+    except json.JSONDecodeError:
+        pass
+
+    # 2. Try markdown extraction
+    if "```json" in clean_text:
+        try:
+            markdown_content = clean_text.split("```json")[1].split("```")[0].strip()
+            data = json.loads(markdown_content)
+            return normalize_to_list(data, list_key)
+        except:
+            pass
+    elif "```" in clean_text:
+        try:
+            markdown_content = clean_text.split("```")[1].split("```")[0].strip()
+            data = json.loads(markdown_content)
+            return normalize_to_list(data, list_key)
+        except:
+            pass
+
+    # 3. Use regex to find the first JSON-like structure
+    import re
+    
+    # Look for an array first [ ... ]
+    array_match = re.search(r'\[\s*\{.*\}\s*\]', clean_text, re.DOTALL)
+    if array_match:
+        try:
+            data = json.loads(array_match.group(0))
+            return normalize_to_list(data, list_key)
+        except:
+            pass
+
+    # Look for a single object { ... }
+    obj_match = re.search(r'\{.*\}', clean_text, re.DOTALL)
+    if obj_match:
+        try:
+            # We might have found too much, try to find the shortest valid JSON object from the start
+            full_potential = obj_match.group(0)
+            # Simple iterative attempt to find valid end-bracket
+            for i in range(len(full_potential), 0, -1):
+                if full_potential[i-1] == '}':
+                    try:
+                        data = json.loads(full_potential[:i])
+                        return normalize_to_list(data, list_key)
+                    except:
+                        continue
+        except:
+            pass
+
+    print(f"Failed to parse LLM response as JSON: {text_response[:200]}...")
+    return []
+
+def normalize_to_list(data, list_key):
+    """Helper to convert various JSON shapes into a consistent list of objects."""
+    if data is None:
+        return []
         
-        # 3. If it's already a list, return it
-        if isinstance(data, list):
-            return data
+    # If it's already a list, return it
+    if isinstance(data, list):
+        return [item for item in data if isinstance(item, dict)]
+        
+    # If it's a dict, look for common list keys
+    if isinstance(data, dict):
+        # Check the expected key first (e.g. 'assets', 'income')
+        if list_key in data and isinstance(data[list_key], list):
+            return data[list_key]
+        
+        # Check other common keys
+        for key in ['items', 'data', 'results', 'list', 'expenses', 'assets', 'income']:
+            if key in data and isinstance(data[key], list):
+                return data[key]
+        
+        # If it's a single object that matches the expected structure but not in a list, wrap it
+        # Heuristic: check for common financial keys
+        keys = data.keys()
+        # Look for name-like keys and amount-like keys
+        has_name = any(k in keys for k in ['name', 'description', 'institution', 'date', 'payee', 'memo'])
+        has_value = any(k in keys for k in ['value', 'amount', 'balance', 'price', 'total'])
+        
+        if has_name and has_value:
+            # Map 'description' or 'payee' to 'name' if name is missing
+            if 'name' not in data:
+                for alt in ['description', 'payee', 'institution', 'memo']:
+                    if alt in data:
+                        data['name'] = data[alt]
+                        break
+            return [data]
             
-        # 4. If it's a dict, look for common list keys
-        if isinstance(data, dict):
-            # Check the expected key first (e.g. 'assets', 'income')
-            if list_key in data and isinstance(data[list_key], list):
-                return data[list_key]
-            
-            # Check other common keys
-            for key in ['items', 'data', 'results', 'list']:
-                if key in data and isinstance(data[key], list):
-                    return data[key]
-            
-            # If it's a single object that matches the expected structure but not in a list, wrap it
-            # (Heuristic: if it has a 'name' and 'value'/'amount')
-            if 'name' in data and ('value' in data or 'amount' in data):
-                return [data]
-                
-        return []
-    except Exception as e:
-        print(f"LLM JSON Parse Error: {str(e)}")
-        # If all else fails, try a regex approach or return empty
-        return []
+    return []
 
 
 
@@ -878,8 +939,6 @@ def pull_ollama_model():
 @limiter.limit("50 per hour")
 def extract_assets():
     """Extract assets from an uploaded file (image, PDF, or CSV) using AI."""
-    print("Received extract-assets request")
-
     data = request.json
     image_b64 = data.get('image')
     mime_type = data.get('mime_type')
@@ -888,8 +947,6 @@ def extract_assets():
     requested_model = data.get('llm_model')
     existing_assets = data.get('existing_assets', [])
     profile_name = data.get('profile_name')
-
-    print(f"Extraction request: file={file_name}, provider={requested_provider}, model={requested_model}, profile={profile_name}")
 
     # Detect CSV from filename if mime_type is missing or wrong
     if file_name.lower().endswith('.csv') or mime_type in ['text/csv', 'application/csv', 'application/vnd.ms-excel']:
@@ -958,12 +1015,10 @@ def extract_assets():
     """
 
     def generate():
-        print(f"Starting generator for {provider} extraction...")
         try:
             if (mime_type == 'application/pdf' or image_b64.startswith('JVBERi')) and mime_type != 'text/csv':
                 # Handle multi-page PDF for ALL providers
                 all_extracted = []
-                print(f"Processing multi-page PDF for {provider} using model {requested_model or 'default'}...")
                 file_bytes = base64.b64decode(image_b64)
                 chunks, content_type = process_pdf_content(file_bytes)
                 
@@ -1023,7 +1078,6 @@ def extract_assets():
                         csv_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
                         enhanced_prompt = f"{prompt}\n\nCSV Data:\n```\n{csv_content}\n```"
                         # For CSV, vision models work fine with text-only input
-                        print(f"Ollama CSV extraction using model: {ollama_model}")
                         response = requests.post(
                             f"{ollama_url}/api/chat",
                             json={
@@ -1044,7 +1098,6 @@ def extract_assets():
                             img.save(buffered, format="JPEG", quality=85)
                             image_payload = base64.b64encode(buffered.getvalue()).decode('utf-8')
                         except Exception as e:
-                            print(f"Ollama image normalization failed: {str(e)}")
                             image_payload = image_b64
 
                         response = requests.post(
@@ -1082,7 +1135,6 @@ def extract_assets():
 @limiter.limit("50 per hour")
 def extract_income():
     """Extract income streams from an uploaded file (image, PDF, or CSV) using AI."""
-    print("Received extract-income request")
     data = request.json
     image_b64 = data.get('image')
     mime_type = data.get('mime_type')
@@ -1090,8 +1142,6 @@ def extract_income():
     requested_provider = data.get('llm_provider')
     requested_model = data.get('llm_model')
     profile_name = data.get('profile_name')
-
-    print(f"Extraction request (income): file={file_name}, provider={requested_provider}, model={requested_model}, profile={profile_name}")
 
     # Detect CSV from filename if mime_type is missing or wrong
     if file_name.lower().endswith('.csv') or mime_type in ['text/csv', 'application/csv', 'application/vnd.ms-excel']:
@@ -1156,12 +1206,10 @@ def extract_income():
     """
 
     def generate():
-        print(f"Starting generator for income extraction (provider={provider})...")
         try:
             if (mime_type == 'application/pdf' or image_b64.startswith('JVBERi')) and mime_type != 'text/csv':
                 # Handle multi-page PDF for ALL providers
                 all_extracted = []
-                print(f"Processing multi-page PDF for {provider} using model {requested_model or 'default'}...")
                 file_bytes = base64.b64decode(image_b64)
                 chunks, content_type = process_pdf_content(file_bytes)
                 
@@ -1221,7 +1269,6 @@ def extract_income():
                         csv_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
                         enhanced_prompt = f"{prompt}\n\nCSV Data:\n```\n{csv_content}\n```"
                         # For CSV, vision models work fine with text-only input
-                        print(f"Ollama CSV extraction using model: {ollama_model}")
                         response = requests.post(
                             f"{ollama_url}/api/chat",
                             json={
@@ -1242,7 +1289,6 @@ def extract_income():
                             img.save(buffered, format="JPEG", quality=85)
                             image_payload = base64.b64encode(buffered.getvalue()).decode('utf-8')
                         except Exception as e:
-                            print(f"Ollama image normalization failed: {str(e)}")
                             image_payload = image_b64
 
                         response = requests.post(
@@ -1280,7 +1326,6 @@ def extract_income():
 @limiter.limit("50 per hour")
 def extract_expenses():
     """Extract expenses from an uploaded file (image, PDF, or CSV) using AI."""
-    print("Received extract-expenses request")
     data = request.json
     image_b64 = data.get('image')
     mime_type = data.get('mime_type')
@@ -1288,8 +1333,6 @@ def extract_expenses():
     requested_provider = data.get('llm_provider')
     requested_model = data.get('llm_model')
     profile_name = data.get('profile_name')
-
-    print(f"Extraction request (expenses): file={file_name}, provider={requested_provider}, model={requested_model}, profile={profile_name}")
 
     # Detect CSV from filename if mime_type is missing or wrong
     if file_name.lower().endswith('.csv') or mime_type in ['text/csv', 'application/csv', 'application/vnd.ms-excel']:
@@ -1358,12 +1401,10 @@ def extract_expenses():
     """
 
     def generate():
-        print(f"Starting generator for expenses extraction (provider={provider})...")
         try:
             if (mime_type == 'application/pdf' or image_b64.startswith('JVBERi')) and mime_type != 'text/csv':
                 # Handle multi-page PDF for ALL providers
                 all_extracted = []
-                print(f"Processing multi-page PDF for {provider} using model {requested_model or 'default'}...")
                 file_bytes = base64.b64decode(image_b64)
                 chunks, content_type = process_pdf_content(file_bytes)
                 
@@ -1424,7 +1465,6 @@ def extract_expenses():
                         csv_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
                         enhanced_prompt = f"{prompt}\n\nCSV Data:\n```\n{csv_content}\n```"
                         # For CSV, vision models work fine with text-only input
-                        print(f"Ollama CSV extraction using model: {ollama_model}")
                         response = requests.post(
                             f"{ollama_url}/api/chat",
                             json={
@@ -1445,7 +1485,6 @@ def extract_expenses():
                             img.save(buffered, format="JPEG", quality=85)
                             image_payload = base64.b64encode(buffered.getvalue()).decode('utf-8')
                         except Exception as e:
-                            print(f"Ollama image normalization failed: {str(e)}")
                             image_payload = image_b64
 
                         response = requests.post(
