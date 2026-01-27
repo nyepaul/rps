@@ -70,14 +70,14 @@ class Config:
     LOG_BACKUP_COUNT = 5
 
     # Email Configuration
-    MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
-    MAIL_PORT = int(os.environ.get('MAIL_PORT', '587'))
-    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
+    MAIL_SERVER = os.environ.get('MAIL_SERVER', '127.0.0.1')
+    MAIL_PORT = int(os.environ.get('MAIL_PORT', '25'))
+    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'false').lower() == 'true'
     MAIL_USE_SSL = os.environ.get('MAIL_USE_SSL', 'false').lower() == 'true'
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
-    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', os.environ.get('MAIL_USERNAME'))
-    APP_BASE_URL = os.environ.get('APP_BASE_URL', 'http://localhost:5137')
+    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'rps@pan2.app')
+    APP_BASE_URL = os.environ.get('APP_BASE_URL', 'https://rps.pan2.app')
 
 
 class DevelopmentConfig(Config):

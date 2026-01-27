@@ -1,5 +1,5 @@
 {
-    "version": "3.9.56",
-    "release_date": "2026-01-25",
-    "release_notes": "Further optimize chunked PDF processing and increase timeouts for very large documents (135+ pages)"
+    "version": "3.8.105",
+    "release_date": "2026-01-26",
+    "release_notes": "Configured local sendmail for rps@pan2.app"
 }
