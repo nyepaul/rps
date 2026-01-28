@@ -1,5 +1,5 @@
 {
-    "version": "3.9.75",
+    "version": "3.9.76",
     "release_date": "2026-01-28",
-    "release_notes": "Fix LLM data import: Claude model IDs, null system prompt, missing provider handling"
+    "release_notes": "Fix TXT file import - text files were incorrectly sent as inline_data to Gemini"
 }

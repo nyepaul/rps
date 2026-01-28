@@ -288,10 +288,10 @@ def call_gemini_with_fallback(prompt, api_key, image_data=None, mime_type=None, 
                         if file_bytes[:4] == b'%PDF':
                             mime_type = 'application/pdf'
 
-                # For CSV files, include content as text in the prompt
-                if mime_type == 'text/csv':
-                    csv_content = file_bytes.decode('utf-8', errors='replace')
-                    enhanced_prompt = f"{prompt}\n\nCSV Data:\n```\n{csv_content}\n```"
+                # For text files (CSV, TXT, etc.), include content in the prompt
+                if mime_type in ['text/csv', 'text/plain']:
+                    text_content = file_bytes.decode('utf-8', errors='replace')
+                    enhanced_prompt = f"{prompt}\n\nDocument Data:\n```\n{text_content}\n```"
                     payload = {
                         'contents': [{
                             'parts': [{'text': enhanced_prompt}]
