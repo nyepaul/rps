@@ -25,10 +25,9 @@ export function showAIImportModal(type, profileName, onComplete) {
 
     const MODELS = {
         'gemini': [
-            { id: 'gemini-3.0-flash', name: 'Gemini 3.0 Flash (Fastest)' },
-            { id: 'gemini-3.0-pro', name: 'Gemini 3.0 Pro (Most Capable)' },
-            { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
-            { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Stable)' }
+            { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Recommended)' },
+            { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Reliable)' },
+            { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Best Intelligence)' }
         ],
         'claude': [
             { id: 'claude-4-5-sonnet-20250929', name: 'Claude 4.5 Sonnet (Fast & Pro)' },
