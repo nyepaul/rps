@@ -142,9 +142,7 @@ def resilient_parse_llm_json(text_response, list_key):
     obj_match = re.search(r'\{.*\}', clean_text, re.DOTALL)
     if obj_match:
         try:
-            # We might have found too much, try to find the shortest valid JSON object from the start
             full_potential = obj_match.group(0)
-            # Simple iterative attempt to find valid end-bracket
             for i in range(len(full_potential), 0, -1):
                 if full_potential[i-1] == '}':
                     try:
@@ -154,6 +152,38 @@ def resilient_parse_llm_json(text_response, list_key):
                         continue
         except:
             pass
+
+    # 4. Final Fallback: Regex-based field extraction (for non-JSON or badly malformed output)
+    # This is useful if the LLM just lists "Name: X, Amount: Y"
+    try:
+        # Extract name/description
+        name_match = re.search(r'"?(?:name|description|payee|institution)"?\s*:\s*"([^"]+)"', clean_text, re.IGNORECASE)
+        # Extract amount/value
+        amount_match = re.search(r'"?(?:amount|value|balance|price|total)"?\s*:\s*([\d,.]+)', clean_text, re.IGNORECASE)
+        
+        if name_match and amount_match:
+            name = name_match.group(1)
+            # Clean amount (remove commas)
+            amount_str = amount_match.group(1).replace(',', '')
+            try:
+                amount = float(amount_str)
+                # Map other common fields
+                type_match = re.search(r'"?(?:type|category)"?\s*:\s*"([^"]+)"', clean_text, re.IGNORECASE)
+                freq_match = re.search(r'"?frequency"?\s*:\s*"([^"]+)"', clean_text, re.IGNORECASE)
+                
+                dummy_obj = {
+                    'name': name,
+                    'amount': amount,
+                    'value': amount,
+                    'type': type_match.group(1) if type_match else 'other',
+                    'category': type_match.group(1) if type_match else 'other',
+                    'frequency': freq_match.group(1) if freq_match else 'monthly'
+                }
+                return [dummy_obj]
+            except:
+                pass
+    except:
+        pass
 
     print(f"Failed to parse LLM response as JSON: {text_response[:200]}...")
     return []
@@ -174,7 +204,7 @@ def normalize_to_list(data, list_key):
             return data[list_key]
         
         # Check other common keys
-        for key in ['items', 'data', 'results', 'list', 'expenses', 'assets', 'income']:
+        for key in ['items', 'data', 'results', 'list', 'expenses', 'assets', 'income', 'transactions', 'records', 'rows', 'entries']:
             if key in data and isinstance(data[key], list):
                 return data[key]
         
@@ -1047,7 +1077,7 @@ def extract_items(item_type):
                     else:
                         fn = call_claude_with_vision if provider == 'claude' else call_openai_with_vision
                         response_text = fn(prompt, api_key, image_b64, mime_type, model=requested_model)
-                elif provider == 'ollama':
+                if provider == 'ollama':
                     msg = {'role': 'user', 'content': prompt}
                     if is_text_file:
                         text_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
