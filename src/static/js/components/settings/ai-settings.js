@@ -130,6 +130,9 @@ export async function renderAPIKeysSettings(container) {
             <p style="margin: 0; font-size: 13px; opacity: 0.9;">
                 Configure AI providers for smart retirement advice and analysis. Keys are encrypted with AES-256-GCM.
             </p>
+            <p style="margin: 8px 0 0 0; font-size: 12px; opacity: 0.8; font-style: italic;">
+                💡 Tip: Keys are automatically saved after successful testing
+            </p>
         </div>
 
         <!-- Status Summary -->
@@ -250,7 +253,7 @@ function renderProviderCard(provider) {
                     ${!provider.isUrl ? `<button class="toggle-visibility-btn" data-target="${fieldId}" type="button" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; padding: 4px; font-size: 16px;">👁️</button>` : ''}
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <button class="test-key-btn" data-provider="${provider.id}" style="padding: 4px 10px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px;">🧪 Test Connection</button>
+                    <button class="test-key-btn" data-provider="${provider.id}" style="padding: 4px 10px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px;">🧪 Test & Save</button>
                     ${provider.url ? `<a href="${provider.url}" target="_blank" style="font-size: 11px; color: var(--accent-color); text-decoration: none;">Get Key ↗</a>` : ''}
                 </div>
                 <div id="${provider.id}-test-status" style="margin-top: 6px; font-size: 11px;"></div>
@@ -338,7 +341,23 @@ async function testNewKey(provider, container, profile) {
 
         const result = await response.json();
         if (response.ok && result.success) {
-            statusEl.innerHTML = `<span style="color: var(--success-color);">✓ Valid! ${result.model || ''} - Save to store this key</span>`;
+            // Test passed! Auto-save the key
+            statusEl.innerHTML = `<span style="color: var(--success-color);">✓ Valid! ${result.model || ''} - Saving...</span>`;
+
+            // Save immediately
+            const saveSuccess = await saveAllSettings(container, profile);
+
+            if (saveSuccess) {
+                statusEl.innerHTML = `<span style="color: var(--success-color);">✓ Saved and verified!</span>`;
+                showSuccess(`${provider.charAt(0).toUpperCase() + provider.slice(1)} API key saved successfully`);
+
+                // Reload the component to show "configured" state
+                setTimeout(() => {
+                    renderAPIKeysSettings(container);
+                }, 1000);
+            } else {
+                statusEl.innerHTML = `<span style="color: var(--warning-color);">✓ Valid but save failed - use modal Save button</span>`;
+            }
         } else {
             statusEl.innerHTML = `<span style="color: var(--danger-color);">✗ ${result.error || 'Connection failed'}</span>`;
         }
