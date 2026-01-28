@@ -1,5 +1,5 @@
 {
-    "version": "3.9.80",
+    "version": "3.9.81",
     "release_date": "2026-01-28",
-    "release_notes": "Improve data import: consolidate repeated entries, average amounts, detect frequency"
+    "release_notes": "Add API key debug logging to diagnose invalid key errors"
 }

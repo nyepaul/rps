@@ -1077,6 +1077,15 @@ def extract_items(item_type):
         localai_url = sanitize_url(api_keys.get("localai_url"), "http://localhost:8080")
         ollama_url = sanitize_url(api_keys.get("ollama_url"), "http://localhost:11434")
 
+        # Debug: log API key retrieval
+        print(f"=== API KEY DEBUG ===")
+        print(f"  Provider: {provider}")
+        print(f"  Key name looked up: {provider}_api_key")
+        print(f"  Available keys in profile: {list(api_keys.keys())}")
+        print(f"  API key found: {bool(api_key)}")
+        if api_key:
+            print(f"  API key preview: {api_key[:10]}...{api_key[-4:]} (len={len(api_key)})")
+
         if not api_key and provider not in ['lmstudio', 'localai', 'ollama']:
             return jsonify({'error': f'{provider.capitalize()} API key not configured.'}), 400
 
