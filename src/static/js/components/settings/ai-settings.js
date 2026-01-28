@@ -80,7 +80,6 @@ export async function renderAPIKeysSettings(container) {
                 <option value="together">🤝 Together AI</option>
                 <option value="huggingface">🤗 Hugging Face</option>
                 <option value="zhipu">🇨🇳 Zhipu AI (GLM)</option>
-                <option value="ollama">🏠 Local Ollama</option>
                 <option value="lmstudio">💻 LM Studio</option>
                 <option value="localai">🤖 LocalAI</option>
             </select>
@@ -97,35 +96,6 @@ export async function renderAPIKeysSettings(container) {
             </p>
             
             <div style="display: grid; grid-template-columns: 1fr; gap: 15px;">
-                <!-- Ollama -->
-                <div>
-                    <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px;">Ollama Configuration</label>
-                    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
-                        <input
-                            type="text"
-                            id="ollama-url"
-                            placeholder="http://localhost:11434"
-                            style="flex: 2; padding: 8px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 12px;"
-                        />
-                        <select id="ollama-model-select" style="flex: 1; padding: 8px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 12px; display: none;">
-                        </select>
-                        <input
-                            type="text"
-                            id="ollama-model"
-                            placeholder="qwen:latest"
-                            style="flex: 1; padding: 8px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 12px;"
-                        />
-                        <button class="test-local-btn" data-provider="ollama" style="padding: 8px 15px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 12px;">
-                            🧪 Test
-                        </button>
-                    </div>
-                    <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
-                        <button id="refresh-models-btn" style="font-size: 10px; background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); padding: 2px 8px; border-radius: 4px; cursor: pointer;">🔄 Refresh Model List</button>
-                        <button id="pull-vision-btn" style="font-size: 10px; background: transparent; border: 1px solid var(--success-color); color: var(--success-color); padding: 2px 8px; border-radius: 4px; cursor: pointer;">📥 Update Vision (Llama 3.2)</button>
-                    </div>
-                    <div id="ollama-status" style="margin-top: 4px; font-size: 10px;"></div>
-                </div>
-
                 <!-- LM Studio -->
                 <div>
                     <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px;">LM Studio URL</label>
@@ -173,16 +143,13 @@ export async function renderAPIKeysSettings(container) {
             <span id="ai-save-status" style="font-size: 13px;"></span>
         </div>
 
-        <!-- Educational Footer -->
-        <div style="margin-top: 30px; padding: 15px; background: var(--bg-tertiary); border-radius: 8px; font-size: 11px;">
-            <h4 style="margin: 0 0 8px 0; font-size: 12px; display: flex; align-items: center; gap: 5px;">💡 Pro Tip: Free AI Access</h4>
-            <p style="margin: 0; color: var(--text-secondary); line-height: 1.5;">
-                <strong>Gemini</strong> offers a generous free tier for Flash models. 
-                <strong>OpenRouter</strong> provides access to many free models (like Llama 3) with a single key.
-                <strong>Hugging Face</strong> offers thousands of open-source models for free.
-                If you have a powerful PC, use <strong>Ollama</strong> for 100% free, private local execution.
+        <div style="margin-bottom: 25px; padding: 15px; background: var(--info-bg); border-radius: 8px; border-left: 4px solid var(--accent-color);">
+            <p style="margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-primary);">
+                🔒 <strong>Privacy First:</strong> Your financial data is only sent to the AI providers you configure below. 
+                If you prefer 100% local processing, use <strong>LM Studio</strong> or <strong>LocalAI</strong>.
             </p>
         </div>
+
     `;
 
     setupHandlers(container, profile);
@@ -261,77 +228,8 @@ function setupHandlers(container, profile) {
         });
     });
 
-    // Model management handlers
-    container.querySelector('#refresh-models-btn').addEventListener('click', () => refreshOllamaModels(container));
-    container.querySelector('#pull-vision-btn').addEventListener('click', () => pullOllamaModel(container, 'llama3.2-vision'));
-
     // Save button
     container.querySelector('#save-ai-settings-btn').addEventListener('click', () => saveAllSettings(container, profile));
-}
-
-async function refreshOllamaModels(container) {
-    const url = container.querySelector('#ollama-url').value || 'http://localhost:11434';
-    const status = container.querySelector('#ollama-status');
-    const select = container.querySelector('#ollama-model-select');
-    const input = container.querySelector('#ollama-model');
-
-    status.innerHTML = '<span style="color: var(--text-secondary);">Fetching models...</span>';
-
-    try {
-        const response = await fetch(`/api/ollama/models?url=${encodeURIComponent(url)}`);
-        const data = await response.json();
-
-        if (response.ok && data.models) {
-            select.innerHTML = data.models.map(m => `<option value="${m.name}">${m.name}</option>`).join('');
-            select.style.display = 'block';
-            input.style.display = 'none';
-            
-            // Sync input when selection changes
-            select.addEventListener('change', () => {
-                input.value = select.value;
-            });
-            
-            // Set initial value
-            if (input.value && data.models.some(m => m.name === input.value)) {
-                select.value = input.value;
-            } else {
-                input.value = select.value;
-            }
-
-            status.innerHTML = `<span style="color: var(--success-color);">✓ Found ${data.models.length} models</span>`;
-        } else {
-            status.innerHTML = `<span style="color: var(--danger-color);">✗ ${data.error || 'Failed to fetch models'}</span>`;
-        }
-    } catch (error) {
-        status.innerHTML = `<span style="color: var(--danger-color);">✗ Connection error</span>`;
-    }
-}
-
-async function pullOllamaModel(container, modelName) {
-    const url = container.querySelector('#ollama-url').value || 'http://localhost:11434';
-    const status = container.querySelector('#ollama-status');
-
-    if (!confirm(`This will pull/update the '${modelName}' model. This may take several minutes depending on your internet speed. Continue?`)) return;
-
-    status.innerHTML = `<span style="color: var(--accent-color);">📥 Downloading ${modelName}... (Please wait)</span>`;
-
-    try {
-        const response = await fetch('/api/ollama/pull', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url, model: modelName })
-        });
-
-        const data = await response.json();
-        if (response.ok) {
-            status.innerHTML = `<span style="color: var(--success-color);">✓ ${data.message}</span>`;
-            await refreshOllamaModels(container);
-        } else {
-            status.innerHTML = `<span style="color: var(--danger-color);">✗ ${data.error || 'Pull failed'}</span>`;
-        }
-    } catch (error) {
-        status.innerHTML = `<span style="color: var(--danger-color);">✗ Error updating model</span>`;
-    }
 }
 
 async function testKey(provider, key, statusElement, profile, container) {
@@ -345,12 +243,6 @@ async function testKey(provider, key, statusElement, profile, container) {
     try {
         const payload = { provider, api_key: key };
         
-        // Add Ollama model if testing Ollama
-        if (provider === 'ollama') {
-            const model = container.querySelector('#ollama-model').value.trim();
-            if (model) payload.ollama_model = model;
-        }
-
         const response = await fetch('/api/test-api-key', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -393,21 +285,6 @@ async function loadExistingKeys(container, profile) {
                 }
             });
 
-            if (data.ollama_url) {
-                // Local URLs should NOT be masked. If we see bullets, ignore them and use default or empty.
-                const url = data.ollama_url;
-                const input = container.querySelector('#ollama-url');
-                if (url.includes('•')) {
-                    input.value = 'http://localhost:11434';
-                } else {
-                    input.value = url;
-                }
-                
-                if (data.ollama_model) {
-                    container.querySelector('#ollama-model').value = data.ollama_model;
-                }
-                container.querySelector('#ollama-status').innerHTML = '<span style="color: var(--success-color);">✓ Connected</span>';
-            }
             if (data.lmstudio_url) {
                 container.querySelector('#lmstudio-url').value = data.lmstudio_url;
                 container.querySelector('#lmstudio-status').innerHTML = '<span style="color: var(--success-color);">✓ Connected</span>';
@@ -441,12 +318,6 @@ async function saveAllSettings(container, profile, silent = false) {
         // NEVER save strings containing bullets (masked indicators)
         if (val && !val.includes('•')) payload[`${p}_api_key`] = val;
     });
-
-    const ollamaUrl = container.querySelector('#ollama-url').value.trim();
-    if (ollamaUrl && !ollamaUrl.includes('•')) payload.ollama_url = ollamaUrl;
-
-    const ollamaModel = container.querySelector('#ollama-model').value.trim();
-    if (ollamaModel && !ollamaModel.includes('•')) payload.ollama_model = ollamaModel;
 
     const lmstudioUrl = container.querySelector('#lmstudio-url').value.trim();
     if (lmstudioUrl && !lmstudioUrl.includes('•')) payload.lmstudio_url = lmstudioUrl;

@@ -1,5 +1,5 @@
 {
-    "version": "3.9.68",
-    "release_date": "2026-01-27",
-    "release_notes": "Add AI model selection for document imports"
+    "version": "3.9.69",
+    "release_date": "2026-01-28",
+    "release_notes": "Fix AI key propagation and provider fallbacks"
 }

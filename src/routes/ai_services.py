@@ -156,10 +156,10 @@ def resilient_parse_llm_json(text_response, list_key):
     # 4. Final Fallback: Regex-based field extraction (for non-JSON or badly malformed output)
     # This is useful if the LLM just lists "Name: X, Amount: Y"
     try:
-        # Extract name/description
-        name_match = re.search(r'"?(?:name|description|payee|institution)"?\s*:\s*"([^"]+)"', clean_text, re.IGNORECASE)
-        # Extract amount/value
-        amount_match = re.search(r'"?(?:amount|value|balance|price|total)"?\s*:\s*([\d,.]+)', clean_text, re.IGNORECASE)
+        # Extract name/description - now with optional quotes
+        name_match = re.search(r'"?(?:name|description|payee|institution)"?\s*[:=-]\s*"?([^"\n,]+)"?', clean_text, re.IGNORECASE)
+        # Extract amount/value - now with optional quotes
+        amount_match = re.search(r'"?(?:amount|value|balance|price|total)"?\s*[:=-]\s*"?([\d,.]+)"?', clean_text, re.IGNORECASE)
         
         if name_match and amount_match:
             name = name_match.group(1)
@@ -208,17 +208,22 @@ def normalize_to_list(data, list_key):
             if key in data and isinstance(data[key], list):
                 return data[key]
         
+        # Recursive fallback: find ANY list in the dictionary
+        for val in data.values():
+            if isinstance(val, list) and len(val) > 0 and isinstance(val[0], dict):
+                return val
+        
         # If it's a single object that matches the expected structure but not in a list, wrap it
         # Heuristic: check for common financial keys
         keys = data.keys()
         # Look for name-like keys and amount-like keys
-        has_name = any(k in keys for k in ['name', 'description', 'institution', 'date', 'payee', 'memo'])
+        has_name = any(k in keys for k in ['name', 'description', 'institution', 'date', 'payee', 'memo', 'type'])
         has_value = any(k in keys for k in ['value', 'amount', 'balance', 'price', 'total'])
         
         if has_name and has_value:
             # Map 'description' or 'payee' to 'name' if name is missing
             if 'name' not in data:
-                for alt in ['description', 'payee', 'institution', 'memo']:
+                for alt in ['description', 'payee', 'institution', 'memo', 'type']:
                     if alt in data:
                         data['name'] = data[alt]
                         break
@@ -312,14 +317,10 @@ def call_gemini_with_fallback(prompt, api_key, image_data=None, mime_type=None, 
                     }]
                 }
 
-            # Determine which API version to use
-            # v1 is stable for images, but v1beta is required for PDF/Document support via inline_data
-            api_version = 'v1'
-            if mime_type == 'application/pdf' or (isinstance(image_data, bytes) and image_data[:4] == b'%PDF'):
-                api_version = 'v1beta'
+            # Use v1beta for all calls - it's more robust and required for PDF/Document support
+            api_version = 'v1beta'
 
             # Call Gemini REST API
-            # Model name should already include 'models/' prefix in the path
             url = f'https://generativelanguage.googleapis.com/{api_version}/{model_name}:generateContent?key={api_key}'
 
             response = requests.post(url, json=payload, timeout=60)
@@ -341,9 +342,10 @@ def call_gemini_with_fallback(prompt, api_key, image_data=None, mime_type=None, 
             error_str = str(e)
             print(f"Model {model_name} failed: {error_str}")
 
-            # Check for quota errors - don't retry other models if quota exceeded
+            # Check for quota errors - try other models if quota exceeded on this specific one
             if '429' in error_str or 'quota' in error_str.lower() or 'RESOURCE_EXHAUSTED' in error_str:
-                raise Exception("Gemini API quota exceeded. Please wait a few minutes or upgrade your API plan.")
+                # Often flash is rate limited but pro isn't, or vice-versa
+                continue
 
             # Continue trying other models
             continue
@@ -485,24 +487,22 @@ from src.models.profile import Profile
 from src.models.conversation import Conversation
 from flask_login import current_user
 
-def call_llm(provider, prompt, api_key, history=None, system_prompt=None, ollama_url=None, lmstudio_url=None, localai_url=None, ollama_model=None):
+def call_llm(provider, prompt, api_key, history=None, system_prompt=None, lmstudio_url=None, localai_url=None, model=None):
     """Unified interface to call various LLM providers."""
     if provider == 'gemini':
-        return call_gemini(prompt, api_key, history, system_prompt)
+        return call_gemini(prompt, api_key, history, system_prompt, model=model)
     elif provider == 'claude':
-        return call_claude(prompt, api_key, history, system_prompt)
-    elif provider == 'ollama':
-        return call_ollama(prompt, ollama_url, history, system_prompt, ollama_model)
+        return call_claude(prompt, api_key, history, system_prompt, model=model)
     elif provider == 'lmstudio':
         return call_lmstudio(prompt, lmstudio_url, history, system_prompt)
     elif provider == 'localai':
         return call_localai(prompt, localai_url, history, system_prompt)
     else:
         # OpenAI-compatible providers
-        return call_openai_compatible(provider, prompt, api_key, history, system_prompt)
+        return call_openai_compatible(provider, prompt, api_key, history, system_prompt, model=model)
 
 
-def call_gemini(prompt, api_key, history=None, system_prompt=None):
+def call_gemini(prompt, api_key, history=None, system_prompt=None, model=None):
     """Calls Gemini using the official client."""
     client = genai.Client(api_key=api_key)
     
@@ -522,6 +522,14 @@ def call_gemini(prompt, api_key, history=None, system_prompt=None):
         'models/gemini-1.5-pro'
     ]
 
+    # If specific model requested, try it first
+    if model:
+        if not model.startswith('models/'):
+            model = f'models/{model}'
+        if model in models_to_try:
+            models_to_try.remove(model)
+        models_to_try.insert(0, model)
+
     for model_name in models_to_try:
         try:
             response = client.models.generate_content(
@@ -540,7 +548,7 @@ def call_gemini(prompt, api_key, history=None, system_prompt=None):
     raise Exception("All Gemini models failed or rate limited.")
 
 
-def call_claude(prompt, api_key, history=None, system_prompt=None):
+def call_claude(prompt, api_key, history=None, system_prompt=None, model=None):
     """Calls Anthropic Claude API."""
     messages = []
     if history:
@@ -550,6 +558,11 @@ def call_claude(prompt, api_key, history=None, system_prompt=None):
 
     models = ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229']
     
+    if model:
+        if model in models:
+            models.remove(model)
+        models.insert(0, model)
+
     for model in models:
         try:
             response = requests.post(
@@ -574,7 +587,7 @@ def call_claude(prompt, api_key, history=None, system_prompt=None):
     raise Exception("Claude API call failed.")
 
 
-def call_openai_compatible(provider, prompt, api_key, history=None, system_prompt=None):
+def call_openai_compatible(provider, prompt, api_key, history=None, system_prompt=None, model=None):
     """Calls OpenAI-compatible APIs (OpenAI, DeepSeek, OpenRouter, etc.)."""
     endpoints = {
         'openai': ('https://api.openai.com/v1/chat/completions', 'gpt-4o'),
@@ -590,6 +603,9 @@ def call_openai_compatible(provider, prompt, api_key, history=None, system_promp
     url, default_model = endpoints.get(provider, (None, None))
     if not url:
         raise Exception(f"Unsupported provider: {provider}")
+
+    # Use requested model if provided
+    active_model = model if model else default_model
 
     messages = []
     if system_prompt:
@@ -607,7 +623,7 @@ def call_openai_compatible(provider, prompt, api_key, history=None, system_promp
                 'Content-Type': 'application/json'
             },
             json={
-                'model': default_model,
+                'model': active_model,
                 'messages': messages,
                 'temperature': 0.7
             },
@@ -619,39 +635,6 @@ def call_openai_compatible(provider, prompt, api_key, history=None, system_promp
             raise Exception(f"{provider.capitalize()} API error: {response.text}")
     except Exception as e:
         raise Exception(f"Failed to call {provider}: {str(e)}")
-
-
-def call_ollama(prompt, url, history=None, system_prompt=None, model=None):
-    """Calls local Ollama API."""
-    if not url:
-        url = "http://localhost:11434"
-    if not model:
-        model = "qwen:latest"
-    
-    messages = []
-    if system_prompt:
-        messages.append({'role': 'system', 'content': system_prompt})
-    if history:
-        for msg in history:
-            messages.append({'role': msg.role, 'content': msg.content})
-    messages.append({'role': 'user', 'content': prompt})
-
-    try:
-        response = requests.post(
-            f"{url}/api/chat",
-            json={
-                'model': model,
-                'messages': messages,
-                'stream': False
-            },
-            timeout=120
-        )
-        if response.status_code == 200:
-            return response.json()['message']['content']
-        else:
-            raise Exception(f"Ollama error: {response.text}")
-    except Exception as e:
-        raise Exception(f"Failed to connect to Ollama at {url}: {str(e)}")
 
 
 def call_lmstudio(prompt, url, history=None, system_prompt=None):
@@ -741,8 +724,8 @@ def advisor_chat():
         
         # If no preferred provider, find first available key
         if not provider:
-            for p in ['gemini', 'claude', 'openai', 'openrouter', 'deepseek', 'ollama', 'zhipu', 'lmstudio', 'localai']:
-                key_name = f"{p}_api_key" if p not in ['ollama', 'lmstudio', 'localai'] else f"{p}_url"
+            for p in ['gemini', 'claude', 'openai', 'grok', 'openrouter', 'deepseek', 'mistral', 'together', 'huggingface', 'zhipu', 'lmstudio', 'localai']:
+                key_name = f"{p}_api_key" if p not in ['lmstudio', 'localai'] else f"{p}_url"
                 if api_keys.get(key_name):
                     provider = p
                     break
@@ -752,13 +735,10 @@ def advisor_chat():
 
         # Get the appropriate key/url
         api_key = api_keys.get(f"{provider}_api_key")
-        ollama_url = sanitize_url(api_keys.get("ollama_url"), "http://localhost:11434")
-        # Use model from request if provided (e.g. from chat selector), else use profile default
-        ollama_model = data.get('ollama_model') or api_keys.get("ollama_model")
         lmstudio_url = sanitize_url(api_keys.get("lmstudio_url"), "http://localhost:1234")
         localai_url = sanitize_url(api_keys.get("localai_url"), "http://localhost:8080")
 
-        if not api_key and provider not in ['ollama', 'lmstudio', 'localai']:
+        if not api_key and provider not in ['lmstudio', 'localai']:
             return jsonify({
                 'error': f'{provider.capitalize()} API key not configured. Please configure in AI Settings.'
             }), 400
@@ -804,7 +784,7 @@ def advisor_chat():
         user_msg.save()
 
         # Call the selected LLM
-        assistant_text = call_llm(provider, user_message, api_key, history, system_prompt, ollama_url, lmstudio_url, localai_url, ollama_model)
+        assistant_text = call_llm(provider, user_message, api_key, history, system_prompt, lmstudio_url, localai_url, model=data.get('llm_model'))
 
         # Save assistant message
         assistant_msg = Conversation(
@@ -905,73 +885,57 @@ def clear_advisor_history(profile_id: int):
     return jsonify({'message': 'History cleared'}), 200
 
 
-@ai_services_bp.route('/ollama/models', methods=['GET'])
-@login_required
-@limiter.exempt
-def list_ollama_models():
-    """List available models from local Ollama instance."""
-    url = request.args.get('url', 'http://localhost:11434')
-    try:
-        response = requests.get(f"{url}/api/tags", timeout=5)
-        if response.status_code == 200:
-            return jsonify(response.json()), 200
-        enhanced_audit_logger.log(
-            action='OLLAMA_MODELS_FETCH_FAILED',
-            details={'status_code': response.status_code, 'url': url},
-            status_code=response.status_code
-        )
-        return jsonify({'error': f'Ollama error: {response.status_code}'}), response.status_code
-    except Exception as e:
-        enhanced_audit_logger.log(
-            action='OLLAMA_MODELS_CONNECTION_ERROR',
-            details={'error': str(e), 'url': url},
-            status_code=500
-        )
-        return jsonify({'error': str(e)}), 500
-
-
 EXTRACT_CONFIGS = {
     'assets': {
         'list_key': 'assets',
         'prompt': """
-            Analyze this financial document (image, PDF, CSV, or TXT). Extract a list of investment accounts or assets.
-            Return ONLY a JSON array of objects with the structure:
-            [{"name": "...", "type": "...", "value": ..., "cost_basis": null, "institution": "...", "account_number": null}]
-            Clean all values: remove symbols and commas. 
-            Supported types: "traditional_ira", "roth_ira", "401k", "403b", "457", "brokerage", "savings", "checking".
+            TASK: Extract all investment accounts, bank accounts, or assets from this document.
+            FORMAT: You must return a JSON array of objects.
+            FIELDS PER OBJECT:
+            - "name": Account or institution name
+            - "type": One of [traditional_ira, roth_ira, 401k, 403b, 457, brokerage, savings, checking]
+            - "value": The current balance or value as a number
+            - "institution": The bank or company name
+            
+            EXAMPLE OUTPUT:
+            [{"name": "Savings", "type": "savings", "value": 5000, "institution": "Chase"}]
+            
+            CRITICAL: Return ONLY the JSON array. Do not include any other text.
             """,
         'log_action': 'EXTRACT_ASSETS'
     },
     'income': {
         'list_key': 'income',
         'prompt': """
-            Analyze this financial document (image, PDF, CSV, or TXT) of a pay stub, bank statement, or tax document.
-            Extract a list of regular income streams.
-
-            FREQUENCY DETECTION:
-            - Keywords: "monthly", "bi-weekly", "weekly", "annual", "yearly", "quarterly", "semi-monthly"
-            - Pay stubs: Check dates. ~2 weeks apart = "bi-weekly", ~1 month = "monthly"
-            - Tax docs (W-2, 1099): Annual amounts - frequency "annual"
+            TASK: Extract all regular income streams from this document.
+            FORMAT: You must return a JSON array of objects.
+            FIELDS PER OBJECT:
+            - "name": Descriptive name of the income
+            - "amount": The per-period dollar amount as a number
+            - "frequency": One of [weekly, bi-weekly, semi-monthly, monthly, quarterly, annual]
             
-            RULES:
-            1. Extract: "name", "amount" (per period), "frequency".
-            2. Return ONLY a JSON array: [{"name": "...", "amount": ..., "frequency": "..."}]
+            EXAMPLE OUTPUT:
+            [{"name": "Salary", "amount": 3000, "frequency": "monthly"}]
+            
+            CRITICAL: Return ONLY the JSON array. Do not include any other text.
             """,
         'log_action': 'EXTRACT_INCOME'
     },
     'expenses': {
         'list_key': 'expenses',
         'prompt': """
-            Analyze this financial document (image, PDF, CSV, or TXT) of a receipt, credit card statement, or bill.
-            Extract a list of recurring or significant expenses.
-
-            RULES:
-            1. Extract for each expense:
-               - "name": Descriptive name
-               - "amount": The per-period amount as a number
-               - "frequency": "weekly", "bi-weekly", "monthly", "quarterly", "semi-annual", "annual"
-               - "category": housing, utilities, transportation, food, dining_out, healthcare, insurance, travel, entertainment, personal_care, clothing, gifts, childcare_education, charitable_giving, subscriptions, pet_care, home_maintenance, debt_payments, taxes, discretionary, other
-            2. Return ONLY a JSON array: [{"name": "...", "amount": ..., "frequency": "...", "category": "..."}]
+            TASK: Extract all recurring or significant expenses from this document.
+            FORMAT: You must return a JSON array of objects.
+            FIELDS PER OBJECT:
+            - "name": Descriptive name of the expense
+            - "amount": The dollar amount as a number
+            - "frequency": One of [weekly, bi-weekly, monthly, quarterly, semi-annual, annual]
+            - "category": One of [housing, utilities, transportation, food, dining_out, healthcare, insurance, travel, entertainment, personal_care, clothing, gifts, childcare_education, charitable_giving, subscriptions, pet_care, home_maintenance, debt_payments, taxes, discretionary, other]
+            
+            EXAMPLE OUTPUT:
+            [{"name": "Rent", "amount": 1500, "frequency": "monthly", "category": "housing"}]
+            
+            CRITICAL: Return ONLY the JSON array. Do not include any other text.
             """,
         'log_action': 'EXTRACT_EXPENSES'
     }
@@ -1011,15 +975,12 @@ def extract_items(item_type):
         api_keys = data_dict.get('api_keys', {})
         provider = requested_provider or data_dict.get('preferred_ai_provider') or 'gemini'
         
-        ollama_url = sanitize_url(api_keys.get('ollama_url'), 'http://localhost:11434')
-        if requested_model and provider == 'ollama':
-            ollama_model = requested_model
-        else:
-            configured_model = api_keys.get('ollama_model', '')
-            ollama_model = configured_model if ('vision' in configured_model.lower() or 'vl' in configured_model.lower()) else 'llama3.2-vision'
-
+        # Get the appropriate key/url
         api_key = api_keys.get(f"{provider}_api_key")
-        if not api_key and provider not in ['ollama', 'lmstudio', 'localai']:
+        lmstudio_url = sanitize_url(api_keys.get("lmstudio_url"), "http://localhost:1234")
+        localai_url = sanitize_url(api_keys.get("localai_url"), "http://localhost:8080")
+
+        if not api_key and provider not in ['lmstudio', 'localai']:
             return jsonify({'error': f'{provider.capitalize()} API key not configured.'}), 400
 
     except Exception as e:
@@ -1050,15 +1011,11 @@ def extract_items(item_type):
                             response_text = fn(prompt, api_key, chunk, "image/png", model=requested_model)
                         else:
                             # Handle text chunk via unified caller if it's text
-                            response_text = call_llm(provider, f"{prompt}\n\nTEXT:\n{chunk}", api_key, model=requested_model)
-                    elif provider == 'ollama':
-                        msg = {'role': 'user', 'content': prompt if content_type == "images" else f"{prompt}\n\nTEXT:\n{chunk}"}
-                        if content_type == "images": msg['images'] = [chunk]
-                        res = requests.post(f"{ollama_url}/api/chat", json={'model': ollama_model, 'messages': [msg], 'stream': False, 'format': 'json'}, timeout=180)
-                        if res.status_code == 200: response_text = res.json()['message']['content']
+                            response_text = call_llm(provider, f"{prompt}\n\nTEXT:\n{chunk}", api_key, model=requested_model, lmstudio_url=lmstudio_url, localai_url=localai_url)
 
                     if response_text:
-                        all_extracted.extend(resilient_parse_llm_json(response_text, config['list_key']))
+                        chunk_items = resilient_parse_llm_json(response_text, config['list_key'])
+                        all_extracted.extend(chunk_items)
                 
                 yield json.dumps({config['list_key']: all_extracted, 'status': 'success', 'progress': 100}) + '\n'
             
@@ -1073,20 +1030,19 @@ def extract_items(item_type):
                 elif provider in ['claude', 'openai']:
                     if is_text_file:
                         text_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
-                        response_text = call_llm(provider, f"{prompt}\n\nDATA:\n{text_content}", api_key, model=requested_model)
+                        response_text = call_llm(provider, f"{prompt}\n\nDATA:\n{text_content}", api_key, model=requested_model, lmstudio_url=lmstudio_url, localai_url=localai_url)
                     else:
                         fn = call_claude_with_vision if provider == 'claude' else call_openai_with_vision
                         response_text = fn(prompt, api_key, image_b64, mime_type, model=requested_model)
-                if provider == 'ollama':
-                    msg = {'role': 'user', 'content': prompt}
+                elif provider in ['lmstudio', 'localai']:
+                    # These are text-only usually, or OpenAI compatible
+                    text_content = ""
                     if is_text_file:
                         text_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
-                        msg['content'] += f"\n\nDATA:\n{text_content}"
                     else:
-                        msg['images'] = [image_b64]
+                        text_content = "[Image provided - vision not supported via local AI import yet]"
                     
-                    res = requests.post(f"{ollama_url}/api/chat", json={'model': ollama_model, 'messages': [msg], 'stream': False, 'format': 'json'}, timeout=180)
-                    if res.status_code == 200: response_text = res.json()['message']['content']
+                    response_text = call_llm(provider, f"{prompt}\n\nDATA:\n{text_content}", api_key, model=requested_model, lmstudio_url=lmstudio_url, localai_url=localai_url)
 
                 items = resilient_parse_llm_json(response_text, config['list_key'])
                 yield json.dumps({config['list_key']: items, 'status': 'success', 'progress': 100}) + '\n'

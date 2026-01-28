@@ -42,11 +42,9 @@ export function renderAdvisorTab(container) {
                         Profile: <strong>${profile.name}</strong> | Get personalized advice powered by AI
                     </p>
                 </div>
-                <div id="ollama-model-selector-container" style="display: none;">
-                    <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 4px;">Ollama Model</label>
-                    <select id="chat-ollama-model" style="padding: 6px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 13px;">
-                        <option value="">(Loading...)</option>
-                    </select>
+                <div style="flex: 1; display: flex; gap: 10px; align-items: center;">
+                    <input type="text" id="advisor-input" placeholder="Ask about your financial plan..." style="flex: 1; padding: 12px 15px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); font-size: 14px;">
+                    <button id="send-advisor-msg" class="btn-primary" style="padding: 10px 20px;">Send</button>
                 </div>
             </div>
 
@@ -273,35 +271,8 @@ function setupAdvisorHandlers(container, profile) {
     const chatInput = container.querySelector('#chat-input');
     const sendBtn = container.querySelector('#send-btn');
     const chatContainer = container.querySelector('#chat-container');
-    const modelSelectorContainer = container.querySelector('#ollama-model-selector-container');
-    const modelSelect = container.querySelector('#chat-ollama-model');
 
     if (!chatInput || !sendBtn || !chatContainer) return;
-
-    // Check if we should show the Ollama model selector
-    const initModelSelector = async () => {
-        try {
-            const response = await apiClient.get(`/api/profiles/${encodeURIComponent(profile.name)}/api-keys`);
-            if (response && response.preferred_ai_provider === 'ollama') {
-                modelSelectorContainer.style.display = 'block';
-                
-                // Fetch available models
-                const ollamaUrl = response.ollama_url || 'http://localhost:11434';
-                const modelsRes = await apiClient.get(`/api/ollama/models?url=${encodeURIComponent(ollamaUrl)}`);
-                
-                if (modelsRes && modelsRes.models) {
-                    modelSelect.innerHTML = modelsRes.models.map(m => 
-                        `<option value="${m.name}" ${m.name === response.ollama_model ? 'selected' : ''}>${m.name}</option>`
-                    ).join('');
-                } else {
-                    modelSelect.innerHTML = `<option value="${response.ollama_model || 'qwen:latest'}">${response.ollama_model || 'qwen:latest'}</option>`;
-                }
-            }
-        } catch (error) {
-            console.warn('Could not initialize Ollama model selector:', error);
-        }
-    };
-    initModelSelector();
 
     // Troubleshoot button
     const troubleshootBtn = container.querySelector('#troubleshoot-btn');
@@ -360,13 +331,9 @@ async function sendMessage(profile, chatInput, chatContainer) {
     // Show typing indicator
     const typingId = showTypingIndicator(chatContainer);
     
-    // Get selected model if selector exists
-    const modelSelect = document.getElementById('chat-ollama-model');
-    const selectedModel = modelSelect ? modelSelect.value : null;
-
     try {
         // Send to API
-        const response = await advisorAPI.chat(profile.name, message, currentConversationId, selectedModel);
+        const response = await advisorAPI.chat(profile.name, message, currentConversationId);
 
         // Update conversation ID if provided
         if (response.conversation_id) {

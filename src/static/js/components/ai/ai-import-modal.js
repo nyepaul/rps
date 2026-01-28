@@ -37,8 +37,7 @@ export function showAIImportModal(type, profileName, onComplete) {
         'openai': [
             { id: 'gpt-4o', name: 'GPT-4o (Standard)' },
             { id: 'gpt-4o-mini', name: 'GPT-4o-mini (Fast)' }
-        ],
-        'ollama': [] // Populated from server if available
+        ]
     };
 
     modal.innerHTML = `
@@ -67,7 +66,6 @@ export function showAIImportModal(type, profileName, onComplete) {
                             <option value="gemini">Google Gemini</option>
                             <option value="claude">Anthropic Claude</option>
                             <option value="openai">OpenAI (GPT-4o)</option>
-                            <option value="ollama">Local Ollama</option>
                         </select>
                     </div>
                     <div>
@@ -112,27 +110,6 @@ export function showAIImportModal(type, profileName, onComplete) {
     const updateModelList = async (provider) => {
         modelSelect.innerHTML = '';
         
-        if (provider === 'ollama') {
-            try {
-                // Try to fetch local models from backend
-                const response = await apiClient.get('/api/ollama/models');
-                if (response && response.models) {
-                    MODELS.ollama = response.models.map(m => ({ id: m.name, name: m.name }));
-                }
-            } catch (e) {
-                console.warn('Could not fetch Ollama models', e);
-            }
-            
-            if (MODELS.ollama.length === 0) {
-                // Add a default if nothing found
-                const option = document.createElement('option');
-                option.value = '';
-                option.textContent = 'Auto (llama3.2-vision)';
-                modelSelect.appendChild(option);
-                return;
-            }
-        }
-
         const providerModels = MODELS[provider] || [];
         providerModels.forEach(m => {
             const option = document.createElement('option');
@@ -155,16 +132,8 @@ export function showAIImportModal(type, profileName, onComplete) {
             const response = await apiClient.get(`/api/profiles/${encodeURIComponent(profileName)}/api-keys`);
             if (response && response.preferred_ai_provider) {
                 providerSelect.value = response.preferred_ai_provider;
-            } else if (response && response.ollama_url && !response.gemini_api_key) {
-                // If Ollama is configured but Gemini isn't, default to Ollama
-                providerSelect.value = 'ollama';
             }
             await updateModelList(providerSelect.value);
-            
-            // For Ollama, if we have a preferred model in settings, try to select it
-            if (providerSelect.value === 'ollama' && response && response.ollama_model) {
-                modelSelect.value = response.ollama_model;
-            }
         } catch (error) {
             console.warn('Could not load preferred AI provider, defaulting to Gemini', error);
             await updateModelList('gemini');

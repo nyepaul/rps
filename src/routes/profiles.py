@@ -561,8 +561,6 @@ class APIKeySchema(BaseModel):
     together_api_key: Optional[str] = None
     huggingface_api_key: Optional[str] = None
     zhipu_api_key: Optional[str] = None
-    ollama_url: Optional[str] = None
-    ollama_model: Optional[str] = None
     lmstudio_url: Optional[str] = None
     localai_url: Optional[str] = None
     preferred_ai_provider: Optional[str] = None
@@ -579,7 +577,7 @@ class APIKeySchema(BaseModel):
                 raise ValueError('API key is too long')
         return v
 
-    @validator('ollama_url', 'lmstudio_url', 'localai_url')
+    @validator('lmstudio_url', 'localai_url')
     def validate_local_urls(cls, v):
         if v is not None:
             v = v.strip()
@@ -637,10 +635,6 @@ def get_api_keys(name: str):
         if api_keys.get('huggingface_api_key'):
             result['huggingface_api_key'] = api_keys['huggingface_api_key'][-4:]
             keys_configured.append('huggingface')
-        if api_keys.get('ollama_url'):
-            result['ollama_url'] = api_keys['ollama_url']
-            result['ollama_model'] = api_keys.get('ollama_model', 'qwen:latest')
-            keys_configured.append('ollama')
         if api_keys.get('lmstudio_url'):
             result['lmstudio_url'] = api_keys['lmstudio_url']
             keys_configured.append('lmstudio')
@@ -737,11 +731,6 @@ def save_api_keys(name: str):
         if data.zhipu_api_key:
             data_dict['api_keys']['zhipu_api_key'] = data.zhipu_api_key
             keys_updated.append('zhipu')
-        if data.ollama_url:
-            data_dict['api_keys']['ollama_url'] = data.ollama_url
-            if data.ollama_model:
-                data_dict['api_keys']['ollama_model'] = data.ollama_model
-            keys_updated.append('ollama')
         if data.lmstudio_url:
             data_dict['api_keys']['lmstudio_url'] = data.lmstudio_url
             keys_updated.append('lmstudio')
@@ -826,8 +815,6 @@ def test_api_key():
             return test_huggingface_api_key(api_key)
         elif provider == 'zhipu':
             return test_zhipu_api_key(api_key)
-        elif provider == 'ollama':
-            return test_ollama_api_key(api_key, data.get('ollama_model'))
         elif provider == 'lmstudio':
             return test_lmstudio_api_key(api_key)
         elif provider == 'localai':
@@ -1123,26 +1110,6 @@ def test_zhipu_api_key(api_key: str):
             return jsonify({'success': False, 'error': f"Zhipu Error: {response.text}"}), 400
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 400
-
-
-def test_ollama_api_key(url: str, model: str = None):
-    """Test Ollama connection (URL instead of key)."""
-    try:
-        import requests
-        if not model:
-            model = 'qwen:latest'
-        response = requests.get(f'{url}/api/tags', timeout=5)
-        if response.status_code == 200:
-            models = response.json().get('models', [])
-            return jsonify({
-                'success': True, 
-                'message': f'Connected to Ollama ({len(models)} models found)',
-                'model': models[0]['name'] if models else 'ollama'
-            }), 200
-        else:
-            return jsonify({'success': False, 'error': f"Ollama Error: {response.status_code}"}), 400
-    except Exception as e:
-        return jsonify({'success': False, 'error': f"Connection failed: {str(e)}"}), 400
 
 
 def test_lmstudio_api_key(url: str):
