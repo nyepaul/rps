@@ -843,11 +843,10 @@ def test_claude_api_key(api_key: str):
 
         # Try latest Claude models
         models_to_try = [
-            'claude-opus-4-5-20251101',      # Claude Opus 4.5 (Nov 2025) - most capable
-            'claude-sonnet-4-5-20250929',    # Claude Sonnet 4.5 (Sep 2025) - excellent balance
-            'claude-sonnet-4-20250514',      # Claude Sonnet 4 (May 2025) - fallback
-            'claude-sonnet-3-5-20241022',    # Claude Sonnet 3.5 (Oct 2024) - legacy fallback
-            'claude-3-5-haiku-20241022'      # Claude Haiku 3.5 (fastest, for quick tests)
+            'claude-opus-4-5-20251101',      # Claude Opus 4.5 (Nov 2025)
+            'claude-sonnet-4-5-20250929',    # Claude Sonnet 4.5 (Sep 2025)
+            'claude-4-sonnet-20250514',      # Claude 4.0 Sonnet (May 2025)
+            'claude-3-5-sonnet-20241022'     # Legacy fallback
         ]
 
         last_error = None
@@ -937,7 +936,7 @@ def test_openai_api_key(api_key: str):
                 'Content-Type': 'application/json'
             },
             json={
-                'model': 'gpt-4o',
+                'model': 'gpt-5.2',
                 'messages': [{'role': 'user', 'content': 'Hi'}],
                 'max_tokens': 5
             },

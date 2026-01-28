@@ -25,19 +25,18 @@ export function showAIImportModal(type, profileName, onComplete) {
 
     const MODELS = {
         'gemini': [
-            { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Recommended)' },
-            { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Reliable)' },
-            { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Best Intelligence)' }
+            { id: 'gemini-3-flash-preview', name: 'Gemini 3.0 Flash (Fastest)' },
+            { id: 'gemini-3-pro-preview', name: 'Gemini 3.0 Pro (Most Capable)' },
+            { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Stable)' }
         ],
         'claude': [
-            { id: 'claude-4-5-sonnet-20250929', name: 'Claude 4.5 Sonnet (Fast & Pro)' },
-            { id: 'claude-4-5-opus-20251101', name: 'Claude 4.5 Opus (Most Intelligent)' },
-            { id: 'claude-4-sonnet-20250514', name: 'Claude 4.0 Sonnet' },
-            { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet (Legacy)' }
+            { id: 'claude-sonnet-4-5-20250929', name: 'Claude 4.5 Sonnet' },
+            { id: 'claude-opus-4-5-20251101', name: 'Claude 4.5 Opus' },
+            { id: 'claude-haiku-4-5-20251001', name: 'Claude 4.5 Haiku' }
         ],
         'openai': [
-            { id: 'gpt-5.2-instant', name: 'GPT-5.2 Instant (Everyday Pro)' },
-            { id: 'gpt-5.2-thinking', name: 'GPT-5.2 Thinking (Deep Reasoning)' },
+            { id: 'gpt-5.2', name: 'GPT-5.2 (Latest Frontier)' },
+            { id: 'gpt-5.2-thinking', name: 'GPT-5.2 Thinking' },
             { id: 'gpt-4o', name: 'GPT-4o (Legacy)' }
         ]
     };

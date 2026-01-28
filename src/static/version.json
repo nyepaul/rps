@@ -1,5 +1,5 @@
 {
-    "version": "3.9.72",
+    "version": "3.9.73",
     "release_date": "2026-01-28",
-    "release_notes": "Fix Gemini 404s by standardizing model IDs and URL paths"
+    "release_notes": "Final Frontier: Gemini 3, Claude 4.5, and GPT-5.2 fixed"
 }

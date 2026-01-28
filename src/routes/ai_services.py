@@ -236,25 +236,30 @@ def normalize_to_list(data, list_key):
 def call_gemini_with_fallback(prompt, api_key, image_data=None, mime_type=None, model=None):
     """Calls Gemini with a prioritized list of models and fallback logic using REST API."""
     # Use full model resource names for v1 API
-    # Prioritize stable models
+    # Frontier models for 2026
     models = [
-        'gemini-2.0-flash', 
+        'gemini-3-flash-preview', 
+        'gemini-3-pro-preview',
+        'gemini-2.0-flash',
         'gemini-1.5-flash',
-        'gemini-1.5-pro',
     ]
 
     # If specific model requested, try it first
     if model:
-        # Add 'models/' prefix if missing
-        if not model.startswith('models/'):
-            model = f'models/{model}'
+        if model in models:
+            models.remove(model)
         models.insert(0, model)
 
     last_error = None
 
     for model_name in models:
         try:
-            print(f"Attempting Gemini model: {model_name}")
+            # DESTROY 404s: Ensure model name is formatted correctly for v1beta
+            # Must be 'models/model-id'
+            model_id = model_name.replace('models/', '')
+            full_model_path = f"models/{model_id}"
+            
+            print(f"Attempting Gemini model: {full_model_path}")
 
             # Build request based on whether we have image data
             if image_data:
@@ -319,9 +324,7 @@ def call_gemini_with_fallback(prompt, api_key, image_data=None, mime_type=None, 
             api_version = 'v1beta'
 
             # Call Gemini REST API
-            # Ensure model name doesn't have double prefix
-            clean_model_id = model_name.replace('models/', '')
-            url = f'https://generativelanguage.googleapis.com/{api_version}/models/{clean_model_id}:generateContent?key={api_key}'
+            url = f'https://generativelanguage.googleapis.com/{api_version}/{full_model_path}:generateContent?key={api_key}'
 
             response = requests.post(url, json=payload, timeout=60)
 
@@ -367,7 +370,7 @@ def call_claude_with_vision(prompt, api_key, image_b64, mime_type, model=None):
     }
     
     # Use requested model or default
-    model_name = model if model else 'claude-3-5-sonnet-20241022'
+    model_name = model if model else 'claude-sonnet-4-5-20250929'
 
     # Handle CSV case: Include as text in the prompt instead of an image
     if mime_type == 'text/csv':
@@ -517,9 +520,9 @@ def call_gemini(prompt, api_key, history=None, system_prompt=None, model=None):
     contents.append(types.Content(role='user', parts=[types.Part(text=prompt)]))
 
     models_to_try = [
-        'gemini-2.0-flash', 
-        'gemini-1.5-flash',
-        'gemini-1.5-pro'
+        'models/gemini-3-flash-preview', 
+        'models/gemini-3-pro-preview', 
+        'models/gemini-2.0-flash'
     ]
 
     # If specific model requested, try it first
@@ -595,9 +598,9 @@ def call_claude(prompt, api_key, history=None, system_prompt=None, model=None):
 def call_openai_compatible(provider, prompt, api_key, history=None, system_prompt=None, model=None):
     """Calls OpenAI-compatible APIs (OpenAI, DeepSeek, OpenRouter, etc.)."""
     endpoints = {
-        'openai': ('https://api.openai.com/v1/chat/completions', 'gpt-5.2-instant'),
+        'openai': ('https://api.openai.com/v1/chat/completions', 'gpt-5.2'),
         'deepseek': ('https://api.deepseek.com/chat/completions', 'deepseek-chat'), # Maps to V4
-        'openrouter': ('https://openrouter.ai/api/v1/chat/completions', 'google/gemini-3.0-flash'),
+        'openrouter': ('https://openrouter.ai/api/v1/chat/completions', 'google/gemini-3-flash-preview'),
         'grok': ('https://api.x.ai/v1/chat/completions', 'grok-5'),
         'mistral': ('https://api.mistral.ai/v1/chat/completions', 'mistral-large-25.12'),
         'together': ('https://api.together.xyz/v1/chat/completions', 'meta-llama/Llama-4-70b-instruct'),
