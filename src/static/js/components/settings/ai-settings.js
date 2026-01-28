@@ -190,17 +190,6 @@ export async function renderAPIKeysSettings(container) {
                 <option value="localai">🤖 LocalAI</option>
             </select>
         </div>
-
-        <!-- Save Button -->
-        <div style="display: flex; align-items: center; gap: 15px;">
-            <button
-                id="save-ai-settings-btn"
-                style="padding: 12px 30px; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"
-            >
-                💾 Save Configuration
-            </button>
-            <span id="ai-save-status" style="font-size: 13px;"></span>
-        </div>
     `;
 
     // Render provider sections
@@ -315,9 +304,6 @@ function setupHandlers(container, profile) {
         section.style.display = showAllProviders ? 'block' : 'none';
         toggleText.textContent = showAllProviders ? 'Show Less ▲' : 'Show More Providers ▼';
     });
-
-    // Save button
-    container.querySelector('#save-ai-settings-btn').addEventListener('click', () => saveAllSettings(container, profile));
 }
 
 async function testNewKey(provider, container, profile) {
@@ -484,10 +470,7 @@ async function loadExistingKeys(container, profile) {
     }
 }
 
-async function saveAllSettings(container, profile) {
-    const statusEl = container.querySelector('#ai-save-status');
-    statusEl.innerHTML = '<span style="color: var(--text-secondary);">💾 Saving...</span>';
-
+export async function saveAllSettings(container, profile) {
     const payload = {};
     const allProviders = [...PROVIDERS.recommended, ...PROVIDERS.budget, ...PROVIDERS.local, ...PROVIDERS.more];
     const validationErrors = [];
@@ -516,9 +499,8 @@ async function saveAllSettings(container, profile) {
     // Show validation errors if any
     if (validationErrors.length > 0) {
         const errorMsg = validationErrors.join('\n');
-        statusEl.innerHTML = `<span style="color: var(--danger-color);">✗ Validation failed</span>`;
         showError(`Validation errors:\n${errorMsg}`);
-        return;
+        return false;
     }
 
     const preferredProvider = container.querySelector('#preferred-ai-provider').value;
@@ -532,21 +514,22 @@ async function saveAllSettings(container, profile) {
         });
 
         if (response.ok) {
-            statusEl.innerHTML = '<span style="color: var(--success-color);">✓ Saved successfully</span>';
             showSuccess('AI configuration saved and encrypted');
 
             // Reload to show updated status
             setTimeout(() => {
                 renderAPIKeysSettings(container);
             }, 1000);
+
+            return true;
         } else {
             const err = await response.json();
-            statusEl.innerHTML = `<span style="color: var(--danger-color);">✗ ${err.error || 'Failed'}</span>`;
-            showError(err.error || 'Failed to save');
+            showError(err.error || 'Failed to save AI settings');
+            return false;
         }
     } catch (error) {
-        statusEl.innerHTML = `<span style="color: var(--danger-color);">✗ Network error</span>`;
-        showError('Network error while saving');
+        showError('Network error while saving AI settings');
+        return false;
     }
 }
 
