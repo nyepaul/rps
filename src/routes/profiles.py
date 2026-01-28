@@ -680,21 +680,10 @@ def get_api_keys(name: str):
 @login_required
 def save_api_keys(name: str):
     """Save encrypted API keys for a profile."""
-    # Debug: log incoming request
-    print(f"=== SAVE API KEYS REQUEST ===")
-    print(f"  Profile: {name}")
-    raw_json = request.json or {}
-    for key, val in raw_json.items():
-        if 'api_key' in key and val:
-            print(f"  {key}: {val[:10]}...{val[-4:]} (len={len(val)})")
-        else:
-            print(f"  {key}: {val}")
-
     try:
         # Validate input
         data = APIKeySchema(**request.json)
     except Exception as e:
-        print(f"  VALIDATION ERROR: {str(e)}")
         enhanced_audit_logger.log(
             action='SAVE_API_KEYS_VALIDATION_ERROR',
             details={'profile_name': name, 'error': str(e)},
@@ -771,18 +760,6 @@ def save_api_keys(name: str):
         # Save profile (encryption happens automatically via the data property setter)
         profile.data = data_dict
         profile.save()
-
-        # Debug: confirm what was saved
-        print(f"  SAVED SUCCESSFULLY: {keys_updated}")
-        for key in keys_updated:
-            if key in ['lmstudio', 'localai', 'ollama']:
-                print(f"    {key}_url: {data_dict['api_keys'].get(f'{key}_url', 'N/A')}")
-            elif key == 'preferred_provider':
-                print(f"    preferred: {data_dict.get('preferred_ai_provider', 'N/A')}")
-            else:
-                saved_key = data_dict['api_keys'].get(f'{key}_api_key', '')
-                if saved_key:
-                    print(f"    {key}_api_key: {saved_key[:10]}...{saved_key[-4:]} (len={len(saved_key)})")
 
         enhanced_audit_logger.log(
             action='SAVE_API_KEYS',
@@ -1177,7 +1154,7 @@ def test_localai_api_key(url: str):
         if response.status_code == 200:
             models = response.json().get('data', [])
             return jsonify({
-                'success': True, 
+                'success': True,
                 'message': f'Connected to LocalAI ({len(models)} models found)',
                 'model': models[0]['id'] if models else 'localai'
             }), 200
@@ -1185,3 +1162,132 @@ def test_localai_api_key(url: str):
             return jsonify({'success': False, 'error': f"LocalAI Error: {response.status_code}"}), 400
     except Exception as e:
         return jsonify({'success': False, 'error': f"Connection failed: {str(e)}"}), 400
+
+
+@profiles_bp.route('/profiles/<name>/test-stored-key', methods=['POST'])
+@login_required
+@limiter.exempt
+def test_stored_api_key(name: str):
+    """Test a stored API key for a profile."""
+    try:
+        profile = Profile.get_by_name(name, current_user.id)
+        if not profile:
+            enhanced_audit_logger.log(
+                action='TEST_STORED_KEY_NOT_FOUND',
+                details={'profile_name': name},
+                status_code=404
+            )
+            return jsonify({'error': 'Profile not found'}), 404
+
+        provider = request.json.get('provider')
+        if not provider:
+            return jsonify({'error': 'Provider required'}), 400
+
+        # Get stored key
+        api_keys = profile.data_dict.get('api_keys', {})
+
+        # Handle both API keys and local URLs
+        if provider in ['lmstudio', 'localai']:
+            stored_value = api_keys.get(f'{provider}_url')
+            value_type = 'URL'
+        else:
+            stored_value = api_keys.get(f'{provider}_api_key')
+            value_type = 'API key'
+
+        if not stored_value:
+            return jsonify({'error': f'No {value_type} configured for {provider}'}), 404
+
+        enhanced_audit_logger.log(
+            action='TEST_STORED_KEY',
+            details={'provider': provider, 'profile_name': name},
+            status_code=200
+        )
+
+        # Test using existing test functions
+        if provider == 'claude':
+            return test_claude_api_key(stored_value)
+        elif provider == 'gemini':
+            return test_gemini_api_key(stored_value)
+        elif provider == 'openai':
+            return test_openai_api_key(stored_value)
+        elif provider == 'grok':
+            return test_grok_api_key(stored_value)
+        elif provider == 'openrouter':
+            return test_openrouter_api_key(stored_value)
+        elif provider == 'deepseek':
+            return test_deepseek_api_key(stored_value)
+        elif provider == 'mistral':
+            return test_mistral_api_key(stored_value)
+        elif provider == 'together':
+            return test_together_api_key(stored_value)
+        elif provider == 'huggingface':
+            return test_huggingface_api_key(stored_value)
+        elif provider == 'zhipu':
+            return test_zhipu_api_key(stored_value)
+        elif provider == 'lmstudio':
+            return test_lmstudio_api_key(stored_value)
+        elif provider == 'localai':
+            return test_localai_api_key(stored_value)
+        else:
+            return jsonify({'error': f'Unknown provider: {provider}'}), 400
+
+    except Exception as e:
+        enhanced_audit_logger.log(
+            action='TEST_STORED_KEY_ERROR',
+            details={'provider': provider, 'profile_name': name, 'error': str(e)},
+            status_code=500
+        )
+        return jsonify({'error': str(e)}), 500
+
+
+@profiles_bp.route('/profiles/<name>/delete-api-key', methods=['POST'])
+@login_required
+def delete_api_key(name: str):
+    """Delete a specific API key from profile."""
+    try:
+        profile = Profile.get_by_name(name, current_user.id)
+        if not profile:
+            enhanced_audit_logger.log(
+                action='DELETE_API_KEY_NOT_FOUND',
+                details={'profile_name': name},
+                status_code=404
+            )
+            return jsonify({'error': 'Profile not found'}), 404
+
+        provider = request.json.get('provider')
+        if not provider:
+            return jsonify({'error': 'Provider required'}), 400
+
+        data_dict = profile.data_dict
+        if 'api_keys' not in data_dict:
+            return jsonify({'error': 'No API keys configured'}), 404
+
+        # Handle both API keys and local URLs
+        if provider in ['lmstudio', 'localai']:
+            key_name = f'{provider}_url'
+        else:
+            key_name = f'{provider}_api_key'
+
+        if key_name in data_dict['api_keys']:
+            del data_dict['api_keys'][key_name]
+            profile.data = data_dict
+            profile.save()
+
+            enhanced_audit_logger.log(
+                action='DELETE_API_KEY',
+                table_name='profile',
+                record_id=profile.id,
+                details={'provider': provider, 'profile_name': name},
+                status_code=200
+            )
+            return jsonify({'message': f'{provider} key deleted successfully'}), 200
+
+        return jsonify({'error': 'Key not found'}), 404
+
+    except Exception as e:
+        enhanced_audit_logger.log(
+            action='DELETE_API_KEY_ERROR',
+            details={'provider': provider, 'profile_name': name, 'error': str(e)},
+            status_code=500
+        )
+        return jsonify({'error': str(e)}), 500
