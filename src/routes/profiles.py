@@ -969,7 +969,7 @@ def test_grok_api_key(api_key: str):
                 'Content-Type': 'application/json'
             },
             json={
-                'model': 'grok-beta',
+                'model': 'grok-5',
                 'messages': [{'role': 'user', 'content': 'Hi'}],
                 'max_tokens': 5
             },
