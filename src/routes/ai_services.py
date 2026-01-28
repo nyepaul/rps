@@ -1079,7 +1079,7 @@ def extract_items(item_type):
                         chunk_items = resilient_parse_llm_json(response_text, config['list_key'])
                         all_extracted.extend(chunk_items)
                 
-                yield json.dumps({config['list_key']: all_extracted, 'status': 'success', 'progress': 100}) + '\n'
+                yield json.dumps({config['list_key']: all_extracted, 'status': 'complete'}) + '\n'
             
             # Single File Path (Images, CSV, TXT)
             else:
@@ -1132,7 +1132,7 @@ def extract_items(item_type):
                 if items:
                     print(f"  First item: {items[0]}")
 
-                yield json.dumps({config['list_key']: items, 'status': 'success', 'progress': 100}) + '\n'
+                yield json.dumps({config['list_key']: items, 'status': 'complete'}) + '\n'
 
         except Exception as e:
             enhanced_audit_logger.log(action=f"{config['log_action']}_ERROR", details={'error': str(e)}, status_code=500)
