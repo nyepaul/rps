@@ -310,14 +310,20 @@ def call_gemini_with_fallback(prompt, api_key, image_data=None, mime_type=None, 
                                     }
                                 }
                             ]
-                        }]
+                        }],
+                        'generationConfig': {
+                            'response_mime_type': 'application/json'
+                        }
                     }
             else:
                 # Text-only case
                 payload = {
                     'contents': [{
                         'parts': [{'text': prompt}]
-                    }]
+                    }],
+                    'generationConfig': {
+                        'response_mime_type': 'application/json'
+                    }
                 }
 
             # Use v1beta for all calls - it's more robust and required for PDF/Document support
@@ -540,7 +546,8 @@ def call_gemini(prompt, api_key, history=None, system_prompt=None, model=None):
                 contents=contents,
                 config=types.GenerateContentConfig(
                     system_instruction=system_prompt,
-                    temperature=0.7
+                    temperature=0.7,
+                    response_mime_type="application/json"
                 )
             )
             return response.text
@@ -1022,6 +1029,7 @@ def extract_items(item_type):
                             response_text = call_llm(provider, f"{prompt}\n\nTEXT:\n{chunk}", api_key, model=requested_model, lmstudio_url=lmstudio_url, localai_url=localai_url)
 
                     if response_text:
+                        print(f"DEBUG: Response from {provider}: {response_text[:500]}")
                         chunk_items = resilient_parse_llm_json(response_text, config['list_key'])
                         all_extracted.extend(chunk_items)
                 
@@ -1051,6 +1059,9 @@ def extract_items(item_type):
                         text_content = "[Image provided - vision not supported via local AI import yet]"
                     
                     response_text = call_llm(provider, f"{prompt}\n\nDATA:\n{text_content}", api_key, model=requested_model, lmstudio_url=lmstudio_url, localai_url=localai_url)
+
+                if response_text:
+                    print(f"DEBUG: Response from {provider}: {response_text[:500]}")
 
                 items = resilient_parse_llm_json(response_text, config['list_key'])
                 yield json.dumps({config['list_key']: items, 'status': 'success', 'progress': 100}) + '\n'

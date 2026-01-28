@@ -1,5 +1,5 @@
 {
-    "version": "3.9.73",
+    "version": "3.9.74",
     "release_date": "2026-01-28",
-    "release_notes": "Final Frontier: Gemini 3, Claude 4.5, and GPT-5.2 fixed"
+    "release_notes": "Enforce Gemini JSON output and add debug logging"
 }
