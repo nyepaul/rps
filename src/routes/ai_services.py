@@ -238,11 +238,9 @@ def call_gemini_with_fallback(prompt, api_key, image_data=None, mime_type=None, 
     # Use full model resource names for v1 API
     # Prioritize Flash models (higher free tier quotas) over Pro models
     models = [
-        'models/gemini-2.0-flash',               # Gemini 2.0 Flash - latest stable, good for vision
+        'models/gemini-2.0-flash',               # Gemini 2.0 Flash - latest stable
         'models/gemini-1.5-flash',               # Gemini 1.5 Flash - reliable, high quota
-        'models/gemini-1.5-flash-latest',        # Gemini 1.5 Flash latest alias
         'models/gemini-1.5-pro',                 # Gemini 1.5 Pro - better quality, lower quota
-        'models/gemini-1.5-pro-latest',          # Gemini 1.5 Pro latest alias
     ]
 
     # If specific model requested, try it first

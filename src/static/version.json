@@ -1,5 +1,5 @@
 {
-    "version": "3.9.69",
+    "version": "3.9.70",
     "release_date": "2026-01-28",
-    "release_notes": "Fix AI key propagation and provider fallbacks"
+    "release_notes": "Standardize Gemini model names and remove 404 aliases"
 }
