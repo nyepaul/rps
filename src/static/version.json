@@ -1,5 +1,5 @@
 {
-    "version": "3.9.76",
+    "version": "3.9.77",
     "release_date": "2026-01-28",
-    "release_notes": "Fix TXT file import - text files were incorrectly sent as inline_data to Gemini"
+    "release_notes": "Add comprehensive logging to data import for debugging"
 }

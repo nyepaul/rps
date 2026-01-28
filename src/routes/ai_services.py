@@ -335,17 +335,35 @@ def call_gemini_with_fallback(prompt, api_key, image_data=None, mime_type=None, 
             # Call Gemini REST API
             url = f'https://generativelanguage.googleapis.com/{api_version}/{full_model_path}:generateContent?key={api_key}'
 
+            # Log request details
+            print(f"  Gemini API Request:")
+            print(f"    URL: {url[:80]}...")
+            print(f"    Payload has generationConfig: {'generationConfig' in payload}")
+            if 'contents' in payload and payload['contents']:
+                parts = payload['contents'][0].get('parts', [])
+                print(f"    Parts count: {len(parts)}")
+                for i, part in enumerate(parts):
+                    if 'text' in part:
+                        print(f"    Part {i}: text ({len(part['text'])} chars)")
+                    elif 'inline_data' in part:
+                        print(f"    Part {i}: inline_data (mime={part['inline_data'].get('mime_type')})")
+
             response = requests.post(url, json=payload, timeout=60)
+
+            print(f"  Gemini API Response: status={response.status_code}")
 
             if response.status_code == 200:
                 result = response.json()
                 if 'candidates' in result and len(result['candidates']) > 0:
                     text = result['candidates'][0]['content']['parts'][0]['text']
-                    print(f"Success with model: {model_name}")
+                    print(f"  Success with model: {model_name}, response length: {len(text)}")
                     return text
                 else:
+                    print(f"  No candidates in response: {json.dumps(result)[:500]}")
                     raise Exception(f"No candidates in response: {result}")
             else:
+                error_text = response.text[:500] if response.text else 'No response body'
+                print(f"  Gemini API Error: {response.status_code} - {error_text}")
                 error_detail = response.json() if response.text else {'error': response.text}
                 raise Exception(f"{response.status_code} {error_detail}")
 
@@ -1013,6 +1031,16 @@ def extract_items(item_type):
 
     prompt = config['prompt']
 
+    # Log extraction request details
+    print(f"=== EXTRACTION REQUEST ===")
+    print(f"  Item type: {item_type}")
+    print(f"  Provider: {provider}")
+    print(f"  Model: {requested_model}")
+    print(f"  MIME type: {mime_type}")
+    print(f"  File name: {file_name}")
+    print(f"  Data length: {len(image_b64) if image_b64 else 0} chars")
+    print(f"  API key present: {bool(api_key)}")
+
     def generate():
         try:
             # Multi-page PDF Path
@@ -1057,38 +1085,53 @@ def extract_items(item_type):
             else:
                 response_text = ""
                 is_text_file = mime_type in ['text/csv', 'text/plain']
-                
+                print(f"  Processing single file: is_text_file={is_text_file}, mime_type={mime_type}")
+
                 if provider == 'gemini':
+                    print(f"  Calling Gemini with file data...")
                     file_bytes = base64.b64decode(image_b64)
+                    print(f"  Decoded file: {len(file_bytes)} bytes")
                     response_text = call_gemini_with_fallback(prompt, api_key, image_data=file_bytes, mime_type=mime_type, model=requested_model)
                 elif provider in ['claude', 'openai']:
                     if is_text_file:
                         text_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
+                        print(f"  Calling {provider} with text content ({len(text_content)} chars)...")
                         response_text = call_llm(provider, f"{prompt}\n\nDATA:\n{text_content}", api_key, model=requested_model, lmstudio_url=lmstudio_url, localai_url=localai_url)
                     else:
                         fn = call_claude_with_vision if provider == 'claude' else call_openai_with_vision
+                        print(f"  Calling {provider} with vision...")
                         response_text = fn(prompt, api_key, image_b64, mime_type, model=requested_model)
                 elif provider in ['lmstudio', 'localai']:
-                    # These are text-only usually, or OpenAI compatible
                     text_content = ""
                     if is_text_file:
                         text_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
                     else:
                         text_content = "[Image provided - vision not supported via local AI import yet]"
-
+                    print(f"  Calling {provider} with text content ({len(text_content)} chars)...")
                     response_text = call_llm(provider, f"{prompt}\n\nDATA:\n{text_content}", api_key, model=requested_model, lmstudio_url=lmstudio_url, localai_url=localai_url)
                 else:
-                    # Other providers (deepseek, grok, mistral, openrouter, etc.) - text-only extraction
                     if is_text_file:
                         text_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
+                        print(f"  Calling {provider} with text content ({len(text_content)} chars)...")
                         response_text = call_llm(provider, f"{prompt}\n\nDATA:\n{text_content}", api_key, model=requested_model, lmstudio_url=lmstudio_url, localai_url=localai_url)
                     else:
                         raise Exception(f"Provider '{provider}' does not support image extraction. Use Gemini, Claude, or OpenAI for images.")
 
+                # Log response details
+                print(f"=== LLM RESPONSE ===")
+                print(f"  Response received: {bool(response_text)}")
+                print(f"  Response length: {len(response_text) if response_text else 0}")
                 if response_text:
-                    print(f"DEBUG: Response from {provider}: {response_text[:500]}")
+                    print(f"  Response preview: {response_text[:500]}")
+                else:
+                    print(f"  WARNING: Empty response from {provider}!")
 
                 items = resilient_parse_llm_json(response_text, config['list_key'])
+                print(f"=== PARSE RESULT ===")
+                print(f"  Items extracted: {len(items)}")
+                if items:
+                    print(f"  First item: {items[0]}")
+
                 yield json.dumps({config['list_key']: items, 'status': 'success', 'progress': 100}) + '\n'
 
         except Exception as e:
