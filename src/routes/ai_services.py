@@ -517,7 +517,7 @@ from src.models.profile import Profile
 from src.models.conversation import Conversation
 from flask_login import current_user
 
-def call_llm(provider, prompt, api_key, history=None, system_prompt=None, lmstudio_url=None, localai_url=None, model=None):
+def call_llm(provider, prompt, api_key, history=None, system_prompt=None, lmstudio_url=None, localai_url=None, ollama_url=None, model=None):
     """Unified interface to call various LLM providers."""
     if provider == 'gemini':
         return call_gemini(prompt, api_key, history, system_prompt, model=model)
@@ -527,6 +527,8 @@ def call_llm(provider, prompt, api_key, history=None, system_prompt=None, lmstud
         return call_lmstudio(prompt, lmstudio_url, history, system_prompt)
     elif provider == 'localai':
         return call_localai(prompt, localai_url, history, system_prompt)
+    elif provider == 'ollama':
+        return call_ollama(prompt, ollama_url, history, system_prompt, model=model)
     else:
         # OpenAI-compatible providers
         return call_openai_compatible(provider, prompt, api_key, history, system_prompt, model=model)
@@ -714,7 +716,7 @@ def call_localai(prompt, url, history=None, system_prompt=None):
     """Calls local LocalAI API (OpenAI compatible)."""
     if not url:
         url = "http://localhost:8080"
-    
+
     messages = []
     if system_prompt:
         messages.append({'role': 'system', 'content': system_prompt})
@@ -738,6 +740,44 @@ def call_localai(prompt, url, history=None, system_prompt=None):
             raise Exception(f"LocalAI error: {response.text}")
     except Exception as e:
         raise Exception(f"Failed to connect to LocalAI at {url}: {str(e)}")
+
+
+def call_ollama(prompt, url, history=None, system_prompt=None, model=None):
+    """Calls local Ollama API."""
+    if not url:
+        url = "http://localhost:11434"
+
+    # Default to a good general-purpose model
+    model_name = model or "llama3.2"
+
+    messages = []
+    if system_prompt:
+        messages.append({'role': 'system', 'content': system_prompt})
+    if history:
+        for msg in history:
+            messages.append({'role': msg.role, 'content': msg.content})
+    messages.append({'role': 'user', 'content': prompt})
+
+    try:
+        # Use Ollama's OpenAI-compatible endpoint
+        response = requests.post(
+            f"{url}/v1/chat/completions",
+            json={
+                'model': model_name,
+                'messages': messages,
+                'temperature': 0.7,
+                'stream': False
+            },
+            timeout=180  # Local models can be slow
+        )
+        if response.status_code == 200:
+            return response.json()['choices'][0]['message']['content']
+        else:
+            raise Exception(f"Ollama error: {response.status_code} {response.text}")
+    except requests.exceptions.ConnectionError:
+        raise Exception(f"Cannot connect to Ollama at {url}. Is Ollama running? Try: ollama serve")
+    except Exception as e:
+        raise Exception(f"Failed to connect to Ollama at {url}: {str(e)}")
 
 
 @ai_services_bp.route('/advisor/chat', methods=['POST'])
@@ -767,8 +807,8 @@ def advisor_chat():
         
         # If no preferred provider, find first available key
         if not provider:
-            for p in ['gemini', 'claude', 'openai', 'grok', 'openrouter', 'deepseek', 'mistral', 'together', 'huggingface', 'zhipu', 'lmstudio', 'localai']:
-                key_name = f"{p}_api_key" if p not in ['lmstudio', 'localai'] else f"{p}_url"
+            for p in ['gemini', 'claude', 'openai', 'grok', 'openrouter', 'deepseek', 'mistral', 'together', 'huggingface', 'zhipu', 'lmstudio', 'localai', 'ollama']:
+                key_name = f"{p}_api_key" if p not in ['lmstudio', 'localai', 'ollama'] else f"{p}_url"
                 if api_keys.get(key_name):
                     provider = p
                     break
@@ -780,8 +820,9 @@ def advisor_chat():
         api_key = api_keys.get(f"{provider}_api_key")
         lmstudio_url = sanitize_url(api_keys.get("lmstudio_url"), "http://localhost:1234")
         localai_url = sanitize_url(api_keys.get("localai_url"), "http://localhost:8080")
+        ollama_url = sanitize_url(api_keys.get("ollama_url"), "http://localhost:11434")
 
-        if not api_key and provider not in ['lmstudio', 'localai']:
+        if not api_key and provider not in ['lmstudio', 'localai', 'ollama']:
             return jsonify({
                 'error': f'{provider.capitalize()} API key not configured. Please configure in AI Settings.'
             }), 400
@@ -1022,8 +1063,9 @@ def extract_items(item_type):
         api_key = api_keys.get(f"{provider}_api_key")
         lmstudio_url = sanitize_url(api_keys.get("lmstudio_url"), "http://localhost:1234")
         localai_url = sanitize_url(api_keys.get("localai_url"), "http://localhost:8080")
+        ollama_url = sanitize_url(api_keys.get("ollama_url"), "http://localhost:11434")
 
-        if not api_key and provider not in ['lmstudio', 'localai']:
+        if not api_key and provider not in ['lmstudio', 'localai', 'ollama']:
             return jsonify({'error': f'{provider.capitalize()} API key not configured.'}), 400
 
     except Exception as e:
@@ -1064,11 +1106,11 @@ def extract_items(item_type):
                             response_text = fn(prompt, api_key, chunk, "image/png", model=requested_model)
                         else:
                             # Handle text chunk via unified caller if it's text
-                            response_text = call_llm(provider, f"{prompt}\n\nTEXT:\n{chunk}", api_key, model=requested_model, lmstudio_url=lmstudio_url, localai_url=localai_url)
+                            response_text = call_llm(provider, f"{prompt}\n\nTEXT:\n{chunk}", api_key, model=requested_model, lmstudio_url=lmstudio_url, localai_url=localai_url, ollama_url=ollama_url)
                     else:
                         # Other providers (deepseek, grok, mistral, etc.) - text extraction only
                         if content_type == "text":
-                            response_text = call_llm(provider, f"{prompt}\n\nTEXT:\n{chunk}", api_key, model=requested_model, lmstudio_url=lmstudio_url, localai_url=localai_url)
+                            response_text = call_llm(provider, f"{prompt}\n\nTEXT:\n{chunk}", api_key, model=requested_model, lmstudio_url=lmstudio_url, localai_url=localai_url, ollama_url=ollama_url)
                         else:
                             # Skip image chunks for non-vision providers, continue with warning
                             print(f"WARNING: Provider '{provider}' cannot process image chunks from scanned PDF")
@@ -1096,24 +1138,24 @@ def extract_items(item_type):
                     if is_text_file:
                         text_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
                         print(f"  Calling {provider} with text content ({len(text_content)} chars)...")
-                        response_text = call_llm(provider, f"{prompt}\n\nDATA:\n{text_content}", api_key, model=requested_model, lmstudio_url=lmstudio_url, localai_url=localai_url)
+                        response_text = call_llm(provider, f"{prompt}\n\nDATA:\n{text_content}", api_key, model=requested_model, lmstudio_url=lmstudio_url, localai_url=localai_url, ollama_url=ollama_url)
                     else:
                         fn = call_claude_with_vision if provider == 'claude' else call_openai_with_vision
                         print(f"  Calling {provider} with vision...")
                         response_text = fn(prompt, api_key, image_b64, mime_type, model=requested_model)
-                elif provider in ['lmstudio', 'localai']:
+                elif provider in ['lmstudio', 'localai', 'ollama']:
                     text_content = ""
                     if is_text_file:
                         text_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
                     else:
-                        text_content = "[Image provided - vision not supported via local AI import yet]"
+                        text_content = "[Image provided - vision not supported via local AI yet. Use Gemini/Claude/OpenAI for images.]"
                     print(f"  Calling {provider} with text content ({len(text_content)} chars)...")
-                    response_text = call_llm(provider, f"{prompt}\n\nDATA:\n{text_content}", api_key, model=requested_model, lmstudio_url=lmstudio_url, localai_url=localai_url)
+                    response_text = call_llm(provider, f"{prompt}\n\nDATA:\n{text_content}", api_key, model=requested_model, lmstudio_url=lmstudio_url, localai_url=localai_url, ollama_url=ollama_url)
                 else:
                     if is_text_file:
                         text_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
                         print(f"  Calling {provider} with text content ({len(text_content)} chars)...")
-                        response_text = call_llm(provider, f"{prompt}\n\nDATA:\n{text_content}", api_key, model=requested_model, lmstudio_url=lmstudio_url, localai_url=localai_url)
+                        response_text = call_llm(provider, f"{prompt}\n\nDATA:\n{text_content}", api_key, model=requested_model, lmstudio_url=lmstudio_url, localai_url=localai_url, ollama_url=ollama_url)
                     else:
                         raise Exception(f"Provider '{provider}' does not support image extraction. Use Gemini, Claude, or OpenAI for images.")
 
