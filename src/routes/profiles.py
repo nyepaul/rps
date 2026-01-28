@@ -680,10 +680,21 @@ def get_api_keys(name: str):
 @login_required
 def save_api_keys(name: str):
     """Save encrypted API keys for a profile."""
+    # Debug: log incoming request
+    print(f"=== SAVE API KEYS REQUEST ===")
+    print(f"  Profile: {name}")
+    raw_json = request.json or {}
+    for key, val in raw_json.items():
+        if 'api_key' in key and val:
+            print(f"  {key}: {val[:10]}...{val[-4:]} (len={len(val)})")
+        else:
+            print(f"  {key}: {val}")
+
     try:
         # Validate input
         data = APIKeySchema(**request.json)
     except Exception as e:
+        print(f"  VALIDATION ERROR: {str(e)}")
         enhanced_audit_logger.log(
             action='SAVE_API_KEYS_VALIDATION_ERROR',
             details={'profile_name': name, 'error': str(e)},
@@ -760,6 +771,18 @@ def save_api_keys(name: str):
         # Save profile (encryption happens automatically via the data property setter)
         profile.data = data_dict
         profile.save()
+
+        # Debug: confirm what was saved
+        print(f"  SAVED SUCCESSFULLY: {keys_updated}")
+        for key in keys_updated:
+            if key in ['lmstudio', 'localai', 'ollama']:
+                print(f"    {key}_url: {data_dict['api_keys'].get(f'{key}_url', 'N/A')}")
+            elif key == 'preferred_provider':
+                print(f"    preferred: {data_dict.get('preferred_ai_provider', 'N/A')}")
+            else:
+                saved_key = data_dict['api_keys'].get(f'{key}_api_key', '')
+                if saved_key:
+                    print(f"    {key}_api_key: {saved_key[:10]}...{saved_key[-4:]} (len={len(saved_key)})")
 
         enhanced_audit_logger.log(
             action='SAVE_API_KEYS',
