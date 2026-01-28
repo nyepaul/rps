@@ -1,5 +1,5 @@
 {
-    "version": "3.9.74",
+    "version": "3.9.75",
     "release_date": "2026-01-28",
-    "release_notes": "Enforce Gemini JSON output and add debug logging"
+    "release_notes": "Fix LLM data import: Claude model IDs, null system prompt, missing provider handling"
 }

@@ -295,7 +295,10 @@ def call_gemini_with_fallback(prompt, api_key, image_data=None, mime_type=None, 
                     payload = {
                         'contents': [{
                             'parts': [{'text': enhanced_prompt}]
-                        }]
+                        }],
+                        'generationConfig': {
+                            'response_mime_type': 'application/json'
+                        }
                     }
                 else:
                     # Images and PDFs can be sent as inline_data
@@ -567,9 +570,9 @@ def call_claude(prompt, api_key, history=None, system_prompt=None, model=None):
     messages.append({'role': 'user', 'content': prompt})
 
     models = [
-        'claude-4-5-opus-20251101', 
-        'claude-4-5-sonnet-20250929', 
-        'claude-4-sonnet-20250514',
+        'claude-opus-4-5-20251101',
+        'claude-sonnet-4-5-20250929',
+        'claude-sonnet-4-20250514',
         'claude-3-5-sonnet-20241022'
     ]
     
@@ -580,6 +583,15 @@ def call_claude(prompt, api_key, history=None, system_prompt=None, model=None):
 
     for model in models:
         try:
+            payload = {
+                'model': model,
+                'max_tokens': 4096,
+                'messages': messages
+            }
+            # Only include system if provided (Anthropic API rejects null)
+            if system_prompt:
+                payload['system'] = system_prompt
+
             response = requests.post(
                 'https://api.anthropic.com/v1/messages',
                 headers={
@@ -587,17 +599,15 @@ def call_claude(prompt, api_key, history=None, system_prompt=None, model=None):
                     'anthropic-version': '2023-06-01',
                     'content-type': 'application/json'
                 },
-                json={
-                    'model': model,
-                    'max_tokens': 4096,
-                    'system': system_prompt,
-                    'messages': messages
-                },
+                json=payload,
                 timeout=60
             )
             if response.status_code == 200:
                 return response.json()['content'][0]['text']
-        except Exception:
+            else:
+                print(f"Claude API error for {model}: {response.status_code} {response.text[:200]}")
+        except Exception as e:
+            print(f"Claude API exception for {model}: {str(e)}")
             continue
     raise Exception("Claude API call failed.")
 
@@ -1027,6 +1037,14 @@ def extract_items(item_type):
                         else:
                             # Handle text chunk via unified caller if it's text
                             response_text = call_llm(provider, f"{prompt}\n\nTEXT:\n{chunk}", api_key, model=requested_model, lmstudio_url=lmstudio_url, localai_url=localai_url)
+                    else:
+                        # Other providers (deepseek, grok, mistral, etc.) - text extraction only
+                        if content_type == "text":
+                            response_text = call_llm(provider, f"{prompt}\n\nTEXT:\n{chunk}", api_key, model=requested_model, lmstudio_url=lmstudio_url, localai_url=localai_url)
+                        else:
+                            # Skip image chunks for non-vision providers, continue with warning
+                            print(f"WARNING: Provider '{provider}' cannot process image chunks from scanned PDF")
+                            continue
 
                     if response_text:
                         print(f"DEBUG: Response from {provider}: {response_text[:500]}")
@@ -1057,8 +1075,15 @@ def extract_items(item_type):
                         text_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
                     else:
                         text_content = "[Image provided - vision not supported via local AI import yet]"
-                    
+
                     response_text = call_llm(provider, f"{prompt}\n\nDATA:\n{text_content}", api_key, model=requested_model, lmstudio_url=lmstudio_url, localai_url=localai_url)
+                else:
+                    # Other providers (deepseek, grok, mistral, openrouter, etc.) - text-only extraction
+                    if is_text_file:
+                        text_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
+                        response_text = call_llm(provider, f"{prompt}\n\nDATA:\n{text_content}", api_key, model=requested_model, lmstudio_url=lmstudio_url, localai_url=localai_url)
+                    else:
+                        raise Exception(f"Provider '{provider}' does not support image extraction. Use Gemini, Claude, or OpenAI for images.")
 
                 if response_text:
                     print(f"DEBUG: Response from {provider}: {response_text[:500]}")
