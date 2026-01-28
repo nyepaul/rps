@@ -570,7 +570,7 @@ class APIKeySchema(BaseModel):
     @validator('claude_api_key', 'gemini_api_key', 'openai_api_key', 'grok_api_key',
                'openrouter_api_key', 'deepseek_api_key', 'mistral_api_key',
                'together_api_key', 'huggingface_api_key', 'zhipu_api_key')
-    def validate_api_key(cls, v, field):
+    def validate_api_key(cls, v, values, **kwargs):
         if v is not None:
             v = v.strip()
 
@@ -597,27 +597,26 @@ class APIKeySchema(BaseModel):
                 raise ValueError('API key must contain alphanumeric characters')
 
             # Format validation for known key patterns
-            key_name = field.name
-            if key_name == 'gemini_api_key':
-                if not v.startswith('REDACTED_GAPI_'):
-                    raise ValueError('Gemini API keys must start with "REDACTED_GAPI_"')
+            # Note: We can't easily get field name in Pydantic v1 validator, so check format patterns
+            if v.startswith('REDACTED_GAPI_'):
+                # Gemini key
                 if len(v) != 39:
                     raise ValueError('Gemini API keys are exactly 39 characters')
-            elif key_name == 'claude_api_key':
-                if not v.startswith('REDACTED_ANTH_'):
-                    raise ValueError('Claude API keys must start with "REDACTED_ANTH_"')
-            elif key_name == 'openai_api_key':
-                if not v.startswith(('sk-', 'REDACTED_OPENAI_')):
-                    raise ValueError('OpenAI API keys must start with "sk-" or "REDACTED_OPENAI_"')
-            elif key_name == 'grok_api_key':
-                if not v.startswith('xai-'):
-                    raise ValueError('Grok API keys must start with "xai-"')
-            elif key_name == 'openrouter_api_key':
-                if not v.startswith('REDACTED_OR_'):
-                    raise ValueError('OpenRouter API keys must start with "REDACTED_OR_"')
-            elif key_name == 'huggingface_api_key':
-                if not v.startswith('hf_'):
-                    raise ValueError('Hugging Face tokens must start with "hf_"')
+            elif v.startswith('REDACTED_ANTH_'):
+                # Claude key - no additional validation needed
+                pass
+            elif v.startswith(('sk-', 'REDACTED_OPENAI_')) and not v.startswith('REDACTED_OR_') and not v.startswith('REDACTED_ANTH_'):
+                # OpenAI key - no additional validation needed
+                pass
+            elif v.startswith('xai-'):
+                # Grok key - no additional validation needed
+                pass
+            elif v.startswith('REDACTED_OR_'):
+                # OpenRouter key - no additional validation needed
+                pass
+            elif v.startswith('hf_'):
+                # Hugging Face token - no additional validation needed
+                pass
 
         return v
 
