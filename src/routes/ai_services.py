@@ -236,14 +236,11 @@ def normalize_to_list(data, list_key):
 def call_gemini_with_fallback(prompt, api_key, image_data=None, mime_type=None, model=None):
     """Calls Gemini with a prioritized list of models and fallback logic using REST API."""
     # Use full model resource names for v1 API
-    # Prioritize Gemini 3.0 and 2.5 models (Jan 2026)
+    # Prioritize stable models
     models = [
-        'models/gemini-3.0-flash',               # Gemini 3.0 Flash - latest fastest
-        'models/gemini-3.0-pro',                 # Gemini 3.0 Pro - latest most capable
-        'models/gemini-2.5-flash',               # Gemini 2.5 Flash
-        'models/gemini-2.5-pro',                 # Gemini 2.5 Pro
-        'models/gemini-2.0-flash',               # Gemini 2.0 Flash stable
-        'models/gemini-1.5-flash',               # Gemini 1.5 Flash legacy
+        'gemini-2.0-flash', 
+        'gemini-1.5-flash',
+        'gemini-1.5-pro',
     ]
 
     # If specific model requested, try it first
@@ -322,7 +319,9 @@ def call_gemini_with_fallback(prompt, api_key, image_data=None, mime_type=None, 
             api_version = 'v1beta'
 
             # Call Gemini REST API
-            url = f'https://generativelanguage.googleapis.com/{api_version}/{model_name}:generateContent?key={api_key}'
+            # Ensure model name doesn't have double prefix
+            clean_model_id = model_name.replace('models/', '')
+            url = f'https://generativelanguage.googleapis.com/{api_version}/models/{clean_model_id}:generateContent?key={api_key}'
 
             response = requests.post(url, json=payload, timeout=60)
 
@@ -518,10 +517,9 @@ def call_gemini(prompt, api_key, history=None, system_prompt=None, model=None):
     contents.append(types.Content(role='user', parts=[types.Part(text=prompt)]))
 
     models_to_try = [
-        'models/gemini-3.0-flash', 
-        'models/gemini-3.0-pro', 
-        'models/gemini-2.5-flash',
-        'models/gemini-2.0-flash'
+        'gemini-2.0-flash', 
+        'gemini-1.5-flash',
+        'gemini-1.5-pro'
     ]
 
     # If specific model requested, try it first
