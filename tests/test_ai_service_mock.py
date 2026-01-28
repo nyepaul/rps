@@ -30,7 +30,7 @@ class TestAIServices:
         }
         mock_post.return_value = mock_response
 
-        # Use the extract-assets endpoint which calls call_gemini_with_fallback
+        # Use the extract-items endpoint which calls call_gemini_with_fallback
         # Setup profile with API key
         test_profile.data = {
             'api_keys': {'gemini_api_key': 'test_key'},
@@ -41,7 +41,7 @@ class TestAIServices:
         # Login
         client.post('/api/auth/login', json={'username': 'testuser', 'password': 'TestPass123'})
 
-        response = client.post('/api/extract-assets', json={
+        response = client.post('/api/extract-items/assets', json={
             'image': 'SGVsbG8=',
             'llm_provider': 'gemini',
             'profile_name': test_profile.name
@@ -55,7 +55,7 @@ class TestAIServices:
 
     @patch('src.routes.ai_services.requests.post')
     def test_call_gemini_specific_model(self, mock_post, client, test_user, test_profile, encryption_service):
-        """Test extract-assets with a specific requested model."""
+        """Test extract-items with a specific requested model."""
         
         # Mock response
         mock_response = MagicMock()
@@ -76,7 +76,7 @@ class TestAIServices:
         client.post('/api/auth/login', json={'username': 'testuser', 'password': 'TestPass123'})
 
         # Request a specific model
-        response = client.post('/api/extract-assets', json={
+        response = client.post('/api/extract-items/assets', json={
             'image': 'SGVsbG8=',
             'llm_provider': 'gemini',
             'llm_model': 'gemini-1.5-pro',
@@ -116,7 +116,7 @@ class TestAIServices:
         # Login
         client.post('/api/auth/login', json={'username': 'testuser', 'password': 'TestPass123'})
 
-        response = client.post('/api/extract-assets', json={
+        response = client.post('/api/extract-items/assets', json={
             'image': 'SGVsbG8=',
             'llm_provider': 'gemini',
             'profile_name': test_profile.name
@@ -189,19 +189,19 @@ class TestAIServices:
         assert 'configure in AI Settings' in data['error']
 
     def test_extract_assets_input_validation(self, client, test_user):
-        """Test validation for extract-assets."""
+        """Test validation for extract-items."""
         client.post('/api/auth/login', json={'username': 'testuser', 'password': 'TestPass123'})
         
         # No image
-        response = client.post('/api/extract-assets', json={
+        response = client.post('/api/extract-items/assets', json={
             'profile_name': 'Test Profile'
         })
         assert response.status_code == 400
-        assert 'No image' in response.get_json()['error']
+        assert 'required' in response.get_json()['error']
 
         # No profile name
-        response = client.post('/api/extract-assets', json={
+        response = client.post('/api/extract-items/assets', json={
             'image': 'data'
         })
         assert response.status_code == 400
-        assert 'No profile_name' in response.get_json()['error']
+        assert 'required' in response.get_json()['error']

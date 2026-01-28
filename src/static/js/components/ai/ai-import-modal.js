@@ -56,8 +56,8 @@ export function showAIImportModal(type, profileName, onComplete) {
                 <div id="drop-zone" tabindex="0" style="border: 2px dashed var(--border-color); border-radius: 8px; padding: 40px 20px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--bg-primary);">
                     <div style="font-size: 48px; margin-bottom: 10px;">📄</div>
                     <div style="font-weight: 600; margin-bottom: 5px;">Click, Drop, or Paste (Ctrl+V)</div>
-                    <div style="font-size: 12px; color: var(--text-light);">Screenshots, Images, PDF, or CSV</div>
-                    <input type="file" id="ai-file-input" accept="image/*,.pdf,.csv,application/pdf,text/csv" style="display: none;">
+                    <div style="font-size: 12px; color: var(--text-light);">Screenshots, Images, PDF, CSV, or TXT</div>
+                    <input type="file" id="ai-file-input" accept="image/*,.pdf,.csv,.txt,application/pdf,text/csv,text/plain" style="display: none;">
                 </div>
 
                 <div style="margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
@@ -221,6 +221,18 @@ export function showAIImportModal(type, profileName, onComplete) {
                     return;
                 }
             }
+            // Handle pasted text
+            if (item.type === 'text/plain') {
+                const text = e.clipboardData.getData('text');
+                if (text && text.length > 10) {
+                    e.preventDefault();
+                    // Create a dummy file object from text
+                    const blob = new Blob([text], { type: 'text/plain' });
+                    const file = new File([blob], "pasted-text.txt", { type: 'text/plain' });
+                    processFile(file);
+                    return;
+                }
+            }
         }
     };
 
@@ -232,14 +244,14 @@ export function showAIImportModal(type, profileName, onComplete) {
     setTimeout(() => dropZone.focus(), 100);
 
     async function processFile(file) {
-        // Accept images, PDFs, and CSVs
-        const validTypes = ['image/', 'application/pdf', 'text/csv'];
-        const validExtensions = ['.pdf', '.csv'];
+        // Accept images, PDFs, CSVs, and TXT files
+        const validTypes = ['image/', 'application/pdf', 'text/csv', 'text/plain'];
+        const validExtensions = ['.pdf', '.csv', '.txt'];
         const isValidType = validTypes.some(t => file.type.startsWith(t)) ||
                            validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
 
         if (!isValidType) {
-            showError('Please upload an image, PDF, or CSV file.');
+            showError('Please upload an image, PDF, CSV, or TXT file.');
             return;
         }
 
@@ -272,10 +284,15 @@ export function showAIImportModal(type, profileName, onComplete) {
             reader.readAsDataURL(file);
             reader.onload = async () => {
                 const base64Data = reader.result.split(',')[1];
-                const mimeType = file.type || (file.name.endsWith('.csv') ? 'text/csv' : 'application/pdf');
+                let mimeType = file.type;
+                if (!mimeType) {
+                    if (file.name.endsWith('.csv')) mimeType = 'text/csv';
+                    else if (file.name.endsWith('.txt')) mimeType = 'text/plain';
+                    else if (file.name.endsWith('.pdf')) mimeType = 'application/pdf';
+                }
 
                 try {
-                    const endpoint = `/api/extract-${type.replace('_accounts', '')}`;
+                    const endpoint = `/api/extract-items/${type.replace('_accounts', '')}`;
                     
                     const updateProgress = (data) => {
                         if (data.progress !== undefined) {
@@ -314,7 +331,9 @@ export function showAIImportModal(type, profileName, onComplete) {
                         return;
                     }
 
-                    extractedData = finalResponse[type] || finalResponse.income || finalResponse.expenses || [];
+                    // Look for the data in the response using the type key or common fallback keys
+                    const resultKey = type.replace('_accounts', '');
+                    extractedData = finalResponse[resultKey] || finalResponse.assets || finalResponse.income || finalResponse.expenses || finalResponse.items || [];
                     
                     if (extractedData.length === 0) {
                         showError('AI could not find any items in this image. Please try a different screenshot or add manually.');

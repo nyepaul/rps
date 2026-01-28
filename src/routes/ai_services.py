@@ -900,618 +900,169 @@ def list_ollama_models():
         return jsonify({'error': str(e)}), 500
 
 
-@ai_services_bp.route('/ollama/pull', methods=['POST'])
-@login_required
-@limiter.exempt
-def pull_ollama_model():
-    """Pull/update a model in local Ollama instance."""
-    data = request.json
-    url = sanitize_url(data.get('url'), 'http://localhost:11434')
-    model = data.get('model')
-    
-    if not model:
-        return jsonify({'error': 'Model name is required'}), 400
-        
-    try:
-        # We use stream=True because pulling can take a long time
-        # Using a longer timeout for pulls as they involve large downloads
-        response = requests.post(f"{url}/api/pull", json={'name': model, 'stream': False}, timeout=600)
-        if response.status_code == 200:
-            return jsonify({'status': 'success', 'message': f'Model {model} updated successfully'}), 200
-        
-        enhanced_audit_logger.log(
-            action='OLLAMA_PULL_FAILED',
-            details={'status_code': response.status_code, 'model': model, 'response': response.text},
-            status_code=response.status_code
-        )
-        return jsonify({'error': f'Ollama error: {response.status_code}', 'details': response.text}), response.status_code
-    except Exception as e:
-        enhanced_audit_logger.log(
-            action='OLLAMA_PULL_EXCEPTION',
-            details={'error': str(e), 'model': model},
-            status_code=500
-        )
-        return jsonify({'error': str(e)}), 500
+EXTRACT_CONFIGS = {
+    'assets': {
+        'list_key': 'assets',
+        'prompt': """
+            Analyze this financial document (image, PDF, CSV, or TXT). Extract a list of investment accounts or assets.
+            Return ONLY a JSON array of objects with the structure:
+            [{"name": "...", "type": "...", "value": ..., "cost_basis": null, "institution": "...", "account_number": null}]
+            Clean all values: remove symbols and commas. 
+            Supported types: "traditional_ira", "roth_ira", "401k", "403b", "457", "brokerage", "savings", "checking".
+            """,
+        'log_action': 'EXTRACT_ASSETS'
+    },
+    'income': {
+        'list_key': 'income',
+        'prompt': """
+            Analyze this financial document (image, PDF, CSV, or TXT) of a pay stub, bank statement, or tax document.
+            Extract a list of regular income streams.
 
+            FREQUENCY DETECTION:
+            - Keywords: "monthly", "bi-weekly", "weekly", "annual", "yearly", "quarterly", "semi-monthly"
+            - Pay stubs: Check dates. ~2 weeks apart = "bi-weekly", ~1 month = "monthly"
+            - Tax docs (W-2, 1099): Annual amounts - frequency "annual"
+            
+            RULES:
+            1. Extract: "name", "amount" (per period), "frequency".
+            2. Return ONLY a JSON array: [{"name": "...", "amount": ..., "frequency": "..."}]
+            """,
+        'log_action': 'EXTRACT_INCOME'
+    },
+    'expenses': {
+        'list_key': 'expenses',
+        'prompt': """
+            Analyze this financial document (image, PDF, CSV, or TXT) of a receipt, credit card statement, or bill.
+            Extract a list of recurring or significant expenses.
 
-@ai_services_bp.route('/extract-assets', methods=['POST'])
+            RULES:
+            1. Extract for each expense:
+               - "name": Descriptive name
+               - "amount": The per-period amount as a number
+               - "frequency": "weekly", "bi-weekly", "monthly", "quarterly", "semi-annual", "annual"
+               - "category": housing, utilities, transportation, food, dining_out, healthcare, insurance, travel, entertainment, personal_care, clothing, gifts, childcare_education, charitable_giving, subscriptions, pet_care, home_maintenance, debt_payments, taxes, discretionary, other
+            2. Return ONLY a JSON array: [{"name": "...", "amount": ..., "frequency": "...", "category": "..."}]
+            """,
+        'log_action': 'EXTRACT_EXPENSES'
+    }
+}
+
+@ai_services_bp.route('/extract-items/<item_type>', methods=['POST'])
 @login_required
 @limiter.limit("50 per hour")
-def extract_assets():
-    """Extract assets from an uploaded file (image, PDF, or CSV) using AI."""
+def extract_items(item_type):
+    """Unified AI extraction endpoint for any item type."""
+    if item_type not in EXTRACT_CONFIGS:
+        return jsonify({'error': f'Invalid item type: {item_type}'}), 400
+
+    config = EXTRACT_CONFIGS[item_type]
     data = request.json
     image_b64 = data.get('image')
     mime_type = data.get('mime_type')
     file_name = data.get('file_name', '')
     requested_provider = data.get('llm_provider')
     requested_model = data.get('llm_model')
-    existing_assets = data.get('existing_assets', [])
     profile_name = data.get('profile_name')
 
-    # Detect CSV from filename if mime_type is missing or wrong
-    if file_name.lower().endswith('.csv') or mime_type in ['text/csv', 'application/csv', 'application/vnd.ms-excel']:
-        mime_type = 'text/csv'
+    # Detect TXT/CSV
+    if not mime_type:
+        if file_name.lower().endswith('.csv'): mime_type = 'text/csv'
+        elif file_name.lower().endswith('.txt'): mime_type = 'text/plain'
+        elif file_name.lower().endswith('.pdf'): mime_type = 'application/pdf'
 
-    if not image_b64:
-        return jsonify({'error': 'No image data provided'}), 400
+    if not image_b64 or not profile_name:
+        return jsonify({'error': 'image and profile_name are required'}), 400
 
-    if not profile_name:
-        return jsonify({'error': 'No profile_name provided'}), 400
-
-    # Get API key or Local URL from profile
     try:
         profile = Profile.get_by_name(profile_name, current_user.id)
-        if not profile:
-            return jsonify({'error': 'Profile not found'}), 404
-
+        if not profile: return jsonify({'error': 'Profile not found'}), 404
+        
         data_dict = profile.data_dict
         api_keys = data_dict.get('api_keys', {})
-        
-        # Determine provider: priority = request > profile preference > Gemini (fallback)
         provider = requested_provider or data_dict.get('preferred_ai_provider') or 'gemini'
         
-        print(f"Provider: {provider}, MIME type: {mime_type}, Data length: {len(image_b64) if image_b64 else 0}")
-
-        api_key = None
         ollama_url = sanitize_url(api_keys.get('ollama_url'), 'http://localhost:11434')
-        
-        # Determine Ollama model: request > profile vision-check > default
         if requested_model and provider == 'ollama':
             ollama_model = requested_model
         else:
             configured_model = api_keys.get('ollama_model', '')
-            if 'vision' in configured_model.lower() or 'vl' in configured_model.lower():
-                ollama_model = configured_model
-            else:
-                ollama_model = 'llama3.2-vision'
+            ollama_model = configured_model if ('vision' in configured_model.lower() or 'vl' in configured_model.lower()) else 'llama3.2-vision'
 
-        if provider == 'gemini':
-            api_key = api_keys.get('gemini_api_key')
-            if not api_key:
-                return jsonify({'error': 'Gemini API key not configured. Please configure in AI Settings.'}), 400
-        elif provider == 'claude':
-            api_key = api_keys.get('claude_api_key')
-            if not api_key:
-                return jsonify({'error': 'Claude API key not configured. Please configure in AI Settings.'}), 400
-        elif provider == 'openai':
-            api_key = api_keys.get('openai_api_key')
-            if not api_key:
-                return jsonify({'error': 'OpenAI API key not configured. Please configure in AI Settings.'}), 400
-        elif provider == 'ollama':
-            # Ollama doesn't need an API key
-            pass
-        else:
-            return jsonify({'error': f'Provider {provider} not supported for asset extraction yet.'}), 400
+        api_key = api_keys.get(f"{provider}_api_key")
+        if not api_key and provider not in ['ollama', 'lmstudio', 'localai']:
+            return jsonify({'error': f'{provider.capitalize()} API key not configured.'}), 400
 
     except Exception as e:
-        return jsonify({'error': f'Error loading AI configuration: {str(e)}'}), 500
+        return jsonify({'error': str(e)}), 500
 
-    prompt = """
-    Analyze this financial document. Extract a list of investment accounts or assets.
-    Return ONLY a JSON array of objects with the structure:
-    [{"name": "...", "type": "...", "value": ..., "cost_basis": null, "institution": "...", "account_number": null}]
-    Clean all values: remove symbols and commas. 
-    Supported types: "traditional_ira", "roth_ira", "401k", "403b", "457", "brokerage", "savings", "checking".
-    """
+    prompt = config['prompt']
 
     def generate():
         try:
-            if (mime_type == 'application/pdf' or image_b64.startswith('JVBERi')) and mime_type != 'text/csv':
-                # Handle multi-page PDF for ALL providers
+            # Multi-page PDF Path
+            if mime_type == 'application/pdf' or image_b64.startswith('JVBERi'):
                 all_extracted = []
                 file_bytes = base64.b64decode(image_b64)
                 chunks, content_type = process_pdf_content(file_bytes)
                 
                 num_chunks = len(chunks)
                 for idx, chunk in enumerate(chunks):
-                    progress = int(((idx) / num_chunks) * 100)
-                    yield json.dumps({'status': 'processing', 'progress': progress, 'message': f'Analyzing page group {idx+1}/{num_chunks}...'}) + '\n'
+                    yield json.dumps({'status': 'processing', 'progress': int((idx / num_chunks) * 100), 'message': f'Analyzing page {idx+1}/{num_chunks}...'}) + '\n'
                     
-                    chunk_text_response = ""
+                    response_text = ""
                     if provider == 'gemini':
-                        image_data = base64.b64decode(chunk) if content_type == "images" else None
-                        current_prompt = prompt if content_type == "images" else f"{prompt}\n\nDocument Text (Chunk {idx+1}):\n{chunk}"
-                        chunk_text_response = call_gemini_with_fallback(current_prompt, api_key, image_data=image_data, mime_type="image/png" if content_type == "images" else None, model=requested_model)
-                    elif provider == 'claude':
+                        img_data = base64.b64decode(chunk) if content_type == "images" else None
+                        p = prompt if content_type == "images" else f"{prompt}\n\nTEXT:\n{chunk}"
+                        response_text = call_gemini_with_fallback(p, api_key, image_data=img_data, mime_type="image/png" if content_type == "images" else None, model=requested_model)
+                    elif provider in ['claude', 'openai']:
+                        fn = call_claude_with_vision if provider == 'claude' else call_openai_with_vision
                         if content_type == "images":
-                            chunk_text_response = call_claude_with_vision(prompt, api_key, chunk, "image/png", model=requested_model)
-                    elif provider == 'openai':
-                        if content_type == "images":
-                            chunk_text_response = call_openai_with_vision(prompt, api_key, chunk, "image/png", model=requested_model)
-                    elif provider == 'ollama':
-                        payload = {
-                            'model': ollama_model,
-                            'messages': [{
-                                'role': 'user',
-                                'content': prompt if content_type == "images" else f"{prompt}\n\nDocument Text (Chunk {idx+1}):\n{chunk}",
-                            }],
-                            'stream': False,
-                            'format': 'json'
-                        }
-                        if content_type == "images":
-                            payload['messages'][0]['images'] = [chunk]
-
-                        response = requests.post(f"{ollama_url}/api/chat", json=payload, timeout=600)
-                        if response.status_code == 200:
-                            chunk_text_response = response.json()['message']['content']
+                            response_text = fn(prompt, api_key, chunk, "image/png", model=requested_model)
                         else:
-                            print(f"Warning: Chunk {idx+1} failed: {response.text}")
+                            # Handle text chunk via unified caller if it's text
+                            response_text = call_llm(provider, f"{prompt}\n\nTEXT:\n{chunk}", api_key, model=requested_model)
+                    elif provider == 'ollama':
+                        msg = {'role': 'user', 'content': prompt if content_type == "images" else f"{prompt}\n\nTEXT:\n{chunk}"}
+                        if content_type == "images": msg['images'] = [chunk]
+                        res = requests.post(f"{ollama_url}/api/chat", json={'model': ollama_model, 'messages': [msg], 'stream': False, 'format': 'json'}, timeout=180)
+                        if res.status_code == 200: response_text = res.json()['message']['content']
 
-                    if chunk_text_response:
-                        chunk_items = resilient_parse_llm_json(chunk_text_response, 'assets')
-                        all_extracted.extend(chunk_items)
+                    if response_text:
+                        all_extracted.extend(resilient_parse_llm_json(response_text, config['list_key']))
                 
-                yield json.dumps({'assets': all_extracted, 'status': 'success', 'progress': 100}) + '\n'
+                yield json.dumps({config['list_key']: all_extracted, 'status': 'success', 'progress': 100}) + '\n'
+            
+            # Single File Path (Images, CSV, TXT)
             else:
-                # Standard single-shot path
-                text_response = ""
+                response_text = ""
+                is_text_file = mime_type in ['text/csv', 'text/plain']
+                
                 if provider == 'gemini':
                     file_bytes = base64.b64decode(image_b64)
-                    text_response = call_gemini_with_fallback(prompt, api_key, image_data=file_bytes, mime_type=mime_type, model=requested_model)
-                elif provider == 'claude':
-                    text_response = call_claude_with_vision(prompt, api_key, image_b64, mime_type, model=requested_model)
-                elif provider == 'openai':
-                    text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type, model=requested_model)
+                    response_text = call_gemini_with_fallback(prompt, api_key, image_data=file_bytes, mime_type=mime_type, model=requested_model)
+                elif provider in ['claude', 'openai']:
+                    if is_text_file:
+                        text_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
+                        response_text = call_llm(provider, f"{prompt}\n\nDATA:\n{text_content}", api_key, model=requested_model)
+                    else:
+                        fn = call_claude_with_vision if provider == 'claude' else call_openai_with_vision
+                        response_text = fn(prompt, api_key, image_b64, mime_type, model=requested_model)
                 elif provider == 'ollama':
-                    # Handle CSV as text, images as vision
-                    if mime_type == 'text/csv':
-                        csv_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
-                        enhanced_prompt = f"{prompt}\n\nCSV Data:\n```\n{csv_content}\n```"
-                        # For CSV, vision models work fine with text-only input
-                        response = requests.post(
-                            f"{ollama_url}/api/chat",
-                            json={
-                                'model': ollama_model,
-                                'messages': [{'role': 'user', 'content': enhanced_prompt}],
-                                'stream': False,
-                                'format': 'json'
-                            },
-                            timeout=180
-                        )
+                    msg = {'role': 'user', 'content': prompt}
+                    if is_text_file:
+                        text_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
+                        msg['content'] += f"\n\nDATA:\n{text_content}"
                     else:
-                        # Single image case - ensure standard format
-                        try:
-                            img = Image.open(BytesIO(base64.b64decode(image_b64)))
-                            if img.mode != 'RGB':
-                                img = img.convert('RGB')
-                            buffered = BytesIO()
-                            img.save(buffered, format="JPEG", quality=85)
-                            image_payload = base64.b64encode(buffered.getvalue()).decode('utf-8')
-                        except Exception as e:
-                            image_payload = image_b64
-
-                        response = requests.post(
-                            f"{ollama_url}/api/chat",
-                            json={
-                                'model': ollama_model,
-                                'messages': [{'role': 'user', 'content': prompt, 'images': [image_payload]}],
-                                'stream': False,
-                                'format': 'json'
-                            },
-                            timeout=180
-                        )
-                    if response.status_code == 200:
-                        text_response = response.json()['message']['content']
-                    else:
-                        raise Exception(f"Ollama error ({response.status_code}): {response.text}")
-
-                extracted_assets = resilient_parse_llm_json(text_response, 'assets')
-                yield json.dumps({'assets': extracted_assets, 'status': 'success', 'progress': 100}) + '\n'
-
-        except Exception as e:
-            print(f"Extract assets error: {str(e)}")
-            enhanced_audit_logger.log(
-                action='EXTRACT_ASSETS_ERROR',
-                details={'profile_name': profile_name, 'error': str(e)},
-                status_code=500
-            )
-            yield json.dumps({'error': str(e)}) + '\n'
-
-    return Response(generate(), mimetype='application/x-ndjson')
-
-
-@ai_services_bp.route('/extract-income', methods=['POST'])
-@login_required
-@limiter.limit("50 per hour")
-def extract_income():
-    """Extract income streams from an uploaded file (image, PDF, or CSV) using AI."""
-    data = request.json
-    image_b64 = data.get('image')
-    mime_type = data.get('mime_type')
-    file_name = data.get('file_name', '')
-    requested_provider = data.get('llm_provider')
-    requested_model = data.get('llm_model')
-    profile_name = data.get('profile_name')
-
-    # Detect CSV from filename if mime_type is missing or wrong
-    if file_name.lower().endswith('.csv') or mime_type in ['text/csv', 'application/csv', 'application/vnd.ms-excel']:
-        mime_type = 'text/csv'
-
-    if not image_b64 or not profile_name:
-        return jsonify({'error': 'image and profile_name are required'}), 400
-
-    # Get API key
-    profile = Profile.get_by_name(profile_name, current_user.id)
-    if not profile: return jsonify({'error': 'Profile not found'}), 404
-    
-    data_dict = profile.data_dict
-    api_keys = data_dict.get('api_keys', {})
-    
-    # Determine provider: priority = request > profile preference > Gemini (fallback)
-    provider = requested_provider or data_dict.get('preferred_ai_provider') or 'gemini'
-    
-    api_key = None
-    ollama_url = sanitize_url(api_keys.get('ollama_url'), 'http://localhost:11434')
-    
-    # Determine Ollama model: request > profile vision-check > default
-    if requested_model and provider == 'ollama':
-        ollama_model = requested_model
-    else:
-        configured_model = api_keys.get('ollama_model', '')
-        if 'vision' in configured_model.lower() or 'vl' in configured_model.lower():
-            ollama_model = configured_model
-        else:
-            ollama_model = 'llama3.2-vision'
-    
-    if provider == 'gemini':
-        api_key = api_keys.get('gemini_api_key')
-    elif provider == 'claude':
-        api_key = api_keys.get('claude_api_key')
-    elif provider == 'openai':
-        api_key = api_keys.get('openai_api_key')
-        
-    if not api_key and provider not in ['ollama', 'lmstudio', 'localai']: 
-        return jsonify({'error': f'{provider.capitalize()} API key not configured. Please configure in AI Settings.'}), 400
-
-    prompt = """
-    Analyze this financial document (image, PDF, or CSV data) of a pay stub, bank statement, or tax document.
-    Extract a list of regular income streams.
-
-    FREQUENCY DETECTION - Look for these patterns:
-    - Keywords: "monthly", "bi-weekly", "weekly", "annual", "yearly", "quarterly", "semi-monthly"
-    - Pay stubs: Check pay period dates. If ~2 weeks apart = "bi-weekly", ~1 month = "monthly"
-    - Bank statements: Look for recurring deposits on similar dates each month
-    - Tax documents (W-2, 1099): Annual amounts - set frequency to "annual"
-    - Salary/wages typically: "bi-weekly" or "semi-monthly" (24 pay periods/year)
-    - Rental income, dividends, Social Security: typically "monthly"
-
-    RULES:
-    1. Extract for each income source:
-       - "name": Descriptive name (e.g., "Salary - Acme Corp", "Rental Income - 123 Main St", "Social Security")
-       - "amount": The per-period amount as a number (not annual total unless frequency is "annual")
-       - "frequency": One of "weekly", "bi-weekly", "semi-monthly", "monthly", "quarterly", "annual"
-    2. Clean values: numbers only for amount, no $ or commas.
-    3. If frequency is unclear, default to "monthly" for regular income, "annual" for one-time or tax documents.
-    4. Return ONLY a JSON array: [{"name": "...", "amount": ..., "frequency": "..."}]
-    """
-
-    def generate():
-        try:
-            if (mime_type == 'application/pdf' or image_b64.startswith('JVBERi')) and mime_type != 'text/csv':
-                # Handle multi-page PDF for ALL providers
-                all_extracted = []
-                file_bytes = base64.b64decode(image_b64)
-                chunks, content_type = process_pdf_content(file_bytes)
-                
-                num_chunks = len(chunks)
-                for idx, chunk in enumerate(chunks):
-                    progress = int(((idx) / num_chunks) * 100)
-                    yield json.dumps({'status': 'processing', 'progress': progress, 'message': f'Analyzing page group {idx+1}/{num_chunks}...'}) + '\n'
+                        msg['images'] = [image_b64]
                     
-                    chunk_text_response = ""
-                    if provider == 'gemini':
-                        image_data = base64.b64decode(chunk) if content_type == "images" else None
-                        current_prompt = prompt if content_type == "images" else f"{prompt}\n\nDocument Text (Chunk {idx+1}):\n{chunk}"
-                        chunk_text_response = call_gemini_with_fallback(current_prompt, api_key, image_data=image_data, mime_type="image/png" if content_type == "images" else None, model=requested_model)
-                    elif provider == 'claude':
-                        if content_type == "images":
-                            chunk_text_response = call_claude_with_vision(prompt, api_key, chunk, "image/png", model=requested_model)
-                    elif provider == 'openai':
-                        if content_type == "images":
-                            chunk_text_response = call_openai_with_vision(prompt, api_key, chunk, "image/png", model=requested_model)
-                    elif provider == 'ollama':
-                        payload = {
-                            'model': ollama_model,
-                            'messages': [{
-                                'role': 'user',
-                                'content': prompt if content_type == "images" else f"{prompt}\n\nDocument Text (Chunk {idx+1}):\n{chunk}",
-                            }],
-                            'stream': False,
-                            'format': 'json'
-                        }
-                        if content_type == "images":
-                            payload['messages'][0]['images'] = [chunk]
+                    res = requests.post(f"{ollama_url}/api/chat", json={'model': ollama_model, 'messages': [msg], 'stream': False, 'format': 'json'}, timeout=180)
+                    if res.status_code == 200: response_text = res.json()['message']['content']
 
-                        response = requests.post(f"{ollama_url}/api/chat", json=payload, timeout=600)
-                        if response.status_code == 200:
-                            chunk_text_response = response.json()['message']['content']
-                        else:
-                            print(f"Warning: Chunk {idx+1} failed: {response.text}")
-
-                    if chunk_text_response:
-                        chunk_items = resilient_parse_llm_json(chunk_text_response, 'income')
-                        all_extracted.extend(chunk_items)
-                
-                yield json.dumps({'income': all_extracted, 'status': 'success', 'progress': 100}) + '\n'
-            else:
-                # Standard single-shot path
-                text_response = ""
-                if provider == 'gemini':
-                    file_bytes = base64.b64decode(image_b64)
-                    text_response = call_gemini_with_fallback(prompt, api_key, image_data=file_bytes, mime_type=mime_type, model=requested_model)
-                elif provider == 'claude':
-                    text_response = call_claude_with_vision(prompt, api_key, image_b64, mime_type, model=requested_model)
-                elif provider == 'openai':
-                    text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type, model=requested_model)
-                elif provider == 'ollama':
-                    # Handle CSV as text, images as vision
-                    if mime_type == 'text/csv':
-                        csv_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
-                        enhanced_prompt = f"{prompt}\n\nCSV Data:\n```\n{csv_content}\n```"
-                        # For CSV, vision models work fine with text-only input
-                        response = requests.post(
-                            f"{ollama_url}/api/chat",
-                            json={
-                                'model': ollama_model,
-                                'messages': [{'role': 'user', 'content': enhanced_prompt}],
-                                'stream': False,
-                                'format': 'json'
-                            },
-                            timeout=180
-                        )
-                    else:
-                        # Single image case - ensure standard format
-                        try:
-                            img = Image.open(BytesIO(base64.b64decode(image_b64)))
-                            if img.mode != 'RGB':
-                                img = img.convert('RGB')
-                            buffered = BytesIO()
-                            img.save(buffered, format="JPEG", quality=85)
-                            image_payload = base64.b64encode(buffered.getvalue()).decode('utf-8')
-                        except Exception as e:
-                            image_payload = image_b64
-
-                        response = requests.post(
-                            f"{ollama_url}/api/chat",
-                            json={
-                                'model': ollama_model,
-                                'messages': [{'role': 'user', 'content': prompt, 'images': [image_payload]}],
-                                'stream': False,
-                                'format': 'json'
-                            },
-                            timeout=180
-                        )
-                    if response.status_code == 200:
-                        text_response = response.json()['message']['content']
-                    else:
-                        raise Exception(f"Ollama error ({response.status_code}): {response.text}")
-
-                extracted_income = resilient_parse_llm_json(text_response, 'income')
-                yield json.dumps({'income': extracted_income, 'status': 'success', 'progress': 100}) + '\n'
+                items = resilient_parse_llm_json(response_text, config['list_key'])
+                yield json.dumps({config['list_key']: items, 'status': 'success', 'progress': 100}) + '\n'
 
         except Exception as e:
-            print(f"Extract income error: {str(e)}")
-            enhanced_audit_logger.log(
-                action='EXTRACT_INCOME_ERROR',
-                details={'profile_name': profile_name, 'error': str(e)},
-                status_code=500
-            )
+            enhanced_audit_logger.log(action=f"{config['log_action']}_ERROR", details={'error': str(e)}, status_code=500)
             yield json.dumps({'error': str(e)}) + '\n'
-    
-    return Response(generate(), mimetype='application/x-ndjson')
 
-
-@ai_services_bp.route('/extract-expenses', methods=['POST'])
-@login_required
-@limiter.limit("50 per hour")
-def extract_expenses():
-    """Extract expenses from an uploaded file (image, PDF, or CSV) using AI."""
-    data = request.json
-    image_b64 = data.get('image')
-    mime_type = data.get('mime_type')
-    file_name = data.get('file_name', '')
-    requested_provider = data.get('llm_provider')
-    requested_model = data.get('llm_model')
-    profile_name = data.get('profile_name')
-
-    # Detect CSV from filename if mime_type is missing or wrong
-    if file_name.lower().endswith('.csv') or mime_type in ['text/csv', 'application/csv', 'application/vnd.ms-excel']:
-        mime_type = 'text/csv'
-
-    if not image_b64 or not profile_name:
-        return jsonify({'error': 'image and profile_name are required'}), 400
-
-    # Get API key
-    profile = Profile.get_by_name(profile_name, current_user.id)
-    if not profile: return jsonify({'error': 'Profile not found'}), 404
-    
-    data_dict = profile.data_dict
-    api_keys = data_dict.get('api_keys', {})
-    
-    # Determine provider: priority = request > profile preference > Gemini (fallback)
-    provider = requested_provider or data_dict.get('preferred_ai_provider') or 'gemini'
-    
-    api_key = None
-    ollama_url = sanitize_url(api_keys.get('ollama_url'), 'http://localhost:11434')
-    
-    # Determine Ollama model: request > profile vision-check > default
-    if requested_model and provider == 'ollama':
-        ollama_model = requested_model
-    else:
-        configured_model = api_keys.get('ollama_model', '')
-        if 'vision' in configured_model.lower() or 'vl' in configured_model.lower():
-            ollama_model = configured_model
-        else:
-            ollama_model = 'llama3.2-vision'
-    
-    if provider == 'gemini':
-        api_key = api_keys.get('gemini_api_key')
-    elif provider == 'claude':
-        api_key = api_keys.get('claude_api_key')
-    elif provider == 'openai':
-        api_key = api_keys.get('openai_api_key')
-        
-    if not api_key and provider not in ['ollama', 'lmstudio', 'localai']: 
-        return jsonify({'error': f'{provider.capitalize()} API key not configured. Please configure in AI Settings.'}), 400
-
-    prompt = """
-    Analyze this financial document (image, PDF, or CSV data) of a receipt, credit card statement, or bill.
-    Extract a list of recurring or significant expenses.
-
-    FREQUENCY DETECTION - Look for these patterns:
-    - Keywords on bills: "monthly", "annual", "yearly", "quarterly", "weekly", "due monthly"
-    - Subscriptions (Netflix, Spotify, gym): typically "monthly" or "annual"
-    - Utilities (electric, gas, water, internet): typically "monthly"
-    - Insurance premiums: check if "monthly", "quarterly", "semi-annual", or "annual"
-    - Mortgage/rent: typically "monthly"
-    - Property taxes: typically "annual" or "semi-annual"
-    - Car payments, loan payments: typically "monthly"
-    - Credit card statements: Look for recurring charges on similar dates
-    - Bank statements: Identify repeating transactions with same payee/amount
-
-    RULES:
-    1. Extract for each expense:
-       - "name": Descriptive name (e.g., "Electric Bill - PG&E", "Netflix Subscription", "Mortgage - Chase")
-       - "amount": The per-period amount as a number
-       - "frequency": One of "weekly", "bi-weekly", "monthly", "quarterly", "semi-annual", "annual"
-       - "category": Map to one of: housing, utilities, transportation, food, dining_out, healthcare, insurance, travel, entertainment, personal_care, clothing, gifts, childcare_education, charitable_giving, subscriptions, pet_care, home_maintenance, debt_payments, taxes, discretionary, other
-    2. Clean values: numbers only for amount, no $ or commas.
-    3. If frequency is unclear: utilities/subscriptions/rent default to "monthly", insurance/taxes consider "annual".
-    4. Return ONLY a JSON array: [{"name": "...", "amount": ..., "frequency": "...", "category": "..."}]
-    """
-
-    def generate():
-        try:
-            if (mime_type == 'application/pdf' or image_b64.startswith('JVBERi')) and mime_type != 'text/csv':
-                # Handle multi-page PDF for ALL providers
-                all_extracted = []
-                file_bytes = base64.b64decode(image_b64)
-                chunks, content_type = process_pdf_content(file_bytes)
-                
-                num_chunks = len(chunks)
-                for idx, chunk in enumerate(chunks):
-                    progress = int(((idx) / num_chunks) * 100)
-                    yield json.dumps({'status': 'processing', 'progress': progress, 'message': f'Analyzing page group {idx+1}/{num_chunks}...'}) + '\n'
-                    
-                    chunk_text_response = ""
-                    if provider == 'gemini':
-                        # For Gemini, if it's images, we pass as image data. If text, we pass as text.
-                        image_data = base64.b64decode(chunk) if content_type == "images" else None
-                        current_prompt = prompt if content_type == "images" else f"{prompt}\n\nDocument Text (Chunk {idx+1}):\n{chunk}"
-                        chunk_text_response = call_gemini_with_fallback(current_prompt, api_key, image_data=image_data, mime_type="image/png" if content_type == "images" else None, model=requested_model)
-                    elif provider == 'claude':
-                        if content_type == "images":
-                            chunk_text_response = call_claude_with_vision(prompt, api_key, chunk, "image/png", model=requested_model)
-                    elif provider == 'openai':
-                        if content_type == "images":
-                            chunk_text_response = call_openai_with_vision(prompt, api_key, chunk, "image/png", model=requested_model)
-                    elif provider == 'ollama':
-                        payload = {
-                            'model': ollama_model,
-                            'messages': [{
-                                'role': 'user',
-                                'content': prompt if content_type == "images" else f"{prompt}\n\nDocument Text (Chunk {idx+1}):\n{chunk}",
-                            }],
-                            'stream': False,
-                            'format': 'json'
-                        }
-                        if content_type == "images":
-                            payload['messages'][0]['images'] = [chunk]
-
-                        response = requests.post(f"{ollama_url}/api/chat", json=payload, timeout=600)
-                        if response.status_code == 200:
-                            chunk_text_response = response.json()['message']['content']
-                        else:
-                            print(f"Warning: Chunk {idx+1} failed: {response.text}")
-
-                    if chunk_text_response:
-                        chunk_items = resilient_parse_llm_json(chunk_text_response, 'expenses')
-                        all_extracted.extend(chunk_items)
-                
-                yield json.dumps({'expenses': all_extracted, 'status': 'success', 'progress': 100}) + '\n'
-            else:
-                # Standard single-shot path for images/CSVs
-                text_response = ""
-                if provider == 'gemini':
-                    file_bytes = base64.b64decode(image_b64)
-                    text_response = call_gemini_with_fallback(prompt, api_key, image_data=file_bytes, mime_type=mime_type, model=requested_model)
-                elif provider == 'claude':
-                    text_response = call_claude_with_vision(prompt, api_key, image_b64, mime_type, model=requested_model)
-                elif provider == 'openai':
-                    text_response = call_openai_with_vision(prompt, api_key, image_b64, mime_type, model=requested_model)
-                elif provider == 'ollama':
-                    # Handle CSV as text, images as vision
-                    if mime_type == 'text/csv':
-                        csv_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
-                        enhanced_prompt = f"{prompt}\n\nCSV Data:\n```\n{csv_content}\n```"
-                        # For CSV, vision models work fine with text-only input
-                        response = requests.post(
-                            f"{ollama_url}/api/chat",
-                            json={
-                                'model': ollama_model,
-                                'messages': [{'role': 'user', 'content': enhanced_prompt}],
-                                'stream': False,
-                                'format': 'json'
-                            },
-                            timeout=180
-                        )
-                    else:
-                        # Single image case - ensure standard format
-                        try:
-                            img = Image.open(BytesIO(base64.b64decode(image_b64)))
-                            if img.mode != 'RGB':
-                                img = img.convert('RGB')
-                            buffered = BytesIO()
-                            img.save(buffered, format="JPEG", quality=85)
-                            image_payload = base64.b64encode(buffered.getvalue()).decode('utf-8')
-                        except Exception as e:
-                            image_payload = image_b64
-
-                        response = requests.post(
-                            f"{ollama_url}/api/chat",
-                            json={
-                                'model': ollama_model,
-                                'messages': [{'role': 'user', 'content': prompt, 'images': [image_payload]}],
-                                'stream': False,
-                                'format': 'json'
-                            },
-                            timeout=180
-                        )
-                    if response.status_code == 200:
-                        text_response = response.json()['message']['content']
-                    else:
-                        raise Exception(f"Ollama error ({response.status_code}): {response.text}")
-
-                extracted_expenses = resilient_parse_llm_json(text_response, 'expenses')
-                yield json.dumps({'expenses': extracted_expenses, 'status': 'success', 'progress': 100}) + '\n'
-
-        except Exception as e:
-            print(f"Extract expenses error: {str(e)}")
-            enhanced_audit_logger.log(
-                action='EXTRACT_EXPENSES_ERROR',
-                details={'profile_name': profile_name, 'error': str(e)},
-                status_code=500
-            )
-            yield json.dumps({'error': str(e)}) + '\n'
-    
     return Response(generate(), mimetype='application/x-ndjson')
