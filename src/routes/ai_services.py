@@ -994,13 +994,18 @@ EXTRACT_CONFIGS = {
             TASK: Extract all regular income streams from this document.
             FORMAT: You must return a JSON array of objects.
             FIELDS PER OBJECT:
-            - "name": Descriptive name of the income
+            - "name": Descriptive name of the income source
             - "amount": The per-period dollar amount as a number
             - "frequency": One of [weekly, bi-weekly, semi-monthly, monthly, quarterly, annual]
-            
-            EXAMPLE OUTPUT:
-            [{"name": "Salary", "amount": 3000, "frequency": "monthly"}]
-            
+
+            CONSOLIDATION RULES:
+            - If the same income source appears MULTIPLE times, consolidate into ONE entry
+            - For recurring income (appears 2+ times): set frequency to "monthly" or appropriate interval, use the AVERAGE amount
+            - For one-time income (appears only once): set frequency to "annual"
+
+            EXAMPLE: If "Employer Direct Deposit" appears 4 times with amounts $2800, $2850, $2800, $2900:
+            Output ONE entry: {"name": "Employer Direct Deposit", "amount": 2837.50, "frequency": "bi-weekly"}
+
             CRITICAL: Return ONLY the JSON array. Do not include any other text.
             """,
         'log_action': 'EXTRACT_INCOME'
@@ -1011,14 +1016,21 @@ EXTRACT_CONFIGS = {
             TASK: Extract all recurring or significant expenses from this document.
             FORMAT: You must return a JSON array of objects.
             FIELDS PER OBJECT:
-            - "name": Descriptive name of the expense
+            - "name": Descriptive name of the expense (use merchant/payee name)
             - "amount": The dollar amount as a number
             - "frequency": One of [weekly, bi-weekly, monthly, quarterly, semi-annual, annual]
             - "category": One of [housing, utilities, transportation, food, dining_out, healthcare, insurance, travel, entertainment, personal_care, clothing, gifts, childcare_education, charitable_giving, subscriptions, pet_care, home_maintenance, debt_payments, taxes, discretionary, other]
-            
-            EXAMPLE OUTPUT:
-            [{"name": "Rent", "amount": 1500, "frequency": "monthly", "category": "housing"}]
-            
+
+            CONSOLIDATION RULES:
+            - If the same merchant/payee appears MULTIPLE times, consolidate into ONE entry
+            - For recurring expenses (appears 2+ times monthly): set frequency to "monthly", use the AVERAGE amount
+            - For recurring expenses (appears weekly): set frequency to "weekly", use the AVERAGE amount
+            - For one-time expenses (appears only once): set frequency to "annual"
+            - Group similar small transactions (e.g., multiple grocery trips) by category
+
+            EXAMPLE: If "Netflix" appears 3 times with amounts $15.99, $15.99, $17.99:
+            Output ONE entry: {"name": "Netflix", "amount": 16.66, "frequency": "monthly", "category": "subscriptions"}
+
             CRITICAL: Return ONLY the JSON array. Do not include any other text.
             """,
         'log_action': 'EXTRACT_EXPENSES'
