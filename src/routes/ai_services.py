@@ -236,11 +236,14 @@ def normalize_to_list(data, list_key):
 def call_gemini_with_fallback(prompt, api_key, image_data=None, mime_type=None, model=None):
     """Calls Gemini with a prioritized list of models and fallback logic using REST API."""
     # Use full model resource names for v1 API
-    # Prioritize Flash models (higher free tier quotas) over Pro models
+    # Prioritize Gemini 3.0 and 2.5 models (Jan 2026)
     models = [
-        'models/gemini-2.0-flash',               # Gemini 2.0 Flash - latest stable
-        'models/gemini-1.5-flash',               # Gemini 1.5 Flash - reliable, high quota
-        'models/gemini-1.5-pro',                 # Gemini 1.5 Pro - better quality, lower quota
+        'models/gemini-3.0-flash',               # Gemini 3.0 Flash - latest fastest
+        'models/gemini-3.0-pro',                 # Gemini 3.0 Pro - latest most capable
+        'models/gemini-2.5-flash',               # Gemini 2.5 Flash
+        'models/gemini-2.5-pro',                 # Gemini 2.5 Pro
+        'models/gemini-2.0-flash',               # Gemini 2.0 Flash stable
+        'models/gemini-1.5-flash',               # Gemini 1.5 Flash legacy
     ]
 
     # If specific model requested, try it first
@@ -433,7 +436,7 @@ def call_openai_with_vision(prompt, api_key, image_b64, mime_type, model=None):
     }
     
     # Use requested model or default
-    model_name = model if model else 'gpt-4o'
+    model_name = model if model else 'gpt-5.2-instant'
 
     # Handle CSV case: Include as text in the prompt instead of an image URL
     if mime_type == 'text/csv':
@@ -515,9 +518,10 @@ def call_gemini(prompt, api_key, history=None, system_prompt=None, model=None):
     contents.append(types.Content(role='user', parts=[types.Part(text=prompt)]))
 
     models_to_try = [
-        'models/gemini-2.0-flash', 
-        'models/gemini-1.5-flash',
-        'models/gemini-1.5-pro'
+        'models/gemini-3.0-flash', 
+        'models/gemini-3.0-pro', 
+        'models/gemini-2.5-flash',
+        'models/gemini-2.0-flash'
     ]
 
     # If specific model requested, try it first
@@ -554,7 +558,12 @@ def call_claude(prompt, api_key, history=None, system_prompt=None, model=None):
             messages.append({'role': msg.role, 'content': msg.content})
     messages.append({'role': 'user', 'content': prompt})
 
-    models = ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229']
+    models = [
+        'claude-4-5-opus-20251101', 
+        'claude-4-5-sonnet-20250929', 
+        'claude-4-sonnet-20250514',
+        'claude-3-5-sonnet-20241022'
+    ]
     
     if model:
         if model in models:
@@ -588,14 +597,14 @@ def call_claude(prompt, api_key, history=None, system_prompt=None, model=None):
 def call_openai_compatible(provider, prompt, api_key, history=None, system_prompt=None, model=None):
     """Calls OpenAI-compatible APIs (OpenAI, DeepSeek, OpenRouter, etc.)."""
     endpoints = {
-        'openai': ('https://api.openai.com/v1/chat/completions', 'gpt-4o'),
-        'deepseek': ('https://api.deepseek.com/chat/completions', 'deepseek-chat'),
-        'openrouter': ('https://openrouter.ai/api/v1/chat/completions', 'google/gemini-2.0-flash-001'),
-        'grok': ('https://api.x.ai/v1/chat/completions', 'grok-beta'),
-        'mistral': ('https://api.mistral.ai/v1/chat/completions', 'mistral-large-latest'),
-        'together': ('https://api.together.xyz/v1/chat/completions', 'mistralai/Mixtral-8x7B-Instruct-v0.1'),
-        'huggingface': ('https://api-inference.huggingface.co/v1/chat/completions', 'meta-llama/Llama-3-70b-chat-hf'),
-        'zhipu': ('https://open.bigmodel.cn/api/paas/v4/chat/completions', 'glm-4-flash')
+        'openai': ('https://api.openai.com/v1/chat/completions', 'gpt-5.2-instant'),
+        'deepseek': ('https://api.deepseek.com/chat/completions', 'deepseek-chat'), # Maps to V4
+        'openrouter': ('https://openrouter.ai/api/v1/chat/completions', 'google/gemini-3.0-flash'),
+        'grok': ('https://api.x.ai/v1/chat/completions', 'grok-5'),
+        'mistral': ('https://api.mistral.ai/v1/chat/completions', 'mistral-large-25.12'),
+        'together': ('https://api.together.xyz/v1/chat/completions', 'meta-llama/Llama-4-70b-instruct'),
+        'huggingface': ('https://api-inference.huggingface.co/v1/chat/completions', 'meta-llama/Llama-4-70b-chat'),
+        'zhipu': ('https://open.bigmodel.cn/api/paas/v4/chat/completions', 'glm-5-flash')
     }
     
     url, default_model = endpoints.get(provider, (None, None))
