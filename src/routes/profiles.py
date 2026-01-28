@@ -563,21 +563,26 @@ class APIKeySchema(BaseModel):
     zhipu_api_key: Optional[str] = None
     lmstudio_url: Optional[str] = None
     localai_url: Optional[str] = None
+    ollama_url: Optional[str] = None
+    ollama_model: Optional[str] = None
     preferred_ai_provider: Optional[str] = None
 
-    @validator('claude_api_key', 'gemini_api_key', 'openai_api_key', 'grok_api_key', 
-               'openrouter_api_key', 'deepseek_api_key', 'mistral_api_key', 
+    @validator('claude_api_key', 'gemini_api_key', 'openai_api_key', 'grok_api_key',
+               'openrouter_api_key', 'deepseek_api_key', 'mistral_api_key',
                'together_api_key', 'huggingface_api_key', 'zhipu_api_key')
     def validate_api_key(cls, v):
         if v is not None:
             v = v.strip()
-            if len(v) < 8:  # Some keys might be short
-                raise ValueError('API key must be at least 8 characters')
+            # Reject masked/placeholder values
+            if '•' in v or '●' in v or '∙' in v or '****' in v:
+                raise ValueError('Cannot save masked API key - please enter the full key')
+            if len(v) < 20:  # Real API keys are typically 30+ chars
+                raise ValueError('API key appears invalid - must be at least 20 characters')
             if len(v) > 500:
                 raise ValueError('API key is too long')
         return v
 
-    @validator('lmstudio_url', 'localai_url')
+    @validator('lmstudio_url', 'localai_url', 'ollama_url')
     def validate_local_urls(cls, v):
         if v is not None:
             v = v.strip()
@@ -641,7 +646,12 @@ def get_api_keys(name: str):
         if api_keys.get('localai_url'):
             result['localai_url'] = api_keys['localai_url']
             keys_configured.append('localai')
-        
+        if api_keys.get('ollama_url'):
+            result['ollama_url'] = api_keys['ollama_url']
+            keys_configured.append('ollama')
+        if api_keys.get('ollama_model'):
+            result['ollama_model'] = api_keys['ollama_model']
+
         if data_dict.get('preferred_ai_provider'):
             result['preferred_ai_provider'] = data_dict['preferred_ai_provider']
 
@@ -737,7 +747,12 @@ def save_api_keys(name: str):
         if data.localai_url:
             data_dict['api_keys']['localai_url'] = data.localai_url
             keys_updated.append('localai')
-        
+        if data.ollama_url:
+            data_dict['api_keys']['ollama_url'] = data.ollama_url
+            keys_updated.append('ollama')
+        if data.ollama_model:
+            data_dict['api_keys']['ollama_model'] = data.ollama_model
+
         if data.preferred_ai_provider:
             data_dict['preferred_ai_provider'] = data.preferred_ai_provider
             keys_updated.append('preferred_provider')

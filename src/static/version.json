@@ -1,5 +1,5 @@
 {
-    "version": "3.9.81",
+    "version": "3.9.82",
     "release_date": "2026-01-28",
-    "release_notes": "Add API key debug logging to diagnose invalid key errors"
+    "release_notes": "Add backend API key validation (reject masked values), add Ollama to profile schema"
 }
