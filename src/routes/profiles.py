@@ -570,16 +570,55 @@ class APIKeySchema(BaseModel):
     @validator('claude_api_key', 'gemini_api_key', 'openai_api_key', 'grok_api_key',
                'openrouter_api_key', 'deepseek_api_key', 'mistral_api_key',
                'together_api_key', 'huggingface_api_key', 'zhipu_api_key')
-    def validate_api_key(cls, v):
+    def validate_api_key(cls, v, field):
         if v is not None:
             v = v.strip()
-            # Reject masked/placeholder values
-            if '•' in v or '●' in v or '∙' in v or '****' in v:
-                raise ValueError('Cannot save masked API key - please enter the full key')
-            if len(v) < 20:  # Real API keys are typically 30+ chars
+
+            # Comprehensive masked character detection
+            masked_chars = ['•', '●', '∙', '⋅', '⦁', '◦', '▪', '▫', '■', '□', '▬', '─', '━', '▂', '▃', '▄']
+            if any(char in v for char in masked_chars):
+                raise ValueError('Cannot save masked API key - contains bullet/masking characters')
+
+            # Reject common placeholder patterns
+            placeholder_patterns = ['****', '...', 'xxx', 'XXX', 'XXXX', 'xxxx', 'your_api_key',
+                                   'your-api-key', 'api-key-here', 'enter_key_here', 'placeholder']
+            if any(pattern in v.lower() for pattern in placeholder_patterns):
+                raise ValueError('Cannot save placeholder value - enter your actual API key')
+
+            # Length validation
+            if len(v) < 20:
                 raise ValueError('API key appears invalid - must be at least 20 characters')
             if len(v) > 500:
-                raise ValueError('API key is too long')
+                raise ValueError('API key is too long (max 500 characters)')
+
+            # Must contain alphanumeric characters (not all symbols)
+            import re
+            if not re.search(r'[A-Za-z0-9]', v):
+                raise ValueError('API key must contain alphanumeric characters')
+
+            # Format validation for known key patterns
+            key_name = field.name
+            if key_name == 'gemini_api_key':
+                if not v.startswith('AIzaSy'):
+                    raise ValueError('Gemini API keys must start with "AIzaSy"')
+                if len(v) != 39:
+                    raise ValueError('Gemini API keys are exactly 39 characters')
+            elif key_name == 'claude_api_key':
+                if not v.startswith('sk-ant-'):
+                    raise ValueError('Claude API keys must start with "sk-ant-"')
+            elif key_name == 'openai_api_key':
+                if not v.startswith(('sk-', 'sk-proj-')):
+                    raise ValueError('OpenAI API keys must start with "sk-" or "sk-proj-"')
+            elif key_name == 'grok_api_key':
+                if not v.startswith('xai-'):
+                    raise ValueError('Grok API keys must start with "xai-"')
+            elif key_name == 'openrouter_api_key':
+                if not v.startswith('sk-or-'):
+                    raise ValueError('OpenRouter API keys must start with "sk-or-"')
+            elif key_name == 'huggingface_api_key':
+                if not v.startswith('hf_'):
+                    raise ValueError('Hugging Face tokens must start with "hf_"')
+
         return v
 
     @validator('lmstudio_url', 'localai_url', 'ollama_url')

@@ -8,6 +8,77 @@ import { showSuccess, showError } from '../../utils/dom.js';
 let showAllProviders = false;
 
 /**
+ * Validate API key format client-side
+ */
+function validateApiKey(provider, value) {
+    if (!value || value.trim() === '') {
+        return { valid: false, error: 'API key cannot be empty' };
+    }
+
+    value = value.trim();
+
+    // Check for masked/bullet characters
+    const maskedChars = ['•', '●', '∙', '⋅', '⦁', '◦', '▪', '▫', '■', '□', '▬', '─', '━'];
+    if (maskedChars.some(char => value.includes(char))) {
+        return { valid: false, error: 'Cannot save masked key - enter your actual API key' };
+    }
+
+    // Check for placeholder patterns
+    const placeholders = ['****', '...', 'xxx', 'your_api_key', 'your-api-key', 'placeholder', 'enter_key'];
+    if (placeholders.some(pattern => value.toLowerCase().includes(pattern))) {
+        return { valid: false, error: 'Cannot save placeholder - enter your actual API key' };
+    }
+
+    // Length check
+    if (value.length < 20) {
+        return { valid: false, error: 'API key too short - must be at least 20 characters' };
+    }
+
+    if (value.length > 500) {
+        return { valid: false, error: 'API key too long - maximum 500 characters' };
+    }
+
+    // Provider-specific format validation
+    switch (provider) {
+        case 'gemini':
+            if (!value.startsWith('AIzaSy')) {
+                return { valid: false, error: 'Gemini keys must start with "AIzaSy"' };
+            }
+            if (value.length !== 39) {
+                return { valid: false, error: 'Gemini keys are exactly 39 characters' };
+            }
+            break;
+        case 'claude':
+            if (!value.startsWith('sk-ant-')) {
+                return { valid: false, error: 'Claude keys must start with "sk-ant-"' };
+            }
+            break;
+        case 'openai':
+            if (!value.startsWith('sk-') && !value.startsWith('sk-proj-')) {
+                return { valid: false, error: 'OpenAI keys must start with "sk-" or "sk-proj-"' };
+            }
+            break;
+        case 'grok':
+            if (!value.startsWith('xai-')) {
+                return { valid: false, error: 'Grok keys must start with "xai-"' };
+            }
+            break;
+        case 'openrouter':
+            if (!value.startsWith('sk-or-')) {
+                return { valid: false, error: 'OpenRouter keys must start with "sk-or-"' };
+            }
+            break;
+        case 'huggingface':
+            if (!value.startsWith('hf_')) {
+                return { valid: false, error: 'Hugging Face tokens must start with "hf_"' };
+            }
+            break;
+    }
+
+    return { valid: true };
+}
+
+/**
  * Provider configurations
  */
 const PROVIDERS = {
@@ -261,6 +332,15 @@ async function testNewKey(provider, container, profile) {
         return;
     }
 
+    // Validate format before testing (skip for URLs)
+    if (!isUrl) {
+        const validation = validateApiKey(provider, value);
+        if (!validation.valid) {
+            statusEl.innerHTML = `<span style="color: var(--danger-color);">✗ ${validation.error}</span>`;
+            return;
+        }
+    }
+
     statusEl.innerHTML = '<span style="color: var(--text-secondary);">⏳ Testing...</span>';
 
     try {
@@ -382,6 +462,14 @@ async function loadExistingKeys(container, profile) {
                     if (maskedSpan) {
                         maskedSpan.textContent = isUrl ? '' : value; // Show last 4 for keys, nothing for URLs
                     }
+
+                    // IMPORTANT: Clear the input field to prevent accidental re-saving of masked values
+                    const inputId = isUrl ? `${p.id}-url` : `${p.id}-api-key`;
+                    const inputField = container.querySelector(`#${inputId}`);
+                    if (inputField) {
+                        inputField.value = '';
+                        inputField.placeholder = 'Enter new key to replace...';
+                    }
                 }
             }
         });
@@ -402,6 +490,7 @@ async function saveAllSettings(container, profile) {
 
     const payload = {};
     const allProviders = [...PROVIDERS.recommended, ...PROVIDERS.budget, ...PROVIDERS.local, ...PROVIDERS.more];
+    const validationErrors = [];
 
     allProviders.forEach(p => {
         const isUrl = p.isUrl;
@@ -409,11 +498,28 @@ async function saveAllSettings(container, profile) {
         const input = container.querySelector(`#${inputId}`);
         const value = input?.value.trim();
 
-        if (value && !value.includes('•')) {
+        if (value) {
+            // Validate API keys (skip validation for URLs)
+            if (!isUrl) {
+                const validation = validateApiKey(p.id, value);
+                if (!validation.valid) {
+                    validationErrors.push(`${p.name}: ${validation.error}`);
+                    return; // Skip this key
+                }
+            }
+
             const keyName = isUrl ? `${p.id}_url` : `${p.id}_api_key`;
             payload[keyName] = value;
         }
     });
+
+    // Show validation errors if any
+    if (validationErrors.length > 0) {
+        const errorMsg = validationErrors.join('\n');
+        statusEl.innerHTML = `<span style="color: var(--danger-color);">✗ Validation failed</span>`;
+        showError(`Validation errors:\n${errorMsg}`);
+        return;
+    }
 
     const preferredProvider = container.querySelector('#preferred-ai-provider').value;
     payload.preferred_ai_provider = preferredProvider;
