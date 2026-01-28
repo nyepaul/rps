@@ -1,5 +1,5 @@
 {
-    "version": "3.9.79",
+    "version": "3.9.80",
     "release_date": "2026-01-28",
-    "release_notes": "Add Ollama support for free local LLM models"
+    "release_notes": "Improve data import: consolidate repeated entries, average amounts, detect frequency"
 }
