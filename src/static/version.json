@@ -1,5 +1,5 @@
 {
-    "version": "3.9.82",
+    "version": "3.9.83",
     "release_date": "2026-01-28",
-    "release_notes": "Add backend API key validation (reject masked values), add Ollama to profile schema"
+    "release_notes": "Fix API keys settings: add missing endpoints, comprehensive validation, auto-save after test, remove duplicate save button"
 }
