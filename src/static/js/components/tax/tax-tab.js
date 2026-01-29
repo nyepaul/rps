@@ -124,16 +124,16 @@ function renderTaxAnalysis(container, analysis, profile) {
                     </summary>
                     <div style="padding: 10px; background: var(--bg-primary); border-radius: 6px; margin-top: 6px;">
                         <div style="display: grid; gap: 6px; font-size: 12px;">
-                            <div style="display: flex; justify-content: space-between;">
+                            <div style="display: flex; gap: 8px; align-items: baseline;">
                                 <span>Federal Tax:</span>
                                 <span style="font-weight: 600;">${formatCurrency(snapshot.taxes.federal_tax, 0)}</span>
                             </div>
-                            <div style="display: flex; justify-content: space-between;">
+                            <div style="display: flex; gap: 8px; align-items: baseline;">
                                 <span>State Tax (${snapshot.settings.state}):</span>
                                 <span style="font-weight: 600;">${formatCurrency(snapshot.taxes.state_tax, 0)}</span>
                             </div>
                             ${snapshot.taxes.capital_gains_tax > 0 ? `
-                            <div style="display: flex; justify-content: space-between;">
+                            <div style="display: flex; gap: 8px; align-items: baseline;">
                                 <span>Capital Gains Tax:</span>
                                 <span style="font-weight: 600;">${formatCurrency(snapshot.taxes.capital_gains_tax, 0)}</span>
                             </div>
