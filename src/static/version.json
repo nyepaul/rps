@@ -1,5 +1,5 @@
 {
-    "version": "3.9.109",
+    "version": "3.9.110",
     "release_date": "2026-01-28",
-    "release_notes": "Fix full system backup to include all code/scripts/migrations, add incremental backup option, optimize compression, align backup card buttons, add flashing notification indicator for pending feedback/password requests in admin dashboard"
+    "release_notes": "Improve chart text readability - make labels darker and bolder for Asset Allocation, Annual Cash Flow, and Savings Rate charts"
 }
