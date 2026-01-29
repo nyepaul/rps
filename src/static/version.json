@@ -1,5 +1,5 @@
 {
-    "version": "3.9.128",
+    "version": "3.9.129",
     "release_date": "2026-01-29",
-    "release_notes": "Fix setup checker: running analysis now updates profile and marks task complete"
+    "release_notes": "Remove refresh button from header"
 }

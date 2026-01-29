@@ -43,9 +43,6 @@ async function init() {
     // Set up roadmap link
     setupRoadmapLink();
 
-    // Set up refresh button
-    setupRefreshButton();
-
     // Set up settings button
     setupSettings();
 
@@ -332,36 +329,6 @@ async function loadTabComponent(tabName, container) {
     // Replace container content
     container.innerHTML = '';
     container.appendChild(tabContent);
-}
-
-/**
- * Set up refresh button
- */
-function setupRefreshButton() {
-    const refreshBtn = document.getElementById('refresh-btn');
-    if (refreshBtn) {
-        refreshBtn.addEventListener('click', async () => {
-            const currentProfile = store.getState().currentProfile;
-            if (!currentProfile) return;
-
-            try {
-                refreshBtn.classList.add('spinning');
-                const { profilesAPI } = await import('./api/profiles.js');
-                const data = await profilesAPI.get(currentProfile.name);
-                store.setState({ currentProfile: data.profile });
-                
-                // Re-render current tab
-                const currentTab = store.getState().currentTab;
-                showTab(currentTab);
-                
-                console.log('✅ Data refreshed');
-            } catch (error) {
-                console.error('❌ Refresh failed:', error);
-            } finally {
-                refreshBtn.classList.remove('spinning');
-            }
-        });
-    }
 }
 
 /**
