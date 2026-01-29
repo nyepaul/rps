@@ -642,38 +642,53 @@ function setupDashboardHandlers(container, profiles) {
         });
     }
 
-    // Metric Card Click Handlers
-    const currentProfile = store.get('currentProfile');
-    if (currentProfile) {
-        const networthCard = container.querySelector('#metric-networth');
-        if (networthCard) {
-            networthCard.addEventListener('click', () => showNetWorthDetails(currentProfile));
-        }
+    // Metric Card Click Handlers - fetch fresh profile data on each click
+    const networthCard = container.querySelector('#metric-networth');
+    if (networthCard) {
+        networthCard.addEventListener('click', () => {
+            const currentProfile = store.get('currentProfile');
+            if (currentProfile) showNetWorthDetails(currentProfile);
+        });
+    }
 
-        const incomeCard = container.querySelector('#metric-income');
-        if (incomeCard) {
-            incomeCard.addEventListener('click', () => showIncomeDetails(currentProfile));
-        }
+    const incomeCard = container.querySelector('#metric-income');
+    if (incomeCard) {
+        incomeCard.addEventListener('click', () => {
+            const currentProfile = store.get('currentProfile');
+            if (currentProfile) showIncomeDetails(currentProfile);
+        });
+    }
 
-        const expensesCard = container.querySelector('#metric-expenses');
-        if (expensesCard) {
-            expensesCard.addEventListener('click', () => showExpensesDetails(currentProfile));
-        }
+    const expensesCard = container.querySelector('#metric-expenses');
+    if (expensesCard) {
+        expensesCard.addEventListener('click', () => {
+            const currentProfile = store.get('currentProfile');
+            if (currentProfile) showExpensesDetails(currentProfile);
+        });
+    }
 
-        const savingsCard = container.querySelector('#metric-savings-rate');
-        if (savingsCard) {
-            savingsCard.addEventListener('click', () => showSavingsRateDetails(currentProfile));
-        }
+    const savingsCard = container.querySelector('#metric-savings-rate');
+    if (savingsCard) {
+        savingsCard.addEventListener('click', () => {
+            const currentProfile = store.get('currentProfile');
+            if (currentProfile) showSavingsRateDetails(currentProfile);
+        });
+    }
 
-        const ageCard = container.querySelector('#metric-age');
-        if (ageCard) {
-            ageCard.addEventListener('click', () => showAgeDetails(currentProfile));
-        }
+    const ageCard = container.querySelector('#metric-age');
+    if (ageCard) {
+        ageCard.addEventListener('click', () => {
+            const currentProfile = store.get('currentProfile');
+            if (currentProfile) showAgeDetails(currentProfile);
+        });
+    }
 
-        const retirementCard = container.querySelector('#metric-retirement');
-        if (retirementCard) {
-            retirementCard.addEventListener('click', () => showRetirementDetails(currentProfile));
-        }
+    const retirementCard = container.querySelector('#metric-retirement');
+    if (retirementCard) {
+        retirementCard.addEventListener('click', () => {
+            const currentProfile = store.get('currentProfile');
+            if (currentProfile) showRetirementDetails(currentProfile);
+        });
     }
 }
 

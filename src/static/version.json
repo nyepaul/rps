@@ -1,5 +1,5 @@
 {
-    "version": "3.9.112",
+    "version": "3.9.113",
     "release_date": "2026-01-28",
-    "release_notes": "Add theme-aware chart text colors using CSS variables - adapts to light/dark/high-contrast themes"
+    "release_notes": "Fix metric card details to show current profile data instead of stale cached data"
 }
