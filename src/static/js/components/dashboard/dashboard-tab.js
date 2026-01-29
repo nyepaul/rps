@@ -9,8 +9,6 @@ import { formatCurrency, formatCompact } from '../../utils/formatters.js';
 import { showSuccess, showError, showSpinner, hideSpinner } from '../../utils/dom.js';
 import { STORAGE_KEYS } from '../../config.js';
 import { calculateNetWorth, calculateLiquidAssets, calculateRetirementAssets, calculateRealEstateEquity, calculateTotalDebts } from '../../utils/financial-calculations.js';
-import { checkSetupCompletion } from '../../utils/setup-checker.js';
-import { showSetupChecklist } from '../setup/setup-checklist.js';
 
 export async function renderDashboardTab(container) {
     const currentUser = store.get('currentUser');
@@ -341,31 +339,7 @@ function renderFinancialSummary(profile) {
         }
     }, 100);
 
-    // Check setup completion status
-    const setupStatus = checkSetupCompletion(profile);
-    const incompleteItems = setupStatus.checklist.filter(item => !item.completed);
-
     return `
-        ${!setupStatus.isComplete ? `
-        <!-- Setup Alert Banner -->
-        <div id="setup-alert-banner" style="background: linear-gradient(135deg, #fff3cd, #ffeaa7); border: 1px solid #ffc107; border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; transition: all 0.2s;" onclick="window.dashboardShowSetupChecklist && window.dashboardShowSetupChecklist()" onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow=''">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="font-size: 24px;">⚠️</div>
-                <div>
-                    <div style="font-weight: 600; color: #856404; font-size: 14px;">Profile Setup Incomplete</div>
-                    <div style="font-size: 12px; color: #856404; opacity: 0.85;">
-                        ${incompleteItems.length} item${incompleteItems.length !== 1 ? 's' : ''} remaining: ${incompleteItems.map(i => i.label.replace('Add your ', '').replace('Complete ', '').replace('Run ', '')).slice(0, 3).join(', ')}${incompleteItems.length > 3 ? '...' : ''}
-                    </div>
-                </div>
-            </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="background: #856404; color: white; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600;">
-                    Complete Setup →
-                </div>
-            </div>
-        </div>
-        ` : ''}
-
         <!-- Active Profile Financial Summary -->
         <div style="background: var(--bg-secondary); border-radius: 8px; padding: 16px; margin-bottom: 12px; border: 2px solid var(--accent-color); box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
             <!-- Header -->
@@ -588,9 +562,6 @@ function renderProfileCard(profile, currentProfile) {
  * Setup dashboard event handlers
  */
 function setupDashboardHandlers(container, profiles) {
-    // Register global function for setup alert banner click
-    window.dashboardShowSetupChecklist = showSetupChecklist;
-
     // Create Profile Button
     const createBtn = container.querySelector('#create-profile-btn');
     if (createBtn) {

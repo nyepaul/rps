@@ -405,12 +405,14 @@ export function updateSetupButton() {
     // Update button state
     if (status.isComplete) {
         setupBtn.classList.add('complete');
+        setupBtn.classList.remove('incomplete');
         const text = setupBtn.querySelector('.setup-text');
         if (text) {
             text.textContent = 'Setup Complete';
         }
     } else {
         setupBtn.classList.remove('complete');
+        setupBtn.classList.add('incomplete');
         const text = setupBtn.querySelector('.setup-text');
         if (text) {
             text.textContent = 'Complete Setup';
