@@ -86,176 +86,407 @@ def seed_demo_data():
 
         # 2. Define Profiles
         
-        # Data for Demo Junior
-        birth_year = 2000
-        birth_date = f"{birth_year}-05-15"
-        retire_year = birth_year + 65
-        retire_date = f"{retire_year}-05-15"
-        
+        # Current date for calculations
+        today = datetime.now().strftime("%Y-%m-%d")
+
+        # ============================================
+        # DEMO JUNIOR - Entry Level Developer, 26yo
+        # ============================================
         junior_data = {
-            "profile_name": "Junior Employee - Alex",
+            "profile_name": "Demo Junior",
             "person": {
                 "name": "Alex Junior",
-                "birth_date": birth_date,
-                "retirement_date": retire_date,
-                "life_expectancy": 95,
-                "current_age": datetime.now().year - birth_year,
-                "retirement_age": 65
+                "birth_date": "2000-05-15",
+                "retirement_date": "2065-05-15",
+                "life_expectancy": 95
             },
-            "spouse": {}, 
+            "spouse": {},
             "children": [],
-            "financial": {
-                "annual_income": 70000,
-                "annual_expenses": 48000, 
-                "liquid_assets": 12500,
-                "retirement_assets": 15000,
-                "social_security_benefit": 2200, 
-                "annual_ira_contribution": 6000
-            },
             "income_streams": [
-                {
-                    "name": "Salary (Junior Dev)",
-                    "type": "salary",
-                    "amount": 70000,
-                    "frequency": "annual",
-                    "start_date": datetime.now().strftime("%Y-%m-%d"),
-                    "end_date": retire_date,
-                    "inflation_adjusted": True,
-                    "growth_rate": 0.03
-                }
+                {"name": "Software Developer Salary", "amount": 5833, "source": "employment", "start_date": "2022-06-01", "end_date": None}
             ],
             "budget": {
-                "income": {
-                    "current": {
-                        "employment": { "primary_person": 70000, "spouse": 0 }
-                    }
-                },
                 "expenses": {
                     "current": {
-                        "housing": { "amount": 1800, "frequency": "monthly" },
-                        "utilities": { "amount": 200, "frequency": "monthly" },
-                        "food": { "amount": 600, "frequency": "monthly" },
-                        "transportation": { "amount": 400, "frequency": "monthly" },
-                        "entertainment": { "amount": 300, "frequency": "monthly" },
-                        "other": { "amount": 700, "frequency": "monthly" }
+                        "housing": [{"name": "Rent (1BR Apartment)", "amount": 1650, "frequency": "monthly"}],
+                        "utilities": [
+                            {"name": "Electric/Gas", "amount": 85, "frequency": "monthly"},
+                            {"name": "Internet", "amount": 65, "frequency": "monthly"},
+                            {"name": "Phone", "amount": 45, "frequency": "monthly"}
+                        ],
+                        "food": [
+                            {"name": "Groceries", "amount": 350, "frequency": "monthly"},
+                            {"name": "Dining Out", "amount": 200, "frequency": "monthly"}
+                        ],
+                        "transportation": [
+                            {"name": "Car Payment", "amount": 350, "frequency": "monthly"},
+                            {"name": "Gas", "amount": 120, "frequency": "monthly"},
+                            {"name": "Car Insurance", "amount": 95, "frequency": "monthly"}
+                        ],
+                        "insurance": [{"name": "Renters Insurance", "amount": 25, "frequency": "monthly"}],
+                        "entertainment": [
+                            {"name": "Streaming Services", "amount": 45, "frequency": "monthly"},
+                            {"name": "Gaming/Hobbies", "amount": 75, "frequency": "monthly"}
+                        ],
+                        "personal": [
+                            {"name": "Gym Membership", "amount": 40, "frequency": "monthly"},
+                            {"name": "Personal Care", "amount": 50, "frequency": "monthly"}
+                        ],
+                        "other": [{"name": "Miscellaneous", "amount": 150, "frequency": "monthly"}]
+                    },
+                    "future": {
+                        "housing": [{"name": "Rent (Adjusted)", "amount": 1200, "frequency": "monthly"}],
+                        "utilities": [{"name": "Utilities", "amount": 150, "frequency": "monthly"}],
+                        "food": [{"name": "Food", "amount": 400, "frequency": "monthly"}],
+                        "healthcare": [{"name": "Medicare + Supplement", "amount": 350, "frequency": "monthly"}],
+                        "entertainment": [{"name": "Entertainment", "amount": 200, "frequency": "monthly"}],
+                        "other": [{"name": "Other", "amount": 200, "frequency": "monthly"}]
                     }
                 }
             },
             "assets": {
                 "taxable_accounts": [
-                    { "name": "Checking Account", "type": "checking", "value": 2500, "cost_basis": 2500 },
-                    { "name": "Emergency Fund", "type": "savings", "value": 10000, "cost_basis": 10000 }
+                    {"name": "Checking Account", "type": "checking", "value": 3500, "cost_basis": 3500},
+                    {"name": "Emergency Fund (HYSA)", "type": "savings", "value": 8500, "cost_basis": 8500}
                 ],
                 "retirement_accounts": [
-                    { "name": "401k - Tech Corp", "type": "401k", "value": 15000, "cost_basis": 12000 },
-                    { "name": "Roth IRA", "type": "roth_ira", "value": 5000, "cost_basis": 4000 }
+                    {"name": "401k", "type": "401k", "value": 18000, "cost_basis": 15000},
+                    {"name": "Roth IRA", "type": "roth_ira", "value": 9500, "cost_basis": 8000}
                 ]
             },
-            "market_assumptions": { "stock_allocation": 0.90, "stock_return_mean": 0.10, "inflation_mean": 0.03 }
+            "liabilities": [
+                {"name": "Student Loans", "type": "student_loan", "balance": 28000, "interest_rate": 5.5, "monthly_payment": 300}
+            ],
+            "market_assumptions": {"stock_allocation": 0.90, "stock_return_mean": 0.10, "inflation_mean": 0.03}
+        }
+
+        # ============================================
+        # DEMO THOMPSON - Upper-Middle Class Family, Bay Area
+        # ============================================
+        thompson_data = {
+            "profile_name": "Demo Thompson",
+            "person": {
+                "name": "Tom Thompson",
+                "birth_date": "1979-06-15",
+                "retirement_date": "2044-06-15",
+                "life_expectancy": 90
+            },
+            "spouse": {
+                "name": "Tara Thompson",
+                "birth_date": "1981-08-20",
+                "retirement_date": "2046-08-20"
+            },
+            "children": [
+                {"name": "Tyler", "birth_date": "2008-03-12"},
+                {"name": "Taylor", "birth_date": "2010-09-25"}
+            ],
+            "income_streams": [
+                {"name": "Tom - Senior Engineer (FAANG)", "amount": 18500, "source": "employment", "start_date": "2015-01-15", "end_date": None},
+                {"name": "Tara - Product Manager", "amount": 13500, "source": "employment", "start_date": "2016-03-01", "end_date": None},
+                {"name": "RSU Vesting (Annual)", "amount": 2500, "source": "investment", "start_date": "2020-01-01", "end_date": None}
+            ],
+            "budget": {
+                "expenses": {
+                    "current": {
+                        "housing": [
+                            {"name": "Mortgage (SF Home)", "amount": 5200, "frequency": "monthly"},
+                            {"name": "Property Tax", "amount": 1450, "frequency": "monthly"},
+                            {"name": "Home Insurance", "amount": 280, "frequency": "monthly"},
+                            {"name": "HOA Fees", "amount": 350, "frequency": "monthly"}
+                        ],
+                        "utilities": [
+                            {"name": "PG&E", "amount": 250, "frequency": "monthly"},
+                            {"name": "Water/Garbage", "amount": 120, "frequency": "monthly"},
+                            {"name": "Internet/Cable", "amount": 180, "frequency": "monthly"},
+                            {"name": "Phone (Family Plan)", "amount": 200, "frequency": "monthly"}
+                        ],
+                        "food": [
+                            {"name": "Groceries (Whole Foods)", "amount": 1200, "frequency": "monthly"},
+                            {"name": "Dining Out", "amount": 600, "frequency": "monthly"}
+                        ],
+                        "transportation": [
+                            {"name": "Tesla Model Y Payment", "amount": 650, "frequency": "monthly"},
+                            {"name": "Toyota Sienna Payment", "amount": 450, "frequency": "monthly"},
+                            {"name": "Auto Insurance (2 cars)", "amount": 280, "frequency": "monthly"},
+                            {"name": "Gas/Charging", "amount": 200, "frequency": "monthly"}
+                        ],
+                        "insurance": [
+                            {"name": "Term Life Insurance", "amount": 150, "frequency": "monthly"},
+                            {"name": "Umbrella Policy", "amount": 50, "frequency": "monthly"}
+                        ],
+                        "healthcare": [
+                            {"name": "Health Insurance (Family)", "amount": 800, "frequency": "monthly"},
+                            {"name": "Out of Pocket Medical", "amount": 200, "frequency": "monthly"}
+                        ],
+                        "childcare": [
+                            {"name": "After-School Programs", "amount": 600, "frequency": "monthly"},
+                            {"name": "Summer Camps", "amount": 400, "frequency": "monthly"}
+                        ],
+                        "entertainment": [
+                            {"name": "Family Activities", "amount": 500, "frequency": "monthly"},
+                            {"name": "Streaming/Subscriptions", "amount": 100, "frequency": "monthly"},
+                            {"name": "Kids Sports/Activities", "amount": 400, "frequency": "monthly"}
+                        ],
+                        "travel": [{"name": "Family Vacations", "amount": 800, "frequency": "monthly"}],
+                        "education": [{"name": "Tutoring/Music Lessons", "amount": 400, "frequency": "monthly"}],
+                        "personal": [
+                            {"name": "Clothing (Family)", "amount": 300, "frequency": "monthly"},
+                            {"name": "Personal Care", "amount": 200, "frequency": "monthly"}
+                        ],
+                        "other": [
+                            {"name": "Gifts/Charity", "amount": 400, "frequency": "monthly"},
+                            {"name": "Miscellaneous", "amount": 300, "frequency": "monthly"}
+                        ]
+                    },
+                    "future": {
+                        "housing": [
+                            {"name": "Property Tax", "amount": 1800, "frequency": "monthly"},
+                            {"name": "Home Insurance", "amount": 350, "frequency": "monthly"},
+                            {"name": "Home Maintenance", "amount": 500, "frequency": "monthly"}
+                        ],
+                        "utilities": [{"name": "Utilities", "amount": 400, "frequency": "monthly"}],
+                        "food": [{"name": "Food", "amount": 1000, "frequency": "monthly"}],
+                        "healthcare": [{"name": "Healthcare", "amount": 1200, "frequency": "monthly"}],
+                        "transportation": [{"name": "Transportation", "amount": 400, "frequency": "monthly"}],
+                        "travel": [{"name": "Travel", "amount": 1500, "frequency": "monthly"}],
+                        "entertainment": [{"name": "Entertainment", "amount": 600, "frequency": "monthly"}],
+                        "other": [{"name": "Other", "amount": 500, "frequency": "monthly"}]
+                    }
+                }
+            },
+            "assets": {
+                "taxable_accounts": [
+                    {"name": "Joint Checking", "type": "checking", "value": 25000, "cost_basis": 25000},
+                    {"name": "Joint Savings (HYSA)", "type": "savings", "value": 85000, "cost_basis": 85000},
+                    {"name": "Vanguard Brokerage", "type": "brokerage", "value": 320000, "cost_basis": 180000},
+                    {"name": "Company Stock (FAANG)", "type": "stock", "value": 450000, "cost_basis": 150000}
+                ],
+                "retirement_accounts": [
+                    {"name": "Tom 401k", "type": "401k", "value": 680000, "cost_basis": 450000},
+                    {"name": "Tara 401k", "type": "401k", "value": 420000, "cost_basis": 300000},
+                    {"name": "Tom Roth IRA", "type": "roth_ira", "value": 95000, "cost_basis": 70000},
+                    {"name": "Tara Roth IRA", "type": "roth_ira", "value": 85000, "cost_basis": 65000}
+                ],
+                "real_estate": [
+                    {"name": "Primary Home (San Francisco)", "value": 1850000, "mortgage": 620000, "monthly_payment": 5200, "interest_rate": 3.25}
+                ],
+                "education_accounts": [
+                    {"name": "Tyler 529", "type": "529", "value": 125000, "cost_basis": 90000},
+                    {"name": "Taylor 529", "type": "529", "value": 95000, "cost_basis": 75000}
+                ]
+            },
+            "college_expenses": [
+                {"child_name": "Tyler", "start_year": 2026, "end_year": 2030, "annual_cost": 75000, "enabled": True},
+                {"child_name": "Taylor", "start_year": 2028, "end_year": 2032, "annual_cost": 75000, "enabled": True}
+            ],
+            "market_assumptions": {"stock_allocation": 0.70, "stock_return_mean": 0.08, "inflation_mean": 0.03}
+        }
+
+        # ============================================
+        # DEMO STARMAN - Middle Class Family, Austin TX
+        # ============================================
+        starman_data = {
+            "profile_name": "Demo Starman",
+            "person": {
+                "name": "Steve Starman",
+                "birth_date": "1984-03-10",
+                "retirement_date": "2049-03-10",
+                "life_expectancy": 92
+            },
+            "spouse": {
+                "name": "Sarah Starman",
+                "birth_date": "1986-07-22",
+                "retirement_date": "2051-07-22"
+            },
+            "children": [
+                {"name": "Sophie", "birth_date": "2012-04-15"},
+                {"name": "Sam", "birth_date": "2015-11-08"},
+                {"name": "Stella Jr", "birth_date": "2019-02-28"}
+            ],
+            "income_streams": [
+                {"name": "Steve - IT Manager", "amount": 9200, "source": "employment", "start_date": "2018-06-01", "end_date": None},
+                {"name": "Sarah - Nurse (Part-Time)", "amount": 4500, "source": "employment", "start_date": "2020-01-15", "end_date": None}
+            ],
+            "budget": {
+                "expenses": {
+                    "current": {
+                        "housing": [
+                            {"name": "Mortgage", "amount": 2400, "frequency": "monthly"},
+                            {"name": "Property Tax", "amount": 750, "frequency": "monthly"},
+                            {"name": "Home Insurance", "amount": 180, "frequency": "monthly"}
+                        ],
+                        "utilities": [
+                            {"name": "Electric (TX Heat!)", "amount": 220, "frequency": "monthly"},
+                            {"name": "Water/Sewer", "amount": 80, "frequency": "monthly"},
+                            {"name": "Internet", "amount": 70, "frequency": "monthly"},
+                            {"name": "Phone (Family)", "amount": 160, "frequency": "monthly"}
+                        ],
+                        "food": [
+                            {"name": "Groceries", "amount": 900, "frequency": "monthly"},
+                            {"name": "Dining Out", "amount": 300, "frequency": "monthly"}
+                        ],
+                        "transportation": [
+                            {"name": "Honda Pilot Payment", "amount": 480, "frequency": "monthly"},
+                            {"name": "Toyota Camry Payment", "amount": 320, "frequency": "monthly"},
+                            {"name": "Auto Insurance", "amount": 200, "frequency": "monthly"},
+                            {"name": "Gas", "amount": 280, "frequency": "monthly"}
+                        ],
+                        "insurance": [{"name": "Term Life", "amount": 80, "frequency": "monthly"}],
+                        "healthcare": [
+                            {"name": "Health Insurance", "amount": 450, "frequency": "monthly"},
+                            {"name": "Medical/Dental", "amount": 150, "frequency": "monthly"}
+                        ],
+                        "childcare": [{"name": "Daycare (Stella Jr)", "amount": 1100, "frequency": "monthly"}],
+                        "entertainment": [
+                            {"name": "Family Activities", "amount": 250, "frequency": "monthly"},
+                            {"name": "Streaming/Games", "amount": 60, "frequency": "monthly"},
+                            {"name": "Kids Activities", "amount": 200, "frequency": "monthly"}
+                        ],
+                        "education": [{"name": "School Supplies/Activities", "amount": 100, "frequency": "monthly"}],
+                        "personal": [
+                            {"name": "Clothing", "amount": 200, "frequency": "monthly"},
+                            {"name": "Personal Care", "amount": 100, "frequency": "monthly"}
+                        ],
+                        "other": [
+                            {"name": "Pets", "amount": 100, "frequency": "monthly"},
+                            {"name": "Gifts", "amount": 150, "frequency": "monthly"},
+                            {"name": "Miscellaneous", "amount": 200, "frequency": "monthly"}
+                        ]
+                    },
+                    "future": {
+                        "housing": [
+                            {"name": "Property Tax", "amount": 900, "frequency": "monthly"},
+                            {"name": "Insurance/Maintenance", "amount": 400, "frequency": "monthly"}
+                        ],
+                        "utilities": [{"name": "Utilities", "amount": 300, "frequency": "monthly"}],
+                        "food": [{"name": "Food", "amount": 800, "frequency": "monthly"}],
+                        "healthcare": [{"name": "Healthcare", "amount": 800, "frequency": "monthly"}],
+                        "transportation": [{"name": "Transportation", "amount": 300, "frequency": "monthly"}],
+                        "travel": [{"name": "Travel", "amount": 600, "frequency": "monthly"}],
+                        "entertainment": [{"name": "Entertainment", "amount": 400, "frequency": "monthly"}],
+                        "other": [{"name": "Other", "amount": 300, "frequency": "monthly"}]
+                    }
+                }
+            },
+            "assets": {
+                "taxable_accounts": [
+                    {"name": "Joint Checking", "type": "checking", "value": 8500, "cost_basis": 8500},
+                    {"name": "Emergency Fund", "type": "savings", "value": 32000, "cost_basis": 32000},
+                    {"name": "Brokerage Account", "type": "brokerage", "value": 45000, "cost_basis": 35000}
+                ],
+                "retirement_accounts": [
+                    {"name": "Steve 401k", "type": "401k", "value": 285000, "cost_basis": 200000},
+                    {"name": "Sarah 403b", "type": "403b", "value": 125000, "cost_basis": 95000},
+                    {"name": "Steve Roth IRA", "type": "roth_ira", "value": 48000, "cost_basis": 40000},
+                    {"name": "Sarah Roth IRA", "type": "roth_ira", "value": 32000, "cost_basis": 28000}
+                ],
+                "real_estate": [
+                    {"name": "Primary Home (Austin)", "value": 485000, "mortgage": 320000, "monthly_payment": 2400, "interest_rate": 4.5}
+                ],
+                "education_accounts": [
+                    {"name": "Sophie 529", "type": "529", "value": 28000, "cost_basis": 22000},
+                    {"name": "Sam 529", "type": "529", "value": 18000, "cost_basis": 15000},
+                    {"name": "Stella Jr 529", "type": "529", "value": 8000, "cost_basis": 7000}
+                ]
+            },
+            "college_expenses": [
+                {"child_name": "Sophie", "start_year": 2030, "end_year": 2034, "annual_cost": 45000, "enabled": True},
+                {"child_name": "Sam", "start_year": 2033, "end_year": 2037, "annual_cost": 45000, "enabled": True},
+                {"child_name": "Stella Jr", "start_year": 2037, "end_year": 2041, "annual_cost": 45000, "enabled": True}
+            ],
+            "market_assumptions": {"stock_allocation": 0.75, "stock_return_mean": 0.08, "inflation_mean": 0.03}
+        }
+
+        # ============================================
+        # DEMO DUDEMAN - Blue Collar, IBEW Electrician
+        # ============================================
+        dudeman_data = {
+            "profile_name": "Demo Dudeman",
+            "person": {
+                "name": "Dan Dudeman",
+                "birth_date": "1974-11-05",
+                "retirement_date": "2036-11-05",
+                "life_expectancy": 85
+            },
+            "spouse": {},
+            "children": [],
+            "income_streams": [
+                {"name": "IBEW Electrician", "amount": 6100, "source": "employment", "start_date": "2005-03-15", "end_date": None}
+            ],
+            "budget": {
+                "expenses": {
+                    "current": {
+                        "housing": [
+                            {"name": "Property Tax", "amount": 350, "frequency": "monthly"},
+                            {"name": "Home Insurance", "amount": 120, "frequency": "monthly"},
+                            {"name": "Maintenance", "amount": 200, "frequency": "monthly"}
+                        ],
+                        "utilities": [
+                            {"name": "Electric/Gas", "amount": 180, "frequency": "monthly"},
+                            {"name": "Water/Sewer", "amount": 60, "frequency": "monthly"},
+                            {"name": "Internet", "amount": 55, "frequency": "monthly"},
+                            {"name": "Phone", "amount": 50, "frequency": "monthly"}
+                        ],
+                        "food": [
+                            {"name": "Groceries", "amount": 400, "frequency": "monthly"},
+                            {"name": "Dining/Beer", "amount": 200, "frequency": "monthly"}
+                        ],
+                        "transportation": [
+                            {"name": "Truck Payment", "amount": 450, "frequency": "monthly"},
+                            {"name": "Gas", "amount": 250, "frequency": "monthly"},
+                            {"name": "Insurance", "amount": 110, "frequency": "monthly"}
+                        ],
+                        "insurance": [{"name": "Union Health Plan", "amount": 180, "frequency": "monthly"}],
+                        "entertainment": [
+                            {"name": "Bowling League", "amount": 60, "frequency": "monthly"},
+                            {"name": "Streaming", "amount": 30, "frequency": "monthly"},
+                            {"name": "Fishing/Hunting", "amount": 100, "frequency": "monthly"}
+                        ],
+                        "personal": [
+                            {"name": "Clothing/Work Gear", "amount": 75, "frequency": "monthly"},
+                            {"name": "Personal", "amount": 50, "frequency": "monthly"}
+                        ],
+                        "other": [
+                            {"name": "Union Dues", "amount": 85, "frequency": "monthly"},
+                            {"name": "Miscellaneous", "amount": 150, "frequency": "monthly"}
+                        ]
+                    },
+                    "future": {
+                        "housing": [
+                            {"name": "Property Tax", "amount": 400, "frequency": "monthly"},
+                            {"name": "Insurance/Maintenance", "amount": 350, "frequency": "monthly"}
+                        ],
+                        "utilities": [{"name": "Utilities", "amount": 250, "frequency": "monthly"}],
+                        "food": [{"name": "Food", "amount": 500, "frequency": "monthly"}],
+                        "healthcare": [{"name": "Medicare + Supplement", "amount": 400, "frequency": "monthly"}],
+                        "transportation": [{"name": "Transportation", "amount": 250, "frequency": "monthly"}],
+                        "entertainment": [{"name": "Entertainment/Hobbies", "amount": 300, "frequency": "monthly"}],
+                        "other": [{"name": "Other", "amount": 200, "frequency": "monthly"}]
+                    }
+                }
+            },
+            "assets": {
+                "taxable_accounts": [
+                    {"name": "Checking", "type": "checking", "value": 4500, "cost_basis": 4500},
+                    {"name": "Savings", "type": "savings", "value": 18000, "cost_basis": 18000}
+                ],
+                "retirement_accounts": [
+                    {"name": "IBEW Pension", "type": "pension", "value": 0, "monthly_benefit": 3200, "start_age": 62},
+                    {"name": "401k (Electrical)", "type": "401k", "value": 125000, "cost_basis": 90000},
+                    {"name": "Traditional IRA", "type": "traditional_ira", "value": 45000, "cost_basis": 40000}
+                ],
+                "real_estate": [
+                    {"name": "House (Columbus, OH)", "value": 245000, "mortgage": 0}
+                ]
+            },
+            "market_assumptions": {"stock_allocation": 0.50, "stock_return_mean": 0.07, "inflation_mean": 0.03}
         }
 
         profiles = [
-            {
-                "name": "Demo Junior",
-                "data": junior_data
-            },
-            {
-                "name": "Demo Thompson",
-                "data": {
-                    "profile_name": "Demo Thompson",
-                    "person": {
-                        "name": "Tom Thompson",
-                        "birth_date": "1980-06-15",
-                        "retirement_date": "2045-06-15",
-                        "life_expectancy": 90,
-                        "current_age": 45,
-                        "retirement_age": 65
-                    },
-                    "spouse": {
-                        "name": "Tara Thompson",
-                        "birth_date": "1982-08-20",
-                        "retirement_date": "2047-08-20"
-                    },
-                    "children": [{"name": "Timmy", "age": 10}, {"name": "Tammy", "age": 8}],
-                    "financial": {
-                        "annual_income": 150000,
-                        "annual_expenses": 100000,
-                        "liquid_assets": 50000,
-                        "retirement_assets": 400000,
-                        "social_security_benefit": 3500,
-                        "annual_ira_contribution": 12000
-                    },
-                    "assets": {
-                        "taxable_accounts": [{"name": "Joint Brokerage", "value": 50000, "type": "brokerage"}],
-                        "retirement_accounts": [
-                            {"name": "Tom 401k", "value": 250000, "type": "401k"},
-                            {"name": "Tara 401k", "value": 150000, "type": "401k"}
-                        ],
-                        "real_estate": [{"name": "Primary Home", "value": 600000, "mortgage": 350000}]
-                    },
-                    "market_assumptions": {"stock_allocation": 0.70, "stock_return_mean": 0.08, "inflation_mean": 0.03}
-                }
-            },
-            {
-                "name": "Demo Starman",
-                "data": {
-                    "profile_name": "Demo Starman",
-                    "person": {
-                        "name": "Stella Starman",
-                        "birth_date": "1990-03-10",
-                        "retirement_date": "2040-03-10",
-                        "life_expectancy": 95,
-                        "current_age": 35,
-                        "retirement_age": 50
-                    },
-                    "spouse": {},
-                    "children": [],
-                    "financial": {
-                        "annual_income": 200000,
-                        "annual_expenses": 60000,
-                        "liquid_assets": 150000,
-                        "retirement_assets": 300000,
-                        "social_security_benefit": 2800,
-                        "annual_ira_contribution": 7000
-                    },
-                    "assets": {
-                        "taxable_accounts": [{"name": "High Yield Savings", "value": 50000, "type": "savings"}, {"name": "Vanguard Index", "value": 100000, "type": "brokerage"}],
-                        "retirement_accounts": [{"name": "Tech 401k", "value": 300000, "type": "401k"}],
-                        "real_estate": []
-                    },
-                    "market_assumptions": {"stock_allocation": 0.90, "stock_return_mean": 0.09, "inflation_mean": 0.03}
-                }
-            },
-            {
-                "name": "Demo Dudeman",
-                "data": {
-                    "profile_name": "Demo Dudeman",
-                    "person": {
-                        "name": "The Dude",
-                        "birth_date": "1975-11-05",
-                        "retirement_date": "2035-11-05",
-                        "life_expectancy": 85,
-                        "current_age": 50,
-                        "retirement_age": 60
-                    },
-                    "spouse": {},
-                    "children": [],
-                    "financial": {
-                        "annual_income": 60000,
-                        "annual_expenses": 30000,
-                        "liquid_assets": 20000,
-                        "retirement_assets": 150000,
-                        "social_security_benefit": 1800,
-                        "annual_ira_contribution": 0
-                    },
-                    "assets": {
-                        "taxable_accounts": [{"name": "Checking", "value": 5000, "type": "checking"}, {"name": "CDs", "value": 15000, "type": "cd"}],
-                        "retirement_accounts": [{"name": "Old IRA", "value": 150000, "type": "traditional_ira"}],
-                        "real_estate": [{"name": "Bungalow", "value": 250000, "mortgage": 0}]
-                    },
-                    "market_assumptions": {"stock_allocation": 0.50, "stock_return_mean": 0.07, "inflation_mean": 0.03}
-                }
-            }
+            {"name": "Demo Junior", "data": junior_data},
+            {"name": "Demo Thompson", "data": thompson_data},
+            {"name": "Demo Starman", "data": starman_data},
+            {"name": "Demo Dudeman", "data": dudeman_data}
         ]
 
         # 3. Wipe and Recreate Profiles

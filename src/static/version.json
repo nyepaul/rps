@@ -1,5 +1,5 @@
 {
-    "version": "3.9.133",
+    "version": "3.9.134",
     "release_date": "2026-01-29",
-    "release_notes": "Fix tax tab double spinner: use coordinated showLoading"
+    "release_notes": "Add comprehensive demo data with realistic cashflow for all profiles"
 }
