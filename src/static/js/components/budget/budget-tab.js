@@ -822,9 +822,12 @@ function isExpenseActive(expense, checkDate) {
  * Convert amount to annual
  */
 function annualAmount(amount, frequency) {
-    if (frequency === 'monthly') return amount * 12;
-    if (frequency === 'quarterly') return amount * 4;
-    return amount;
+    if (frequency === 'monthly' || frequency === 'm') return amount * 12;
+    if (frequency === 'quarterly' || frequency === 'q') return amount * 4;
+    if (frequency === 'weekly' || frequency === 'w') return amount * 52;
+    if (frequency === 'semi-annual' || frequency === 's') return amount * 2;
+    if (frequency === 'annual' || frequency === 'a') return amount;
+    return amount; // Default to annual
 }
 
 /**

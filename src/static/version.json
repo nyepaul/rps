@@ -1,5 +1,5 @@
 {
-    "version": "3.9.116",
+    "version": "3.9.117",
     "release_date": "2026-01-28",
-    "release_notes": "Fix expense summary totals not updating after save - refresh PRE/POST-RETIREMENT totals"
+    "release_notes": "Fix expense frequency calculations - add weekly, semi-annual, and annual support"
 }
