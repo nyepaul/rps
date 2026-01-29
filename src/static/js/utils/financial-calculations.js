@@ -17,7 +17,8 @@ export function calculateNetWorth(assets) {
     const retirementAssets = sumAssets(assets.retirement_accounts);
     const taxableAssets = sumAssets(assets.taxable_accounts);
     const realEstateAssets = sumAssets(assets.real_estate);
-    const otherAssets = sumAssets(assets.other_assets);
+    const educationAssets = sumAssets(assets.education_accounts);
+    const otherAssets = sumAssets(assets.other_assets) + educationAssets;
     const totalAssets = retirementAssets + taxableAssets + realEstateAssets + otherAssets;
 
     // Calculate total debts (mortgage balances + other liabilities)
@@ -142,6 +143,7 @@ export function calculateAllocation(assets) {
 
     processCategory(assets.retirement_accounts);
     processCategory(assets.taxable_accounts);
+    processCategory(assets.education_accounts);
     processCategory(assets.other_assets);
 
     if (totalVal === 0) return { stocks: 0.6, bonds: 0.4, cash: 0 };

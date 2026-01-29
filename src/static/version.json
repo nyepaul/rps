@@ -1,5 +1,5 @@
 {
-    "version": "3.9.135",
+    "version": "3.9.136",
     "release_date": "2026-01-29",
-    "release_notes": "Add more detailed income/expense records to demo profiles"
+    "release_notes": "Include education accounts (529s) in Other Assets calculation"
 }
