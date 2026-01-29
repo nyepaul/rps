@@ -86,7 +86,10 @@ function renderTaxAnalysis(container, analysis, profile) {
 
             <!-- Tax Snapshot -->
             <div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--border-color);">
-                <h2 style="font-size: 15px; margin: 0 0 10px 0; font-weight: 700; color: var(--accent-color);">📊 Current Tax Snapshot</h2>
+                <h2 style="font-size: 15px; margin: 0 0 10px 0; font-weight: 700; color: var(--accent-color); display: flex; align-items: center; gap: 8px;">
+                    📊 Current Tax Snapshot
+                    <span id="tax-snapshot-info" style="cursor: pointer; font-size: 14px; opacity: 0.7; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'" title="Click for explanation">ℹ️</span>
+                </h2>
 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 12px;">
                     <div style="background: var(--bg-primary); padding: 10px; border-radius: 6px;">
@@ -241,4 +244,87 @@ function renderTaxAnalysis(container, analysis, profile) {
             </div>
         </div>
     `;
+
+    // Add event listener for tax snapshot info
+    const infoIcon = container.querySelector('#tax-snapshot-info');
+    if (infoIcon) {
+        infoIcon.addEventListener('click', () => {
+            showTaxSnapshotExplanation();
+        });
+    }
+}
+
+/**
+ * Show explanation modal for Current Tax Snapshot
+ */
+function showTaxSnapshotExplanation() {
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 20px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 24px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; border: 2px solid var(--accent-color);">
+                <h2 style="margin: 0 0 16px 0; color: var(--accent-color); display: flex; align-items: center; gap: 8px;">
+                    📊 Understanding Your Tax Snapshot
+                </h2>
+
+                <div style="color: var(--text-primary); line-height: 1.6;">
+                    <p style="margin: 0 0 16px 0;">
+                        The <strong>Current Tax Snapshot</strong> shows your estimated federal tax situation based on your current profile data, including income, deductions, and filing status.
+                    </p>
+
+                    <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                        <h3 style="margin: 0 0 12px 0; font-size: 14px; color: var(--accent-color);">Key Metrics Explained:</h3>
+
+                        <div style="margin-bottom: 12px;">
+                            <strong style="color: var(--danger-color);">Total Tax</strong><br>
+                            <span style="font-size: 13px; color: var(--text-secondary);">The total federal income tax you'll owe for the current tax year. This includes income tax on wages, investment income, and other taxable sources.</span>
+                        </div>
+
+                        <div style="margin-bottom: 12px;">
+                            <strong style="color: var(--success-color);">Effective Rate</strong><br>
+                            <span style="font-size: 13px; color: var(--text-secondary);">Your actual tax rate - calculated as (Total Tax ÷ Total Income). This shows what percentage of your total income goes to federal taxes.</span>
+                        </div>
+
+                        <div style="margin-bottom: 12px;">
+                            <strong style="color: var(--warning-color);">Marginal Rate</strong><br>
+                            <span style="font-size: 13px; color: var(--text-secondary);">The tax rate on your next dollar of income. This is your current tax bracket and tells you how much tax you'd pay on additional income.</span>
+                        </div>
+
+                        <div>
+                            <strong style="color: var(--info-color);">Taxable Income</strong><br>
+                            <span style="font-size: 13px; color: var(--text-secondary);">Your income after subtracting the standard deduction or itemized deductions. This is the amount used to calculate your actual tax.</span>
+                        </div>
+                    </div>
+
+                    <div style="background: var(--info-bg); padding: 12px; border-radius: 6px; margin-bottom: 16px; border-left: 3px solid var(--info-color);">
+                        <strong>💡 Why This Matters:</strong><br>
+                        <span style="font-size: 13px;">Understanding these metrics helps you make smart financial decisions, optimize Roth conversions, plan withdrawals strategically, and minimize your lifetime tax burden.</span>
+                    </div>
+
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-color);">
+                        <strong>Note:</strong> These calculations are estimates based on 2024 federal tax brackets. For precise tax advice, consult a tax professional.
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px; text-align: right;">
+                    <button id="close-tax-explanation" style="padding: 10px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
+                        Got It
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Close on button click
+    modal.querySelector('#close-tax-explanation').addEventListener('click', () => {
+        modal.remove();
+    });
+
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
 }
