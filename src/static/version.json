@@ -1,5 +1,5 @@
 {
-    "version": "3.9.107",
+    "version": "3.9.108",
     "release_date": "2026-01-28",
-    "release_notes": "Fix backup scripts to read version from version.json instead of grepping __version__.py"
+    "release_notes": "Add database tables and scripts count to backup metadata"
 }

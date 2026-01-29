@@ -114,6 +114,7 @@ Hostname: $(hostname)
 User: $(whoami)
 RPS Version: $(python3 -c "import json; print(json.load(open('${PROJECT_ROOT}/src/static/version.json'))['version'])" 2>/dev/null || echo "unknown")
 Configuration Files: $(find "${TEMP_DIR}/config" -type f | wc -l)
+Database Tables: N/A (system backup only)
 Scripts: $(find "${TEMP_DIR}/bin" -type f | wc -l)
 EOF
 

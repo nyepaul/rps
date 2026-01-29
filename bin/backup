@@ -202,6 +202,8 @@ User: $(whoami)
 RPS Version: $(python3 -c "import json; print(json.load(open('${PROJECT_ROOT}/src/static/version.json'))['version'])" 2>/dev/null || echo "unknown")
 Backup Script: $0
 Database Size: $(du -h "${TEMP_DIR}/data/planning.db" 2>/dev/null | cut -f1 || echo "N/A")
+Database Tables: $(sqlite3 "${TEMP_DIR}/data/planning.db" "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';" 2>/dev/null || echo "N/A")
+Scripts: $(find "${PROJECT_ROOT}/bin" -type f -executable 2>/dev/null | wc -l || echo "N/A")
 Total Backup Size: $(du -sh "${TEMP_DIR}" | cut -f1)
 EOF
 
