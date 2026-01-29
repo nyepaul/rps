@@ -78,9 +78,29 @@ mypy src/               # Type checking
 ```
 
 ### Backup and Restore
+
+**Two backup types available:**
+
+1. **Full System Backup** (complete application - 76M compressed)
+   ```bash
+   ./bin/backup                    # Run full system backup
+   ./bin/backup --keep 14          # Keep last 14 full backups (default)
+   ```
+   - Includes: source code, scripts, migrations, tests, docs, database, configs
+   - Use for: system restores, deployments, archival
+   - Frequency: weekly or before major changes
+
+2. **Incremental Backup** (data only - 2.6M compressed)
+   ```bash
+   ./bin/backup-incremental        # Run incremental backup
+   ./bin/backup-incremental --keep 30  # Keep last 30 incremental backups (default)
+   ```
+   - Includes: database, configs, recent logs only
+   - Use for: daily/hourly data protection (29× smaller!)
+   - Frequency: automated daily backups
+
+**Restore:**
 ```bash
-./bin/backup                    # Run manual backup
-./bin/backup --keep 30          # Keep last 30 backups
 ./bin/restore --list            # List available backups
 ./bin/restore --latest          # Restore latest backup
 ./bin/setup-backup-timer        # Install automated daily backups
@@ -90,6 +110,8 @@ mypy src/               # Type checking
 - System backups: Admin → Backups → System Backups tab
 - Selective profile/group backups: Admin → Backups → Selective Backup tab
 - Stored in `backups/selective/` as JSON files
+
+**All backups use optimal gzip -9 compression for maximum space efficiency.**
 
 See [docs/BACKUP_GUIDE.md](docs/BACKUP_GUIDE.md) for comprehensive backup documentation.
 

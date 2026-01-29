@@ -4,6 +4,7 @@
 
 import { store } from '../../state/store.js';
 import { showError } from '../../utils/dom.js';
+import { apiClient } from '../../api/client.js';
 import { renderLogsViewer, prefetchLogs } from './logs-viewer.js';
 import { renderUserTimeline } from './user-timeline.js';
 import { renderConfigEditor } from './config-editor.js';
@@ -41,11 +42,37 @@ export async function renderAdminTab(container) {
     container.innerHTML = `
         <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-2) var(--space-3);">
             <!-- Header -->
-            <div style="margin-bottom: var(--space-3);">
+            <div style="margin-bottom: var(--space-3); position: relative;">
                 <h1 style="font-size: var(--font-2xl); margin: 0;">⚙️ Admin Dashboard</h1>
                 <p style="color: var(--text-secondary); margin: 0; font-size: 13px;">
                     System administration and audit logs
                 </p>
+
+                <!-- Notification Indicator -->
+                <div id="admin-notification-indicator" style="position: absolute; top: 0; right: 0; display: none;">
+                    <style>
+                        @keyframes pulse-glow {
+                            0%, 100% {
+                                opacity: 1;
+                                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+                            }
+                            50% {
+                                opacity: 0.8;
+                                box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+                            }
+                        }
+                        .notification-pulse {
+                            animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+                        }
+                    </style>
+                    <div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);" class="notification-pulse">
+                        <span style="font-size: 16px;">🔔</span>
+                        <div id="notification-text" style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.3;">
+                            <span id="notification-count" style="font-size: 14px;"></span>
+                            <span id="notification-details" style="font-size: 10px; opacity: 0.9;"></span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Admin Sub-Tabs -->
@@ -125,6 +152,12 @@ export async function renderAdminTab(container) {
 
     // Prefetch logs in background
     prefetchLogs();
+
+    // Load notification counts
+    loadNotificationCounts(container);
+
+    // Refresh notification counts every 30 seconds
+    setInterval(() => loadNotificationCounts(container), 30000);
 }
 
 /**
@@ -290,5 +323,55 @@ async function showSubTab(container, subtab) {
                 <div style="color: var(--text-secondary); margin-top: 10px;">${error.message}</div>
             </div>
         `;
+    }
+}
+
+/**
+ * Load and display notification counts for pending items
+ */
+async function loadNotificationCounts(container) {
+    try {
+        const indicator = container.querySelector('#admin-notification-indicator');
+        if (!indicator) return;
+
+        // Fetch pending counts
+        const [feedbackData, passwordData] = await Promise.all([
+            apiClient.get('/api/feedback').catch(() => ({ feedback: [] })),
+            apiClient.get('/api/admin/password-requests').catch(() => ({ requests: [] }))
+        ]);
+
+        const pendingFeedback = feedbackData.feedback?.filter(f => f.status === 'new').length || 0;
+        const pendingPasswords = passwordData.requests?.filter(r => r.status === 'pending').length || 0;
+        const totalPending = pendingFeedback + pendingPasswords;
+
+        if (totalPending > 0) {
+            // Show and update indicator
+            indicator.style.display = 'block';
+
+            const countEl = indicator.querySelector('#notification-count');
+            const detailsEl = indicator.querySelector('#notification-details');
+            const notificationBox = indicator.querySelector('.notification-pulse');
+
+            countEl.textContent = `${totalPending} Pending`;
+
+            const details = [];
+            if (pendingFeedback > 0) details.push(`${pendingFeedback} feedback`);
+            if (pendingPasswords > 0) details.push(`${pendingPasswords} pwd req`);
+            detailsEl.textContent = details.join(' • ');
+
+            // Add click handler to navigate to relevant section
+            notificationBox.style.cursor = 'pointer';
+            notificationBox.onclick = () => {
+                // Navigate to feedback if there's pending feedback, otherwise password requests
+                const targetTab = pendingFeedback > 0 ? 'feedback' : 'password_requests';
+                showSubTab(container, targetTab);
+            };
+        } else {
+            // Hide indicator
+            indicator.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error loading notification counts:', error);
+        // Silently fail - don't show error to user for background polling
     }
 }

@@ -1,24 +1,16 @@
 #!/bin/bash
 ###############################################################################
-# RPS Backup Script
+# RPS Incremental Backup Script
 #
-# Comprehensive backup solution for the Retirement Planning System
-#
-# Features:
-#   - Compressed backups with timestamps
-#   - Automatic rotation (keeps last N backups)
-#   - Database integrity verification
-#   - Optional off-site sync
-#   - Logging and notifications
+# Lightweight backup for data-only changes (database, configs, logs).
+# Use for frequent automated backups between full system backups.
 #
 # Usage:
-#   ./bin/backup                    # Run backup with default settings
-#   ./bin/backup --keep 30          # Keep last 30 backups
-#   ./bin/backup --remote user@host:/path  # Sync to remote
-#   ./bin/backup --verify           # Verify backup integrity
+#   ./bin/backup-incremental              # Quick data backup
+#   ./bin/backup-incremental --keep 30    # Keep last 30 backups
 #
 # Author: pan
-# Date: 2026-01-20
+# Date: 2026-01-28
 ###############################################################################
 
 set -euo pipefail
@@ -26,18 +18,16 @@ set -euo pipefail
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-BACKUP_DIR="${PROJECT_ROOT}/backups"
+BACKUP_DIR="${PROJECT_ROOT}/backups/incremental"
 LOG_DIR="${PROJECT_ROOT}/logs"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-BACKUP_NAME="rps_backup_${TIMESTAMP}"
+BACKUP_NAME="rps_incremental_${TIMESTAMP}"
 TEMP_DIR="/tmp/${BACKUP_NAME}"
 
 # Default settings
-KEEP_BACKUPS=14  # Keep last 14 days by default
-REMOTE_SYNC=""
+KEEP_BACKUPS=30  # Keep last 30 incremental backups by default
 VERIFY_BACKUP=true
 VERBOSE=false
-COMPRESS=true
 
 # Colors for output
 RED='\033[0;31m'
@@ -53,14 +43,6 @@ while [[ $# -gt 0 ]]; do
             KEEP_BACKUPS="$2"
             shift 2
             ;;
-        --remote)
-            REMOTE_SYNC="$2"
-            shift 2
-            ;;
-        --verify)
-            VERIFY_BACKUP=true
-            shift
-            ;;
         --no-verify)
             VERIFY_BACKUP=false
             shift
@@ -72,10 +54,10 @@ while [[ $# -gt 0 ]]; do
         --help|-h)
             echo "Usage: $0 [options]"
             echo ""
+            echo "Incremental backup - backs up data only (database, configs, logs)"
+            echo ""
             echo "Options:"
-            echo "  --keep N          Keep last N backups (default: 14)"
-            echo "  --remote DEST     Sync to remote destination (rsync format)"
-            echo "  --verify          Verify backup integrity (default)"
+            echo "  --keep N          Keep last N backups (default: 30)"
             echo "  --no-verify       Skip backup verification"
             echo "  --verbose, -v     Verbose output"
             echo "  --help, -h        Show this help"
@@ -137,9 +119,9 @@ trap 'error_exit "Backup failed at line $LINENO"' ERR
 
 # Main backup function
 main() {
-    log INFO "Starting RPS backup: ${BACKUP_NAME}"
+    log INFO "Starting RPS incremental backup: ${BACKUP_NAME}"
 
-    # Create backup directory if it doesn't exist
+    # Create backup directories
     mkdir -p "${BACKUP_DIR}"
     mkdir -p "${TEMP_DIR}"
 
@@ -173,85 +155,27 @@ main() {
         log WARNING "Database not found at ${PROJECT_ROOT}/data/planning.db"
     fi
 
-    # Backup source code
-    log INFO "Backing up source code..."
-    if [[ -d "${PROJECT_ROOT}/src" ]]; then
-        cp -r "${PROJECT_ROOT}/src" "${TEMP_DIR}/"
-        # Remove Python cache files
-        find "${TEMP_DIR}/src" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-        find "${TEMP_DIR}/src" -type f -name "*.pyc" -delete 2>/dev/null || true
-        log SUCCESS "Source code backed up"
-    else
-        log WARNING "Source directory not found"
-    fi
-
-    # Backup scripts
-    log INFO "Backing up scripts..."
-    if [[ -d "${PROJECT_ROOT}/bin" ]]; then
-        cp -r "${PROJECT_ROOT}/bin" "${TEMP_DIR}/"
-        log SUCCESS "Scripts backed up ($(find "${TEMP_DIR}/bin" -type f | wc -l) files)"
-    else
-        log WARNING "Scripts directory not found"
-    fi
-
-    # Backup database migrations
-    log INFO "Backing up database migrations..."
-    if [[ -d "${PROJECT_ROOT}/migrations" ]]; then
-        cp -r "${PROJECT_ROOT}/migrations" "${TEMP_DIR}/"
-        # Remove Python cache files
-        find "${TEMP_DIR}/migrations" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-        find "${TEMP_DIR}/migrations" -type f -name "*.pyc" -delete 2>/dev/null || true
-        log SUCCESS "Migrations backed up"
-    else
-        log WARNING "Migrations directory not found"
-    fi
-
-    # Backup tests
-    log INFO "Backing up tests..."
-    if [[ -d "${PROJECT_ROOT}/tests" ]]; then
-        cp -r "${PROJECT_ROOT}/tests" "${TEMP_DIR}/"
-        # Remove Python cache files
-        find "${TEMP_DIR}/tests" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-        find "${TEMP_DIR}/tests" -type f -name "*.pyc" -delete 2>/dev/null || true
-        log SUCCESS "Tests backed up"
-    else
-        log WARNING "Tests directory not found"
-    fi
-
-    # Backup documentation
-    log INFO "Backing up documentation..."
-    if [[ -d "${PROJECT_ROOT}/docs" ]]; then
-        cp -r "${PROJECT_ROOT}/docs" "${TEMP_DIR}/"
-        log SUCCESS "Documentation backed up"
-    else
-        log WARNING "Documentation directory not found"
-    fi
-
     # Backup configuration files
     log INFO "Backing up configuration files..."
     [[ -f "${PROJECT_ROOT}/.env" ]] && cp "${PROJECT_ROOT}/.env" "${TEMP_DIR}/config/" || true
     [[ -f "${PROJECT_ROOT}/.env.production" ]] && cp "${PROJECT_ROOT}/.env.production" "${TEMP_DIR}/config/" || true
     [[ -f "${PROJECT_ROOT}/alembic.ini" ]] && cp "${PROJECT_ROOT}/alembic.ini" "${TEMP_DIR}/config/" || true
-    [[ -f "${PROJECT_ROOT}/requirements.txt" ]] && cp "${PROJECT_ROOT}/requirements.txt" "${TEMP_DIR}/config/" || true
-    [[ -f "${PROJECT_ROOT}/pyproject.toml" ]] && cp "${PROJECT_ROOT}/pyproject.toml" "${TEMP_DIR}/config/" || true
-    [[ -f "${PROJECT_ROOT}/setup.py" ]] && cp "${PROJECT_ROOT}/setup.py" "${TEMP_DIR}/config/" || true
-    [[ -f "${PROJECT_ROOT}/pytest.ini" ]] && cp "${PROJECT_ROOT}/pytest.ini" "${TEMP_DIR}/config/" || true
-    [[ -f "${PROJECT_ROOT}/.gitignore" ]] && cp "${PROJECT_ROOT}/.gitignore" "${TEMP_DIR}/config/" || true
 
-    # Backup root-level documentation
-    for doc in CLAUDE.md README.md DEPLOYMENT.md LICENSE; do
-        [[ -f "${PROJECT_ROOT}/${doc}" ]] && cp "${PROJECT_ROOT}/${doc}" "${TEMP_DIR}/config/" || true
-    done
+    # Backup version info to track what version the data came from
+    if [[ -f "${PROJECT_ROOT}/src/static/version.json" ]]; then
+        cp "${PROJECT_ROOT}/src/static/version.json" "${TEMP_DIR}/config/"
+    fi
 
-    # Backup recent logs (last 7 days)
+    # Backup recent logs (last 24 hours only for incremental)
     log INFO "Backing up recent logs..."
     if [[ -d "${PROJECT_ROOT}/logs" ]]; then
-        find "${PROJECT_ROOT}/logs" -type f -mtime -7 -exec cp {} "${TEMP_DIR}/logs/" \; 2>/dev/null || true
+        find "${PROJECT_ROOT}/logs" -type f -mtime -1 -exec cp {} "${TEMP_DIR}/logs/" \; 2>/dev/null || true
     fi
 
     # Create backup metadata
     cat > "${TEMP_DIR}/backup_metadata.txt" << EOF
 Backup Name: ${BACKUP_NAME}
+Backup Type: INCREMENTAL (Data Only)
 Timestamp: $(date)
 Hostname: $(hostname)
 User: $(whoami)
@@ -261,26 +185,18 @@ Backup Script: $0
 === Backup Contents ===
 Database Size: $(du -h "${TEMP_DIR}/data/planning.db" 2>/dev/null | cut -f1 || echo "N/A")
 Database Tables: $(sqlite3 "${TEMP_DIR}/data/planning.db" "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';" 2>/dev/null || echo "N/A")
-Source Files: $(find "${TEMP_DIR}/src" -type f 2>/dev/null | wc -l || echo "N/A")
-Scripts: $(find "${TEMP_DIR}/bin" -type f 2>/dev/null | wc -l || echo "N/A")
-Migrations: $(find "${TEMP_DIR}/migrations/versions" -type f -name "*.py" 2>/dev/null | wc -l || echo "N/A")
-Tests: $(find "${TEMP_DIR}/tests" -type f -name "*.py" 2>/dev/null | wc -l || echo "N/A")
-Documentation: $(find "${TEMP_DIR}/docs" -type f -name "*.md" 2>/dev/null | wc -l || echo "N/A")
-
-=== Directory Sizes ===
-Source Code: $(du -sh "${TEMP_DIR}/src" 2>/dev/null | cut -f1 || echo "N/A")
-Database: $(du -sh "${TEMP_DIR}/data" 2>/dev/null | cut -f1 || echo "N/A")
-Scripts: $(du -sh "${TEMP_DIR}/bin" 2>/dev/null | cut -f1 || echo "N/A")
-Migrations: $(du -sh "${TEMP_DIR}/migrations" 2>/dev/null | cut -f1 || echo "N/A")
-Tests: $(du -sh "${TEMP_DIR}/tests" 2>/dev/null | cut -f1 || echo "N/A")
-Documentation: $(du -sh "${TEMP_DIR}/docs" 2>/dev/null | cut -f1 || echo "N/A")
+Config Files: $(find "${TEMP_DIR}/config" -type f 2>/dev/null | wc -l || echo "N/A")
+Log Files: $(find "${TEMP_DIR}/logs" -type f 2>/dev/null | wc -l || echo "N/A")
 
 Total Backup Size: $(du -sh "${TEMP_DIR}" | cut -f1)
+
+Note: This is an incremental backup containing only data files.
+For full system restore, use a full system backup from ./bin/backup
 EOF
 
     # Create compressed archive with optimal compression
     log INFO "Creating compressed archive (optimal compression)..."
-    cd "${PROJECT_ROOT}/backups"
+    cd "${BACKUP_DIR}"
     # Use maximum gzip compression (-9) for optimal space savings
     tar -c -C /tmp "${BACKUP_NAME}" | gzip -9 > "${BACKUP_NAME}.tar.gz"
 
@@ -296,7 +212,7 @@ EOF
 
     # Get final backup size
     local backup_size=$(du -h "${BACKUP_DIR}/${BACKUP_NAME}.tar.gz" | cut -f1)
-    log SUCCESS "Backup created: ${BACKUP_NAME}.tar.gz (${backup_size})"
+    log SUCCESS "Incremental backup created: ${BACKUP_NAME}.tar.gz (${backup_size})"
 
     # Cleanup temp directory
     rm -rf "${TEMP_DIR}"
@@ -304,25 +220,18 @@ EOF
     # Rotate old backups
     log INFO "Rotating old backups (keeping last ${KEEP_BACKUPS})..."
     cd "${BACKUP_DIR}"
-    ls -t rps_backup_*.tar.gz 2>/dev/null | tail -n +$((KEEP_BACKUPS + 1)) | while read old_backup; do
+    ls -t rps_incremental_*.tar.gz 2>/dev/null | tail -n +$((KEEP_BACKUPS + 1)) | while read old_backup; do
         log INFO "Removing old backup: ${old_backup}"
         rm -f "${old_backup}"
     done
 
     # Count remaining backups
-    local backup_count=$(ls -1 rps_backup_*.tar.gz 2>/dev/null | wc -l)
-    log INFO "Total backups: ${backup_count}"
-
-    # Sync to remote if specified
-    if [[ -n "${REMOTE_SYNC}" ]]; then
-        log INFO "Syncing to remote: ${REMOTE_SYNC}"
-        rsync -avz --progress "${BACKUP_DIR}/${BACKUP_NAME}.tar.gz" "${REMOTE_SYNC}/" || \
-            log WARNING "Remote sync failed"
-    fi
+    local backup_count=$(ls -1 rps_incremental_*.tar.gz 2>/dev/null | wc -l)
+    log INFO "Total incremental backups: ${backup_count}"
 
     # Print summary
     echo ""
-    log SUCCESS "=== Backup Summary ==="
+    log SUCCESS "=== Incremental Backup Summary ==="
     log INFO "Backup file: ${BACKUP_DIR}/${BACKUP_NAME}.tar.gz"
     log INFO "Size: ${backup_size}"
     log INFO "Backups retained: ${backup_count}"

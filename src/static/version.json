@@ -1,5 +1,5 @@
 {
-    "version": "3.9.108",
+    "version": "3.9.109",
     "release_date": "2026-01-28",
-    "release_notes": "Add database tables and scripts count to backup metadata"
+    "release_notes": "Fix full system backup to include all code/scripts/migrations, add incremental backup option, optimize compression, align backup card buttons, add flashing notification indicator for pending feedback/password requests in admin dashboard"
 }

@@ -4,10 +4,23 @@ Comprehensive backup methodology for the Retirement Planning System (RPS) on Lin
 
 ## Overview
 
-The RPS backup system provides:
-- **Automated daily backups** via systemd timer
+The RPS backup system provides **two backup types**:
+
+### Full System Backup (`./bin/backup`)
+- Complete application backup (code, database, migrations, tests, docs)
+- **Size**: ~76M compressed (~331M uncompressed)
+- **Use for**: System restores, deployments, archival
+- **Frequency**: Weekly or before major changes
+
+### Incremental Backup (`./bin/backup-incremental`)
+- Data-only backup (database, configs, recent logs)
+- **Size**: ~2.6M compressed (~47M uncompressed) - 29× smaller!
+- **Use for**: Daily/hourly data protection
+- **Frequency**: Daily automated backups
+
+**Both backup types provide:**
 - **Hot backups** of SQLite database (no downtime required)
-- **Automatic rotation** to manage storage (keeps last 14 days by default)
+- **Automatic rotation** to manage storage
 - **Compression** using tar.gz for efficient storage
 - **Integrity verification** for database and archives
 - **Pre-restore safety** backups before any restore operation
@@ -19,23 +32,23 @@ The RPS backup system provides:
 ### Set Up Automated Backups
 
 ```bash
-# Install and enable the backup timer
+# Install and enable the backup timer (runs incremental backups daily)
 sudo ./bin/setup-backup-timer
 
 # Verify timer is active
 sudo systemctl status rps-backup.timer
 ```
 
-### Run Manual Backup
+### Run Manual Backups
 
 ```bash
-# Basic backup
-./bin/backup
+# Full system backup (complete application)
+./bin/backup --keep 14
 
-# Keep last 30 backups (default: 14)
-./bin/backup --keep 30
+# Incremental backup (data only)
+./bin/backup-incremental --keep 30
 
-# Sync to remote server
+# Full backup with remote sync
 ./bin/backup --remote user@backup-server.com:/backups/rps
 ```
 
@@ -55,44 +68,122 @@ sudo systemctl status rps-backup.timer
 ./bin/restore --latest --type database
 ```
 
-## Backup Script Reference
+## Backup Types Comparison
+
+| Feature | Full System Backup | Incremental Backup |
+|---------|-------------------|-------------------|
+| Script | `./bin/backup` | `./bin/backup-incremental` |
+| Size | ~76M compressed | ~2.6M compressed |
+| Contents | Everything | Data only |
+| Source code | ✅ Yes (9,467 files) | ❌ No |
+| Scripts | ✅ Yes (26 files) | ❌ No |
+| Migrations | ✅ Yes (15 files) | ❌ No |
+| Tests | ✅ Yes (52 files) | ❌ No |
+| Documentation | ✅ Yes (58 files) | ❌ No |
+| Database | ✅ Yes (~44M) | ✅ Yes (~44M) |
+| Configs | ✅ Yes | ✅ Yes |
+| Logs | ✅ Last 7 days | ✅ Last 24 hours |
+| Use case | System restore | Data protection |
+| Frequency | Weekly | Daily/Hourly |
+| Default retention | 14 backups | 30 backups |
+
+## Full System Backup Reference
 
 ### Location
 `./bin/backup`
 
 ### What Gets Backed Up
 
+1. **Source Code** (`src/` directory - 9,467 files)
+   - Complete Python application code
+   - All routes, services, models, middleware
+   - Static assets (HTML, CSS, JS)
+   - Templates and components
+   - Size: ~283M uncompressed
+
+2. **Scripts** (`bin/` directory - 26 files)
+   - All management and utility scripts
+   - Backup/restore scripts
+   - Development and deployment tools
+   - Size: ~176K
+
+3. **Database Migrations** (`migrations/` directory - 15 files)
+   - Alembic migration scripts
+   - Schema version history
+   - Migration environment configuration
+   - Size: ~136K
+
+4. **Tests** (`tests/` directory - 52 files)
+   - Complete test suite
+   - Unit tests, integration tests
+   - Test fixtures and utilities
+   - Size: ~512K
+
+5. **Documentation** (`docs/` directory - 58 files)
+   - User guides and tutorials
+   - API documentation
+   - Deployment guides
+   - Architecture documentation
+   - Size: ~632K
+
+6. **Database** (`data/planning.db`)
+   - Hot backup using SQLite's built-in backup command
+   - Integrity verification with PRAGMA integrity_check
+   - Size: ~44M
+
+7. **Configuration Files**
+   - `.env` and `.env.production` (environment variables)
+   - `alembic.ini` (database migration config)
+   - `requirements.txt`, `pyproject.toml`, `setup.py`
+   - `pytest.ini`, `.gitignore`
+   - Root-level docs: `CLAUDE.md`, `README.md`, `DEPLOYMENT.md`, `LICENSE`
+
+8. **Recent Logs** (last 7 days)
+   - Application logs from `logs/` directory
+   - Useful for troubleshooting issues at time of backup
+
+9. **Metadata**
+   - `backup_metadata.txt` containing backup info, timestamp, version, file counts, sizes
+
+### What Doesn't Get Backed Up
+
+- Python virtual environment (`venv/`, `.venv/`)
+- Git repository (`.git/`)
+- Python cache (`__pycache__/`, `*.pyc`)
+- Old backups (`backups/` directory)
+- Temporary files (`tmp/`, `.tmp`)
+- Node modules (if any)
+- Old log files (>7 days)
+
+## Incremental Backup Reference
+
+### Location
+`./bin/backup-incremental`
+
+### What Gets Backed Up
+
 1. **Database** (`data/planning.db`)
    - Hot backup using SQLite's built-in backup command
    - Integrity verification with PRAGMA integrity_check
-   - Size: ~500-600 KB
+   - Size: ~44M
 
 2. **Configuration Files**
    - `.env` and `.env.production` (environment variables)
    - `alembic.ini` (database migration config)
-   - `src/__version__.py` (version tracking)
+   - `version.json` (tracks RPS version for the data)
 
-3. **Documentation** (key files only)
-   - `CLAUDE.md`
-   - `README.md`
-   - `DEPLOYMENT.md`
-
-4. **Recent Logs** (last 7 days)
+3. **Recent Logs** (last 24 hours only)
    - Application logs from `logs/` directory
-   - Useful for troubleshooting issues at time of backup
+   - Smaller log window for faster backups
 
-5. **Metadata**
-   - `backup_metadata.txt` containing backup info, timestamp, version, etc.
+4. **Metadata**
+   - `backup_metadata.txt` with backup type indicator
+   - Note explaining this is data-only backup
 
-### What Doesn't Get Backed Up
+### Storage Locations
 
-- Python virtual environment (`venv/`)
-- Git repository (`.git/`)
-- Static assets (`src/static/`)
-- Source code (use git for version control)
-- Test files and temporary data
-- Node modules or build artifacts
-- Old log files (>7 days)
+- **Full backups**: `backups/rps_backup_YYYYMMDD_HHMMSS.tar.gz`
+- **Incremental backups**: `backups/incremental/rps_incremental_YYYYMMDD_HHMMSS.tar.gz`
 
 ### Command Line Options
 

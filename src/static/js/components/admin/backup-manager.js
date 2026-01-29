@@ -42,8 +42,8 @@ export async function renderBackupManager(container) {
                 <!-- Backup Controls -->
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
                     <!-- Data Backup Card -->
-                    <div style="background: var(--bg-secondary); padding: 25px; border-radius: 12px; border-left: 4px solid var(--accent-color);">
-                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
+                    <div style="background: var(--bg-secondary); padding: 25px; border-radius: 12px; border-left: 4px solid var(--accent-color); display: flex; flex-direction: column;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px; flex: 1;">
                             <div>
                                 <h3 style="margin: 0; font-size: 18px;">📋 Data Backups</h3>
                                 <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 13px;">Profiles, scenarios, and application data</p>
@@ -59,35 +59,39 @@ export async function renderBackupManager(container) {
                     </div>
 
                 <!-- System Backup Card -->
-                <div style="background: var(--bg-secondary); padding: 25px; border-radius: 12px; border-left: 4px solid #9b59b6;">
-                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
-                        <span style="font-size: 32px;">⚙️</span>
-                        <div>
-                            <h3 style="margin: 0; font-size: 18px;">System Backup</h3>
-                            <p style="margin: 5px 0 0 0; font-size: 13px; color: var(--text-secondary);">Configuration & scripts</p>
+                <div style="background: var(--bg-secondary); padding: 25px; border-radius: 12px; border-left: 4px solid #9b59b6; display: flex; flex-direction: column;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                            <span style="font-size: 32px;">⚙️</span>
+                            <div>
+                                <h3 style="margin: 0; font-size: 18px;">System Backup</h3>
+                                <p style="margin: 5px 0 0 0; font-size: 13px; color: var(--text-secondary);">Configuration & scripts</p>
+                            </div>
                         </div>
+                        <p style="margin: 0; font-size: 14px; color: var(--text-secondary);">
+                            Backs up system configuration, scripts, and settings. Essential for disaster recovery.
+                        </p>
                     </div>
-                    <p style="margin-bottom: 20px; font-size: 14px; color: var(--text-secondary);">
-                        Backs up system configuration, scripts, and settings. Essential for disaster recovery.
-                    </p>
-                    <button id="run-system-backup" style="width: 100%; padding: 12px; background: #9b59b6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s;">
+                    <button id="run-system-backup" style="width: 100%; padding: 12px; background: #9b59b6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; margin-top: 20px;">
                         Run System Backup
                     </button>
                 </div>
 
                 <!-- Full Backup Card -->
-                <div style="background: var(--bg-secondary); padding: 25px; border-radius: 12px; border-left: 4px solid #27ae60;">
-                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
-                        <span style="font-size: 32px;">📦</span>
-                        <div>
-                            <h3 style="margin: 0; font-size: 18px;">Full Backup</h3>
-                            <p style="margin: 5px 0 0 0; font-size: 13px; color: var(--text-secondary);">Complete backup</p>
+                <div style="background: var(--bg-secondary); padding: 25px; border-radius: 12px; border-left: 4px solid #27ae60; display: flex; flex-direction: column;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                            <span style="font-size: 32px;">📦</span>
+                            <div>
+                                <h3 style="margin: 0; font-size: 18px;">Full Backup</h3>
+                                <p style="margin: 5px 0 0 0; font-size: 13px; color: var(--text-secondary);">Complete backup</p>
+                            </div>
                         </div>
+                        <p style="margin: 0; font-size: 14px; color: var(--text-secondary);">
+                            Backs up everything: database, configuration, logs, and documentation.
+                        </p>
                     </div>
-                    <p style="margin-bottom: 20px; font-size: 14px; color: var(--text-secondary);">
-                        Backs up everything: database, configuration, logs, and documentation.
-                    </p>
-                    <button id="run-full-backup" style="width: 100%; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s;">
+                    <button id="run-full-backup" style="width: 100%; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; margin-top: 20px;">
                         Run Full Backup
                     </button>
                 </div>
