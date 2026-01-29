@@ -1,5 +1,5 @@
 {
-    "version": "3.9.101",
+    "version": "3.9.102",
     "release_date": "2026-01-28",
-    "release_notes": "Fix Roth conversion scenarios display and add comprehensive explanations"
+    "release_notes": "Improve RMD projection table: add headers, explain '--', show relevant years"
 }

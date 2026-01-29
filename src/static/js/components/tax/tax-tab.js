@@ -260,22 +260,48 @@ function renderTaxAnalysis(container, analysis, profile) {
                             <span id="rmd-analysis-info" style="cursor: pointer; font-size: 14px; opacity: 0.7; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'" title="Click for explanation">ℹ️</span>
                         </h2>
                         <div style="font-size: 12px; margin-bottom: 8px;">
-                            ${rmd_analysis.current.required 
+                            ${rmd_analysis.current.required
                                 ? `Current RMD: <strong>${formatCurrency(rmd_analysis.current.rmd_amount, 0)}</strong>`
-                                : `RMDs begin in <strong>${rmd_analysis.summary.years_until_rmd} years</strong>`}
+                                : `RMDs begin in <strong>${rmd_analysis.summary.years_until_rmd} years</strong> (age 73)`}
                         </div>
                         <details style="cursor: pointer;">
-                            <summary style="font-size: 12px; font-weight: 600; padding: 4px 0; user-select: none;">10-Year Proj</summary>
+                            <summary style="font-size: 12px; font-weight: 600; padding: 4px 0; user-select: none;">📊 10-Year Projection</summary>
                             <div style="padding: 8px; background: rgba(255,255,255,0.1); border-radius: 6px; margin-top: 6px;">
+                                ${!rmd_analysis.current.required ? `
+                                    <div style="font-size: 10px; opacity: 0.8; margin-bottom: 6px; line-height: 1.4;">
+                                        <strong>What is "--"?</strong> No RMD required yet. RMDs start at age 73.
+                                        Years 1-${rmd_analysis.summary.years_until_rmd - 1} show "--" (not required).
+                                    </div>
+                                ` : ''}
                                 <table style="width: 100%; font-size: 10px; border-collapse: collapse;">
-                                    ${rmd_analysis.projections.slice(0, 5).map(proj => `
-                                        <tr>
-                                            <td style="padding: 2px;">${proj.year}</td>
-                                            <td style="padding: 2px; text-align: right;">${formatCompact(proj.start_balance)}</td>
-                                            <td style="padding: 2px; text-align: right; font-weight: 700;">${proj.rmd_amount > 0 ? formatCompact(proj.rmd_amount) : '--'}</td>
+                                    <thead>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.3); opacity: 0.7;">
+                                            <th style="padding: 4px 2px; text-align: left; font-weight: 600;">Year</th>
+                                            <th style="padding: 4px 2px; text-align: right; font-weight: 600;">Balance</th>
+                                            <th style="padding: 4px 2px; text-align: right; font-weight: 600;">RMD</th>
                                         </tr>
-                                    `).join('')}
+                                    </thead>
+                                    <tbody>
+                                    ${(() => {
+                                        // Show years around when RMDs start for better context
+                                        const yearsUntilRMD = rmd_analysis.summary.years_until_rmd;
+                                        const startYear = Math.max(0, yearsUntilRMD - 2);
+                                        const endYear = Math.min(rmd_analysis.projections.length, startYear + 5);
+                                        return rmd_analysis.projections.slice(startYear, endYear).map(proj => `
+                                            <tr style="${proj.rmd_amount > 0 ? 'background: rgba(251,191,36,0.1);' : ''}">
+                                                <td style="padding: 3px 2px;">${proj.year}</td>
+                                                <td style="padding: 3px 2px; text-align: right;">${formatCompact(proj.start_balance)}</td>
+                                                <td style="padding: 3px 2px; text-align: right; font-weight: 700; ${proj.rmd_amount > 0 ? 'color: #fbbf24;' : ''}">${proj.rmd_amount > 0 ? formatCompact(proj.rmd_amount) : '--'}</td>
+                                            </tr>
+                                        `).join('');
+                                    })()}
+                                    </tbody>
                                 </table>
+                                ${rmd_analysis.summary.first_year_rmd && rmd_analysis.summary.first_year_rmd > 0 ? `
+                                    <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.2); font-size: 10px; opacity: 0.9;">
+                                        <strong>First RMD:</strong> ${formatCurrency(rmd_analysis.summary.first_year_rmd, 0)} in year ${rmd_analysis.summary.years_until_rmd}
+                                    </div>
+                                ` : ''}
                             </div>
                         </details>
                     </div>
