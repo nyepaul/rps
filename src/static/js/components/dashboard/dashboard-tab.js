@@ -58,17 +58,7 @@ function renderProfileDashboard(container, profiles, currentProfile, currentUser
                 </button>
             </div>
 
-            ${currentProfile ? `
-            <!-- Current Profile Banner -->
-            <div style="background: linear-gradient(135deg, var(--accent-color), var(--info-color)); padding: 4px 10px; border-radius: 4px; margin-bottom: var(--space-2); color: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 10px; font-weight: 700; background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px;">ACTIVE</span>
-                        <span style="font-size: 13px; font-weight: 700;">${currentProfile.name}</span>
-                    </div>
-                </div>
-            </div>
-            ` : ''}
+            ${currentProfile ? renderFinancialSummary(currentProfile) : ''}
 
             ${hasProfiles ? `
             <!-- Profiles Grid -->
@@ -94,6 +84,367 @@ function renderProfileDashboard(container, profiles, currentProfile, currentUser
     `;
 
     setupDashboardHandlers(container, profiles);
+}
+
+/**
+ * Render financial summary for active profile
+ */
+function renderFinancialSummary(profile) {
+    const data = profile.data || {};
+    const financial = data.financial || {};
+    const assets = data.assets || {};
+    const spouse = data.spouse || {};
+    const incomeStreams = data.income_streams || [];
+    const budget = data.budget || {};
+    const expensesCurrent = budget.expenses?.current || {};
+
+    // Calculate net worth and breakdown
+    const { netWorth, totalAssets, totalDebts, breakdown } = calculateNetWorth(assets);
+
+    // Calculate total annual income from currently active income streams
+    const today = new Date();
+    const retirementDate = profile.retirement_date ? new Date(profile.retirement_date) : null;
+
+    const totalAnnualIncome = incomeStreams.reduce((sum, stream) => {
+        const amount = parseFloat(stream.amount) || 0;
+        if (amount <= 0) return sum;
+
+        // Check if stream has started
+        if (stream.start_date && new Date(stream.start_date) > today) {
+            return sum;
+        }
+
+        // Check if stream has ended
+        const endDate = stream.end_date ? new Date(stream.end_date) : retirementDate;
+        if (endDate && today > endDate) {
+            return sum;
+        }
+
+        return sum + amount * 12;
+    }, 0);
+
+    // Calculate total annual expenses
+    const totalAnnualExpenses = Object.values(expensesCurrent).flat().reduce((sum, expense) => {
+        return sum + (parseFloat(expense.amount) || 0) * 12;
+    }, 0);
+
+    const annualSavings = totalAnnualIncome - totalAnnualExpenses;
+    const savingsRate = totalAnnualIncome > 0 ? (annualSavings / totalAnnualIncome) * 100 : 0;
+
+    // Calculate age
+    const calcAge = (dateStr) => {
+        if (!dateStr) return null;
+        const birth = new Date(dateStr);
+        const today = new Date();
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+        return age;
+    };
+    const currentAge = profile.birth_date ? calcAge(profile.birth_date) : null;
+
+    // Calculate years to retirement
+    let yearsToRetirement = null;
+    if (profile.retirement_date) {
+        const retDate = new Date(profile.retirement_date);
+        const diffTime = retDate - today;
+        const diffDays = diffTime / (1000 * 60 * 60 * 24);
+        yearsToRetirement = Math.max(0, Math.ceil(diffDays / 365));
+    }
+
+    // Generate unique IDs for canvas elements
+    const assetChartId = `asset-chart-${Date.now()}`;
+    const cashflowChartId = `cashflow-chart-${Date.now()}-1`;
+    const savingsGaugeId = `savings-gauge-${Date.now()}`;
+
+    setTimeout(() => {
+        // Asset Allocation Pie Chart
+        const assetCanvas = document.getElementById(assetChartId);
+        if (assetCanvas && window.Chart) {
+            const chartData = {
+                labels: ['Retirement Accounts', 'Taxable Accounts', 'Real Estate Equity', 'Other Assets'],
+                datasets: [{
+                    data: [
+                        breakdown.retirementAssets,
+                        breakdown.taxableAssets,
+                        breakdown.realEstateAssets,
+                        breakdown.otherAssets
+                    ],
+                    backgroundColor: [
+                        '#3498db', // blue
+                        '#2ecc71', // green
+                        '#e74c3c', // red
+                        '#95a5a6'  // gray
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            };
+
+            new Chart(assetCanvas, {
+                type: 'doughnut',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 10,
+                                font: { size: 11 },
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim()
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                    return `${label}: $${(value / 1000).toFixed(0)}K (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Income vs Expenses Bar Chart
+        const cashflowCanvas = document.getElementById(cashflowChartId);
+        if (cashflowCanvas && window.Chart) {
+            new Chart(cashflowCanvas, {
+                type: 'bar',
+                data: {
+                    labels: ['Annual Cash Flow'],
+                    datasets: [
+                        {
+                            label: 'Income',
+                            data: [totalAnnualIncome],
+                            backgroundColor: '#2ecc71',
+                            borderWidth: 0
+                        },
+                        {
+                            label: 'Expenses',
+                            data: [totalAnnualExpenses],
+                            backgroundColor: '#e74c3c',
+                            borderWidth: 0
+                        },
+                        {
+                            label: 'Savings',
+                            data: [annualSavings],
+                            backgroundColor: annualSavings >= 0 ? '#3498db' : '#e67e22',
+                            borderWidth: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 8,
+                                font: { size: 11 },
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim()
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: $${(context.parsed.x / 1000).toFixed(0)}K`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + (value / 1000).toFixed(0) + 'K';
+                                },
+                                font: { size: 10 },
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim()
+                            },
+                            grid: {
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--border-color').trim()
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                font: { size: 10 },
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim()
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Savings Rate Gauge (using doughnut)
+        const gaugeCanvas = document.getElementById(savingsGaugeId);
+        if (gaugeCanvas && window.Chart) {
+            const displayRate = Math.min(100, Math.max(0, savingsRate));
+            new Chart(gaugeCanvas, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [displayRate, 100 - displayRate],
+                        backgroundColor: [
+                            displayRate >= 20 ? '#2ecc71' : displayRate >= 10 ? '#f39c12' : '#e74c3c',
+                            '#ecf0f1'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    rotation: -90,
+                    circumference: 180,
+                    cutout: '75%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    }
+                },
+                plugins: [{
+                    afterDraw: (chart) => {
+                        const ctx = chart.ctx;
+                        const width = chart.width;
+                        const height = chart.height;
+                        ctx.restore();
+
+                        const fontSize = (height / 80).toFixed(2);
+                        ctx.font = `bold ${fontSize}em sans-serif`;
+                        ctx.textBaseline = 'middle';
+                        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim();
+
+                        const text = displayRate.toFixed(0) + '%';
+                        const textX = Math.round((width - ctx.measureText(text).width) / 2);
+                        const textY = height / 1.5;
+
+                        ctx.fillText(text, textX, textY);
+                        ctx.save();
+                    }
+                }]
+            });
+        }
+    }, 100);
+
+    return `
+        <!-- Active Profile Financial Summary -->
+        <div style="background: var(--bg-secondary); border-radius: 8px; padding: 16px; margin-bottom: 12px; border: 2px solid var(--accent-color); box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <!-- Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 11px; font-weight: 700; background: var(--accent-color); color: white; padding: 4px 10px; border-radius: 4px;">ACTIVE PROFILE</span>
+                    <h2 style="font-size: 20px; margin: 0; font-weight: 700;">${profile.name}</h2>
+                </div>
+                <button onclick="window.app.showTab('profile')" style="padding: 6px 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                    Edit Profile
+                </button>
+            </div>
+
+            <!-- Key Metrics Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px;">
+                <!-- Net Worth -->
+                <div style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 12px; border-radius: 6px; color: white;">
+                    <div style="font-size: 10px; opacity: 0.9; margin-bottom: 4px;">💰 Net Worth</div>
+                    <div style="font-size: 18px; font-weight: 700;">${formatCompact(netWorth)}</div>
+                </div>
+
+                <!-- Annual Income -->
+                <div style="background: linear-gradient(135deg, #3498db, #2980b9); padding: 12px; border-radius: 6px; color: white;">
+                    <div style="font-size: 10px; opacity: 0.9; margin-bottom: 4px;">📈 Annual Income</div>
+                    <div style="font-size: 18px; font-weight: 700;">${totalAnnualIncome > 0 ? formatCompact(totalAnnualIncome) : 'Not set'}</div>
+                </div>
+
+                <!-- Annual Expenses -->
+                <div style="background: linear-gradient(135deg, #e74c3c, #c0392b); padding: 12px; border-radius: 6px; color: white;">
+                    <div style="font-size: 10px; opacity: 0.9; margin-bottom: 4px;">📉 Annual Expenses</div>
+                    <div style="font-size: 18px; font-weight: 700;">${totalAnnualExpenses > 0 ? formatCompact(totalAnnualExpenses) : 'Not set'}</div>
+                </div>
+
+                <!-- Savings Rate -->
+                <div style="background: linear-gradient(135deg, #9b59b6, #8e44ad); padding: 12px; border-radius: 6px; color: white;">
+                    <div style="font-size: 10px; opacity: 0.9; margin-bottom: 4px;">💵 Savings Rate</div>
+                    <div style="font-size: 18px; font-weight: 700;">${totalAnnualIncome > 0 ? savingsRate.toFixed(1) + '%' : 'N/A'}</div>
+                </div>
+
+                ${currentAge ? `
+                <!-- Current Age -->
+                <div style="background: linear-gradient(135deg, #1abc9c, #16a085); padding: 12px; border-radius: 6px; color: white;">
+                    <div style="font-size: 10px; opacity: 0.9; margin-bottom: 4px;">👤 Current Age</div>
+                    <div style="font-size: 18px; font-weight: 700;">${currentAge}</div>
+                </div>
+                ` : ''}
+
+                ${yearsToRetirement !== null ? `
+                <!-- Years to Retirement -->
+                <div style="background: linear-gradient(135deg, #f39c12, #e67e22); padding: 12px; border-radius: 6px; color: white;">
+                    <div style="font-size: 10px; opacity: 0.9; margin-bottom: 4px;">🏖️ To Retirement</div>
+                    <div style="font-size: 18px; font-weight: 700;">${yearsToRetirement} ${yearsToRetirement === 1 ? 'year' : 'years'}</div>
+                </div>
+                ` : ''}
+            </div>
+
+            <!-- Charts Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;">
+                <!-- Asset Allocation Chart -->
+                <div style="background: var(--bg-primary); padding: 14px; border-radius: 6px; border: 1px solid var(--border-color);">
+                    <h3 style="font-size: 13px; margin: 0 0 10px 0; font-weight: 600; color: var(--text-secondary);">Asset Allocation</h3>
+                    <div style="height: 180px; display: flex; align-items: center; justify-content: center;">
+                        ${totalAssets > 0 ? `
+                            <canvas id="${assetChartId}" style="max-height: 180px;"></canvas>
+                        ` : `
+                            <div style="text-align: center; color: var(--text-secondary); font-size: 12px;">
+                                <div style="font-size: 32px; opacity: 0.3; margin-bottom: 8px;">📊</div>
+                                <div>No assets added yet</div>
+                            </div>
+                        `}
+                    </div>
+                </div>
+
+                <!-- Cash Flow Chart -->
+                <div style="background: var(--bg-primary); padding: 14px; border-radius: 6px; border: 1px solid var(--border-color);">
+                    <h3 style="font-size: 13px; margin: 0 0 10px 0; font-weight: 600; color: var(--text-secondary);">Annual Cash Flow</h3>
+                    <div style="height: 180px; display: flex; align-items: center; justify-content: center;">
+                        ${(totalAnnualIncome > 0 || totalAnnualExpenses > 0) ? `
+                            <canvas id="${cashflowChartId}" style="max-height: 180px;"></canvas>
+                        ` : `
+                            <div style="text-align: center; color: var(--text-secondary); font-size: 12px;">
+                                <div style="font-size: 32px; opacity: 0.3; margin-bottom: 8px;">💸</div>
+                                <div>No income or expenses set</div>
+                            </div>
+                        `}
+                    </div>
+                </div>
+
+                <!-- Savings Rate Gauge -->
+                ${totalAnnualIncome > 0 ? `
+                <div style="background: var(--bg-primary); padding: 14px; border-radius: 6px; border: 1px solid var(--border-color);">
+                    <h3 style="font-size: 13px; margin: 0 0 10px 0; font-weight: 600; color: var(--text-secondary);">Savings Rate</h3>
+                    <div style="height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <div style="width: 150px; height: 100px; position: relative;">
+                            <canvas id="${savingsGaugeId}"></canvas>
+                        </div>
+                        <div style="text-align: center; margin-top: 8px; font-size: 11px; color: var(--text-secondary);">
+                            ${savingsRate >= 20 ? '✅ Excellent!' : savingsRate >= 10 ? '👍 Good' : '⚠️ Consider increasing'}
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
 }
 
 /**

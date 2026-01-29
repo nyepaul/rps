@@ -1,5 +1,5 @@
 {
-    "version": "3.9.104",
+    "version": "3.9.105",
     "release_date": "2026-01-28",
-    "release_notes": "Move Cash Flow View to top of Analysis menu"
+    "release_notes": "Add comprehensive financial summary with charts to dashboard"
 }
