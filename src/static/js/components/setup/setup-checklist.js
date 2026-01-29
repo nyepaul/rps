@@ -316,15 +316,41 @@ function attachModalEventListeners(modal) {
                 e.stopPropagation();
                 const tab = btn.getAttribute('data-tab');
 
-                // Don't close the modal - let it stay open so user can see progress
-                // Trigger tab change
-                const tabButton = document.querySelector(`.tab[data-tab="${tab}"]`);
-                if (tabButton) {
-                    tabButton.click();
+                // Close the modal so user can interact with the tab
+                if (modal._storeUnsubscribe) {
+                    modal._storeUnsubscribe();
+                }
+                modal.remove();
+
+                // Navigate to the tab
+                if (window.app && window.app.showTab) {
+                    window.app.showTab(tab);
                 }
             });
         });
     }
+
+    // Add click handlers for checklist items (clicking row also navigates)
+    const checklistItems = modal.querySelectorAll('.setup-checklist-item');
+    checklistItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            // Don't trigger if clicking a button inside
+            if (e.target.closest('.go-to-tab-btn')) return;
+
+            const tab = item.getAttribute('data-tab');
+            if (!tab) return;
+
+            // Close modal and navigate
+            if (modal._storeUnsubscribe) {
+                modal._storeUnsubscribe();
+            }
+            modal.remove();
+
+            if (window.app && window.app.showTab) {
+                window.app.showTab(tab);
+            }
+        });
+    });
 
     // Close on background click
     const existingListener = modal._backgroundClickListener;
