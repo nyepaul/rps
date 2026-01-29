@@ -1,5 +1,5 @@
 {
-    "version": "3.9.99",
+    "version": "3.9.100",
     "release_date": "2026-01-28",
-    "release_notes": "Standardize CSV parsing with unified parser utility (Phase 1 of hybrid CSV+AI import)"
+    "release_notes": "Fix Roth Conversion display: show data even when optimal conversion is 0, add helpful message for high-bracket users"
 }

@@ -533,11 +533,17 @@ class RothConversionOptimizer:
                 traditional_balance
             )
 
-        return self.analyze_conversion_amount(
+        result = self.analyze_conversion_amount(
             current_taxable_income,
             traditional_balance,
             optimal_amount
         )
+
+        # Add bracket ceiling information for display
+        result['bracket_ceiling'] = target_ceiling
+        result['max_rate'] = max_rate
+
+        return result
 
 
 class RMDCalculator:

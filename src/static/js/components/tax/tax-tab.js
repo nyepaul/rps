@@ -174,16 +174,36 @@ function renderTaxAnalysis(container, analysis, profile) {
                             <span id="roth-conversion-info" style="cursor: pointer; font-size: 14px; opacity: 0.7; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'" title="Click for explanation">ℹ️</span>
                         </h2>
 
-                        ${roth_conversion.optimal_24pct && roth_conversion.optimal_24pct.conversion_amount > 0 ? `
-                        <div style="background: rgba(255,255,255,0.15); padding: 10px; border-radius: 6px; margin-bottom: 8px;">
-                            <div style="font-size: 12px; font-weight: 700; margin-bottom: 2px;">Optimal Conversion</div>
-                            <div style="font-size: 14px; font-weight: 700;">${formatCurrency(roth_conversion.optimal_24pct.conversion_amount, 0)}</div>
-                            <div style="font-size: 10px; opacity: 0.8;">Cost: ${formatCurrency(roth_conversion.optimal_24pct.conversion_tax, 0)}</div>
-                        </div>
+                        ${roth_conversion.optimal_24pct ? `
+                            ${roth_conversion.optimal_24pct.conversion_amount > 0 ? `
+                                <div style="background: rgba(255,255,255,0.15); padding: 10px; border-radius: 6px; margin-bottom: 8px;">
+                                    <div style="font-size: 12px; font-weight: 700; margin-bottom: 2px;">Optimal Conversion (24% Bracket)</div>
+                                    <div style="font-size: 18px; font-weight: 700; color: #4ade80;">${formatCurrency(roth_conversion.optimal_24pct.conversion_amount, 0)}</div>
+                                    <div style="font-size: 11px; opacity: 0.8; margin-top: 4px;">
+                                        Tax Cost: ${formatCurrency(roth_conversion.optimal_24pct.conversion_tax, 0)}
+                                        (${(roth_conversion.optimal_24pct.effective_rate_on_conversion * 100).toFixed(1)}% effective)
+                                    </div>
+                                    <div style="font-size: 11px; opacity: 0.8; margin-top: 2px;">
+                                        Lifetime Savings: ${formatCurrency(roth_conversion.optimal_24pct.lifetime_savings || 0, 0)}
+                                    </div>
+                                </div>
+                            ` : `
+                                <div style="background: rgba(251,191,36,0.15); padding: 10px; border-radius: 6px; margin-bottom: 8px; border: 1px solid rgba(251,191,36,0.3);">
+                                    <div style="font-size: 12px; font-weight: 700; margin-bottom: 4px;">⚠️ Already in Higher Bracket</div>
+                                    <div style="font-size: 11px; opacity: 0.9; line-height: 1.4;">
+                                        Your current taxable income is already at or above the 24% tax bracket ceiling.
+                                        Converting now would occur at higher marginal rates (32%+).
+                                    </div>
+                                    <div style="font-size: 11px; opacity: 0.8; margin-top: 6px;">
+                                        Current Income: ${formatCurrency(roth_conversion.current_taxable_income, 0)}<br>
+                                        24% Bracket Ceiling: ${formatCurrency(roth_conversion.optimal_24pct.bracket_ceiling || 0, 0)}
+                                    </div>
+                                </div>
+                            `}
                         ` : ''}
 
-                        <details style="cursor: pointer;">
-                            <summary style="font-size: 12px; font-weight: 600; padding: 4px 0; user-select: none;">Scenarios & Space</summary>
+                        <details style="cursor: pointer;" ${roth_conversion.optimal_24pct?.conversion_amount === 0 ? 'open' : ''}>
+                            <summary style="font-size: 12px; font-weight: 600; padding: 4px 0; user-select: none;">Tax Bracket Space Available</summary>
                             <div style="padding: 8px; background: rgba(255,255,255,0.1); border-radius: 6px; margin-top: 6px; font-size: 11px;">
                                 ${roth_conversion.bracket_space.slice(0, 3).map(space => `
                                     <div style="display: flex; justify-content: space-between; padding: 4px 0;">
@@ -191,6 +211,17 @@ function renderTaxAnalysis(container, analysis, profile) {
                                         <span style="font-weight: 700;">${formatCurrency(space.space_available, 0)}</span>
                                     </div>
                                 `).join('')}
+                                ${roth_conversion.scenarios && roth_conversion.scenarios.length > 0 ? `
+                                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.2);">
+                                        <div style="font-weight: 600; margin-bottom: 4px;">Sample Conversion Scenarios:</div>
+                                        ${roth_conversion.scenarios.slice(0, 3).map(scenario => `
+                                            <div style="display: flex; justify-content: space-between; padding: 2px 0; font-size: 10px;">
+                                                <span>Convert ${formatCurrency(scenario.conversion_amount, 0)}:</span>
+                                                <span>Tax ${formatCurrency(scenario.conversion_tax, 0)} @ ${scenario.marginal_rate_after}%</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                ` : ''}
                             </div>
                         </details>
                     </div>
