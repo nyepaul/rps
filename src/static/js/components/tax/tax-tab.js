@@ -7,7 +7,7 @@
 import { store } from '../../state/store.js';
 import { taxOptimizationAPI } from '../../api/tax-optimization.js';
 import { formatCurrency, formatPercent, formatCompact } from '../../utils/formatters.js';
-import { showSuccess, showError } from '../../utils/dom.js';
+import { showSuccess, showError, showLoading } from '../../utils/dom.js';
 
 export async function renderTaxTab(container) {
     const currentProfile = store.get('currentProfile');
@@ -28,26 +28,8 @@ export async function renderTaxTab(container) {
         return;
     }
 
-    // Show loading state
-    container.innerHTML = `
-        <div style="text-align: center; padding: 60px;">
-            <div class="spinner" style="
-                width: 48px;
-                height: 48px;
-                border: 4px solid var(--border-color);
-                border-top-color: var(--accent-color);
-                border-radius: 50%;
-                animation: spin 0.8s linear infinite;
-                margin: 0 auto 20px;
-            "></div>
-            <div>Analyzing tax optimization strategies...</div>
-        </div>
-        <style>
-            @keyframes spin {
-                to { transform: rotate(360deg); }
-            }
-        </style>
-    `;
+    // Show loading state (uses coordinated spinner system)
+    showLoading(container, 'Analyzing tax optimization strategies...');
 
     try {
         // Fetch comprehensive tax analysis
