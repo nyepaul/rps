@@ -3,6 +3,7 @@
  */
 
 import { assetsAPI } from '../../api/assets.js';
+import { parseCSV, ASSET_CONFIG, validateCSVFile, parseCSVLine, detectDelimiter } from '../../utils/csv-parser.js';
 
 /**
  * Export assets to CSV
@@ -183,6 +184,9 @@ function previewCSV(csvText, container) {
         return;
     }
 
+    // Detect delimiter from first line
+    const delimiter = detectDelimiter(lines[0]);
+
     // Show first 10 lines
     const previewLines = lines.slice(0, 10);
     const hasMore = lines.length > 10;
@@ -191,7 +195,7 @@ function previewCSV(csvText, container) {
 
     // Header row
     html += '<tr style="background: var(--bg-tertiary); font-weight: 600;">';
-    const headers = parseCSVLine(previewLines[0]);
+    const headers = parseCSVLine(previewLines[0], delimiter);
     headers.forEach(header => {
         html += `<th style="padding: 8px; border: 1px solid var(--border-color); text-align: left;">${escapeHtml(header)}</th>`;
     });
@@ -200,7 +204,7 @@ function previewCSV(csvText, container) {
     // Data rows
     for (let i = 1; i < previewLines.length; i++) {
         html += '<tr>';
-        const cells = parseCSVLine(previewLines[i]);
+        const cells = parseCSVLine(previewLines[i], delimiter);
         cells.forEach(cell => {
             html += `<td style="padding: 8px; border: 1px solid var(--border-color);">${escapeHtml(cell)}</td>`;
         });
@@ -216,30 +220,7 @@ function previewCSV(csvText, container) {
     previewDiv.innerHTML = html;
 }
 
-/**
- * Parse CSV line (simple parser)
- */
-function parseCSVLine(line) {
-    const cells = [];
-    let current = '';
-    let inQuotes = false;
-
-    for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-
-        if (char === '"') {
-            inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
-            cells.push(current.trim());
-            current = '';
-        } else {
-            current += char;
-        }
-    }
-
-    cells.push(current.trim());
-    return cells;
-}
+// Note: parseCSVLine is now imported from csv-parser.js utility
 
 /**
  * Escape HTML

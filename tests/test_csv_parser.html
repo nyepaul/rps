@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Parser Tests</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+        .pass {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+        .fail {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+        .summary {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .summary.pass { color: #28a745; }
+        .summary.fail { color: #dc3545; }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>CSV Parser Unit Tests</h1>
+    <div id="summary"></div>
+    <div id="results"></div>
+
+    <script type="module">
+        import {
+            parseCSV,
+            detectDelimiter,
+            normalizeColumnName,
+            parseCSVLine,
+            getColumnValue,
+            INCOME_CONFIG,
+            EXPENSE_CONFIG,
+            ASSET_CONFIG,
+            validateCSVFile
+        } from '../src/static/js/utils/csv-parser.js';
+
+        const results = [];
+
+        function test(name, fn) {
+            try {
+                fn();
+                results.push({ name, pass: true });
+                console.log('✓', name);
+            } catch (error) {
+                results.push({ name, pass: false, error: error.message });
+                console.error('✗', name, error);
+            }
+        }
+
+        function assert(condition, message) {
+            if (!condition) {
+                throw new Error(message || 'Assertion failed');
+            }
+        }
+
+        function assertEquals(actual, expected, message) {
+            if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+                throw new Error(`${message || 'Values not equal'}\nExpected: ${JSON.stringify(expected)}\nActual: ${JSON.stringify(actual)}`);
+            }
+        }
+
+        // ========== Delimiter Detection Tests ==========
+        test('detectDelimiter - comma', () => {
+            const result = detectDelimiter('name,amount,date');
+            assertEquals(result, ',', 'Should detect comma');
+        });
+
+        test('detectDelimiter - tab', () => {
+            const result = detectDelimiter('name\tamount\tdate');
+            assertEquals(result, '\t', 'Should detect tab');
+        });
+
+        test('detectDelimiter - semicolon', () => {
+            const result = detectDelimiter('name;amount;date');
+            assertEquals(result, ';', 'Should detect semicolon');
+        });
+
+        test('detectDelimiter - pipe', () => {
+            const result = detectDelimiter('name|amount|date');
+            assertEquals(result, '|', 'Should detect pipe');
+        });
+
+        // ========== Column Name Normalization Tests ==========
+        test('normalizeColumnName - spaces to underscores', () => {
+            const result = normalizeColumnName('Start Date');
+            assertEquals(result, 'start_date', 'Should convert to lowercase with underscores');
+        });
+
+        test('normalizeColumnName - remove quotes', () => {
+            const result = normalizeColumnName('"Account Number"');
+            assertEquals(result, 'account_number', 'Should remove quotes');
+        });
+
+        test('normalizeColumnName - remove special chars', () => {
+            const result = normalizeColumnName('Name (Primary)');
+            assertEquals(result, 'name_primary', 'Should remove special chars');
+        });
+
+        // ========== CSV Line Parsing Tests ==========
+        test('parseCSVLine - simple comma', () => {
+            const result = parseCSVLine('apple,banana,cherry', ',');
+            assertEquals(result, ['apple', 'banana', 'cherry'], 'Should parse simple values');
+        });
+
+        test('parseCSVLine - quoted values', () => {
+            const result = parseCSVLine('"apple","banana","cherry"', ',');
+            assertEquals(result, ['apple', 'banana', 'cherry'], 'Should handle quoted values');
+        });
+
+        test('parseCSVLine - comma in quotes', () => {
+            const result = parseCSVLine('"Smith, John",1000,"New York, NY"', ',');
+            assertEquals(result, ['Smith, John', '1000', 'New York, NY'], 'Should preserve commas in quotes');
+        });
+
+        test('parseCSVLine - escaped quotes', () => {
+            const result = parseCSVLine('"He said ""hello""",world', ',');
+            assertEquals(result, ['He said "hello"', 'world'], 'Should handle escaped quotes');
+        });
+
+        test('parseCSVLine - mixed quoted and unquoted', () => {
+            const result = parseCSVLine('apple,"banana, orange",cherry', ',');
+            assertEquals(result, ['apple', 'banana, orange', 'cherry'], 'Should handle mixed values');
+        });
+
+        // ========== Income CSV Parsing Tests ==========
+        test('parseCSV - income basic', () => {
+            const csv = `Name,Amount,Start Date,End Date,Description
+Salary,5000,2024-01-01,2050-12-31,Monthly salary
+Bonus,10000,2024-12-01,2024-12-01,Annual bonus`;
+
+            const result = parseCSV(csv, INCOME_CONFIG);
+            assertEquals(result.errors.length, 0, 'Should have no errors');
+            assertEquals(result.items.length, 2, 'Should parse 2 items');
+            assertEquals(result.items[0].name, 'Salary', 'Should parse name');
+            assertEquals(result.items[0].amount, 5000, 'Should parse amount');
+        });
+
+        test('parseCSV - income with variations', () => {
+            const csv = `Source,Monthly,Start,End,Notes
+Pension,3000,2024-01-01,2050-12-31,Retirement pension`;
+
+            const result = parseCSV(csv, INCOME_CONFIG);
+            assertEquals(result.errors.length, 0, 'Should handle column variations');
+            assertEquals(result.items.length, 1, 'Should parse 1 item');
+            assertEquals(result.items[0].name, 'Pension', 'Should map source to name');
+            assertEquals(result.items[0].amount, 3000, 'Should map monthly to amount');
+        });
+
+        test('parseCSV - income empty rows', () => {
+            const csv = `Name,Amount
+Salary,5000
+
+Bonus,1000`;
+
+            const result = parseCSV(csv, INCOME_CONFIG);
+            assertEquals(result.items.length, 2, 'Should skip empty rows');
+        });
+
+        test('parseCSV - income missing required', () => {
+            const csv = `Description,Start Date
+This has no name or amount`;
+
+            const result = parseCSV(csv, INCOME_CONFIG);
+            assert(result.errors.length > 0, 'Should have errors for missing required columns');
+        });
+
+        // ========== Expense CSV Parsing Tests ==========
+        test('parseCSV - expense basic', () => {
+            const csv = `Name,Amount,Category,Frequency
+Rent,2000,housing,monthly
+Groceries,500,food,monthly`;
+
+            const result = parseCSV(csv, EXPENSE_CONFIG);
+            assertEquals(result.errors.length, 0, 'Should have no errors');
+            assertEquals(result.items.length, 2, 'Should parse 2 items');
+            assertEquals(result.items[0].category, 'housing', 'Should parse category');
+        });
+
+        test('parseCSV - expense invalid category', () => {
+            const csv = `Name,Amount,Category
+Coffee,5,invalid_category`;
+
+            const result = parseCSV(csv, EXPENSE_CONFIG);
+            assertEquals(result.items.length, 1, 'Should still parse item');
+            assertEquals(result.items[0].category, 'other', 'Should default to other');
+        });
+
+        test('parseCSV - expense defaults', () => {
+            const csv = `Name,Amount
+Internet,100`;
+
+            const result = parseCSV(csv, EXPENSE_CONFIG);
+            assertEquals(result.items[0].frequency, 'monthly', 'Should default frequency');
+            assertEquals(result.items[0].category, 'other', 'Should default category');
+            assert(result.items[0].inflation_adjusted, 'Should default inflation_adjusted');
+        });
+
+        // ========== Asset CSV Parsing Tests ==========
+        test('parseCSV - asset basic', () => {
+            const csv = `Name,Type,Institution,Account Number,Balance
+401k,401k,Vanguard,1234,100000
+Checking,checking,Chase,5678,5000`;
+
+            const result = parseCSV(csv, ASSET_CONFIG);
+            assertEquals(result.errors.length, 0, 'Should have no errors');
+            assertEquals(result.items.length, 2, 'Should parse 2 items');
+            assertEquals(result.items[0].type, '401k', 'Should parse type');
+        });
+
+        test('parseCSV - asset type mapping', () => {
+            const csv = `Name,Type,Balance
+IRA,traditional,50000
+Roth,roth,25000
+House,property,400000`;
+
+            const result = parseCSV(csv, ASSET_CONFIG);
+            assertEquals(result.items[0].type, 'traditional_ira', 'Should map traditional');
+            assertEquals(result.items[1].type, 'roth_ira', 'Should map roth');
+            assertEquals(result.items[2].type, 'real_estate', 'Should map property');
+        });
+
+        test('parseCSV - asset invalid type', () => {
+            const csv = `Name,Type,Balance
+Crypto,bitcoin,10000`;
+
+            const result = parseCSV(csv, ASSET_CONFIG);
+            assertEquals(result.items[0].type, 'other', 'Should default to other for invalid type');
+        });
+
+        // ========== Edge Cases ==========
+        test('parseCSV - empty file', () => {
+            const result = parseCSV('', INCOME_CONFIG);
+            assert(result.errors.length > 0, 'Should error on empty file');
+        });
+
+        test('parseCSV - headers only', () => {
+            const result = parseCSV('Name,Amount', INCOME_CONFIG);
+            assert(result.errors.length > 0, 'Should error with no data rows');
+        });
+
+        test('parseCSV - negative amounts with warning', () => {
+            const csv = `Name,Amount
+Refund,-100`;
+
+            const result = parseCSV(csv, INCOME_CONFIG);
+            assertEquals(result.items.length, 1, 'Should still parse');
+            assert(result.warnings.length > 0, 'Should have warnings');
+        });
+
+        test('parseCSV - unicode characters', () => {
+            const csv = `Name,Amount
+Café Münchën,50
+日本語,100`;
+
+            const result = parseCSV(csv, EXPENSE_CONFIG);
+            assertEquals(result.items.length, 2, 'Should handle unicode');
+            assertEquals(result.items[0].name, 'Café Münchën', 'Should preserve unicode');
+        });
+
+        test('parseCSV - windows line endings', () => {
+            const csv = "Name,Amount\r\nSalary,5000\r\nBonus,1000";
+            const result = parseCSV(csv, INCOME_CONFIG);
+            assertEquals(result.items.length, 2, 'Should handle Windows line endings');
+        });
+
+        // ========== getColumnValue Tests ==========
+        test('getColumnValue - first match', () => {
+            const row = { name: 'John', source: 'Other' };
+            const result = getColumnValue(row, ['name', 'source']);
+            assertEquals(result, 'John', 'Should return first match');
+        });
+
+        test('getColumnValue - fallback', () => {
+            const row = { source: 'Pension' };
+            const result = getColumnValue(row, ['name', 'source']);
+            assertEquals(result, 'Pension', 'Should fallback to second option');
+        });
+
+        test('getColumnValue - not found', () => {
+            const row = { other: 'value' };
+            const result = getColumnValue(row, ['name', 'source']);
+            assertEquals(result, '', 'Should return empty string when not found');
+        });
+
+        // ========== File Validation Tests ==========
+        test('validateCSVFile - null file', () => {
+            const result = validateCSVFile(null);
+            assert(!result.valid, 'Should be invalid');
+            assert(result.errors.length > 0, 'Should have errors');
+        });
+
+        test('validateCSVFile - valid file', () => {
+            const mockFile = { name: 'test.csv', size: 1000 };
+            const result = validateCSVFile(mockFile);
+            assert(result.valid, 'Should be valid');
+            assertEquals(result.errors.length, 0, 'Should have no errors');
+        });
+
+        test('validateCSVFile - wrong extension', () => {
+            const mockFile = { name: 'test.txt', size: 1000 };
+            const result = validateCSVFile(mockFile);
+            assert(!result.valid, 'Should be invalid');
+        });
+
+        test('validateCSVFile - too large', () => {
+            const mockFile = { name: 'test.csv', size: 20 * 1024 * 1024 }; // 20MB
+            const result = validateCSVFile(mockFile);
+            assert(!result.valid, 'Should be invalid');
+        });
+
+        test('validateCSVFile - empty file', () => {
+            const mockFile = { name: 'test.csv', size: 0 };
+            const result = validateCSVFile(mockFile);
+            assert(!result.valid, 'Should be invalid');
+        });
+
+        // ========== Display Results ==========
+        const passCount = results.filter(r => r.pass).length;
+        const failCount = results.filter(r => !r.pass).length;
+
+        const summaryEl = document.getElementById('summary');
+        summaryEl.className = `summary ${failCount === 0 ? 'pass' : 'fail'}`;
+        summaryEl.textContent = `${passCount} passed, ${failCount} failed`;
+
+        const resultsEl = document.getElementById('results');
+        results.forEach(result => {
+            const section = document.createElement('div');
+            section.className = 'test-section';
+
+            const testResult = document.createElement('div');
+            testResult.className = `test-result ${result.pass ? 'pass' : 'fail'}`;
+            testResult.textContent = `${result.pass ? '✓' : '✗'} ${result.name}`;
+
+            section.appendChild(testResult);
+
+            if (!result.pass && result.error) {
+                const error = document.createElement('pre');
+                error.textContent = result.error;
+                section.appendChild(error);
+            }
+
+            resultsEl.appendChild(section);
+        });
+
+        // Exit with appropriate code for CI
+        if (failCount > 0) {
+            console.error(`❌ ${failCount} tests failed`);
+        } else {
+            console.log(`✅ All ${passCount} tests passed`);
+        }
+    </script>
+</body>
+</html>

@@ -8,6 +8,7 @@ import { profilesAPI } from '../../api/profiles.js';
 import { formatCurrency, parseCurrency } from '../../utils/formatters.js';
 import { showError, showSuccess } from '../../utils/dom.js';
 import { showAIImportModal } from '../ai/ai-import-modal.js';
+import { parseCSV, INCOME_CONFIG, validateCSVFile } from '../../utils/csv-parser.js';
 
 export function renderIncomeTab(container) {
     const profile = store.get('currentProfile');
@@ -692,39 +693,37 @@ function showImportIncomeCSVModal(container, profile, incomeStreams) {
 
     importBtn.addEventListener('click', async () => {
         if (!selectedFile) return;
+
+        // Validate file first
+        const validation = validateCSVFile(selectedFile);
+        if (!validation.valid) {
+            showError(validation.errors.join(', '));
+            return;
+        }
+
         importBtn.disabled = true;
         importBtn.textContent = 'Importing...';
 
         try {
             const text = await selectedFile.text();
-            const lines = text.split(/\r?\n/).filter(l => l.trim());
-            if (lines.length < 2) throw new Error('CSV must have headers and at least one data row');
+            const result = parseCSV(text, INCOME_CONFIG);
 
-            const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim().toLowerCase());
-            let added = 0;
-
-            for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].match(/(".*?"|[^,]+)/g)?.map(v => v.replace(/^"|"$/g, '').trim()) || [];
-                const row = {};
-                headers.forEach((h, idx) => { row[h] = values[idx] || ''; });
-
-                const name = row['name'] || row['source'] || '';
-                if (!name) continue;
-
-                incomeStreams.push({
-                    name: name,
-                    amount: parseFloat(row['amount'] || row['monthly'] || '0') || 0,
-                    start_date: row['start date'] || row['start_date'] || row['start'] || '',
-                    end_date: row['end date'] || row['end_date'] || row['end'] || '',
-                    description: row['description'] || row['notes'] || '',
-                    owner: row['owner'] || 'primary'
-                });
-                added++;
+            // Check for parsing errors
+            if (result.errors.length > 0) {
+                throw new Error(result.errors.join(', '));
             }
+
+            // Show warnings if any
+            if (result.warnings.length > 0) {
+                console.warn('CSV Import warnings:', result.warnings);
+            }
+
+            // Add parsed items to income streams
+            result.items.forEach(item => incomeStreams.push(item));
 
             await saveIncomeStreams(profile, incomeStreams);
             renderIncomeStreamsList(container, incomeStreams);
-            showSuccess(`Imported ${added} income streams`);
+            showSuccess(`Imported ${result.items.length} income streams`);
             modal.remove();
         } catch (error) {
             showError('Import failed: ' + error.message);

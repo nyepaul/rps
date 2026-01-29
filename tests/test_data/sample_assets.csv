@@ -1,0 +1,9 @@
+Name,Type,Institution,Account Number,Balance
+401k Account,401k,Vanguard,1234,250000
+Traditional IRA,traditional,Fidelity,5678,100000
+Roth IRA,roth,Charles Schwab,9012,75000
+Brokerage Account,brokerage,Vanguard,3456,50000
+Savings Account,savings,Chase Bank,7890,25000
+Checking Account,checking,Chase Bank,2345,5000
+Primary Residence,real_estate,N/A,N/A,450000
+Rental Property,property,N/A,N/A,300000

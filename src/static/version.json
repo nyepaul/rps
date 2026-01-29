@@ -1,5 +1,5 @@
 {
-    "version": "3.9.98",
+    "version": "3.9.99",
     "release_date": "2026-01-28",
-    "release_notes": "Rename import buttons to 'AI Import' and 'TXT/CSV' for clarity"
+    "release_notes": "Standardize CSV parsing with unified parser utility (Phase 1 of hybrid CSV+AI import)"
 }

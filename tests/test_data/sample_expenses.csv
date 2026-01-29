@@ -1,0 +1,14 @@
+Name,Amount,Category,Frequency
+Mortgage,2000,housing,monthly
+Property Tax,800,housing,monthly
+Groceries,600,food,monthly
+Restaurants,300,food,monthly
+Car Payment,400,transportation,monthly
+Gas,200,transportation,monthly
+Health Insurance,500,healthcare,monthly
+Utilities,150,utilities,monthly
+Internet,100,utilities,monthly
+Home Insurance,150,insurance,monthly
+Car Insurance,120,insurance,monthly
+Gym Membership,50,personal,monthly
+Streaming Services,30,entertainment,monthly

@@ -9,6 +9,7 @@ import { formatCurrency, parseCurrency } from '../../utils/formatters.js';
 import { APP_CONFIG } from '../../config.js';
 import { showAIImportModal } from '../ai/ai-import-modal.js';
 import { apiClient } from '../../api/client.js';
+import { parseCSV, EXPENSE_CONFIG, validateCSVFile } from '../../utils/csv-parser.js';
 
 let currentPeriod = 'current';
 let budgetData = null;
@@ -2486,42 +2487,38 @@ function showImportExpensesCSVModal(profile, container) {
 
     importBtn.addEventListener('click', async () => {
         if (!selectedFile) return;
+
+        // Validate file first
+        const validation = validateCSVFile(selectedFile);
+        if (!validation.valid) {
+            showError(validation.errors.join(', '));
+            return;
+        }
+
         importBtn.disabled = true;
         importBtn.textContent = 'Importing...';
 
         try {
             const text = await selectedFile.text();
-            const lines = text.split(/\r?\n/).filter(l => l.trim());
-            if (lines.length < 2) throw new Error('CSV must have headers and at least one data row');
+            const result = parseCSV(text, EXPENSE_CONFIG);
 
-            const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim().toLowerCase());
+            // Check for parsing errors
+            if (result.errors.length > 0) {
+                throw new Error(result.errors.join(', '));
+            }
+
+            // Show warnings if any
+            if (result.warnings.length > 0) {
+                console.warn('CSV Import warnings:', result.warnings);
+            }
+
             const targetPeriod = periodSelect.value;
             let added = 0;
 
-            const validCategories = ['housing', 'transportation', 'food', 'healthcare', 'utilities', 'insurance', 'personal', 'entertainment', 'other'];
+            // Add parsed items to appropriate period(s)
+            result.items.forEach(expense => {
+                const category = expense.category;
 
-            for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].match(/(".*?"|[^,]+)/g)?.map(v => v.replace(/^"|"$/g, '').trim()) || [];
-                const row = {};
-                headers.forEach((h, idx) => { row[h] = values[idx] || ''; });
-
-                const name = row['name'] || row['expense'] || row['description'] || '';
-                if (!name) continue;
-
-                let category = (row['category'] || row['type'] || 'other').toLowerCase();
-                if (!validCategories.includes(category)) category = 'other';
-
-                const expense = {
-                    name: name,
-                    amount: parseFloat(row['amount'] || row['monthly'] || '0') || 0,
-                    frequency: row['frequency'] || 'monthly',
-                    inflation_adjusted: true,
-                    ongoing: true,
-                    start_date: null,
-                    end_date: null
-                };
-
-                // Add to appropriate period(s)
                 if (targetPeriod === 'current' || targetPeriod === 'both') {
                     if (!budgetData.expenses.current[category]) budgetData.expenses.current[category] = [];
                     budgetData.expenses.current[category].push(expense);
@@ -2532,7 +2529,7 @@ function showImportExpensesCSVModal(profile, container) {
                     budgetData.expenses.future[category].push({ ...expense });
                     if (targetPeriod !== 'both') added++;
                 }
-            }
+            });
 
             await saveBudget(profile, container);
             renderExpenseSection(container);
