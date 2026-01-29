@@ -1,5 +1,5 @@
 {
-    "version": "3.9.123",
+    "version": "3.9.124",
     "release_date": "2026-01-29",
-    "release_notes": "Fix savings rate modal: use date-based income filtering"
+    "release_notes": "Add clickable pre/post-retirement expense cards with detailed breakdown modal"
 }

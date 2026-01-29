@@ -649,16 +649,174 @@ function renderBudgetSummary(container) {
 
     summaryContainer.innerHTML = `
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-            <div style="background: var(--bg-secondary); padding: 8px 12px; border-radius: 6px; border-left: 4px solid #ef4444; border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+            <div id="pre-retirement-card" style="background: var(--bg-secondary); padding: 8px 12px; border-radius: 6px; border-left: 4px solid #ef4444; border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='var(--bg-secondary)'">
                 <div style="color: var(--text-secondary); font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 2px;">PRE-RETIREMENT</div>
                 <div style="font-size: 16px; font-weight: 700;">${formatCurrency(currentExpenses)}<span style="font-size: 11px; font-weight: normal; opacity: 0.7;">/yr</span></div>
             </div>
-            <div style="background: var(--bg-secondary); padding: 8px 12px; border-radius: 6px; border-left: 4px solid #f59e0b; border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+            <div id="post-retirement-card" style="background: var(--bg-secondary); padding: 8px 12px; border-radius: 6px; border-left: 4px solid #f59e0b; border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='var(--bg-secondary)'">
                 <div style="color: var(--text-secondary); font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 2px;">POST-RETIREMENT</div>
                 <div style="font-size: 16px; font-weight: 700;">${formatCurrency(futureExpenses)}<span style="font-size: 11px; font-weight: normal; opacity: 0.7;">/yr</span></div>
             </div>
         </div>
     `;
+
+    // Add click handlers
+    const preCard = summaryContainer.querySelector('#pre-retirement-card');
+    const postCard = summaryContainer.querySelector('#post-retirement-card');
+
+    if (preCard) {
+        preCard.addEventListener('click', () => showExpenseBreakdownModal('current', 'Pre-Retirement', currentExpenses, '#ef4444'));
+    }
+    if (postCard) {
+        postCard.addEventListener('click', () => showExpenseBreakdownModal('future', 'Post-Retirement', futureExpenses, '#f59e0b', retirementDate));
+    }
+}
+
+/**
+ * Show expense breakdown modal for a period
+ */
+function showExpenseBreakdownModal(period, title, totalExpenses, accentColor, asOfDate = null) {
+    const expenses = budgetData.expenses[period] || {};
+    const today = asOfDate || new Date();
+
+    // Calculate breakdown by category
+    const categoryTotals = {};
+    const categoryItems = {};
+
+    for (const category of Object.keys(expenses)) {
+        const catData = expenses[category];
+        let expenseItems = [];
+
+        if (Array.isArray(catData)) {
+            expenseItems = catData;
+        } else if (catData && typeof catData === 'object' && catData.amount !== undefined) {
+            expenseItems = [catData];
+        }
+
+        let categoryTotal = 0;
+        const activeItems = [];
+
+        for (const item of expenseItems) {
+            if (!isExpenseActive(item, today)) continue;
+
+            const amount = item.amount || 0;
+            const frequency = item.frequency || 'monthly';
+            const annual = annualAmount(amount, frequency);
+            categoryTotal += annual;
+            activeItems.push({ ...item, annualAmount: annual });
+        }
+
+        if (categoryTotal > 0) {
+            categoryTotals[category] = categoryTotal;
+            categoryItems[category] = activeItems;
+        }
+    }
+
+    // Add college expenses
+    const collegeExpenses = budgetData.college_expenses || [];
+    const currentYear = today.getFullYear();
+    let collegeTotal = 0;
+    const activeCollegeExpenses = [];
+
+    for (const expense of collegeExpenses) {
+        if (!expense.enabled) continue;
+        if (currentYear >= expense.start_year && currentYear <= expense.end_year) {
+            collegeTotal += expense.annual_cost;
+            activeCollegeExpenses.push(expense);
+        }
+    }
+
+    if (collegeTotal > 0) {
+        categoryTotals['College'] = collegeTotal;
+        categoryItems['College'] = activeCollegeExpenses;
+    }
+
+    // Sort categories by amount
+    const sortedCategories = Object.entries(categoryTotals).sort(([,a], [,b]) => b - a);
+
+    // Category emoji mapping
+    const categoryEmojis = {
+        'housing': '🏠', 'utilities': '💡', 'food': '🍽️', 'transportation': '🚗',
+        'entertainment': '🎬', 'healthcare': '🏥', 'insurance': '🛡️', 'shopping': '🛍️',
+        'college': '🎓', 'other': '📦', 'personal': '👤', 'subscriptions': '📱',
+        'travel': '✈️', 'education': '📚', 'childcare': '👶', 'pets': '🐾'
+    };
+
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.cssText = 'display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center;';
+
+    modal.innerHTML = `
+        <div style="background: var(--bg-primary); border-radius: 12px; padding: 30px; max-width: 700px; width: 90%; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: var(--text-primary); font-size: 24px;">📊 ${title} Expenses</h2>
+                <button id="close-expense-breakdown-modal" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">&times;</button>
+            </div>
+
+            <!-- Summary -->
+            <div style="background: linear-gradient(135deg, ${accentColor}33, ${accentColor}22); border-radius: 8px; padding: 20px; margin-bottom: 25px; border-left: 4px solid ${accentColor};">
+                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">Total Annual Expenses</div>
+                <div style="font-size: 32px; font-weight: bold; color: var(--text-primary);">${formatCurrency(totalExpenses)}</div>
+                <div style="font-size: 13px; color: var(--text-secondary); margin-top: 5px;">
+                    ${formatCurrency(totalExpenses / 12)}/month across ${sortedCategories.length} categories
+                </div>
+            </div>
+
+            <!-- Category Breakdown -->
+            <h3 style="margin: 0 0 15px 0; font-size: 16px; color: var(--text-primary);">Category Breakdown</h3>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+                ${sortedCategories.map(([category, amount]) => {
+                    const percentage = totalExpenses > 0 ? (amount / totalExpenses * 100) : 0;
+                    const emoji = categoryEmojis[category.toLowerCase()] || '📦';
+                    const items = categoryItems[category] || [];
+                    const monthlyAmount = amount / 12;
+
+                    return `
+                        <div style="padding: 14px; background: var(--bg-secondary); border-radius: 8px; border-left: 3px solid ${accentColor};">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; color: var(--text-primary); font-size: 14px; margin-bottom: 4px;">
+                                        ${emoji} ${category.charAt(0).toUpperCase() + category.slice(1)}
+                                    </div>
+                                    <div style="font-size: 11px; color: var(--text-secondary);">
+                                        ${formatCurrency(monthlyAmount, 0)}/mo • ${items.length} item${items.length !== 1 ? 's' : ''}
+                                    </div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-weight: bold; color: ${accentColor}; font-size: 16px;">${formatCurrency(amount, 0)}</div>
+                                    <div style="font-size: 10px; color: var(--text-secondary);">${percentage.toFixed(1)}%</div>
+                                </div>
+                            </div>
+                            <div style="background: ${accentColor}22; border-radius: 4px; height: 6px; overflow: hidden;">
+                                <div style="background: ${accentColor}; height: 100%; width: ${percentage}%; transition: width 0.3s;"></div>
+                            </div>
+                            ${items.length > 0 && items.length <= 5 ? `
+                                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-color);">
+                                    ${items.map(item => `
+                                        <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); padding: 2px 0;">
+                                            <span>${item.name || item.child_name || 'Item'}</span>
+                                            <span>${formatCurrency(item.annualAmount || item.annual_cost || 0, 0)}/yr</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+
+            ${sortedCategories.length === 0 ? `
+                <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                    <div style="font-size: 48px; margin-bottom: 10px;">📭</div>
+                    <p>No expenses configured for this period.</p>
+                </div>
+            ` : ''}
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.querySelector('#close-expense-breakdown-modal').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 }
 
 /**
