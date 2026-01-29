@@ -1465,10 +1465,30 @@ function renderExpenseSection(parentContainer) {
             expenseItems.forEach((expense, index) => {
                 const annual = annualAmount(expense.amount || 0, expense.frequency || 'monthly');
 
+                // Determine source badge
+                const source = expense.source || 'specified';
+                const sourceBadges = {
+                    'specified': { color: '#10b981', text: '✓', borderColor: '#10b981' },
+                    'detected': { color: '#3b82f6', text: '🔍', borderColor: '#3b82f6' },
+                    'merged': { color: '#8b5cf6', text: '⚡', borderColor: '#8b5cf6' }
+                };
+                const badge = sourceBadges[source] || sourceBadges['specified'];
+
+                // Build tooltip for detected/merged items
+                let tooltip = '';
+                if (source === 'detected' || source === 'merged') {
+                    const parts = [];
+                    if (expense.confidence) parts.push(`Confidence: ${(expense.confidence * 100).toFixed(0)}%`);
+                    if (expense.variance !== undefined) parts.push(`Variance: ±$${expense.variance.toFixed(2)}`);
+                    if (expense.transaction_count) parts.push(`${expense.transaction_count} transactions`);
+                    tooltip = parts.join(' • ');
+                }
+
                 html += `
-                    <div class="expense-item-row" data-category="${cat.key}" data-index="${index}" style="padding: 4px 6px; background: var(--bg-secondary); border-radius: 3px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--accent-color)'" onmouseout="this.style.borderColor='var(--border-color)'">
+                    <div class="expense-item-row" data-category="${cat.key}" data-index="${index}" style="padding: 4px 6px; background: var(--bg-secondary); border-radius: 3px; border: 1px solid var(--border-color); border-left: 2px solid ${badge.borderColor}; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--accent-color)'" onmouseout="this.style.borderColor='var(--border-color)'">
                         <div style="display: flex; align-items: center; gap: 4px; flex: 1; font-size: 11px; overflow: hidden;">
                             <span style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${expense.name || cat.label}</span>
+                            ${source !== 'specified' ? `<span style="font-size: 9px;" ${tooltip ? `title="${tooltip}"` : ''}>${badge.text}</span>` : ''}
                             <span style="color: var(--text-secondary); white-space: nowrap;">${formatCurrency(expense.amount || 0, 0)}/${expense.frequency[0].toLowerCase()}</span>
                         </div>
                         <div style="display: flex; gap: 2px; flex-shrink: 0;">

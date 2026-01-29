@@ -8,6 +8,7 @@ import { profilesAPI } from '../../api/profiles.js';
 import { formatCurrency, parseCurrency } from '../../utils/formatters.js';
 import { showError, showSuccess } from '../../utils/dom.js';
 import { showAIImportModal } from '../ai/ai-import-modal.js';
+import { showTransactionImportModal } from '../transactions/transaction-import-modal.js';
 import { parseCSV, INCOME_CONFIG, validateCSVFile } from '../../utils/csv-parser.js';
 
 export function renderIncomeTab(container) {
@@ -57,6 +58,9 @@ export function renderIncomeTab(container) {
                     </button>
                     <button id="ai-import-income-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px;">
                         AI Import
+                    </button>
+                    <button id="transaction-import-btn" style="padding: 6px 12px; background: var(--info-color, #2196F3); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px;" title="Import bank transactions CSV">
+                        📊 Import CSV
                     </button>
                     <div style="display: flex; border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden;">
                         <button id="csv-export-income-btn" style="padding: 6px 10px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-right: 1px solid var(--border-color); cursor: pointer; font-size: 11px;">
@@ -134,6 +138,23 @@ function setupIncomeStreamsHandlers(container, profile, incomeStreams) {
                 if (updated > 0) parts.push(`${updated} updated`);
                 if (parts.length > 0) {
                     showSuccess(`Income streams imported: ${parts.join(', ')}`);
+                }
+            });
+        });
+    }
+
+    // Transaction Import button
+    const transactionBtn = container.querySelector('#transaction-import-btn');
+    if (transactionBtn) {
+        transactionBtn.addEventListener('click', () => {
+            showTransactionImportModal(profile.name, incomeStreams, async () => {
+                // Reload profile after import
+                await profilesAPI.get(profile.name);
+                const updatedProfile = store.get('currentProfile');
+                if (updatedProfile) {
+                    const updatedStreams = updatedProfile.data?.income_streams || [];
+                    renderIncomeStreamsList(container, updatedStreams);
+                    showSuccess('Transactions imported successfully!');
                 }
             });
         });
@@ -298,10 +319,33 @@ function renderIncomeStreamRow(stream, index) {
 
     const annual = stream.amount * 12;
 
+    // Determine source badge
+    const source = stream.source || 'specified';
+    const sourceBadges = {
+        'specified': { color: '#10b981', text: '✓ Manual', borderColor: '#10b981' },
+        'detected': { color: '#3b82f6', text: '🔍 Detected', borderColor: '#3b82f6' },
+        'merged': { color: '#8b5cf6', text: '⚡ Merged', borderColor: '#8b5cf6' }
+    };
+    const badge = sourceBadges[source] || sourceBadges['specified'];
+
+    // Build tooltip for detected/merged items
+    let tooltip = '';
+    if (source === 'detected' || source === 'merged') {
+        const parts = [];
+        if (stream.detected_from) parts.push(`From: ${stream.detected_from}`);
+        if (stream.confidence) parts.push(`Confidence: ${(stream.confidence * 100).toFixed(0)}%`);
+        if (stream.variance !== undefined) parts.push(`Variance: ±$${stream.variance.toFixed(2)}`);
+        if (stream.first_seen && stream.last_seen) {
+            parts.push(`Period: ${stream.first_seen} to ${stream.last_seen}`);
+        }
+        tooltip = parts.join(' • ');
+    }
+
     return `
-        <div class="income-row" data-index="${index}" style="padding: 8px 12px; background: var(--bg-primary); border-radius: 4px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; flex-wrap: wrap; gap: var(--space-2);" onmouseover="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--accent-color)'" onmouseout="this.style.background='var(--bg-primary)'; this.style.borderColor='var(--border-color)'">
+        <div class="income-row" data-index="${index}" style="padding: 8px 12px; background: var(--bg-primary); border-radius: 4px; border: 1px solid var(--border-color); border-left: 3px solid ${badge.borderColor}; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; flex-wrap: wrap; gap: var(--space-2);" onmouseover="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--accent-color)'" onmouseout="this.style.background='var(--bg-primary)'; this.style.borderColor='var(--border-color)'">
             <div style="display: flex; align-items: center; gap: var(--space-2); flex: 1; font-size: 13px; flex-wrap: wrap;">
                 <span style="font-weight: 700;">${stream.name}</span>
+                <span style="display: inline-block; padding: 2px 8px; background: ${badge.color}; color: white; border-radius: 12px; font-size: 10px; font-weight: 600;" ${tooltip ? `title="${tooltip}"` : ''}>${badge.text}</span>
                 <span style="color: var(--text-secondary);">${formatCurrency(stream.amount, 0)}/mo (${formatCurrency(annual, 0)}/yr)</span>
                 <span style="font-size: 11px; color: var(--text-secondary); opacity: 0.8;">${dateInfo}</span>
             </div>

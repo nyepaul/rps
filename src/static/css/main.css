@@ -1099,4 +1099,188 @@
         .accordion-content.expanded {
             max-height: 5000px;
             transition: max-height 0.5s ease-in;
-        }.force-hide { display: none !important; }
+        }
+
+        .force-hide { display: none !important; }
+
+        /* Transaction Import Styles */
+        .tab-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            background: var(--border-color);
+            color: var(--text-secondary);
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-left: 4px;
+        }
+
+        .recon-tab.active .tab-badge {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .recon-item {
+            transition: all 0.2s;
+        }
+
+        .recon-item:hover {
+            transform: translateX(2px);
+            box-shadow: 0 2px 8px var(--shadow);
+        }
+
+        .action-select {
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .action-select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .action-select:hover {
+            border-color: var(--accent-color);
+        }
+
+        /* Source Badge Styles */
+        .source-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .source-badge.specified {
+            background: #10b981;
+            color: white;
+        }
+
+        .source-badge.detected {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .source-badge.merged {
+            background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+            color: white;
+        }
+
+        /* Progress Bar Animation */
+        @keyframes progressPulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        #progress-bar {
+            animation: progressPulse 1.5s ease-in-out infinite;
+        }
+
+        /* Reconciliation Tab Hover Effects */
+        .recon-tab {
+            transition: all 0.2s;
+        }
+
+        .recon-tab:hover:not(.active) {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        /* Action Menu Item Hover */
+        .action-menu-item:hover {
+            background: var(--bg-tertiary) !important;
+        }
+
+        /* Drop Zone Active State */
+        #drop-zone.drag-over {
+            border-color: var(--accent-color);
+            background: var(--bg-secondary);
+        }
+
+        /* Spinner Animation */
+        .spinner {
+            border: 4px solid var(--border-color);
+            border-top-color: var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 2000;
+            animation: fadeIn 0.2s;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Tooltip Styles */
+        [title] {
+            position: relative;
+        }
+
+        /* Responsive adjustments for transaction import */
+        @media (max-width: 768px) {
+            .modal-content {
+                max-width: 100% !important;
+                max-height: 95vh;
+                overflow-y: auto;
+            }
+
+            .recon-tab {
+                font-size: 11px !important;
+                padding: 8px 12px !important;
+            }
+
+            .tab-badge {
+                font-size: 9px !important;
+            }
+        }
