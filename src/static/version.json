@@ -1,5 +1,5 @@
 {
-    "version": "3.9.84",
+    "version": "3.9.119",
     "release_date": "2026-01-29",
     "release_notes": "Add CSV transaction import with income/expense reconciliation and pattern detection"
 }
