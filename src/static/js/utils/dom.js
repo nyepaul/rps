@@ -32,11 +32,17 @@ export function createElement(tag, attrs = {}, ...children) {
 }
 
 /**
- * Show loading spinner
+ * Show loading spinner in container (inline spinner)
+ * Skips if global spinner is already visible
  */
 export function showLoading(container, message = 'Loading...') {
+    // Skip if global spinner is already showing
+    if (document.getElementById('global-spinner')) {
+        return;
+    }
+
     container.innerHTML = `
-        <div style="text-align: center; padding: 40px;">
+        <div class="inline-loading-spinner" style="text-align: center; padding: 40px;">
             <div class="spinner" style="
                 width: 48px;
                 height: 48px;
@@ -140,12 +146,23 @@ export function clearContainer(container) {
 
 /**
  * Show global loading spinner overlay
+ * Hides any inline spinners and ensures only one global spinner exists
  */
 export function showSpinner(message = 'Loading...') {
     const existingSpinner = document.getElementById('global-spinner');
     if (existingSpinner) {
+        // Update message if spinner already exists
+        const messageEl = existingSpinner.querySelector('[data-spinner-message]');
+        if (messageEl) {
+            messageEl.textContent = message;
+        }
         return;
     }
+
+    // Hide any inline spinners
+    document.querySelectorAll('.inline-loading-spinner').forEach(el => {
+        el.style.display = 'none';
+    });
 
     const spinner = document.createElement('div');
     spinner.id = 'global-spinner';
@@ -174,7 +191,7 @@ export function showSpinner(message = 'Loading...') {
                 animation: spin 0.8s linear infinite;
                 margin: 0 auto 20px;
             "></div>
-            <div style="font-size: 16px; color: var(--text-primary); font-weight: 500;">${message}</div>
+            <div data-spinner-message style="font-size: 16px; color: var(--text-primary); font-weight: 500;">${message}</div>
         </div>
         <style>
             @keyframes spin {

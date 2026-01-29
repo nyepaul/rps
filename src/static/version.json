@@ -1,5 +1,5 @@
 {
-    "version": "3.9.131",
+    "version": "3.9.132",
     "release_date": "2026-01-29",
-    "release_notes": "Fix analysis modal readability: replace blue backgrounds with bordered boxes"
+    "release_notes": "Prevent multiple spinners: coordinate global and inline spinners"
 }
