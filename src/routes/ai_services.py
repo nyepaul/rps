@@ -235,13 +235,14 @@ def normalize_to_list(data, list_key):
 
 def call_gemini_with_fallback(prompt, api_key, image_data=None, mime_type=None, model=None):
     """Calls Gemini with a prioritized list of models and fallback logic using REST API."""
-    # Use full model resource names for v1 API
-    # Frontier models for 2026
+    # Current Gemini models as of Jan 2026
+    # Note: Gemini 1.5 and 1.0 are RETIRED and return 404
+    # Prioritize gemini-2.5-flash (stable, tested working)
     models = [
-        'gemini-3-flash-preview', 
-        'gemini-3-pro-preview',
+        'gemini-2.5-flash',
         'gemini-2.0-flash',
-        'gemini-1.5-flash',
+        'gemini-3-flash-preview',
+        'gemini-3-pro-preview',
     ]
 
     # If specific model requested, try it first
@@ -332,21 +333,12 @@ def call_gemini_with_fallback(prompt, api_key, image_data=None, mime_type=None, 
             # Use v1beta for all calls - it's more robust and required for PDF/Document support
             api_version = 'v1beta'
 
+            # Check for invalid API key (contains masking characters)
+            if '•' in api_key or '●' in api_key or not api_key.isascii():
+                raise Exception("API key contains invalid characters (possibly masked). Please re-enter your API key in Settings → AI Settings.")
+
             # Call Gemini REST API
             url = f'https://generativelanguage.googleapis.com/{api_version}/{full_model_path}:generateContent?key={api_key}'
-
-            # Log request details
-            print(f"  Gemini API Request:")
-            print(f"    URL: {url[:80]}...")
-            print(f"    Payload has generationConfig: {'generationConfig' in payload}")
-            if 'contents' in payload and payload['contents']:
-                parts = payload['contents'][0].get('parts', [])
-                print(f"    Parts count: {len(parts)}")
-                for i, part in enumerate(parts):
-                    if 'text' in part:
-                        print(f"    Part {i}: text ({len(part['text'])} chars)")
-                    elif 'inline_data' in part:
-                        print(f"    Part {i}: inline_data (mime={part['inline_data'].get('mime_type')})")
 
             response = requests.post(url, json=payload, timeout=60)
 
@@ -549,9 +541,10 @@ def call_gemini(prompt, api_key, history=None, system_prompt=None, model=None):
     contents.append(types.Content(role='user', parts=[types.Part(text=prompt)]))
 
     models_to_try = [
-        'models/gemini-3-flash-preview', 
-        'models/gemini-3-pro-preview', 
-        'models/gemini-2.0-flash'
+        'models/gemini-2.5-flash',
+        'models/gemini-2.0-flash',
+        'models/gemini-3-flash-preview',
+        'models/gemini-3-pro-preview'
     ]
 
     # If specific model requested, try it first
@@ -637,7 +630,7 @@ def call_openai_compatible(provider, prompt, api_key, history=None, system_promp
     endpoints = {
         'openai': ('https://api.openai.com/v1/chat/completions', 'gpt-5.2'),
         'deepseek': ('https://api.deepseek.com/chat/completions', 'deepseek-chat'), # Maps to V4
-        'openrouter': ('https://openrouter.ai/api/v1/chat/completions', 'google/gemini-3-flash-preview'),
+        'openrouter': ('https://openrouter.ai/api/v1/chat/completions', 'google/gemini-2.5-flash'),
         'grok': ('https://api.x.ai/v1/chat/completions', 'grok-5'),
         'mistral': ('https://api.mistral.ai/v1/chat/completions', 'mistral-large-25.12'),
         'together': ('https://api.together.xyz/v1/chat/completions', 'meta-llama/Llama-4-70b-instruct'),
@@ -1077,15 +1070,6 @@ def extract_items(item_type):
         localai_url = sanitize_url(api_keys.get("localai_url"), "http://localhost:8080")
         ollama_url = sanitize_url(api_keys.get("ollama_url"), "http://localhost:11434")
 
-        # Debug: log API key retrieval
-        print(f"=== API KEY DEBUG ===")
-        print(f"  Provider: {provider}")
-        print(f"  Key name looked up: {provider}_api_key")
-        print(f"  Available keys in profile: {list(api_keys.keys())}")
-        print(f"  API key found: {bool(api_key)}")
-        if api_key:
-            print(f"  API key preview: {api_key[:10]}...{api_key[-4:]} (len={len(api_key)})")
-
         if not api_key and provider not in ['lmstudio', 'localai', 'ollama']:
             return jsonify({'error': f'{provider.capitalize()} API key not configured.'}), 400
 
@@ -1093,16 +1077,6 @@ def extract_items(item_type):
         return jsonify({'error': str(e)}), 500
 
     prompt = config['prompt']
-
-    # Log extraction request details
-    print(f"=== EXTRACTION REQUEST ===")
-    print(f"  Item type: {item_type}")
-    print(f"  Provider: {provider}")
-    print(f"  Model: {requested_model}")
-    print(f"  MIME type: {mime_type}")
-    print(f"  File name: {file_name}")
-    print(f"  Data length: {len(image_b64) if image_b64 else 0} chars")
-    print(f"  API key present: {bool(api_key)}")
 
     def generate():
         try:
@@ -1138,7 +1112,6 @@ def extract_items(item_type):
                             continue
 
                     if response_text:
-                        print(f"DEBUG: Response from {provider}: {response_text[:500]}")
                         chunk_items = resilient_parse_llm_json(response_text, config['list_key'])
                         all_extracted.extend(chunk_items)
                 
@@ -1148,21 +1121,16 @@ def extract_items(item_type):
             else:
                 response_text = ""
                 is_text_file = mime_type in ['text/csv', 'text/plain']
-                print(f"  Processing single file: is_text_file={is_text_file}, mime_type={mime_type}")
 
                 if provider == 'gemini':
-                    print(f"  Calling Gemini with file data...")
                     file_bytes = base64.b64decode(image_b64)
-                    print(f"  Decoded file: {len(file_bytes)} bytes")
                     response_text = call_gemini_with_fallback(prompt, api_key, image_data=file_bytes, mime_type=mime_type, model=requested_model)
                 elif provider in ['claude', 'openai']:
                     if is_text_file:
                         text_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
-                        print(f"  Calling {provider} with text content ({len(text_content)} chars)...")
                         response_text = call_llm(provider, f"{prompt}\n\nDATA:\n{text_content}", api_key, model=requested_model, lmstudio_url=lmstudio_url, localai_url=localai_url, ollama_url=ollama_url)
                     else:
                         fn = call_claude_with_vision if provider == 'claude' else call_openai_with_vision
-                        print(f"  Calling {provider} with vision...")
                         response_text = fn(prompt, api_key, image_b64, mime_type, model=requested_model)
                 elif provider in ['lmstudio', 'localai', 'ollama']:
                     text_content = ""
@@ -1170,30 +1138,15 @@ def extract_items(item_type):
                         text_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
                     else:
                         text_content = "[Image provided - vision not supported via local AI yet. Use Gemini/Claude/OpenAI for images.]"
-                    print(f"  Calling {provider} with text content ({len(text_content)} chars)...")
                     response_text = call_llm(provider, f"{prompt}\n\nDATA:\n{text_content}", api_key, model=requested_model, lmstudio_url=lmstudio_url, localai_url=localai_url, ollama_url=ollama_url)
                 else:
                     if is_text_file:
                         text_content = base64.b64decode(image_b64).decode('utf-8', errors='replace')
-                        print(f"  Calling {provider} with text content ({len(text_content)} chars)...")
                         response_text = call_llm(provider, f"{prompt}\n\nDATA:\n{text_content}", api_key, model=requested_model, lmstudio_url=lmstudio_url, localai_url=localai_url, ollama_url=ollama_url)
                     else:
                         raise Exception(f"Provider '{provider}' does not support image extraction. Use Gemini, Claude, or OpenAI for images.")
 
-                # Log response details
-                print(f"=== LLM RESPONSE ===")
-                print(f"  Response received: {bool(response_text)}")
-                print(f"  Response length: {len(response_text) if response_text else 0}")
-                if response_text:
-                    print(f"  Response preview: {response_text[:500]}")
-                else:
-                    print(f"  WARNING: Empty response from {provider}!")
-
                 items = resilient_parse_llm_json(response_text, config['list_key'])
-                print(f"=== PARSE RESULT ===")
-                print(f"  Items extracted: {len(items)}")
-                if items:
-                    print(f"  First item: {items[0]}")
 
                 yield json.dumps({config['list_key']: items, 'status': 'complete'}) + '\n'
 
