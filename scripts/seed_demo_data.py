@@ -103,36 +103,74 @@ def seed_demo_data():
             "spouse": {},
             "children": [],
             "income_streams": [
-                {"name": "Software Developer Salary", "amount": 5833, "source": "employment", "start_date": "2022-06-01", "end_date": None}
+                {"name": "Software Developer Salary", "amount": 5833, "source": "employment", "start_date": "2022-06-01", "end_date": ""},
+                {"name": "Annual Bonus (Prorated)", "amount": 400, "source": "employment", "start_date": "2023-01-01", "end_date": ""},
+                {"name": "Side Project Income", "amount": 250, "source": "self_employment", "start_date": "2024-03-01", "end_date": ""}
             ],
             "budget": {
                 "expenses": {
                     "current": {
-                        "housing": [{"name": "Rent (1BR Apartment)", "amount": 1650, "frequency": "monthly"}],
+                        "housing": [
+                            {"name": "Rent (1BR Apartment)", "amount": 1650, "frequency": "monthly"},
+                            {"name": "Renters Insurance", "amount": 25, "frequency": "monthly"}
+                        ],
                         "utilities": [
-                            {"name": "Electric/Gas", "amount": 85, "frequency": "monthly"},
+                            {"name": "Electric", "amount": 55, "frequency": "monthly"},
+                            {"name": "Gas", "amount": 30, "frequency": "monthly"},
                             {"name": "Internet", "amount": 65, "frequency": "monthly"},
-                            {"name": "Phone", "amount": 45, "frequency": "monthly"}
+                            {"name": "Cell Phone", "amount": 45, "frequency": "monthly"},
+                            {"name": "Water/Trash (included)", "amount": 0, "frequency": "monthly"}
                         ],
                         "food": [
-                            {"name": "Groceries", "amount": 350, "frequency": "monthly"},
-                            {"name": "Dining Out", "amount": 200, "frequency": "monthly"}
+                            {"name": "Groceries", "amount": 320, "frequency": "monthly"},
+                            {"name": "Restaurants", "amount": 150, "frequency": "monthly"},
+                            {"name": "Coffee/Snacks", "amount": 60, "frequency": "monthly"},
+                            {"name": "Food Delivery Apps", "amount": 80, "frequency": "monthly"}
                         ],
                         "transportation": [
-                            {"name": "Car Payment", "amount": 350, "frequency": "monthly"},
+                            {"name": "Car Payment (Honda Civic)", "amount": 350, "frequency": "monthly"},
                             {"name": "Gas", "amount": 120, "frequency": "monthly"},
-                            {"name": "Car Insurance", "amount": 95, "frequency": "monthly"}
+                            {"name": "Car Insurance", "amount": 95, "frequency": "monthly"},
+                            {"name": "Parking", "amount": 50, "frequency": "monthly"},
+                            {"name": "Car Maintenance", "amount": 40, "frequency": "monthly"}
                         ],
-                        "insurance": [{"name": "Renters Insurance", "amount": 25, "frequency": "monthly"}],
+                        "healthcare": [
+                            {"name": "Health Insurance (via employer)", "amount": 120, "frequency": "monthly"},
+                            {"name": "Dental/Vision", "amount": 25, "frequency": "monthly"},
+                            {"name": "Medications/Copays", "amount": 20, "frequency": "monthly"}
+                        ],
                         "entertainment": [
-                            {"name": "Streaming Services", "amount": 45, "frequency": "monthly"},
-                            {"name": "Gaming/Hobbies", "amount": 75, "frequency": "monthly"}
+                            {"name": "Netflix", "amount": 15, "frequency": "monthly"},
+                            {"name": "Spotify", "amount": 11, "frequency": "monthly"},
+                            {"name": "Gaming (Xbox/Steam)", "amount": 30, "frequency": "monthly"},
+                            {"name": "Concerts/Events", "amount": 50, "frequency": "monthly"},
+                            {"name": "Bars/Nightlife", "amount": 100, "frequency": "monthly"}
+                        ],
+                        "subscriptions": [
+                            {"name": "Amazon Prime", "amount": 12, "frequency": "monthly"},
+                            {"name": "Cloud Storage", "amount": 10, "frequency": "monthly"},
+                            {"name": "News/Apps", "amount": 15, "frequency": "monthly"}
                         ],
                         "personal": [
                             {"name": "Gym Membership", "amount": 40, "frequency": "monthly"},
-                            {"name": "Personal Care", "amount": 50, "frequency": "monthly"}
+                            {"name": "Haircuts", "amount": 30, "frequency": "monthly"},
+                            {"name": "Clothing", "amount": 75, "frequency": "monthly"},
+                            {"name": "Personal Care Products", "amount": 25, "frequency": "monthly"}
                         ],
-                        "other": [{"name": "Miscellaneous", "amount": 150, "frequency": "monthly"}]
+                        "education": [
+                            {"name": "Student Loan Payment", "amount": 300, "frequency": "monthly"},
+                            {"name": "Online Courses/Books", "amount": 25, "frequency": "monthly"}
+                        ],
+                        "savings": [
+                            {"name": "401k Contribution", "amount": 583, "frequency": "monthly"},
+                            {"name": "Roth IRA", "amount": 250, "frequency": "monthly"},
+                            {"name": "Emergency Fund", "amount": 200, "frequency": "monthly"}
+                        ],
+                        "other": [
+                            {"name": "Gifts", "amount": 40, "frequency": "monthly"},
+                            {"name": "Pet (Cat)", "amount": 50, "frequency": "monthly"},
+                            {"name": "Miscellaneous", "amount": 75, "frequency": "monthly"}
+                        ]
                     },
                     "future": {
                         "housing": [{"name": "Rent (Adjusted)", "amount": 1200, "frequency": "monthly"}],
@@ -181,9 +219,13 @@ def seed_demo_data():
                 {"name": "Taylor", "birth_date": "2010-09-25"}
             ],
             "income_streams": [
-                {"name": "Tom - Senior Engineer (FAANG)", "amount": 18500, "source": "employment", "start_date": "2015-01-15", "end_date": None},
-                {"name": "Tara - Product Manager", "amount": 13500, "source": "employment", "start_date": "2016-03-01", "end_date": None},
-                {"name": "RSU Vesting (Annual)", "amount": 2500, "source": "investment", "start_date": "2020-01-01", "end_date": None}
+                {"name": "Tom - Senior Engineer Base", "amount": 16500, "source": "employment", "start_date": "2015-01-15", "end_date": ""},
+                {"name": "Tom - Annual Bonus (Prorated)", "amount": 2000, "source": "employment", "start_date": "2015-01-15", "end_date": ""},
+                {"name": "Tara - Product Manager Base", "amount": 12000, "source": "employment", "start_date": "2016-03-01", "end_date": ""},
+                {"name": "Tara - Annual Bonus (Prorated)", "amount": 1500, "source": "employment", "start_date": "2016-03-01", "end_date": ""},
+                {"name": "RSU Vesting (Monthly Avg)", "amount": 3500, "source": "investment", "start_date": "2020-01-01", "end_date": ""},
+                {"name": "Dividend Income", "amount": 450, "source": "investment", "start_date": "2018-01-01", "end_date": ""},
+                {"name": "Rental Property (Net)", "amount": 800, "source": "rental", "start_date": "2021-06-01", "end_date": ""}
             ],
             "budget": {
                 "expenses": {
@@ -304,8 +346,11 @@ def seed_demo_data():
                 {"name": "Stella Jr", "birth_date": "2019-02-28"}
             ],
             "income_streams": [
-                {"name": "Steve - IT Manager", "amount": 9200, "source": "employment", "start_date": "2018-06-01", "end_date": None},
-                {"name": "Sarah - Nurse (Part-Time)", "amount": 4500, "source": "employment", "start_date": "2020-01-15", "end_date": None}
+                {"name": "Steve - IT Manager Base", "amount": 8500, "source": "employment", "start_date": "2018-06-01", "end_date": ""},
+                {"name": "Steve - Annual Bonus (Prorated)", "amount": 700, "source": "employment", "start_date": "2018-06-01", "end_date": ""},
+                {"name": "Sarah - Nurse (Part-Time)", "amount": 4200, "source": "employment", "start_date": "2020-01-15", "end_date": ""},
+                {"name": "Sarah - PRN Shifts", "amount": 600, "source": "employment", "start_date": "2022-01-01", "end_date": ""},
+                {"name": "Dividend Income", "amount": 120, "source": "investment", "start_date": "2020-01-01", "end_date": ""}
             ],
             "budget": {
                 "expenses": {
@@ -411,7 +456,10 @@ def seed_demo_data():
             "spouse": {},
             "children": [],
             "income_streams": [
-                {"name": "IBEW Electrician", "amount": 6100, "source": "employment", "start_date": "2005-03-15", "end_date": None}
+                {"name": "IBEW Electrician - Base Pay", "amount": 5400, "source": "employment", "start_date": "2005-03-15", "end_date": ""},
+                {"name": "IBEW - Overtime (Avg)", "amount": 500, "source": "employment", "start_date": "2005-03-15", "end_date": ""},
+                {"name": "Side Jobs (Cash)", "amount": 350, "source": "self_employment", "start_date": "2010-01-01", "end_date": ""},
+                {"name": "Union Pension (Future)", "amount": 3200, "source": "pension", "start_date": "2036-11-05", "end_date": ""}
             ],
             "budget": {
                 "expenses": {

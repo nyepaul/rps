@@ -1,5 +1,5 @@
 {
-    "version": "3.9.134",
+    "version": "3.9.135",
     "release_date": "2026-01-29",
-    "release_notes": "Add comprehensive demo data with realistic cashflow for all profiles"
+    "release_notes": "Add more detailed income/expense records to demo profiles"
 }
