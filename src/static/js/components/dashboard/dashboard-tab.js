@@ -642,52 +642,100 @@ function setupDashboardHandlers(container, profiles) {
         });
     }
 
-    // Metric Card Click Handlers - fetch fresh profile data on each click
+    // Metric Card Click Handlers - fetch fresh complete profile data from API
     const networthCard = container.querySelector('#metric-networth');
     if (networthCard) {
-        networthCard.addEventListener('click', () => {
+        networthCard.addEventListener('click', async () => {
             const currentProfile = store.get('currentProfile');
-            if (currentProfile) showNetWorthDetails(currentProfile);
+            if (currentProfile && currentProfile.name) {
+                try {
+                    const result = await profilesAPI.get(currentProfile.name);
+                    showNetWorthDetails(result.profile);
+                } catch (error) {
+                    console.error('Error fetching profile:', error);
+                    showNetWorthDetails(currentProfile); // Fallback to store data
+                }
+            }
         });
     }
 
     const incomeCard = container.querySelector('#metric-income');
     if (incomeCard) {
-        incomeCard.addEventListener('click', () => {
+        incomeCard.addEventListener('click', async () => {
             const currentProfile = store.get('currentProfile');
-            if (currentProfile) showIncomeDetails(currentProfile);
+            if (currentProfile && currentProfile.name) {
+                try {
+                    const result = await profilesAPI.get(currentProfile.name);
+                    showIncomeDetails(result.profile);
+                } catch (error) {
+                    console.error('Error fetching profile:', error);
+                    showIncomeDetails(currentProfile); // Fallback to store data
+                }
+            }
         });
     }
 
     const expensesCard = container.querySelector('#metric-expenses');
     if (expensesCard) {
-        expensesCard.addEventListener('click', () => {
+        expensesCard.addEventListener('click', async () => {
             const currentProfile = store.get('currentProfile');
-            if (currentProfile) showExpensesDetails(currentProfile);
+            if (currentProfile && currentProfile.name) {
+                try {
+                    const result = await profilesAPI.get(currentProfile.name);
+                    showExpensesDetails(result.profile);
+                } catch (error) {
+                    console.error('Error fetching profile:', error);
+                    showExpensesDetails(currentProfile); // Fallback to store data
+                }
+            }
         });
     }
 
     const savingsCard = container.querySelector('#metric-savings-rate');
     if (savingsCard) {
-        savingsCard.addEventListener('click', () => {
+        savingsCard.addEventListener('click', async () => {
             const currentProfile = store.get('currentProfile');
-            if (currentProfile) showSavingsRateDetails(currentProfile);
+            if (currentProfile && currentProfile.name) {
+                try {
+                    const result = await profilesAPI.get(currentProfile.name);
+                    showSavingsRateDetails(result.profile);
+                } catch (error) {
+                    console.error('Error fetching profile:', error);
+                    showSavingsRateDetails(currentProfile); // Fallback to store data
+                }
+            }
         });
     }
 
     const ageCard = container.querySelector('#metric-age');
     if (ageCard) {
-        ageCard.addEventListener('click', () => {
+        ageCard.addEventListener('click', async () => {
             const currentProfile = store.get('currentProfile');
-            if (currentProfile) showAgeDetails(currentProfile);
+            if (currentProfile && currentProfile.name) {
+                try {
+                    const result = await profilesAPI.get(currentProfile.name);
+                    showAgeDetails(result.profile);
+                } catch (error) {
+                    console.error('Error fetching profile:', error);
+                    showAgeDetails(currentProfile); // Fallback to store data
+                }
+            }
         });
     }
 
     const retirementCard = container.querySelector('#metric-retirement');
     if (retirementCard) {
-        retirementCard.addEventListener('click', () => {
+        retirementCard.addEventListener('click', async () => {
             const currentProfile = store.get('currentProfile');
-            if (currentProfile) showRetirementDetails(currentProfile);
+            if (currentProfile && currentProfile.name) {
+                try {
+                    const result = await profilesAPI.get(currentProfile.name);
+                    showRetirementDetails(result.profile);
+                } catch (error) {
+                    console.error('Error fetching profile:', error);
+                    showRetirementDetails(currentProfile); // Fallback to store data
+                }
+            }
         });
     }
 }

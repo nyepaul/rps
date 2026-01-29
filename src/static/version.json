@@ -1,5 +1,5 @@
 {
-    "version": "3.9.113",
+    "version": "3.9.114",
     "release_date": "2026-01-28",
-    "release_notes": "Fix metric card details to show current profile data instead of stale cached data"
+    "release_notes": "Fetch complete profile data from API when clicking metric cards for accurate details"
 }
