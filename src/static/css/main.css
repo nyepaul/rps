@@ -25,6 +25,10 @@
             --card-gradient-1: #3b82f6;
             --card-gradient-2: #60a5fa;
 
+            /* Chart text colors */
+            --chart-text-primary: #1f2937;
+            --chart-text-secondary: #374151;
+
             /* Spacing scale (8px grid system) */
             --space-1: 4px;
             --space-2: 8px;
@@ -71,6 +75,10 @@
             --info-color: #4dabf7;
             --card-gradient-1: #5c7cfa;
             --card-gradient-2: #9775fa;
+
+            /* Chart text colors */
+            --chart-text-primary: #e9ecef;
+            --chart-text-secondary: #adb5bd;
         }
 
         body.high-contrast-mode {
@@ -100,6 +108,10 @@
             --card-gradient-1: #1e5090;
             --card-gradient-2: #1e4080;
             --focus-outline: 3px solid #4169e1;
+
+            /* Chart text colors - High contrast needs bright white */
+            --chart-text-primary: #ffffff;
+            --chart-text-secondary: #ffffff;
         }
 
         * {

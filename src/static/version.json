@@ -1,5 +1,5 @@
 {
-    "version": "3.9.111",
+    "version": "3.9.112",
     "release_date": "2026-01-28",
-    "release_notes": "Make chart text pure black and bolder - maximum readability for Asset Allocation, Annual Cash Flow, and Savings Rate charts"
+    "release_notes": "Add theme-aware chart text colors using CSS variables - adapts to light/dark/high-contrast themes"
 }

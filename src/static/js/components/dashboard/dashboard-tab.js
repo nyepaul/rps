@@ -193,7 +193,7 @@ function renderFinancialSummary(profile) {
                             labels: {
                                 padding: 10,
                                 font: { size: 13, weight: 'bold' },
-                                color: '#000000'
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--chart-text-primary').trim()
                             }
                         },
                         tooltip: {
@@ -250,7 +250,7 @@ function renderFinancialSummary(profile) {
                             labels: {
                                 padding: 8,
                                 font: { size: 13, weight: 'bold' },
-                                color: '#000000'
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--chart-text-primary').trim()
                             }
                         },
                         tooltip: {
@@ -268,16 +268,16 @@ function renderFinancialSummary(profile) {
                                     return '$' + (value / 1000).toFixed(0) + 'K';
                                 },
                                 font: { size: 11, weight: 'bold' },
-                                color: '#000000'
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--chart-text-secondary').trim()
                             },
                             grid: {
-                                color: 'rgba(0, 0, 0, 0.1)'
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--border-color').trim()
                             }
                         },
                         y: {
                             ticks: {
                                 font: { size: 11, weight: 'bold' },
-                                color: '#000000'
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--chart-text-secondary').trim()
                             },
                             grid: {
                                 display: false
@@ -325,7 +325,7 @@ function renderFinancialSummary(profile) {
                         const fontSize = (height / 70).toFixed(2);
                         ctx.font = `900 ${fontSize}em sans-serif`;
                         ctx.textBaseline = 'middle';
-                        ctx.fillStyle = '#000000';
+                        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--chart-text-primary').trim();
 
                         const text = displayRate.toFixed(0) + '%';
                         const textX = Math.round((width - ctx.measureText(text).width) / 2);
