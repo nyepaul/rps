@@ -66,14 +66,6 @@ function renderProfileDashboard(container, profiles, currentProfile, currentUser
                         <span style="font-size: 10px; font-weight: 700; background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px;">ACTIVE</span>
                         <span style="font-size: 13px; font-weight: 700;">${currentProfile.name}</span>
                     </div>
-                    <div style="display: flex; gap: 4px; flex-wrap: wrap;">
-                        <button onclick="window.app.showTab('profile')" style="padding: 2px 6px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 3px; color: white; cursor: pointer; font-size: 10px;">
-                            Settings
-                        </button>
-                        <button onclick="window.app.showTab('assets')" style="padding: 2px 6px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 3px; color: white; cursor: pointer; font-size: 10px;">
-                            Data
-                        </button>
-                    </div>
                 </div>
             </div>
             ` : ''}
