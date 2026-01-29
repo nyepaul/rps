@@ -1314,8 +1314,22 @@ function showNetWorthDetails(profile) {
 function showIncomeDetails(profile) {
     const data = profile.data || {};
     const incomeStreams = data.income_streams || [];
-    const activeStreams = incomeStreams.filter(s => s.period === 'current' || s.period === 'both');
-    const futureStreams = incomeStreams.filter(s => s.period === 'future' || s.period === 'both');
+
+    // Determine if income is active based on dates (no end_date or end_date in future)
+    const today = new Date();
+    const isActive = (stream) => {
+        if (!stream.end_date) return true; // Ongoing income
+        const endDate = new Date(stream.end_date);
+        return endDate >= today;
+    };
+    const isFuture = (stream) => {
+        if (!stream.start_date) return false;
+        const startDate = new Date(stream.start_date);
+        return startDate > today;
+    };
+
+    const activeStreams = incomeStreams.filter(s => isActive(s) && !isFuture(s));
+    const futureStreams = incomeStreams.filter(s => isFuture(s));
 
     const totalActive = activeStreams.reduce((sum, s) => sum + (parseFloat(s.amount) || 0) * 12, 0);
     const totalFuture = futureStreams.reduce((sum, s) => sum + (parseFloat(s.amount) || 0) * 12, 0);
