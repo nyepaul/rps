@@ -1,5 +1,5 @@
 {
-    "version": "3.9.105",
+    "version": "3.9.106",
     "release_date": "2026-01-28",
-    "release_notes": "Add comprehensive financial summary with charts to dashboard"
+    "release_notes": "Add interactive metric cards with detailed explanations on dashboard"
 }

@@ -356,42 +356,48 @@ function renderFinancialSummary(profile) {
             <!-- Key Metrics Grid -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px;">
                 <!-- Net Worth -->
-                <div style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 12px; border-radius: 6px; color: white;">
+                <div id="metric-networth" class="metric-card" style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 12px; border-radius: 6px; color: white; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
                     <div style="font-size: 10px; opacity: 0.9; margin-bottom: 4px;">💰 Net Worth</div>
                     <div style="font-size: 18px; font-weight: 700;">${formatCompact(netWorth)}</div>
+                    <div style="font-size: 9px; opacity: 0.7; margin-top: 4px;">Click for details</div>
                 </div>
 
                 <!-- Annual Income -->
-                <div style="background: linear-gradient(135deg, #3498db, #2980b9); padding: 12px; border-radius: 6px; color: white;">
+                <div id="metric-income" class="metric-card" style="background: linear-gradient(135deg, #3498db, #2980b9); padding: 12px; border-radius: 6px; color: white; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
                     <div style="font-size: 10px; opacity: 0.9; margin-bottom: 4px;">📈 Annual Income</div>
                     <div style="font-size: 18px; font-weight: 700;">${totalAnnualIncome > 0 ? formatCompact(totalAnnualIncome) : 'Not set'}</div>
+                    <div style="font-size: 9px; opacity: 0.7; margin-top: 4px;">Click for details</div>
                 </div>
 
                 <!-- Annual Expenses -->
-                <div style="background: linear-gradient(135deg, #e74c3c, #c0392b); padding: 12px; border-radius: 6px; color: white;">
+                <div id="metric-expenses" class="metric-card" style="background: linear-gradient(135deg, #e74c3c, #c0392b); padding: 12px; border-radius: 6px; color: white; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
                     <div style="font-size: 10px; opacity: 0.9; margin-bottom: 4px;">📉 Annual Expenses</div>
                     <div style="font-size: 18px; font-weight: 700;">${totalAnnualExpenses > 0 ? formatCompact(totalAnnualExpenses) : 'Not set'}</div>
+                    <div style="font-size: 9px; opacity: 0.7; margin-top: 4px;">Click for details</div>
                 </div>
 
                 <!-- Savings Rate -->
-                <div style="background: linear-gradient(135deg, #9b59b6, #8e44ad); padding: 12px; border-radius: 6px; color: white;">
+                <div id="metric-savings-rate" class="metric-card" style="background: linear-gradient(135deg, #9b59b6, #8e44ad); padding: 12px; border-radius: 6px; color: white; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
                     <div style="font-size: 10px; opacity: 0.9; margin-bottom: 4px;">💵 Savings Rate</div>
                     <div style="font-size: 18px; font-weight: 700;">${totalAnnualIncome > 0 ? savingsRate.toFixed(1) + '%' : 'N/A'}</div>
+                    <div style="font-size: 9px; opacity: 0.7; margin-top: 4px;">Click for details</div>
                 </div>
 
                 ${currentAge ? `
                 <!-- Current Age -->
-                <div style="background: linear-gradient(135deg, #1abc9c, #16a085); padding: 12px; border-radius: 6px; color: white;">
+                <div id="metric-age" class="metric-card" style="background: linear-gradient(135deg, #1abc9c, #16a085); padding: 12px; border-radius: 6px; color: white; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
                     <div style="font-size: 10px; opacity: 0.9; margin-bottom: 4px;">👤 Current Age</div>
                     <div style="font-size: 18px; font-weight: 700;">${currentAge}</div>
+                    <div style="font-size: 9px; opacity: 0.7; margin-top: 4px;">Click for details</div>
                 </div>
                 ` : ''}
 
                 ${yearsToRetirement !== null ? `
                 <!-- Years to Retirement -->
-                <div style="background: linear-gradient(135deg, #f39c12, #e67e22); padding: 12px; border-radius: 6px; color: white;">
+                <div id="metric-retirement" class="metric-card" style="background: linear-gradient(135deg, #f39c12, #e67e22); padding: 12px; border-radius: 6px; color: white; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
                     <div style="font-size: 10px; opacity: 0.9; margin-bottom: 4px;">🏖️ To Retirement</div>
                     <div style="font-size: 18px; font-weight: 700;">${yearsToRetirement} ${yearsToRetirement === 1 ? 'year' : 'years'}</div>
+                    <div style="font-size: 9px; opacity: 0.7; margin-top: 4px;">Click for details</div>
                 </div>
                 ` : ''}
             </div>
@@ -634,6 +640,40 @@ function setupDashboardHandlers(container, profiles) {
             activeProfileCard.style.transform = '';
             activeProfileCard.style.boxShadow = '0 1px 4px rgba(0,0,0,0.1)';
         });
+    }
+
+    // Metric Card Click Handlers
+    const currentProfile = store.get('currentProfile');
+    if (currentProfile) {
+        const networthCard = container.querySelector('#metric-networth');
+        if (networthCard) {
+            networthCard.addEventListener('click', () => showNetWorthDetails(currentProfile));
+        }
+
+        const incomeCard = container.querySelector('#metric-income');
+        if (incomeCard) {
+            incomeCard.addEventListener('click', () => showIncomeDetails(currentProfile));
+        }
+
+        const expensesCard = container.querySelector('#metric-expenses');
+        if (expensesCard) {
+            expensesCard.addEventListener('click', () => showExpensesDetails(currentProfile));
+        }
+
+        const savingsCard = container.querySelector('#metric-savings-rate');
+        if (savingsCard) {
+            savingsCard.addEventListener('click', () => showSavingsRateDetails(currentProfile));
+        }
+
+        const ageCard = container.querySelector('#metric-age');
+        if (ageCard) {
+            ageCard.addEventListener('click', () => showAgeDetails(currentProfile));
+        }
+
+        const retirementCard = container.querySelector('#metric-retirement');
+        if (retirementCard) {
+            retirementCard.addEventListener('click', () => showRetirementDetails(currentProfile));
+        }
     }
 }
 
@@ -963,5 +1003,629 @@ function showProfileInfoModal(profile) {
 
     // Close button
     modal.querySelector('#close-modal-btn').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+}
+
+// ============================================================================
+// METRIC DETAIL MODALS
+// ============================================================================
+
+function showNetWorthDetails(profile) {
+    const assets = profile.assets || [];
+    const { netWorth, totalAssets, totalDebts, breakdown } = calculateNetWorth(assets);
+
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.cssText = 'display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center;';
+
+    modal.innerHTML = `
+        <div style="background: var(--bg-primary); border-radius: 12px; padding: 30px; max-width: 700px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: var(--text-primary); font-size: 24px;">💰 Net Worth Details</h2>
+                <button id="close-networth-modal" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">&times;</button>
+            </div>
+
+            <div style="background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(16,185,129,0.2)); border-radius: 8px; padding: 20px; margin-bottom: 20px; border-left: 4px solid #22c55e;">
+                <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Total Net Worth</div>
+                <div style="font-size: 32px; font-weight: bold; color: var(--text-primary);">${formatCurrency(netWorth, 0)}</div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
+                <div style="background: var(--bg-secondary); border-radius: 8px; padding: 15px;">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">Total Assets</div>
+                    <div style="font-size: 20px; font-weight: bold; color: #22c55e;">${formatCurrency(totalAssets, 0)}</div>
+                </div>
+                <div style="background: var(--bg-secondary); border-radius: 8px; padding: 15px;">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">Total Debts</div>
+                    <div style="font-size: 20px; font-weight: bold; color: #ef4444;">${formatCurrency(totalDebts, 0)}</div>
+                </div>
+            </div>
+
+            <h3 style="margin: 20px 0 15px 0; font-size: 16px; color: var(--text-primary);">Asset Breakdown</h3>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;">
+                ${Object.entries(breakdown.assets).map(([category, amount]) => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bg-secondary); border-radius: 6px;">
+                        <span style="color: var(--text-primary);">${category}</span>
+                        <span style="font-weight: bold; color: #22c55e;">${formatCurrency(amount, 0)}</span>
+                    </div>
+                `).join('')}
+            </div>
+
+            ${totalDebts > 0 ? `
+                <h3 style="margin: 20px 0 15px 0; font-size: 16px; color: var(--text-primary);">Debt Breakdown</h3>
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;">
+                    ${Object.entries(breakdown.debts).map(([category, amount]) => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bg-secondary); border-radius: 6px;">
+                            <span style="color: var(--text-primary);">${category}</span>
+                            <span style="font-weight: bold; color: #ef4444;">${formatCurrency(amount, 0)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+
+            <div style="background: rgba(59,130,246,0.15); border-radius: 8px; padding: 15px; margin-top: 20px; border-left: 3px solid #3b82f6;">
+                <h4 style="margin: 0 0 10px 0; font-size: 14px; color: var(--text-primary);">💡 What is Net Worth?</h4>
+                <p style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+                    Net worth is your total assets minus your total debts. It's the fundamental measure of your financial health
+                    and represents what you would have if you sold everything and paid off all debts. Growing your net worth
+                    is the primary goal of wealth building.
+                </p>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.querySelector('#close-networth-modal').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+}
+
+function showIncomeDetails(profile) {
+    const incomeStreams = profile.income_streams || [];
+    const activeStreams = incomeStreams.filter(s => s.period === 'current' || s.period === 'both');
+    const futureStreams = incomeStreams.filter(s => s.period === 'future' || s.period === 'both');
+
+    const totalActive = activeStreams.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0);
+    const totalFuture = futureStreams.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0);
+
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.cssText = 'display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center;';
+
+    modal.innerHTML = `
+        <div style="background: var(--bg-primary); border-radius: 12px; padding: 30px; max-width: 700px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: var(--text-primary); font-size: 24px;">📈 Income Details</h2>
+                <button id="close-income-modal" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">&times;</button>
+            </div>
+
+            <div style="background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(16,185,129,0.2)); border-radius: 8px; padding: 20px; margin-bottom: 20px; border-left: 4px solid #22c55e;">
+                <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Total Annual Income (Active)</div>
+                <div style="font-size: 32px; font-weight: bold; color: var(--text-primary);">${formatCurrency(totalActive, 0)}</div>
+            </div>
+
+            ${activeStreams.length > 0 ? `
+                <h3 style="margin: 20px 0 15px 0; font-size: 16px; color: var(--text-primary);">Active Income Streams</h3>
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;">
+                    ${activeStreams.map(stream => `
+                        <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px; border-left: 3px solid #22c55e;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                                <span style="font-weight: 600; color: var(--text-primary);">${stream.name}</span>
+                                <span style="font-weight: bold; color: #22c55e;">${formatCurrency(stream.amount, 0)}/yr</span>
+                            </div>
+                            ${stream.source ? `<div style="font-size: 12px; color: var(--text-secondary);">Source: ${stream.source}</div>` : ''}
+                            ${stream.start_date ? `<div style="font-size: 12px; color: var(--text-secondary);">Started: ${stream.start_date}</div>` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            ` : '<p style="color: var(--text-secondary); margin-bottom: 25px;">No active income streams.</p>'}
+
+            ${futureStreams.length > 0 ? `
+                <h3 style="margin: 20px 0 15px 0; font-size: 16px; color: var(--text-primary);">Future Income Streams</h3>
+                <div style="background: rgba(59,130,246,0.1); border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                    <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 5px;">Projected Future Income</div>
+                    <div style="font-size: 24px; font-weight: bold; color: #3b82f6;">${formatCurrency(totalFuture, 0)}/yr</div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;">
+                    ${futureStreams.map(stream => `
+                        <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px; border-left: 3px solid #3b82f6;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                                <span style="font-weight: 600; color: var(--text-primary);">${stream.name}</span>
+                                <span style="font-weight: bold; color: #3b82f6;">${formatCurrency(stream.amount, 0)}/yr</span>
+                            </div>
+                            ${stream.source ? `<div style="font-size: 12px; color: var(--text-secondary);">Source: ${stream.source}</div>` : ''}
+                            ${stream.start_date ? `<div style="font-size: 12px; color: var(--text-secondary);">Starts: ${stream.start_date}</div>` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+
+            <div style="background: rgba(59,130,246,0.15); border-radius: 8px; padding: 15px; margin-top: 20px; border-left: 3px solid #3b82f6;">
+                <h4 style="margin: 0 0 10px 0; font-size: 14px; color: var(--text-primary);">💡 About Income Streams</h4>
+                <p style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+                    Income streams represent your sources of money. Active streams are currently generating income,
+                    while future streams (like pensions or Social Security) will begin at a specified date. Diversifying
+                    your income sources reduces financial risk.
+                </p>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.querySelector('#close-income-modal').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+}
+
+function showExpensesDetails(profile) {
+    const expenses = profile.expenses || [];
+    const totalAnnual = expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+
+    // Group by category
+    const byCategory = {};
+    expenses.forEach(exp => {
+        const cat = exp.category || 'Other';
+        byCategory[cat] = (byCategory[cat] || 0) + (parseFloat(exp.amount) || 0);
+    });
+
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.cssText = 'display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center;';
+
+    modal.innerHTML = `
+        <div style="background: var(--bg-primary); border-radius: 12px; padding: 30px; max-width: 700px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: var(--text-primary); font-size: 24px;">📉 Expense Details</h2>
+                <button id="close-expense-modal" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">&times;</button>
+            </div>
+
+            <div style="background: linear-gradient(135deg, rgba(239,68,68,0.2), rgba(220,38,38,0.2)); border-radius: 8px; padding: 20px; margin-bottom: 20px; border-left: 4px solid #ef4444;">
+                <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Total Annual Expenses</div>
+                <div style="font-size: 32px; font-weight: bold; color: var(--text-primary);">${formatCurrency(totalAnnual, 0)}</div>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">Monthly: ${formatCurrency(totalAnnual / 12, 0)}</div>
+            </div>
+
+            <h3 style="margin: 20px 0 15px 0; font-size: 16px; color: var(--text-primary);">Breakdown by Category</h3>
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px;">
+                ${Object.entries(byCategory).sort(([,a], [,b]) => b - a).map(([category, amount]) => {
+                    const percentage = (amount / totalAnnual * 100).toFixed(1);
+                    return `
+                        <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <span style="font-weight: 600; color: var(--text-primary);">${category}</span>
+                                <div style="text-align: right;">
+                                    <div style="font-weight: bold; color: #ef4444;">${formatCurrency(amount, 0)}/yr</div>
+                                    <div style="font-size: 11px; color: var(--text-secondary);">${percentage}%</div>
+                                </div>
+                            </div>
+                            <div style="background: rgba(239,68,68,0.2); border-radius: 4px; height: 6px; overflow: hidden;">
+                                <div style="background: #ef4444; height: 100%; width: ${percentage}%; transition: width 0.3s;"></div>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+
+            <h3 style="margin: 20px 0 15px 0; font-size: 16px; color: var(--text-primary);">Individual Expenses</h3>
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px; max-height: 200px; overflow-y: auto;">
+                ${expenses.sort((a, b) => (parseFloat(b.amount) || 0) - (parseFloat(a.amount) || 0)).map(exp => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-secondary); border-radius: 4px;">
+                        <div>
+                            <div style="font-size: 14px; color: var(--text-primary);">${exp.name}</div>
+                            ${exp.category ? `<div style="font-size: 11px; color: var(--text-secondary);">${exp.category}</div>` : ''}
+                        </div>
+                        <span style="font-weight: 600; color: #ef4444;">${formatCurrency(exp.amount, 0)}</span>
+                    </div>
+                `).join('')}
+            </div>
+
+            <div style="background: rgba(59,130,246,0.15); border-radius: 8px; padding: 15px; margin-top: 20px; border-left: 3px solid #3b82f6;">
+                <h4 style="margin: 0 0 10px 0; font-size: 14px; color: var(--text-primary);">💡 Managing Expenses</h4>
+                <p style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+                    Understanding your expense breakdown helps identify opportunities to optimize spending. Focus on
+                    the largest categories first for maximum impact. Even small percentage reductions in major
+                    categories can significantly accelerate your path to financial independence.
+                </p>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.querySelector('#close-expense-modal').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+}
+
+function showSavingsRateDetails(profile) {
+    const incomeStreams = profile.income_streams || [];
+    const expenses = profile.expenses || [];
+
+    const totalAnnualIncome = incomeStreams
+        .filter(s => s.period === 'current' || s.period === 'both')
+        .reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0);
+
+    const totalAnnualExpenses = expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+    const annualSavings = totalAnnualIncome - totalAnnualExpenses;
+    const savingsRate = totalAnnualIncome > 0 ? (annualSavings / totalAnnualIncome) * 100 : 0;
+
+    // Years to Financial Independence (simplified 4% rule)
+    const assets = profile.assets || [];
+    const { netWorth } = calculateNetWorth(assets);
+    const targetAmount = totalAnnualExpenses * 25; // 4% rule
+    const yearsToFI = annualSavings > 0 ? Math.max(0, (targetAmount - netWorth) / annualSavings) : 999;
+
+    // Savings rate benchmarks
+    let rating = '';
+    let ratingColor = '';
+    if (savingsRate < 10) {
+        rating = 'Low - Build your savings habit';
+        ratingColor = '#ef4444';
+    } else if (savingsRate < 20) {
+        rating = 'Good - Above average';
+        ratingColor = '#f59e0b';
+    } else if (savingsRate < 30) {
+        rating = 'Great - Well positioned';
+        ratingColor = '#eab308';
+    } else if (savingsRate < 50) {
+        rating = 'Excellent - Strong progress';
+        ratingColor = '#22c55e';
+    } else {
+        rating = 'Outstanding - Exceptional';
+        ratingColor = '#10b981';
+    }
+
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.cssText = 'display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center;';
+
+    modal.innerHTML = `
+        <div style="background: var(--bg-primary); border-radius: 12px; padding: 30px; max-width: 700px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: var(--text-primary); font-size: 24px;">💵 Savings Rate Details</h2>
+                <button id="close-savings-modal" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">&times;</button>
+            </div>
+
+            <div style="background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(16,185,129,0.2)); border-radius: 8px; padding: 20px; margin-bottom: 20px; border-left: 4px solid #22c55e;">
+                <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Your Savings Rate</div>
+                <div style="font-size: 32px; font-weight: bold; color: var(--text-primary);">${savingsRate.toFixed(1)}%</div>
+                <div style="font-size: 14px; margin-top: 8px; padding: 8px 12px; background: ${ratingColor}33; border-radius: 6px; color: ${ratingColor}; font-weight: 600;">
+                    ${rating}
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 25px;">
+                <div style="background: var(--bg-secondary); border-radius: 8px; padding: 12px; text-align: center;">
+                    <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 5px;">Income</div>
+                    <div style="font-size: 16px; font-weight: bold; color: #22c55e;">${formatCompact(totalAnnualIncome)}</div>
+                </div>
+                <div style="background: var(--bg-secondary); border-radius: 8px; padding: 12px; text-align: center;">
+                    <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 5px;">Expenses</div>
+                    <div style="font-size: 16px; font-weight: bold; color: #ef4444;">${formatCompact(totalAnnualExpenses)}</div>
+                </div>
+                <div style="background: var(--bg-secondary); border-radius: 8px; padding: 12px; text-align: center;">
+                    <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 5px;">Savings</div>
+                    <div style="font-size: 16px; font-weight: bold; color: #3b82f6;">${formatCompact(annualSavings)}</div>
+                </div>
+            </div>
+
+            ${yearsToFI < 100 ? `
+                <div style="background: rgba(59,130,246,0.15); border-radius: 8px; padding: 15px; margin-bottom: 20px; border-left: 3px solid #3b82f6;">
+                    <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 5px;">Years to Financial Independence</div>
+                    <div style="font-size: 28px; font-weight: bold; color: var(--text-primary);">${yearsToFI.toFixed(1)} years</div>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">
+                        Based on 4% rule (${formatCurrency(targetAmount, 0)} target)
+                    </div>
+                </div>
+            ` : ''}
+
+            <h3 style="margin: 20px 0 15px 0; font-size: 16px; color: var(--text-primary);">Savings Rate Benchmarks</h3>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 60px; font-size: 13px; color: var(--text-secondary);">&lt; 10%</div>
+                    <div style="flex: 1; height: 24px; background: #ef444433; border-radius: 4px; display: flex; align-items: center; padding: 0 10px; font-size: 12px; color: var(--text-primary);">Low - Build savings habit</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 60px; font-size: 13px; color: var(--text-secondary);">10-20%</div>
+                    <div style="flex: 1; height: 24px; background: #f59e0b33; border-radius: 4px; display: flex; align-items: center; padding: 0 10px; font-size: 12px; color: var(--text-primary);">Good - Above average</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 60px; font-size: 13px; color: var(--text-secondary);">20-30%</div>
+                    <div style="flex: 1; height: 24px; background: #eab30833; border-radius: 4px; display: flex; align-items: center; padding: 0 10px; font-size: 12px; color: var(--text-primary);">Great - Well positioned</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 60px; font-size: 13px; color: var(--text-secondary);">30-50%</div>
+                    <div style="flex: 1; height: 24px; background: #22c55e33; border-radius: 4px; display: flex; align-items: center; padding: 0 10px; font-size: 12px; color: var(--text-primary);">Excellent - Strong progress</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 60px; font-size: 13px; color: var(--text-secondary);">&gt; 50%</div>
+                    <div style="flex: 1; height: 24px; background: #10b98133; border-radius: 4px; display: flex; align-items: center; padding: 0 10px; font-size: 12px; color: var(--text-primary);">Outstanding - Exceptional</div>
+                </div>
+            </div>
+
+            <div style="background: rgba(59,130,246,0.15); border-radius: 8px; padding: 15px; margin-top: 20px; border-left: 3px solid #3b82f6;">
+                <h4 style="margin: 0 0 10px 0; font-size: 14px; color: var(--text-primary);">💡 Why Savings Rate Matters</h4>
+                <p style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+                    Your savings rate is the single most important metric for building wealth. It determines both how quickly
+                    you can reach financial independence and how much you'll need to sustain your lifestyle. A higher savings
+                    rate means reaching your goals faster, regardless of investment returns.
+                </p>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.querySelector('#close-savings-modal').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+}
+
+function showAgeDetails(profile) {
+    const birthDate = profile.date_of_birth ? new Date(profile.date_of_birth) : null;
+    const currentAge = profile.current_age || 0;
+    const retirementAge = profile.retirement_age || 65;
+
+    let daysUntilBirthday = 0;
+    let nextBirthdayAge = currentAge + 1;
+    if (birthDate) {
+        const today = new Date();
+        const nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+        if (nextBirthday < today) {
+            nextBirthday.setFullYear(today.getFullYear() + 1);
+        }
+        daysUntilBirthday = Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24));
+    }
+
+    // Life expectancy milestones
+    const lifeExpectancy = 85; // Typical planning horizon
+    const percentOfLife = (currentAge / lifeExpectancy * 100).toFixed(1);
+
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.cssText = 'display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center;';
+
+    modal.innerHTML = `
+        <div style="background: var(--bg-primary); border-radius: 12px; padding: 30px; max-width: 700px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: var(--text-primary); font-size: 24px;">👤 Age & Life Timeline</h2>
+                <button id="close-age-modal" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">&times;</button>
+            </div>
+
+            <div style="background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(37,99,235,0.2)); border-radius: 8px; padding: 20px; margin-bottom: 20px; border-left: 4px solid #3b82f6;">
+                <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Current Age</div>
+                <div style="font-size: 32px; font-weight: bold; color: var(--text-primary);">${currentAge} years</div>
+                ${birthDate ? `
+                    <div style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">
+                        Next birthday in ${daysUntilBirthday} days (Age ${nextBirthdayAge})
+                    </div>
+                ` : ''}
+            </div>
+
+            <div style="margin-bottom: 25px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="font-size: 13px; color: var(--text-secondary);">Life Progress</span>
+                    <span style="font-size: 13px; color: var(--text-primary); font-weight: 600;">${percentOfLife}%</span>
+                </div>
+                <div style="background: var(--bg-secondary); border-radius: 8px; height: 24px; overflow: hidden; position: relative;">
+                    <div style="background: linear-gradient(90deg, #3b82f6, #8b5cf6); height: 100%; width: ${percentOfLife}%; transition: width 0.5s;"></div>
+                    <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text-primary);">
+                        Age ${currentAge} of ${lifeExpectancy} (planning horizon)
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 25px;">
+                <div style="background: var(--bg-secondary); border-radius: 8px; padding: 15px;">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">Years to Retirement</div>
+                    <div style="font-size: 24px; font-weight: bold; color: #22c55e;">${Math.max(0, retirementAge - currentAge)}</div>
+                </div>
+                <div style="background: var(--bg-secondary); border-radius: 8px; padding: 15px;">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">Planned Retirement Age</div>
+                    <div style="font-size: 24px; font-weight: bold; color: #3b82f6;">${retirementAge}</div>
+                </div>
+            </div>
+
+            <h3 style="margin: 20px 0 15px 0; font-size: 16px; color: var(--text-primary);">Age-Based Planning Considerations</h3>
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px;">
+                ${currentAge < 30 ? `
+                    <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px; border-left: 3px solid #22c55e;">
+                        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 5px;">20s: Foundation Building</div>
+                        <div style="font-size: 13px; color: var(--text-secondary);">Focus on career growth, emergency fund, and starting to invest. Time is your greatest asset.</div>
+                    </div>
+                ` : ''}
+                ${currentAge >= 30 && currentAge < 40 ? `
+                    <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px; border-left: 3px solid #3b82f6;">
+                        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 5px;">30s: Wealth Acceleration</div>
+                        <div style="font-size: 13px; color: var(--text-secondary);">Peak earning potential emerging. Maximize retirement contributions and consider real estate.</div>
+                    </div>
+                ` : ''}
+                ${currentAge >= 40 && currentAge < 50 ? `
+                    <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px; border-left: 3px solid #8b5cf6;">
+                        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 5px;">40s: Peak Earning Years</div>
+                        <div style="font-size: 13px; color: var(--text-secondary);">Highest income years. Catch-up contributions, refine retirement plan, update estate documents.</div>
+                    </div>
+                ` : ''}
+                ${currentAge >= 50 && currentAge < 60 ? `
+                    <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px; border-left: 3px solid #f59e0b;">
+                        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 5px;">50s: Pre-Retirement Planning</div>
+                        <div style="font-size: 13px; color: var(--text-secondary);">Eligible for catch-up contributions ($7,500 401k, $1,000 IRA). Review healthcare and Social Security strategy.</div>
+                    </div>
+                ` : ''}
+                ${currentAge >= 60 ? `
+                    <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px; border-left: 3px solid #ef4444;">
+                        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 5px;">60+: Transition Phase</div>
+                        <div style="font-size: 13px; color: var(--text-secondary);">Social Security claiming strategy critical. Medicare at 65. RMDs start at 73. Tax planning for distributions.</div>
+                    </div>
+                ` : ''}
+            </div>
+
+            <div style="background: rgba(59,130,246,0.15); border-radius: 8px; padding: 15px; margin-top: 20px; border-left: 3px solid #3b82f6;">
+                <h4 style="margin: 0 0 10px 0; font-size: 14px; color: var(--text-primary);">💡 Time & Wealth Building</h4>
+                <p style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+                    Your age determines your planning timeline and strategy. Younger investors can take more risk and benefit
+                    from decades of compounding. As you age, focus shifts to wealth preservation, tax efficiency, and
+                    distribution strategies. The key is aligning your plan with your life stage.
+                </p>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.querySelector('#close-age-modal').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+}
+
+function showRetirementDetails(profile) {
+    const currentAge = profile.current_age || 0;
+    const retirementAge = profile.retirement_age || 65;
+    const yearsToRetirement = Math.max(0, retirementAge - currentAge);
+
+    // Calculate more detailed countdown
+    const monthsToRetirement = yearsToRetirement * 12;
+    const daysToRetirement = yearsToRetirement * 365;
+    const workingDaysToRetirement = yearsToRetirement * 260; // ~260 working days/year
+
+    // Get action items related to retirement
+    const actionItems = profile.action_items || [];
+    const retirementActions = actionItems.filter(a =>
+        !a.completed && (
+            a.title.toLowerCase().includes('retire') ||
+            a.title.toLowerCase().includes('401') ||
+            a.title.toLowerCase().includes('ira') ||
+            a.category === 'retirement'
+        )
+    ).slice(0, 5);
+
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.cssText = 'display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center;';
+
+    modal.innerHTML = `
+        <div style="background: var(--bg-primary); border-radius: 12px; padding: 30px; max-width: 700px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: var(--text-primary); font-size: 24px;">🏖️ Retirement Timeline</h2>
+                <button id="close-retirement-modal" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">&times;</button>
+            </div>
+
+            ${yearsToRetirement > 0 ? `
+                <div style="background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(124,58,237,0.2)); border-radius: 8px; padding: 20px; margin-bottom: 20px; border-left: 4px solid #8b5cf6;">
+                    <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Years Until Retirement</div>
+                    <div style="font-size: 32px; font-weight: bold; color: var(--text-primary);">${yearsToRetirement.toFixed(1)} years</div>
+                    <div style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">
+                        Target retirement age: ${retirementAge}
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 25px;">
+                    <div style="background: var(--bg-secondary); border-radius: 8px; padding: 12px; text-align: center;">
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 5px;">Months</div>
+                        <div style="font-size: 20px; font-weight: bold; color: #8b5cf6;">${monthsToRetirement}</div>
+                    </div>
+                    <div style="background: var(--bg-secondary); border-radius: 8px; padding: 12px; text-align: center;">
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 5px;">Days</div>
+                        <div style="font-size: 20px; font-weight: bold; color: #8b5cf6;">${daysToRetirement.toLocaleString()}</div>
+                    </div>
+                    <div style="background: var(--bg-secondary); border-radius: 8px; padding: 12px; text-align: center;">
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 5px;">Work Days</div>
+                        <div style="font-size: 20px; font-weight: bold; color: #8b5cf6;">${workingDaysToRetirement.toLocaleString()}</div>
+                    </div>
+                </div>
+            ` : `
+                <div style="background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(16,185,129,0.2)); border-radius: 8px; padding: 20px; margin-bottom: 20px; border-left: 4px solid #22c55e;">
+                    <div style="font-size: 18px; font-weight: bold; color: var(--text-primary); margin-bottom: 10px;">🎉 You've Reached Retirement Age!</div>
+                    <div style="font-size: 14px; color: var(--text-secondary);">
+                        You are at or past your planned retirement age of ${retirementAge}. Focus on optimizing withdrawals and enjoying your retirement.
+                    </div>
+                </div>
+            `}
+
+            ${retirementActions.length > 0 ? `
+                <h3 style="margin: 20px 0 15px 0; font-size: 16px; color: var(--text-primary);">Retirement Action Items</h3>
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;">
+                    ${retirementActions.map(action => `
+                        <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px; border-left: 3px solid ${action.priority === 'high' ? '#ef4444' : action.priority === 'medium' ? '#f59e0b' : '#3b82f6'};">
+                            <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 5px;">${action.title}</div>
+                            ${action.description ? `<div style="font-size: 12px; color: var(--text-secondary);">${action.description}</div>` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+
+            <h3 style="margin: 20px 0 15px 0; font-size: 16px; color: var(--text-primary);">Retirement Planning Milestones</h3>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;">
+                <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px; ${currentAge >= 50 ? 'opacity: 0.5;' : ''}">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600; color: var(--text-primary);">Age 50: Catch-Up Contributions</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">+$7,500 401(k), +$1,000 IRA annually</div>
+                        </div>
+                        ${currentAge >= 50 ? '<span style="color: #22c55e;">✓ Eligible</span>' : `<span style="color: var(--text-secondary);">${50 - currentAge} years</span>`}
+                    </div>
+                </div>
+                <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px; ${currentAge >= 59.5 ? 'opacity: 0.5;' : ''}">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600; color: var(--text-primary);">Age 59½: Penalty-Free Withdrawals</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">Access retirement accounts without 10% penalty</div>
+                        </div>
+                        ${currentAge >= 59.5 ? '<span style="color: #22c55e;">✓ Eligible</span>' : `<span style="color: var(--text-secondary);">${(59.5 - currentAge).toFixed(1)} years</span>`}
+                    </div>
+                </div>
+                <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px; ${currentAge >= 62 ? 'opacity: 0.5;' : ''}">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600; color: var(--text-primary);">Age 62: Early Social Security</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">Reduced benefits (~70% of full amount)</div>
+                        </div>
+                        ${currentAge >= 62 ? '<span style="color: #22c55e;">✓ Eligible</span>' : `<span style="color: var(--text-secondary);">${62 - currentAge} years</span>`}
+                    </div>
+                </div>
+                <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px; ${currentAge >= 65 ? 'opacity: 0.5;' : ''}">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600; color: var(--text-primary);">Age 65: Medicare Eligibility</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">Health insurance coverage begins</div>
+                        </div>
+                        ${currentAge >= 65 ? '<span style="color: #22c55e;">✓ Eligible</span>' : `<span style="color: var(--text-secondary);">${65 - currentAge} years</span>`}
+                    </div>
+                </div>
+                <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px; ${currentAge >= 67 ? 'opacity: 0.5;' : ''}">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600; color: var(--text-primary);">Age 67: Full Retirement Age</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">100% Social Security benefits (born 1960+)</div>
+                        </div>
+                        ${currentAge >= 67 ? '<span style="color: #22c55e;">✓ Eligible</span>' : `<span style="color: var(--text-secondary);">${67 - currentAge} years</span>`}
+                    </div>
+                </div>
+                <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px; ${currentAge >= 70 ? 'opacity: 0.5;' : ''}">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600; color: var(--text-primary);">Age 70: Maximum Social Security</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">~124% of full amount with delayed credits</div>
+                        </div>
+                        ${currentAge >= 70 ? '<span style="color: #22c55e;">✓ Eligible</span>' : `<span style="color: var(--text-secondary);">${70 - currentAge} years</span>`}
+                    </div>
+                </div>
+                <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px; ${currentAge >= 73 ? 'opacity: 0.5;' : ''}">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600; color: var(--text-primary);">Age 73: Required Minimum Distributions</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">Must begin withdrawals from traditional accounts</div>
+                        </div>
+                        ${currentAge >= 73 ? '<span style="color: #22c55e;">✓ Eligible</span>' : `<span style="color: var(--text-secondary);">${73 - currentAge} years</span>`}
+                    </div>
+                </div>
+            </div>
+
+            <div style="background: rgba(59,130,246,0.15); border-radius: 8px; padding: 15px; margin-top: 20px; border-left: 3px solid #3b82f6;">
+                <h4 style="margin: 0 0 10px 0; font-size: 14px; color: var(--text-primary);">💡 Retirement Planning Strategy</h4>
+                <p style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+                    Successful retirement planning requires understanding key milestones and making strategic decisions about
+                    Social Security, Medicare, and retirement account withdrawals. The timing of these decisions can significantly
+                    impact your lifetime retirement income. Use the Monte Carlo simulations and tax optimization tools to model
+                    different scenarios.
+                </p>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.querySelector('#close-retirement-modal').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 }
