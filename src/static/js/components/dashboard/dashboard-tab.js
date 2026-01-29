@@ -1149,68 +1149,136 @@ function showIncomeDetails(profile) {
     const activeStreams = incomeStreams.filter(s => s.period === 'current' || s.period === 'both');
     const futureStreams = incomeStreams.filter(s => s.period === 'future' || s.period === 'both');
 
-    const totalActive = activeStreams.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0);
-    const totalFuture = futureStreams.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0);
+    const totalActive = activeStreams.reduce((sum, s) => sum + (parseFloat(s.amount) || 0) * 12, 0);
+    const totalFuture = futureStreams.reduce((sum, s) => sum + (parseFloat(s.amount) || 0) * 12, 0);
+    const monthlyActive = totalActive / 12;
+
+    // Group by source for diversification analysis
+    const bySource = {};
+    activeStreams.forEach(s => {
+        const source = s.source || 'Manual';
+        bySource[source] = (bySource[source] || 0) + (parseFloat(s.amount) || 0) * 12;
+    });
+
+    // Calculate concentration risk
+    const largestSource = Math.max(...Object.values(bySource), 0);
+    const concentration = totalActive > 0 ? (largestSource / totalActive * 100) : 0;
 
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.style.cssText = 'display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center;';
 
     modal.innerHTML = `
-        <div style="background: var(--bg-primary); border-radius: 12px; padding: 30px; max-width: 700px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+        <div style="background: var(--bg-primary); border-radius: 12px; padding: 30px; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="margin: 0; color: var(--text-primary); font-size: 24px;">📈 Income Details</h2>
+                <h2 style="margin: 0; color: var(--text-primary); font-size: 24px;">📈 Income Analysis</h2>
                 <button id="close-income-modal" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">&times;</button>
             </div>
 
-            <div style="background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(16,185,129,0.2)); border-radius: 8px; padding: 20px; margin-bottom: 20px; border-left: 4px solid #22c55e;">
-                <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Total Annual Income (Active)</div>
-                <div style="font-size: 32px; font-weight: bold; color: var(--text-primary);">${formatCurrency(totalActive, 0)}</div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                <div style="background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(16,185,129,0.2)); border-radius: 8px; padding: 20px; border-left: 4px solid #22c55e;">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">Annual Income</div>
+                    <div style="font-size: 28px; font-weight: bold; color: var(--text-primary);">${formatCurrency(totalActive, 0)}</div>
+                </div>
+                <div style="background: var(--bg-secondary); border-radius: 8px; padding: 20px;">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">Monthly Average</div>
+                    <div style="font-size: 28px; font-weight: bold; color: var(--text-primary);">${formatCurrency(monthlyActive, 0)}</div>
+                </div>
+                <div style="background: var(--bg-secondary); border-radius: 8px; padding: 20px;">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">Income Streams</div>
+                    <div style="font-size: 28px; font-weight: bold; color: var(--text-primary);">${activeStreams.length}</div>
+                </div>
             </div>
 
             ${activeStreams.length > 0 ? `
-                <h3 style="margin: 20px 0 15px 0; font-size: 16px; color: var(--text-primary);">Active Income Streams</h3>
+                <h3 style="margin: 25px 0 15px 0; font-size: 18px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                    💰 Active Income Streams
+                    <span style="font-size: 12px; background: var(--bg-tertiary); padding: 4px 8px; border-radius: 12px; color: var(--text-secondary); font-weight: normal;">${activeStreams.length} ${activeStreams.length === 1 ? 'source' : 'sources'}</span>
+                </h3>
                 <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;">
-                    ${activeStreams.map(stream => `
-                        <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px; border-left: 3px solid #22c55e;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                                <span style="font-weight: 600; color: var(--text-primary);">${stream.name}</span>
-                                <span style="font-weight: bold; color: #22c55e;">${formatCurrency(stream.amount, 0)}/yr</span>
+                    ${activeStreams.map((stream, idx) => {
+                        const annual = (parseFloat(stream.amount) || 0) * 12;
+                        const percentage = totalActive > 0 ? (annual / totalActive * 100) : 0;
+                        const sourceColor = stream.source === 'detected' ? '#3b82f6' : stream.source === 'merged' ? '#8b5cf6' : '#22c55e';
+                        return `
+                        <div style="padding: 14px; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid ${sourceColor}; position: relative;">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; color: var(--text-primary); font-size: 15px; margin-bottom: 4px;">${idx + 1}. ${stream.name}</div>
+                                    <div style="display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--text-secondary);">
+                                        ${stream.source ? `<span>📍 ${stream.source}</span>` : ''}
+                                        ${stream.frequency ? `<span>🔁 ${stream.frequency}</span>` : '<span>🔁 monthly</span>'}
+                                        ${stream.start_date ? `<span>📅 Since ${stream.start_date}</span>` : ''}
+                                        ${stream.confidence ? `<span>🎯 ${(stream.confidence * 100).toFixed(0)}% confidence</span>` : ''}
+                                    </div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-weight: bold; color: #22c55e; font-size: 18px;">${formatCurrency(annual, 0)}</div>
+                                    <div style="font-size: 11px; color: var(--text-secondary);">${percentage.toFixed(1)}% of total</div>
+                                </div>
                             </div>
-                            ${stream.source ? `<div style="font-size: 12px; color: var(--text-secondary);">Source: ${stream.source}</div>` : ''}
-                            ${stream.start_date ? `<div style="font-size: 12px; color: var(--text-secondary);">Started: ${stream.start_date}</div>` : ''}
+                            <div style="background: var(--bg-tertiary); height: 6px; border-radius: 3px; overflow: hidden; margin-top: 8px;">
+                                <div style="background: ${sourceColor}; height: 100%; width: ${percentage}%; transition: width 0.3s;"></div>
+                            </div>
                         </div>
-                    `).join('')}
+                    `}).join('')}
                 </div>
-            ` : '<p style="color: var(--text-secondary); margin-bottom: 25px;">No active income streams.</p>'}
+
+                <!-- Income Diversification -->
+                <div style="background: rgba(59,130,246,0.1); border-radius: 8px; padding: 18px; margin-bottom: 25px; border-left: 3px solid #3b82f6;">
+                    <h4 style="margin: 0 0 12px 0; font-size: 15px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                        📊 Diversification Analysis
+                    </h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                        <div>
+                            <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 3px;">Largest Source</div>
+                            <div style="font-size: 18px; font-weight: bold; color: var(--text-primary);">${concentration.toFixed(0)}%</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 3px;">Risk Level</div>
+                            <div style="font-size: 14px; font-weight: 600; color: ${concentration > 80 ? '#ef4444' : concentration > 60 ? '#f59e0b' : '#22c55e'};">
+                                ${concentration > 80 ? '🔴 High' : concentration > 60 ? '🟡 Medium' : '🟢 Low'}
+                            </div>
+                        </div>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 10px; line-height: 1.5;">
+                        ${concentration > 70 ? '⚠️ High concentration in one income source. Consider diversifying to reduce risk.' : '✅ Good income diversification helps protect against job loss or economic changes.'}
+                    </div>
+                </div>
+            ` : '<p style="color: var(--text-secondary); margin-bottom: 25px; padding: 20px; background: var(--bg-secondary); border-radius: 8px; text-align: center;">No active income streams. Add income sources to track your earnings.</p>'}
 
             ${futureStreams.length > 0 ? `
-                <h3 style="margin: 20px 0 15px 0; font-size: 16px; color: var(--text-primary);">Future Income Streams</h3>
+                <h3 style="margin: 25px 0 15px 0; font-size: 18px; color: var(--text-primary);">🔮 Future Income Streams</h3>
                 <div style="background: rgba(59,130,246,0.1); border-radius: 8px; padding: 15px; margin-bottom: 15px;">
-                    <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 5px;">Projected Future Income</div>
-                    <div style="font-size: 24px; font-weight: bold; color: #3b82f6;">${formatCurrency(totalFuture, 0)}/yr</div>
+                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 5px;">Projected Annual Income</div>
+                    <div style="font-size: 26px; font-weight: bold; color: #3b82f6;">${formatCurrency(totalFuture, 0)}</div>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;">
-                    ${futureStreams.map(stream => `
-                        <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px; border-left: 3px solid #3b82f6;">
+                    ${futureStreams.map((stream, idx) => {
+                        const annual = (parseFloat(stream.amount) || 0) * 12;
+                        return `
+                        <div style="padding: 14px; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid #3b82f6;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                                <span style="font-weight: 600; color: var(--text-primary);">${stream.name}</span>
-                                <span style="font-weight: bold; color: #3b82f6;">${formatCurrency(stream.amount, 0)}/yr</span>
+                                <span style="font-weight: 600; color: var(--text-primary); font-size: 15px;">${idx + 1}. ${stream.name}</span>
+                                <span style="font-weight: bold; color: #3b82f6; font-size: 18px;">${formatCurrency(annual, 0)}/yr</span>
                             </div>
-                            ${stream.source ? `<div style="font-size: 12px; color: var(--text-secondary);">Source: ${stream.source}</div>` : ''}
-                            ${stream.start_date ? `<div style="font-size: 12px; color: var(--text-secondary);">Starts: ${stream.start_date}</div>` : ''}
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--text-secondary);">
+                                ${stream.source ? `<span>📍 ${stream.source}</span>` : ''}
+                                ${stream.start_date ? `<span>📅 Starts ${stream.start_date}</span>` : ''}
+                            </div>
                         </div>
-                    `).join('')}
+                    `}).join('')}
                 </div>
             ` : ''}
 
-            <div style="background: rgba(59,130,246,0.15); border-radius: 8px; padding: 15px; margin-top: 20px; border-left: 3px solid #3b82f6;">
-                <h4 style="margin: 0 0 10px 0; font-size: 14px; color: var(--text-primary);">💡 About Income Streams</h4>
-                <p style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
-                    Income streams represent your sources of money. Active streams are currently generating income,
-                    while future streams (like pensions or Social Security) will begin at a specified date. Diversifying
-                    your income sources reduces financial risk.
-                </p>
+            <div style="background: rgba(59,130,246,0.15); border-radius: 8px; padding: 18px; margin-top: 25px; border-left: 3px solid #3b82f6;">
+                <h4 style="margin: 0 0 10px 0; font-size: 14px; color: var(--text-primary);">💡 Income Planning Tips</h4>
+                <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: var(--text-secondary); line-height: 1.8;">
+                    <li><strong>Diversify:</strong> Multiple income sources provide financial security</li>
+                    <li><strong>Track Changes:</strong> Monitor income trends to spot issues early</li>
+                    <li><strong>Plan Transitions:</strong> Prepare for retirement income changes in advance</li>
+                    <li><strong>Consider Taxes:</strong> Different income types have different tax implications</li>
+                </ul>
             </div>
         </div>
     `;
