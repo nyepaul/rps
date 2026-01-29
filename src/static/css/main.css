@@ -88,12 +88,12 @@
             --border-color: #ffffff;
             --shadow: rgba(255,255,255,0.3);
             --success-color: #32cd32;
-            --warning-color: #ffcc00;
+            --warning-color: #cc9900;
             --danger-color: #ff4444;
             --success-text: #7fff7f;
-            --warning-text: #ffff66;
+            --warning-text: #1a1a00;
             --success-bg: #004400;
-            --warning-bg: #331800;
+            --warning-bg: #ffe680;
             --danger-bg: #440000;
             --info-bg: #002244;
             --info-color: #87ceeb;
