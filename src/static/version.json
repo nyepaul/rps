@@ -1,5 +1,5 @@
 {
-    "version": "3.9.96",
+    "version": "3.9.97",
     "release_date": "2026-01-28",
-    "release_notes": "Comprehensive updates: AI model selector, tax explanations, UI improvements, extensive testing (96.6% pass rate, production ready)"
+    "release_notes": "Standardize button layouts across Income, Budget, and Asset tabs for consistency"
 }

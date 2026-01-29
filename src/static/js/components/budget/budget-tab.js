@@ -84,22 +84,23 @@ export function renderBudgetTab(container) {
                         Tracking <strong>${profile.name}'s</strong> recurring costs
                     </p>
                 </div>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <button id="ai-import-expenses-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                    <button id="ai-import-expenses-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
                         Import
                     </button>
-                    <button id="export-expenses-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
-                        Export
-                    </button>
+                    <div style="display: flex; border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden;">
+                        <button id="export-expenses-btn" style="padding: 6px 10px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-right: 1px solid var(--border-color); cursor: pointer; font-size: 11px;">
+                            Export
+                        </button>
+                        <button id="import-expenses-csv-btn" style="padding: 6px 10px; background: var(--bg-tertiary); color: var(--text-primary); border: none; cursor: pointer; font-size: 11px;">
+                            Import
+                        </button>
+                    </div>
                     <div style="position: relative;">
-                        <button id="expense-actions-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                        <button id="expense-actions-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
                             Actions ▾
                         </button>
                         <div id="expense-actions-menu" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 200px; z-index: 100;">
-                            <button class="action-menu-item" data-action="import-csv" style="width: 100%; padding: 10px 14px; border: none; background: none; text-align: left; cursor: pointer; font-size: 13px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-                                📥 Import from CSV
-                            </button>
-                            <div style="height: 1px; background: var(--border-color); margin: 4px 0;"></div>
                             <button class="action-menu-item" data-action="copy-to-post" style="width: 100%; padding: 10px 14px; border: none; background: none; text-align: left; cursor: pointer; font-size: 13px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
                                 📋 Copy Pre → Post Retirement
                             </button>
