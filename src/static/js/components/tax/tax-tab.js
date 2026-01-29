@@ -169,7 +169,10 @@ function renderTaxAnalysis(container, analysis, profile) {
                     <!-- Roth Conversion Analysis -->
                     ${roth_conversion ? `
                     <div style="background: #000; padding: 12px; border-radius: 8px; color: white; border: 1px solid #333;">
-                        <h2 style="font-size: 15px; margin: 0 0 10px 0; font-weight: 700;">🔄 Roth Conversions</h2>
+                        <h2 style="font-size: 15px; margin: 0 0 10px 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                            🔄 Roth Conversions
+                            <span id="roth-conversion-info" style="cursor: pointer; font-size: 14px; opacity: 0.7; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'" title="Click for explanation">ℹ️</span>
+                        </h2>
 
                         ${roth_conversion.optimal_24pct && roth_conversion.optimal_24pct.conversion_amount > 0 ? `
                         <div style="background: rgba(255,255,255,0.15); padding: 10px; border-radius: 6px; margin-bottom: 8px;">
@@ -196,7 +199,10 @@ function renderTaxAnalysis(container, analysis, profile) {
                     <!-- RMD Analysis -->
                     ${rmd_analysis ? `
                     <div style="background: #000; padding: 12px; border-radius: 8px; color: white; border: 1px solid #333;">
-                        <h2 style="font-size: 15px; margin: 0 0 10px 0; font-weight: 700;">📅 RMD Analysis</h2>
+                        <h2 style="font-size: 15px; margin: 0 0 10px 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                            📅 RMD Analysis
+                            <span id="rmd-analysis-info" style="cursor: pointer; font-size: 14px; opacity: 0.7; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'" title="Click for explanation">ℹ️</span>
+                        </h2>
                         <div style="font-size: 12px; margin-bottom: 8px;">
                             ${rmd_analysis.current.required 
                                 ? `Current RMD: <strong>${formatCurrency(rmd_analysis.current.rmd_amount, 0)}</strong>`
@@ -263,6 +269,24 @@ function renderTaxAnalysis(container, analysis, profile) {
             }
         });
     });
+
+    // Add event listener for Roth Conversion info
+    const rothInfoIcon = container.querySelector('#roth-conversion-info');
+    if (rothInfoIcon) {
+        rothInfoIcon.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showRothConversionExplanation();
+        });
+    }
+
+    // Add event listener for RMD Analysis info
+    const rmdInfoIcon = container.querySelector('#rmd-analysis-info');
+    if (rmdInfoIcon) {
+        rmdInfoIcon.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showRMDAnalysisExplanation();
+        });
+    }
 }
 
 /**
@@ -509,4 +533,150 @@ function showRecommendationDetail(recommendation) {
             modal.remove();
         }
     });
+}
+
+/**
+ * Show explanation modal for Roth Conversions
+ */
+function showRothConversionExplanation() {
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 20px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 24px; max-width: 700px; width: 100%; max-height: 90vh; overflow-y: auto; border: 2px solid var(--accent-color);">
+                <h2 style="margin: 0 0 16px 0; color: var(--accent-color);">
+                    🔄 Understanding Roth Conversions
+                </h2>
+
+                <div style="color: var(--text-primary); line-height: 1.6;">
+                    <p style="margin: 0 0 16px 0;">
+                        A <strong>Roth conversion</strong> moves money from a traditional IRA or 401(k) into a Roth IRA. You pay taxes on the converted amount now, but all future growth and withdrawals are tax-free forever.
+                    </p>
+
+                    <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                        <h3 style="margin: 0 0 12px 0; font-size: 14px; color: var(--success-color);">📊 What the Numbers Mean:</h3>
+
+                        <div style="margin-bottom: 12px;">
+                            <strong>Optimal Conversion Amount:</strong><br>
+                            <span style="font-size: 13px; color: var(--text-secondary);">The recommended amount to convert this year to maximize tax efficiency. This amount "fills up" your current tax bracket without pushing you into a higher one.</span>
+                        </div>
+
+                        <div style="margin-bottom: 12px;">
+                            <strong>Conversion Tax Cost:</strong><br>
+                            <span style="font-size: 13px; color: var(--text-secondary);">The federal tax you'll pay on the conversion. This is due when you file your tax return for the conversion year.</span>
+                        </div>
+
+                        <div>
+                            <strong>Lifetime Savings:</strong><br>
+                            <span style="font-size: 13px; color: var(--text-secondary);">The estimated total tax savings over your lifetime from converting at today's tax rates versus paying taxes on traditional IRA withdrawals later at potentially higher rates.</span>
+                        </div>
+                    </div>
+
+                    <div style="background: var(--success-bg); padding: 16px; border-radius: 8px; margin-bottom: 16px; border: 1px solid var(--success-color);">
+                        <h3 style="margin: 0 0 12px 0; font-size: 14px; color: var(--success-color);">✅ Why Convert?</h3>
+                        <ul style="margin: 0; padding-left: 20px; font-size: 13px;">
+                            <li>Lock in today's tax rates (hedge against future increases)</li>
+                            <li>Tax-free growth for life - no taxes on gains ever again</li>
+                            <li>No Required Minimum Distributions (RMDs) - more flexibility</li>
+                            <li>Pass tax-free assets to heirs</li>
+                            <li>Reduce future RMDs that could push you into higher brackets</li>
+                        </ul>
+                    </div>
+
+                    <div style="background: var(--info-bg); padding: 12px; border-radius: 6px; margin-bottom: 16px; border-left: 3px solid var(--info-color);">
+                        <strong>💡 Strategy:</strong><br>
+                        <span style="font-size: 13px;">Consider converting gradually over multiple years during low-income periods (early retirement, between jobs, market downturns) to stay in lower tax brackets.</span>
+                    </div>
+
+                    <div style="background: var(--warning-bg); color: var(--warning-text); padding: 12px; border-radius: 6px; border: 1px solid var(--warning-color);">
+                        <strong>⚠️ Important Considerations:</strong>
+                        <ul style="margin: 8px 0 0 0; padding-left: 20px; font-size: 13px;">
+                            <li>Must have cash on hand to pay the conversion tax</li>
+                            <li>Can trigger Medicare IRMAA surcharges if over 65</li>
+                            <li>State taxes may apply on top of federal</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px; text-align: right;">
+                    <button id="close-roth-explanation" style="padding: 10px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
+                        Got It
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.querySelector('#close-roth-explanation').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+}
+
+/**
+ * Show explanation modal for RMD Analysis
+ */
+function showRMDAnalysisExplanation() {
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 20px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 24px; max-width: 700px; width: 100%; max-height: 90vh; overflow-y: auto; border: 2px solid var(--accent-color);">
+                <h2 style="margin: 0 0 16px 0; color: var(--accent-color);">
+                    📅 Understanding Required Minimum Distributions (RMDs)
+                </h2>
+
+                <div style="color: var(--text-primary); line-height: 1.6;">
+                    <p style="margin: 0 0 16px 0;">
+                        <strong>Required Minimum Distributions (RMDs)</strong> are mandatory annual withdrawals from traditional IRAs and 401(k)s that the IRS requires starting at age 73.
+                    </p>
+
+                    <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                        <h3 style="margin: 0 0 12px 0; font-size: 14px; color: var(--warning-color);">📊 What the Numbers Mean:</h3>
+
+                        <div style="margin-bottom: 12px;">
+                            <strong>Current RMD:</strong><br>
+                            <span style="font-size: 13px; color: var(--text-secondary);">The minimum amount you must withdraw this year. 25% penalty if you miss it.</span>
+                        </div>
+
+                        <div style="margin-bottom: 12px;">
+                            <strong>Years Until RMD:</strong><br>
+                            <span style="font-size: 13px; color: var(--text-secondary);">Your window for tax-efficient strategies like Roth conversions.</span>
+                        </div>
+
+                        <div>
+                            <strong>First/Future RMDs:</strong><br>
+                            <span style="font-size: 13px; color: var(--text-secondary);">Projected required withdrawals showing future tax obligations.</span>
+                        </div>
+                    </div>
+
+                    <div style="background: var(--warning-bg); color: var(--warning-text); padding: 16px; border-radius: 8px; margin-bottom: 16px; border: 1px solid var(--warning-color);">
+                        <h3 style="margin: 0 0 12px 0; font-size: 14px;">⚠️ Why RMDs Matter:</h3>
+                        <ul style="margin: 0; padding-left: 20px; font-size: 13px;">
+                            <li>Forced taxable income can push you into higher brackets</li>
+                            <li>Can trigger Medicare IRMAA surcharges</li>
+                            <li>May make more Social Security taxable</li>
+                            <li>Forced to sell regardless of market conditions</li>
+                        </ul>
+                    </div>
+
+                    <div style="background: var(--success-bg); padding: 12px; border-radius: 6px; border: 1px solid var(--success-color);">
+                        <strong style="color: var(--success-color);">💡 Strategies:</strong>
+                        <ul style="margin: 8px 0 0 0; padding-left: 20px; font-size: 13px;">
+                            <li>Roth conversions before age 73 to reduce future RMDs</li>
+                            <li>QCDs: Donate RMDs to charity tax-free (age 70½+)</li>
+                            <li>Strategic withdrawals before 73 to smooth tax burden</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px; text-align: right;">
+                    <button id="close-rmd-explanation" style="padding: 10px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
+                        Got It
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.querySelector('#close-rmd-explanation').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 }
