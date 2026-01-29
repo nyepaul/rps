@@ -1074,7 +1074,8 @@ function showProfileInfoModal(profile) {
 // ============================================================================
 
 function showNetWorthDetails(profile) {
-    const assets = profile.assets || [];
+    const data = profile.data || {};
+    const assets = data.assets || {};
     const { netWorth, totalAssets, totalDebts, breakdown } = calculateNetWorth(assets);
 
     const modal = document.createElement('div');
@@ -1143,7 +1144,8 @@ function showNetWorthDetails(profile) {
 }
 
 function showIncomeDetails(profile) {
-    const incomeStreams = profile.income_streams || [];
+    const data = profile.data || {};
+    const incomeStreams = data.income_streams || [];
     const activeStreams = incomeStreams.filter(s => s.period === 'current' || s.period === 'both');
     const futureStreams = incomeStreams.filter(s => s.period === 'future' || s.period === 'both');
 
@@ -1219,7 +1221,8 @@ function showIncomeDetails(profile) {
 }
 
 function showExpensesDetails(profile) {
-    const expenses = profile.expenses || [];
+    const data = profile.data || {};
+    const expenses = data.expenses || [];
     const totalAnnual = expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
 
     // Group by category
@@ -1297,8 +1300,9 @@ function showExpensesDetails(profile) {
 }
 
 function showSavingsRateDetails(profile) {
-    const incomeStreams = profile.income_streams || [];
-    const expenses = profile.expenses || [];
+    const data = profile.data || {};
+    const incomeStreams = data.income_streams || [];
+    const expenses = data.expenses || [];
 
     const totalAnnualIncome = incomeStreams
         .filter(s => s.period === 'current' || s.period === 'both')
@@ -1309,7 +1313,7 @@ function showSavingsRateDetails(profile) {
     const savingsRate = totalAnnualIncome > 0 ? (annualSavings / totalAnnualIncome) * 100 : 0;
 
     // Years to Financial Independence (simplified 4% rule)
-    const assets = profile.assets || [];
+    const assets = data.assets || {};
     const { netWorth } = calculateNetWorth(assets);
     const targetAmount = totalAnnualExpenses * 25; // 4% rule
     const yearsToFI = annualSavings > 0 ? Math.max(0, (targetAmount - netWorth) / annualSavings) : 999;
@@ -1534,6 +1538,7 @@ function showAgeDetails(profile) {
 }
 
 function showRetirementDetails(profile) {
+    const data = profile.data || {};
     const currentAge = profile.current_age || 0;
     const retirementAge = profile.retirement_age || 65;
     const yearsToRetirement = Math.max(0, retirementAge - currentAge);
@@ -1544,7 +1549,7 @@ function showRetirementDetails(profile) {
     const workingDaysToRetirement = yearsToRetirement * 260; // ~260 working days/year
 
     // Get action items related to retirement
-    const actionItems = profile.action_items || [];
+    const actionItems = data.action_items || [];
     const retirementActions = actionItems.filter(a =>
         !a.completed && (
             a.title.toLowerCase().includes('retire') ||

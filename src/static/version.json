@@ -1,5 +1,5 @@
 {
-    "version": "3.9.114",
+    "version": "3.9.115",
     "release_date": "2026-01-28",
-    "release_notes": "Fetch complete profile data from API when clicking metric cards for accurate details"
+    "release_notes": "Fix metric detail modals to access correct nested profile data structure (profile.data.*)"
 }
