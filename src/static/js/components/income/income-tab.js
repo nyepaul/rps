@@ -55,14 +55,14 @@ export function renderIncomeTab(container) {
                         + Add Income
                     </button>
                     <button id="ai-import-income-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px;">
-                        Import
+                        AI Import
                     </button>
                     <div style="display: flex; border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden;">
                         <button id="csv-export-income-btn" style="padding: 6px 10px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-right: 1px solid var(--border-color); cursor: pointer; font-size: 11px;">
                             Export
                         </button>
                         <button id="csv-import-income-btn" style="padding: 6px 10px; background: var(--bg-tertiary); color: var(--text-primary); border: none; cursor: pointer; font-size: 11px;">
-                            Import
+                            TXT/CSV
                         </button>
                     </div>
                     <button id="delete-all-income-btn" style="padding: 6px 10px; background: var(--bg-tertiary); color: var(--danger-color); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px;" title="Delete all income streams">

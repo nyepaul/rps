@@ -86,14 +86,14 @@ export function renderBudgetTab(container) {
                 </div>
                 <div style="display: flex; gap: 4px; flex-wrap: wrap;">
                     <button id="ai-import-expenses-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
-                        Import
+                        AI Import
                     </button>
                     <div style="display: flex; border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden;">
                         <button id="export-expenses-btn" style="padding: 6px 10px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-right: 1px solid var(--border-color); cursor: pointer; font-size: 11px;">
                             Export
                         </button>
                         <button id="import-expenses-csv-btn" style="padding: 6px 10px; background: var(--bg-tertiary); color: var(--text-primary); border: none; cursor: pointer; font-size: 11px;">
-                            Import
+                            TXT/CSV
                         </button>
                     </div>
                     <div style="position: relative;">
