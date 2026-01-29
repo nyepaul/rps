@@ -13,8 +13,8 @@ RPS is a retirement and wealth planning system - a local-first financial plannin
 **CRITICAL: Always bump version before pushing when making ANY code changes.**
 
 ### Version Scheme
-- Current major.minor: **3.9.x** (Current: 3.9.83)
-- Use patch versions: 3.9.1, 3.9.2, ..., 3.9.99
+- Current major.minor: **3.9.x** (Current: 3.9.119)
+- Use patch versions: 3.9.1, 3.9.2, ..., 3.9.199
 - Increment patch for ALL changes (features, fixes, improvements)
 - Only move to 3.10.0 when explicitly requested
 
