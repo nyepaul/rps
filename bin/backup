@@ -199,7 +199,7 @@ Backup Name: ${BACKUP_NAME}
 Timestamp: $(date)
 Hostname: $(hostname)
 User: $(whoami)
-RPS Version: $(grep -oP '__version__ = "\K[^"]+' "${PROJECT_ROOT}/src/__version__.py" 2>/dev/null || echo "unknown")
+RPS Version: $(python3 -c "import json; print(json.load(open('${PROJECT_ROOT}/src/static/version.json'))['version'])" 2>/dev/null || echo "unknown")
 Backup Script: $0
 Database Size: $(du -h "${TEMP_DIR}/data/planning.db" 2>/dev/null | cut -f1 || echo "N/A")
 Total Backup Size: $(du -sh "${TEMP_DIR}" | cut -f1)
