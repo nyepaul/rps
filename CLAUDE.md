@@ -13,7 +13,7 @@ RPS is a retirement and wealth planning system - a local-first financial plannin
 **CRITICAL: Always bump version before pushing when making ANY code changes.**
 
 ### Version Scheme
-- Current major.minor: **3.9.x**
+- Current major.minor: **3.9.x** (Current: 3.9.83)
 - Use patch versions: 3.9.1, 3.9.2, ..., 3.9.99
 - Increment patch for ALL changes (features, fixes, improvements)
 - Only move to 3.10.0 when explicitly requested
@@ -115,7 +115,14 @@ Key documents:
 
 ### Backend (Python/Flask)
 - **Entry point**: `src/app.py` - Flask app factory
-- **Routes**: `src/routes/` - API endpoints organized by domain (profiles, analysis, scenarios, ai_services, action_items)
+- **Routes**: `src/routes/` - API endpoints organized by domain. Key modules:
+  - `ai_services.py`: AI/LLM integration (Multi-provider)
+  - `roadmap.py`: Strategic planning
+  - `events.py`: Life event modeling
+  - `feedback.py`: User feedback
+  - `budget.py`: Budget management
+  - `fingerprint.py`: Device fingerprinting
+  - Standard: `profiles.py`, `analysis.py`, `scenarios.py`, `action_items.py`
 - **Services**: `src/services/` - Business logic, notably `retirement_model.py` (~25K lines for Monte Carlo simulation)
 - **Models**: `src/models/` - Domain models with SQLite persistence
 - **Database**: `src/database/connection.py` - SQLite connection manager with context manager pattern
@@ -137,6 +144,7 @@ Key documents:
 - Data encryption via `src/services/encryption_service.py`
 - Rate limiting (Flask-Limiter)
 - Audit logging for compliance
+- IP Geolocation and device fingerprinting
 - Pydantic schemas for input validation
 
 ## Key Patterns
@@ -148,7 +156,7 @@ Key documents:
 - **localStorage**: Wizard progress and learning tracking stored client-side
 
 ## Environment Variables
-- `GEMINI_API_KEY` / `ANTHROPIC_API_KEY` - For AI features
+- `GEMINI_API_KEY` / `ANTHROPIC_API_KEY` - For AI features (optional)
 - `SECRET_KEY` - Flask session encryption
 - `ENCRYPTION_KEY` - Production data encryption (required in production)
 - `FLASK_ENV` - development/production

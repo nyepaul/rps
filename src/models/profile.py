@@ -160,16 +160,12 @@ class Profile:
     def to_dict(self):
         """Convert to dictionary."""
         data = self.data_dict.copy() if self.data_dict else {}
-        
-        # Mask API keys if present
-        if 'api_keys' in data and isinstance(data['api_keys'], dict):
-            masked_keys = {}
-            for k, v in data['api_keys'].items():
-                if v and isinstance(v, str) and len(v) > 4:
-                    masked_keys[k] = '••••' + v[-4:]
-                else:
-                    masked_keys[k] = '••••'
-            data['api_keys'] = masked_keys
+
+        # NEVER include api_keys in to_dict() - they should only be accessed
+        # via the dedicated /api-keys endpoint to prevent accidental leakage
+        # or corruption when the data is saved back
+        if 'api_keys' in data:
+            del data['api_keys']
 
         return {
             'id': self.id,

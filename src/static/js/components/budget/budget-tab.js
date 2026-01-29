@@ -96,6 +96,10 @@ export function renderBudgetTab(container) {
                             Actions ▾
                         </button>
                         <div id="expense-actions-menu" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 200px; z-index: 100;">
+                            <button class="action-menu-item" data-action="import-csv" style="width: 100%; padding: 10px 14px; border: none; background: none; text-align: left; cursor: pointer; font-size: 13px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                                📥 Import from CSV
+                            </button>
+                            <div style="height: 1px; background: var(--border-color); margin: 4px 0;"></div>
                             <button class="action-menu-item" data-action="copy-to-post" style="width: 100%; padding: 10px 14px; border: none; background: none; text-align: left; cursor: pointer; font-size: 13px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
                                 📋 Copy Pre → Post Retirement
                             </button>
@@ -2151,6 +2155,9 @@ function setupBudgetEventHandlers(profile, container) {
                 actionsMenu.style.display = 'none';
 
                 switch (action) {
+                    case 'import-csv':
+                        showImportExpensesCSVModal(profile, container);
+                        break;
                     case 'copy-to-post':
                         showCopyExpensesModal(profile, container, 'current', 'future');
                         break;
@@ -2404,6 +2411,142 @@ function exportExpensesCSV(profile) {
 }
 
 /**
+ * Import expenses from CSV
+ */
+function showImportExpensesCSVModal(profile, container) {
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 24px; max-width: 500px; width: 90%;">
+                <h3 style="margin: 0 0 16px 0;">📥 Import Expenses from CSV</h3>
+                <p style="margin: 0 0 16px 0; color: var(--text-secondary); font-size: 14px;">
+                    CSV should have columns: Name, Amount, Category, Frequency<br>
+                    Categories: housing, transportation, food, healthcare, utilities, insurance, personal, entertainment, other
+                </p>
+                <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
+                <div id="drop-zone" style="border: 2px dashed var(--border-color); border-radius: 8px; padding: 30px; text-align: center; cursor: pointer; margin-bottom: 16px;">
+                    <div style="font-size: 32px; margin-bottom: 8px;">📄</div>
+                    <div>Click or drop CSV file here</div>
+                </div>
+                <div id="file-info" style="display: none; margin-bottom: 16px; padding: 12px; background: var(--bg-secondary); border-radius: 6px;"></div>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Import to:</label>
+                    <select id="import-period" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-secondary);">
+                        <option value="current">Pre-Retirement</option>
+                        <option value="future">Post-Retirement</option>
+                        <option value="both">Both Periods</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <button id="cancel-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
+                        Cancel
+                    </button>
+                    <button id="import-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; display: none;">
+                        Import
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    const fileInput = modal.querySelector('#csv-file-input');
+    const dropZone = modal.querySelector('#drop-zone');
+    const fileInfo = modal.querySelector('#file-info');
+    const importBtn = modal.querySelector('#import-btn');
+    const periodSelect = modal.querySelector('#import-period');
+    let selectedFile = null;
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = 'var(--accent-color)'; });
+    dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = 'var(--border-color)'; });
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'var(--border-color)';
+        if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    });
+
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length) handleFile(fileInput.files[0]);
+    });
+
+    function handleFile(file) {
+        if (!file.name.endsWith('.csv')) {
+            showError('Please select a CSV file');
+            return;
+        }
+        selectedFile = file;
+        fileInfo.style.display = 'block';
+        fileInfo.textContent = `Selected: ${file.name}`;
+        importBtn.style.display = 'block';
+    }
+
+    modal.querySelector('#cancel-btn').addEventListener('click', () => modal.remove());
+
+    importBtn.addEventListener('click', async () => {
+        if (!selectedFile) return;
+        importBtn.disabled = true;
+        importBtn.textContent = 'Importing...';
+
+        try {
+            const text = await selectedFile.text();
+            const lines = text.split(/\r?\n/).filter(l => l.trim());
+            if (lines.length < 2) throw new Error('CSV must have headers and at least one data row');
+
+            const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim().toLowerCase());
+            const targetPeriod = periodSelect.value;
+            let added = 0;
+
+            const validCategories = ['housing', 'transportation', 'food', 'healthcare', 'utilities', 'insurance', 'personal', 'entertainment', 'other'];
+
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].match(/(".*?"|[^,]+)/g)?.map(v => v.replace(/^"|"$/g, '').trim()) || [];
+                const row = {};
+                headers.forEach((h, idx) => { row[h] = values[idx] || ''; });
+
+                const name = row['name'] || row['expense'] || row['description'] || '';
+                if (!name) continue;
+
+                let category = (row['category'] || row['type'] || 'other').toLowerCase();
+                if (!validCategories.includes(category)) category = 'other';
+
+                const expense = {
+                    name: name,
+                    amount: parseFloat(row['amount'] || row['monthly'] || '0') || 0,
+                    frequency: row['frequency'] || 'monthly',
+                    inflation_adjusted: true,
+                    ongoing: true,
+                    start_date: null,
+                    end_date: null
+                };
+
+                // Add to appropriate period(s)
+                if (targetPeriod === 'current' || targetPeriod === 'both') {
+                    if (!budgetData.expenses.current[category]) budgetData.expenses.current[category] = [];
+                    budgetData.expenses.current[category].push(expense);
+                    added++;
+                }
+                if (targetPeriod === 'future' || targetPeriod === 'both') {
+                    if (!budgetData.expenses.future[category]) budgetData.expenses.future[category] = [];
+                    budgetData.expenses.future[category].push({ ...expense });
+                    if (targetPeriod !== 'both') added++;
+                }
+            }
+
+            await saveBudget(profile, container);
+            renderExpenseSection(container);
+            renderBudgetSummary(container);
+            showSuccess(`Imported ${added} expenses`);
+            modal.remove();
+        } catch (error) {
+            showError('Import failed: ' + error.message);
+            importBtn.disabled = false;
+            importBtn.textContent = 'Import';
+        }
+    });
+}
+
+/**
  * Save budget
  */
 async function saveBudget(profile, container) {
@@ -2426,7 +2569,11 @@ async function saveBudget(profile, container) {
         };
 
         console.log('Saving budget data:', JSON.parse(JSON.stringify(budgetData)));
-        console.log('Future part_time_consulting before save:', budgetData.income.future.part_time_consulting);
+        console.log('Profile name for save:', profile?.name, 'Profile object:', profile);
+
+        if (!profile?.name) {
+            throw new Error('Profile name is missing - cannot save');
+        }
 
         // Save to backend
         const result = await profilesAPI.update(profile.name, { data: updatedData });

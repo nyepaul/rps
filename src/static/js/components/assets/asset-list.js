@@ -8,11 +8,15 @@ import { makeRowEditable } from './inline-editor.js';
 import { store } from '../../state/store.js';
 import { profilesAPI } from '../../api/profiles.js';
 import { showError, showSuccess } from '../../utils/dom.js';
+import { isPotentialDuplicate, updateDuplicateDetection } from './assets-tab.js';
 
 /**
  * Render all assets in a simple flat list
  */
 export function renderAssetList(assets, container, onSaveCallback) {
+    // Update duplicate detection before rendering
+    updateDuplicateDetection(assets);
+
     // Collect all assets into a flat array with their category info
     const allAssets = [];
 
@@ -190,13 +194,23 @@ function renderAssetRow(asset) {
         </span>`
     ).join('<span style="color: var(--border-color); margin: 0 4px;">•</span>');
 
+    // Check if this asset is a potential duplicate
+    const isDuplicate = asset.id && isPotentialDuplicate(asset.id);
+    const duplicateStyle = isDuplicate
+        ? 'border: 2px solid var(--warning-color, #f0ad4e); background: rgba(240, 173, 78, 0.1);'
+        : 'border: 1px solid var(--border-color); background: var(--bg-primary);';
+    const duplicateBadge = isDuplicate
+        ? '<span style="background: var(--warning-color, #f0ad4e); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; margin-left: 8px;">POSSIBLE DUPLICATE</span>'
+        : '';
+
     return `
-        <div class="asset-row" data-category="${asset.categoryKey}" data-index="${asset.index}" style="padding: 8px 12px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; gap: 12px;" onmouseover="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--accent-color)'" onmouseout="this.style.background='var(--bg-primary)'; this.style.borderColor='var(--border-color)'">
+        <div class="asset-row" data-category="${asset.categoryKey}" data-index="${asset.index}" data-id="${asset.id || ''}" style="padding: 8px 12px; ${duplicateStyle} border-radius: 6px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; gap: 12px;" onmouseover="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--accent-color)'" onmouseout="this.style.background='${isDuplicate ? 'rgba(240, 173, 78, 0.1)' : 'var(--bg-primary)'}'; this.style.borderColor='${isDuplicate ? 'var(--warning-color, #f0ad4e)' : 'var(--border-color)'}'">
             <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0;">
-                <div style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; flex-wrap: wrap;">
                     <span style="font-size: 16px;">${asset.categoryIcon}</span>
                     <span style="font-weight: 600;">${asset.name}</span>
                     <span style="color: var(--text-secondary);">${typeLabel}</span>
+                    ${duplicateBadge}
                     <span style="color: var(--accent-color); font-weight: 600; margin-left: auto;">${valueDisplay}</span>
                 </div>
                 ${attributesHTML ? `<div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-left: 24px;">${attributesHTML}</div>` : ''}

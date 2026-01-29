@@ -25,9 +25,9 @@ export function showAIImportModal(type, profileName, onComplete) {
 
     const MODELS = {
         'gemini': [
-            { id: 'gemini-3-flash-preview', name: 'Gemini 3.0 Flash (Fastest)' },
-            { id: 'gemini-3-pro-preview', name: 'Gemini 3.0 Pro (Most Capable)' },
-            { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Stable)' }
+            { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (Recommended)' },
+            { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Stable)' },
+            { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash (Preview)' }
         ],
         'claude': [
             { id: 'claude-sonnet-4-5-20250929', name: 'Claude 4.5 Sonnet' },
@@ -52,6 +52,17 @@ export function showAIImportModal(type, profileName, onComplete) {
                 <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;">
                     Upload an image, PDF, or CSV file. AI will extract the relevant data for you.
                 </p>
+
+                <div id="ai-error-banner" style="display: none; background: var(--danger-bg, #fee); border: 1px solid var(--danger-color, #dc3545); border-radius: 8px; padding: 12px 15px; margin-bottom: 15px; color: var(--danger-color, #dc3545);">
+                    <div style="display: flex; align-items: flex-start; gap: 10px;">
+                        <span style="font-size: 18px; line-height: 1;">⚠️</span>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; margin-bottom: 4px;">Import Failed</div>
+                            <div id="ai-error-message" style="font-size: 13px; line-height: 1.4;"></div>
+                        </div>
+                        <button id="ai-error-dismiss" style="background: none; border: none; font-size: 18px; cursor: pointer; color: var(--danger-color, #dc3545); padding: 0; line-height: 1;">×</button>
+                    </div>
+                </div>
 
                 <div id="drop-zone" tabindex="0" style="border: 2px dashed var(--border-color); border-radius: 8px; padding: 40px 20px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--bg-primary);">
                     <div style="font-size: 48px; margin-bottom: 10px;">📄</div>
@@ -106,7 +117,37 @@ export function showAIImportModal(type, profileName, onComplete) {
     const previewStep = modal.querySelector('#ai-preview-step');
     const providerSelect = modal.querySelector('#ai-provider-select');
     const modelSelect = modal.querySelector('#ai-model-select');
+    const errorBanner = modal.querySelector('#ai-error-banner');
+    const errorMessage = modal.querySelector('#ai-error-message');
     let extractedData = null;
+
+    // Helper to show error in modal
+    const showModalError = (message) => {
+        console.error('AI Import Error (full):', message);
+        // Show full error for debugging, with simplified hint
+        let displayMessage = message || 'Unknown error occurred';
+        let hint = '';
+        if (message && message.includes('API key not valid')) {
+            hint = ' (Check API key in Settings → AI Settings)';
+        } else if (message && (message.includes('quota') || message.includes('429'))) {
+            hint = ' (Rate limit - wait a few minutes)';
+        } else if (message && message.includes('not found')) {
+            hint = ' (Model may not be available)';
+        }
+        // Show truncated error + hint
+        const truncated = displayMessage.length > 200 ? displayMessage.substring(0, 200) + '...' : displayMessage;
+        errorMessage.textContent = truncated + hint;
+        errorBanner.style.display = 'block';
+        // Scroll to top of modal to ensure error is visible
+        modal.querySelector('.modal-content').scrollTop = 0;
+    };
+
+    const hideModalError = () => {
+        errorBanner.style.display = 'none';
+    };
+
+    // Error dismiss button
+    modal.querySelector('#ai-error-dismiss').addEventListener('click', hideModalError);
 
     const updateModelList = async (provider) => {
         modelSelect.innerHTML = '';
@@ -228,7 +269,8 @@ export function showAIImportModal(type, profileName, onComplete) {
         const provider = modal.querySelector('#ai-provider-select').value;
         const model = modal.querySelector('#ai-model-select').value;
 
-        // Show processing state
+        // Clear any previous errors and show processing state
+        hideModalError();
         uploadStep.style.display = 'none';
         processingStep.style.display = 'block';
         const progressMessage = processingStep.querySelector('p');
@@ -294,7 +336,7 @@ export function showAIImportModal(type, profileName, onComplete) {
                     }
 
                     if (finalResponse && finalResponse.error) {
-                        showError(finalResponse.error);
+                        showModalError(finalResponse.error);
                         uploadStep.style.display = 'block';
                         processingStep.style.display = 'none';
                         progressBarContainer.remove();
@@ -304,22 +346,23 @@ export function showAIImportModal(type, profileName, onComplete) {
                     // Look for the data in the response using the type key or common fallback keys
                     const resultKey = type.replace('_accounts', '');
                     extractedData = finalResponse[resultKey] || finalResponse.assets || finalResponse.income || finalResponse.expenses || finalResponse.items || [];
-                    
+
                     if (extractedData.length === 0) {
-                        showError('AI could not find any items in this image. Please try a different screenshot or add manually.');
+                        showModalError('AI could not find any items in this document. Try a different file or add items manually.');
                         uploadStep.style.display = 'block';
                         processingStep.style.display = 'none';
                         progressBarContainer.remove();
                         return;
                     }
 
+                    hideModalError();
                     showPreview();
                 } catch (error) {
                     console.error('AI Extraction error:', error);
                     if (error.message === 'TIMEOUT') {
-                        showError('The document is very large and taking longer than expected. It is still processing in the background. Please try again in 2 minutes.');
+                        showModalError('The document is very large and taking longer than expected. Please try again in 2 minutes.');
                     } else {
-                        showError(error.message || 'AI extraction failed.');
+                        showModalError(error.message || 'AI extraction failed. Check your API key in Settings.');
                     }
                     uploadStep.style.display = 'block';
                     processingStep.style.display = 'none';
@@ -327,7 +370,7 @@ export function showAIImportModal(type, profileName, onComplete) {
                 }
             };
         } catch (error) {
-            showError('Failed to read file.');
+            showModalError('Failed to read file. Please try again.');
             uploadStep.style.display = 'block';
             processingStep.style.display = 'none';
             progressBarContainer.remove();

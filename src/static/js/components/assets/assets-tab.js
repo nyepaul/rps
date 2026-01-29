@@ -12,6 +12,90 @@ import { formatCurrency, parseCurrency } from '../../utils/formatters.js';
 import { showSuccess, showError } from '../../utils/dom.js';
 import { calculateNetWorth, calculateRealEstateEquity, calculateTotalDebts } from '../../utils/financial-calculations.js';
 
+/**
+ * Extract account number digits from a string
+ */
+function extractAccountDigits(str) {
+    if (!str) return null;
+    const matches = str.match(/\(?(\d{4,})\)?/g);
+    if (matches && matches.length > 0) {
+        return matches[matches.length - 1].replace(/[^\d]/g, '');
+    }
+    return null;
+}
+
+/**
+ * Detect potential duplicate assets across all categories
+ * Returns array of asset IDs that may be duplicates
+ */
+function detectPotentialDuplicates(assets) {
+    const allAssets = [];
+    const categories = ['retirement_accounts', 'taxable_accounts', 'real_estate', 'pensions_annuities', 'other_assets', 'liabilities'];
+
+    // Flatten all assets with their category
+    for (const cat of categories) {
+        if (assets[cat]) {
+            for (const asset of assets[cat]) {
+                allAssets.push({ ...asset, _category: cat });
+            }
+        }
+    }
+
+    const duplicateIds = new Set();
+
+    // Compare each asset to all others
+    for (let i = 0; i < allAssets.length; i++) {
+        for (let j = i + 1; j < allAssets.length; j++) {
+            const a = allAssets[i];
+            const b = allAssets[j];
+
+            // Extract account digits from name or account_number
+            const aDigits = extractAccountDigits(a.account_number) || extractAccountDigits(a.name);
+            const bDigits = extractAccountDigits(b.account_number) || extractAccountDigits(b.name);
+
+            // Check for matching account digits
+            if (aDigits && bDigits && aDigits === bDigits) {
+                // Check if institution is similar
+                const aInst = (a.institution || '').toLowerCase().replace(/[^a-z]/g, '');
+                const bInst = (b.institution || '').toLowerCase().replace(/[^a-z]/g, '');
+
+                if (aInst === bInst || aInst.includes(bInst) || bInst.includes(aInst) || !aInst || !bInst) {
+                    // Check if values are similar (within 5%)
+                    const valueDiff = Math.abs((a.value || 0) - (b.value || 0));
+                    const maxValue = Math.max(a.value || 0, b.value || 0);
+                    const pctDiff = maxValue > 0 ? valueDiff / maxValue : 0;
+
+                    if (pctDiff < 0.05) {
+                        // Very likely duplicates
+                        if (a.id) duplicateIds.add(a.id);
+                        if (b.id) duplicateIds.add(b.id);
+                    }
+                }
+            }
+        }
+    }
+
+    return Array.from(duplicateIds);
+}
+
+// Store duplicate IDs for highlighting (module-level for access by render functions)
+let potentialDuplicateIds = [];
+
+/**
+ * Check if an asset is a potential duplicate
+ */
+export function isPotentialDuplicate(assetId) {
+    return potentialDuplicateIds.includes(assetId);
+}
+
+/**
+ * Update the list of potential duplicates
+ */
+export function updateDuplicateDetection(assets) {
+    potentialDuplicateIds = detectPotentialDuplicates(assets);
+    return potentialDuplicateIds;
+}
+
 export function renderAssetsTab(container) {
     const profile = store.get('currentProfile');
     let currentFilter = 'total'; // Default filter
@@ -70,6 +154,9 @@ export function renderAssetsTab(container) {
                             Import
                         </button>
                     </div>
+                    <button id="delete-all-assets-btn" style="padding: 6px 10px; background: var(--bg-tertiary); color: var(--danger-color); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px;" title="Delete all assets">
+                        🗑️
+                    </button>
                 </div>
             </div>
 
@@ -286,6 +373,40 @@ function setupGeneralHandlers(container, profile, assets, refreshCallback) {
             showAIImportModal('assets', profile.name, async (extractedAssets) => {
                 let added = 0, updated = 0;
 
+                // Helper: extract account number digits from name or account_number field
+                const extractAccountDigits = (str) => {
+                    if (!str) return null;
+                    // Extract last 4+ digits, handling formats like "8737", "(8737)", "Wells Fargo 8737", "WF (8737)"
+                    const matches = str.match(/\(?(\d{4,})\)?/g);
+                    if (matches && matches.length > 0) {
+                        // Get the last match and extract just digits
+                        return matches[matches.length - 1].replace(/[^\d]/g, '');
+                    }
+                    return null;
+                };
+
+                // Helper: check if two assets are likely duplicates (fuzzy match)
+                const isFuzzyMatch = (item, existing) => {
+                    // Extract account digits from both name and account_number fields
+                    const itemDigits = extractAccountDigits(item.account_number) || extractAccountDigits(item.name);
+                    const existingDigits = extractAccountDigits(existing.account_number) || extractAccountDigits(existing.name);
+
+                    // If both have account digits and they match, it's likely a duplicate
+                    if (itemDigits && existingDigits && itemDigits === existingDigits) {
+                        // Also check institution matches (fuzzy)
+                        const itemInst = (item.institution || '').toLowerCase().replace(/[^a-z]/g, '');
+                        const existingInst = (existing.institution || '').toLowerCase().replace(/[^a-z]/g, '');
+                        if (itemInst && existingInst && (itemInst.includes(existingInst) || existingInst.includes(itemInst))) {
+                            return true;
+                        }
+                        // If no institution but same digits, still likely duplicate
+                        if (!itemInst || !existingInst) {
+                            return true;
+                        }
+                    }
+                    return false;
+                };
+
                 // Helper: find existing asset across all categories using multiple markers
                 const findExistingAsset = (item) => {
                     const allCategories = ['retirement_accounts', 'taxable_accounts', 'real_estate', 'pensions_annuities', 'other_assets', 'liabilities'];
@@ -296,39 +417,23 @@ function setupGeneralHandlers(container, profile, assets, refreshCallback) {
                         for (let i = 0; i < assets[cat].length; i++) {
                             const existing = assets[cat][i];
 
-                            // Priority 1: Match by account_number (strongest identifier)
+                            // Priority 1: Exact account_number match
                             if (item.account_number && existing.account_number &&
                                 item.account_number === existing.account_number) {
                                 return { category: cat, index: i, existing };
                             }
 
-                            // Priority 2: Match by name + institution (both must match)
+                            // Priority 2: Fuzzy match on account digits (handles "8737" vs "(8737)")
+                            if (isFuzzyMatch(item, existing)) {
+                                return { category: cat, index: i, existing, fuzzy: true };
+                            }
+
+                            // Priority 3: Match by name + institution (both must match exactly)
                             if (item.institution && existing.institution &&
                                 item.name?.toLowerCase() === existing.name?.toLowerCase() &&
                                 item.institution.toLowerCase() === existing.institution.toLowerCase()) {
                                 return { category: cat, index: i, existing };
                             }
-
-                            // Priority 3: Match by name + type
-                            if (item.name?.toLowerCase() === existing.name?.toLowerCase() &&
-                                item.type === existing.type) {
-                                return { category: cat, index: i, existing };
-                            }
-                        }
-                    }
-
-                    // Priority 4: Fallback to name-only match in target category
-                    const type = item.type || 'brokerage';
-                    let targetCat = 'taxable_accounts';
-                    if (['401k', '403b', '457', 'traditional_ira', 'roth_ira'].includes(type)) {
-                        targetCat = 'retirement_accounts';
-                    }
-                    if (assets[targetCat]) {
-                        const idx = assets[targetCat].findIndex(
-                            a => a.name?.toLowerCase() === item.name?.toLowerCase()
-                        );
-                        if (idx >= 0) {
-                            return { category: targetCat, index: idx, existing: assets[targetCat][idx] };
                         }
                     }
 
@@ -352,6 +457,7 @@ function setupGeneralHandlers(container, profile, assets, refreshCallback) {
 
                     if (match) {
                         // Update existing asset - preserve id and allocation, update value/cost_basis
+                        console.log(`Matched "${item.name}" to existing "${match.existing.name}"${match.fuzzy ? ' (fuzzy)' : ''}`);
                         assets[match.category][match.index] = {
                             ...match.existing,
                             value: item.value ?? match.existing.value,
@@ -381,12 +487,20 @@ function setupGeneralHandlers(container, profile, assets, refreshCallback) {
                 await saveAssets(profile, assets);
                 if (refreshCallback) refreshCallback();
 
+                // Detect potential duplicates after import
+                const duplicates = detectPotentialDuplicates(assets);
+
                 // Show summary of what happened
                 const parts = [];
                 if (added > 0) parts.push(`${added} added`);
                 if (updated > 0) parts.push(`${updated} updated`);
+                if (duplicates.length > 0) parts.push(`${duplicates.length} potential duplicates detected`);
                 if (parts.length > 0) {
-                    showSuccess(`Assets imported: ${parts.join(', ')}`);
+                    if (duplicates.length > 0) {
+                        showError(`Assets imported: ${parts.join(', ')}. Review highlighted items.`);
+                    } else {
+                        showSuccess(`Assets imported: ${parts.join(', ')}`);
+                    }
                 }
             });
         });
@@ -421,6 +535,70 @@ function setupGeneralHandlers(container, profile, assets, refreshCallback) {
             }
         });
     }
+
+    // Delete All Assets button
+    const deleteAllBtn = container.querySelector('#delete-all-assets-btn');
+    if (deleteAllBtn) {
+        deleteAllBtn.addEventListener('click', () => {
+            showDeleteAllAssetsModal(profile, refreshCallback);
+        });
+    }
+}
+
+/**
+ * Show modal to confirm deleting all assets
+ */
+function showDeleteAllAssetsModal(profile, refreshCallback) {
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 24px; max-width: 400px; width: 90%;">
+                <h3 style="margin: 0 0 16px 0; color: var(--danger-color);">⚠️ Delete All Assets</h3>
+                <p style="margin: 0 0 16px 0; color: var(--text-secondary);">
+                    This will permanently delete <strong>ALL</strong> assets including:
+                </p>
+                <ul style="margin: 0 0 16px 0; padding-left: 20px; color: var(--text-secondary); font-size: 14px;">
+                    <li>Retirement accounts (401k, IRA, etc.)</li>
+                    <li>Taxable accounts (brokerage, savings)</li>
+                    <li>Real estate properties</li>
+                    <li>Pensions & annuities</li>
+                    <li>Other assets & liabilities</li>
+                </ul>
+                <p style="margin: 0 0 20px 0; color: var(--danger-color); font-weight: 600;">
+                    This action cannot be undone!
+                </p>
+                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <button id="cancel-delete" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
+                        Cancel
+                    </button>
+                    <button id="confirm-delete" style="padding: 10px 20px; background: var(--danger-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        Delete All Assets
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    modal.querySelector('#cancel-delete').addEventListener('click', () => modal.remove());
+    modal.querySelector('#confirm-delete').addEventListener('click', async () => {
+        try {
+            const emptyAssets = {
+                retirement_accounts: [],
+                taxable_accounts: [],
+                real_estate: [],
+                pensions_annuities: [],
+                other_assets: [],
+                liabilities: []
+            };
+            await saveAssets(profile, emptyAssets);
+            if (refreshCallback) refreshCallback();
+            showSuccess('All assets deleted');
+            modal.remove();
+        } catch (error) {
+            showError('Failed to delete assets: ' + error.message);
+        }
+    });
 }
 
 /**

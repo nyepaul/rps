@@ -7,10 +7,11 @@ A local-first financial planning application for Monte Carlo retirement simulati
 ## Features
 
 - **Monte Carlo Simulations** — 10,000-run projections with granular tax modeling
-- **AI Strategic Advisor** — Personalized guidance via Gemini or Claude
+- **AI Strategic Advisor** — Personalized guidance via Gemini, Claude, OpenAI, and Local LLMs (Ollama, LM Studio).
 - **Tax Optimization** — Roth conversion windows, withdrawal sequencing, RMD planning
 - **Income Stream Modeling** — Pensions, Social Security, rental income with survivor benefits
 - **Real-time Dashboard** — Adjust parameters and see immediate impact on success rates
+- **Roadmap & Life Events** — Strategic planning for major life changes
 - **Action Item Tracking** — Convert AI recommendations into executable tasks
 
 ## Quick Start
@@ -41,7 +42,7 @@ A local-first financial planning application for Monte Carlo retirement simulati
 |-------|------------|
 | Backend | Python/Flask with SQLite |
 | Frontend | Vanilla JS, ES6 modules, Chart.js |
-| AI | Gemini Flash / Claude Sonnet |
+| AI | Multi-provider (Gemini, Claude, OpenAI, Local LLMs) |
 | Storage | Local SQLite (`data/planning.db`) |
 | Security | AES-256-GCM encryption, bcrypt, rate limiting |
 
@@ -67,4 +68,4 @@ The following variables are used for system-level configuration or testing. **Us
 
 ---
 
-**Version**: 3.9.28 | **Author**: pan
+**Version**: 3.9.83 | **Author**: pan

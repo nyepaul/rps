@@ -50,9 +50,20 @@ export function renderIncomeTab(container) {
                         Tracking <strong>${profile.name}'s</strong> recurring income
                     </p>
                 </div>
-                <div style="display: flex; gap: 8px;">
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                     <button id="ai-import-income-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px;">
                         Import
+                    </button>
+                    <div style="display: flex; border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden;">
+                        <button id="csv-export-income-btn" style="padding: 6px 10px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-right: 1px solid var(--border-color); cursor: pointer; font-size: 11px;">
+                            Export
+                        </button>
+                        <button id="csv-import-income-btn" style="padding: 6px 10px; background: var(--bg-tertiary); color: var(--text-primary); border: none; cursor: pointer; font-size: 11px;">
+                            CSV
+                        </button>
+                    </div>
+                    <button id="delete-all-income-btn" style="padding: 6px 10px; background: var(--bg-tertiary); color: var(--danger-color); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px;" title="Delete all income streams">
+                        🗑️
                     </button>
                     <button id="add-income-stream-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px;">
                         + Add Income
@@ -132,6 +143,30 @@ function setupIncomeStreamsHandlers(container, profile, incomeStreams) {
     if (addBtn) {
         addBtn.addEventListener('click', () => {
             showIncomeStreamModal(container, profile, null, incomeStreams);
+        });
+    }
+
+    // CSV Export button
+    const csvExportBtn = container.querySelector('#csv-export-income-btn');
+    if (csvExportBtn) {
+        csvExportBtn.addEventListener('click', () => {
+            exportIncomeCSV(profile, incomeStreams);
+        });
+    }
+
+    // CSV Import button
+    const csvImportBtn = container.querySelector('#csv-import-income-btn');
+    if (csvImportBtn) {
+        csvImportBtn.addEventListener('click', () => {
+            showImportIncomeCSVModal(container, profile, incomeStreams);
+        });
+    }
+
+    // Delete All button
+    const deleteAllBtn = container.querySelector('#delete-all-income-btn');
+    if (deleteAllBtn) {
+        deleteAllBtn.addEventListener('click', () => {
+            showDeleteAllIncomeModal(container, profile, incomeStreams);
         });
     }
 }
@@ -555,4 +590,193 @@ async function deleteIncomeStream(container, index, incomeStreams) {
         console.error('Error deleting income stream:', error);
         showError('Failed to delete: ' + error.message);
     }
+}
+
+/**
+ * Export income streams to CSV
+ */
+function exportIncomeCSV(profile, incomeStreams) {
+    if (incomeStreams.length === 0) {
+        showError('No income streams to export');
+        return;
+    }
+
+    const headers = ['Name', 'Amount', 'Start Date', 'End Date', 'Description', 'Owner'];
+    const rows = incomeStreams.map(stream => [
+        stream.name || '',
+        stream.amount || 0,
+        stream.start_date || '',
+        stream.end_date || '',
+        stream.description || '',
+        stream.owner || 'primary'
+    ]);
+
+    const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${profile.name}_income_streams_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+
+    showSuccess('Income streams exported to CSV');
+}
+
+/**
+ * Show CSV import modal for income
+ */
+function showImportIncomeCSVModal(container, profile, incomeStreams) {
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 24px; max-width: 500px; width: 90%;">
+                <h3 style="margin: 0 0 16px 0;">📥 Import Income from CSV</h3>
+                <p style="margin: 0 0 16px 0; color: var(--text-secondary); font-size: 14px;">
+                    CSV should have columns: Name, Amount, Start Date, End Date, Description<br>
+                    First row is treated as headers.
+                </p>
+                <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
+                <div id="drop-zone" style="border: 2px dashed var(--border-color); border-radius: 8px; padding: 30px; text-align: center; cursor: pointer; margin-bottom: 16px;">
+                    <div style="font-size: 32px; margin-bottom: 8px;">📄</div>
+                    <div>Click or drop CSV file here</div>
+                </div>
+                <div id="file-info" style="display: none; margin-bottom: 16px; padding: 12px; background: var(--bg-secondary); border-radius: 6px;"></div>
+                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <button id="cancel-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
+                        Cancel
+                    </button>
+                    <button id="import-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; display: none;">
+                        Import
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    const fileInput = modal.querySelector('#csv-file-input');
+    const dropZone = modal.querySelector('#drop-zone');
+    const fileInfo = modal.querySelector('#file-info');
+    const importBtn = modal.querySelector('#import-btn');
+    let selectedFile = null;
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = 'var(--accent-color)'; });
+    dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = 'var(--border-color)'; });
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'var(--border-color)';
+        if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    });
+
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length) handleFile(fileInput.files[0]);
+    });
+
+    function handleFile(file) {
+        if (!file.name.endsWith('.csv')) {
+            showError('Please select a CSV file');
+            return;
+        }
+        selectedFile = file;
+        fileInfo.style.display = 'block';
+        fileInfo.textContent = `Selected: ${file.name}`;
+        importBtn.style.display = 'block';
+    }
+
+    modal.querySelector('#cancel-btn').addEventListener('click', () => modal.remove());
+
+    importBtn.addEventListener('click', async () => {
+        if (!selectedFile) return;
+        importBtn.disabled = true;
+        importBtn.textContent = 'Importing...';
+
+        try {
+            const text = await selectedFile.text();
+            const lines = text.split(/\r?\n/).filter(l => l.trim());
+            if (lines.length < 2) throw new Error('CSV must have headers and at least one data row');
+
+            const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim().toLowerCase());
+            let added = 0;
+
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].match(/(".*?"|[^,]+)/g)?.map(v => v.replace(/^"|"$/g, '').trim()) || [];
+                const row = {};
+                headers.forEach((h, idx) => { row[h] = values[idx] || ''; });
+
+                const name = row['name'] || row['source'] || '';
+                if (!name) continue;
+
+                incomeStreams.push({
+                    name: name,
+                    amount: parseFloat(row['amount'] || row['monthly'] || '0') || 0,
+                    start_date: row['start date'] || row['start_date'] || row['start'] || '',
+                    end_date: row['end date'] || row['end_date'] || row['end'] || '',
+                    description: row['description'] || row['notes'] || '',
+                    owner: row['owner'] || 'primary'
+                });
+                added++;
+            }
+
+            await saveIncomeStreams(profile, incomeStreams);
+            renderIncomeStreamsList(container, incomeStreams);
+            showSuccess(`Imported ${added} income streams`);
+            modal.remove();
+        } catch (error) {
+            showError('Import failed: ' + error.message);
+            importBtn.disabled = false;
+            importBtn.textContent = 'Import';
+        }
+    });
+}
+
+/**
+ * Show delete all income modal
+ */
+function showDeleteAllIncomeModal(container, profile, incomeStreams) {
+    if (incomeStreams.length === 0) {
+        showError('No income streams to delete');
+        return;
+    }
+
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 24px; max-width: 400px; width: 90%;">
+                <h3 style="margin: 0 0 16px 0; color: var(--danger-color);">⚠️ Delete All Income Streams</h3>
+                <p style="margin: 0 0 16px 0; color: var(--text-secondary);">
+                    This will permanently delete <strong>ALL ${incomeStreams.length}</strong> income streams.
+                </p>
+                <p style="margin: 0 0 20px 0; color: var(--danger-color); font-weight: 600;">
+                    This action cannot be undone!
+                </p>
+                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <button id="cancel-delete" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
+                        Cancel
+                    </button>
+                    <button id="confirm-delete" style="padding: 10px 20px; background: var(--danger-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        Delete All
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    modal.querySelector('#cancel-delete').addEventListener('click', () => modal.remove());
+    modal.querySelector('#confirm-delete').addEventListener('click', async () => {
+        try {
+            incomeStreams.length = 0; // Clear array
+            await saveIncomeStreams(profile, incomeStreams);
+            renderIncomeStreamsList(container, incomeStreams);
+            showSuccess('All income streams deleted');
+            modal.remove();
+        } catch (error) {
+            showError('Failed to delete: ' + error.message);
+        }
+    });
 }

@@ -109,6 +109,7 @@ class APIClient {
      * PUT request
      */
     async put(url, data, options = {}) {
+        console.log('PUT request:', url, 'method: PUT');
         return this.request(url, {
             ...options,
             method: 'PUT',
@@ -192,11 +193,11 @@ class APIClient {
             }
             
             if (!result && response.ok) {
-                // If we finished but never got a final result object, check if we had any progress
-                // If we have nothing, maybe the backend failed silently
+                // If we finished but never got a final result object, the backend may have failed silently
                 console.warn('Stream finished without a final result object');
+                throw new APIError('Stream ended without returning data. The request may have failed.', 0, {});
             }
-            
+
             return result;
         } catch (error) {
             throw error;

@@ -243,7 +243,26 @@ def update_profile(name: str):
 
         if data.data is not None:
             updated_fields.append('data')
-            profile.data = data.data
+            # CRITICAL: Preserve existing api_keys - they get masked in to_dict()
+            # and we don't want to overwrite real keys with masked values
+            existing_data = profile.data_dict or {}
+            new_data = data.data
+            if 'api_keys' in existing_data and existing_data['api_keys']:
+                # Check if incoming api_keys are masked (contain bullet chars)
+                incoming_keys = new_data.get('api_keys', {})
+                if incoming_keys:
+                    masked_chars = ['•', '●', '∙', '⋅', '⦁']
+                    is_masked = any(
+                        any(char in str(v) for char in masked_chars)
+                        for v in incoming_keys.values() if v
+                    )
+                    if is_masked:
+                        # Preserve existing keys, don't save masked values
+                        new_data['api_keys'] = existing_data['api_keys']
+                else:
+                    # No api_keys in incoming data, preserve existing
+                    new_data['api_keys'] = existing_data['api_keys']
+            profile.data = new_data
 
         profile.save()
 

@@ -5,7 +5,7 @@ Project context for Google Gemini AI.
 ## Project: Retirement & Wealth Planning System (RPS)
 
 **Type**: Web Application (Flask/Vanilla JS)
-**Version**: 3.9.x (See `src/__version__.py`)
+**Version**: 3.9.83
 **Location**: `/home/paul/src/rps`
 **Manager**: `bin/manage` (Main CLI entry point)
 
@@ -29,9 +29,13 @@ RPS is a comprehensive, **local-first** financial planning application designed 
   - **Conservative Decline**: Gradual spending reduction.
 - **Dynamic Income**: Models complex streams like Social Security (with claiming age optimization), Pensions (Lump vs. Stream), and Budget-based income.
 
-### 2. AI Integration (Optional) (`src/services/ai_service.py`)
-The system works fully offline but gains capabilities with API keys (Gemini/Claude):
-- **AI Advisor**: Context-aware chat for personalized financial strategy.
+### 2. AI Integration (Optional) (`src/routes/ai_services.py`)
+The system works fully offline but gains capabilities with API keys. Now supports a wide range of providers including:
+- **Cloud**: Gemini (Google), Claude (Anthropic), OpenAI, DeepSeek, Grok (xAI), Mistral, Together AI, HuggingFace, Zhipu AI, OpenRouter.
+- **Local**: Ollama, LM Studio, LocalAI.
+
+Features:
+- **AI Advisor**: Context-aware chat for personalized financial strategy with multi-model fallback.
 - **Asset Extraction**: **Computer Vision** feature to extract account details (holdings, values) from uploaded statement images/screenshots.
 - **Action Items**: AI-generated, prioritized task lists based on profile analysis.
 
@@ -43,11 +47,18 @@ The system works fully offline but gains capabilities with API keys (Gemini/Clau
 ### 4. Security & Data
 - **Local-First**: All data stored in SQLite (`data/planning.db`).
 - **Encryption**: Profile data encrypted at rest using AES-256-GCM (`src/services/encryption_service.py`).
-- **Audit Logging**: Enhanced logging with **IP Geolocation** tracking (`docs/GEOLOCATION_LOGGING.md`).
+- **Audit Logging**: Enhanced logging with **IP Geolocation** tracking (`docs/GEOLOCATION_LOGGING.md`) using `maxminddb-geolite2` and `geoip2`.
 - **Data Portability**: Full CSV Import/Export capabilities for assets.
+- **Fingerprinting**: Browser/Device fingerprinting for security (`src/routes/fingerprint.py`).
 
 ### 5. Educational Content
 - **Skills System**: Built-in knowledge base (`skills/`) serving markdown guides on topics like "Tax Strategy" and "Estate Planning" (`src/routes/skills.py`).
+
+### 6. Additional Modules
+- **Roadmap**: Strategic planning module (`src/routes/roadmap.py`).
+- **Life Events**: Modeling significant life changes (`src/routes/events.py`).
+- **Feedback**: User feedback collection system (`src/routes/feedback.py`).
+- **Budgeting**: Detailed budget management (`src/routes/budget.py`).
 
 ## System Architecture
 
@@ -66,7 +77,7 @@ The system works fully offline but gains capabilities with API keys (Gemini/Clau
 ├── bin/                 # Management scripts (start, backup, deploy)
 ├── src/                 # Source code
 │   ├── app.py           # Flask app factory
-│   ├── services/        # Core business logic (Model, Tax, AI)
+│   ├── services/        # Core business logic (Model, Tax, Audit, PDF)
 │   ├── routes/          # API endpoints (Blueprints)
 │   ├── models/          # Data access layer (Raw SQL)
 │   └── static/          # Frontend assets (JS/CSS/HTML)
