@@ -1,5 +1,5 @@
 {
-    "version": "3.9.97",
+    "version": "3.9.98",
     "release_date": "2026-01-28",
-    "release_notes": "Standardize button layouts across Income, Budget, and Asset tabs for consistency"
+    "release_notes": "Rename import buttons to 'AI Import' and 'TXT/CSV' for clarity"
 }
