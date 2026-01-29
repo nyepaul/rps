@@ -1,5 +1,5 @@
 {
-    "version": "3.9.103",
+    "version": "3.9.104",
     "release_date": "2026-01-28",
-    "release_notes": "Redesign State Tax Comparison UI for better readability"
+    "release_notes": "Move Cash Flow View to top of Analysis menu"
 }
