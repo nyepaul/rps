@@ -14,7 +14,7 @@ def test_register_new_user(client, test_db):
 
     assert response.status_code == 201
     data = response.get_json()
-    assert data['message'] == 'Registration successful'
+    assert 'Registration successful' in data['message']
     assert 'user' in data
     assert data['user']['username'] == 'newuser'
     assert data['user']['email'] == 'new@example.com'

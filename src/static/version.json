@@ -1,5 +1,5 @@
 {
-    "version": "3.9.119",
+    "version": "3.9.120",
     "release_date": "2026-01-29",
-    "release_notes": "Add CSV transaction import with income/expense reconciliation and pattern detection"
+    "release_notes": "Fix auth test assertion for flexible message matching"
 }
