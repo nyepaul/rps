@@ -118,7 +118,7 @@ export function renderAnalysisTab(container) {
                                 </optgroup>
                             `).join('')}
                         </select>
-                        <div style="background: var(--warning-color); color: white; padding: 8px; border-radius: 4px; font-size: 11px;">
+                        <div style="background: var(--warning-bg); color: var(--warning-text); padding: 8px; border-radius: 4px; font-size: 11px; border: 1px solid var(--warning-color);">
                             ⚠️ <strong>Note:</strong> Simple mode uses ONE market condition for your ENTIRE retirement (30-40 years). This is unrealistic. Consider using Presets or Timeline for more accurate projections.
                         </div>
                     </div>
