@@ -1,5 +1,5 @@
 {
-    "version": "3.9.83",
+    "version": "3.9.95",
     "release_date": "2026-01-28",
-    "release_notes": "Fix API keys settings: add missing endpoints, comprehensive validation, auto-save after test, remove duplicate save button"
+    "release_notes": "Remove debug print statements from AI services"
 }
