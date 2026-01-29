@@ -1348,3 +1348,278 @@ def delete_api_key(name: str):
             status_code=500
         )
         return jsonify({'error': str(e)}), 500
+
+
+@profiles_bp.route('/profile/<name>/transactions/import', methods=['POST'])
+@login_required
+@limiter.limit("10 per hour")
+def import_transactions_stream(name: str):
+    """
+    Upload CSV, detect patterns, return reconciliation preview.
+    Streams progress updates via NDJSON for better UX.
+    Does NOT save to profile yet - preview only.
+    """
+    import json
+    from src.services.transaction_analyzer import (
+        parse_transaction_csv,
+        sanitize_transaction,
+        detect_income_patterns,
+        detect_expense_patterns,
+        reconcile_income
+    )
+
+    def generate():
+        try:
+            # Verify ownership
+            profile = Profile.get_by_name(name, current_user.id)
+            if not profile:
+                yield json.dumps({'status': 'error', 'error': 'Profile not found'}) + '\n'
+                return
+
+            # Get uploaded file
+            file = request.files.get('file')
+            if not file:
+                yield json.dumps({'status': 'error', 'error': 'No file uploaded'}) + '\n'
+                return
+
+            # Validate file size (5MB limit)
+            file.seek(0, 2)  # Seek to end
+            file_size = file.tell()
+            file.seek(0)  # Reset to beginning
+
+            if file_size > 5 * 1024 * 1024:  # 5MB
+                yield json.dumps({'status': 'error', 'error': 'File too large (max 5MB)'}) + '\n'
+                return
+
+            # Step 1: Parse CSV
+            yield json.dumps({
+                'status': 'parsing',
+                'progress': 10,
+                'message': 'Reading CSV file...'
+            }) + '\n'
+
+            csv_content = file.read().decode('utf-8-sig')  # Handle BOM
+            transactions = parse_transaction_csv(csv_content)
+
+            if len(transactions) < 3:
+                yield json.dumps({
+                    'status': 'error',
+                    'error': 'Not enough transactions (minimum 3 required)'
+                }) + '\n'
+                return
+
+            # Step 2: Sanitize (strip PII)
+            yield json.dumps({
+                'status': 'sanitizing',
+                'progress': 30,
+                'message': 'Removing sensitive data...'
+            }) + '\n'
+
+            sanitized = [sanitize_transaction(t) for t in transactions]
+
+            # Step 3: Detect patterns
+            yield json.dumps({
+                'status': 'detecting',
+                'progress': 50,
+                'message': 'Analyzing patterns...'
+            }) + '\n'
+
+            income_txns = [t for t in sanitized if t.amount > 0]
+            expense_txns = [t for t in sanitized if t.amount < 0]
+
+            detected_income = detect_income_patterns(income_txns)
+            detected_expenses = detect_expense_patterns(expense_txns)
+
+            # Step 4: Reconcile with existing data
+            yield json.dumps({
+                'status': 'reconciling',
+                'progress': 80,
+                'message': 'Comparing with your data...'
+            }) + '\n'
+
+            data_dict = profile.data_dict
+            specified_income = data_dict.get('income_streams', [])
+            reconciliation = reconcile_income(specified_income, detected_income)
+
+            # Step 5: Complete
+            dates = [t.date for t in sanitized]
+            date_range = {
+                'start': min(dates).isoformat(),
+                'end': max(dates).isoformat()
+            }
+
+            # Convert dataclasses to dicts
+            from dataclasses import asdict
+
+            yield json.dumps({
+                'status': 'complete',
+                'progress': 100,
+                'message': 'Analysis complete!',
+                'data': {
+                    'transaction_count': len(transactions),
+                    'income_count': len(income_txns),
+                    'expense_count': len(expense_txns),
+                    'date_range': date_range,
+                    'detected_income': [asdict(d) for d in detected_income],
+                    'detected_expenses': {
+                        cat: [asdict(e) for e in expenses]
+                        for cat, expenses in detected_expenses.items()
+                    },
+                    'reconciliation': {
+                        'matches': [asdict(m) for m in reconciliation.matches],
+                        'new_detected': [asdict(d) for d in reconciliation.new_detected],
+                        'manual_only': reconciliation.manual_only,
+                        'summary': reconciliation.summary
+                    }
+                }
+            }) + '\n'
+
+            # Audit logging
+            enhanced_audit_logger.log(
+                action='CSV_TRANSACTION_IMPORT',
+                table_name='profile',
+                record_id=profile.id,
+                details={
+                    'transaction_count': len(transactions),
+                    'date_range': f"{date_range['start']} to {date_range['end']}",
+                    'patterns_detected': len(detected_income) + sum(len(e) for e in detected_expenses.values()),
+                    'file_size_kb': round(len(csv_content) / 1024, 2)
+                },
+                status_code=200
+            )
+
+        except ValueError as e:
+            yield json.dumps({'status': 'error', 'error': str(e)}) + '\n'
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.exception("CSV import failed")
+            yield json.dumps({'status': 'error', 'error': 'Import failed. Please check CSV format.'}) + '\n'
+
+    return Response(generate(), mimetype='application/x-ndjson')
+
+
+@profiles_bp.route('/profile/<name>/transactions/reconcile', methods=['POST'])
+@login_required
+def reconcile_transactions(name: str):
+    """
+    Apply reconciliation decisions to profile.
+    Accepts user choices: merge, add_new, ignore, add_expense.
+    """
+    try:
+        profile = Profile.get_by_name(name, current_user.id)
+        if not profile:
+            enhanced_audit_logger.log(
+                action='RECONCILE_TRANSACTIONS_NOT_FOUND',
+                details={'profile_name': name},
+                status_code=404
+            )
+            return jsonify({'error': 'Profile not found'}), 404
+
+        actions = request.json.get('actions', [])
+        if not actions:
+            return jsonify({'error': 'No actions provided'}), 400
+
+        data_dict = profile.data_dict
+        applied_count = 0
+        income_added = 0
+        expenses_added = 0
+
+        # Ensure income_streams exists
+        if 'income_streams' not in data_dict:
+            data_dict['income_streams'] = []
+
+        # Ensure budget structure exists
+        if 'budget' not in data_dict:
+            data_dict['budget'] = {'expenses': {'current': {}, 'future': {}}}
+        if 'expenses' not in data_dict['budget']:
+            data_dict['budget']['expenses'] = {'current': {}, 'future': {}}
+        if 'current' not in data_dict['budget']['expenses']:
+            data_dict['budget']['expenses']['current'] = {}
+
+        for action in actions:
+            action_type = action.get('type')
+
+            if action_type == 'merge':
+                # Update existing income stream with detected data
+                stream_idx = action.get('stream_index')
+                updates = action.get('updates', {})
+
+                if stream_idx is not None and 0 <= stream_idx < len(data_dict['income_streams']):
+                    data_dict['income_streams'][stream_idx].update({
+                        'amount': updates.get('amount'),
+                        'frequency': updates.get('frequency'),
+                        'source': 'merged',
+                        'detected_from': updates.get('detected_from'),
+                        'confidence': updates.get('confidence'),
+                        'variance': updates.get('variance'),
+                        'first_seen': updates.get('first_seen'),
+                        'last_seen': updates.get('last_seen'),
+                        'detected_date': datetime.now().isoformat()
+                    })
+                    applied_count += 1
+                    income_added += 1
+
+            elif action_type == 'add_new':
+                # Add new detected income stream
+                new_stream = action.get('stream', {})
+                new_stream['source'] = 'detected'
+                new_stream['detected_date'] = datetime.now().isoformat()
+                data_dict['income_streams'].append(new_stream)
+                applied_count += 1
+                income_added += 1
+
+            elif action_type == 'ignore':
+                # Just log - no action needed
+                applied_count += 1
+
+            elif action_type == 'add_expense':
+                # Add detected expense to budget
+                category = action.get('category', 'other')
+                expense = action.get('expense', {})
+                expense['source'] = 'detected'
+                expense['detected_date'] = datetime.now().isoformat()
+
+                # Default to pre-retirement expenses
+                period = 'current'
+
+                if category not in data_dict['budget']['expenses'][period]:
+                    data_dict['budget']['expenses'][period][category] = []
+
+                data_dict['budget']['expenses'][period][category].append(expense)
+                applied_count += 1
+                expenses_added += 1
+
+        # Save updated profile
+        profile.data = data_dict
+        profile.save()
+
+        # Audit log
+        enhanced_audit_logger.log(
+            action='CSV_RECONCILE_APPLIED',
+            table_name='profile',
+            record_id=profile.id,
+            details={
+                'actions_applied': applied_count,
+                'income_patterns_added': income_added,
+                'expense_patterns_added': expenses_added,
+                'profile_name': name
+            },
+            status_code=200
+        )
+
+        return jsonify({
+            'success': True,
+            'actions_applied': applied_count,
+            'income_added': income_added,
+            'expenses_added': expenses_added,
+            'message': f'Successfully applied {applied_count} changes'
+        }), 200
+
+    except Exception as e:
+        enhanced_audit_logger.log(
+            action='RECONCILE_TRANSACTIONS_ERROR',
+            details={'profile_name': name, 'error': str(e)},
+            status_code=500
+        )
+        return jsonify({'error': str(e)}), 500
