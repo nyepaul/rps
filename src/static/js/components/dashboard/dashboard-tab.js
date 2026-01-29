@@ -1265,21 +1265,27 @@ function showNetWorthDetails(profile) {
                     <span>💳</span> Debt Breakdown
                 </h3>
                 <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;">
-                    ${Object.entries(breakdown.debts).sort(([,a], [,b]) => b - a).map(([category, amount]) => {
-                        const debtPct = totalDebts > 0 ? (amount / totalDebts * 100) : 0;
-                        const emoji = debtEmojis[category] || '📄';
-                        return `
-                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--bg-secondary); border-radius: 6px; border-left: 2px solid #ef4444;">
-                                <div style="flex: 1;">
-                                    <div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">${emoji} ${category}</div>
-                                    <div style="font-size: 10px; color: var(--text-secondary);">${debtPct.toFixed(1)}% of total debt</div>
+                    ${(() => {
+                        // Construct debts object from breakdown
+                        const debts = {};
+                        if (breakdown.mortgageDebts > 0) debts['Mortgage'] = breakdown.mortgageDebts;
+                        if (breakdown.otherLiabilities > 0) debts['Other Debts'] = breakdown.otherLiabilities;
+                        return Object.entries(debts).sort(([,a], [,b]) => b - a).map(([category, amount]) => {
+                            const debtPct = totalDebts > 0 ? (amount / totalDebts * 100) : 0;
+                            const emoji = debtEmojis[category] || '📄';
+                            return `
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--bg-secondary); border-radius: 6px; border-left: 2px solid #ef4444;">
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">${emoji} ${category}</div>
+                                        <div style="font-size: 10px; color: var(--text-secondary);">${debtPct.toFixed(1)}% of total debt</div>
+                                    </div>
+                                    <div style="font-weight: bold; color: #ef4444; font-size: 14px;">
+                                        ${formatCurrency(amount, 0)}
+                                    </div>
                                 </div>
-                                <div style="font-weight: bold; color: #ef4444; font-size: 14px;">
-                                    ${formatCurrency(amount, 0)}
-                                </div>
-                            </div>
-                        `;
-                    }).join('')}
+                            `;
+                        }).join('');
+                    })()}
                 </div>
             ` : ''}
 
@@ -1710,13 +1716,26 @@ function showExpensesDetails(profile) {
 function showSavingsRateDetails(profile) {
     const data = profile.data || {};
     const incomeStreams = data.income_streams || [];
-    const expenses = data.expenses || [];
 
+    // Get expenses from budget structure (same as showExpensesDetails)
+    const budget = data.budget || {};
+    const expensesCurrent = budget.expenses?.current || {};
+    const expenses = Object.entries(expensesCurrent).flatMap(([category, items]) =>
+        items.map(item => ({ ...item, category }))
+    );
+
+    // Income is monthly, multiply by 12 for annual
     const totalAnnualIncome = incomeStreams
         .filter(s => s.period === 'current' || s.period === 'both')
-        .reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0);
+        .reduce((sum, s) => sum + (parseFloat(s.amount) || 0) * 12, 0);
 
-    const totalAnnualExpenses = expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+    // Calculate annual expenses (convert monthly to annual where needed)
+    const totalAnnualExpenses = expenses.reduce((sum, exp) => {
+        const amount = parseFloat(exp.amount) || 0;
+        const frequency = (exp.frequency || 'monthly').toLowerCase();
+        const multiplier = frequency === 'annual' ? 1 : 12;
+        return sum + (amount * multiplier);
+    }, 0);
     const annualSavings = totalAnnualIncome - totalAnnualExpenses;
     const savingsRate = totalAnnualIncome > 0 ? (annualSavings / totalAnnualIncome) * 100 : 0;
 
@@ -1831,9 +1850,25 @@ function showSavingsRateDetails(profile) {
 }
 
 function showAgeDetails(profile) {
-    const birthDate = profile.date_of_birth ? new Date(profile.date_of_birth) : null;
-    const currentAge = profile.current_age || 0;
-    const retirementAge = profile.retirement_age || 65;
+    const birthDate = profile.birth_date ? new Date(profile.birth_date) : null;
+    const retirementDate = profile.retirement_date ? new Date(profile.retirement_date) : null;
+
+    // Calculate current age from birth date
+    let currentAge = 0;
+    if (birthDate) {
+        const today = new Date();
+        currentAge = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            currentAge--;
+        }
+    }
+
+    // Calculate retirement age from retirement date
+    let retirementAge = 65;
+    if (retirementDate && birthDate) {
+        retirementAge = retirementDate.getFullYear() - birthDate.getFullYear();
+    }
 
     let daysUntilBirthday = 0;
     let nextBirthdayAge = currentAge + 1;
@@ -1947,8 +1982,26 @@ function showAgeDetails(profile) {
 
 function showRetirementDetails(profile) {
     const data = profile.data || {};
-    const currentAge = profile.current_age || 0;
-    const retirementAge = profile.retirement_age || 65;
+    const birthDate = profile.birth_date ? new Date(profile.birth_date) : null;
+    const retirementDate = profile.retirement_date ? new Date(profile.retirement_date) : null;
+
+    // Calculate current age from birth date
+    let currentAge = 0;
+    if (birthDate) {
+        const today = new Date();
+        currentAge = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            currentAge--;
+        }
+    }
+
+    // Calculate retirement age from retirement date
+    let retirementAge = 65;
+    if (retirementDate && birthDate) {
+        retirementAge = retirementDate.getFullYear() - birthDate.getFullYear();
+    }
+
     const yearsToRetirement = Math.max(0, retirementAge - currentAge);
 
     // Calculate more detailed countdown

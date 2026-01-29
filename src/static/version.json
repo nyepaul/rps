@@ -1,5 +1,5 @@
 {
-    "version": "3.9.120",
+    "version": "3.9.121",
     "release_date": "2026-01-29",
-    "release_notes": "Fix auth test assertion for flexible message matching"
+    "release_notes": "Fix metric card detail modals: correct data paths for net worth debts, savings rate expenses, and age/retirement date calculations"
 }
