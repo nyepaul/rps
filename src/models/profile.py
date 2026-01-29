@@ -107,6 +107,16 @@ class Profile:
             profiles.append(profile.to_dict())
         return profiles
     
+    def _is_demo_user(self):
+        """Check if this profile belongs to the demo user."""
+        if not self.user_id:
+            return False
+        row = db.execute_one(
+            'SELECT username FROM users WHERE id = ?',
+            (self.user_id,)
+        )
+        return row and row['username'].lower() == 'demo'
+
     def save(self):
         """Save or update profile (encrypts data and logs action)."""
         is_new = self.id is None
@@ -114,16 +124,25 @@ class Profile:
         with db.get_connection() as conn:
             cursor = conn.cursor()
 
-            # Encrypt data if we have decrypted data cached
-            if self._decrypted_data is not None:
-                encrypted_data, data_iv = encrypt_dict(self._decrypted_data)
-                self._data = encrypted_data
-                self.data_iv = data_iv
-            elif isinstance(self._data, dict):
-                # Data is a plain dict, encrypt it
-                encrypted_data, data_iv = encrypt_dict(self._data)
-                self._data = encrypted_data
-                self.data_iv = data_iv
+            # Demo user: store data as plain JSON (no encryption)
+            if self._is_demo_user():
+                if self._decrypted_data is not None:
+                    self._data = json.dumps(self._decrypted_data)
+                    self.data_iv = None
+                elif isinstance(self._data, dict):
+                    self._data = json.dumps(self._data)
+                    self.data_iv = None
+            else:
+                # Encrypt data if we have decrypted data cached
+                if self._decrypted_data is not None:
+                    encrypted_data, data_iv = encrypt_dict(self._decrypted_data)
+                    self._data = encrypted_data
+                    self.data_iv = data_iv
+                elif isinstance(self._data, dict):
+                    # Data is a plain dict, encrypt it
+                    encrypted_data, data_iv = encrypt_dict(self._data)
+                    self._data = encrypted_data
+                    self.data_iv = data_iv
             # Otherwise, data is already encrypted (or plain JSON from old records)
 
             if is_new:

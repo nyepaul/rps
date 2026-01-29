@@ -559,6 +559,30 @@ class User(UserMixin):
         with db.get_connection() as conn:
             conn.execute('DELETE FROM admin_groups WHERE user_id = ? AND group_id = ?', (self.id, group_id))
 
+    @staticmethod
+    def get_super_admins():
+        """Get all super admin users.
+
+        Returns:
+            list[User]: List of super admin User objects
+        """
+        rows = db.execute(
+            'SELECT * FROM users WHERE is_super_admin = 1 AND is_active = 1'
+        )
+        return [User(**dict(row)) for row in rows]
+
+    @staticmethod
+    def get_super_admin_emails():
+        """Get email addresses of all active super admins.
+
+        Returns:
+            list[str]: List of super admin email addresses
+        """
+        rows = db.execute(
+            'SELECT email FROM users WHERE is_super_admin = 1 AND is_active = 1'
+        )
+        return [row['email'] for row in rows]
+
     def __repr__(self):
         return f'<User {self.username}>'
 

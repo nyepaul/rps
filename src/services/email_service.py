@@ -290,3 +290,109 @@ class EmailService:
             return bool(mail_username)
         except:
             return False
+
+    @staticmethod
+    def send_new_account_notification(username: str, email: str, base_url: str = None):
+        """Send notification to super admins when a new account is created.
+
+        Args:
+            username: The new user's username
+            email: The new user's email address
+            base_url: Base URL of the application
+
+        Returns:
+            bool: True if at least one email was sent successfully
+        """
+        from src.auth.models import User
+        from datetime import datetime
+
+        if not base_url:
+            base_url = os.getenv('APP_BASE_URL', 'http://localhost:5137')
+
+        # Get all super admin emails, excluding .local domains
+        super_admin_emails = [
+            email for email in User.get_super_admin_emails()
+            if not email.lower().endswith('.local')
+        ]
+        if not super_admin_emails:
+            print("No super admins configured to receive new account notifications")
+            return False
+
+        subject = f"RPS - New Account Created: {username}"
+        created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')
+
+        html_body = f"""
+        <!DOCTYPE html>
+        <html>
+        <body style="font-family: sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #2563eb;">New Account Created</h2>
+                <p>A new user has registered on RPS:</p>
+                <table style="border-collapse: collapse; margin: 20px 0;">
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Username:</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">{username}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Email:</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">{email}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold;">Created:</td>
+                        <td style="padding: 8px;">{created_at}</td>
+                    </tr>
+                </table>
+                <p style="color: #6b7280; font-size: 14px;">
+                    This is an automated notification. The user must verify their email before they can log in.
+                </p>
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                    <a href="{base_url}/admin.html" style="color: #2563eb; text-decoration: none;">View Admin Panel</a>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        text_body = f"""New Account Created
+
+A new user has registered on RPS:
+
+Username: {username}
+Email: {email}
+Created: {created_at}
+
+This is an automated notification. The user must verify their email before they can log in.
+
+Admin Panel: {base_url}/admin.html
+"""
+
+        any_sent = False
+        for admin_email in super_admin_emails:
+            try:
+                # Try standard Flask-Mail (SMTP) first
+                msg = Message(subject=subject, recipients=[admin_email], html=html_body, body=text_body)
+                mail.send(msg)
+                any_sent = True
+            except Exception as e:
+                print(f"Flask-Mail SMTP failed for {admin_email}: {e}")
+                # Fallback to local sendmail binary
+                try:
+                    import subprocess
+                    from email.mime.text import MIMEText
+                    from email.mime.multipart import MIMEMultipart
+                    sender = current_app.config.get('MAIL_DEFAULT_SENDER', 'rps@pan2.app')
+                    mime_msg = MIMEMultipart('alternative')
+                    mime_msg['Subject'] = subject
+                    mime_msg['From'] = sender
+                    mime_msg['To'] = admin_email
+                    mime_msg.attach(MIMEText(text_body, 'plain'))
+                    mime_msg.attach(MIMEText(html_body, 'html'))
+
+                    process = subprocess.Popen(['/usr/sbin/sendmail', '-t'], stdin=subprocess.PIPE)
+                    process.communicate(input=mime_msg.as_bytes())
+                    if process.returncode == 0:
+                        any_sent = True
+                except Exception as ex:
+                    print(f"Sendmail fallback failed for {admin_email}: {ex}")
+
+        return any_sent

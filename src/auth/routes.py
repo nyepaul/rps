@@ -146,18 +146,43 @@ def register():
         password_hash=User.hash_password(data.password)
     )
 
-    # Generate user-specific encryption key (DEK)
-    dek = EncryptionService.generate_dek()
-    # Use deterministic salt based on identity
-    kek = EncryptionService.get_kek_from_password(data.password, user.get_kek_salt())
-    
-    # Encrypt DEK with KEK derived from password
-    temp_service = EncryptionService(key=kek)
-    encrypted_dek, dek_iv = temp_service.encrypt(base64.b64encode(dek).decode('utf-8'))
+    # Demo account: no encryption, no recovery needed
+    is_demo = data.username.lower() == 'demo'
+    recovery_code = None
 
-    # Update user with encryption details
-    user.encrypted_dek = encrypted_dek
-    user.dek_iv = dek_iv
+    if is_demo:
+        # Demo account stores data unencrypted - no DEK needed
+        user.encrypted_dek = None
+        user.dek_iv = None
+    else:
+        # Generate user-specific encryption key (DEK)
+        dek = EncryptionService.generate_dek()
+        # Use deterministic salt based on identity
+        kek = EncryptionService.get_kek_from_password(data.password, user.get_kek_salt())
+
+        # Encrypt DEK with KEK derived from password
+        temp_service = EncryptionService(key=kek)
+        encrypted_dek, dek_iv = temp_service.encrypt(base64.b64encode(dek).decode('utf-8'))
+
+        # Update user with encryption details
+        user.encrypted_dek = encrypted_dek
+        user.dek_iv = dek_iv
+
+        # Generate recovery code so user can recover data if they forget password
+        recovery_code = EncryptionService.generate_recovery_code()
+        recovery_salt = os.urandom(16)
+        recovery_kek = EncryptionService.get_recovery_kek(recovery_code, recovery_salt)
+        recovery_service = EncryptionService(key=recovery_kek)
+        dek_b64 = base64.b64encode(dek).decode('utf-8')
+        rec_enc_dek, rec_iv = recovery_service.encrypt(dek_b64)
+
+        user.recovery_encrypted_dek = rec_enc_dek
+        user.recovery_iv = rec_iv
+        user.recovery_salt = base64.b64encode(recovery_salt).decode('utf-8')
+
+        # Also set up email-based recovery backup
+        user.update_email_recovery_backup(dek)
+
     user.save()
 
     # Send verification email
@@ -168,6 +193,14 @@ def register():
     except Exception as e:
         print(f"Failed to send verification email: {e}")
         # We still create the account, user can resend later
+
+    # Notify super admins of new account
+    try:
+        from src.services.email_service import EmailService
+        EmailService.send_new_account_notification(user.username, user.email)
+    except Exception as e:
+        print(f"Failed to send admin notification: {e}")
+        # Non-critical, don't fail registration
 
     # Log the registration
     EnhancedAuditLogger.log(
@@ -183,13 +216,20 @@ def register():
     )
 
     # DO NOT log user in immediately. Require verification.
-    return jsonify({
+    response_data = {
         'message': 'Registration successful. Please check your email to verify your account.',
         'user': {
             'username': user.username,
             'email': user.email
         }
-    }), 201
+    }
+
+    # Include recovery code for non-demo accounts
+    if recovery_code:
+        response_data['recovery_code'] = recovery_code
+        response_data['recovery_warning'] = 'SAVE THIS CODE SECURELY. It is the ONLY way to recover your data if you forget your password. This code will not be shown again.'
+
+    return jsonify(response_data), 201
 
 
 @auth_bp.route('/verify-email', methods=['POST'])

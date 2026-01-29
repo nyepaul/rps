@@ -1,5 +1,5 @@
 {
-    "version": "3.9.136",
+    "version": "3.9.140",
     "release_date": "2026-01-29",
-    "release_notes": "Include education accounts (529s) in Other Assets calculation"
+    "release_notes": "Demo account: unencrypted data, no recovery code, comprehensive seed data (scenarios, action items, conversations)"
 }
