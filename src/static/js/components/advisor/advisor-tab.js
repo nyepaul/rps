@@ -35,16 +35,25 @@ export function renderAdvisorTab(container) {
 
     container.innerHTML = `
         <div style="max-width: 1000px; margin: 0 auto; padding: 20px; height: calc(100vh - 200px); display: flex; flex-direction: column;">
-            <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <h1 style="font-size: 36px; margin-bottom: 10px;">AI Retirement Advisor</h1>
-                    <p style="color: var(--text-secondary);">
-                        Profile: <strong>${profile.name}</strong> | Get personalized advice powered by AI
-                    </p>
-                </div>
-                <div style="flex: 1; display: flex; gap: 10px; align-items: center;">
-                    <input type="text" id="advisor-input" placeholder="Ask about your financial plan..." style="flex: 1; padding: 12px 15px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); font-size: 14px;">
-                    <button id="send-advisor-msg" class="btn-primary" style="padding: 10px 20px;">Send</button>
+            <div style="margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                    <div>
+                        <h1 style="font-size: 32px; margin: 0 0 8px 0;">AI Retirement Advisor</h1>
+                        <p style="color: var(--text-secondary); margin: 0;">
+                            Profile: <strong>${profile.name}</strong>
+                        </p>
+                    </div>
+                    <div style="text-align: right;">
+                        <label style="display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; font-weight: 600;">AI MODEL</label>
+                        <select id="model-selector" style="padding: 6px 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-tertiary); color: var(--text-primary); font-size: 13px; cursor: pointer;">
+                            <option value="gemini">Gemini 2.5 Flash (Recommended)</option>
+                            <option value="claude">Claude Sonnet 4.5</option>
+                            <option value="openai">GPT-5.2</option>
+                            <option value="deepseek">DeepSeek V4</option>
+                            <option value="grok">Grok 5</option>
+                            <option value="mistral">Mistral Large</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -322,6 +331,10 @@ async function sendMessage(profile, chatInput, chatContainer) {
         return;
     }
 
+    // Get selected model
+    const modelSelector = document.querySelector('#model-selector');
+    const selectedProvider = modelSelector ? modelSelector.value : 'gemini';
+
     // Add user message to chat
     addMessage(chatContainer, 'user', message);
 
@@ -330,10 +343,10 @@ async function sendMessage(profile, chatInput, chatContainer) {
 
     // Show typing indicator
     const typingId = showTypingIndicator(chatContainer);
-    
+
     try {
-        // Send to API
-        const response = await advisorAPI.chat(profile.name, message, currentConversationId);
+        // Send to API with provider
+        const response = await advisorAPI.chat(profile.name, message, currentConversationId, selectedProvider);
 
         // Update conversation ID if provided
         if (response.conversation_id) {
@@ -378,7 +391,96 @@ async function sendMessage(profile, chatInput, chatContainer) {
     }
 }
 
+function formatJSONResponse(jsonObj) {
+    // Format JSON response in a more readable way
+    if (jsonObj.analysis_and_advice) {
+        const analysis = jsonObj.analysis_and_advice;
+        let html = '<div style="line-height: 1.6;">';
+
+        // Introduction
+        if (analysis.introduction) {
+            html += `<p style="margin-bottom: 16px; font-size: 15px; line-height: 1.6;">${escapeHtml(analysis.introduction)}</p>`;
+        }
+
+        // Current Snapshot
+        if (analysis.current_snapshot) {
+            html += '<div style="background: var(--bg-tertiary); padding: 16px; border-radius: 8px; margin: 16px 0;">';
+            html += '<h3 style="margin: 0 0 12px 0; color: var(--accent-color); font-size: 16px;">📊 Current Snapshot</h3>';
+            const snapshot = analysis.current_snapshot;
+            if (snapshot.total_assets) {
+                html += '<div style="margin-bottom: 12px; font-size: 14px;"><strong>Total Assets:</strong> ' + escapeHtml(snapshot.total_assets.total_combined_assets || '') + '</div>';
+            }
+            if (snapshot.key_observations) {
+                html += '<div style="font-size: 14px;"><strong>Key Observations:</strong><ul style="margin: 8px 0; padding-left: 20px;">';
+                snapshot.key_observations.forEach(obs => {
+                    html += `<li style="margin-bottom: 6px; line-height: 1.5;">${escapeHtml(obs)}</li>`;
+                });
+                html += '</ul></div>';
+            }
+            html += '</div>';
+        }
+
+        // Immediate Concerns
+        if (analysis.immediate_concerns_and_next_steps) {
+            html += '<div style="background: var(--warning-bg); padding: 16px; border-radius: 8px; margin: 16px 0; border: 1px solid var(--warning-color);">';
+            html += '<h3 style="margin: 0 0 12px 0; color: var(--warning-text); font-size: 16px;">⚠️ Immediate Concerns & Next Steps</h3>';
+            const concerns = analysis.immediate_concerns_and_next_steps;
+            if (concerns.missing_financial_data) {
+                html += `<p style="margin-bottom: 12px; font-size: 14px; line-height: 1.6;">${escapeHtml(concerns.missing_financial_data)}</p>`;
+            }
+            if (concerns.actionable_next_steps_summary) {
+                html += '<div style="font-size: 14px;"><strong>Action Steps:</strong><ol style="margin: 8px 0; padding-left: 20px;">';
+                concerns.actionable_next_steps_summary.forEach(step => {
+                    html += `<li style="margin-bottom: 8px; line-height: 1.5;">${escapeHtml(step)}</li>`;
+                });
+                html += '</ol></div>';
+            }
+            html += '</div>';
+        }
+
+        // Detailed Advice Sections
+        if (analysis.detailed_advice) {
+            const advice = analysis.detailed_advice;
+            for (const [key, section] of Object.entries(advice)) {
+                if (section.title && section.points) {
+                    html += '<div style="margin: 20px 0;">';
+                    html += `<h3 style="margin: 0 0 12px 0; color: var(--accent-color); font-size: 16px;">${escapeHtml(section.title)}</h3>`;
+                    html += '<ul style="margin: 0; padding-left: 20px; font-size: 14px;">';
+                    section.points.forEach(point => {
+                        html += `<li style="margin-bottom: 10px; line-height: 1.6;">${escapeHtml(point)}</li>`;
+                    });
+                    html += '</ul></div>';
+                }
+            }
+        }
+
+        // Disclaimer
+        if (analysis.disclaimer) {
+            html += `<div style="margin-top: 20px; padding: 12px; background: var(--info-bg); border: 1px solid var(--info-color); border-radius: 6px; font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
+                <strong>ℹ️ Disclaimer:</strong> ${escapeHtml(analysis.disclaimer)}
+            </div>`;
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    // Fallback: pretty-print JSON
+    return `<pre style="background: var(--bg-tertiary); padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.4;">${escapeHtml(JSON.stringify(jsonObj, null, 2))}</pre>`;
+}
+
 function formatMarkdown(text) {
+    // Check if text is JSON and format it appropriately
+    try {
+        const jsonMatch = text.match(/^\s*\{[\s\S]*\}\s*$/);
+        if (jsonMatch) {
+            const jsonObj = JSON.parse(text);
+            return formatJSONResponse(jsonObj);
+        }
+    } catch (e) {
+        // Not JSON, continue with markdown formatting
+    }
+
     // Escape HTML first
     let html = escapeHtml(text);
 
