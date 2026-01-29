@@ -148,10 +148,11 @@ function renderTaxAnalysis(container, analysis, profile) {
             <div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--border-color);">
                 <h2 style="font-size: 15px; margin: 0 0 10px 0; font-weight: 700; color: var(--accent-color);">💡 Top Recommendations</h2>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 8px;">
-                    ${recommendations.slice(0, 3).map(rec => `
-                        <div style="background: var(--bg-tertiary); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
-                            <div style="font-size: 13px; font-weight: 700; margin-bottom: 2px; color: var(--text-primary);">
+                    ${recommendations.slice(0, 3).map((rec, idx) => `
+                        <div class="tax-recommendation" data-rec-index="${idx}" style="background: var(--bg-tertiary); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--accent-color)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border-color)'; this.style.transform='translateY(0)'">
+                            <div style="font-size: 13px; font-weight: 700; margin-bottom: 2px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
                                 ${rec.title}
+                                <span style="font-size: 11px; opacity: 0.6;">ℹ️</span>
                             </div>
                             <div style="font-size: 11px; color: var(--text-secondary);">
                                 ${rec.impact}
@@ -252,6 +253,16 @@ function renderTaxAnalysis(container, analysis, profile) {
             showTaxSnapshotExplanation();
         });
     }
+
+    // Add event listeners for recommendation cards
+    const recCards = container.querySelectorAll('.tax-recommendation');
+    recCards.forEach((card, idx) => {
+        card.addEventListener('click', () => {
+            if (recommendations && recommendations[idx]) {
+                showRecommendationDetail(recommendations[idx]);
+            }
+        });
+    });
 }
 
 /**
@@ -318,6 +329,177 @@ function showTaxSnapshotExplanation() {
 
     // Close on button click
     modal.querySelector('#close-tax-explanation').addEventListener('click', () => {
+        modal.remove();
+    });
+
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+}
+
+/**
+ * Show detailed explanation modal for a tax recommendation
+ */
+function showRecommendationDetail(recommendation) {
+    // Generate detailed content based on recommendation type
+    let detailedContent = '';
+    const title = recommendation.title || '';
+
+    if (title.includes('State Tax Relocation') || title.includes('State Tax')) {
+        detailedContent = `
+            <h3 style="color: var(--accent-color); margin: 0 0 12px 0; font-size: 16px;">🏡 State Tax Relocation Strategy</h3>
+
+            <p style="margin: 0 0 16px 0; line-height: 1.6;">
+                <strong>Why Consider Relocating?</strong><br>
+                State income taxes can represent a significant portion of your lifetime tax burden, especially in high-tax states. Some states have no income tax at all, while others charge rates exceeding 10%.
+            </p>
+
+            <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                <strong style="color: var(--success-color);">No Income Tax States:</strong>
+                <div style="margin-top: 8px; font-size: 13px; color: var(--text-secondary);">
+                    Alaska, Florida, Nevada, South Dakota, Tennessee, Texas, Washington, Wyoming, New Hampshire (limited)
+                </div>
+            </div>
+
+            <div style="background: var(--warning-bg); color: var(--warning-text); padding: 12px; border-radius: 6px; margin-bottom: 16px; border: 1px solid var(--warning-color);">
+                <strong>⚠️ Important Considerations:</strong>
+                <ul style="margin: 8px 0 0 0; padding-left: 20px; font-size: 13px;">
+                    <li>Property taxes may be higher in no-income-tax states</li>
+                    <li>Sales taxes and other fees can offset some savings</li>
+                    <li>Consider cost of living, healthcare access, and quality of life</li>
+                    <li>Establish residency properly to avoid dual-state taxation</li>
+                </ul>
+            </div>
+
+            <p style="margin: 0; line-height: 1.6;">
+                <strong>Typical Savings:</strong> Moving from a high-tax state to a no-tax state can save $10,000-$50,000+ annually depending on your income level, potentially adding hundreds of thousands to your retirement nest egg over time.
+            </p>
+        `;
+    } else if (title.includes('Marginal Rate') || title.includes('High Marginal')) {
+        detailedContent = `
+            <h3 style="color: var(--accent-color); margin: 0 0 12px 0; font-size: 16px;">📊 High Marginal Tax Rate Alert</h3>
+
+            <p style="margin: 0 0 16px 0; line-height: 1.6;">
+                <strong>What This Means:</strong><br>
+                Your marginal tax rate is the percentage of tax you pay on your next dollar of income. A high marginal rate means a significant portion of additional income goes to taxes.
+            </p>
+
+            <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                <strong style="color: var(--warning-color);">Strategies to Manage High Marginal Rates:</strong>
+                <ul style="margin: 8px 0 0 0; padding-left: 20px; font-size: 13px; line-height: 1.6;">
+                    <li><strong>Income Timing:</strong> Defer income to future years when you may be in a lower bracket</li>
+                    <li><strong>Tax-Deferred Contributions:</strong> Max out 401(k), traditional IRA, HSA contributions</li>
+                    <li><strong>Tax-Loss Harvesting:</strong> Offset capital gains with capital losses</li>
+                    <li><strong>Qualified Business Income Deduction:</strong> If self-employed, take advantage of the 20% QBI deduction</li>
+                    <li><strong>Charitable Giving:</strong> Donate appreciated assets directly to charity</li>
+                </ul>
+            </div>
+
+            <div style="background: var(--info-bg); padding: 12px; border-radius: 6px; margin-bottom: 16px; border-left: 3px solid var(--info-color);">
+                <strong>💡 Pro Tip:</strong><br>
+                <span style="font-size: 13px;">Consider Roth conversions in years when your income is temporarily lower (between jobs, early retirement, etc.) to lock in lower tax rates on future growth.</span>
+            </div>
+
+            <p style="margin: 0; line-height: 1.6;">
+                <strong>Impact:</strong> Strategic income timing and deductions can reduce your marginal rate by one or more tax brackets, saving thousands of dollars annually.
+            </p>
+        `;
+    } else if (title.includes('Roth Conversion')) {
+        detailedContent = `
+            <h3 style="color: var(--accent-color); margin: 0 0 12px 0; font-size: 16px;">🔄 Roth Conversion Opportunity</h3>
+
+            <p style="margin: 0 0 16px 0; line-height: 1.6;">
+                <strong>What is a Roth Conversion?</strong><br>
+                A Roth conversion is the process of moving money from a traditional IRA or 401(k) to a Roth IRA. You pay taxes on the converted amount now, but all future growth and withdrawals are tax-free.
+            </p>
+
+            <div style="background: var(--success-bg); padding: 16px; border-radius: 8px; margin-bottom: 16px; border: 1px solid var(--success-color);">
+                <strong style="color: var(--success-color);">Benefits of Roth Conversions:</strong>
+                <ul style="margin: 8px 0 0 0; padding-left: 20px; font-size: 13px; line-height: 1.6;">
+                    <li>Tax-free growth for life</li>
+                    <li>Tax-free withdrawals in retirement</li>
+                    <li>No Required Minimum Distributions (RMDs)</li>
+                    <li>Can pass tax-free to heirs</li>
+                    <li>Hedge against future tax rate increases</li>
+                </ul>
+            </div>
+
+            <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                <strong>Optimal Conversion Timing:</strong>
+                <ul style="margin: 8px 0 0 0; padding-left: 20px; font-size: 13px; line-height: 1.6;">
+                    <li><strong>Low-income years:</strong> Between jobs, early retirement, business loss years</li>
+                    <li><strong>Before RMDs start:</strong> Age 60-73, before forced withdrawals begin</li>
+                    <li><strong>Market downturns:</strong> Convert when account values are temporarily depressed</li>
+                    <li><strong>Stay in current bracket:</strong> Convert up to the top of your current tax bracket to avoid jumping to a higher rate</li>
+                </ul>
+            </div>
+
+            <div style="background: var(--warning-bg); color: var(--warning-text); padding: 12px; border-radius: 6px; margin-bottom: 16px; border: 1px solid var(--warning-color);">
+                <strong>⚠️ Watch Out For:</strong>
+                <ul style="margin: 8px 0 0 0; padding-left: 20px; font-size: 13px;">
+                    <li>IRMAA Medicare surcharges (if over 65)</li>
+                    <li>ACA subsidy impacts (if under 65 and on marketplace)</li>
+                    <li>Pushing into a higher tax bracket</li>
+                    <li>State taxes on the conversion</li>
+                </ul>
+            </div>
+
+            <p style="margin: 0; line-height: 1.6;">
+                <strong>Strategy:</strong> Consider converting $20,000-$50,000 annually over multiple years to "fill up" your current tax bracket without jumping to a higher one. This can save tens of thousands in taxes over your lifetime.
+            </p>
+        `;
+    } else {
+        // Generic explanation for other recommendation types
+        detailedContent = `
+            <h3 style="color: var(--accent-color); margin: 0 0 12px 0; font-size: 16px;">${recommendation.title}</h3>
+
+            <p style="margin: 0 0 16px 0; line-height: 1.6;">
+                <strong>Impact:</strong><br>
+                ${recommendation.impact}
+            </p>
+
+            ${recommendation.description ? `
+            <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                <strong>Details:</strong><br>
+                <p style="margin: 8px 0 0 0; font-size: 13px; line-height: 1.6;">${recommendation.description}</p>
+            </div>
+            ` : ''}
+
+            ${recommendation.action ? `
+            <div style="background: var(--info-bg); padding: 12px; border-radius: 6px; border-left: 3px solid var(--info-color);">
+                <strong>💡 Recommended Action:</strong><br>
+                <p style="margin: 8px 0 0 0; font-size: 13px;">${recommendation.action}</p>
+            </div>
+            ` : ''}
+        `;
+    }
+
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 20px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 24px; max-width: 700px; width: 100%; max-height: 90vh; overflow-y: auto; border: 2px solid var(--accent-color);">
+                ${detailedContent}
+
+                <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-color); font-size: 12px; color: var(--text-secondary);">
+                    <strong>Note:</strong> This is general guidance. Consult with a tax professional or financial advisor to determine the best strategy for your specific situation.
+                </div>
+
+                <div style="margin-top: 20px; text-align: right;">
+                    <button id="close-recommendation-detail" style="padding: 10px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
+                        Got It
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Close on button click
+    modal.querySelector('#close-recommendation-detail').addEventListener('click', () => {
         modal.remove();
     });
 
