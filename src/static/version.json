@@ -1,5 +1,5 @@
 {
-    "version": "3.9.110",
+    "version": "3.9.111",
     "release_date": "2026-01-28",
-    "release_notes": "Improve chart text readability - make labels darker and bolder for Asset Allocation, Annual Cash Flow, and Savings Rate charts"
+    "release_notes": "Make chart text pure black and bolder - maximum readability for Asset Allocation, Annual Cash Flow, and Savings Rate charts"
 }
