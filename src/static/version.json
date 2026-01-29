@@ -1,5 +1,5 @@
 {
-    "version": "3.9.127",
+    "version": "3.9.128",
     "release_date": "2026-01-29",
-    "release_notes": "Fix setup checklist: buttons now navigate to tabs and close modal"
+    "release_notes": "Fix setup checker: running analysis now updates profile and marks task complete"
 }

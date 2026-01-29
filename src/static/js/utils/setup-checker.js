@@ -68,11 +68,11 @@ export function checkSetupCompletion(profile) {
         priority: 4
     });
 
-    // 5. Run Analysis - check for scenarios or analysis results
+    // 5. Run Analysis - check for analysis date or scenarios
     const hasAnalysis = !!(
+        data.last_analysis_date ||
         data.scenarios?.length > 0 ||
-        data.last_analysis ||
-        profile?.last_analysis_date
+        data.last_analysis
     );
     checklist.push({
         id: 'analysis',

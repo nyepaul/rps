@@ -3,6 +3,7 @@
  */
 
 import { analysisAPI } from '../../api/analysis.js';
+import { profilesAPI } from '../../api/profiles.js';
 import { store } from '../../state/store.js';
 import { showSuccess, showError, showErrorInContainer, showLoading } from '../../utils/dom.js';
 import { formatCurrency, formatPercent, formatCompact } from '../../utils/formatters.js';
@@ -911,6 +912,17 @@ function setupAnalysisHandlers(container, profile) {
 
             // Display results
             displayResults(resultsContainer, result, profile, simulations);
+
+            // Update profile to record that analysis was run
+            try {
+                const updatedData = { ...profile.data, last_analysis_date: new Date().toISOString() };
+                await profilesAPI.update(profile.name, { data: updatedData });
+                // Update store with new profile data
+                const updatedProfile = { ...profile, data: updatedData };
+                store.setState({ currentProfile: updatedProfile });
+            } catch (updateError) {
+                console.warn('Could not update profile with analysis date:', updateError);
+            }
 
             showSuccess('Analysis complete!');
 
