@@ -1831,7 +1831,7 @@ function showSuccessRateModal() {
                     </div>
                 </div>
 
-                <div style="background: var(--info-color); padding: 15px; border-radius: 8px; margin-top: 20px; color: white;">
+                <div style="background: var(--bg-secondary); padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid var(--info-color); color: var(--text-primary);">
                     <strong>💡 Important Note:</strong> 100% success rate often means you're being too conservative and leaving money on the table. A 85-95% success rate typically represents an optimal balance between security and enjoying your wealth.
                 </div>
             </div>
@@ -1868,7 +1868,7 @@ function showMedianBalanceModal() {
             <h2 style="font-size: 28px; margin-bottom: 20px; color: var(--info-color);">💰 Median Final Balance</h2>
 
             <div style="line-height: 1.8; color: var(--text-primary);">
-                <div style="background: linear-gradient(135deg, var(--info-color), #5faee3); padding: 20px; border-radius: 12px; margin-bottom: 20px; color: white;">
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 12px; margin-bottom: 20px; border-left: 4px solid var(--info-color); color: var(--text-primary);">
                     <h3 style="font-size: 20px; margin: 0 0 12px 0; font-weight: bold;">🎯 What It Means</h3>
                     <p style="margin: 0; font-size: 15px; line-height: 1.6;">
                         The middle outcome from all simulations - half of the scenarios ended with more money than this, and half ended with less. This represents your "typical" outcome.
@@ -1915,7 +1915,7 @@ function showMedianBalanceModal() {
                     </div>
                 </div>
 
-                <div style="background: var(--info-color); padding: 15px; border-radius: 8px; margin-top: 20px; color: white;">
+                <div style="background: var(--bg-secondary); padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid var(--info-color); color: var(--text-primary);">
                     <strong>💡 Pro Tip:</strong> A high median final balance suggests you might be able to spend more in retirement or retire earlier. Consider running scenarios with increased spending to optimize your plan.
                 </div>
             </div>
@@ -2277,7 +2277,7 @@ function showCalculationExplanationModal() {
                     </p>
                 </div>
 
-                <div style="background: var(--info-color); padding: 20px; border-radius: 8px; margin-bottom: 15px; color: white;">
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid var(--info-color); color: var(--text-primary);">
                     <h4 style="font-size: 16px; margin-bottom: 10px; font-weight: bold;">💡 How Spending Strategy Works with Your Expenses</h4>
                     <p style="margin: 0; line-height: 1.6;">
                         <strong>Your actual expenses from the Expenses tab are used as the BASE.</strong><br><br>
@@ -2326,7 +2326,7 @@ function showCalculationExplanationModal() {
                     <strong>Success Rate:</strong> Percentage of simulations where portfolio lasts through life expectancy
                 </div>
 
-                <div style="background: linear-gradient(135deg, var(--info-color), #5faee3); padding: 15px; border-radius: 8px; margin-bottom: 10px; color: white;">
+                <div style="background: var(--bg-secondary); padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--info-color); color: var(--text-primary);">
                     <strong>Median Balance:</strong> The middle outcome - half do better, half worse
                 </div>
 

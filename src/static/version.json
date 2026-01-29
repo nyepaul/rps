@@ -1,5 +1,5 @@
 {
-    "version": "3.9.130",
+    "version": "3.9.131",
     "release_date": "2026-01-29",
-    "release_notes": "Hide setup button when profile is 100% complete"
+    "release_notes": "Fix analysis modal readability: replace blue backgrounds with bordered boxes"
 }
