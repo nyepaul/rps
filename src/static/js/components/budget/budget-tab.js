@@ -2588,6 +2588,9 @@ async function saveBudget(profile, container) {
         // Update the budget data reference
         budgetData = result.profile.data.budget;
 
+        // Refresh the budget summary totals
+        renderBudgetSummary(container);
+
     } catch (error) {
         console.error('Error saving budget:', error);
         showError('Failed to save expenses: ' + error.message);

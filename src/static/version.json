@@ -1,5 +1,5 @@
 {
-    "version": "3.9.115",
+    "version": "3.9.116",
     "release_date": "2026-01-28",
-    "release_notes": "Fix metric detail modals to access correct nested profile data structure (profile.data.*)"
+    "release_notes": "Fix expense summary totals not updating after save - refresh PRE/POST-RETIREMENT totals"
 }
