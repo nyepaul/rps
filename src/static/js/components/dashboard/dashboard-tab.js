@@ -1290,14 +1290,74 @@ function showIncomeDetails(profile) {
 
 function showExpensesDetails(profile) {
     const data = profile.data || {};
-    const expenses = data.expenses || [];
-    const totalAnnual = expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+    const budget = data.budget || {};
+    const expensesCurrent = budget.expenses?.current || {};
 
-    // Group by category
+    // Flatten all expenses from all categories
+    const expenses = Object.entries(expensesCurrent).flatMap(([category, items]) =>
+        items.map(item => ({ ...item, category }))
+    );
+
+    // Calculate total annual expenses (convert monthly to annual)
+    const totalAnnual = expenses.reduce((sum, exp) => {
+        const amount = parseFloat(exp.amount) || 0;
+        const frequency = (exp.frequency || 'monthly').toLowerCase();
+        const multiplier = frequency === 'annual' ? 1 : 12;
+        return sum + (amount * multiplier);
+    }, 0);
+
+    const totalMonthly = totalAnnual / 12;
+    const expenseCount = expenses.length;
+
+    // Group by category with annual totals
     const byCategory = {};
     expenses.forEach(exp => {
         const cat = exp.category || 'Other';
-        byCategory[cat] = (byCategory[cat] || 0) + (parseFloat(exp.amount) || 0);
+        const amount = parseFloat(exp.amount) || 0;
+        const frequency = (exp.frequency || 'monthly').toLowerCase();
+        const multiplier = frequency === 'annual' ? 1 : 12;
+        const annualAmount = amount * multiplier;
+        byCategory[cat] = (byCategory[cat] || 0) + annualAmount;
+    });
+
+    // Group by source
+    const bySource = {
+        specified: 0,
+        detected: 0,
+        merged: 0
+    };
+    expenses.forEach(exp => {
+        const source = exp.source || 'specified';
+        const amount = parseFloat(exp.amount) || 0;
+        const frequency = (exp.frequency || 'monthly').toLowerCase();
+        const multiplier = frequency === 'annual' ? 1 : 12;
+        const annualAmount = amount * multiplier;
+        bySource[source] = (bySource[source] || 0) + annualAmount;
+    });
+
+    // Calculate concentration risk (largest category as % of total)
+    const largestCategory = Math.max(...Object.values(byCategory), 0);
+    const concentration = totalAnnual > 0 ? (largestCategory / totalAnnual * 100) : 0;
+    const concentrationRisk = concentration > 50 ? 'High' : concentration > 35 ? 'Medium' : 'Low';
+    const concentrationColor = concentration > 50 ? '#ef4444' : concentration > 35 ? '#f59e0b' : '#22c55e';
+    const concentrationIcon = concentration > 50 ? '🔴' : concentration > 35 ? '🟡' : '🟢';
+
+    // Source badge colors
+    const sourceBadges = {
+        'specified': { color: '#10b981', text: '✓ Manual', borderColor: '#10b981' },
+        'detected': { color: '#3b82f6', text: '🔍 Detected', borderColor: '#3b82f6' },
+        'merged': { color: '#8b5cf6', text: '⚡ Merged', borderColor: '#8b5cf6' }
+    };
+
+    // Category insights
+    const categoryInsights = [];
+    Object.entries(byCategory).sort(([,a], [,b]) => b - a).forEach(([category, amount], idx) => {
+        const percentage = (amount / totalAnnual * 100);
+        if (idx === 0 && percentage > 50) {
+            categoryInsights.push(`${category} dominates at ${percentage.toFixed(0)}% - consider diversifying`);
+        } else if (idx === 0 && percentage > 35) {
+            categoryInsights.push(`${category} is your largest expense category at ${percentage.toFixed(0)}%`);
+        }
     });
 
     const modal = document.createElement('div');
@@ -1305,59 +1365,177 @@ function showExpensesDetails(profile) {
     modal.style.cssText = 'display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center;';
 
     modal.innerHTML = `
-        <div style="background: var(--bg-primary); border-radius: 12px; padding: 30px; max-width: 700px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+        <div style="background: var(--bg-primary); border-radius: 12px; padding: 30px; max-width: 800px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2 style="margin: 0; color: var(--text-primary); font-size: 24px;">📉 Expense Details</h2>
                 <button id="close-expense-modal" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">&times;</button>
             </div>
 
-            <div style="background: linear-gradient(135deg, rgba(239,68,68,0.2), rgba(220,38,38,0.2)); border-radius: 8px; padding: 20px; margin-bottom: 20px; border-left: 4px solid #ef4444;">
-                <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Total Annual Expenses</div>
-                <div style="font-size: 32px; font-weight: bold; color: var(--text-primary);">${formatCurrency(totalAnnual, 0)}</div>
-                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">Monthly: ${formatCurrency(totalAnnual / 12, 0)}</div>
+            <!-- Summary Cards Grid -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 25px;">
+                <div style="background: linear-gradient(135deg, rgba(239,68,68,0.2), rgba(220,38,38,0.2)); border-radius: 8px; padding: 16px; border-left: 4px solid #ef4444;">
+                    <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 5px; text-transform: uppercase; font-weight: 600;">Annual Total</div>
+                    <div style="font-size: 24px; font-weight: bold; color: var(--text-primary);">${formatCompact(totalAnnual)}</div>
+                </div>
+                <div style="background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(220,38,38,0.15)); border-radius: 8px; padding: 16px; border-left: 4px solid #f87171;">
+                    <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 5px; text-transform: uppercase; font-weight: 600;">Monthly Avg</div>
+                    <div style="font-size: 24px; font-weight: bold; color: var(--text-primary);">${formatCompact(totalMonthly)}</div>
+                </div>
+                <div style="background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(220,38,38,0.1)); border-radius: 8px; padding: 16px; border-left: 4px solid #fca5a5;">
+                    <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 5px; text-transform: uppercase; font-weight: 600;">Expense Items</div>
+                    <div style="font-size: 24px; font-weight: bold; color: var(--text-primary);">${expenseCount}</div>
+                </div>
             </div>
 
-            <h3 style="margin: 20px 0 15px 0; font-size: 16px; color: var(--text-primary);">Breakdown by Category</h3>
-            <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px;">
+            <!-- Category Breakdown -->
+            <h3 style="margin: 25px 0 15px 0; font-size: 16px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                <span>📊</span> Category Breakdown
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;">
                 ${Object.entries(byCategory).sort(([,a], [,b]) => b - a).map(([category, amount]) => {
-                    const percentage = (amount / totalAnnual * 100).toFixed(1);
+                    const percentage = (amount / totalAnnual * 100);
+                    const monthlyAmount = amount / 12;
+
+                    // Category emoji mapping
+                    const categoryEmojis = {
+                        'housing': '🏠',
+                        'utilities': '💡',
+                        'food': '🍽️',
+                        'transportation': '🚗',
+                        'entertainment': '🎬',
+                        'healthcare': '🏥',
+                        'insurance': '🛡️',
+                        'shopping': '🛍️',
+                        'other': '📦'
+                    };
+                    const emoji = categoryEmojis[category.toLowerCase()] || '📦';
+
                     return `
-                        <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                <span style="font-weight: 600; color: var(--text-primary);">${category}</span>
+                        <div style="padding: 14px; background: var(--bg-secondary); border-radius: 8px; border-left: 3px solid #ef4444;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; color: var(--text-primary); font-size: 14px; margin-bottom: 4px;">
+                                        ${emoji} ${category}
+                                    </div>
+                                    <div style="font-size: 11px; color: var(--text-secondary);">
+                                        ${formatCurrency(monthlyAmount, 0)}/mo • ${formatCurrency(amount, 0)}/yr
+                                    </div>
+                                </div>
                                 <div style="text-align: right;">
-                                    <div style="font-weight: bold; color: #ef4444;">${formatCurrency(amount, 0)}/yr</div>
-                                    <div style="font-size: 11px; color: var(--text-secondary);">${percentage}%</div>
+                                    <div style="font-weight: bold; color: #ef4444; font-size: 16px;">${percentage.toFixed(1)}%</div>
+                                    <div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;">of total</div>
                                 </div>
                             </div>
-                            <div style="background: rgba(239,68,68,0.2); border-radius: 4px; height: 6px; overflow: hidden;">
-                                <div style="background: #ef4444; height: 100%; width: ${percentage}%; transition: width 0.3s;"></div>
+                            <div style="background: rgba(239,68,68,0.15); border-radius: 4px; height: 8px; overflow: hidden;">
+                                <div style="background: linear-gradient(90deg, #ef4444, #dc2626); height: 100%; width: ${percentage}%; transition: width 0.5s ease;"></div>
                             </div>
                         </div>
                     `;
                 }).join('')}
             </div>
 
-            <h3 style="margin: 20px 0 15px 0; font-size: 16px; color: var(--text-primary);">Individual Expenses</h3>
-            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px; max-height: 200px; overflow-y: auto;">
-                ${expenses.sort((a, b) => (parseFloat(b.amount) || 0) - (parseFloat(a.amount) || 0)).map(exp => `
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-secondary); border-radius: 4px;">
-                        <div>
-                            <div style="font-size: 14px; color: var(--text-primary);">${exp.name}</div>
-                            ${exp.category ? `<div style="font-size: 11px; color: var(--text-secondary);">${exp.category}</div>` : ''}
-                        </div>
-                        <span style="font-weight: 600; color: #ef4444;">${formatCurrency(exp.amount, 0)}</span>
+            <!-- Spending Analysis -->
+            <h3 style="margin: 25px 0 15px 0; font-size: 16px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                <span>🔍</span> Spending Analysis
+            </h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 25px;">
+                <div style="background: var(--bg-secondary); border-radius: 8px; padding: 16px; border-left: 3px solid ${concentrationColor};">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600;">Concentration Risk</div>
+                    <div style="font-size: 20px; font-weight: bold; color: var(--text-primary); margin-bottom: 4px;">
+                        ${concentrationIcon} ${concentrationRisk}
                     </div>
-                `).join('')}
+                    <div style="font-size: 11px; color: var(--text-secondary);">
+                        Largest category: ${concentration.toFixed(0)}%
+                    </div>
+                </div>
+                <div style="background: var(--bg-secondary); border-radius: 8px; padding: 16px; border-left: 3px solid #8b5cf6;">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600;">Data Sources</div>
+                    <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.8;">
+                        ${bySource.specified > 0 ? `<div><span style="color: #10b981;">●</span> Manual: ${formatCurrency(bySource.specified, 0)}</div>` : ''}
+                        ${bySource.detected > 0 ? `<div><span style="color: #3b82f6;">●</span> Detected: ${formatCurrency(bySource.detected, 0)}</div>` : ''}
+                        ${bySource.merged > 0 ? `<div><span style="color: #8b5cf6;">●</span> Merged: ${formatCurrency(bySource.merged, 0)}</div>` : ''}
+                    </div>
+                </div>
             </div>
 
-            <div style="background: rgba(59,130,246,0.15); border-radius: 8px; padding: 15px; margin-top: 20px; border-left: 3px solid #3b82f6;">
-                <h4 style="margin: 0 0 10px 0; font-size: 14px; color: var(--text-primary);">💡 Managing Expenses</h4>
-                <p style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
-                    Understanding your expense breakdown helps identify opportunities to optimize spending. Focus on
-                    the largest categories first for maximum impact. Even small percentage reductions in major
-                    categories can significantly accelerate your path to financial independence.
-                </p>
+            <!-- Individual Expenses -->
+            <h3 style="margin: 25px 0 15px 0; font-size: 16px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                <span>📋</span> All Expenses (${expenseCount})
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 25px; max-height: 280px; overflow-y: auto; padding-right: 8px;">
+                ${expenses.sort((a, b) => {
+                    const amountA = parseFloat(a.amount) || 0;
+                    const amountB = parseFloat(b.amount) || 0;
+                    const freqA = (a.frequency || 'monthly').toLowerCase();
+                    const freqB = (b.frequency || 'monthly').toLowerCase();
+                    const multA = freqA === 'annual' ? 1 : 12;
+                    const multB = freqB === 'annual' ? 1 : 12;
+                    return (amountB * multB) - (amountA * multA);
+                }).map(exp => {
+                    const amount = parseFloat(exp.amount) || 0;
+                    const frequency = (exp.frequency || 'monthly').toLowerCase();
+                    const multiplier = frequency === 'annual' ? 1 : 12;
+                    const annualAmount = amount * multiplier;
+                    const percentage = totalAnnual > 0 ? (annualAmount / totalAnnual * 100) : 0;
+                    const source = exp.source || 'specified';
+                    const badge = sourceBadges[source];
+
+                    // Build tooltip for detected/merged items
+                    let tooltip = '';
+                    if (source !== 'specified' && exp.confidence) {
+                        tooltip = `Confidence: ${(exp.confidence * 100).toFixed(0)}%`;
+                        if (exp.detected_from) tooltip += `\\nFrom: ${exp.detected_from}`;
+                        if (exp.variance) tooltip += `\\nVariance: ±$${exp.variance.toFixed(2)}`;
+                    }
+
+                    return `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--bg-secondary); border-radius: 6px; border-left: 2px solid ${badge.borderColor};">
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 3px;">
+                                    <span style="font-size: 13px; font-weight: 600; color: var(--text-primary);">${exp.name}</span>
+                                    ${source !== 'specified' ? `
+                                        <span title="${tooltip}" style="font-size: 9px; padding: 2px 6px; background: ${badge.color}; color: white; border-radius: 3px; font-weight: 600; white-space: nowrap;">
+                                            ${badge.text}
+                                        </span>
+                                    ` : ''}
+                                </div>
+                                <div style="font-size: 10px; color: var(--text-secondary);">
+                                    ${exp.category} • ${frequency === 'annual' ? 'Annual' : 'Monthly'} • ${percentage.toFixed(1)}% of total
+                                </div>
+                            </div>
+                            <div style="text-align: right; margin-left: 12px;">
+                                <div style="font-weight: bold; color: #ef4444; font-size: 14px; white-space: nowrap;">
+                                    ${formatCurrency(amount, 0)}
+                                </div>
+                                <div style="font-size: 10px; color: var(--text-secondary);">
+                                    /${frequency === 'annual' ? 'yr' : 'mo'}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+
+            <!-- Insights & Tips -->
+            <div style="background: rgba(59,130,246,0.15); border-radius: 8px; padding: 16px; margin-top: 20px; border-left: 3px solid #3b82f6;">
+                <h4 style="margin: 0 0 12px 0; font-size: 14px; color: var(--text-primary); font-weight: 600;">💡 Optimization Tips</h4>
+                <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.7;">
+                    ${categoryInsights.length > 0 ? `
+                        <div style="margin-bottom: 10px; padding: 8px; background: rgba(59,130,246,0.1); border-radius: 4px;">
+                            <strong style="color: var(--text-primary);">Key Insight:</strong> ${categoryInsights[0]}
+                        </div>
+                    ` : ''}
+                    <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+                        <li style="margin-bottom: 6px;">Focus on your top 3 expense categories - they represent ${
+                            Object.values(byCategory).sort((a,b) => b - a).slice(0, 3).reduce((sum, amt) => sum + amt, 0) / totalAnnual * 100
+                        }% of spending</li>
+                        <li style="margin-bottom: 6px;">Even a 10% reduction in your largest category could save ${
+                            formatCurrency(largestCategory * 0.10, 0)
+                        }/year</li>
+                        <li style="margin-bottom: 6px;">Review detected expenses for accuracy - CSV imports may need fine-tuning</li>
+                        <li>Consider setting category-specific budgets to track progress over time</li>
+                    </ul>
+                </div>
             </div>
         </div>
     `;
