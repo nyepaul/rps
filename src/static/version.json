@@ -1,5 +1,5 @@
 {
-    "version": "3.9.117",
+    "version": "3.9.118",
     "release_date": "2026-01-28",
-    "release_notes": "Fix expense frequency calculations - add weekly, semi-annual, and annual support"
+    "release_notes": "Fix POST-RETIREMENT expense calculation to use retirement date instead of current date"
 }

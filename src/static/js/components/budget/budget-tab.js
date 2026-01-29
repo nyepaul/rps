@@ -640,8 +640,12 @@ function showCollegeExpenseModal(parentContainer, index) {
 function renderBudgetSummary(container) {
     const summaryContainer = container.querySelector('#budget-summary');
 
+    // Get profile to calculate retirement date
+    const profile = store.get('currentProfile');
+    const retirementDate = profile?.retirement_date ? new Date(profile.retirement_date) : null;
+
     const currentExpenses = calculateTotalExpenses('current');
-    const futureExpenses = calculateTotalExpenses('future');
+    const futureExpenses = calculateTotalExpenses('future', retirementDate);
 
     summaryContainer.innerHTML = `
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
