@@ -1738,9 +1738,22 @@ function showSavingsRateDetails(profile) {
         items.map(item => ({ ...item, category }))
     );
 
+    // Determine active income based on dates (same logic as showIncomeDetails)
+    const today = new Date();
+    const isActiveIncome = (stream) => {
+        if (!stream.end_date) return true;
+        const endDate = new Date(stream.end_date);
+        return endDate >= today;
+    };
+    const isFutureIncome = (stream) => {
+        if (!stream.start_date) return false;
+        const startDate = new Date(stream.start_date);
+        return startDate > today;
+    };
+
     // Income is monthly, multiply by 12 for annual
     const totalAnnualIncome = incomeStreams
-        .filter(s => s.period === 'current' || s.period === 'both')
+        .filter(s => isActiveIncome(s) && !isFutureIncome(s))
         .reduce((sum, s) => sum + (parseFloat(s.amount) || 0) * 12, 0);
 
     // Calculate annual expenses (convert monthly to annual where needed)

@@ -1,5 +1,5 @@
 {
-    "version": "3.9.122",
+    "version": "3.9.123",
     "release_date": "2026-01-29",
-    "release_notes": "Fix income details modal: use date-based filtering instead of non-existent period field"
+    "release_notes": "Fix savings rate modal: use date-based income filtering"
 }
