@@ -37,7 +37,7 @@ export function checkSetupCompletion(profile) {
         label: 'Add your assets',
         description: 'Retirement accounts, investments, real estate, etc.',
         completed: hasAssets,
-        tab: 'aie',
+        tab: 'assets',
         priority: 2
     });
 
@@ -54,7 +54,7 @@ export function checkSetupCompletion(profile) {
         label: 'Add your income sources',
         description: 'Employment, rental income, business income, etc.',
         completed: hasIncome,
-        tab: 'aie',
+        tab: 'income',
         priority: 3
     });
 
@@ -69,7 +69,7 @@ export function checkSetupCompletion(profile) {
         label: 'Add your expenses',
         description: 'Housing, transportation, food, healthcare, etc.',
         completed: hasExpenses,
-        tab: 'aie',
+        tab: 'expenses',
         priority: 4
     });
 

@@ -70,7 +70,7 @@ function renderProfileDashboard(container, profiles, currentProfile, currentUser
                         <button onclick="window.app.showTab('profile')" style="padding: 2px 6px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 3px; color: white; cursor: pointer; font-size: 10px;">
                             Settings
                         </button>
-                        <button onclick="window.app.showTab('aie')" style="padding: 2px 6px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 3px; color: white; cursor: pointer; font-size: 10px;">
+                        <button onclick="window.app.showTab('assets')" style="padding: 2px 6px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 3px; color: white; cursor: pointer; font-size: 10px;">
                             Data
                         </button>
                     </div>

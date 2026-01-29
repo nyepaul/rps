@@ -108,7 +108,7 @@ function runStep2(profile) {
                             🔐 Configure API Keys
                         </button>
                     </li>
-                    <li style="margin-bottom: 10px;">Complete your <a href="#" onclick="window.app.showTab('profile'); return false;">Profile</a> and <a href="#" onclick="window.app.showTab('aie'); return false;">Assets</a> sections.</li>
+                    <li style="margin-bottom: 10px;">Complete your <a href="#" onclick="window.app.showTab('profile'); return false;">Profile</a> and <a href="#" onclick="window.app.showTab('assets'); return false;">Assets</a> sections.</li>
                     <li style="margin-bottom: 10px;">Try refreshing the page if the AI Advisor is still unresponsive.</li>
                 </ul>
             </div>

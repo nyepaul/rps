@@ -373,9 +373,9 @@ function showSimpleEditModal(asset, originalCategory, assetIndex, allAssets) {
                 showSuccess('Asset updated successfully!');
                 modal.remove();
 
-                // Refresh the AIE tab
+                // Refresh the Assets tab
                 if (window.app && window.app.showTab) {
-                    window.app.showTab('aie');
+                    window.app.showTab('assets');
                 }
             } catch (error) {
                 console.error('Error saving asset:', error);
