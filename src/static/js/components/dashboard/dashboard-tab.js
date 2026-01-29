@@ -1078,62 +1078,224 @@ function showNetWorthDetails(profile) {
     const assets = data.assets || {};
     const { netWorth, totalAssets, totalDebts, breakdown } = calculateNetWorth(assets);
 
+    // Calculate debt-to-asset ratio
+    const debtToAssetRatio = totalAssets > 0 ? (totalDebts / totalAssets * 100) : 0;
+    const debtRatioStatus = debtToAssetRatio > 50 ? 'High Risk' : debtToAssetRatio > 30 ? 'Moderate' : debtToAssetRatio > 0 ? 'Low' : 'Debt-Free';
+    const debtRatioColor = debtToAssetRatio > 50 ? '#ef4444' : debtToAssetRatio > 30 ? '#f59e0b' : debtToAssetRatio > 0 ? '#22c55e' : '#10b981';
+    const debtRatioIcon = debtToAssetRatio > 50 ? '🔴' : debtToAssetRatio > 30 ? '🟡' : debtToAssetRatio > 0 ? '🟢' : '✅';
+
+    // Calculate liquidity (liquid assets vs total assets)
+    const liquidAssets = calculateLiquidAssets(assets);
+    const liquidityRatio = totalAssets > 0 ? (liquidAssets / totalAssets * 100) : 0;
+    const liquidityStatus = liquidityRatio > 40 ? 'High' : liquidityRatio > 20 ? 'Moderate' : 'Low';
+    const liquidityColor = liquidityRatio > 40 ? '#22c55e' : liquidityRatio > 20 ? '#f59e0b' : '#ef4444';
+
+    // Asset allocation analysis
+    const retirementPct = totalAssets > 0 ? (breakdown.retirementAssets / totalAssets * 100) : 0;
+    const taxablePct = totalAssets > 0 ? (breakdown.taxableAssets / totalAssets * 100) : 0;
+    const realEstatePct = totalAssets > 0 ? (breakdown.realEstateAssets / totalAssets * 100) : 0;
+    const otherPct = totalAssets > 0 ? (breakdown.otherAssets / totalAssets * 100) : 0;
+
+    // Asset category emojis
+    const assetEmojis = {
+        'Retirement Accounts': '🏦',
+        'Taxable Accounts': '📈',
+        'Real Estate': '🏠',
+        'Vehicles': '🚗',
+        'Other Assets': '📦',
+        'Cash & Checking': '💵',
+        'Savings': '💰'
+    };
+
+    // Debt category emojis
+    const debtEmojis = {
+        'Mortgage': '🏠',
+        'Auto Loans': '🚗',
+        'Student Loans': '🎓',
+        'Credit Cards': '💳',
+        'Other Debts': '📄'
+    };
+
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.style.cssText = 'display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center;';
 
     modal.innerHTML = `
-        <div style="background: var(--bg-primary); border-radius: 12px; padding: 30px; max-width: 700px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+        <div style="background: var(--bg-primary); border-radius: 12px; padding: 30px; max-width: 800px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2 style="margin: 0; color: var(--text-primary); font-size: 24px;">💰 Net Worth Details</h2>
                 <button id="close-networth-modal" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">&times;</button>
             </div>
 
-            <div style="background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(16,185,129,0.2)); border-radius: 8px; padding: 20px; margin-bottom: 20px; border-left: 4px solid #22c55e;">
-                <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Total Net Worth</div>
-                <div style="font-size: 32px; font-weight: bold; color: var(--text-primary);">${formatCurrency(netWorth, 0)}</div>
+            <!-- Summary Cards Grid -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 25px;">
+                <div style="background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(16,185,129,0.2)); border-radius: 8px; padding: 16px; border-left: 4px solid #22c55e;">
+                    <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 5px; text-transform: uppercase; font-weight: 600;">Net Worth</div>
+                    <div style="font-size: 24px; font-weight: bold; color: var(--text-primary);">${formatCompact(netWorth)}</div>
+                </div>
+                <div style="background: linear-gradient(135deg, rgba(34,197,94,0.15), rgba(16,185,129,0.15)); border-radius: 8px; padding: 16px; border-left: 4px solid #10b981;">
+                    <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 5px; text-transform: uppercase; font-weight: 600;">Total Assets</div>
+                    <div style="font-size: 24px; font-weight: bold; color: var(--text-primary);">${formatCompact(totalAssets)}</div>
+                </div>
+                <div style="background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(220,38,38,0.15)); border-radius: 8px; padding: 16px; border-left: 4px solid #ef4444;">
+                    <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 5px; text-transform: uppercase; font-weight: 600;">Total Debts</div>
+                    <div style="font-size: 24px; font-weight: bold; color: var(--text-primary);">${formatCompact(totalDebts)}</div>
+                </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
-                <div style="background: var(--bg-secondary); border-radius: 8px; padding: 15px;">
-                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">Total Assets</div>
-                    <div style="font-size: 20px; font-weight: bold; color: #22c55e;">${formatCurrency(totalAssets, 0)}</div>
-                </div>
-                <div style="background: var(--bg-secondary); border-radius: 8px; padding: 15px;">
-                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">Total Debts</div>
-                    <div style="font-size: 20px; font-weight: bold; color: #ef4444;">${formatCurrency(totalDebts, 0)}</div>
-                </div>
-            </div>
-
-            <h3 style="margin: 20px 0 15px 0; font-size: 16px; color: var(--text-primary);">Asset Breakdown</h3>
+            <!-- Asset Allocation Analysis -->
+            <h3 style="margin: 25px 0 15px 0; font-size: 16px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                <span>📊</span> Asset Allocation
+            </h3>
             <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;">
-                ${Object.entries(breakdown.assets).map(([category, amount]) => `
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bg-secondary); border-radius: 6px;">
-                        <span style="color: var(--text-primary);">${category}</span>
-                        <span style="font-weight: bold; color: #22c55e;">${formatCurrency(amount, 0)}</span>
+                ${retirementPct > 0 ? `
+                    <div style="padding: 14px; background: var(--bg-secondary); border-radius: 8px; border-left: 3px solid #3b82f6;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: var(--text-primary); font-size: 14px; margin-bottom: 4px;">
+                                    🏦 Retirement Accounts
+                                </div>
+                                <div style="font-size: 11px; color: var(--text-secondary);">
+                                    401(k), IRA, Roth IRA
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-weight: bold; color: #3b82f6; font-size: 16px;">${retirementPct.toFixed(1)}%</div>
+                                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${formatCurrency(breakdown.retirementAssets, 0)}</div>
+                            </div>
+                        </div>
+                        <div style="background: rgba(59,130,246,0.15); border-radius: 4px; height: 8px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, #3b82f6, #2563eb); height: 100%; width: ${retirementPct}%; transition: width 0.5s ease;"></div>
+                        </div>
                     </div>
-                `).join('')}
+                ` : ''}
+                ${taxablePct > 0 ? `
+                    <div style="padding: 14px; background: var(--bg-secondary); border-radius: 8px; border-left: 3px solid #22c55e;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: var(--text-primary); font-size: 14px; margin-bottom: 4px;">
+                                    📈 Taxable Accounts
+                                </div>
+                                <div style="font-size: 11px; color: var(--text-secondary);">
+                                    Brokerage, cash, savings
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-weight: bold; color: #22c55e; font-size: 16px;">${taxablePct.toFixed(1)}%</div>
+                                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${formatCurrency(breakdown.taxableAssets, 0)}</div>
+                            </div>
+                        </div>
+                        <div style="background: rgba(34,197,94,0.15); border-radius: 4px; height: 8px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, #22c55e, #16a34a); height: 100%; width: ${taxablePct}%; transition: width 0.5s ease;"></div>
+                        </div>
+                    </div>
+                ` : ''}
+                ${realEstatePct > 0 ? `
+                    <div style="padding: 14px; background: var(--bg-secondary); border-radius: 8px; border-left: 3px solid #8b5cf6;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: var(--text-primary); font-size: 14px; margin-bottom: 4px;">
+                                    🏠 Real Estate
+                                </div>
+                                <div style="font-size: 11px; color: var(--text-secondary);">
+                                    Primary residence, rentals
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-weight: bold; color: #8b5cf6; font-size: 16px;">${realEstatePct.toFixed(1)}%</div>
+                                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${formatCurrency(breakdown.realEstateAssets, 0)}</div>
+                            </div>
+                        </div>
+                        <div style="background: rgba(139,92,246,0.15); border-radius: 4px; height: 8px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, #8b5cf6, #7c3aed); height: 100%; width: ${realEstatePct}%; transition: width 0.5s ease;"></div>
+                        </div>
+                    </div>
+                ` : ''}
+                ${otherPct > 0 ? `
+                    <div style="padding: 14px; background: var(--bg-secondary); border-radius: 8px; border-left: 3px solid #f59e0b;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: var(--text-primary); font-size: 14px; margin-bottom: 4px;">
+                                    📦 Other Assets
+                                </div>
+                                <div style="font-size: 11px; color: var(--text-secondary);">
+                                    Vehicles, collectibles, etc.
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-weight: bold; color: #f59e0b; font-size: 16px;">${otherPct.toFixed(1)}%</div>
+                                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${formatCurrency(breakdown.otherAssets, 0)}</div>
+                            </div>
+                        </div>
+                        <div style="background: rgba(245,158,11,0.15); border-radius: 4px; height: 8px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, #f59e0b, #d97706); height: 100%; width: ${otherPct}%; transition: width 0.5s ease;"></div>
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+
+            <!-- Financial Health Metrics -->
+            <h3 style="margin: 25px 0 15px 0; font-size: 16px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                <span>🔍</span> Financial Health
+            </h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 25px;">
+                <div style="background: var(--bg-secondary); border-radius: 8px; padding: 16px; border-left: 3px solid ${debtRatioColor};">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600;">Debt-to-Asset Ratio</div>
+                    <div style="font-size: 20px; font-weight: bold; color: var(--text-primary); margin-bottom: 4px;">
+                        ${debtRatioIcon} ${debtRatioStatus}
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-secondary);">
+                        ${debtToAssetRatio.toFixed(1)}% of assets are debt
+                    </div>
+                </div>
+                <div style="background: var(--bg-secondary); border-radius: 8px; padding: 16px; border-left: 3px solid ${liquidityColor};">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600;">Liquidity</div>
+                    <div style="font-size: 20px; font-weight: bold; color: var(--text-primary); margin-bottom: 4px;">
+                        ${liquidityStatus}
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-secondary);">
+                        ${formatCurrency(liquidAssets, 0)} readily accessible
+                    </div>
+                </div>
             </div>
 
             ${totalDebts > 0 ? `
-                <h3 style="margin: 20px 0 15px 0; font-size: 16px; color: var(--text-primary);">Debt Breakdown</h3>
-                <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;">
-                    ${Object.entries(breakdown.debts).map(([category, amount]) => `
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bg-secondary); border-radius: 6px;">
-                            <span style="color: var(--text-primary);">${category}</span>
-                            <span style="font-weight: bold; color: #ef4444;">${formatCurrency(amount, 0)}</span>
-                        </div>
-                    `).join('')}
+                <!-- Debt Breakdown -->
+                <h3 style="margin: 25px 0 15px 0; font-size: 16px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                    <span>💳</span> Debt Breakdown
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;">
+                    ${Object.entries(breakdown.debts).sort(([,a], [,b]) => b - a).map(([category, amount]) => {
+                        const debtPct = totalDebts > 0 ? (amount / totalDebts * 100) : 0;
+                        const emoji = debtEmojis[category] || '📄';
+                        return `
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--bg-secondary); border-radius: 6px; border-left: 2px solid #ef4444;">
+                                <div style="flex: 1;">
+                                    <div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">${emoji} ${category}</div>
+                                    <div style="font-size: 10px; color: var(--text-secondary);">${debtPct.toFixed(1)}% of total debt</div>
+                                </div>
+                                <div style="font-weight: bold; color: #ef4444; font-size: 14px;">
+                                    ${formatCurrency(amount, 0)}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
                 </div>
             ` : ''}
 
-            <div style="background: rgba(59,130,246,0.15); border-radius: 8px; padding: 15px; margin-top: 20px; border-left: 3px solid #3b82f6;">
-                <h4 style="margin: 0 0 10px 0; font-size: 14px; color: var(--text-primary);">💡 What is Net Worth?</h4>
-                <p style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
-                    Net worth is your total assets minus your total debts. It's the fundamental measure of your financial health
-                    and represents what you would have if you sold everything and paid off all debts. Growing your net worth
-                    is the primary goal of wealth building.
-                </p>
+            <!-- Insights & Tips -->
+            <div style="background: rgba(59,130,246,0.15); border-radius: 8px; padding: 16px; margin-top: 20px; border-left: 3px solid #3b82f6;">
+                <h4 style="margin: 0 0 12px 0; font-size: 14px; color: var(--text-primary); font-weight: 600;">💡 Wealth Building Tips</h4>
+                <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.7;">
+                    <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+                        <li style="margin-bottom: 6px;">Net worth = Assets - Debts. Focus on increasing both sides of this equation</li>
+                        ${debtToAssetRatio > 30 ? `<li style="margin-bottom: 6px; color: #f59e0b;"><strong>Priority:</strong> Your debt-to-asset ratio is ${debtToAssetRatio.toFixed(0)}% - focus on debt reduction</li>` : ''}
+                        ${liquidityRatio < 20 ? `<li style="margin-bottom: 6px; color: #f59e0b;"><strong>Tip:</strong> Build emergency fund - aim for 3-6 months expenses in liquid assets</li>` : ''}
+                        ${retirementPct < 30 ? `<li style="margin-bottom: 6px;">Retirement accounts are only ${retirementPct.toFixed(0)}% - consider increasing tax-advantaged savings</li>` : ''}
+                        <li style="margin-bottom: 6px;">Track net worth monthly to measure progress toward financial goals</li>
+                        <li>Diversification across asset types reduces risk and improves long-term returns</li>
+                    </ul>
+                </div>
             </div>
         </div>
     `;
