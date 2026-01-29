@@ -203,23 +203,48 @@ function renderTaxAnalysis(container, analysis, profile) {
                         ` : ''}
 
                         <details style="cursor: pointer;" ${roth_conversion.optimal_24pct?.conversion_amount === 0 ? 'open' : ''}>
-                            <summary style="font-size: 12px; font-weight: 600; padding: 4px 0; user-select: none;">Tax Bracket Space Available</summary>
+                            <summary style="font-size: 12px; font-weight: 600; padding: 4px 0; user-select: none;">📊 Tax Bracket Space & Scenarios</summary>
                             <div style="padding: 8px; background: rgba(255,255,255,0.1); border-radius: 6px; margin-top: 6px; font-size: 11px;">
+                                <div style="margin-bottom: 8px; font-size: 10px; opacity: 0.8; line-height: 1.5;">
+                                    <strong>What is "Tax Bracket Space"?</strong><br>
+                                    This shows how much more income you can earn before jumping to the next tax bracket.
+                                    The space represents your "room" for conversions or additional income at your current marginal rate.
+                                </div>
+
                                 ${roth_conversion.bracket_space.slice(0, 3).map(space => `
-                                    <div style="display: flex; justify-content: space-between; padding: 4px 0;">
-                                        <span>${space.bracket} Space:</span>
-                                        <span style="font-weight: 700;">${formatCurrency(space.space_available, 0)}</span>
+                                    <div style="display: flex; justify-content: space-between; padding: 4px 0; background: rgba(255,255,255,0.05); margin: 2px 0; padding: 4px 6px; border-radius: 3px;">
+                                        <span style="font-weight: 600;">${space.bracket} Bracket Space:</span>
+                                        <span style="font-weight: 700; color: #4ade80;">${formatCurrency(space.space_available, 0)}</span>
                                     </div>
                                 `).join('')}
+
+                                <div style="margin-top: 8px; font-size: 10px; opacity: 0.8; line-height: 1.5;">
+                                    <strong>How to read this:</strong><br>
+                                    • If you have $38k in "32% Space", you can convert up to $38k more at 32% rate before hitting 35%<br>
+                                    • The space tells you your "runway" for Roth conversions at each rate
+                                </div>
+
                                 ${roth_conversion.scenarios && roth_conversion.scenarios.length > 0 ? `
-                                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.2);">
-                                        <div style="font-weight: 600; margin-bottom: 4px;">Sample Conversion Scenarios:</div>
+                                    <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.2);">
+                                        <div style="font-weight: 600; margin-bottom: 6px;">💡 Sample Conversion Scenarios:</div>
+                                        <div style="margin-bottom: 6px; font-size: 10px; opacity: 0.8; line-height: 1.4;">
+                                            These show what you'd pay if you converted different amounts. The marginal rate is your "top bracket" after the conversion.
+                                        </div>
                                         ${roth_conversion.scenarios.slice(0, 3).map(scenario => `
-                                            <div style="display: flex; justify-content: space-between; padding: 2px 0; font-size: 10px;">
+                                            <div style="display: flex; justify-content: space-between; padding: 3px 0; font-size: 10px; background: rgba(255,255,255,0.03); margin: 2px 0; padding: 4px 6px; border-radius: 3px;">
                                                 <span>Convert ${formatCurrency(scenario.conversion_amount, 0)}:</span>
-                                                <span>Tax ${formatCurrency(scenario.conversion_tax, 0)} @ ${scenario.marginal_rate_after}%</span>
+                                                <span style="font-weight: 600;">
+                                                    Tax ${formatCurrency(scenario.conversion_tax, 0)}
+                                                    @ ${scenario.new_marginal_rate ? (scenario.new_marginal_rate * 100).toFixed(0) : 'N/A'}% marginal
+                                                </span>
                                             </div>
                                         `).join('')}
+                                        <div style="margin-top: 6px; font-size: 10px; opacity: 0.8; line-height: 1.4;">
+                                            <strong>Effective vs Marginal Rate:</strong><br>
+                                            • <strong>Marginal rate</strong> is your highest bracket (what the last dollar pays)<br>
+                                            • Your <strong>effective rate</strong> is the average across all brackets<br>
+                                            • Example: If you convert $50k and pay $16,359 in tax, that's ${roth_conversion.scenarios[2] ? ((roth_conversion.scenarios[2].conversion_tax / roth_conversion.scenarios[2].conversion_amount) * 100).toFixed(1) : '~32.7'}% effective
+                                        </div>
                                     </div>
                                 ` : ''}
                             </div>
@@ -588,17 +613,32 @@ function showRothConversionExplanation() {
 
                         <div style="margin-bottom: 12px;">
                             <strong>Optimal Conversion Amount:</strong><br>
-                            <span style="font-size: 13px; color: var(--text-secondary);">The recommended amount to convert this year to maximize tax efficiency. This amount "fills up" your current tax bracket without pushing you into a higher one.</span>
+                            <span style="font-size: 13px; color: var(--text-secondary);">The recommended amount to convert this year to maximize tax efficiency. This amount "fills up" your current tax bracket without pushing you into a higher one. If you see "Already in Higher Bracket", you're above the 24% ceiling, and conversions would occur at 32%+ rates.</span>
                         </div>
 
                         <div style="margin-bottom: 12px;">
                             <strong>Conversion Tax Cost:</strong><br>
-                            <span style="font-size: 13px; color: var(--text-secondary);">The federal tax you'll pay on the conversion. This is due when you file your tax return for the conversion year.</span>
+                            <span style="font-size: 13px; color: var(--text-secondary);">The federal tax you'll pay on the conversion. This is due when you file your tax return for the conversion year. You need cash on hand to pay this - don't use your IRA funds!</span>
+                        </div>
+
+                        <div style="margin-bottom: 12px;">
+                            <strong>Tax Bracket Space:</strong><br>
+                            <span style="font-size: 13px; color: var(--text-secondary);">Shows how much more income you can earn before moving to the next tax bracket. For example, "32% Space: $38,030" means you can convert up to $38k more at the 32% marginal rate before hitting 35%. This is your "runway" for conversions.</span>
+                        </div>
+
+                        <div style="margin-bottom: 12px;">
+                            <strong>Sample Conversion Scenarios:</strong><br>
+                            <span style="font-size: 13px; color: var(--text-secondary);">Shows what you'd pay if you converted different amounts. The "marginal rate" is your top tax bracket after conversion. The actual tax you pay (effective rate) is usually lower because of our progressive tax system.</span>
+                        </div>
+
+                        <div style="margin-bottom: 12px;">
+                            <strong>Marginal vs Effective Rate:</strong><br>
+                            <span style="font-size: 13px; color: var(--text-secondary);"><strong>Marginal</strong> = highest bracket you're in (what the last dollar pays). <strong>Effective</strong> = average rate across all brackets. Example: In 32% bracket but paying 27% effective because lower dollars taxed at 10%, 12%, 22%, 24%.</span>
                         </div>
 
                         <div>
                             <strong>Lifetime Savings:</strong><br>
-                            <span style="font-size: 13px; color: var(--text-secondary);">The estimated total tax savings over your lifetime from converting at today's tax rates versus paying taxes on traditional IRA withdrawals later at potentially higher rates.</span>
+                            <span style="font-size: 13px; color: var(--text-secondary);">The estimated total tax savings over your lifetime from converting at today's tax rates versus paying taxes on traditional IRA withdrawals later at potentially higher rates (due to RMDs, tax law changes, or bracket creep).</span>
                         </div>
                     </div>
 

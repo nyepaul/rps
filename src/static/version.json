@@ -1,5 +1,5 @@
 {
-    "version": "3.9.100",
+    "version": "3.9.101",
     "release_date": "2026-01-28",
-    "release_notes": "Fix Roth Conversion display: show data even when optimal conversion is 0, add helpful message for high-bracket users"
+    "release_notes": "Fix Roth conversion scenarios display and add comprehensive explanations"
 }
