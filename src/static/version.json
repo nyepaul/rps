@@ -1,5 +1,5 @@
 {
-    "version": "3.9.124",
+    "version": "3.9.125",
     "release_date": "2026-01-29",
-    "release_notes": "Add clickable pre/post-retirement expense cards with detailed breakdown modal"
+    "release_notes": "Fix setup checker data paths and add incomplete profile alert banner on dashboard"
 }

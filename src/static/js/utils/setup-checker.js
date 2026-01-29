@@ -10,12 +10,13 @@
  */
 export function checkSetupCompletion(profile) {
     const checklist = [];
+    const data = profile?.data || {};
 
     // 1. Basic Profile Information
     const hasBasicInfo = !!(
         profile?.birth_date &&
         profile?.retirement_date &&
-        (profile?.data?.person?.name || profile?.name)  // Fallback to top-level name for older profiles
+        profile?.name
     );
     checklist.push({
         id: 'basic_info',
@@ -26,12 +27,11 @@ export function checkSetupCompletion(profile) {
         priority: 1
     });
 
-    // 2. Assets
-    const hasAssets = profile?.data?.assets &&
-                      Object.keys(profile.data.assets).length > 0 &&
-                      Object.values(profile.data.assets).some(category =>
-                          Array.isArray(category) && category.length > 0
-                      );
+    // 2. Assets - check for any assets in any category
+    const assets = data.assets || {};
+    const hasAssets = Object.values(assets).some(category =>
+        Array.isArray(category) && category.length > 0
+    );
     checklist.push({
         id: 'assets',
         label: 'Add your assets',
@@ -41,14 +41,9 @@ export function checkSetupCompletion(profile) {
         priority: 2
     });
 
-    // 3. Income
-    const hasIncome = profile?.data?.budget?.income && (
-        (profile.data.budget.income.current?.employment?.primary_person > 0) ||
-        (profile.data.budget.income.current?.employment?.spouse > 0) ||
-        Object.values(profile.data.budget.income.current || {}).some(category =>
-            Array.isArray(category) && category.length > 0
-        )
-    );
+    // 3. Income - check income_streams array (correct location)
+    const incomeStreams = data.income_streams || [];
+    const hasIncome = incomeStreams.length > 0;
     checklist.push({
         id: 'income',
         label: 'Add your income sources',
@@ -58,11 +53,11 @@ export function checkSetupCompletion(profile) {
         priority: 3
     });
 
-    // 4. Expenses
-    const hasExpenses = profile?.data?.budget?.expenses && (
-        Object.values(profile.data.budget.expenses.current || {}).some(category =>
-            Array.isArray(category) ? category.length > 0 : (category?.amount > 0)
-        )
+    // 4. Expenses - check budget.expenses.current (correct location)
+    const budget = data.budget || {};
+    const expensesCurrent = budget.expenses?.current || {};
+    const hasExpenses = Object.values(expensesCurrent).some(category =>
+        Array.isArray(category) ? category.length > 0 : (category?.amount > 0)
     );
     checklist.push({
         id: 'expenses',
@@ -73,9 +68,12 @@ export function checkSetupCompletion(profile) {
         priority: 4
     });
 
-    // 5. Run Analysis
-    const hasAnalysis = profile?.last_analysis_date ||
-                       (profile?.data?.scenarios && profile.data.scenarios.length > 0);
+    // 5. Run Analysis - check for scenarios or analysis results
+    const hasAnalysis = !!(
+        data.scenarios?.length > 0 ||
+        data.last_analysis ||
+        profile?.last_analysis_date
+    );
     checklist.push({
         id: 'analysis',
         label: 'Run retirement analysis',
