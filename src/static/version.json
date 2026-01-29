@@ -1,5 +1,5 @@
 {
-    "version": "3.9.102",
+    "version": "3.9.103",
     "release_date": "2026-01-28",
-    "release_notes": "Improve RMD projection table: add headers, explain '--', show relevant years"
+    "release_notes": "Redesign State Tax Comparison UI for better readability"
 }

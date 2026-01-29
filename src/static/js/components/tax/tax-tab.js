@@ -313,19 +313,82 @@ function renderTaxAnalysis(container, analysis, profile) {
                     <!-- State Tax Comparison -->
                     ${state_comparison && state_comparison.length > 0 ? `
                     <div style="background: #000; padding: 12px; border-radius: 8px; color: white; border: 1px solid #333; height: 100%;">
-                        <h2 style="font-size: 15px; margin: 0 0 10px 0; font-weight: 700;">🗺️ State Comparison</h2>
-                        <div style="max-height: 250px; overflow-y: auto; font-size: 11px; padding-right: 5px;">
-                            ${state_comparison.slice(0, 15).map(state => `
-                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
-                                    <span>${state.state}</span>
-                                    <div style="text-align: right;">
-                                        <div style="font-weight: 700;">${formatCurrency(state.estimated_tax, 0)}</div>
-                                        <div style="font-size: 9px; opacity: 0.8; color: ${state.savings_vs_current >= 0 ? '#4cd137' : '#ff4757'}">
-                                            ${state.savings_vs_current >= 0 ? 'Save' : 'Pay'} ${formatCurrency(Math.abs(state.savings_vs_current), 0)}
+                        <h2 style="font-size: 15px; margin: 0 0 8px 0; font-weight: 700;">🗺️ State Tax Comparison</h2>
+                        <p style="font-size: 10px; opacity: 0.7; margin: 0 0 12px 0; line-height: 1.4;">
+                            Your annual tax burden if you lived in each state. Based on your current income.
+                        </p>
+
+                        <div style="max-height: 280px; overflow-y: auto; padding-right: 5px;">
+                            ${(() => {
+                                // Group states by tax level
+                                const noTaxStates = state_comparison.filter(s => s.estimated_tax === 0);
+                                const lowTaxStates = state_comparison.filter(s => s.estimated_tax > 0 && s.estimated_tax < 15000);
+                                const otherStates = state_comparison.filter(s => s.estimated_tax >= 15000);
+
+                                let html = '';
+
+                                // No income tax states
+                                if (noTaxStates.length > 0) {
+                                    html += `
+                                        <div style="margin-bottom: 12px;">
+                                            <div style="font-size: 10px; font-weight: 600; opacity: 0.6; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+                                                ✅ No Income Tax
+                                            </div>
+                                            ${noTaxStates.slice(0, 9).map(state => `
+                                                <div style="display: grid; grid-template-columns: 40px 1fr auto; gap: 8px; align-items: center; padding: 6px 8px; margin: 2px 0; background: rgba(34,197,94,0.1); border-radius: 4px; border-left: 3px solid #22c55e;">
+                                                    <span style="font-size: 13px; font-weight: 700;">${state.state}</span>
+                                                    <span style="font-size: 11px; color: #22c55e; font-weight: 600;">$0 tax</span>
+                                                    <span style="font-size: 10px; background: rgba(34,197,94,0.2); padding: 2px 6px; border-radius: 3px; font-weight: 600;">
+                                                        💰 Save ${formatCurrency(Math.abs(state.savings_vs_current), 0)}
+                                                    </span>
+                                                </div>
+                                            `).join('')}
                                         </div>
-                                    </div>
-                                </div>
-                            `).join('')}
+                                    `;
+                                }
+
+                                // Low tax states
+                                if (lowTaxStates.length > 0) {
+                                    html += `
+                                        <div style="margin-bottom: 12px;">
+                                            <div style="font-size: 10px; font-weight: 600; opacity: 0.6; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+                                                💚 Low Tax States
+                                            </div>
+                                            ${lowTaxStates.slice(0, 6).map(state => `
+                                                <div style="display: grid; grid-template-columns: 40px 1fr auto; gap: 8px; align-items: center; padding: 6px 8px; margin: 2px 0; background: rgba(234,179,8,0.1); border-radius: 4px; border-left: 3px solid #eab308;">
+                                                    <span style="font-size: 13px; font-weight: 700;">${state.state}</span>
+                                                    <span style="font-size: 11px; color: #eab308; font-weight: 600;">${formatCurrency(state.estimated_tax, 0)} tax</span>
+                                                    <span style="font-size: 10px; background: rgba(234,179,8,0.2); padding: 2px 6px; border-radius: 3px; font-weight: 600;">
+                                                        ${state.savings_vs_current >= 0 ? '💰 Save' : '💸 Pay'} ${formatCurrency(Math.abs(state.savings_vs_current), 0)}
+                                                    </span>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    `;
+                                }
+
+                                // Other states
+                                if (otherStates.length > 0) {
+                                    html += `
+                                        <div>
+                                            <div style="font-size: 10px; font-weight: 600; opacity: 0.6; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+                                                📊 Other States
+                                            </div>
+                                            ${otherStates.slice(0, 8).map(state => `
+                                                <div style="display: grid; grid-template-columns: 40px 1fr auto; gap: 8px; align-items: center; padding: 6px 8px; margin: 2px 0; background: rgba(255,255,255,0.05); border-radius: 4px; border-left: 3px solid rgba(255,255,255,0.3);">
+                                                    <span style="font-size: 13px; font-weight: 700;">${state.state}</span>
+                                                    <span style="font-size: 11px; opacity: 0.9; font-weight: 600;">${formatCurrency(state.estimated_tax, 0)} tax</span>
+                                                    <span style="font-size: 10px; background: ${state.savings_vs_current >= 0 ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}; color: ${state.savings_vs_current >= 0 ? '#22c55e' : '#ef4444'}; padding: 2px 6px; border-radius: 3px; font-weight: 600;">
+                                                        ${state.savings_vs_current >= 0 ? '💰' : '💸'} ${state.savings_vs_current >= 0 ? 'Save' : 'Pay'} ${formatCurrency(Math.abs(state.savings_vs_current), 0)}
+                                                    </span>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    `;
+                                }
+
+                                return html;
+                            })()}
                         </div>
                     </div>
                     ` : ''}
