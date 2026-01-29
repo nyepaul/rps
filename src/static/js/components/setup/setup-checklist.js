@@ -428,15 +428,11 @@ export function updateSetupButton() {
         badge.textContent = `${status.percentage}%`;
     }
 
-    // Update button state
+    // Update button state - hide if complete
     if (status.isComplete) {
-        setupBtn.classList.add('complete');
-        setupBtn.classList.remove('incomplete');
-        const text = setupBtn.querySelector('.setup-text');
-        if (text) {
-            text.textContent = 'Setup Complete';
-        }
+        setupBtn.style.display = 'none';
     } else {
+        setupBtn.style.display = 'flex';
         setupBtn.classList.remove('complete');
         setupBtn.classList.add('incomplete');
         const text = setupBtn.querySelector('.setup-text');

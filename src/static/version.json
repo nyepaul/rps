@@ -1,5 +1,5 @@
 {
-    "version": "3.9.129",
+    "version": "3.9.130",
     "release_date": "2026-01-29",
-    "release_notes": "Remove refresh button from header"
+    "release_notes": "Hide setup button when profile is 100% complete"
 }
