@@ -2933,7 +2933,7 @@ def process_password_reset(request_id):
             # Construct the link
             base_url = current_app.config.get(
                 "APP_BASE_URL", "https://rps.pan2.app")
-            reset_link = f"{base_url}/account-recovery.html?token={token}"
+            reset_link = f"{base_url}/account-recovery?token={token}"
 
             # Mark request as processed
             req.mark_processed(current_user.id)

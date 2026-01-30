@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification - RPS</title>
+    <link rel="stylesheet" href="/css/login.css">
+</head>
+<body>
+    <div class="login-container">
+        <h1>Account Verification</h1>
+        <div id="message">
+            <div class="info" style="background: #eff6ff; color: #1e40af; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                Verifying your email address...
+            </div>
+        </div>
+        
+        <div class="login-spinner active" id="spinner">
+            <div class="spinner"></div>
+            <span class="spinner-text">Processing...</span>
+        </div>
+
+        <div class="toggle-form" id="backToLogin" class="hidden">
+            <a href="/login">Return to Login</a>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const messageDiv = document.getElementById('message');
+            const spinner = document.getElementById('spinner');
+            const backLink = document.getElementById('backToLogin');
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+
+            if (!token) {
+                messageDiv.innerHTML = '<div class="error">Invalid or missing verification token.</div>';
+                spinner.classList.remove('active');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/verify-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    messageDiv.innerHTML = `<div class="success">${data.message || 'Email verified successfully!'}</div>`;
+                    setTimeout(() => window.location.href = '/login', 3000);
+                } else {
+                    messageDiv.innerHTML = `<div class="error">${data.error || 'Verification failed. The link may be expired or invalid.'}</div>`;
+                }
+            } catch (error) {
+                messageDiv.innerHTML = '<div class="error">Network error. Please try again later.</div>';
+            } finally {
+                spinner.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>

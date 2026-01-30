@@ -368,6 +368,10 @@ def create_app(config_name="development"):
     def account_recovery_page():
         return send_from_directory(app.static_folder, "account-recovery.html")
 
+    @app.route("/verify-email")
+    def verify_email_page():
+        return send_from_directory(app.static_folder, "verify-email.html")
+
     @app.route("/health")
     def health():
         return {"status": "healthy"}, 200

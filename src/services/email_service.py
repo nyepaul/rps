@@ -25,7 +25,7 @@ class EmailService:
         if not base_url:
             base_url = current_app.config.get("APP_BASE_URL") or os.getenv("APP_BASE_URL", "https://rps.pan2.app")
 
-        verification_link = f"{base_url}/verify-email.html?token={token}"
+        verification_link = f"{base_url}/verify-email?token={token}"
         subject = f"Verification Code for {email}"
 
         html_body = f"""
@@ -142,7 +142,7 @@ class EmailService:
             base_url = current_app.config.get("APP_BASE_URL") or os.getenv("APP_BASE_URL", "https://rps.pan2.app")
 
         # Generate reset link
-        reset_link = f"{base_url}/account-recovery.html?token={token}"
+        reset_link = f"{base_url}/account-recovery?token={token}"
 
         # Email subject
         subject = "RPS - Password Reset Request"
@@ -390,7 +390,7 @@ class EmailService:
         
         verification_section = ""
         if verification_token:
-            v_link = f"{base_url}/verify-email.html?token={verification_token}"
+            v_link = f"{base_url}/verify-email?token={verification_token}"
             verification_section = f"""
                 <tr>
                     <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #e5e7eb; color: #b91c1c;">Verification Link:</td>
@@ -433,7 +433,7 @@ class EmailService:
 
         v_link_text = ""
         if verification_token:
-            v_link = f"{base_url}/verify-email.html?token={verification_token}"
+            v_link = f"{base_url}/verify-email?token={verification_token}"
             v_link_text = f"\nVerification Link: {v_link}\n"
 
         text_body = f"""New Account Created

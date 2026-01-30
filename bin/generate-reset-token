@@ -42,7 +42,7 @@ def generate_token(username):
         print(f"TOKEN: {token}")
         print("-" * 60)
         print(f"\nDIRECT LINK:")
-        print(f"https://rps.pan2.app/account-recovery.html?token={token}\n")
+        print(f"https://rps.pan2.app/account-recovery?token={token}\n")
         return True
     except Exception as e:
         print(f"❌ Database error: {e}")
