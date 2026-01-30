@@ -1,5 +1,5 @@
 {
-    "version": "3.9.156",
+    "version": "3.9.157",
     "release_date": "2026-01-29",
-    "release_notes": "Implement dedicated verification page and pretty URLs"
+    "release_notes": "Revert verification link expiration to 24 hours"
 }
