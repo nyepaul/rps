@@ -1,5 +1,5 @@
 {
-    "version": "3.9.151",
+    "version": "3.9.152",
     "release_date": "2026-01-29",
-    "release_notes": "Hyper-simplify verification email for ACM.org delivery"
+    "release_notes": "Align verification email template with successful notification template"
 }

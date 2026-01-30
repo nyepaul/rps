@@ -26,20 +26,29 @@ class EmailService:
             base_url = current_app.config.get("APP_BASE_URL") or os.getenv("APP_BASE_URL", "https://rps.pan2.app")
 
         verification_link = f"{base_url}/verify-email.html?token={token}"
-        subject = f"RPS - Verification Code for {email}"
+        subject = f"Verification Code for {email}"
 
         html_body = f"""
+        <!DOCTYPE html>
         <html>
-        <body>
-            <p>Hello,</p>
-            <p>Your RPS verification link is:</p>
-            <p>{verification_link}</p>
-            <p>This link will expire in 24 hours.</p>
+        <body style="font-family: sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #2563eb;">Account Verification</h2>
+                <p>Hello,</p>
+                <p>Please use the link below to verify your RPS account:</p>
+                <div style="margin: 20px 0;">
+                    <a href="{verification_link}" style="color: #2563eb; font-weight: bold; word-break: break-all;">{verification_link}</a>
+                </div>
+                <p>This link will expire in 24 hours.</p>
+                <p style="color: #6b7280; font-size: 14px; margin-top: 20px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                    This is an automated message from the Retirement Planning System.
+                </p>
+            </div>
         </body>
         </html>
         """
 
-        text_body = f"Hello,\n\nYour RPS verification link is:\n{verification_link}\n\nThis link will expire in 24 hours."
+        text_body = f"Hello,\n\nPlease verify your RPS account by clicking the link below:\n\n{verification_link}\n\nThis link will expire in 24 hours."
 
         # Always log to a local file for development/debugging
         try:
