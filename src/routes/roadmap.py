@@ -5,7 +5,7 @@ Manages product roadmap and feature planning - Super Admin only
 
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
-from src.database.connection import db
+from src.database import connection
 from datetime import datetime
 import logging
 
@@ -37,7 +37,7 @@ def get_roadmap():
         phase = request.args.get("phase")
         status = request.args.get("status")
 
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
 
             # Build query with optional filters
@@ -97,7 +97,7 @@ def get_roadmap():
 def get_public_roadmap():
     """Get roadmap items for public viewing - any authenticated user can access."""
     try:
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
 
             # Get all non-cancelled items, ordered by priority and phase
@@ -170,7 +170,7 @@ def get_roadmap_item(item_id):
         return auth_check
 
     try:
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM feature_roadmap WHERE id = ?", (item_id,))
             row = cursor.fetchone()
@@ -221,7 +221,7 @@ def create_roadmap_item():
         if not data.get("category"):
             return jsonify({"error": "Category is required"}), 400
 
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
 
             cursor.execute(
@@ -273,7 +273,7 @@ def update_roadmap_item(item_id):
     try:
         data = request.get_json()
 
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
 
             # Check if item exists
@@ -340,7 +340,7 @@ def delete_roadmap_item(item_id):
         return auth_check
 
     try:
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
 
             # Check if item exists
@@ -373,7 +373,7 @@ def get_roadmap_stats():
         return auth_check
 
     try:
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
 
             # Get counts by status

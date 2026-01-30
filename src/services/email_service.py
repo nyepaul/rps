@@ -1,6 +1,7 @@
 """Email service for sending transactional emails."""
 
 import os
+from datetime import datetime
 from flask import current_app
 from flask_mail import Message
 from src.extensions import mail
@@ -45,6 +46,34 @@ class EmailService:
         """
 
         text_body = f"Welcome to RPS!\n\nPlease verify your email: {verification_link}\n\nThis link expires in 24 hours."
+
+        # Always log to a local file for development/debugging
+        try:
+            from src.config import Config
+            log_path = os.path.join(Config.DATA_DIR, "sent_emails.log")
+            with open(log_path, "a") as f:
+                f.write(f"--- {datetime.now().isoformat()} ---\n")
+                f.write(f"To: {email}\n")
+                f.write(f"Subject: {subject}\n")
+                f.write(f"Link: {verification_link}\n")
+                f.write(f"-----------------------------------\n\n")
+        except Exception as log_ex:
+            print(f"Failed to log email to file: {log_ex}")
+
+        # Logging for development and troubleshooting
+        print(f"DEBUG: Verification link for {email}: {verification_link}")
+        try:
+            from src.services.enhanced_audit_logger import enhanced_audit_logger
+            enhanced_audit_logger.log(
+                action="EMAIL_VERIFICATION_GENERATED",
+                details={
+                    "email": email,
+                    "link": verification_link,
+                    "info": "Link logged to server for recovery in case of email delivery failure."
+                }
+            )
+        except:
+            pass
 
         try:
             # Try standard Flask-Mail (SMTP) first
@@ -99,6 +128,19 @@ class EmailService:
 
         # Email subject
         subject = "RPS - Password Reset Request"
+
+        # Always log to a local file for development/debugging
+        try:
+            from src.config import Config
+            log_path = os.path.join(Config.DATA_DIR, "sent_emails.log")
+            with open(log_path, "a") as f:
+                f.write(f"--- {datetime.now().isoformat()} ---\n")
+                f.write(f"To: {email}\n")
+                f.write(f"Subject: {subject}\n")
+                f.write(f"Link: {reset_link}\n")
+                f.write(f"-----------------------------------\n\n")
+        except Exception as log_ex:
+            print(f"Failed to log reset email to file: {log_ex}")
 
         # Email body (HTML)
         html_body = f"""

@@ -390,11 +390,8 @@ def create_app(config_name="development"):
 
 
 if __name__ == "__main__":
-    app = create_app()
-
-    # Secure configuration from environment
-    debug = os.environ.get("FLASK_DEBUG", "False").lower() == "true"
-    host = os.environ.get("FLASK_HOST", "127.0.0.1")
-    port = int(os.environ.get("FLASK_PORT", 5137))
-
+    port = int(os.environ.get("PORT", 5137))
+    debug = os.environ.get("FLASK_ENV") == "development"
+    host = os.environ.get("HOST", "127.0.0.1")
+    app = create_app(os.environ.get("FLASK_ENV", "production"))
     app.run(host=host, port=port, debug=debug)

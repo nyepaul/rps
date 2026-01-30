@@ -7,22 +7,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const registerForm = document.getElementById('registerForm');
     const resetRequestForm = document.getElementById('resetRequestForm');
     const resetPasswordForm = document.getElementById('resetPasswordForm');
+    const resendVerificationForm = document.getElementById('resendVerificationForm');
     const toggleLink = document.getElementById('toggleLink');
     const toggleText = document.getElementById('toggleText');
+    const resendToggle = document.getElementById('resendToggle');
+    const resendLinkContainer = document.getElementById('resendLinkContainer');
     const backToLoginLink = document.getElementById('backToLoginLink');
     const messageDiv = document.getElementById('message');
-    let currentMode = 'login'; // 'login', 'register', 'resetRequest', 'resetPassword'
+    let currentMode = 'login'; // 'login', 'register', 'resetRequest', 'resetPassword', 'resend'
     let resetToken = null;
     
     // Toggle between login and register
     if (toggleLink) {
         toggleLink.addEventListener('click', (e) => {
             e.preventDefault();
-            if (currentMode === 'login') {
+            if (currentMode === 'login' || currentMode === 'resend') {
                 showMode('register');
             } else {
                 showMode('login');
             }
+        });
+    }
+
+    // Resend Toggle
+    if (resendToggle) {
+        resendToggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            showMode('resend');
         });
     }
 
@@ -44,31 +55,46 @@ document.addEventListener('DOMContentLoaded', () => {
         registerForm.classList.add('hidden');
         resetRequestForm.classList.add('hidden');
         resetPasswordForm.classList.add('hidden');
+        if (resendVerificationForm) resendVerificationForm.classList.add('hidden');
 
         // Show appropriate form
         if (mode === 'login') {
             loginForm.classList.remove('hidden');
             toggleText.textContent = "Don't have an account? ";
             toggleLink.textContent = "Register";
+            toggleLink.classList.remove('hidden');
             backToLoginLink.classList.add('hidden');
+            if (resendLinkContainer) resendLinkContainer.classList.remove('hidden');
             document.querySelector('h1').textContent = "Welcome Back";
         } else if (mode === 'register') {
             registerForm.classList.remove('hidden');
             toggleText.textContent = "Already have an account? ";
             toggleLink.textContent = "Login";
+            toggleLink.classList.remove('hidden');
             backToLoginLink.classList.add('hidden');
+            if (resendLinkContainer) resendLinkContainer.classList.add('hidden');
             document.querySelector('h1').textContent = "Create Account";
+        } else if (mode === 'resend') {
+            if (resendVerificationForm) resendVerificationForm.classList.remove('hidden');
+            toggleText.textContent = "Back to ";
+            toggleLink.textContent = "Login";
+            toggleLink.classList.remove('hidden');
+            backToLoginLink.classList.add('hidden');
+            if (resendLinkContainer) resendLinkContainer.classList.add('hidden');
+            document.querySelector('h1').textContent = "Resend Verification";
         } else if (mode === 'resetRequest') {
             resetRequestForm.classList.remove('hidden');
             toggleText.textContent = "";
             toggleLink.classList.add('hidden');
             backToLoginLink.classList.remove('hidden');
+            if (resendLinkContainer) resendLinkContainer.classList.add('hidden');
             document.querySelector('h1').textContent = "Reset Password";
         } else if (mode === 'resetPassword') {
             resetPasswordForm.classList.remove('hidden');
             toggleText.textContent = "";
             toggleLink.classList.add('hidden');
             backToLoginLink.classList.remove('hidden');
+            if (resendLinkContainer) resendLinkContainer.classList.add('hidden');
             document.querySelector('h1').textContent = "Set New Password";
         }
     }
@@ -103,6 +129,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     setTimeout(() => window.location.href = '/', 1000);
                 } else {
                     showMessage(data.error || 'Login failed', 'error');
+                    // If email not verified, show resend option clearly
+                    if (data.code === 'EMAIL_NOT_VERIFIED') {
+                        const extra = document.createElement('div');
+                        extra.style.marginTop = '10px';
+                        extra.innerHTML = '<a href="#" id="resendFromError" style="color: #667eea; font-weight: bold;">Click here to resend verification email</a>';
+                        messageDiv.appendChild(extra);
+                        document.getElementById('resendFromError').onclick = (e) => {
+                            e.preventDefault();
+                            showMode('resend');
+                        };
+                    }
                 }
             } catch (error) {
                 showMessage('Network error. Please try again.', 'error');
@@ -142,9 +179,56 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
 
                 if (response.ok) {
-                    spinner.querySelector('.spinner-text').textContent = 'Registration successful! Redirecting...';
-                    showMessage('Registration successful! Redirecting...', 'success');
-                    setTimeout(() => window.location.href = '/', 1000);
+                    const successMsg = data.message || 'Registration successful! Please check your email to verify your account.';
+                    showMessage(successMsg, 'success');
+                    spinner.classList.remove('active');
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    
+                    // If in development mode and token is provided, show auto-verify option
+                    if (data.development_mode && data.verification_token) {
+                        const devDiv = document.createElement('div');
+                        devDiv.style.marginTop = '15px';
+                        devDiv.style.padding = '10px';
+                        devDiv.style.background = '#fef3c7';
+                        devDiv.style.border = '1px solid #f59e0b';
+                        devDiv.style.borderRadius = '4px';
+                        devDiv.innerHTML = `
+                            <p style="margin: 0 0 10px 0; font-size: 14px; color: #92400e;"><strong>Dev Mode:</strong> Email sending might be disabled.</p>
+                            <button id="autoVerifyBtn" style="background: #f59e0b; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Verify Account Now (Local Only)</button>
+                        `;
+                        messageDiv.appendChild(devDiv);
+                        
+                        document.getElementById('autoVerifyBtn').onclick = async (e) => {
+                            e.preventDefault();
+                            try {
+                                const vResp = await fetch(`${API_URL}/auth/verify-email`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ token: data.verification_token })
+                                });
+                                const vData = await vResp.json();
+                                if (vResp.ok) {
+                                    showMessage('Account verified! You can now log in.', 'success');
+                                    setTimeout(() => showMode('login'), 2000);
+                                } else {
+                                    showMessage(vData.error || 'Verification failed', 'error');
+                                }
+                            } catch (err) {
+                                showMessage('Auto-verification failed', 'error');
+                            }
+                        };
+                    }
+                    
+                    // Clear form
+                    registerForm.reset();
+                    
+                    // Switch to login mode after a delay so they can see the message
+                    setTimeout(() => {
+                        if (currentMode === 'register') {
+                            showMode('login');
+                        }
+                    }, 8000);
                 } else {
                     showMessage(data.error || 'Registration failed', 'error');
                 }
@@ -156,6 +240,42 @@ document.addEventListener('DOMContentLoaded', () => {
                     btn.style.opacity = '1';
                     spinner.classList.remove('active');
                 }
+            }
+        });
+    }
+
+    // Resend Verification
+    if (resendVerificationForm) {
+        resendVerificationForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearMessage();
+
+            const email = document.getElementById('resendEmail').value;
+            const btn = document.getElementById('resendBtn');
+
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+
+            try {
+                const response = await fetch(`${API_URL}/auth/resend-verification`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage(data.message || 'Verification email sent.', 'success');
+                    setTimeout(() => showMode('login'), 3000);
+                } else {
+                    showMessage(data.error || 'Failed to resend verification', 'error');
+                }
+            } catch (error) {
+                showMessage('Network error. Please try again.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Send Verification Link';
             }
         });
     }

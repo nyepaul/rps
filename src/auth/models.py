@@ -4,9 +4,10 @@ import bcrypt
 import sqlite3
 import secrets
 import string
+import jwt
 from datetime import datetime, timedelta
 from flask_login import UserMixin
-from src.database.connection import db
+from src.database import connection
 
 
 class User(UserMixin):
@@ -95,7 +96,7 @@ class User(UserMixin):
     @staticmethod
     def get_by_id(user_id: int):
         """Get user by ID."""
-        row = db.execute_one("SELECT * FROM users WHERE id = ?", (user_id,))
+        row = connection.db.execute_one("SELECT * FROM users WHERE id = ?", (user_id,))
         if row:
             return User(**dict(row))
         return None
@@ -103,7 +104,7 @@ class User(UserMixin):
     @staticmethod
     def get_by_username(username: str):
         """Get user by username."""
-        row = db.execute_one("SELECT * FROM users WHERE username = ?", (username,))
+        row = connection.db.execute_one("SELECT * FROM users WHERE username = ?", (username,))
         if row:
             return User(**dict(row))
         return None
@@ -111,7 +112,7 @@ class User(UserMixin):
     @staticmethod
     def get_by_email(email: str):
         """Get user by email."""
-        row = db.execute_one("SELECT * FROM users WHERE email = ?", (email,))
+        row = connection.db.execute_one("SELECT * FROM users WHERE email = ?", (email,))
         if row:
             return User(**dict(row))
         return None
@@ -160,7 +161,7 @@ class User(UserMixin):
 
     def save(self):
         """Save or update user in database."""
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
             if self.id is None:
                 # Insert new user
@@ -231,7 +232,7 @@ class User(UserMixin):
     def update_last_login(self):
         """Update last login timestamp."""
         self.last_login = datetime.now().isoformat()
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             conn.execute(
                 "UPDATE users SET last_login = ? WHERE id = ?",
                 (self.last_login, self.id),
@@ -316,7 +317,7 @@ class User(UserMixin):
                         new_enc_dek, new_iv = new_service.encrypt(dek_b64)
 
                         # Update DB directly to persist migration
-                        with db.get_connection() as conn:
+                        with connection.db.get_connection() as conn:
                             conn.execute(
                                 """
                                 UPDATE users 
@@ -463,7 +464,7 @@ class User(UserMixin):
             datetime.now() + timedelta(hours=expiry_hours)
         ).isoformat()
 
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             conn.execute(
                 """
                 UPDATE users
@@ -527,7 +528,7 @@ class User(UserMixin):
         Returns:
             User or None: The user if token is valid, None otherwise
         """
-        row = db.execute_one("SELECT * FROM users WHERE reset_token = ?", (token,))
+        row = connection.db.execute_one("SELECT * FROM users WHERE reset_token = ?", (token,))
         if row:
             user = User(**dict(row))
             # Validate token hasn't expired
@@ -562,7 +563,7 @@ class User(UserMixin):
         """Get groups this user belongs to."""
         from src.models.group import Group
 
-        rows = db.execute(
+        rows = connection.db.execute(
             """
             SELECT g.* FROM groups g
             JOIN user_groups ug ON g.id = ug.group_id
@@ -579,7 +580,7 @@ class User(UserMixin):
         if self.is_super_admin:
             return Group.get_all()
 
-        rows = db.execute(
+        rows = connection.db.execute(
             """
             SELECT g.* FROM groups g
             JOIN admin_groups ag ON g.id = ag.group_id
@@ -597,7 +598,7 @@ class User(UserMixin):
             return False
 
         # Check if target user is in any group managed by this admin
-        row = db.execute_one(
+        row = connection.db.execute_one(
             """
             SELECT 1 FROM user_groups ug
             JOIN admin_groups ag ON ug.group_id = ag.group_id
@@ -610,7 +611,7 @@ class User(UserMixin):
 
     def add_to_group(self, group_id: int):
         """Add user to a group."""
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             conn.execute(
                 "INSERT OR IGNORE INTO user_groups (user_id, group_id) VALUES (?, ?)",
                 (self.id, group_id),
@@ -618,7 +619,7 @@ class User(UserMixin):
 
     def remove_from_group(self, group_id: int):
         """Remove user from a group."""
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             conn.execute(
                 "DELETE FROM user_groups WHERE user_id = ? AND group_id = ?",
                 (self.id, group_id),
@@ -626,7 +627,7 @@ class User(UserMixin):
 
     def add_managed_group(self, group_id: int):
         """Assign a group to be managed by this admin."""
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             conn.execute(
                 "INSERT OR IGNORE INTO admin_groups (user_id, group_id) VALUES (?, ?)",
                 (self.id, group_id),
@@ -634,7 +635,7 @@ class User(UserMixin):
 
     def remove_managed_group(self, group_id: int):
         """Remove a group from being managed by this admin."""
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             conn.execute(
                 "DELETE FROM admin_groups WHERE user_id = ? AND group_id = ?",
                 (self.id, group_id),
@@ -647,7 +648,7 @@ class User(UserMixin):
         Returns:
             list[User]: List of super admin User objects
         """
-        rows = db.execute(
+        rows = connection.db.execute(
             "SELECT * FROM users WHERE is_super_admin = 1 AND is_active = 1"
         )
         return [User(**dict(row)) for row in rows]
@@ -659,7 +660,7 @@ class User(UserMixin):
         Returns:
             list[str]: List of super admin email addresses
         """
-        rows = db.execute(
+        rows = connection.db.execute(
             "SELECT email FROM users WHERE is_super_admin = 1 AND is_active = 1"
         )
         return [row["email"] for row in rows]
@@ -707,7 +708,7 @@ class PasswordResetRequest:
 
         expires_at = (datetime.now() + timedelta(hours=48)).isoformat()
 
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
                 """
@@ -726,7 +727,7 @@ class PasswordResetRequest:
 
     @staticmethod
     def get_pending():
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             # Return rows as dicts
             conn.row_factory = sqlite3.Row
             cursor = conn.execute("""
@@ -740,7 +741,7 @@ class PasswordResetRequest:
 
     @staticmethod
     def get_by_id(request_id):
-        row = db.execute_one(
+        row = connection.db.execute_one(
             "SELECT * FROM password_reset_requests WHERE id = ?", (request_id,)
         )
         if row:
@@ -751,7 +752,7 @@ class PasswordResetRequest:
         self.status = "processed"
         self.processed_at = datetime.now().isoformat()
         self.processed_by = admin_id
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             conn.execute(
                 """
                 UPDATE password_reset_requests 

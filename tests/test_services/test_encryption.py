@@ -1,14 +1,19 @@
 """
 Unit tests for Encryption Service
 """
+
 import pytest
 import json
-from src.services.encryption_service import EncryptionService, encrypt_dict, decrypt_dict
+from src.services.encryption_service import (
+    EncryptionService,
+    encrypt_dict,
+    decrypt_dict,
+)
 
 
 def test_encryption_service_creation():
     """Test creating encryption service with custom key."""
-    key = b'0' * 32  # 32 bytes for AES-256
+    key = b"0" * 32  # 32 bytes for AES-256
     service = EncryptionService(key=key)
     assert service.key == key
 
@@ -39,13 +44,10 @@ def test_encrypt_decrypt_string(encryption_service):
 def test_encrypt_decrypt_json(encryption_service):
     """Test encrypting and decrypting JSON data."""
     data = {
-        'name': 'John Doe',
-        'age': 45,
-        'assets': 500000,
-        'nested': {
-            'income': 120000,
-            'expenses': 80000
-        }
+        "name": "John Doe",
+        "age": 45,
+        "assets": 500000,
+        "nested": {"income": 120000, "expenses": 80000},
     }
 
     json_str = json.dumps(data)
@@ -65,10 +67,7 @@ def test_encrypt_decrypt_json(encryption_service):
 
 def test_encrypt_dict_helper(encryption_service):
     """Test encrypt_dict helper function."""
-    data = {
-        'sensitive': 'information',
-        'amount': 1000000
-    }
+    data = {"sensitive": "information", "amount": 1000000}
 
     ciphertext, iv = encrypt_dict(data)
 
@@ -78,17 +77,13 @@ def test_encrypt_dict_helper(encryption_service):
     assert isinstance(iv, str)
 
     # Should not contain plaintext
-    assert 'sensitive' not in ciphertext
-    assert '1000000' not in ciphertext
+    assert "sensitive" not in ciphertext
+    assert "1000000" not in ciphertext
 
 
 def test_decrypt_dict_helper(encryption_service):
     """Test decrypt_dict helper function."""
-    data = {
-        'key1': 'value1',
-        'key2': 'value2',
-        'number': 42
-    }
+    data = {"key1": "value1", "key2": "value2", "number": 42}
 
     ciphertext, iv = encrypt_dict(data)
     decrypted = decrypt_dict(ciphertext, iv)
@@ -142,7 +137,7 @@ def test_decrypt_with_wrong_iv(encryption_service):
     ciphertext, iv = encryption_service.encrypt(plaintext)
 
     # Create wrong IV
-    wrong_iv = b'0' * 12
+    wrong_iv = b"0" * 12
 
     # Should raise exception
     with pytest.raises(Exception):
@@ -156,7 +151,7 @@ def test_decrypt_with_tampered_ciphertext(encryption_service):
     ciphertext, iv = encryption_service.encrypt(plaintext)
 
     # Tamper with ciphertext
-    tampered = ciphertext[:-1] + 'X'
+    tampered = ciphertext[:-1] + "X"
 
     # Should raise exception
     with pytest.raises(Exception):
@@ -165,9 +160,7 @@ def test_decrypt_with_tampered_ciphertext(encryption_service):
 
 def test_encrypt_large_data(encryption_service):
     """Test encrypting large data."""
-    large_data = {
-        'items': [{'id': i, 'value': f'item_{i}'} for i in range(1000)]
-    }
+    large_data = {"items": [{"id": i, "value": f"item_{i}"} for i in range(1000)]}
 
     json_str = json.dumps(large_data)
     ciphertext, iv = encryption_service.encrypt(json_str)

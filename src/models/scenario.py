@@ -2,7 +2,7 @@
 
 from datetime import datetime
 import json
-from src.database.connection import db
+from src.database import connection
 from src.services.encryption_service import encrypt_dict, decrypt_dict
 
 
@@ -36,7 +36,7 @@ class Scenario:
     @staticmethod
     def get_by_id(scenario_id: int, user_id: int):
         """Get scenario by ID (with ownership check)."""
-        row = db.execute_one(
+        row = connection.db.execute_one(
             "SELECT * FROM scenarios WHERE id = ? AND user_id = ?",
             (scenario_id, user_id),
         )
@@ -47,7 +47,7 @@ class Scenario:
     @staticmethod
     def list_by_user(user_id: int):
         """List all scenarios for a user."""
-        rows = db.execute(
+        rows = connection.db.execute(
             "SELECT * FROM scenarios WHERE user_id = ? ORDER BY created_at DESC",
             (user_id,),
         )
@@ -55,7 +55,7 @@ class Scenario:
 
     def save(self):
         """Save or update scenario (encrypts data)."""
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
 
             # Encrypt parameters if needed
@@ -112,7 +112,7 @@ class Scenario:
     def delete(self):
         """Delete scenario."""
         if self.id:
-            with db.get_connection() as conn:
+            with connection.db.get_connection() as conn:
                 conn.execute(
                     "DELETE FROM scenarios WHERE id = ? AND user_id = ?",
                     (self.id, self.user_id),

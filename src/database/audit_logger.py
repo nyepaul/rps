@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Optional
 from flask import request, has_request_context
 from flask_login import current_user
-from src.database.connection import db
+from src.database import connection
 
 
 class AuditLogger:
@@ -50,7 +50,7 @@ class AuditLogger:
         timestamp = datetime.now().isoformat()
 
         try:
-            with db.get_connection() as conn:
+            with connection.db.get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute(
                     """
@@ -153,7 +153,7 @@ class AuditLogger:
         query += " ORDER BY created_at DESC LIMIT ?"
         params.append(limit)
 
-        rows = db.execute(query, tuple(params))
+        rows = connection.db.execute(query, tuple(params))
         return [dict(row) for row in rows]
 
     @staticmethod
@@ -167,7 +167,7 @@ class AuditLogger:
         cutoff_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         cutoff_date = cutoff_date.replace(day=cutoff_date.day - days)
 
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             conn.execute(
                 "DELETE FROM audit_log WHERE created_at < ?", (cutoff_date.isoformat(),)
             )

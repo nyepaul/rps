@@ -8,7 +8,7 @@ Describes user actions in plain English for easy comprehension.
 import json
 from datetime import datetime
 from typing import List, Dict, Any, Optional
-from src.database.connection import db
+from src.database import connection
 
 
 class AuditNarrativeGenerator:
@@ -70,7 +70,7 @@ class AuditNarrativeGenerator:
     ) -> List[Dict[str, Any]]:
         """Fetch audit logs for a user from database."""
         try:
-            with db.get_connection() as conn:
+            with connection.db.get_connection() as conn:
                 cursor = conn.cursor()
 
                 # Build query with optional date filters

@@ -27,7 +27,7 @@ def check_account_lockout(username: str) -> tuple[bool, int]:
     Check if account is locked due to too many failed login attempts.
     Returns (is_locked, remaining_minutes).
     """
-    from src.database.connection import db
+    from src.database import connection
 
     try:
         # Check failed login attempts in the last LOCKOUT_DURATION_MINUTES
@@ -40,7 +40,7 @@ def check_account_lockout(username: str) -> tuple[bool, int]:
         escaped_username = (
             username.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         )
-        rows = db.execute(
+        rows = connection.db.execute(
             """SELECT COUNT(*) as count, MAX(created_at) as last_attempt
                FROM enhanced_audit_log
                WHERE action = 'LOGIN_FAILED'
@@ -129,6 +129,7 @@ class LoginSchema(BaseModel):
 @limiter.limit("5 per hour")
 def register():
     """Register a new user and initialize their encryption key."""
+    data = {}
     try:
         data = RegisterSchema(**request.json)
     except ValidationError as e:
@@ -237,7 +238,58 @@ def register():
             "SAVE THIS CODE SECURELY. It is the ONLY way to recover your data if you forget your password. This code will not be shown again."
         )
 
+    # In development mode, expose the verification token for easy activation
+    from flask import current_app
+    if (
+        current_app.config.get("DEBUG")
+        or current_app.config.get("FLASK_ENV") == "development"
+    ):
+        response_data["verification_token"] = token
+        response_data["development_mode"] = True
+
     return jsonify(response_data), 201
+
+
+@auth_bp.route("/resend-verification", methods=["POST"])
+@limiter.limit("3 per minute")
+def resend_verification():
+    """Resend verification email."""
+    email = request.json.get("email")
+    if not email:
+        return jsonify({"error": "Email is required"}), 400
+
+    user = User.get_by_email(email)
+    if not user:
+        # Don't reveal user existence
+        return (
+            jsonify(
+                {"message": "If the account exists, a verification email has been sent."}
+            ),
+            200,
+        )
+
+    if getattr(user, "email_verified", 0) == 1:
+        return jsonify({"message": "Account is already verified."}), 400
+
+    # Send email
+    try:
+        from src.services.email_service import EmailService
+
+        token = user.generate_verification_token()
+        if EmailService.send_verification_email(user.email, token):
+            return jsonify({"message": "Verification email sent."}), 200
+        else:
+            return (
+                jsonify(
+                    {
+                        "error": "Failed to send email. Please try again later or contact support."
+                    }
+                ),
+                500,
+            )
+    except Exception as e:
+        print(f"Resend verification error: {e}")
+        return jsonify({"error": "Failed to send email"}), 500
 
 
 @auth_bp.route("/verify-email", methods=["POST"])
@@ -291,6 +343,7 @@ def verify_email():
 @limiter.limit("10 per minute")
 def login():
     """Log in a user and decrypt their encryption key."""
+    data = {}
     try:
         data = LoginSchema(**request.json)
     except ValidationError as e:
@@ -356,7 +409,15 @@ def login():
     # If attribute doesn't exist yet on model (migration lag), assume verified
     is_verified = getattr(user, "email_verified", 1)
     if is_verified == 0:
-        return jsonify({"error": "Email not verified. Please check your inbox."}), 403
+        return (
+            jsonify(
+                {
+                    "error": "Email not verified. Please check your inbox or use the 'Resend Verification' option.",
+                    "code": "EMAIL_NOT_VERIFIED",
+                }
+            ),
+            403,
+        )
 
     # Decrypt user's DEK or generate one for old users
     if user.encrypted_dek and user.dek_iv:

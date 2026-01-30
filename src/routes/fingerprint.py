@@ -6,7 +6,7 @@ Handles advanced browser fingerprinting data collection
 from flask import Blueprint, request, jsonify, session
 from flask_login import current_user
 from src.services.enhanced_audit_logger import enhanced_audit_logger
-from src.database.connection import db
+from src.database import connection
 import json
 
 fingerprint_bp = Blueprint("fingerprint", __name__, url_prefix="/api")
@@ -15,7 +15,7 @@ fingerprint_bp = Blueprint("fingerprint", __name__, url_prefix="/api")
 def get_stored_fingerprints(user_id: int, limit: int = 10) -> list:
     """Retrieve stored fingerprints for a user from audit log."""
     try:
-        rows = db.execute(
+        rows = connection.db.execute(
             """SELECT details FROM enhanced_audit_log
                WHERE user_id = ? AND action = 'FINGERPRINT_COLLECTED'
                ORDER BY created_at DESC LIMIT ?""",

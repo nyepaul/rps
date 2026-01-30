@@ -1,5 +1,5 @@
 {
-    "version": "3.9.145",
+    "version": "3.9.146",
     "release_date": "2026-01-29",
-    "release_notes": "Phase 6 Complete: Polish, Performance, and Security"
+    "release_notes": "Integration fixes, AI mocking stabilization, and email verification enhancements"
 }

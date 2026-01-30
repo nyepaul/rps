@@ -1,19 +1,20 @@
 """Admin routes for managing audit logs and system configuration."""
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_login import login_required, current_user
 from pydantic import BaseModel, validator
 from typing import Optional, Dict, Any
 from src.auth.admin_required import admin_required
 from src.auth.super_admin_required import super_admin_required
-from src.database.connection import db
+from src.database import connection
 from src.services.enhanced_audit_logger import enhanced_audit_logger, AuditConfig
 from src.services.audit_narrative_generator import audit_narrative_generator
 from src.auth.models import User, PasswordResetRequest
 from src.models.group import Group
 from src.services.encryption_service import EncryptionService
-import base64
+import re
 import json
+import base64
 from datetime import datetime, timedelta
 from src.extensions import limiter
 
@@ -252,10 +253,11 @@ def get_ip_locations():
 def get_log_by_id(log_id: int):
     """Get a single audit log by ID with full details."""
     try:
-        from src.database.connection import db
+        from src.database import connection
 
         # Query for the specific log
-        log = db.execute_one("SELECT * FROM enhanced_audit_log WHERE id = ?", (log_id,))
+        log = connection.db.execute_one(
+            "SELECT * FROM enhanced_audit_log WHERE id = ?", (log_id,))
 
         if not log:
             return jsonify({"error": "Log not found"}), 404
@@ -340,7 +342,10 @@ def export_audit_logs():
         # Log admin action
         enhanced_audit_logger.log_admin_action(
             action="EXPORT_LOGS",
-            details={"format": export_format, "record_count": len(result["logs"])},
+            details={
+                "format": export_format,
+                "record_count": len(
+                    result["logs"])},
             user_id=current_user.id,
         )
 
@@ -351,7 +356,8 @@ def export_audit_logs():
 
             output = io.StringIO()
             if result["logs"]:
-                writer = csv.DictWriter(output, fieldnames=result["logs"][0].keys())
+                writer = csv.DictWriter(
+                    output, fieldnames=result["logs"][0].keys())
                 writer.writeheader()
                 writer.writerows(result["logs"])
 
@@ -446,10 +452,10 @@ def update_audit_config():
 def list_users():
     """List all users in the system with their group assignments."""
     try:
-        from src.database.connection import db
+        from src.database import connection
 
         if current_user.is_super_admin:
-            rows = db.execute("""
+            rows = connection.db.execute("""
                 SELECT u.id, u.username, u.email, u.is_active, u.is_admin, u.is_super_admin, u.created_at, u.last_login,
                        GROUP_CONCAT(g.name, ', ') as group_names
                 FROM users u
@@ -460,12 +466,12 @@ def list_users():
             """)
         else:
             # Only show users in groups managed by this admin
-            rows = db.execute(
+            rows = connection.db.execute(
                 """
                 SELECT DISTINCT u.id, u.username, u.email, u.is_active, u.is_admin, u.is_super_admin, u.created_at, u.last_login,
-                       (SELECT GROUP_CONCAT(g2.name, ', ') 
-                        FROM groups g2 
-                        JOIN user_groups ug2 ON g2.id = ug2.group_id 
+                       (SELECT GROUP_CONCAT(g2.name, ', ')
+                        FROM groups g2
+                        JOIN user_groups ug2 ON g2.id = ug2.group_id
                         WHERE ug2.user_id = u.id) as group_names
                 FROM users u
                 JOIN user_groups ug ON u.id = ug.user_id
@@ -510,7 +516,8 @@ def update_user(user_id: int):
         # Prevent demoting a super admin unless requester is also super admin
         if user.is_super_admin and not current_user.is_super_admin:
             return (
-                jsonify({"error": "Only super admins can manage other super admins"}),
+                jsonify(
+                    {"error": "Only super admins can manage other super admins"}),
                 403,
             )
 
@@ -673,7 +680,8 @@ def get_group(group_id):
         if not current_user.is_super_admin:
             managed_ids = [g.id for g in current_user.get_managed_groups()]
             if group_id not in managed_ids:
-                return jsonify({"error": "Unauthorized to view this group"}), 403
+                return jsonify(
+                    {"error": "Unauthorized to view this group"}), 403
 
         members = group.get_members()
         return (
@@ -746,7 +754,8 @@ def delete_group(group_id):
         return jsonify({"error": str(e)}), 500
 
 
-@admin_bp.route("/groups/<int:group_id>/members/<int:user_id>", methods=["POST"])
+@admin_bp.route("/groups/<int:group_id>/members/<int:user_id>",
+                methods=["POST"])
 @login_required
 @super_admin_required
 def add_group_member(group_id, user_id):
@@ -777,7 +786,8 @@ def add_group_member(group_id, user_id):
         return jsonify({"error": str(e)}), 500
 
 
-@admin_bp.route("/groups/<int:group_id>/members/<int:user_id>", methods=["DELETE"])
+@admin_bp.route("/groups/<int:group_id>/members/<int:user_id>",
+                methods=["DELETE"])
 @login_required
 @super_admin_required
 def remove_group_member(group_id, user_id):
@@ -800,7 +810,8 @@ def remove_group_member(group_id, user_id):
         return jsonify({"error": str(e)}), 500
 
 
-@admin_bp.route("/users/<int:user_id>/managed-groups/<int:group_id>", methods=["POST"])
+@admin_bp.route("/users/<int:user_id>/managed-groups/<int:group_id>",
+                methods=["POST"])
 @login_required
 @super_admin_required
 def assign_managed_group(user_id, group_id):
@@ -905,7 +916,7 @@ def update_super_admin_status(user_id: int):
         is_super_admin: boolean
     """
     try:
-        from src.database.connection import db
+        from src.database import connection
 
         data = request.json
         if "is_super_admin" not in data:
@@ -920,11 +931,12 @@ def update_super_admin_status(user_id: int):
 
         # Prevent self-demotion from super admin
         if user_id == current_user.id and not is_super_admin:
-            return jsonify({"error": "Cannot revoke your own super admin status"}), 400
+            return jsonify(
+                {"error": "Cannot revoke your own super admin status"}), 400
 
         # Update super admin status
         # When granting super admin, automatically promote to admin as well
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
             if is_super_admin:
                 # Granting super admin: also set is_admin=1
@@ -935,7 +947,8 @@ def update_super_admin_status(user_id: int):
             else:
                 # Revoking super admin: only update is_super_admin
                 cursor.execute(
-                    "UPDATE users SET is_super_admin = ? WHERE id = ?", (0, user_id)
+                    "UPDATE users SET is_super_admin = ? WHERE id = ?", (
+                        0, user_id)
                 )
             conn.commit()
 
@@ -983,7 +996,9 @@ def get_user_profiles(user_id: int):
         # Log admin action
         enhanced_audit_logger.log_admin_action(
             action="VIEW_USER_PROFILES",
-            details={"target_user_id": user_id, "profile_count": len(profiles)},
+            details={
+                "target_user_id": user_id,
+                "profile_count": len(profiles)},
             user_id=current_user.id,
         )
 
@@ -999,7 +1014,7 @@ def get_user_profiles(user_id: int):
 def get_user_report(user_id: int):
     """Get comprehensive activity report for a specific user."""
     try:
-        from src.database.connection import db
+        from src.database import connection
 
         # Get user info
         user = User.get_by_id(user_id)
@@ -1020,52 +1035,52 @@ def get_user_report(user_id: int):
         }
 
         # Count profiles
-        result = db.execute_one(
+        result = connection.db.execute_one(
             "SELECT COUNT(*) as count FROM profile WHERE user_id = ?", (user_id,)
         )
         report["profile_count"] = result["count"] if result else 0
 
         # Get profile list
-        profiles = db.execute(
+        profiles = connection.db.execute(
             "SELECT id, name, created_at FROM profile WHERE user_id = ? ORDER BY created_at DESC",
             (user_id,),
         )
         report["profiles"] = [dict(row) for row in profiles]
 
         # Count scenarios
-        result = db.execute_one(
+        result = connection.db.execute_one(
             "SELECT COUNT(*) as count FROM scenarios WHERE user_id = ?", (user_id,)
         )
         report["scenario_count"] = result["count"] if result else 0
 
         # Get recent scenarios
-        scenarios = db.execute(
+        scenarios = connection.db.execute(
             "SELECT id, name, created_at FROM scenarios WHERE user_id = ? ORDER BY created_at DESC LIMIT 10",
             (user_id,),
         )
         report["recent_scenarios"] = [dict(row) for row in scenarios]
 
         # Count conversations
-        result = db.execute_one(
+        result = connection.db.execute_one(
             "SELECT COUNT(DISTINCT profile_id) as count FROM conversations WHERE user_id = ?",
             (user_id,),
         )
         report["conversation_count"] = result["count"] if result else 0
 
         # Count conversation messages
-        result = db.execute_one(
+        result = connection.db.execute_one(
             "SELECT COUNT(*) as count FROM conversations WHERE user_id = ?", (user_id,)
         )
         report["conversation_message_count"] = result["count"] if result else 0
 
         # Count action items
-        result = db.execute_one(
+        result = connection.db.execute_one(
             "SELECT COUNT(*) as count FROM action_items WHERE user_id = ?", (user_id,)
         )
         report["action_item_count"] = result["count"] if result else 0
 
         # Get action item breakdown by status
-        action_status = db.execute(
+        action_status = connection.db.execute(
             "SELECT status, COUNT(*) as count FROM action_items WHERE user_id = ? GROUP BY status",
             (user_id,),
         )
@@ -1074,7 +1089,7 @@ def get_user_report(user_id: int):
         }
 
         # Get recent audit activity (last 20 actions)
-        audit_logs = db.execute(
+        audit_logs = connection.db.execute(
             "SELECT action, table_name, request_method, request_endpoint, status_code, created_at "
             "FROM enhanced_audit_log WHERE user_id = ? ORDER BY created_at DESC LIMIT 20",
             (user_id,),
@@ -1082,26 +1097,27 @@ def get_user_report(user_id: int):
         report["recent_activity"] = [dict(row) for row in audit_logs]
 
         # Count total audit log entries
-        result = db.execute_one(
+        result = connection.db.execute_one(
             "SELECT COUNT(*) as count FROM enhanced_audit_log WHERE user_id = ?",
             (user_id,),
         )
         report["total_activity_count"] = result["count"] if result else 0
 
         # Get activity by action type
-        activity_by_action = db.execute(
+        activity_by_action = connection.db.execute(
             "SELECT action, COUNT(*) as count FROM enhanced_audit_log "
             "WHERE user_id = ? GROUP BY action ORDER BY count DESC LIMIT 10",
             (user_id,),
         )
-        report["activity_by_action"] = [dict(row) for row in activity_by_action]
+        report["activity_by_action"] = [
+            dict(row) for row in activity_by_action]
 
         # Get first and last activity dates
-        first_activity = db.execute_one(
+        first_activity = connection.db.execute_one(
             "SELECT MIN(created_at) as first_activity FROM enhanced_audit_log WHERE user_id = ?",
             (user_id,),
         )
-        last_activity = db.execute_one(
+        last_activity = connection.db.execute_one(
             "SELECT MAX(created_at) as last_activity FROM enhanced_audit_log WHERE user_id = ?",
             (user_id,),
         )
@@ -1113,7 +1129,7 @@ def get_user_report(user_id: int):
         )
 
         # Count feedback submissions
-        result = db.execute_one(
+        result = connection.db.execute_one(
             "SELECT COUNT(*) as count FROM feedback WHERE user_id = ?", (user_id,)
         )
         report["feedback_count"] = result["count"] if result else 0
@@ -1151,7 +1167,7 @@ def delete_user(user_id: int):
     - Requires admin privileges
     """
     try:
-        from src.database.connection import db
+        from src.database import connection
 
         # Prevent self-deletion
         if user_id == current_user.id:
@@ -1166,24 +1182,29 @@ def delete_user(user_id: int):
         email = user.email
 
         # Delete user and cascade delete related data
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
 
-            # Delete user's profiles (will cascade to scenarios and action items via ON DELETE CASCADE)
+            # Delete user's profiles (will cascade to scenarios and action
+            # items via ON DELETE CASCADE)
             cursor.execute("DELETE FROM profile WHERE user_id = ?", (user_id,))
             profiles_deleted = cursor.rowcount
 
             # Delete user's conversations
-            cursor.execute("DELETE FROM conversations WHERE user_id = ?", (user_id,))
+            cursor.execute(
+                "DELETE FROM conversations WHERE user_id = ?", (user_id,))
             conversations_deleted = cursor.rowcount
 
             # Delete user's feedback submissions
-            cursor.execute("DELETE FROM feedback WHERE user_id = ?", (user_id,))
+            cursor.execute(
+                "DELETE FROM feedback WHERE user_id = ?", (user_id,))
             feedback_deleted = cursor.rowcount
 
-            # Delete user's password reset requests (both as requester and processor)
+            # Delete user's password reset requests (both as requester and
+            # processor)
             cursor.execute(
-                "DELETE FROM password_reset_requests WHERE user_id = ?", (user_id,)
+                "DELETE FROM password_reset_requests WHERE user_id = ?", (
+                    user_id,)
             )
             cursor.execute(
                 "UPDATE password_reset_requests SET processed_by = NULL WHERE processed_by = ?",
@@ -1259,7 +1280,8 @@ def add_user_to_group(user_id, group_id):
         return jsonify({"error": str(e)}), 500
 
 
-@admin_bp.route("/users/<int:user_id>/groups/<int:group_id>", methods=["DELETE"])
+@admin_bp.route("/users/<int:user_id>/groups/<int:group_id>",
+                methods=["DELETE"])
 @login_required
 @super_admin_required
 def remove_user_from_group(user_id, group_id):
@@ -1292,7 +1314,7 @@ def remove_user_from_group(user_id, group_id):
 def get_system_info():
     """Get system information and health metrics."""
     try:
-        from src.database.connection import db
+        from src.database import connection
         from src.__version__ import __version__, __release_date__
         import os
         import sys
@@ -1301,23 +1323,29 @@ def get_system_info():
         stats = {}
 
         # Count users
-        result = db.execute_one("SELECT COUNT(*) as count FROM users")
+        result = connection.db.execute_one(
+            "SELECT COUNT(*) as count FROM users")
         stats["total_users"] = result["count"] if result else 0
 
         # Count profiles
-        result = db.execute_one("SELECT COUNT(*) as count FROM profile")
+        result = connection.db.execute_one(
+            "SELECT COUNT(*) as count FROM profile")
         stats["total_profiles"] = result["count"] if result else 0
 
         # Count scenarios
-        result = db.execute_one("SELECT COUNT(*) as count FROM scenarios")
+        result = connection.db.execute_one(
+            "SELECT COUNT(*) as count FROM scenarios")
         stats["total_scenarios"] = result["count"] if result else 0
 
         # Count audit logs
-        result = db.execute_one("SELECT COUNT(*) as count FROM enhanced_audit_log")
+        result = connection.db.execute_one(
+            "SELECT COUNT(*) as count FROM enhanced_audit_log")
         stats["total_audit_logs"] = result["count"] if result else 0
 
         # Database size
-        db_path = os.path.join(os.path.dirname(__file__), "../../data/planning.db")
+        db_path = os.path.join(
+            os.path.dirname(__file__),
+            "../../data/planning.db")
         if os.path.exists(db_path):
             stats["database_size_mb"] = round(
                 os.path.getsize(db_path) / (1024 * 1024), 2
@@ -1353,12 +1381,12 @@ def get_database_schema():
         return bool(re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", name))
 
     try:
-        from src.database.connection import db
+        from src.database import connection
 
         schema = {"tables": []}
 
         # Get all tables
-        tables_result = db.execute(
+        tables_result = connection.db.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
         )
 
@@ -1371,7 +1399,7 @@ def get_database_schema():
 
             # Get table info (columns)
             info_query = f"PRAGMA table_info({table_name})"
-            columns_result = db.execute(info_query)
+            columns_result = connection.db.execute(info_query)
             columns = []
 
             for col in columns_result:
@@ -1387,7 +1415,7 @@ def get_database_schema():
 
             # Get foreign keys
             fk_query = f"PRAGMA foreign_key_list({table_name})"
-            fk_result = db.execute(fk_query)
+            fk_result = connection.db.execute(fk_query)
             foreign_keys = []
 
             for fk in fk_result:
@@ -1405,7 +1433,7 @@ def get_database_schema():
 
             # Get indexes
             indexes_query = f"PRAGMA index_list({table_name})"
-            indexes_result = db.execute(indexes_query)
+            indexes_result = connection.db.execute(indexes_query)
             indexes = []
 
             for idx in indexes_result:
@@ -1414,7 +1442,7 @@ def get_database_schema():
                 if not validate_identifier(idx_name):
                     continue
                 idx_query = f"PRAGMA index_info({idx_name})"
-                idx_info = db.execute(idx_query)
+                idx_info = connection.db.execute(idx_query)
                 index_columns = [col["name"] for col in idx_info]
                 indexes.append(
                     {
@@ -1461,7 +1489,8 @@ def reset_demo_account():
         )
 
         if not os.path.exists(script_path):
-            return jsonify({"error": f"Seed script not found at {script_path}"}), 500
+            return jsonify(
+                {"error": f"Seed script not found at {script_path}"}), 500
 
         # Execute the script
         # Use the same python interpreter as the running app
@@ -1591,7 +1620,9 @@ def get_documentation(doc_name: str):
         # Get file path relative to project root
         file_name = allowed_docs[doc_name]
         file_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(__file__))), file_name
+            os.path.dirname(
+                os.path.dirname(
+                    os.path.dirname(__file__))), file_name
         )
 
         if not os.path.exists(file_path):
@@ -1615,7 +1646,8 @@ def get_documentation(doc_name: str):
                 download_name=file_name,
             )
         else:
-            return send_file(file_path, mimetype="text/plain", as_attachment=False)
+            return send_file(file_path, mimetype="text/plain",
+                             as_attachment=False)
 
     except Exception as e:
         print(f"Error serving documentation: {e}")
@@ -1628,10 +1660,10 @@ def get_documentation(doc_name: str):
 def get_smtp_config():
     """Get current SMTP configuration (super admin only)."""
     try:
-        from src.database.connection import db
+        from src.database import connection
         import json
 
-        row = db.execute_one(
+        row = connection.db.execute_one(
             "SELECT value FROM system_config WHERE key = ?", ("smtp_config",)
         )
 
@@ -1663,14 +1695,14 @@ def get_smtp_config():
 def update_smtp_config():
     """Update SMTP configuration (super admin only)."""
     try:
-        from src.database.connection import db
+        from src.database import connection
         import json
 
         # Validate input
         data = SmtpConfigSchema(**request.json)
 
         # Get existing config to handle password update
-        row = db.execute_one(
+        row = connection.db.execute_one(
             "SELECT value FROM system_config WHERE key = ?", ("smtp_config",)
         )
         existing_config = {}
@@ -1693,7 +1725,7 @@ def update_smtp_config():
         # Save to database
         config_json = json.dumps(new_config)
 
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             conn.execute(
                 """
                 INSERT OR REPLACE INTO system_config (key, value, updated_at, updated_by)
@@ -2182,7 +2214,8 @@ def get_backup_metadata(backup_type: str, filename: str):
 
                 return (
                     jsonify(
-                        {"metadata": metadata, "files": files, "file_count": len(files)}
+                        {"metadata": metadata, "files": files,
+                            "file_count": len(files)}
                     ),
                     200,
                 )
@@ -2221,6 +2254,10 @@ def restore_backup():
 
         if backup_type not in ["full", "data", "system"]:
             return jsonify({"error": "Invalid backup type"}), 400
+
+        # Validate filename to prevent path traversal
+        if not re.match(r'^[a-zA-Z0-9_\-\.]+$', filename) or '..' in filename:
+            return jsonify({"error": "Invalid filename"}), 400
 
         # Construct backup path
         project_root = Path(__file__).parent.parent.parent
@@ -2393,13 +2430,14 @@ def get_users_by_location_report():
         days = request.args.get("days", 30, type=int)
         days = min(max(days, 1), 365)  # Between 1 and 365 days
 
-        from src.database.connection import db
+        from src.database import connection
         from src.auth.models import User
 
         cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
 
         # Get all users with their access patterns by location
-        # Include all actions with geolocation data to get complete IP/location picture
+        # Include all actions with geolocation data to get complete IP/location
+        # picture
         query = """
             SELECT
                 l.user_id,
@@ -2418,7 +2456,7 @@ def get_users_by_location_report():
             ORDER BY l.user_id, access_count DESC
         """
 
-        rows = db.execute(query, (cutoff_date,))
+        rows = connection.db.execute(query, (cutoff_date,))
 
         # Organize data by user
         users_by_location = {}
@@ -2510,7 +2548,8 @@ def get_users_by_location_report():
                     }
                 )
 
-            # Check for rapid location changes (within 1 hour from different locations)
+            # Check for rapid location changes (within 1 hour from different
+            # locations)
             locations_sorted = sorted(
                 user_data["locations"], key=lambda x: x["last_access"]
             )
@@ -2631,7 +2670,10 @@ def get_user_activity_report():
 
         # Calculate date range if not provided
         if not start_date:
-            start_date = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+            start_date = (
+                datetime.now() -
+                timedelta(
+                    days=days)).strftime("%Y-%m-%d")
         if not end_date:
             end_date = datetime.now().strftime("%Y-%m-%d")
 
@@ -2678,7 +2720,7 @@ def get_user_activity_report():
             "ORDER BY total_actions DESC"
         )
 
-        user_activity_rows = db.execute(activity_query, params)
+        user_activity_rows = connection.db.execute(activity_query, params)
         users_activity = []
 
         for row in user_activity_rows:
@@ -2708,7 +2750,8 @@ def get_user_activity_report():
             if action_types:
                 top_actions_params.extend(action_types)
 
-            top_actions_rows = db.execute(top_actions_query, top_actions_params)
+            top_actions_rows = connection.db.execute(
+                top_actions_query, top_actions_params)
             user_data["top_actions"] = [
                 {"action": r["action"], "count": r["count"]} for r in top_actions_rows
             ]
@@ -2737,7 +2780,8 @@ def get_user_activity_report():
             if action_types:
                 top_tables_params.extend(action_types)
 
-            top_tables_rows = db.execute(top_tables_query, top_tables_params)
+            top_tables_rows = connection.db.execute(
+                top_tables_query, top_tables_params)
             user_data["top_tables"] = [
                 {"table": r["table_name"], "count": r["count"]} for r in top_tables_rows
             ]
@@ -2765,7 +2809,7 @@ def get_user_activity_report():
             if action_types:
                 daily_params.extend(action_types)
 
-            daily_rows = db.execute(daily_query, daily_params)
+            daily_rows = connection.db.execute(daily_query, daily_params)
             user_data["daily_activity"] = [
                 {"date": r["date"], "count": r["count"]} for r in daily_rows
             ]
@@ -2788,7 +2832,7 @@ def get_user_activity_report():
             "GROUP BY action "
             "ORDER BY count DESC"
         )
-        action_dist_rows = db.execute(action_dist_query, params)
+        action_dist_rows = connection.db.execute(action_dist_query, params)
         action_distribution = [
             {"action": r["action"], "count": r["count"]} for r in action_dist_rows
         ]
@@ -2887,7 +2931,8 @@ def process_password_reset(request_id):
             )  # 24 hours for admin assisted
 
             # Construct the link
-            base_url = current_app.config.get("APP_BASE_URL", "https://rps.pan2.app")
+            base_url = current_app.config.get(
+                "APP_BASE_URL", "https://rps.pan2.app")
             reset_link = f"{base_url}/account-recovery.html?token={token}"
 
             # Mark request as processed
@@ -2895,7 +2940,9 @@ def process_password_reset(request_id):
 
             enhanced_audit_logger.log_admin_action(
                 action="ADMIN_GENERATED_RESET_LINK",
-                details={"target_user": user.username, "request_id": request_id},
+                details={
+                    "target_user": user.username,
+                    "request_id": request_id},
                 user_id=current_user.id,
             )
 
@@ -2913,7 +2960,8 @@ def process_password_reset(request_id):
         elif action == "manual_reset":
             new_password = data.get("new_password")
             if not new_password or len(new_password) < 8:
-                return jsonify({"error": "Password must be at least 8 characters"}), 400
+                return jsonify(
+                    {"error": "Password must be at least 8 characters"}), 400
 
             # Force reset (Data loss warning should be handled by UI)
             dek_was_lost = user.force_password_reset(new_password)
@@ -2922,7 +2970,9 @@ def process_password_reset(request_id):
 
             enhanced_audit_logger.log_admin_action(
                 action="ADMIN_RESET_PASSWORD",
-                details={"target_user": user.username, "dek_lost": dek_was_lost},
+                details={
+                    "target_user": user.username,
+                    "dek_lost": dek_was_lost},
                 user_id=current_user.id,
             )
 
@@ -2951,12 +3001,12 @@ def process_password_reset(request_id):
 def get_users_backup_summary():
     """Get summary of users and their backup status for bulk management."""
     try:
-        from src.database.connection import db
+        from src.database import connection
 
         # Base query for users managed by this admin
         if current_user.is_super_admin:
             sql = """
-                SELECT u.id, u.username, u.email, 
+                SELECT u.id, u.username, u.email,
                        (SELECT COUNT(*) FROM profile WHERE user_id = u.id) as profile_count,
                        (SELECT COUNT(*) FROM user_backups WHERE user_id = u.id) as backup_count,
                        (SELECT MAX(created_at) FROM user_backups WHERE user_id = u.id) as last_backup
@@ -2979,7 +3029,7 @@ def get_users_backup_summary():
              """
             params = (current_user.id,)
 
-        rows = db.execute(sql, params)
+        rows = connection.db.execute(sql, params)
         users = [dict(row) for row in rows]
         return jsonify({"users": users}), 200
     except Exception as e:
@@ -2995,7 +3045,9 @@ def bulk_create_user_backups():
 
     data = request.json
     user_ids = data.get("user_ids", [])
-    label = data.get("label", f"Bulk Backup {datetime.now().strftime('%Y-%m-%d')}")
+    label = data.get(
+        "label", f"Bulk Backup {
+            datetime.now().strftime('%Y-%m-%d')}")
 
     results = []
     success_count = 0
@@ -3003,7 +3055,8 @@ def bulk_create_user_backups():
     for uid in user_ids:
         # Check permissions
         if not current_user.can_manage_user(uid):
-            results.append({"user_id": uid, "status": "error", "error": "Unauthorized"})
+            results.append(
+                {"user_id": uid, "status": "error", "error": "Unauthorized"})
             continue
 
         try:
@@ -3011,7 +3064,8 @@ def bulk_create_user_backups():
             results.append({"user_id": uid, "status": "success"})
             success_count += 1
         except Exception as e:
-            results.append({"user_id": uid, "status": "error", "error": str(e)})
+            results.append(
+                {"user_id": uid, "status": "error", "error": str(e)})
 
     enhanced_audit_logger.log_admin_action(
         action="BULK_CREATE_BACKUP",
@@ -3037,7 +3091,8 @@ def bulk_restore_user_backups():
 
     for uid in user_ids:
         if not current_user.can_manage_user(uid):
-            results.append({"user_id": uid, "status": "error", "error": "Unauthorized"})
+            results.append(
+                {"user_id": uid, "status": "error", "error": "Unauthorized"})
             continue
 
         try:
@@ -3045,7 +3100,8 @@ def bulk_restore_user_backups():
             backups = UserBackupService.list_backups(uid)
             if not backups:
                 results.append(
-                    {"user_id": uid, "status": "error", "error": "No backups found"}
+                    {"user_id": uid, "status": "error",
+                        "error": "No backups found"}
                 )
                 continue
 
@@ -3053,7 +3109,8 @@ def bulk_restore_user_backups():
 
             # Create safety backup
             try:
-                UserBackupService.create_backup(uid, f"Pre-restore Safety (Bulk Admin)")
+                UserBackupService.create_backup(
+                    uid, f"Pre-restore Safety (Bulk Admin)")
             except Exception as e:
                 print(f"Safety backup failed for user {uid}: {e}")
 
@@ -3069,7 +3126,8 @@ def bulk_restore_user_backups():
             success_count += 1
 
         except Exception as e:
-            results.append({"user_id": uid, "status": "error", "error": str(e)})
+            results.append(
+                {"user_id": uid, "status": "error", "error": str(e)})
 
     enhanced_audit_logger.log_admin_action(
         action="BULK_RESTORE_BACKUP",
@@ -3096,9 +3154,9 @@ def list_user_backups(user_id):
         # Check permissions
         if not current_user.is_super_admin:
             # Check if user is in a group managed by this admin
-            from src.database.connection import db
+            from src.database import connection
 
-            managed = db.execute_one(
+            managed = connection.db.execute_one(
                 """
                 SELECT 1 FROM user_groups ug
                 JOIN admin_groups ag ON ug.group_id = ag.group_id
@@ -3107,7 +3165,8 @@ def list_user_backups(user_id):
                 (current_user.id, user_id),
             )
             if not managed:
-                return jsonify({"error": "Unauthorized to manage this user"}), 403
+                return jsonify(
+                    {"error": "Unauthorized to manage this user"}), 403
 
         backups = UserBackupService.list_backups(user_id)
         return jsonify({"backups": backups}), 200
@@ -3125,9 +3184,9 @@ def create_user_backup(user_id):
     try:
         # Check permissions
         if not current_user.is_super_admin:
-            from src.database.connection import db
+            from src.database import connection
 
-            managed = db.execute_one(
+            managed = connection.db.execute_one(
                 """
                 SELECT 1 FROM user_groups ug
                 JOIN admin_groups ag ON ug.group_id = ag.group_id
@@ -3136,7 +3195,8 @@ def create_user_backup(user_id):
                 (current_user.id, user_id),
             )
             if not managed:
-                return jsonify({"error": "Unauthorized to manage this user"}), 403
+                return jsonify(
+                    {"error": "Unauthorized to manage this user"}), 403
 
         data = request.json or {}
         label = data.get("label", f"Admin Backup by {current_user.username}")
@@ -3169,9 +3229,9 @@ def restore_user_backup(user_id, backup_id):
     try:
         # Check permissions
         if not current_user.is_super_admin:
-            from src.database.connection import db
+            from src.database import connection
 
-            managed = db.execute_one(
+            managed = connection.db.execute_one(
                 """
                 SELECT 1 FROM user_groups ug
                 JOIN admin_groups ag ON ug.group_id = ag.group_id
@@ -3180,12 +3240,14 @@ def restore_user_backup(user_id, backup_id):
                 (current_user.id, user_id),
             )
             if not managed:
-                return jsonify({"error": "Unauthorized to manage this user"}), 403
+                return jsonify(
+                    {"error": "Unauthorized to manage this user"}), 403
 
         # Create safety backup first
         try:
             UserBackupService.create_backup(
-                user_id, f"Pre-restore Safety Backup (Admin: {current_user.username})"
+                user_id, f"Pre-restore Safety Backup (Admin: {
+                    current_user.username})"
             )
         except Exception as e:
             print(f"Admin safety backup failed: {e}")
@@ -3203,14 +3265,16 @@ def restore_user_backup(user_id, backup_id):
         )
 
         return (
-            jsonify({"message": "User data restored successfully", "details": result}),
+            jsonify(
+                {"message": "User data restored successfully", "details": result}),
             200,
         )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-@admin_bp.route("/users/<int:user_id>/backups/<int:backup_id>", methods=["DELETE"])
+@admin_bp.route("/users/<int:user_id>/backups/<int:backup_id>",
+                methods=["DELETE"])
 @login_required
 @admin_required
 def delete_user_backup(user_id, backup_id):
@@ -3220,9 +3284,9 @@ def delete_user_backup(user_id, backup_id):
     try:
         # Check permissions
         if not current_user.is_super_admin:
-            from src.database.connection import db
+            from src.database import connection
 
-            managed = db.execute_one(
+            managed = connection.db.execute_one(
                 """
                 SELECT 1 FROM user_groups ug
                 JOIN admin_groups ag ON ug.group_id = ag.group_id
@@ -3231,7 +3295,8 @@ def delete_user_backup(user_id, backup_id):
                 (current_user.id, user_id),
             )
             if not managed:
-                return jsonify({"error": "Unauthorized to manage this user"}), 403
+                return jsonify(
+                    {"error": "Unauthorized to manage this user"}), 403
 
         UserBackupService.delete_backup(user_id, backup_id)
 
@@ -3328,7 +3393,8 @@ def create_selective_backup():
         label = data.get("label")
 
         if not profile_ids and not group_ids:
-            return jsonify({"error": "Must specify profile_ids or group_ids"}), 400
+            return jsonify(
+                {"error": "Must specify profile_ids or group_ids"}), 400
 
         result = SelectiveBackupService.create_backup(
             profile_ids=profile_ids,
@@ -3475,7 +3541,8 @@ def delete_selective_backup(filename: str):
             user_id=current_user.id,
         )
 
-        return jsonify({"success": True, "message": "Backup deleted successfully"}), 200
+        return jsonify(
+            {"success": True, "message": "Backup deleted successfully"}), 200
 
     except FileNotFoundError:
         return jsonify({"error": "Backup not found"}), 404

@@ -10,7 +10,7 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Optional
-from src.database.connection import db
+from src.database import connection
 from src.auth.models import User
 
 
@@ -53,26 +53,26 @@ class UserBackupService:
         }
 
         # Fetch profiles
-        profiles = db.execute("SELECT * FROM profile WHERE user_id = ?", (user_id,))
+        profiles = connection.db.execute("SELECT * FROM profile WHERE user_id = ?", (user_id,))
         profile_map = {}  # Maps old ID to new ID during restore, not used here
         for p in profiles:
             p_dict = dict(p)
             backup_data["profiles"].append(p_dict)
 
         # Fetch scenarios
-        scenarios = db.execute("SELECT * FROM scenarios WHERE user_id = ?", (user_id,))
+        scenarios = connection.db.execute("SELECT * FROM scenarios WHERE user_id = ?", (user_id,))
         for s in scenarios:
             backup_data["scenarios"].append(dict(s))
 
         # Fetch action items
-        action_items = db.execute(
+        action_items = connection.db.execute(
             "SELECT * FROM action_items WHERE user_id = ?", (user_id,)
         )
         for ai in action_items:
             backup_data["action_items"].append(dict(ai))
 
         # Fetch conversations
-        conversations = db.execute(
+        conversations = connection.db.execute(
             "SELECT * FROM conversations WHERE user_id = ?", (user_id,)
         )
         for c in conversations:
@@ -96,7 +96,7 @@ class UserBackupService:
 
         # Record in database
         size_bytes = backup_path.stat().st_size
-        db.execute(
+        connection.db.execute(
             """
             INSERT INTO user_backups (user_id, filename, label, size_bytes)
             VALUES (?, ?, ?, ?)
@@ -113,7 +113,7 @@ class UserBackupService:
     @staticmethod
     def list_backups(user_id: int) -> List[Dict[str, Any]]:
         """List all backups for a user."""
-        rows = db.execute(
+        rows = connection.db.execute(
             """
             SELECT * FROM user_backups 
             WHERE user_id = ? 
@@ -126,7 +126,7 @@ class UserBackupService:
     @staticmethod
     def delete_backup(user_id: int, backup_id: int):
         """Delete a backup."""
-        row = db.execute_one(
+        row = connection.db.execute_one(
             "SELECT * FROM user_backups WHERE id = ? AND user_id = ?",
             (backup_id, user_id),
         )
@@ -141,7 +141,7 @@ class UserBackupService:
             backup_path.unlink()
 
         # Delete from DB
-        db.execute("DELETE FROM user_backups WHERE id = ?", (backup_id,))
+        connection.db.execute("DELETE FROM user_backups WHERE id = ?", (backup_id,))
 
     @staticmethod
     def restore_backup(user_id: int, backup_id: int) -> Dict[str, Any]:
@@ -149,7 +149,7 @@ class UserBackupService:
         Restore data from a backup.
         WARNING: This replaces current user data.
         """
-        row = db.execute_one(
+        row = connection.db.execute_one(
             "SELECT * FROM user_backups WHERE id = ? AND user_id = ?",
             (backup_id, user_id),
         )
@@ -166,7 +166,7 @@ class UserBackupService:
             backup_data = json.load(f)
 
         # Start transaction
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
 
             # 1. Clear existing data

@@ -1,7 +1,7 @@
 """Group model for user management."""
 
 from datetime import datetime
-from src.database.connection import db
+from src.database import connection
 
 
 class Group:
@@ -17,7 +17,7 @@ class Group:
     @staticmethod
     def get_by_id(group_id: int):
         """Get group by ID."""
-        row = db.execute_one("SELECT * FROM groups WHERE id = ?", (group_id,))
+        row = connection.db.execute_one("SELECT * FROM groups WHERE id = ?", (group_id,))
         if row:
             return Group(**dict(row))
         return None
@@ -25,12 +25,12 @@ class Group:
     @staticmethod
     def get_all():
         """Get all groups."""
-        rows = db.execute("SELECT * FROM groups ORDER BY name ASC")
+        rows = connection.db.execute("SELECT * FROM groups ORDER BY name ASC")
         return [Group(**dict(row)) for row in rows]
 
     def save(self):
         """Save or update group."""
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
             if self.id is None:
                 cursor.execute(
@@ -49,14 +49,14 @@ class Group:
     def delete(self):
         """Delete group."""
         if self.id:
-            with db.get_connection() as conn:
+            with connection.db.get_connection() as conn:
                 conn.execute("DELETE FROM groups WHERE id = ?", (self.id,))
 
     def get_members(self):
         """Get all users in this group."""
         from src.auth.models import User
 
-        rows = db.execute(
+        rows = connection.db.execute(
             """
             SELECT u.* FROM users u
             JOIN user_groups ug ON u.id = ug.user_id
@@ -68,7 +68,7 @@ class Group:
 
     def add_member(self, user_id: int):
         """Add a user to this group."""
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             conn.execute(
                 "INSERT OR IGNORE INTO user_groups (user_id, group_id) VALUES (?, ?)",
                 (user_id, self.id),
@@ -76,7 +76,7 @@ class Group:
 
     def remove_member(self, user_id: int):
         """Remove a user from this group."""
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             conn.execute(
                 "DELETE FROM user_groups WHERE user_id = ? AND group_id = ?",
                 (user_id, self.id),

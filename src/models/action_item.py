@@ -2,7 +2,7 @@
 
 from datetime import datetime
 import json
-from src.database.connection import db
+from src.database import connection
 from src.services.encryption_service import (
     encrypt_dict,
     decrypt_dict,
@@ -51,7 +51,7 @@ class ActionItem:
     @staticmethod
     def get_by_id(item_id: int, user_id: int):
         """Get action item by ID (with ownership check)."""
-        row = db.execute_one(
+        row = connection.db.execute_one(
             "SELECT * FROM action_items WHERE id = ? AND user_id = ?",
             (item_id, user_id),
         )
@@ -63,14 +63,14 @@ class ActionItem:
     def list_by_user(user_id: int, profile_id: int = None):
         """List action items for a user, optionally filtered by profile."""
         if profile_id:
-            rows = db.execute(
+            rows = connection.db.execute(
                 """SELECT * FROM action_items 
                    WHERE user_id = ? AND profile_id = ? 
                    ORDER BY status, priority, due_date""",
                 (user_id, profile_id),
             )
         else:
-            rows = db.execute(
+            rows = connection.db.execute(
                 "SELECT * FROM action_items WHERE user_id = ? ORDER BY status, priority, due_date",
                 (user_id,),
             )
@@ -78,7 +78,7 @@ class ActionItem:
 
     def save(self):
         """Save or update action item (encrypts data)."""
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
 
             # Encrypt action_data if needed
@@ -148,7 +148,7 @@ class ActionItem:
     def delete(self):
         """Delete action item."""
         if self.id:
-            with db.get_connection() as conn:
+            with connection.db.get_connection() as conn:
                 conn.execute(
                     "DELETE FROM action_items WHERE id = ? AND user_id = ?",
                     (self.id, self.user_id),

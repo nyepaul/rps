@@ -92,9 +92,20 @@
             <button type="submit" id="resetPasswordBtn">Reset Password</button>
         </form>
 
+        <!-- Resend Verification Form -->
+        <form id="resendVerificationForm" class="hidden">
+            <div class="form-group">
+                <label for="resendEmail">Email Address</label>
+                <input type="email" id="resendEmail" required autocomplete="email">
+                <small>Enter the email address used during registration</small>
+            </div>
+            <button type="submit" id="resendBtn">Send Verification Link</button>
+        </form>
+
         <div class="toggle-form">
             <span id="toggleText">Don't have an account? </span>
             <a href="#" id="toggleLink">Register</a>
+            <span id="resendLinkContainer"> | <a href="#" id="resendToggle">Resend Verification?</a></span>
             <span id="backToLoginLink" class="hidden"> | <a href="#" id="backToLogin">Back to Login</a></span>
         </div>
     </div>

@@ -165,6 +165,7 @@ class AnalysisRequestSchema(BaseModel):
 @login_required
 def run_analysis():
     """Run Monte Carlo analysis for a profile."""
+    data = {}
     try:
         data = AnalysisRequestSchema(**request.json)
     except Exception as e:
@@ -523,6 +524,7 @@ def run_analysis():
 @login_required
 def get_cashflow_details():
     """Run a detailed deterministic projection for cashflow visualization."""
+    data = {}
     try:
         data = AnalysisRequestSchema(**request.json)
     except Exception as e:
@@ -762,6 +764,7 @@ def get_cashflow_details():
 @login_required
 def analyze_social_security():
     """Analyze optimal Social Security claiming age."""
+    profile_name = None
     try:
         profile_name = request.json.get("profile_name")
         if not profile_name:
@@ -857,6 +860,7 @@ def analyze_social_security():
 @login_required
 def analyze_roth_conversion():
     """Analyze Roth conversion strategies."""
+    profile_name = None
     try:
         profile_name = request.json.get("profile_name")
         conversion_amount = request.json.get("conversion_amount", 50000)
@@ -957,6 +961,7 @@ def analyze_roth_conversion():
 @login_required
 def analyze_rebalancing():
     """Analyze current allocation and suggest rebalancing."""
+    profile_name = None
     try:
         profile_name = request.json.get("profile_name")
         target_allocation = request.json.get(

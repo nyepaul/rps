@@ -8,7 +8,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Optional
-from src.database.connection import db
+from src.database import connection
 from src.auth.models import User
 from src.models.group import Group
 
@@ -19,6 +19,9 @@ class SelectiveBackupService:
     @staticmethod
     def get_backup_dir() -> Path:
         """Get the directory where selective backups are stored."""
+        if os.environ.get("TEST_BACKUP_DIR"):
+            return Path(os.environ.get("TEST_BACKUP_DIR"))
+            
         project_root = Path(__file__).parent.parent.parent
         backup_dir = project_root / "backups" / "selective"
         backup_dir.mkdir(parents=True, exist_ok=True)
@@ -31,7 +34,7 @@ class SelectiveBackupService:
         Returns a list of profiles with associated user and group data.
         """
         # Get profiles with user info
-        rows = db.execute("""
+        rows = connection.db.execute("""
             SELECT
                 p.id, p.name, p.user_id, p.birth_date, p.retirement_date,
                 p.updated_at, p.created_at,
@@ -45,7 +48,7 @@ class SelectiveBackupService:
         for row in rows:
             profile = dict(row)
             # Get groups for this user
-            groups = db.execute(
+            groups = connection.db.execute(
                 """
                 SELECT g.id, g.name
                 FROM groups g
@@ -64,7 +67,7 @@ class SelectiveBackupService:
         """
         Get all groups with member and profile counts for selection UI.
         """
-        rows = db.execute("""
+        rows = connection.db.execute("""
             SELECT
                 g.id, g.name, g.description,
                 (SELECT COUNT(DISTINCT ug.user_id) FROM user_groups ug WHERE ug.group_id = g.id) as member_count,
@@ -101,7 +104,7 @@ class SelectiveBackupService:
         # Add profiles from specified groups
         if group_ids:
             for group_id in group_ids:
-                group_profiles = db.execute(
+                group_profiles = connection.db.execute(
                     """
                     SELECT DISTINCT p.id
                     FROM profile p
@@ -139,7 +142,7 @@ class SelectiveBackupService:
 
         # Fetch profiles with all data
         for profile_id in all_profile_ids:
-            profile = db.execute_one(
+            profile = connection.db.execute_one(
                 "SELECT * FROM profile WHERE id = ?", (profile_id,)
             )
             if profile:
@@ -149,7 +152,7 @@ class SelectiveBackupService:
 
         # Fetch user info
         for user_id in user_ids:
-            user = db.execute_one(
+            user = connection.db.execute_one(
                 "SELECT id, username, email FROM users WHERE id = ?", (user_id,)
             )
             if user:
@@ -157,7 +160,7 @@ class SelectiveBackupService:
 
         # Fetch related scenarios
         for profile_id in all_profile_ids:
-            scenarios = db.execute(
+            scenarios = connection.db.execute(
                 "SELECT * FROM scenarios WHERE profile_id = ?", (profile_id,)
             )
             for s in scenarios:
@@ -165,7 +168,7 @@ class SelectiveBackupService:
 
         # Fetch related action items
         for profile_id in all_profile_ids:
-            action_items = db.execute(
+            action_items = connection.db.execute(
                 "SELECT * FROM action_items WHERE profile_id = ?", (profile_id,)
             )
             for ai in action_items:
@@ -173,7 +176,7 @@ class SelectiveBackupService:
 
         # Fetch related conversations
         for profile_id in all_profile_ids:
-            conversations = db.execute(
+            conversations = connection.db.execute(
                 "SELECT * FROM conversations WHERE profile_id = ?", (profile_id,)
             )
             for c in conversations:
@@ -323,7 +326,7 @@ class SelectiveBackupService:
             "errors": [],
         }
 
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
 
             for profile in profiles_to_restore:

@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Optional
 import json
-from src.database.connection import db
+from src.database import connection
 from src.services.encryption_service import encrypt_dict, decrypt_dict
 from src.database.audit_logger import log_create, log_update, log_delete, log_read
 
@@ -86,7 +86,7 @@ class Profile:
     @staticmethod
     def get_by_id(profile_id: int, user_id: int):
         """Get profile by ID (with ownership check)."""
-        row = db.execute_one(
+        row = connection.db.execute_one(
             "SELECT * FROM profile WHERE id = ? AND user_id = ?", (profile_id, user_id)
         )
         if row:
@@ -96,7 +96,7 @@ class Profile:
     @staticmethod
     def get_by_name(name: str, user_id: int):
         """Get profile by name (with ownership check)."""
-        row = db.execute_one(
+        row = connection.db.execute_one(
             "SELECT * FROM profile WHERE name = ? AND user_id = ?", (name, user_id)
         )
         if row:
@@ -106,7 +106,7 @@ class Profile:
     @staticmethod
     def list_by_user(user_id: int):
         """List all profiles for a user."""
-        rows = db.execute(
+        rows = connection.db.execute(
             "SELECT * FROM profile WHERE user_id = ? ORDER BY updated_at DESC",
             (user_id,),
         )
@@ -120,14 +120,14 @@ class Profile:
         """Check if this profile belongs to the demo user."""
         if not self.user_id:
             return False
-        row = db.execute_one("SELECT username FROM users WHERE id = ?", (self.user_id,))
+        row = connection.db.execute_one("SELECT username FROM users WHERE id = ?", (self.user_id,))
         return row and row["username"].lower() == "demo"
 
     def save(self):
         """Save or update profile (encrypts data and logs action)."""
         is_new = self.id is None
 
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
 
             # Demo user: store data as plain JSON (no encryption)
@@ -206,7 +206,7 @@ class Profile:
             log_delete(
                 "profile", self.id, self.user_id, f"Deleted profile: {self.name}"
             )
-            with db.get_connection() as conn:
+            with connection.db.get_connection() as conn:
                 conn.execute(
                     "DELETE FROM profile WHERE id = ? AND user_id = ?",
                     (self.id, self.user_id),

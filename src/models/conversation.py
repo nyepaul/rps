@@ -1,7 +1,7 @@
 """Conversation model with user and profile ownership and encryption."""
 
 from datetime import datetime
-from src.database.connection import db
+from src.database import connection
 from src.services.encryption_service import encrypt, decrypt
 
 
@@ -30,7 +30,7 @@ class Conversation:
     @staticmethod
     def get_by_id(conversation_id: int, user_id: int):
         """Get conversation by ID (with ownership check)."""
-        row = db.execute_one(
+        row = connection.db.execute_one(
             "SELECT * FROM conversations WHERE id = ? AND user_id = ?",
             (conversation_id, user_id),
         )
@@ -41,7 +41,7 @@ class Conversation:
     @staticmethod
     def list_by_profile(user_id: int, profile_id: int):
         """List conversation history for a profile."""
-        rows = db.execute(
+        rows = connection.db.execute(
             """SELECT * FROM conversations
                WHERE user_id = ? AND profile_id = ?
                ORDER BY created_at ASC""",
@@ -52,7 +52,7 @@ class Conversation:
     @staticmethod
     def list_by_user(user_id: int):
         """List all conversations for a user."""
-        rows = db.execute(
+        rows = connection.db.execute(
             "SELECT * FROM conversations WHERE user_id = ? ORDER BY created_at DESC",
             (user_id,),
         )
@@ -60,7 +60,7 @@ class Conversation:
 
     def save(self):
         """Save conversation message (encrypts content)."""
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
 
             # Encrypt content if needed
@@ -101,7 +101,7 @@ class Conversation:
     def delete(self):
         """Delete conversation message."""
         if self.id:
-            with db.get_connection() as conn:
+            with connection.db.get_connection() as conn:
                 conn.execute(
                     "DELETE FROM conversations WHERE id = ? AND user_id = ?",
                     (self.id, self.user_id),
@@ -110,7 +110,7 @@ class Conversation:
     @staticmethod
     def delete_by_profile(user_id: int, profile_id: int):
         """Delete all conversations for a profile (with ownership check)."""
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             conn.execute(
                 "DELETE FROM conversations WHERE user_id = ? AND profile_id = ?",
                 (user_id, profile_id),

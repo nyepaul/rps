@@ -13,7 +13,7 @@ from src.services.transaction_analyzer import (
     calculate_confidence,
     auto_categorize_expense,
     reconcile_income,
-    normalize_to_monthly
+    normalize_to_monthly,
 )
 
 
@@ -109,7 +109,7 @@ class TestSanitizeTransaction:
             date=date(2024, 1, 15),
             description="DEBIT CARD PURCHASE 1234567890 STORE NAME",
             amount=100.00,
-            original_description="DEBIT CARD PURCHASE 1234567890 STORE NAME"
+            original_description="DEBIT CARD PURCHASE 1234567890 STORE NAME",
         )
 
         sanitized = sanitize_transaction(txn)
@@ -123,13 +123,16 @@ class TestSanitizeTransaction:
             date=date(2024, 1, 15),
             description="AMAZON.COM*AB12CD34",
             amount=50.00,
-            original_description="AMAZON.COM*AB12CD34"
+            original_description="AMAZON.COM*AB12CD34",
         )
 
         sanitized = sanitize_transaction(txn)
 
         assert "*AB12CD34" not in sanitized.description
-        assert "AMAZON" in sanitized.description.upper() or "COM" in sanitized.description.upper()
+        assert (
+            "AMAZON" in sanitized.description.upper()
+            or "COM" in sanitized.description.upper()
+        )
 
     def test_remove_common_prefixes(self):
         """Test removal of common prefixes."""
@@ -137,13 +140,16 @@ class TestSanitizeTransaction:
             date=date(2024, 1, 15),
             description="DEBIT CARD PURCHASE TARGET STORE",
             amount=75.00,
-            original_description="DEBIT CARD PURCHASE TARGET STORE"
+            original_description="DEBIT CARD PURCHASE TARGET STORE",
         )
 
         sanitized = sanitize_transaction(txn)
 
         assert "DEBIT CARD PURCHASE" not in sanitized.description
-        assert "TARGET" in sanitized.description.upper() or "STORE" in sanitized.description.upper()
+        assert (
+            "TARGET" in sanitized.description.upper()
+            or "STORE" in sanitized.description.upper()
+        )
 
     def test_normalize_merchant_names(self):
         """Test normalization of merchant names with long tracking codes."""
@@ -151,7 +157,7 @@ class TestSanitizeTransaction:
             date=date(2024, 1, 15),
             description="NETFLIX 12345678901",  # 11 digits should be removed
             amount=16.99,
-            original_description="NETFLIX 12345678901"
+            original_description="NETFLIX 12345678901",
         )
 
         sanitized = sanitize_transaction(txn)
@@ -175,7 +181,7 @@ class TestDetectIncomePatterns:
         patterns = detect_income_patterns(transactions)
 
         assert len(patterns) > 0
-        assert patterns[0].frequency == 'biweekly'
+        assert patterns[0].frequency == "biweekly"
         assert patterns[0].amount == 2500.00
         assert patterns[0].confidence > 0.7
 
@@ -190,7 +196,7 @@ class TestDetectIncomePatterns:
         patterns = detect_income_patterns(transactions)
 
         assert len(patterns) > 0
-        assert patterns[0].frequency == 'monthly'
+        assert patterns[0].frequency == "monthly"
         assert patterns[0].amount == 2000.00
 
     def test_ignore_irregular_income(self):
@@ -204,7 +210,7 @@ class TestDetectIncomePatterns:
 
         # Should still detect but with irregular frequency
         if patterns:
-            assert patterns[0].frequency == 'irregular'
+            assert patterns[0].frequency == "irregular"
 
 
 class TestDetectExpensePatterns:
@@ -220,10 +226,10 @@ class TestDetectExpensePatterns:
 
         patterns = detect_expense_patterns(transactions)
 
-        assert 'housing' in patterns
-        assert len(patterns['housing']) > 0
-        assert patterns['housing'][0].amount == 2000.00
-        assert patterns['housing'][0].frequency == 'monthly'
+        assert "housing" in patterns
+        assert len(patterns["housing"]) > 0
+        assert patterns["housing"][0].amount == 2000.00
+        assert patterns["housing"][0].frequency == "monthly"
 
     def test_detect_subscription(self):
         """Test detection of subscription service."""
@@ -235,9 +241,9 @@ class TestDetectExpensePatterns:
 
         patterns = detect_expense_patterns(transactions)
 
-        assert 'entertainment' in patterns
-        assert patterns['entertainment'][0].amount == 16.99
-        assert patterns['entertainment'][0].frequency == 'monthly'
+        assert "entertainment" in patterns
+        assert patterns["entertainment"][0].amount == 16.99
+        assert patterns["entertainment"][0].frequency == "monthly"
 
 
 class TestDetectFrequency:
@@ -252,7 +258,7 @@ class TestDetectFrequency:
             date(2024, 1, 22),
         ]
 
-        assert detect_frequency(dates) == 'weekly'
+        assert detect_frequency(dates) == "weekly"
 
     def test_detect_biweekly(self):
         """Test biweekly frequency detection."""
@@ -263,7 +269,7 @@ class TestDetectFrequency:
             date(2024, 2, 12),
         ]
 
-        assert detect_frequency(dates) == 'biweekly'
+        assert detect_frequency(dates) == "biweekly"
 
     def test_detect_monthly(self):
         """Test monthly frequency detection."""
@@ -273,7 +279,7 @@ class TestDetectFrequency:
             date(2024, 3, 1),
         ]
 
-        assert detect_frequency(dates) == 'monthly'
+        assert detect_frequency(dates) == "monthly"
 
     def test_detect_irregular(self):
         """Test irregular frequency detection."""
@@ -283,7 +289,7 @@ class TestDetectFrequency:
             date(2024, 2, 25),
         ]
 
-        assert detect_frequency(dates) == 'irregular'
+        assert detect_frequency(dates) == "irregular"
 
 
 class TestExtractCommonName:
@@ -302,7 +308,7 @@ class TestExtractCommonName:
         descriptions = [
             "PAYROLL ACME CORP 123",
             "PAYROLL ACME CORP 456",
-            "PAYROLL ACME CORP 789"
+            "PAYROLL ACME CORP 789",
         ]
 
         name = extract_common_name(descriptions)
@@ -326,7 +332,7 @@ class TestCalculateConfidence:
         amounts = [2500.00, 2500.00, 2500.00, 2500.00]
         dates = [date(2024, i, 1) for i in range(1, 5)]
 
-        confidence = calculate_confidence(amounts, dates, 'monthly')
+        confidence = calculate_confidence(amounts, dates, "monthly")
 
         assert confidence > 0.8
 
@@ -335,7 +341,7 @@ class TestCalculateConfidence:
         amounts = [2500.00, 2600.00, 2400.00, 2550.00]
         dates = [date(2024, i, 1) for i in range(1, 5)]
 
-        confidence = calculate_confidence(amounts, dates, 'monthly')
+        confidence = calculate_confidence(amounts, dates, "monthly")
 
         assert confidence < 0.9  # Should be lower due to variance
 
@@ -346,8 +352,8 @@ class TestCalculateConfidence:
         dates_few = [date(2024, 1, 1), date(2024, 2, 1)]
         dates_many = [date(2024, i, 1) for i in range(1, 13)]
 
-        confidence_few = calculate_confidence(amounts_few, dates_few, 'monthly')
-        confidence_many = calculate_confidence(amounts_many, dates_many, 'monthly')
+        confidence_few = calculate_confidence(amounts_few, dates_few, "monthly")
+        confidence_many = calculate_confidence(amounts_many, dates_many, "monthly")
 
         assert confidence_many > confidence_few
 
@@ -357,27 +363,35 @@ class TestAutoCategorizeExpense:
 
     def test_categorize_housing(self):
         """Test housing categorization."""
-        assert auto_categorize_expense("Rent Payment", ["RENT PAYMENT"]) == 'housing'
-        assert auto_categorize_expense("Mortgage", ["MORTGAGE PAYMENT"]) == 'housing'
+        assert auto_categorize_expense("Rent Payment", ["RENT PAYMENT"]) == "housing"
+        assert auto_categorize_expense("Mortgage", ["MORTGAGE PAYMENT"]) == "housing"
 
     def test_categorize_utilities(self):
         """Test utilities categorization."""
-        assert auto_categorize_expense("Electric Company", ["ELECTRIC BILL"]) == 'utilities'
-        assert auto_categorize_expense("Internet", ["INTERNET SERVICE"]) == 'utilities'
+        assert (
+            auto_categorize_expense("Electric Company", ["ELECTRIC BILL"])
+            == "utilities"
+        )
+        assert auto_categorize_expense("Internet", ["INTERNET SERVICE"]) == "utilities"
 
     def test_categorize_food(self):
         """Test food categorization."""
-        assert auto_categorize_expense("Whole Foods", ["WHOLE FOODS MARKET"]) == 'food'
-        assert auto_categorize_expense("Restaurant", ["RESTAURANT ABC"]) == 'food'
+        assert auto_categorize_expense("Whole Foods", ["WHOLE FOODS MARKET"]) == "food"
+        assert auto_categorize_expense("Restaurant", ["RESTAURANT ABC"]) == "food"
 
     def test_categorize_entertainment(self):
         """Test entertainment categorization."""
-        assert auto_categorize_expense("Netflix", ["NETFLIX.COM"]) == 'entertainment'
-        assert auto_categorize_expense("Spotify", ["SPOTIFY PREMIUM"]) == 'entertainment'
+        assert auto_categorize_expense("Netflix", ["NETFLIX.COM"]) == "entertainment"
+        assert (
+            auto_categorize_expense("Spotify", ["SPOTIFY PREMIUM"]) == "entertainment"
+        )
 
     def test_default_to_other(self):
         """Test default categorization to 'other'."""
-        assert auto_categorize_expense("Random Merchant XYZ", ["RANDOM XYZ"]) in ['other', 'shopping']
+        assert auto_categorize_expense("Random Merchant XYZ", ["RANDOM XYZ"]) in [
+            "other",
+            "shopping",
+        ]
 
 
 class TestReconcileIncome:
@@ -387,63 +401,59 @@ class TestReconcileIncome:
         """Test matching with exact amounts."""
         from src.services.transaction_analyzer import DetectedIncomeStream
 
-        specified = [
-            {'name': 'Salary', 'amount': 2500.00, 'frequency': 'monthly'}
-        ]
+        specified = [{"name": "Salary", "amount": 2500.00, "frequency": "monthly"}]
 
         detected = [
             DetectedIncomeStream(
-                name='Payroll',
+                name="Payroll",
                 amount=2500.00,
-                frequency='monthly',
+                frequency="monthly",
                 confidence=0.95,
                 variance=0.0,
                 transaction_count=12,
-                first_seen='2024-01-01',
-                last_seen='2024-12-01',
-                sample_descriptions=['Payroll']
+                first_seen="2024-01-01",
+                last_seen="2024-12-01",
+                sample_descriptions=["Payroll"],
             )
         ]
 
         result = reconcile_income(specified, detected)
 
         assert len(result.matches) == 1
-        assert result.matches[0].match_type == 'match'
+        assert result.matches[0].match_type == "match"
         assert result.matches[0].variance_percent < 5
 
     def test_detect_new_income(self):
         """Test detection of new income not in manual list."""
         from src.services.transaction_analyzer import DetectedIncomeStream
 
-        specified = [
-            {'name': 'Salary', 'amount': 2500.00, 'frequency': 'monthly'}
-        ]
+        specified = [{"name": "Salary", "amount": 2500.00, "frequency": "monthly"}]
 
         detected = [
             DetectedIncomeStream(
-                name='Freelance Income',  # Changed to avoid semantic matching with 'rental'
+                name="Freelance Income",  # Changed to avoid semantic matching with 'rental'
                 amount=1500.00,
-                frequency='monthly',
+                frequency="monthly",
                 confidence=0.90,
                 variance=0.0,
                 transaction_count=12,
-                first_seen='2024-01-01',
-                last_seen='2024-12-01',
-                sample_descriptions=['Freelance']
+                first_seen="2024-01-01",
+                last_seen="2024-12-01",
+                sample_descriptions=["Freelance"],
             )
         ]
 
         result = reconcile_income(specified, detected)
 
         assert len(result.new_detected) == 1
-        assert result.new_detected[0].name == 'Freelance Income'
+        assert result.new_detected[0].name == "Freelance Income"
 
     def test_detect_manual_only(self):
         """Test detection of manual entries not found in CSV."""
         from src.services.transaction_analyzer import DetectedIncomeStream
 
         specified = [
-            {'name': 'Expected Bonus', 'amount': 5000.00, 'frequency': 'annual'}
+            {"name": "Expected Bonus", "amount": 5000.00, "frequency": "annual"}
         ]
 
         detected = []
@@ -451,7 +461,7 @@ class TestReconcileIncome:
         result = reconcile_income(specified, detected)
 
         assert len(result.manual_only) == 1
-        assert result.manual_only[0]['name'] == 'Expected Bonus'
+        assert result.manual_only[0]["name"] == "Expected Bonus"
 
 
 class TestNormalizeToMonthly:
@@ -459,23 +469,23 @@ class TestNormalizeToMonthly:
 
     def test_weekly_to_monthly(self):
         """Test weekly to monthly conversion."""
-        result = normalize_to_monthly(100.00, 'weekly')
+        result = normalize_to_monthly(100.00, "weekly")
         expected = 100.00 * (52 / 12)  # ~433.33
         assert abs(result - expected) < 0.01
 
     def test_biweekly_to_monthly(self):
         """Test biweekly to monthly conversion."""
-        result = normalize_to_monthly(1000.00, 'biweekly')
+        result = normalize_to_monthly(1000.00, "biweekly")
         expected = 1000.00 * (26 / 12)  # ~2166.67
         assert abs(result - expected) < 0.01
 
     def test_monthly_unchanged(self):
         """Test monthly stays the same."""
-        result = normalize_to_monthly(2500.00, 'monthly')
+        result = normalize_to_monthly(2500.00, "monthly")
         assert result == 2500.00
 
     def test_quarterly_to_monthly(self):
         """Test quarterly to monthly conversion."""
-        result = normalize_to_monthly(3000.00, 'quarterly')
+        result = normalize_to_monthly(3000.00, "quarterly")
         expected = 3000.00 / 3  # 1000.00
         assert result == expected

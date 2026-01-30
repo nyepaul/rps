@@ -8,9 +8,10 @@ import sys
 import os
 
 # Add project root to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.services.encryption_service import get_encryption_service
+
 
 def test_encryption_service():
     """Test the encryption service with API key-like data."""
@@ -24,14 +25,11 @@ def test_encryption_service():
 
     # Test data simulating API keys
     test_data = {
-        'api_keys': {
-            'claude_api_key': 'REDACTED_ANTH_test-key-1234567890',
-            'gemini_api_key': 'REDACTED_GAPI_Test1234567890'
+        "api_keys": {
+            "claude_api_key": "REDACTED_ANTH_test-key-1234567890",
+            "gemini_api_key": "REDACTED_GAPI_Test1234567890",
         },
-        'other_data': {
-            'name': 'Test Profile',
-            'created_at': '2025-01-15'
-        }
+        "other_data": {"name": "Test Profile", "created_at": "2025-01-15"},
     }
 
     print(f"\nOriginal data: {test_data}")
@@ -66,8 +64,8 @@ def test_encryption_service():
         return False
 
     # Test API key masking
-    claude_key = test_data['api_keys']['claude_api_key']
-    masked_key = '••••••••' + claude_key[-4:]
+    claude_key = test_data["api_keys"]["claude_api_key"]
+    masked_key = "••••••••" + claude_key[-4:]
     print(f"\n✓ API key masking works")
     print(f"  Original: {claude_key}")
     print(f"  Masked:   {masked_key}")
@@ -89,8 +87,8 @@ def test_api_key_validation():
     # Test valid keys
     try:
         valid_data = APIKeySchema(
-            claude_api_key='REDACTED_ANTH_api03-test1234567890',
-            gemini_api_key='REDACTED_GAPI_Test1234567890'
+            claude_api_key="REDACTED_ANTH_api03-test1234567890",
+            gemini_api_key="REDACTED_GAPI_Test1234567890",
         )
         print(f"\n✓ Valid API keys accepted")
         print(f"  Claude key: {valid_data.claude_api_key[:15]}...")
@@ -101,9 +99,7 @@ def test_api_key_validation():
 
     # Test too short key
     try:
-        invalid_data = APIKeySchema(
-            claude_api_key='short'
-        )
+        invalid_data = APIKeySchema(claude_api_key="short")
         print(f"\n✗ Validation should have rejected short key")
         return False
     except ValidationError:
@@ -111,9 +107,7 @@ def test_api_key_validation():
 
     # Test optional keys
     try:
-        partial_data = APIKeySchema(
-            claude_api_key='REDACTED_ANTH_api03-test1234567890'
-        )
+        partial_data = APIKeySchema(claude_api_key="REDACTED_ANTH_api03-test1234567890")
         print(f"✓ Optional keys work correctly (only Claude key provided)")
     except ValidationError as e:
         print(f"\n✗ Optional key validation failed: {e}")
@@ -131,18 +125,12 @@ def test_profile_integration():
     # This is a conceptual test showing how API keys integrate with profiles
     print("\nProfile data structure:")
     example_profile_data = {
-        'personal': {
-            'name': 'John Doe',
-            'age': 45
+        "personal": {"name": "John Doe", "age": 45},
+        "assets": {"retirement_accounts": [], "taxable_accounts": []},
+        "api_keys": {
+            "claude_api_key": "REDACTED_ANTH_api03-...",
+            "gemini_api_key": "REDACTED_GAPI_...",
         },
-        'assets': {
-            'retirement_accounts': [],
-            'taxable_accounts': []
-        },
-        'api_keys': {
-            'claude_api_key': 'REDACTED_ANTH_api03-...',
-            'gemini_api_key': 'REDACTED_GAPI_...'
-        }
     }
 
     print(f"\nExample profile structure:")
@@ -176,6 +164,7 @@ def main():
         except Exception as e:
             print(f"\n✗ Test '{name}' crashed with exception: {e}")
             import traceback
+
             traceback.print_exc()
             results.append((name, False))
 
@@ -198,5 +187,5 @@ def main():
         return 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

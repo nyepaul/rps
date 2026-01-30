@@ -6,7 +6,7 @@ from pydantic import BaseModel, validator
 from typing import Optional
 from src.auth.admin_required import admin_required
 from src.auth.super_admin_required import super_admin_required
-from src.database.connection import db
+from src.database import connection
 from src.extensions import limiter
 from src.services.enhanced_audit_logger import enhanced_audit_logger
 import html
@@ -164,7 +164,7 @@ def submit_feedback():
 
     # Save to database - metadata and content in separate tables
     try:
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
 
             # Insert feedback metadata (without content)
@@ -250,7 +250,7 @@ def get_feedback_users():
     """
     try:
         if current_user.is_super_admin:
-            rows = db.execute("""
+            rows = connection.db.execute("""
                 SELECT u.id, u.username, COUNT(f.id) as feedback_count
                 FROM users u
                 JOIN feedback f ON u.id = f.user_id
@@ -259,7 +259,7 @@ def get_feedback_users():
             """)
         else:
             # Only show users in groups managed by this admin
-            rows = db.execute(
+            rows = connection.db.execute(
                 """
                 SELECT u.id, u.username, COUNT(f.id) as feedback_count
                 FROM users u
@@ -341,7 +341,7 @@ def get_all_feedback():
 
     # Execute query
     try:
-        rows = db.execute(query, tuple(params))
+        rows = connection.db.execute(query, tuple(params))
 
         # Get total count
         count_query = "SELECT COUNT(*) as count FROM feedback WHERE 1=1"
@@ -369,7 +369,7 @@ def get_all_feedback():
             count_query += " AND user_id = ?"
             count_params.append(user_id)
 
-        total_count = db.execute_one(count_query, tuple(count_params))["count"]
+        total_count = connection.db.execute_one(count_query, tuple(count_params))["count"]
 
         # Convert rows to list of dicts
         feedback_list = [dict(row) for row in rows]
@@ -429,7 +429,7 @@ def update_feedback_status(feedback_id: int):
 
     try:
         # Verify permissions before update
-        feedback = db.execute_one(
+        feedback = connection.db.execute_one(
             "SELECT user_id FROM feedback WHERE id = ?", (feedback_id,)
         )
         if not feedback:
@@ -438,7 +438,7 @@ def update_feedback_status(feedback_id: int):
         if not current_user.can_manage_user(feedback["user_id"]):
             return jsonify({"error": "Access denied"}), 403
 
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
             query = f"UPDATE feedback SET {', '.join(updates)} WHERE id = ?"
             cursor.execute(query, params)
@@ -468,7 +468,7 @@ def get_feedback_content(feedback_id: int):
     separately and only accessible to super admins for security.
     """
     try:
-        row = db.execute_one(
+        row = connection.db.execute_one(
             "SELECT content, created_at FROM feedback_content WHERE feedback_id = ?",
             (feedback_id,),
         )
@@ -499,7 +499,7 @@ def delete_feedback(feedback_id: int):
     """Delete feedback (admin only). Content is cascade deleted automatically."""
     try:
         # Check permissions
-        feedback = db.execute_one(
+        feedback = connection.db.execute_one(
             "SELECT user_id FROM feedback WHERE id = ?", (feedback_id,)
         )
         if not feedback:
@@ -508,7 +508,7 @@ def delete_feedback(feedback_id: int):
         if not current_user.can_manage_user(feedback["user_id"]):
             return jsonify({"error": "Access denied"}), 403
 
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("DELETE FROM feedback WHERE id = ?", (feedback_id,))
             conn.commit()
@@ -565,7 +565,7 @@ def get_my_feedback():
     params.extend([limit, offset])
 
     try:
-        rows = db.execute(query, tuple(params))
+        rows = connection.db.execute(query, tuple(params))
 
         # Get total count
         count_query = "SELECT COUNT(*) as count FROM feedback WHERE user_id = ?"
@@ -577,7 +577,7 @@ def get_my_feedback():
             count_query += " AND status = ?"
             count_params.append(status)
 
-        total_count = db.execute_one(count_query, tuple(count_params))["count"]
+        total_count = connection.db.execute_one(count_query, tuple(count_params))["count"]
 
         feedback_list = [dict(row) for row in rows]
 
@@ -631,7 +631,7 @@ def update_my_feedback(feedback_id: int):
     sanitized_content = html.escape(content)
 
     try:
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
 
             # First verify the feedback belongs to the user
@@ -691,7 +691,7 @@ def update_my_feedback(feedback_id: int):
 def delete_my_feedback(feedback_id: int):
     """Delete own feedback."""
     try:
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
             # Only allow deleting own feedback
             cursor.execute(
@@ -756,7 +756,7 @@ def add_reply(feedback_id: int):
     sanitized_reply = html.escape(reply_text)
 
     try:
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
 
             # Verify feedback exists and check status
@@ -855,7 +855,7 @@ def get_replies(feedback_id: int):
     """
     try:
         # Check if user owns this feedback or is admin
-        feedback_row = db.execute_one(
+        feedback_row = connection.db.execute_one(
             "SELECT user_id FROM feedback WHERE id = ?", (feedback_id,)
         )
         if not feedback_row:
@@ -887,7 +887,7 @@ def get_replies(feedback_id: int):
                 ORDER BY fr.created_at ASC
             """
 
-        rows = db.execute(query, (feedback_id,))
+        rows = connection.db.execute(query, (feedback_id,))
         replies = [dict(row) for row in rows]
 
         return jsonify({"replies": replies, "total": len(replies)}), 200
@@ -936,7 +936,7 @@ def update_reply(reply_id: int):
     params.append(reply_id)
 
     try:
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
             query = (
                 "UPDATE feedback_replies SET " + ", ".join(updates) + " WHERE id = ?"
@@ -963,7 +963,7 @@ def update_reply(reply_id: int):
 def delete_reply(reply_id: int):
     """Delete a reply (admin only)."""
     try:
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("DELETE FROM feedback_replies WHERE id = ?", (reply_id,))
             conn.commit()
@@ -994,7 +994,7 @@ def get_my_feedback_thread(feedback_id: int):
     """
     try:
         # Verify ownership
-        feedback_row = db.execute_one(
+        feedback_row = connection.db.execute_one(
             """
             SELECT f.*, fc.content, u.username as user_username
             FROM feedback f
@@ -1011,7 +1011,7 @@ def get_my_feedback_thread(feedback_id: int):
         feedback = dict(feedback_row)
 
         # Get public replies
-        replies_rows = db.execute(
+        replies_rows = connection.db.execute(
             """
             SELECT fr.*, u.username as admin_username
             FROM feedback_replies fr
@@ -1047,7 +1047,7 @@ def get_feedback_thread_admin(feedback_id: int):
     """
     try:
         # Get feedback with content
-        feedback_row = db.execute_one(
+        feedback_row = connection.db.execute_one(
             """
             SELECT f.*, fc.content, u.username as user_username, u.email as user_email
             FROM feedback f
@@ -1068,7 +1068,7 @@ def get_feedback_thread_admin(feedback_id: int):
         feedback = dict(feedback_row)
 
         # Get all replies (including private)
-        replies_rows = db.execute(
+        replies_rows = connection.db.execute(
             """
             SELECT fr.*, u.username as admin_username
             FROM feedback_replies fr

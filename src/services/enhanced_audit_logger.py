@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from flask import request, has_request_context, session
 from flask_login import current_user
-from src.database.connection import db
+from src.database import connection
 import re
 from user_agents import parse as parse_user_agent
 from src.services.ip_intelligence import ip_intelligence
@@ -107,7 +107,7 @@ class AuditConfig:
     def get_config() -> Dict[str, Any]:
         """Get current audit configuration from database or default."""
         try:
-            row = db.execute_one("SELECT config_data FROM audit_config WHERE id = 1")
+            row = connection.db.execute_one("SELECT config_data FROM audit_config WHERE id = 1")
             if row and row["config_data"]:
                 return json.loads(row["config_data"])
         except Exception:
@@ -118,7 +118,7 @@ class AuditConfig:
     def set_config(config: Dict[str, Any]):
         """Save audit configuration to database."""
         config_json = json.dumps(config)
-        with db.get_connection() as conn:
+        with connection.db.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
                 """
@@ -1144,7 +1144,7 @@ class EnhancedAuditLogger:
     def _save_audit_log(audit_data: Dict[str, Any]):
         """Save audit log entry to database."""
         try:
-            with db.get_connection() as conn:
+            with connection.db.get_connection() as conn:
                 cursor = conn.cursor()
 
                 # Build dynamic SQL based on available fields
@@ -1356,7 +1356,7 @@ class EnhancedAuditLogger:
             query += " AND ip_address = ?"
             params.append(ip_address)
 
-        logs = db.execute(query, tuple(params))
+        logs = connection.db.execute(query, tuple(params))
         log_list = [dict(row) for row in logs]
 
         # Pattern 1: High frequency of failed logins
@@ -1591,7 +1591,7 @@ class EnhancedAuditLogger:
             params.append(ip_address)
 
         # Get total count
-        count_result = db.execute_one(count_query, tuple(params))
+        count_result = connection.db.execute_one(count_query, tuple(params))
         total_count = count_result["total"] if count_result else 0
 
         # Whitelist allowed sort columns to prevent SQL injection
@@ -1633,7 +1633,7 @@ class EnhancedAuditLogger:
             query += f" ORDER BY eal.{sort_by} {sort_direction} LIMIT ? OFFSET ?"
         params.extend([limit, offset])
 
-        rows = db.execute(query, tuple(params))
+        rows = connection.db.execute(query, tuple(params))
         logs = [dict(row) for row in rows]
 
         # Filter fields based on display configuration
@@ -1731,42 +1731,42 @@ class EnhancedAuditLogger:
         stats = {}
 
         # Total logs
-        result = db.execute_one(
+        result = connection.db.execute_one(
             "SELECT COUNT(*) as count FROM enhanced_audit_log WHERE created_at >= ?",
             (cutoff_date,),
         )
         stats["total_logs"] = result["count"] if result else 0
 
         # Logs by action
-        rows = db.execute(
+        rows = connection.db.execute(
             "SELECT action, COUNT(*) as count FROM enhanced_audit_log WHERE created_at >= ? GROUP BY action ORDER BY count DESC",
             (cutoff_date,),
         )
         stats["by_action"] = {row["action"]: row["count"] for row in rows}
 
         # Logs by user
-        rows = db.execute(
+        rows = connection.db.execute(
             "SELECT user_id, COUNT(*) as count FROM enhanced_audit_log WHERE created_at >= ? AND user_id IS NOT NULL GROUP BY user_id ORDER BY count DESC LIMIT 10",
             (cutoff_date,),
         )
         stats["by_user"] = {row["user_id"]: row["count"] for row in rows}
 
         # Failed actions
-        result = db.execute_one(
+        result = connection.db.execute_one(
             "SELECT COUNT(*) as count FROM enhanced_audit_log WHERE created_at >= ? AND (status_code >= 400 OR error_message IS NOT NULL)",
             (cutoff_date,),
         )
         stats["failed_actions"] = result["count"] if result else 0
 
         # Unique IPs
-        result = db.execute_one(
+        result = connection.db.execute_one(
             "SELECT COUNT(DISTINCT ip_address) as count FROM enhanced_audit_log WHERE created_at >= ?",
             (cutoff_date,),
         )
         stats["unique_ips"] = result["count"] if result else 0
 
         # Top countries
-        rows = db.execute(
+        rows = connection.db.execute(
             """SELECT geo_location, COUNT(*) as count
                FROM enhanced_audit_log
                WHERE created_at >= ? AND geo_location IS NOT NULL
@@ -1804,7 +1804,7 @@ class EnhancedAuditLogger:
         query += """ GROUP BY ip_address, geo_location
                ORDER BY access_count DESC"""
 
-        rows = db.execute(query, tuple(params))
+        rows = connection.db.execute(query, tuple(params))
 
         unique_locations = []
         for row in rows:

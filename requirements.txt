@@ -40,3 +40,4 @@ alembic==1.18.1
 
 # Production Server
 gunicorn==23.0.0
+PyJWT==2.8.0

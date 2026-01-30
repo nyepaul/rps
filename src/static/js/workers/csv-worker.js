@@ -2,6 +2,7 @@
  * CSV Parsing Web Worker
  * Handles large CSV parsing off the main thread to prevent UI freezing.
  */
+/* eslint-env worker */
 
 // Since workers can't easily import modules without a bundler in some environments,
 // we will duplicate the core parsing logic here or import it if supported.

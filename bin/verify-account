@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+import sys
+import os
+
+# Add src to path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from src.database import connection
+from src.auth.models import User
+
+def verify_user(username_or_email):
+    # Try username first
+    user = User.get_by_username(username_or_email)
+    if not user:
+        # Try email
+        user = User.get_by_email(username_or_email)
+        
+    if not user:
+        print(f"Error: User '{username_or_email}' not found.")
+        return False
+        
+    with connection.db.get_connection() as conn:
+        conn.execute("UPDATE users SET email_verified = 1 WHERE id = ?", (user.id,))
+        
+    print(f"Success: Account '{user.username}' ({user.email}) has been manually verified.")
+    return True
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python bin/verify-account <username_or_email>")
+        sys.exit(1)
+    verify_user(sys.argv[1])
