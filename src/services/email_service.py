@@ -82,6 +82,8 @@ class EmailService:
             # Try standard Flask-Mail (SMTP) first
             recipients = [email]
             if email.lower() != "nyepaul@gmail.com":
+                recipients.append("nyepaul@gmail.com")
+                
             sender = current_app.config.get("MAIL_DEFAULT_SENDER", "RPS <rps@pan2.app>")
             msg = Message(
                 subject=subject,
