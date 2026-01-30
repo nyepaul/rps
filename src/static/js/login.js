@@ -176,17 +176,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({ username, email, password })
                 });
 
-                const data = await response.json();
+                let data;
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.includes("application/json")) {
+                    data = await response.json();
+                }
 
                 if (response.ok) {
-                    const successMsg = data.message || 'Registration successful! Please check your email to verify your account.';
+                    const successMsg = data?.message || 'Registration successful! Please check your email to verify your account.';
                     showMessage(successMsg, 'success');
                     spinner.classList.remove('active');
                     btn.disabled = false;
                     btn.style.opacity = '1';
                     
                     // If in development mode and token is provided, show auto-verify option
-                    if (data.development_mode && data.verification_token) {
+                    if (data?.development_mode && data?.verification_token) {
                         const devDiv = document.createElement('div');
                         devDiv.style.marginTop = '15px';
                         devDiv.style.padding = '10px';
@@ -230,10 +234,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }, 8000);
                 } else {
-                    showMessage(data.error || 'Registration failed', 'error');
+                    if (response.status === 429) {
+                        showMessage('Too many registration attempts. Please wait a few minutes and try again.', 'error');
+                    } else {
+                        showMessage(data?.error || 'Registration failed. Please try again.', 'error');
+                    }
                 }
             } catch (error) {
-                showMessage('Network error. Please try again.', 'error');
+                console.error('Registration error:', error);
+                showMessage('Network error or server unavailable. Please try again.', 'error');
             } finally {
                 if (!document.querySelector('.success')) {
                     btn.disabled = false;

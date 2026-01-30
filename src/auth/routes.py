@@ -126,7 +126,7 @@ class LoginSchema(BaseModel):
 
 
 @auth_bp.route("/register", methods=["POST"])
-@limiter.limit("5 per hour")
+@limiter.limit("20 per hour")
 def register():
     """Register a new user and initialize their encryption key."""
     data = {}

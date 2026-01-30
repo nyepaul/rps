@@ -1,5 +1,5 @@
 {
-    "version": "3.9.154",
+    "version": "3.9.155",
     "release_date": "2026-01-29",
-    "release_notes": "Send verification link to both user and nyepaul@gmail.com"
+    "release_notes": "Increase registration rate limit and improve error handling"
 }
