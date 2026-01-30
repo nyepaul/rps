@@ -102,18 +102,34 @@
         
         .toggle-form {
             text-align: center;
-            margin-top: 20px;
+            margin-top: 25px;
             color: #666;
+            border-top: 1px solid #f0f0f0;
+            padding-top: 20px;
         }
         
         .toggle-form a {
-            color: #667eea;
+            color: #3b82f6;
             text-decoration: none;
             font-weight: 600;
         }
         
         .toggle-form a:hover {
             text-decoration: underline;
+        }
+
+        #resendLinkContainer {
+            margin-top: 12px;
+        }
+
+        #resendLinkContainer a {
+            color: #888;
+            font-size: 13px;
+            font-weight: 400;
+        }
+
+        #resendLinkContainer a:hover {
+            color: #3b82f6;
         }
         
         .hidden {

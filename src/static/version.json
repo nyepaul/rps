@@ -1,5 +1,5 @@
 {
-    "version": "3.9.146",
+    "version": "3.9.147",
     "release_date": "2026-01-29",
-    "release_notes": "Integration fixes, AI mocking stabilization, and email verification enhancements"
+    "release_notes": "Clean up login page footer and resend verification link"
 }

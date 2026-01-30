@@ -31,7 +31,7 @@
                 <input type="password" id="loginPassword" name="password" required autocomplete="current-password">
             </div>
             <div style="text-align: right; margin-bottom: 15px;">
-                <a href="/account-recovery.html" style="color: #667eea; text-decoration: none; font-size: 14px;">Forgot Password?</a>
+                <a href="/account-recovery.html" style="color: #3b82f6; text-decoration: none; font-size: 14px;">Forgot Password?</a>
             </div>
             <button type="submit" id="loginBtn">Login</button>
             <div class="login-spinner" id="loginSpinner">
@@ -103,10 +103,16 @@
         </form>
 
         <div class="toggle-form">
-            <span id="toggleText">Don't have an account? </span>
-            <a href="#" id="toggleLink">Register</a>
-            <span id="resendLinkContainer"> | <a href="#" id="resendToggle">Resend Verification?</a></span>
-            <span id="backToLoginLink" class="hidden"> | <a href="#" id="backToLogin">Back to Login</a></span>
+            <div id="registrationToggle">
+                <span id="toggleText">Don't have an account? </span>
+                <a href="#" id="toggleLink">Register</a>
+            </div>
+            <div id="resendLinkContainer">
+                <a href="#" id="resendToggle">Resend Verification?</a>
+            </div>
+            <div id="backToLoginLink" class="hidden">
+                <a href="#" id="backToLogin">Back to Login</a>
+            </div>
         </div>
     </div>
     
