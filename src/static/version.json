@@ -1,5 +1,5 @@
 {
-    "version": "3.9.161",
+    "version": "3.9.162",
     "release_date": "2026-01-29",
-    "release_notes": "Fix recovery modal display and persistence issues"
+    "release_notes": "Fix Internal Server Error during login caused by User model initialization bug"
 }

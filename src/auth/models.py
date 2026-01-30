@@ -38,6 +38,9 @@ class User(UserMixin):
         preferences=None,
         email_verified=False,
         email_verification_sent_at=None,
+        temp_recovery_code=None,
+        recovery_code_shown=False,
+        **kwargs,
     ):
         self.id = id
         self.username = username
@@ -66,8 +69,8 @@ class User(UserMixin):
             bool(email_verified) if email_verified is not None else False
         )
         self.email_verification_sent_at = email_verification_sent_at
-        self.temp_recovery_code = kwargs.get("temp_recovery_code")
-        self.recovery_code_shown = bool(kwargs.get("recovery_code_shown", False))
+        self.temp_recovery_code = temp_recovery_code
+        self.recovery_code_shown = bool(recovery_code_shown) if recovery_code_shown is not None else False
 
     @property
     def is_active(self):
