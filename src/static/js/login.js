@@ -291,10 +291,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
 
                 if (response.ok) {
-                    showMessage(data.message || 'Verification email sent.', 'success');
+                    showMessage(data.message || 'Verification email sent. Please check your inbox.', 'success');
                     setTimeout(() => showMode('login'), 3000);
                 } else {
-                    showMessage(data.error || 'Failed to resend verification', 'error');
+                    const errorMsg = data.error || 'We couldn\'t resend the verification link. Please check your email address and try again.';
+                    showMessage(errorMsg, 'error');
+                    
+                    // If already verified, give them a shortcut back to login
+                    if (data.code === 'ALREADY_VERIFIED') {
+                        const extra = document.createElement('div');
+                        extra.style.marginTop = '15px';
+                        extra.innerHTML = '<button onclick="window.app.showLoginMode()" style="background: #3b82f6; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Go to Login</button>';
+                        messageDiv.appendChild(extra);
+                    }
                 }
             } catch (error) {
                 showMessage('Network error. Please try again.', 'error');
@@ -449,4 +458,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         })
         .catch(() => {});
+
+    // Expose helpers for dynamic HTML
+    window.app = {
+        showLoginMode: () => showMode('login')
+    };
 });

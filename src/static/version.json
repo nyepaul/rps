@@ -1,5 +1,5 @@
 {
-    "version": "3.9.172",
+    "version": "3.9.173",
     "release_date": "2026-01-30",
-    "release_notes": "Temporarily increase default rate limits for testing"
+    "release_notes": "Improve resend verification error messaging and handling"
 }

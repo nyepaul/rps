@@ -274,7 +274,7 @@ def resend_verification():
         )
 
     if getattr(user, "email_verified", 0) == 1:
-        return jsonify({"message": "Account is already verified."}), 400
+        return jsonify({"error": "This account is already verified. You can proceed to login.", "code": "ALREADY_VERIFIED"}), 400
 
     # Send email
     try:
