@@ -261,16 +261,16 @@ export function renderProfileTab(container) {
                                     </div>
                                     <div class="form-grid" style="grid-template-columns: repeat(2, 1fr); gap: 8px;">
                                         <div class="form-group">
-                                            <label style="font-size: 11px;">Name</label>
-                                            <input type="text" name="child_${index}_name" value="${child.name || ''}" placeholder="Optional" style="padding: 4px 8px; font-size: 12px;">
+                                            <label for="child_${index}_name" style="font-size: 11px;">Name</label>
+                                            <input id="child_${index}_name" type="text" name="child_${index}_name" value="${child.name || ''}" placeholder="Optional" style="padding: 4px 8px; font-size: 12px;">
                                         </div>
                                         <div class="form-group">
-                                            <label style="font-size: 11px;">Birth Year</label>
-                                            <input type="number" name="child_${index}_birth_year" value="${child.birth_year || ''}" min="1900" max="2100" placeholder="e.g. 2010" style="padding: 4px 8px; font-size: 12px;">
+                                            <label for="child_${index}_birth_year" style="font-size: 11px;">Birth Year</label>
+                                            <input id="child_${index}_birth_year" type="number" name="child_${index}_birth_year" value="${child.birth_year || ''}" min="1900" max="2100" placeholder="e.g. 2010" style="padding: 4px 8px; font-size: 12px;">
                                         </div>
                                         <div class="form-group" style="grid-column: span 2;">
-                                            <label style="font-size: 11px;">Notes</label>
-                                            <input type="text" name="child_${index}_notes" value="${child.notes || ''}" placeholder="Notes" style="padding: 4px 8px; font-size: 12px;">
+                                            <label for="child_${index}_notes" style="font-size: 11px;">Notes</label>
+                                            <input id="child_${index}_notes" type="text" name="child_${index}_notes" value="${child.notes || ''}" placeholder="Notes" style="padding: 4px 8px; font-size: 12px;">
                                         </div>
                                     </div>
                                 </div>
@@ -553,16 +553,16 @@ function addChildToForm(container) {
             </div>
             <div class="form-grid">
                 <div class="form-group">
-                    <label>Name</label>
-                    <input type="text" name="child_${newIndex}_name" value="" placeholder="Optional">
+                    <label for="child_${newIndex}_name">Name</label>
+                    <input id="child_${newIndex}_name" type="text" name="child_${newIndex}_name" value="" placeholder="Optional">
                 </div>
                 <div class="form-group">
-                    <label>Birth Year</label>
-                    <input type="number" name="child_${newIndex}_birth_year" value="" min="1900" max="2100" placeholder="e.g., 2010">
+                    <label for="child_${newIndex}_birth_year">Birth Year</label>
+                    <input id="child_${newIndex}_birth_year" type="number" name="child_${newIndex}_birth_year" value="" min="1900" max="2100" placeholder="e.g., 2010">
                 </div>
                 <div class="form-group" style="grid-column: span 2;">
-                    <label>Notes</label>
-                    <input type="text" name="child_${newIndex}_notes" value="" placeholder="e.g., College 2028-2032">
+                    <label for="child_${newIndex}_notes">Notes</label>
+                    <input id="child_${newIndex}_notes" type="text" name="child_${newIndex}_notes" value="" placeholder="e.g., College 2028-2032">
                 </div>
             </div>
         </div>

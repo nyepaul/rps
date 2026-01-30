@@ -30,7 +30,7 @@ function extractAccountDigits(str) {
  */
 function detectPotentialDuplicates(assets) {
     const allAssets = [];
-    const categories = ['retirement_accounts', 'taxable_accounts', 'real_estate', 'pensions_annuities', 'other_assets', 'liabilities'];
+    const categories = ['retirement_accounts', 'taxable_accounts', 'real_estate', 'pensions_annuities', 'education_accounts', 'other_assets', 'liabilities'];
 
     // Flatten all assets with their category
     for (const cat of categories) {
@@ -125,6 +125,7 @@ export function renderAssetsTab(container) {
         taxable_accounts: [],
         real_estate: [],
         pensions_annuities: [],
+        education_accounts: [],
         other_assets: [],
         liabilities: []
     };
@@ -409,7 +410,7 @@ function setupGeneralHandlers(container, profile, assets, refreshCallback) {
 
                 // Helper: find existing asset across all categories using multiple markers
                 const findExistingAsset = (item) => {
-                    const allCategories = ['retirement_accounts', 'taxable_accounts', 'real_estate', 'pensions_annuities', 'other_assets', 'liabilities'];
+                    const allCategories = ['retirement_accounts', 'taxable_accounts', 'real_estate', 'pensions_annuities', 'education_accounts', 'other_assets', 'liabilities'];
 
                     for (const cat of allCategories) {
                         if (!assets[cat]) continue;

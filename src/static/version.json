@@ -1,5 +1,5 @@
 {
-    "version": "3.9.140",
+    "version": "3.9.141",
     "release_date": "2026-01-29",
-    "release_notes": "Demo account: unencrypted data, no recovery code, comprehensive seed data (scenarios, action items, conversations)"
+    "release_notes": "UX fixes (A11y) and security updates"
 }

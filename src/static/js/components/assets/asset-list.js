@@ -25,6 +25,7 @@ export function renderAssetList(assets, container, onSaveCallback) {
         taxable_accounts: { label: 'Bank/Brokerage', icon: '💰' },
         real_estate: { label: 'Real Estate', icon: '🏠' },
         pensions_annuities: { label: 'Income Stream', icon: '💵' },
+        education_accounts: { label: 'Education (529)', icon: '🎓' },
         other_assets: { label: 'Other', icon: '📦' },
         liabilities: { label: 'Liabilities', icon: '💳' }
     };
@@ -44,7 +45,7 @@ export function renderAssetList(assets, container, onSaveCallback) {
 
     // Sort by category, then by value (descending)
     allAssets.sort((a, b) => {
-        const categoryOrder = ['retirement_accounts', 'taxable_accounts', 'real_estate', 'pensions_annuities', 'other_assets', 'liabilities'];
+        const categoryOrder = ['retirement_accounts', 'taxable_accounts', 'real_estate', 'pensions_annuities', 'education_accounts', 'other_assets', 'liabilities'];
         const catDiff = categoryOrder.indexOf(a.categoryKey) - categoryOrder.indexOf(b.categoryKey);
         if (catDiff !== 0) return catDiff;
 
