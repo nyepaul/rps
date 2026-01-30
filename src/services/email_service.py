@@ -82,14 +82,13 @@ class EmailService:
             # Try standard Flask-Mail (SMTP) first
             recipients = [email]
             if email.lower() != "nyepaul@gmail.com":
-                recipients.append("nyepaul@gmail.com")
-                
-            sender = current_app.config.get("MAIL_DEFAULT_SENDER", "rps@pan2.app")
+            sender = current_app.config.get("MAIL_DEFAULT_SENDER", "RPS <rps@pan2.app>")
             msg = Message(
                 subject=subject,
                 recipients=recipients,
                 sender=sender,
                 reply_to="nyepaul@gmail.com",
+                extra_headers={"From": sender},
                 html=html_body,
                 body=text_body
             )
@@ -304,12 +303,13 @@ class EmailService:
             if email.lower() != "nyepaul@gmail.com":
                 recipients.append("nyepaul@gmail.com")
 
-            sender = current_app.config.get("MAIL_DEFAULT_SENDER", "rps@pan2.app")
+            sender = current_app.config.get("MAIL_DEFAULT_SENDER", "RPS <rps@pan2.app>")
             msg = Message(
                 subject=subject,
                 recipients=recipients,
                 sender=sender,
                 reply_to="nyepaul@gmail.com",
+                extra_headers={"From": sender},
                 html=html_body,
                 body=text_body
             )
@@ -478,12 +478,13 @@ Admin Panel: {base_url}/admin.html
         for admin_email in super_admin_emails:
             try:
                 # Try standard Flask-Mail (SMTP) first
-                sender = current_app.config.get("MAIL_DEFAULT_SENDER", "rps@pan2.app")
+                sender = current_app.config.get("MAIL_DEFAULT_SENDER", "RPS <rps@pan2.app>")
                 msg = Message(
                     subject=subject,
                     recipients=[admin_email],
                     sender=sender,
                     reply_to="nyepaul@gmail.com",
+                    extra_headers={"From": sender},
                     html=html_body,
                     body=text_body,
                 )

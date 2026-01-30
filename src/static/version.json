@@ -1,5 +1,5 @@
 {
-    "version": "3.9.164",
+    "version": "3.9.165",
     "release_date": "2026-01-29",
-    "release_notes": "Set Reply-To address to nyepaul@gmail.com for all transactional emails"
+    "release_notes": "Enforce rps@pan2.app sender address with friendly name and extra headers"
 }

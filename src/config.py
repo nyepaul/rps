@@ -79,7 +79,7 @@ class Config:
     MAIL_USE_SSL = os.environ.get("MAIL_USE_SSL", "false").lower() == "true"
     MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
     MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
-    MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER", "rps@pan2.app")
+    MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER", "RPS <rps@pan2.app>")
     APP_BASE_URL = os.environ.get("APP_BASE_URL", "https://rps.pan2.app")
 
 
