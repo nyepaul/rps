@@ -1,5 +1,5 @@
 {
-    "version": "3.9.160",
+    "version": "3.9.161",
     "release_date": "2026-01-29",
-    "release_notes": "Explicitly set email sender to rps@pan2.app and dual-send password resets"
+    "release_notes": "Fix recovery modal display and persistence issues"
 }

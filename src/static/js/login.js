@@ -133,12 +133,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         const closeBtn = document.getElementById('closeRecoveryModal');
                         
                         codeSpan.textContent = data.show_recovery_code;
-                        modal.classList.remove('hidden');
-                        modal.style.display = 'flex'; // Ensure display is flex
+                        modal.classList.add('active');
                         
                         closeBtn.onclick = () => {
-                            modal.classList.add('hidden');
-                            modal.style.display = 'none';
+                            modal.classList.remove('active');
                             window.location.href = '/';
                         };
                     } else {

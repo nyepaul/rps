@@ -175,3 +175,55 @@
             color: #ccc;
             font-weight: 500;
         }
+
+        /* Recovery Modal */
+        .recovery-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: none; /* Controlled by JS */
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            padding: 20px;
+            backdrop-filter: blur(4px);
+        }
+
+        .recovery-modal.active {
+            display: flex;
+        }
+
+        .recovery-modal-content {
+            background: white;
+            padding: 35px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: modalFadeIn 0.3s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .recovery-code-box {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e1;
+            padding: 25px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 25px 0;
+        }
+
+        .recovery-code-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: 3px;
+            color: #1e40af;
+        }
