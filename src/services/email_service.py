@@ -26,22 +26,20 @@ class EmailService:
             base_url = current_app.config.get("APP_BASE_URL") or os.getenv("APP_BASE_URL", "https://rps.pan2.app")
 
         verification_link = f"{base_url}/verify-email.html?token={token}"
-        subject = "Account Verification"
+        subject = f"RPS - Verification Code for {email}"
 
         html_body = f"""
-        <!DOCTYPE html>
         <html>
-        <body style="font-family: sans-serif; line-height: 1.6; color: #333; padding: 20px;">
-            <h3>Verify your account</h3>
-            <p>Please click the link below to verify your email address:</p>
-            <p><a href="{verification_link}" style="color: #2563eb; font-weight: bold;">{verification_link}</a></p>
-            <p>If the link doesn't work, copy and paste it into your browser.</p>
+        <body>
+            <p>Hello,</p>
+            <p>Your RPS verification link is:</p>
+            <p>{verification_link}</p>
             <p>This link will expire in 24 hours.</p>
         </body>
         </html>
         """
 
-        text_body = f"Please verify your email address by clicking this link:\n\n{verification_link}\n\nThis link expires in 24 hours."
+        text_body = f"Hello,\n\nYour RPS verification link is:\n{verification_link}\n\nThis link will expire in 24 hours."
 
         # Always log to a local file for development/debugging
         try:
