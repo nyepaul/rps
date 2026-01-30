@@ -11,6 +11,55 @@ from typing import List, Dict, Any, Optional, Tuple
 class ReconciliationService:
     """Service for reconciling imported data with existing records."""
 
+    # Standard Categories for AI context
+    valid_categories = {
+        "income": [
+            "employment",
+            "rental_income",
+            "part_time_consulting",
+            "business_income",
+            "investment_income",
+            "pension",
+            "social_security",
+            "other_income",
+        ],
+        "expense": [
+            "housing",
+            "utilities",
+            "transportation",
+            "food",
+            "dining_out",
+            "healthcare",
+            "insurance",
+            "travel",
+            "entertainment",
+            "personal_care",
+            "clothing",
+            "gifts",
+            "childcare_education",
+            "charitable_giving",
+            "subscriptions",
+            "pet_care",
+            "home_maintenance",
+            "debt_payments",
+            "taxes",
+            "discretionary",
+            "other",
+        ],
+        "asset": [
+            "traditional_ira",
+            "roth_ira",
+            "401k",
+            "403b",
+            "457",
+            "brokerage",
+            "savings",
+            "checking",
+            "real_estate",
+            "other",
+        ],
+    }
+
     # Thresholds
     NAME_MATCH_THRESHOLD = 0.80  # 80% similarity required for name match
     AMOUNT_TOLERANCE = 0.05  # 5% difference allowed for amount match
