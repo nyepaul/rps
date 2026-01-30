@@ -157,6 +157,9 @@ class User(UserMixin):
             if payload.get("email") != self.email:
                 return False
 
+            if self.email_verified:
+                return False
+
             self.email_verified = True
             self.save()
             return True

@@ -323,6 +323,15 @@ def verify_email():
         if not user:
             return jsonify({"error": "User not found"}), 404
 
+        # Check if already verified
+        if getattr(user, "email_verified", False):
+            return (
+                jsonify(
+                    {"message": "Email already verified. You can now log in."}
+                ),
+                200,
+            )
+
         if user.confirm_email(token):
             EnhancedAuditLogger.log(
                 action="EMAIL_VERIFIED",

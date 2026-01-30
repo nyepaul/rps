@@ -1,5 +1,5 @@
 {
-    "version": "3.9.165",
+    "version": "3.9.166",
     "release_date": "2026-01-29",
-    "release_notes": "Enforce rps@pan2.app sender address with friendly name and extra headers"
+    "release_notes": "Ensure email verification is only successful once"
 }
