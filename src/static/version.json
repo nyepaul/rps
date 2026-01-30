@@ -1,5 +1,5 @@
 {
-    "version": "3.9.149",
+    "version": "3.9.150",
     "release_date": "2026-01-29",
-    "release_notes": "Fix Resend Verification delivery and UI navigation"
+    "release_notes": "Simplify verification email for better deliverability"
 }
