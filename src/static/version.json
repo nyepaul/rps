@@ -1,5 +1,5 @@
 {
-    "version": "3.9.169",
-    "release_date": "2026-01-29",
-    "release_notes": "Improve verification error messages and robustness"
+    "version": "3.9.170",
+    "release_date": "2026-01-30",
+    "release_notes": "Align manual verification scripts with production SECRET_KEY"
 }

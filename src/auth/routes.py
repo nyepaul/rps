@@ -350,7 +350,9 @@ def verify_email():
             return jsonify({"error": "Invalid or expired token"}), 400
 
     except Exception as e:
-        return jsonify({"error": "Invalid token"}), 400
+        from flask import current_app
+        current_app.logger.error(f"Token verification failed: {str(e)}", exc_info=True)
+        return jsonify({"error": f"Invalid token: {str(e)}" if current_app.debug else "Invalid token"}), 400
 
 
 @auth_bp.route("/login", methods=["POST"])
