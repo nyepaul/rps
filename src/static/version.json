@@ -1,5 +1,5 @@
 {
-    "version": "3.9.147",
+    "version": "3.9.148",
     "release_date": "2026-01-29",
-    "release_notes": "Clean up login page footer and resend verification link"
+    "release_notes": "Fix verification email links to point to rps.pan2.app"
 }

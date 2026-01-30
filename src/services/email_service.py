@@ -23,7 +23,7 @@ class EmailService:
             bool: True if email sent successfully
         """
         if not base_url:
-            base_url = os.getenv("APP_BASE_URL", "http://localhost:5137")
+            base_url = os.getenv("APP_BASE_URL", "https://rps.pan2.app")
 
         verification_link = f"{base_url}/verify-email.html?token={token}"
         subject = "Verify your RPS Account"
@@ -114,14 +114,14 @@ class EmailService:
         Args:
             email: Recipient email address
             token: Password reset token
-            base_url: Base URL of the application (e.g., http://localhost:5137)
+            base_url: Base URL of the application (e.g., https://rps.pan2.app)
 
         Returns:
             bool: True if email sent successfully, False otherwise
         """
         # Determine base URL
         if not base_url:
-            base_url = os.getenv("APP_BASE_URL", "http://localhost:5137")
+            base_url = os.getenv("APP_BASE_URL", "https://rps.pan2.app")
 
         # Generate reset link
         reset_link = f"{base_url}/account-recovery.html?token={token}"
@@ -354,7 +354,7 @@ class EmailService:
         from datetime import datetime
 
         if not base_url:
-            base_url = os.getenv("APP_BASE_URL", "http://localhost:5137")
+            base_url = os.getenv("APP_BASE_URL", "https://rps.pan2.app")
 
         # Get all super admin emails, excluding .local domains
         super_admin_emails = [
