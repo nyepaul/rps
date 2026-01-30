@@ -4,7 +4,6 @@
 
 import { apiClient } from '../../api/client.js';
 import { showSuccess, showError } from '../../utils/dom.js';
-import { formatCurrency } from '../../utils/formatters.js';
 
 // Sort state
 let currentSort = {

@@ -1639,7 +1639,7 @@ def get_smtp_config():
         if row and row["value"]:
             try:
                 config = json.loads(row["value"])
-            except:
+            except Exception:
                 pass
 
         # Mask password
@@ -1677,7 +1677,7 @@ def update_smtp_config():
         if row and row["value"]:
             try:
                 existing_config = json.loads(row["value"])
-            except:
+            except Exception:
                 pass
 
         # Prepare new config

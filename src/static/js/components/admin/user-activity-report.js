@@ -150,7 +150,7 @@ export async function renderUserActivityReport(container) {
     `;
 
     // Load all users for filtering
-    await loadUsers(container);
+    await loadUsers();
 
     // Setup event handlers
     setupFilterHandlers(container);
@@ -170,7 +170,7 @@ export async function renderUserActivityReport(container) {
 /**
  * Load all users for the filter dropdown
  */
-async function loadUsers(container) {
+async function loadUsers() {
     try {
         const response = await apiClient.get('/api/admin/users');
         allUsers = response.users || [];

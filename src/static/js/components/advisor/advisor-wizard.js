@@ -4,7 +4,7 @@
 
 import { store } from '../../state/store.js';
 import { apiClient } from '../../api/client.js';
-import { showSuccess, showError } from '../../utils/dom.js';
+import { showSuccess } from '../../utils/dom.js';
 
 export function showAdvisorWizard() {
     const profile = store.get('currentProfile');
@@ -54,7 +54,7 @@ async function runStep1(profile) {
     
     try {
         // Simulating a backend check for API keys
-        const response = await apiClient.get('/api/health');
+        await apiClient.get('/api/health');
         
         // In a real app, we'd have a specific diagnostic endpoint
         // For now, we'll check profile completeness as well

@@ -110,7 +110,6 @@ function setupUserActionHandlers(container) {
     container.querySelectorAll('.user-row').forEach(row => {
         row.addEventListener('click', async () => {
             const userId = parseInt(row.getAttribute('data-user-id'));
-            const username = row.getAttribute('data-username');
             
             // Need to fetch full user object including status flags
             // Alternatively we could put data attributes on the row
@@ -122,6 +121,7 @@ function setupUserActionHandlers(container) {
                     showUserManagementModal(user, store.get('currentUser'), container);
                 }
             } catch (error) {
+                console.error('Failed to load user data:', error);
                 showError('Failed to load user data');
             }
         });

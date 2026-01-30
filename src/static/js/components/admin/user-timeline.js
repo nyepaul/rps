@@ -90,7 +90,7 @@ export async function renderUserTimeline(container) {
     `;
 
     // Load all users into dropdown
-    await loadAllUsers(container);
+    await loadAllUsers();
 
     // Setup event handlers
     setupTimelineHandlers(container);
@@ -183,7 +183,7 @@ function setupTimelineHandlers(container) {
 /**
  * Load all users
  */
-async function loadAllUsers(container) {
+async function loadAllUsers() {
     try {
         // Get all users from users endpoint (no limit to get all)
         const response = await apiClient.get('/api/admin/users?limit=1000');
@@ -252,7 +252,6 @@ async function loadUserTimeline(container, userId) {
 function renderTimeline(container, timeline) {
     const userInfo = timeline.user_info || {};
     const events = timeline.events || [];
-    const narrative = timeline.narrative || 'No activity recorded.';
     const summary = timeline.summary || '';
 
     // Reset sort state
@@ -533,63 +532,6 @@ function getActionColor(action) {
     };
 
     return colorMap[action] || 'var(--text-secondary)';
-}
-
-/**
- * Render event timeline with visual styling
- */
-function renderEventTimeline(events) {
-    return events.map((event, index) => {
-        const timestamp = event.timestamp || '';
-        const description = event.description || 'Unknown action';
-        const action = event.action || '';
-        const context = event.context || {};
-
-        // Format timestamp
-        let timeStr = '';
-        try {
-            const dt = new Date(timestamp);
-            timeStr = dt.toLocaleString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
-            });
-        } catch {
-            timeStr = timestamp;
-        }
-
-        // Get icon based on action type
-        const icon = getActionIcon(action);
-
-        // Build context info
-        const contextItems = [];
-        if (context.location) contextItems.push(`📍 ${context.location}`);
-        if (context.browser) contextItems.push(`🌐 ${context.browser}`);
-        if (context.device) contextItems.push(`📱 ${context.device}`);
-        if (context.profile) contextItems.push(`👤 Profile: ${context.profile}`);
-
-        return `
-            <div style="display: flex; gap: 20px; margin-bottom: 20px; padding: 15px; background: var(--bg-primary); border-radius: 8px; border-left: 3px solid var(--accent-color-light);">
-                <div style="flex-shrink: 0; width: 40px; height: 40px; background: var(--accent-color-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px;">
-                    ${icon}
-                </div>
-                <div style="flex: 1;">
-                    <div style="font-weight: 600; margin-bottom: 5px; font-size: 15px;">${description}</div>
-                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">
-                        🕐 ${timeStr}
-                    </div>
-                    ${contextItems.length > 0 ? `
-                        <div style="display: flex; gap: 15px; flex-wrap: wrap; font-size: 12px; color: var(--text-secondary);">
-                            ${contextItems.join(' • ')}
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-        `;
-    }).join('');
 }
 
 /**

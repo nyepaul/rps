@@ -2,8 +2,6 @@
  * Assets API client
  */
 
-import { apiClient } from './client.js';
-
 export const assetsAPI = {
     /**
      * Export assets to CSV

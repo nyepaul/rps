@@ -1,8 +1,9 @@
 """User authentication model."""
 
 import bcrypt
-import secrets
 import sqlite3
+import secrets
+import string
 from datetime import datetime, timedelta
 from flask_login import UserMixin
 from src.database.connection import db
@@ -440,7 +441,6 @@ class User(UserMixin):
         """
         import jwt
         from flask import current_app
-        import secrets
 
         # Generate a random JTI (Token ID) to allow revocation
         jti = secrets.token_urlsafe(16)
@@ -695,9 +695,6 @@ class PasswordResetRequest:
 
     @staticmethod
     def create(user_id, ip_address=None):
-        import secrets
-        import string
-
         # Generate a short, readable support token (e.g., "A7X-29P")
         chars = string.ascii_uppercase + string.digits.replace("0", "").replace(
             "1", ""

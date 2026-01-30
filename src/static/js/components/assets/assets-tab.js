@@ -8,9 +8,9 @@ import { renderAssetList } from './asset-list.js';
 import { showAssetWizard } from './asset-wizard.js';
 import { showAIImportModal } from '../ai/ai-import-modal.js';
 import { exportAssetsCSV, importAssetsCSV } from './asset-csv-handler.js';
-import { formatCurrency, parseCurrency } from '../../utils/formatters.js';
+import { formatCurrency } from '../../utils/formatters.js';
 import { showSuccess, showError } from '../../utils/dom.js';
-import { calculateNetWorth, calculateRealEstateEquity, calculateTotalDebts } from '../../utils/financial-calculations.js';
+import { calculateNetWorth } from '../../utils/financial-calculations.js';
 
 /**
  * Extract account number digits from a string
@@ -234,8 +234,8 @@ function filterAssets(assets, filterKey) {
         // Let's exclude pensions from "Net Worth" view list if they are excluded from calculation
         // But user might want to see them.
         // Based on calculation: Net Worth = Retirement + Taxable + Real Estate + Other
-        const { pensions_annuities, ...netWorthAssets } = assets;
-        return netWorthAssets;
+                const { pensions_annuities: _, ...netWorthAssets } = assets;
+                const netWorth = calculateNetWorth(netWorthAssets);        return netWorthAssets;
     }
     
     if (filterKey === 'pensions_annuities') {
@@ -336,7 +336,7 @@ function setupAssetListHandlers(container, profile, assets, refreshCallback) {
 
     // Delete buttons
     container.querySelectorAll('.delete-asset-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
+        btn.addEventListener('click', async () => {
             const category = btn.dataset.category;
             const index = parseInt(btn.dataset.index);
             const asset = assets[category][index];

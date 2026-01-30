@@ -44,7 +44,7 @@ export async function renderGroupManagement(container) {
             </div>
         `;
 
-        setupGroupActionHandlers(container, currentUser);
+        setupGroupActionHandlers(container);
 
     } catch (error) {
         console.error('Failed to load groups:', error);
@@ -112,7 +112,7 @@ function renderGroupCard(group, currentUser) {
     `;
 }
 
-function setupGroupActionHandlers(container, currentUser) {
+function setupGroupActionHandlers(container) {
     // Create group
     const createBtn = container.querySelector('#create-group-btn');
     if (createBtn) {

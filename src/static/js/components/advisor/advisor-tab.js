@@ -5,7 +5,6 @@
 import { advisorAPI } from '../../api/advisor.js';
 import { actionItemsAPI } from '../../api/action-items.js';
 import { store } from '../../state/store.js';
-import { apiClient } from '../../api/client.js';
 import { showSuccess, showError } from '../../utils/dom.js';
 
 let currentConversationId = null;

@@ -2,11 +2,10 @@
  * Actions tab component - Manage action items
  */
 
-import { actionItemsAPI } from '../../api/action-items.js';
-import { store } from '../../state/store.js';
-import { apiClient } from '../../api/client.js';
-import { showSuccess, showError, showLoading } from '../../utils/dom.js';
-import { formatDate } from '../../utils/formatters.js';
+import { actionItemsAPI } from "../../api/action-items.js";
+import { store } from "../../state/store.js";
+import { showSuccess, showError, showLoading } from "../../utils/dom.js";
+import { formatDate } from "../../utils/formatters.js";
 
 export function renderActionsTab(container) {
     const profile = store.get('currentProfile');
@@ -322,10 +321,10 @@ function setupActionsHandlers(container, profile) {
             generateBtn.disabled = true;
 
             try {
-                const response = await apiClient.post('/api/action-items/generate', {
+                await apiClient.post("/api/action-items/generate", {
                     profile_name: profile.name
                 });
-                showSuccess('Recommendations generated based on your profile!');
+                showSuccess("Recommendations generated based on your profile!");
                 loadActionItems(container, profile);
             } catch (error) {
                 console.error('Error generating action items:', error);
@@ -507,12 +506,6 @@ function showActionItemModal(parentContainer, profile, item = null) {
 
 function showAddActionItemModal(parentContainer, profile) {
     showActionItemModal(parentContainer, profile);
-}
-
-function showEditActionItemModal(item) {
-    const profile = store.get('currentProfile');
-    const container = document.getElementById('action-items-container').parentElement;
-    showActionItemModal(container, profile, item);
 }
 
 function getPriorityLabel(priority) {

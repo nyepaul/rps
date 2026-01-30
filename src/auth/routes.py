@@ -4,14 +4,15 @@ import os
 import re
 import json
 import base64
-from flask import Blueprint, request, jsonify, session
+from datetime import datetime, timedelta
+from flask import Blueprint, request, jsonify, session, make_response
 from flask_login import login_user, logout_user, current_user, login_required
 from src.auth.models import User, PasswordResetRequest
 from src.extensions import limiter
 from src.services.encryption_service import EncryptionService
 from src.services.enhanced_audit_logger import EnhancedAuditLogger
 from src.utils.error_sanitizer import sanitize_pydantic_error
-from typing import Optional
+from typing import Any
 from pydantic import BaseModel, EmailStr, validator, ValidationError
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
@@ -27,7 +28,6 @@ def check_account_lockout(username: str) -> tuple[bool, int]:
     Returns (is_locked, remaining_minutes).
     """
     from src.database.connection import db
-    from datetime import datetime, timedelta
 
     try:
         # Check failed login attempts in the last LOCKOUT_DURATION_MINUTES
@@ -123,14 +123,6 @@ class LoginSchema(BaseModel):
 
     username: str
     password: str
-
-
-from flask import Blueprint, request, jsonify, session
-from flask_login import login_user, logout_user, current_user
-from src.auth.models import User
-from src.extensions import limiter
-from src.services.encryption_service import EncryptionService
-import base64
 
 
 @auth_bp.route("/register", methods=["POST"])
@@ -422,8 +414,6 @@ def login():
     login_user(user, remember=False)
 
     # Initialize session with last activity timestamp for inactivity timeout
-    from datetime import datetime
-
     session.permanent = True
     session["last_activity"] = datetime.utcnow().isoformat()
 
@@ -460,7 +450,6 @@ def login():
 @auth_bp.route("/logout", methods=["POST"])
 def logout():
     """Log out the current user and clear encryption key."""
-    from flask import make_response
 
     # Get user info before logout
     user_id = current_user.id if current_user.is_authenticated else None
@@ -960,7 +949,6 @@ def offline_change_password():
 @limiter.limit("5 per hour")
 def change_password():
     """Change password for logged-in user (requires old password to re-encrypt data)."""
-    from flask_login import login_required
 
     if not current_user.is_authenticated:
         return jsonify({"error": "Authentication required"}), 401
@@ -1031,7 +1019,6 @@ def generate_recovery_code():
     This allows resetting the password without data loss.
     Returns the raw recovery code which must be saved by the user.
     """
-    from flask_login import login_required
 
     if not current_user.is_authenticated:
         return jsonify({"error": "Authentication required"}), 401
@@ -1046,7 +1033,7 @@ def generate_recovery_code():
     if "user_dek" in session:
         try:
             dek = base64.b64decode(session["user_dek"])
-        except:
+        except Exception:
             pass
 
     # 2. If not in session, and request provides password, try to decrypt now
@@ -1058,7 +1045,7 @@ def generate_recovery_code():
             dek = user.get_dek(password)
             # Restore to session for future use
             session["user_dek"] = base64.b64encode(dek).decode("utf-8")
-        except:
+        except Exception:
             pass
 
     if not dek and user.encrypted_dek:

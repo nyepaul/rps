@@ -4,7 +4,6 @@
  */
 
 import { apiClient } from '../../api/client.js';
-import { showError } from '../../utils/dom.js';
 
 /**
  * Render demo management interface
