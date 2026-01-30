@@ -66,6 +66,8 @@ class User(UserMixin):
             bool(email_verified) if email_verified is not None else False
         )
         self.email_verification_sent_at = email_verification_sent_at
+        self.temp_recovery_code = kwargs.get("temp_recovery_code")
+        self.recovery_code_shown = bool(kwargs.get("recovery_code_shown", False))
 
     @property
     def is_active(self):
@@ -169,8 +171,9 @@ class User(UserMixin):
                     """
                     INSERT INTO users (username, email, password_hash, is_active, is_admin, is_super_admin, created_at, updated_at, 
                                      encrypted_dek, dek_iv, recovery_encrypted_dek, recovery_iv, recovery_salt,
-                                     email_encrypted_dek, email_iv, email_salt, preferences, email_verified)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                     email_encrypted_dek, email_iv, email_salt, preferences, email_verified,
+                                     temp_recovery_code, recovery_code_shown)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                     (
                         self.username,
@@ -191,6 +194,8 @@ class User(UserMixin):
                         self.email_salt,
                         self.preferences,
                         1 if self.email_verified else 0,
+                        self.temp_recovery_code,
+                        1 if self.recovery_code_shown else 0,
                     ),
                 )  # Default to 0 for new, but if set explicitly respect it
                 self.id = cursor.lastrowid
@@ -203,7 +208,7 @@ class User(UserMixin):
                         is_admin = ?, is_super_admin = ?, last_login = ?, encrypted_dek = ?, dek_iv = ?,
                         recovery_encrypted_dek = ?, recovery_iv = ?, recovery_salt = ?,
                         email_encrypted_dek = ?, email_iv = ?, email_salt = ?, preferences = ?,
-                        email_verified = ?
+                        email_verified = ?, temp_recovery_code = ?, recovery_code_shown = ?
                     WHERE id = ?
                 """,
                     (
@@ -224,6 +229,8 @@ class User(UserMixin):
                         self.email_salt,
                         self.preferences,
                         1 if self.email_verified else 0,
+                        self.temp_recovery_code,
+                        1 if self.recovery_code_shown else 0,
                         self.id,
                     ),
                 )

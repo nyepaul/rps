@@ -115,6 +115,27 @@
             </div>
         </div>
     </div>
+
+    <!-- Recovery Code Modal -->
+    <div id="recoveryModal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 10000; padding: 20px;">
+        <div style="background: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 100%; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);">
+            <h2 style="color: #1e40af; margin-bottom: 20px;">🔐 Your Recovery Code</h2>
+            <p style="color: #374151; margin-bottom: 15px; line-height: 1.5;">
+                This is your master recovery code. Because your data is <strong>end-to-end encrypted</strong>, if you forget your password, this code is the <strong>ONLY</strong> way to regain access to your account and preserve your data.
+            </p>
+            <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 20px;">
+                <span id="recoveryCodeText" style="font-family: monospace; font-size: 24px; font-weight: bold; letter-spacing: 2px; color: #2563eb;">XXXX-XXXX-XXXX-XXXX</span>
+            </div>
+            <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin-bottom: 25px;">
+                <p style="color: #92400e; font-size: 14px; font-weight: 600;">
+                    ⚠️ Warning: Store this code in a safe place (like a password manager). It will not be shown again.
+                </p>
+            </div>
+            <button id="closeRecoveryModal" style="background: #2563eb; color: white; border: none; padding: 12px; border-radius: 6px; width: 100%; font-weight: bold; cursor: pointer;">
+                I have saved my recovery code
+            </button>
+        </div>
+    </div>
     
     <script src="/js/login.js"></script>
 </body>

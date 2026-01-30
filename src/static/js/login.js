@@ -125,8 +125,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (response.ok) {
                     spinner.querySelector('.spinner-text').textContent = 'Login successful! Redirecting...';
-                    showMessage('Login successful! Redirecting...', 'success');
-                    setTimeout(() => window.location.href = '/', 1000);
+                    
+                    // Check if we need to show recovery code
+                    if (data.show_recovery_code) {
+                        const modal = document.getElementById('recoveryModal');
+                        const codeSpan = document.getElementById('recoveryCodeText');
+                        const closeBtn = document.getElementById('closeRecoveryModal');
+                        
+                        codeSpan.textContent = data.show_recovery_code;
+                        modal.classList.remove('hidden');
+                        modal.style.display = 'flex'; // Ensure display is flex
+                        
+                        closeBtn.onclick = () => {
+                            modal.classList.add('hidden');
+                            modal.style.display = 'none';
+                            window.location.href = '/';
+                        };
+                    } else {
+                        showMessage('Login successful! Redirecting...', 'success');
+                        setTimeout(() => window.location.href = '/', 1000);
+                    }
                 } else {
                     showMessage(data.error || 'Login failed', 'error');
                     // If email not verified, show resend option clearly

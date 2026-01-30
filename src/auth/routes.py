@@ -191,6 +191,12 @@ def register():
         user.recovery_iv = rec_iv
         user.recovery_salt = base64.b64encode(recovery_salt).decode("utf-8")
 
+        # Store recovery code temporarily (encrypted with server key) to show on first login
+        from src.services.encryption_service import EncryptionService
+        server_service = EncryptionService() # Explicitly uses ENCRYPTION_KEY
+        enc_code, code_iv = server_service.encrypt(recovery_code)
+        user.temp_recovery_code = json.dumps({"code": enc_code, "iv": code_iv})
+
         # Also set up email-based recovery backup
         user.update_email_recovery_backup(dek)
 
@@ -478,7 +484,7 @@ def login():
     session.permanent = True
     session["last_activity"] = datetime.utcnow().isoformat()
 
-    # Log successful login
+    # Update successful login audit log
     EnhancedAuditLogger.log(
         action="LOGIN_SUCCESS",
         table_name="users",
@@ -487,6 +493,22 @@ def login():
         details=json.dumps({"username": user.username, "email": user.email}),
         status_code=200,
     )
+
+    # Check if we should present recovery code (first login or not shown yet)
+    recovery_code_to_show = None
+    if user.temp_recovery_code and not user.recovery_code_shown:
+        try:
+            from src.services.encryption_service import EncryptionService
+            server_service = EncryptionService() # Explicitly uses ENCRYPTION_KEY
+            code_data = json.loads(user.temp_recovery_code)
+            recovery_code_to_show = server_service.decrypt(code_data["code"], code_data["iv"])
+            
+            # Mark as shown and clear temp storage
+            user.recovery_code_shown = True
+            user.temp_recovery_code = None
+            user.save()
+        except Exception as e:
+            print(f"Failed to decrypt temp recovery code: {e}")
 
     return (
         jsonify(
@@ -502,6 +524,7 @@ def login():
                         json.loads(user.preferences) if user.preferences else {}
                     ),
                 },
+                "show_recovery_code": recovery_code_to_show
             }
         ),
         200,
