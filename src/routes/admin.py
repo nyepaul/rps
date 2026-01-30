@@ -2423,29 +2423,29 @@ def get_user_activity_report():
         where_sql = ' AND '.join(where_clauses)
 
         # Query for user activity summary
-        activity_query = f"""
-            SELECT
-                u.id as user_id,
-                u.username,
-                u.email,
-                COUNT(*) as total_actions,
-                COUNT(DISTINCT DATE(al.created_at)) as active_days,
-                MIN(al.created_at) as first_activity,
-                MAX(al.created_at) as last_activity,
-                COUNT(DISTINCT al.ip_address) as unique_ips,
-                SUM(CASE WHEN al.status_code >= 400 THEN 1 ELSE 0 END) as failed_actions,
-                SUM(CASE WHEN al.action = 'LOGIN_ATTEMPT' THEN 1 ELSE 0 END) as login_attempts,
-                SUM(CASE WHEN al.action = 'CREATE' THEN 1 ELSE 0 END) as creates,
-                SUM(CASE WHEN al.action = 'UPDATE' THEN 1 ELSE 0 END) as updates,
-                SUM(CASE WHEN al.action = 'DELETE' THEN 1 ELSE 0 END) as deletes,
-                SUM(CASE WHEN al.action = 'READ' THEN 1 ELSE 0 END) as reads,
-                SUM(CASE WHEN al.action LIKE 'ADMIN%' THEN 1 ELSE 0 END) as admin_actions
-            FROM enhanced_audit_log al
-            LEFT JOIN users u ON al.user_id = u.id
-            WHERE {where_sql}
-            GROUP BY u.id, u.username, u.email
-            ORDER BY total_actions DESC
-        """
+        activity_query = (
+            "SELECT "
+            "    u.id as user_id, "
+            "    u.username, "
+            "    u.email, "
+            "    COUNT(*) as total_actions, "
+            "    COUNT(DISTINCT DATE(al.created_at)) as active_days, "
+            "    MIN(al.created_at) as first_activity, "
+            "    MAX(al.created_at) as last_activity, "
+            "    COUNT(DISTINCT al.ip_address) as unique_ips, "
+            "    SUM(CASE WHEN al.status_code >= 400 THEN 1 ELSE 0 END) as failed_actions, "
+            "    SUM(CASE WHEN al.action = 'LOGIN_ATTEMPT' THEN 1 ELSE 0 END) as login_attempts, "
+            "    SUM(CASE WHEN al.action = 'CREATE' THEN 1 ELSE 0 END) as creates, "
+            "    SUM(CASE WHEN al.action = 'UPDATE' THEN 1 ELSE 0 END) as updates, "
+            "    SUM(CASE WHEN al.action = 'DELETE' THEN 1 ELSE 0 END) as deletes, "
+            "    SUM(CASE WHEN al.action = 'READ' THEN 1 ELSE 0 END) as reads, "
+            "    SUM(CASE WHEN al.action LIKE 'ADMIN%' THEN 1 ELSE 0 END) as admin_actions "
+            "FROM enhanced_audit_log al "
+            "LEFT JOIN users u ON al.user_id = u.id "
+            f"WHERE {where_sql} "
+            "GROUP BY u.id, u.username, u.email "
+            "ORDER BY total_actions DESC"
+        )
 
         user_activity_rows = db.execute(activity_query, params)
         users_activity = []
@@ -2454,16 +2454,17 @@ def get_user_activity_report():
             user_data = dict(row)
 
             # Get top actions for this user
-            top_actions_query = f"""
-                SELECT action, COUNT(*) as count
-                FROM enhanced_audit_log
-                WHERE user_id = ?
-                AND created_at >= ? AND created_at <= ?
-                {'AND action IN (' + ','.join(['?'] * len(action_types)) + ')' if action_types else ''}
-                GROUP BY action
-                ORDER BY count DESC
-                LIMIT 5
-            """
+            action_filter = f"AND action IN ({','.join(['?'] * len(action_types))}) " if action_types else ""
+            top_actions_query = (
+                "SELECT action, COUNT(*) as count "
+                "FROM enhanced_audit_log "
+                "WHERE user_id = ? "
+                "AND created_at >= ? AND created_at <= ? "
+                f"{action_filter}"
+                "GROUP BY action "
+                "ORDER BY count DESC "
+                "LIMIT 5"
+            )
             top_actions_params = [user_data['user_id'], start_date + ' 00:00:00', end_date + ' 23:59:59']
             if action_types:
                 top_actions_params.extend(action_types)
@@ -2472,17 +2473,17 @@ def get_user_activity_report():
             user_data['top_actions'] = [{'action': r['action'], 'count': r['count']} for r in top_actions_rows]
 
             # Get most active tables for this user
-            top_tables_query = f"""
-                SELECT table_name, COUNT(*) as count
-                FROM enhanced_audit_log
-                WHERE user_id = ?
-                AND created_at >= ? AND created_at <= ?
-                AND table_name IS NOT NULL
-                {'AND action IN (' + ','.join(['?'] * len(action_types)) + ')' if action_types else ''}
-                GROUP BY table_name
-                ORDER BY count DESC
-                LIMIT 5
-            """
+            top_tables_query = (
+                "SELECT table_name, COUNT(*) as count "
+                "FROM enhanced_audit_log "
+                "WHERE user_id = ? "
+                "AND created_at >= ? AND created_at <= ? "
+                "AND table_name IS NOT NULL "
+                + (f"AND action IN ({','.join(['?'] * len(action_types))}) " if action_types else "") +
+                "GROUP BY table_name "
+                "ORDER BY count DESC "
+                "LIMIT 5"
+            )
             top_tables_params = [user_data['user_id'], start_date + ' 00:00:00', end_date + ' 23:59:59']
             if action_types:
                 top_tables_params.extend(action_types)
@@ -2491,16 +2492,16 @@ def get_user_activity_report():
             user_data['top_tables'] = [{'table': r['table_name'], 'count': r['count']} for r in top_tables_rows]
 
             # Get daily activity pattern
-            daily_query = f"""
-                SELECT DATE(created_at) as date, COUNT(*) as count
-                FROM enhanced_audit_log
-                WHERE user_id = ?
-                AND created_at >= ? AND created_at <= ?
-                {'AND action IN (' + ','.join(['?'] * len(action_types)) + ')' if action_types else ''}
-                GROUP BY DATE(created_at)
-                ORDER BY date DESC
-                LIMIT 30
-            """
+            daily_query = (
+                "SELECT DATE(created_at) as date, COUNT(*) as count "
+                "FROM enhanced_audit_log "
+                "WHERE user_id = ? "
+                "AND created_at >= ? AND created_at <= ? "
+                + (f"AND action IN ({','.join(['?'] * len(action_types))}) " if action_types else "") +
+                "GROUP BY DATE(created_at) "
+                "ORDER BY date DESC "
+                "LIMIT 30"
+            )
             daily_params = [user_data['user_id'], start_date + ' 00:00:00', end_date + ' 23:59:59']
             if action_types:
                 daily_params.extend(action_types)
@@ -2519,13 +2520,13 @@ def get_user_activity_report():
         most_active_user = users_activity[0] if users_activity else None
 
         # Get overall action distribution
-        action_dist_query = f"""
-            SELECT action, COUNT(*) as count
-            FROM enhanced_audit_log al
-            WHERE {where_sql}
-            GROUP BY action
-            ORDER BY count DESC
-        """
+        action_dist_query = (
+            "SELECT action, COUNT(*) as count "
+            "FROM enhanced_audit_log al "
+            f"WHERE {where_sql} "
+            "GROUP BY action "
+            "ORDER BY count DESC"
+        )
         action_dist_rows = db.execute(action_dist_query, params)
         action_distribution = [{'action': r['action'], 'count': r['count']} for r in action_dist_rows]
 

@@ -886,7 +886,7 @@ def update_reply(reply_id: int):
     try:
         with db.get_connection() as conn:
             cursor = conn.cursor()
-            query = f"UPDATE feedback_replies SET {', '.join(updates)} WHERE id = ?"
+            query = "UPDATE feedback_replies SET " + ', '.join(updates) + " WHERE id = ?"
             cursor.execute(query, params)
             conn.commit()
 
