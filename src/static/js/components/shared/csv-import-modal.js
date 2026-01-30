@@ -142,39 +142,75 @@ export function showCSVImportModal({ title, config, profileName, onComplete, ext
         if (!selectedFile) return;
 
         showSpinner('Parsing CSV...');
+        
         try {
             const text = await selectedFile.text();
-            const result = parseCSV(text, config);
+            
+            // Use Web Worker for parsing to keep UI responsive
+            const worker = new Worker('/js/workers/csv-worker.js', { type: 'module' });
+            
+            worker.onmessage = function(e) {
+                const { success, result, error } = e.data;
+                
+                if (success) {
+                    processParseResult(result);
+                } else {
+                    handleParseError(error);
+                }
+                worker.terminate();
+            };
+            
+            worker.onerror = function(error) {
+                console.error('Worker error:', error);
+                // Fallback to main thread parsing if worker fails
+                console.warn('Falling back to main thread parsing...');
+                try {
+                    const fallbackResult = parseCSV(text, config);
+                    processParseResult(fallbackResult);
+                } catch (err) {
+                    handleParseError(err.message);
+                }
+                worker.terminate();
+            };
 
-            if (result.errors.length > 0) {
-                hideSpinner();
-                showError(`Failed to parse CSV: ${result.errors[0]}`);
-                return;
-            }
-
-            if (result.items.length === 0) {
-                hideSpinner();
-                showError('No valid data items found in the CSV file.');
-                return;
-            }
-
-            hideSpinner();
-            modal.remove();
-
-            // Open the preview modal
-            showImportPreviewModal({
-                items: result.items,
-                warnings: result.warnings,
-                config,
-                profileName,
-                onComplete,
-                extraData
-            });
+            // Start worker
+            worker.postMessage({ text, config });
 
         } catch (error) {
-            hideSpinner();
-            console.error('CSV Import Error:', error);
-            showError(`Error processing file: ${error.message}`);
+            handleParseError(error.message);
         }
     });
+
+    function handleParseError(message) {
+        hideSpinner();
+        console.error('CSV Import Error:', message);
+        showError(`Error processing file: ${message}`);
+    }
+
+    function processParseResult(result) {
+        if (result.errors.length > 0) {
+            hideSpinner();
+            showError(`Failed to parse CSV: ${result.errors[0]}`);
+            return;
+        }
+
+        if (result.items.length === 0) {
+            hideSpinner();
+            showError('No valid data items found in the CSV file.');
+            return;
+        }
+
+        hideSpinner();
+        modal.remove();
+
+        // Open the preview modal
+        showImportPreviewModal({
+            items: result.items,
+            warnings: result.warnings,
+            config,
+            profileName,
+            onComplete,
+            extraData
+        });
+    }
 }
