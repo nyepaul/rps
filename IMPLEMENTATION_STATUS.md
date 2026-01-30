@@ -1,8 +1,8 @@
 # Hybrid CSV+AI Import System - Implementation Status
 
-## Current Status: Phase 2 Complete ✅
+## Current Status: Phase 5 Complete ✅
 
-**Version**: 3.9.142
+**Version**: 3.9.144
 **Date**: 2026-01-29
 
 ---
@@ -15,64 +15,44 @@
 ---
 
 ### ✅ Phase 2: Unified Modal Component (COMPLETE)
-**Status**: Implemented and integrated
-**Branch**: main
-
-**What was done:**
-- Created `src/static/js/components/shared/csv-import-modal.js` (Unified upload UI)
-- Created `src/static/js/components/shared/import-preview-modal.js` (Advanced preview with Add/Merge/Skip)
-- Integrated into Income, Budget, and Assets tabs
-- Eliminated ~450 lines of redundant modal code
-- Added period selection for Expenses in the preview modal
-- Fixed broken CSV button in Budget tab
-
-**Goal**: Standardize the user experience for importing data across the app.
+... (existing phase 2 info) ...
 
 ---
 
 ### ✅ Phase 3: Backend Reconciliation Service (COMPLETE)
-**Status**: Implemented and tested
-**Branch**: main
-**Version**: 3.9.143
-
-**What was done:**
-- Created `src/services/reconciliation_service.py` using `difflib` for fuzzy matching.
-- Implemented `reconcile_income`, `reconcile_expenses`, and `reconcile_assets`.
-- Added logic for scoring matches (Name + Amount + Category/Institution).
-- Created unit tests covering exact matches, fuzzy matches, and amount mismatches.
-
-**Goal**: Smart duplicate detection without AI (Foundation layer).
+... (existing phase 3 info) ...
 
 ---
 
-### ⏳ Phase 4: AI Enhancement Backend Endpoint (PENDING)
-**Status**: Not started
-**Estimated effort**: 2-3 days
-**Target version**: 3.10.2
+### ✅ Phase 4: AI Enhancement Backend Endpoint (COMPLETE)
+**Status**: Implemented and tested
+**Branch**: main
+**Version**: 3.9.144
 
-**Planned work:**
-- Add `POST /api/enhance-csv-import` endpoint to ai_services.py (+200 lines)
-- Integrate with reconciliation service
-- Add prompt engineering for CSV analysis
-- Test with different LLM providers
+**What was done:**
+- Added /api/enhance-csv-import endpoint to ai_services.py
+- Integrated ReconciliationService for hybrid matching (Fuzzy + AI)
+- Added valid_categories to ReconciliationService for AI context
+- Implemented prompt engineering for smart duplicate detection and categorization
+- Updated implementation status to Phase 4 Complete
 
 **Goal**: AI-powered CSV analysis and suggestions
 
 ---
 
-### ⏳ Phase 5: AI Integration in Modal (PENDING)
-**Status**: Not started
-**Estimated effort**: 2-3 days
-**Target version**: 3.10.3
+### ✅ Phase 5: AI Integration in Modal (COMPLETE)
+**Status**: Implemented and wired up
+**Branch**: main
 
-**Planned work:**
-- Enable AI checkbox in modal
-- Wire up AI endpoint
-- Display AI suggestions in preview
-- Add confidence scores and reasoning
-- Handle timeouts gracefully
+**What was done:**
+- Integrated "✨ Smart AI Optimization" button into the preview modal.
+- Wired up frontend to `POST /api/enhance-csv-import` endpoint.
+- Added visual highlighting for probable duplicates found by AI.
+- Displayed AI-suggested categories and reasoning in the review table.
+- Implemented "Set All to Merge/Add" bulk actions for faster processing.
+- Handled AI result merging for Income, Expenses, and Assets.
 
-**Goal**: Complete hybrid CSV+AI flow
+**Goal**: Complete hybrid CSV+AI flow where AI assists the user in high-confidence data cleaning.
 
 ---
 
