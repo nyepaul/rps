@@ -7,11 +7,12 @@ import { store } from '../../state/store.js';
 import { showError, showSuccess, showLoading } from '../../utils/dom.js';
 import { formatCurrency, parseCurrency } from '../../utils/formatters.js';
 import { APP_CONFIG } from '../../config.js';
-import { showAIImportModal } from '../ai/ai-import-modal.js';
-import { apiClient } from '../../api/client.js';
-import { parseCSV, EXPENSE_CONFIG, validateCSVFile } from '../../utils/csv-parser.js';
+import { showAIImportModal } from "../ai/ai-import-modal.js";
+import { apiClient } from "../../api/client.js";
+import { EXPENSE_CONFIG } from "../../utils/csv-parser.js";
+import { showCSVImportModal } from "../shared/csv-import-modal.js";
 
-let currentPeriod = 'current';
+let currentPeriod = "current";
 let budgetData = null;
 
 /**
@@ -2305,9 +2306,27 @@ function setupBudgetEventHandlers(profile, container) {
     }
 
     // Export button
-    const exportBtn = container.querySelector('#export-expenses-btn');
+    const exportBtn = container.querySelector("#export-expenses-btn");
     if (exportBtn) {
-        exportBtn.addEventListener('click', () => exportExpensesCSV(profile));
+        exportBtn.addEventListener("click", () => exportExpensesCSV(profile));
+    }
+
+    // CSV Import button
+    const csvImportBtn = container.querySelector("#import-expenses-csv-btn");
+    if (csvImportBtn) {
+        csvImportBtn.addEventListener("click", () => {
+            showCSVImportModal({
+                title: "Import Expenses from CSV",
+                config: EXPENSE_CONFIG,
+                profileName: profile.name,
+                extraData: { period: currentPeriod },
+                onComplete: (updatedProfile) => {
+                    budgetData = updatedProfile.data?.budget || budgetData;
+                    renderExpenseSection(container);
+                    renderBudgetSummary(container);
+                },
+            });
+        });
     }
 
     // Actions dropdown menu
@@ -2342,10 +2361,20 @@ function setupBudgetEventHandlers(profile, container) {
                 actionsMenu.style.display = 'none';
 
                 switch (action) {
-                    case 'import-csv':
-                        showImportExpensesCSVModal(profile, container);
+                    case "import-csv":
+                        showCSVImportModal({
+                            title: "Import Expenses from CSV",
+                            config: EXPENSE_CONFIG,
+                            profileName: profile.name,
+                            extraData: { period: currentPeriod },
+                            onComplete: (updatedProfile) => {
+                                budgetData = updatedProfile.data?.budget || budgetData;
+                                renderExpenseSection(container);
+                                renderBudgetSummary(container);
+                            },
+                        });
                         break;
-                    case 'copy-to-post':
+                    case "copy-to-post":
                         showCopyExpensesModal(profile, container, 'current', 'future');
                         break;
                     case 'copy-to-pre':
@@ -2595,138 +2624,6 @@ function exportExpensesCSV(profile) {
     URL.revokeObjectURL(link.href);
 
     showSuccess('Expenses exported to CSV');
-}
-
-/**
- * Import expenses from CSV
- */
-function showImportExpensesCSVModal(profile, container) {
-    const modal = document.createElement('div');
-    modal.innerHTML = `
-        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
-            <div style="background: var(--bg-primary); border-radius: 12px; padding: 24px; max-width: 500px; width: 90%;">
-                <h3 style="margin: 0 0 16px 0;">📥 Import Expenses from CSV</h3>
-                <p style="margin: 0 0 16px 0; color: var(--text-secondary); font-size: 14px;">
-                    CSV should have columns: Name, Amount, Category, Frequency<br>
-                    Categories: housing, transportation, food, healthcare, utilities, insurance, personal, entertainment, other
-                </p>
-                <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
-                <div id="drop-zone" style="border: 2px dashed var(--border-color); border-radius: 8px; padding: 30px; text-align: center; cursor: pointer; margin-bottom: 16px;">
-                    <div style="font-size: 32px; margin-bottom: 8px;">📄</div>
-                    <div>Click or drop CSV file here</div>
-                </div>
-                <div id="file-info" style="display: none; margin-bottom: 16px; padding: 12px; background: var(--bg-secondary); border-radius: 6px;"></div>
-                <div style="margin-bottom: 16px;">
-                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Import to:</label>
-                    <select id="import-period" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-secondary);">
-                        <option value="current">Pre-Retirement</option>
-                        <option value="future">Post-Retirement</option>
-                        <option value="both">Both Periods</option>
-                    </select>
-                </div>
-                <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                    <button id="cancel-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
-                        Cancel
-                    </button>
-                    <button id="import-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; display: none;">
-                        Import
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-
-    const fileInput = modal.querySelector('#csv-file-input');
-    const dropZone = modal.querySelector('#drop-zone');
-    const fileInfo = modal.querySelector('#file-info');
-    const importBtn = modal.querySelector('#import-btn');
-    const periodSelect = modal.querySelector('#import-period');
-    let selectedFile = null;
-
-    dropZone.addEventListener('click', () => fileInput.click());
-    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = 'var(--accent-color)'; });
-    dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = 'var(--border-color)'; });
-    dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropZone.style.borderColor = 'var(--border-color)';
-        if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
-    });
-
-    fileInput.addEventListener('change', () => {
-        if (fileInput.files.length) handleFile(fileInput.files[0]);
-    });
-
-    function handleFile(file) {
-        if (!file.name.endsWith('.csv')) {
-            showError('Please select a CSV file');
-            return;
-        }
-        selectedFile = file;
-        fileInfo.style.display = 'block';
-        fileInfo.textContent = `Selected: ${file.name}`;
-        importBtn.style.display = 'block';
-    }
-
-    modal.querySelector('#cancel-btn').addEventListener('click', () => modal.remove());
-
-    importBtn.addEventListener('click', async () => {
-        if (!selectedFile) return;
-
-        // Validate file first
-        const validation = validateCSVFile(selectedFile);
-        if (!validation.valid) {
-            showError(validation.errors.join(', '));
-            return;
-        }
-
-        importBtn.disabled = true;
-        importBtn.textContent = 'Importing...';
-
-        try {
-            const text = await selectedFile.text();
-            const result = parseCSV(text, EXPENSE_CONFIG);
-
-            // Check for parsing errors
-            if (result.errors.length > 0) {
-                throw new Error(result.errors.join(', '));
-            }
-
-            // Show warnings if any
-            if (result.warnings.length > 0) {
-                console.warn('CSV Import warnings:', result.warnings);
-            }
-
-            const targetPeriod = periodSelect.value;
-            let added = 0;
-
-            // Add parsed items to appropriate period(s)
-            result.items.forEach(expense => {
-                const category = expense.category;
-
-                if (targetPeriod === 'current' || targetPeriod === 'both') {
-                    if (!budgetData.expenses.current[category]) budgetData.expenses.current[category] = [];
-                    budgetData.expenses.current[category].push(expense);
-                    added++;
-                }
-                if (targetPeriod === 'future' || targetPeriod === 'both') {
-                    if (!budgetData.expenses.future[category]) budgetData.expenses.future[category] = [];
-                    budgetData.expenses.future[category].push({ ...expense });
-                    if (targetPeriod !== 'both') added++;
-                }
-            });
-
-            await saveBudget(profile, container);
-            renderExpenseSection(container);
-            renderBudgetSummary(container);
-            showSuccess(`Imported ${added} expenses`);
-            modal.remove();
-        } catch (error) {
-            showError('Import failed: ' + error.message);
-            importBtn.disabled = false;
-            importBtn.textContent = 'Import';
-        }
-    });
 }
 
 /**

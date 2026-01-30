@@ -1,5 +1,5 @@
 {
-    "version": "3.9.141",
+    "version": "3.9.142",
     "release_date": "2026-01-29",
-    "release_notes": "UX fixes (A11y) and security updates"
+    "release_notes": "Phase 2 of CSV Import System: Unified Modal Component"
 }

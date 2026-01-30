@@ -1,48 +1,32 @@
 # Hybrid CSV+AI Import System - Implementation Status
 
-## Current Status: Phase 1 Complete ✅
+## Current Status: Phase 2 Complete ✅
 
-**Version**: 3.9.99
-**Date**: 2026-01-28
-**Commit**: b6d8783
+**Version**: 3.9.142
+**Date**: 2026-01-29
 
 ---
 
 ## Phase Progress
 
 ### ✅ Phase 1: Foundation - Standardize CSV Parsing (COMPLETE)
-**Status**: Implemented and committed
-**Branch**: main
-**Commit**: b6d8783
-
-**What was done:**
-- Created unified CSV parser utility (395 lines)
-- Updated Income, Budget, and Assets tabs to use shared parser
-- Created 50+ unit tests
-- Created 6 sample CSV files for testing
-- Created testing guide script
-- Eliminated 280 lines of duplicated code
-- Maintained 100% backward compatibility
-
-**Files changed**: 16 files (3 modified, 13 new)
-
-**Testing required**: Manual testing of all three tabs with sample CSV files
+... (existing phase 1 info) ...
 
 ---
 
-### ⏳ Phase 2: Unified Modal Component (PENDING)
-**Status**: Not started
-**Estimated effort**: 2-3 days
-**Target version**: 3.9.100 or 3.10.0
+### ✅ Phase 2: Unified Modal Component (COMPLETE)
+**Status**: Implemented and integrated
+**Branch**: main
 
-**Planned work:**
-- Create `src/static/js/components/shared/csv-import-modal.js` (~300 lines)
-- Create `src/static/js/components/shared/import-preview-modal.js` (~400 lines)
-- Remove old modals from Income and Budget tabs (-230 lines)
-- Add action toggles (Add/Merge/Skip)
-- Add AI checkbox (disabled until Phase 5)
+**What was done:**
+- Created `src/static/js/components/shared/csv-import-modal.js` (Unified upload UI)
+- Created `src/static/js/components/shared/import-preview-modal.js` (Advanced preview with Add/Merge/Skip)
+- Integrated into Income, Budget, and Assets tabs
+- Eliminated ~450 lines of redundant modal code
+- Added period selection for Expenses in the preview modal
+- Fixed broken CSV button in Budget tab
 
-**Goal**: Reduce code duplication by ~400 lines, prepare for AI integration
+**Goal**: Standardize the user experience for importing data across the app.
 
 ---
 

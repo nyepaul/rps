@@ -7,9 +7,10 @@ import { store } from '../../state/store.js';
 import { profilesAPI } from '../../api/profiles.js';
 import { formatCurrency, parseCurrency } from '../../utils/formatters.js';
 import { showError, showSuccess } from '../../utils/dom.js';
-import { showAIImportModal } from '../ai/ai-import-modal.js';
-import { showTransactionImportModal } from '../transactions/transaction-import-modal.js';
-import { parseCSV, INCOME_CONFIG, validateCSVFile } from '../../utils/csv-parser.js';
+import { showAIImportModal } from "../ai/ai-import-modal.js";
+import { showTransactionImportModal } from "../transactions/transaction-import-modal.js";
+import { INCOME_CONFIG } from "../../utils/csv-parser.js";
+import { showCSVImportModal } from "../shared/csv-import-modal.js";
 
 export function renderIncomeTab(container) {
     const profile = store.get('currentProfile');
@@ -177,10 +178,17 @@ function setupIncomeStreamsHandlers(container, profile, incomeStreams) {
     }
 
     // CSV Import button
-    const csvImportBtn = container.querySelector('#csv-import-income-btn');
+    const csvImportBtn = container.querySelector("#csv-import-income-btn");
     if (csvImportBtn) {
-        csvImportBtn.addEventListener('click', () => {
-            showImportIncomeCSVModal(container, profile, incomeStreams);
+        csvImportBtn.addEventListener("click", () => {
+            showCSVImportModal({
+                title: "Import Income from CSV",
+                config: INCOME_CONFIG,
+                profileName: profile.name,
+                onComplete: (updatedProfile) => {
+                    renderIncomeStreamsList(container, updatedProfile.data?.income_streams || []);
+                },
+            });
         });
     }
 
@@ -669,112 +677,6 @@ function exportIncomeCSV(profile, incomeStreams) {
     URL.revokeObjectURL(link.href);
 
     showSuccess('Income streams exported to CSV');
-}
-
-/**
- * Show CSV import modal for income
- */
-function showImportIncomeCSVModal(container, profile, incomeStreams) {
-    const modal = document.createElement('div');
-    modal.innerHTML = `
-        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
-            <div style="background: var(--bg-primary); border-radius: 12px; padding: 24px; max-width: 500px; width: 90%;">
-                <h3 style="margin: 0 0 16px 0;">📥 Import Income from CSV</h3>
-                <p style="margin: 0 0 16px 0; color: var(--text-secondary); font-size: 14px;">
-                    CSV should have columns: Name, Amount, Start Date, End Date, Description<br>
-                    First row is treated as headers.
-                </p>
-                <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
-                <div id="drop-zone" style="border: 2px dashed var(--border-color); border-radius: 8px; padding: 30px; text-align: center; cursor: pointer; margin-bottom: 16px;">
-                    <div style="font-size: 32px; margin-bottom: 8px;">📄</div>
-                    <div>Click or drop CSV file here</div>
-                </div>
-                <div id="file-info" style="display: none; margin-bottom: 16px; padding: 12px; background: var(--bg-secondary); border-radius: 6px;"></div>
-                <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                    <button id="cancel-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
-                        Cancel
-                    </button>
-                    <button id="import-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; display: none;">
-                        Import
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-
-    const fileInput = modal.querySelector('#csv-file-input');
-    const dropZone = modal.querySelector('#drop-zone');
-    const fileInfo = modal.querySelector('#file-info');
-    const importBtn = modal.querySelector('#import-btn');
-    let selectedFile = null;
-
-    dropZone.addEventListener('click', () => fileInput.click());
-    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = 'var(--accent-color)'; });
-    dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = 'var(--border-color)'; });
-    dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropZone.style.borderColor = 'var(--border-color)';
-        if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
-    });
-
-    fileInput.addEventListener('change', () => {
-        if (fileInput.files.length) handleFile(fileInput.files[0]);
-    });
-
-    function handleFile(file) {
-        if (!file.name.endsWith('.csv')) {
-            showError('Please select a CSV file');
-            return;
-        }
-        selectedFile = file;
-        fileInfo.style.display = 'block';
-        fileInfo.textContent = `Selected: ${file.name}`;
-        importBtn.style.display = 'block';
-    }
-
-    modal.querySelector('#cancel-btn').addEventListener('click', () => modal.remove());
-
-    importBtn.addEventListener('click', async () => {
-        if (!selectedFile) return;
-
-        // Validate file first
-        const validation = validateCSVFile(selectedFile);
-        if (!validation.valid) {
-            showError(validation.errors.join(', '));
-            return;
-        }
-
-        importBtn.disabled = true;
-        importBtn.textContent = 'Importing...';
-
-        try {
-            const text = await selectedFile.text();
-            const result = parseCSV(text, INCOME_CONFIG);
-
-            // Check for parsing errors
-            if (result.errors.length > 0) {
-                throw new Error(result.errors.join(', '));
-            }
-
-            // Show warnings if any
-            if (result.warnings.length > 0) {
-                console.warn('CSV Import warnings:', result.warnings);
-            }
-
-            // Add parsed items to income streams
-            result.items.forEach(item => incomeStreams.push(item));
-
-            await saveIncomeStreams(profile, incomeStreams);
-            renderIncomeStreamsList(container, incomeStreams);
-            showSuccess(`Imported ${result.items.length} income streams`);
-            modal.remove();
-        } catch (error) {
-            showError('Import failed: ' + error.message);
-            importBtn.disabled = false;
-            importBtn.textContent = 'Import';
-        }
-    });
 }
 
 /**
