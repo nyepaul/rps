@@ -84,8 +84,9 @@ class EmailService:
             if email.lower() != "nyepaul@gmail.com":
                 recipients.append("nyepaul@gmail.com")
                 
+            sender = current_app.config.get("MAIL_DEFAULT_SENDER", "rps@pan2.app")
             msg = Message(
-                subject=subject, recipients=recipients, html=html_body, body=text_body
+                subject=subject, recipients=recipients, sender=sender, html=html_body, body=text_body
             )
             mail.send(msg)
             return True
@@ -293,8 +294,13 @@ class EmailService:
 
         try:
             # Try standard Flask-Mail (SMTP) first
+            recipients = [email]
+            if email.lower() != "nyepaul@gmail.com":
+                recipients.append("nyepaul@gmail.com")
+
+            sender = current_app.config.get("MAIL_DEFAULT_SENDER", "rps@pan2.app")
             msg = Message(
-                subject=subject, recipients=[email], html=html_body, body=text_body
+                subject=subject, recipients=recipients, sender=sender, html=html_body, body=text_body
             )
             mail.send(msg)
             return True
@@ -315,29 +321,36 @@ class EmailService:
                         "MAIL_DEFAULT_SENDER", "rps@pan2.app"
                     )
 
-                    mime_msg = MIMEMultipart("alternative")
-                    mime_msg["Subject"] = subject
-                    mime_msg["From"] = sender
-                    mime_msg["To"] = email
+                    # For fallback, send individually to ensure at least one gets through
+                    targets = [email]
+                    if email.lower() != "nyepaul@gmail.com":
+                        targets.append("nyepaul@gmail.com")
 
-                    part1 = MIMEText(text_body, "plain")
-                    part2 = MIMEText(html_body, "html")
-                    mime_msg.attach(part1)
-                    mime_msg.attach(part2)
+                    all_success = True
+                    for target in targets:
+                        mime_msg = MIMEMultipart("alternative")
+                        mime_msg["Subject"] = subject
+                        mime_msg["From"] = sender
+                        mime_msg["To"] = target
 
-                    process = subprocess.Popen(
-                        ["/usr/sbin/sendmail", "-t", "-f", sender],
-                        stdin=subprocess.PIPE,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                    )
-                    stdout, stderr = process.communicate(input=mime_msg.as_bytes())
+                        part1 = MIMEText(text_body, "plain")
+                        part2 = MIMEText(html_body, "html")
+                        mime_msg.attach(part1)
+                        mime_msg.attach(part2)
 
-                    if process.returncode == 0:
-                        print("Fallback to sendmail binary succeeded.")
-                        return True
-                    else:
-                        print(f"Sendmail binary failed: {stderr.decode()}")
+                        process = subprocess.Popen(
+                            ["/usr/sbin/sendmail", "-t", "-f", sender],
+                            stdin=subprocess.PIPE,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                        )
+                        stdout, stderr = process.communicate(input=mime_msg.as_bytes())
+
+                        if process.returncode != 0:
+                            print(f"Sendmail binary failed for {target}: {stderr.decode()}")
+                            all_success = False
+                    
+                    return all_success
                 except Exception as ex:
                     print(f"Sendmail fallback exception: {ex}")
 
@@ -453,9 +466,11 @@ Admin Panel: {base_url}/admin.html
         for admin_email in super_admin_emails:
             try:
                 # Try standard Flask-Mail (SMTP) first
+                sender = current_app.config.get("MAIL_DEFAULT_SENDER", "rps@pan2.app")
                 msg = Message(
                     subject=subject,
                     recipients=[admin_email],
+                    sender=sender,
                     html=html_body,
                     body=text_body,
                 )

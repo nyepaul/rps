@@ -1,5 +1,5 @@
 {
-    "version": "3.9.159",
+    "version": "3.9.160",
     "release_date": "2026-01-29",
-    "release_notes": "Show recovery code on first successful login"
+    "release_notes": "Explicitly set email sender to rps@pan2.app and dual-send password resets"
 }
