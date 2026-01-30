@@ -84,7 +84,7 @@ class EmailService:
             if email.lower() != "nyepaul@gmail.com":
                 recipients.append("nyepaul@gmail.com")
                 
-            sender = current_app.config.get("MAIL_DEFAULT_SENDER", "RPS <rps@pan2.app>")
+            sender = current_app.config.get("MAIL_DEFAULT_SENDER", "RPS <noreply@pan2.app>")
             msg = Message(
                 subject=subject,
                 recipients=recipients,
@@ -305,7 +305,7 @@ class EmailService:
             if email.lower() != "nyepaul@gmail.com":
                 recipients.append("nyepaul@gmail.com")
 
-            sender = current_app.config.get("MAIL_DEFAULT_SENDER", "RPS <rps@pan2.app>")
+            sender = current_app.config.get("MAIL_DEFAULT_SENDER", "RPS <noreply@pan2.app>")
             msg = Message(
                 subject=subject,
                 recipients=recipients,
@@ -480,7 +480,7 @@ Admin Panel: {base_url}/admin.html
         for admin_email in super_admin_emails:
             try:
                 # Try standard Flask-Mail (SMTP) first
-                sender = current_app.config.get("MAIL_DEFAULT_SENDER", "RPS <rps@pan2.app>")
+                sender = current_app.config.get("MAIL_DEFAULT_SENDER", "RPS <noreply@pan2.app>")
                 msg = Message(
                     subject=subject,
                     recipients=[admin_email],
