@@ -210,7 +210,7 @@ def register():
     try:
         from src.services.email_service import EmailService
 
-        EmailService.send_new_account_notification(user.username, user.email)
+        EmailService.send_new_account_notification(user.username, user.email, verification_token=token)
     except Exception as e:
         print(f"Failed to send admin notification: {e}")
         # Non-critical, don't fail registration

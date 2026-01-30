@@ -342,12 +342,13 @@ class EmailService:
             return False
 
     @staticmethod
-    def send_new_account_notification(username: str, email: str, base_url: str = None):
+    def send_new_account_notification(username: str, email: str, verification_token: str = None, base_url: str = None):
         """Send notification to super admins when a new account is created.
 
         Args:
             username: The new user's username
             email: The new user's email address
+            verification_token: Optional token to include verification link
             base_url: Base URL of the application
 
         Returns:
@@ -371,6 +372,16 @@ class EmailService:
 
         subject = f"RPS - New Account Created: {username}"
         created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
+        
+        verification_section = ""
+        if verification_token:
+            v_link = f"{base_url}/verify-email.html?token={verification_token}"
+            verification_section = f"""
+                <tr>
+                    <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #e5e7eb; color: #b91c1c;">Verification Link:</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; word-break: break-all;"><a href="{v_link}">{v_link}</a></td>
+                </tr>
+            """
 
         html_body = f"""
         <!DOCTYPE html>
@@ -379,9 +390,9 @@ class EmailService:
             <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
                 <h2 style="color: #2563eb;">New Account Created</h2>
                 <p>A new user has registered on RPS:</p>
-                <table style="border-collapse: collapse; margin: 20px 0;">
+                <table style="border-collapse: collapse; margin: 20px 0; width: 100%;">
                     <tr>
-                        <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Username:</td>
+                        <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #e5e7eb; width: 120px;">Username:</td>
                         <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">{username}</td>
                     </tr>
                     <tr>
@@ -389,9 +400,10 @@ class EmailService:
                         <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">{email}</td>
                     </tr>
                     <tr>
-                        <td style="padding: 8px; font-weight: bold;">Created:</td>
-                        <td style="padding: 8px;">{created_at}</td>
+                        <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Created:</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">{created_at}</td>
                     </tr>
+                    {verification_section}
                 </table>
                 <p style="color: #6b7280; font-size: 14px;">
                     This is an automated notification. The user must verify their email before they can log in.
@@ -404,6 +416,11 @@ class EmailService:
         </html>
         """
 
+        v_link_text = ""
+        if verification_token:
+            v_link = f"{base_url}/verify-email.html?token={verification_token}"
+            v_link_text = f"\nVerification Link: {v_link}\n"
+
         text_body = f"""New Account Created
 
 A new user has registered on RPS:
@@ -411,7 +428,7 @@ A new user has registered on RPS:
 Username: {username}
 Email: {email}
 Created: {created_at}
-
+{v_link_text}
 This is an automated notification. The user must verify their email before they can log in.
 
 Admin Panel: {base_url}/admin.html
