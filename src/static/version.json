@@ -1,5 +1,5 @@
 {
-    "version": "3.9.173",
+    "version": "3.9.177",
     "release_date": "2026-01-30",
-    "release_notes": "Improve resend verification error messaging and handling"
+    "release_notes": "Add login notification email for administrator"
 }

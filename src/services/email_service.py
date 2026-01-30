@@ -521,3 +521,102 @@ Admin Panel: {base_url}/admin.html
                     print(f"Sendmail fallback failed for {admin_email}: {ex}")
 
         return any_sent
+
+    @staticmethod
+    def send_login_notification(username: str, email: str, base_url: str = None):
+        """Send notification to the administrator when a user logs in.
+
+        Args:
+            username: The username of the user who logged in
+            email: The email address of the user who logged in
+            base_url: Base URL of the application
+
+        Returns:
+            bool: True if the notification was sent successfully
+        """
+        if not base_url:
+            base_url = current_app.config.get("APP_BASE_URL") or os.getenv("APP_BASE_URL", "https://rps.pan2.app")
+
+        admin_email = "nyepaul@gmail.com"
+        subject = f"RPS - User Login: {username}"
+        login_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
+
+        html_body = f"""
+        <!DOCTYPE html>
+        <html>
+        <body style="font-family: sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #2563eb;">User Login Notification</h2>
+                <p>A user has just logged into the RPS application:</p>
+                <table style="border-collapse: collapse; margin: 20px 0; width: 100%;">
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #e5e7eb; width: 120px;">Username:</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">{username}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Email:</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">{email}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Time:</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">{login_time}</td>
+                    </tr>
+                </table>
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                    <a href="{base_url}/admin.html" style="color: #2563eb; text-decoration: none;">View Admin Panel</a>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        text_body = f"""User Login Notification
+
+A user has just logged into the RPS application:
+
+Username: {username}
+Email: {email}
+Time: {login_time}
+
+Admin Panel: {base_url}/admin.html
+"""
+
+        try:
+            # Try standard Flask-Mail (SMTP) first
+            sender = current_app.config.get("MAIL_DEFAULT_SENDER", "RPS <rps@pan2.app>")
+            msg = Message(
+                subject=subject,
+                recipients=[admin_email],
+                sender=sender,
+                reply_to="nyepaul@gmail.com",
+                extra_headers={"From": sender},
+                html=html_body,
+                body=text_body,
+            )
+            mail.send(msg)
+            return True
+        except Exception as e:
+            print(f"Flask-Mail SMTP failed for login notification: {e}")
+            # Fallback to local sendmail binary
+            try:
+                import subprocess
+                from email.mime.text import MIMEText
+                from email.mime.multipart import MIMEMultipart
+
+                sender = current_app.config.get("MAIL_DEFAULT_SENDER", "RPS <rps@pan2.app>")
+                mime_msg = MIMEMultipart("alternative")
+                mime_msg["Subject"] = subject
+                mime_msg["From"] = sender
+                mime_msg["To"] = admin_email
+                mime_msg["Reply-To"] = "nyepaul@gmail.com"
+                mime_msg.attach(MIMEText(text_body, "plain"))
+                mime_msg.attach(MIMEText(html_body, "html"))
+
+                process = subprocess.Popen(
+                    ["/usr/sbin/sendmail", "-t", "-f", sender], stdin=subprocess.PIPE
+                )
+                process.communicate(input=mime_msg.as_bytes())
+                return process.returncode == 0
+            except Exception as ex:
+                print(f"Sendmail fallback failed for login notification: {ex}")
+                return False
