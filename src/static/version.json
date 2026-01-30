@@ -1,5 +1,5 @@
 {
-    "version": "3.9.157",
+    "version": "3.9.158",
     "release_date": "2026-01-29",
-    "release_notes": "Revert verification link expiration to 24 hours"
+    "release_notes": "Fix verification page hang caused by CSP script blocking"
 }

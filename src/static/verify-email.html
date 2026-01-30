@@ -20,47 +20,11 @@
             <span class="spinner-text">Processing...</span>
         </div>
 
-        <div class="toggle-form" id="backToLogin" class="hidden">
+        <div class="toggle-form" id="backToLogin">
             <a href="/login">Return to Login</a>
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            const messageDiv = document.getElementById('message');
-            const spinner = document.getElementById('spinner');
-            const backLink = document.getElementById('backToLogin');
-            
-            const urlParams = new URLSearchParams(window.location.search);
-            const token = urlParams.get('token');
-
-            if (!token) {
-                messageDiv.innerHTML = '<div class="error">Invalid or missing verification token.</div>';
-                spinner.classList.remove('active');
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/auth/verify-email', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    messageDiv.innerHTML = `<div class="success">${data.message || 'Email verified successfully!'}</div>`;
-                    setTimeout(() => window.location.href = '/login', 3000);
-                } else {
-                    messageDiv.innerHTML = `<div class="error">${data.error || 'Verification failed. The link may be expired or invalid.'}</div>`;
-                }
-            } catch (error) {
-                messageDiv.innerHTML = '<div class="error">Network error. Please try again later.</div>';
-            } finally {
-                spinner.classList.remove('active');
-            }
-        });
-    </script>
+    <script src="/js/verify-email.js"></script>
 </body>
 </html>
