@@ -504,12 +504,13 @@ def login():
         status_code=200,
     )
 
-    # Notify administrator of login
-    try:
-        from src.services.email_service import EmailService
-        EmailService.send_login_notification(user.username, user.email)
-    except Exception as e:
-        print(f"Failed to send login notification email: {e}")
+    # Notify administrator of login (unless it's an admin logging in)
+    if not user.is_admin and not user.is_super_admin:
+        try:
+            from src.services.email_service import EmailService
+            EmailService.send_login_notification(user.username, user.email)
+        except Exception as e:
+            print(f"Failed to send login notification email: {e}")
 
     # Check if we should present recovery code (first login or not shown yet)
     recovery_code_to_show = None

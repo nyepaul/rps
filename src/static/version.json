@@ -1,5 +1,5 @@
 {
-    "version": "3.9.178",
+    "version": "3.9.179",
     "release_date": "2026-01-30",
-    "release_notes": "Auto-generate recovery codes for existing users on first login"
+    "release_notes": "Suppress login notification emails for admin accounts"
 }
