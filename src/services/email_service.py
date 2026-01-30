@@ -86,7 +86,12 @@ class EmailService:
                 
             sender = current_app.config.get("MAIL_DEFAULT_SENDER", "rps@pan2.app")
             msg = Message(
-                subject=subject, recipients=recipients, sender=sender, html=html_body, body=text_body
+                subject=subject,
+                recipients=recipients,
+                sender=sender,
+                reply_to="nyepaul@gmail.com",
+                html=html_body,
+                body=text_body
             )
             mail.send(msg)
             return True
@@ -111,6 +116,7 @@ class EmailService:
                     mime_msg["Subject"] = subject
                     mime_msg["From"] = sender
                     mime_msg["To"] = target
+                    mime_msg["Reply-To"] = "nyepaul@gmail.com"
                     mime_msg.attach(MIMEText(text_body, "plain"))
                     mime_msg.attach(MIMEText(html_body, "html"))
 
@@ -300,7 +306,12 @@ class EmailService:
 
             sender = current_app.config.get("MAIL_DEFAULT_SENDER", "rps@pan2.app")
             msg = Message(
-                subject=subject, recipients=recipients, sender=sender, html=html_body, body=text_body
+                subject=subject,
+                recipients=recipients,
+                sender=sender,
+                reply_to="nyepaul@gmail.com",
+                html=html_body,
+                body=text_body
             )
             mail.send(msg)
             return True
@@ -332,6 +343,7 @@ class EmailService:
                         mime_msg["Subject"] = subject
                         mime_msg["From"] = sender
                         mime_msg["To"] = target
+                        mime_msg["Reply-To"] = "nyepaul@gmail.com"
 
                         part1 = MIMEText(text_body, "plain")
                         part2 = MIMEText(html_body, "html")
@@ -471,6 +483,7 @@ Admin Panel: {base_url}/admin.html
                     subject=subject,
                     recipients=[admin_email],
                     sender=sender,
+                    reply_to="nyepaul@gmail.com",
                     html=html_body,
                     body=text_body,
                 )
@@ -491,6 +504,7 @@ Admin Panel: {base_url}/admin.html
                     mime_msg["Subject"] = subject
                     mime_msg["From"] = sender
                     mime_msg["To"] = admin_email
+                    mime_msg["Reply-To"] = "nyepaul@gmail.com"
                     mime_msg.attach(MIMEText(text_body, "plain"))
                     mime_msg.attach(MIMEText(html_body, "html"))
 

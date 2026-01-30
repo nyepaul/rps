@@ -1,5 +1,5 @@
 {
-    "version": "3.9.163",
+    "version": "3.9.164",
     "release_date": "2026-01-29",
-    "release_notes": "Fix UnboundLocalError during registration and login"
+    "release_notes": "Set Reply-To address to nyepaul@gmail.com for all transactional emails"
 }
