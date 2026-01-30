@@ -192,7 +192,6 @@ def register():
         user.recovery_salt = base64.b64encode(recovery_salt).decode("utf-8")
 
         # Store recovery code temporarily (encrypted with server key) to show on first login
-        from src.services.encryption_service import EncryptionService
         server_service = EncryptionService() # Explicitly uses ENCRYPTION_KEY
         enc_code, code_iv = server_service.encrypt(recovery_code)
         user.temp_recovery_code = json.dumps({"code": enc_code, "iv": code_iv})
@@ -498,7 +497,6 @@ def login():
     recovery_code_to_show = None
     if user.temp_recovery_code and not user.recovery_code_shown:
         try:
-            from src.services.encryption_service import EncryptionService
             server_service = EncryptionService() # Explicitly uses ENCRYPTION_KEY
             code_data = json.loads(user.temp_recovery_code)
             recovery_code_to_show = server_service.decrypt(code_data["code"], code_data["iv"])

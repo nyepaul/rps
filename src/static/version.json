@@ -1,5 +1,5 @@
 {
-    "version": "3.9.162",
+    "version": "3.9.163",
     "release_date": "2026-01-29",
-    "release_notes": "Fix Internal Server Error during login caused by User model initialization bug"
+    "release_notes": "Fix UnboundLocalError during registration and login"
 }
