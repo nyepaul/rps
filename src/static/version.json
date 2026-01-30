@@ -1,5 +1,5 @@
 {
-    "version": "3.9.168",
+    "version": "3.9.169",
     "release_date": "2026-01-29",
-    "release_notes": "Change sender address to RPS <noreply@pan2.app>"
+    "release_notes": "Improve verification error messages and robustness"
 }

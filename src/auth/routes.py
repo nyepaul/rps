@@ -321,7 +321,7 @@ def verify_email():
 
         user = User.get_by_id(user_id)
         if not user:
-            return jsonify({"error": "User not found"}), 404
+            return jsonify({"error": "User account no longer exists. Please register again."}), 404
 
         # Check if already verified
         if getattr(user, "email_verified", False):

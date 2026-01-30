@@ -158,7 +158,7 @@ class User(UserMixin):
                 return False
 
             if self.email_verified:
-                return False
+                return True # Already verified is a success state for the token
 
             self.email_verified = True
             self.save()
