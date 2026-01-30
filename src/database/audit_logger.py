@@ -1,4 +1,5 @@
 """Audit logging service for tracking data access and modifications."""
+
 from datetime import datetime
 from typing import Optional
 from flask import request, has_request_context
@@ -17,7 +18,7 @@ class AuditLogger:
         user_id: Optional[int] = None,
         details: Optional[str] = None,
         ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
     ):
         """
         Log an audit event.
@@ -44,18 +45,30 @@ class AuditLogger:
             if ip_address is None:
                 ip_address = request.remote_addr
             if user_agent is None:
-                user_agent = request.headers.get('User-Agent', '')[:200]  # Limit length
+                user_agent = request.headers.get("User-Agent", "")[:200]  # Limit length
 
         timestamp = datetime.now().isoformat()
 
         try:
             with db.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute('''
+                cursor.execute(
+                    """
                     INSERT INTO audit_log
                     (action, table_name, record_id, user_id, details, ip_address, user_agent, created_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (action, table_name, record_id, user_id, details, ip_address, user_agent, timestamp))
+                """,
+                    (
+                        action,
+                        table_name,
+                        record_id,
+                        user_id,
+                        details,
+                        ip_address,
+                        user_agent,
+                        timestamp,
+                    ),
+                )
                 # Explicitly commit the audit log
                 conn.commit()
         except Exception as e:
@@ -64,31 +77,51 @@ class AuditLogger:
             print(f"Audit logging failed: {e}")
 
     @staticmethod
-    def log_create(table_name: str, record_id: int, user_id: Optional[int] = None, details: Optional[str] = None):
+    def log_create(
+        table_name: str,
+        record_id: int,
+        user_id: Optional[int] = None,
+        details: Optional[str] = None,
+    ):
         """Log a CREATE operation."""
-        AuditLogger.log('CREATE', table_name, record_id, user_id, details)
+        AuditLogger.log("CREATE", table_name, record_id, user_id, details)
 
     @staticmethod
-    def log_read(table_name: str, record_id: Optional[int] = None, user_id: Optional[int] = None, details: Optional[str] = None):
+    def log_read(
+        table_name: str,
+        record_id: Optional[int] = None,
+        user_id: Optional[int] = None,
+        details: Optional[str] = None,
+    ):
         """Log a READ operation."""
-        AuditLogger.log('READ', table_name, record_id, user_id, details)
+        AuditLogger.log("READ", table_name, record_id, user_id, details)
 
     @staticmethod
-    def log_update(table_name: str, record_id: int, user_id: Optional[int] = None, details: Optional[str] = None):
+    def log_update(
+        table_name: str,
+        record_id: int,
+        user_id: Optional[int] = None,
+        details: Optional[str] = None,
+    ):
         """Log an UPDATE operation."""
-        AuditLogger.log('UPDATE', table_name, record_id, user_id, details)
+        AuditLogger.log("UPDATE", table_name, record_id, user_id, details)
 
     @staticmethod
-    def log_delete(table_name: str, record_id: int, user_id: Optional[int] = None, details: Optional[str] = None):
+    def log_delete(
+        table_name: str,
+        record_id: int,
+        user_id: Optional[int] = None,
+        details: Optional[str] = None,
+    ):
         """Log a DELETE operation."""
-        AuditLogger.log('DELETE', table_name, record_id, user_id, details)
+        AuditLogger.log("DELETE", table_name, record_id, user_id, details)
 
     @staticmethod
     def get_logs(
         user_id: Optional[int] = None,
         table_name: Optional[str] = None,
         action: Optional[str] = None,
-        limit: int = 100
+        limit: int = 100,
     ):
         """
         Retrieve audit logs with optional filtering.
@@ -102,22 +135,22 @@ class AuditLogger:
         Returns:
             List of audit log entries
         """
-        query = 'SELECT * FROM audit_log WHERE 1=1'
+        query = "SELECT * FROM audit_log WHERE 1=1"
         params = []
 
         if user_id is not None:
-            query += ' AND user_id = ?'
+            query += " AND user_id = ?"
             params.append(user_id)
 
         if table_name is not None:
-            query += ' AND table_name = ?'
+            query += " AND table_name = ?"
             params.append(table_name)
 
         if action is not None:
-            query += ' AND action = ?'
+            query += " AND action = ?"
             params.append(action)
 
-        query += ' ORDER BY created_at DESC LIMIT ?'
+        query += " ORDER BY created_at DESC LIMIT ?"
         params.append(limit)
 
         rows = db.execute(query, tuple(params))
@@ -136,8 +169,7 @@ class AuditLogger:
 
         with db.get_connection() as conn:
             conn.execute(
-                'DELETE FROM audit_log WHERE created_at < ?',
-                (cutoff_date.isoformat(),)
+                "DELETE FROM audit_log WHERE created_at < ?", (cutoff_date.isoformat(),)
             )
 
 
@@ -146,21 +178,41 @@ audit_logger = AuditLogger()
 
 
 # Convenience functions
-def log_create(table_name: str, record_id: int, user_id: Optional[int] = None, details: Optional[str] = None):
+def log_create(
+    table_name: str,
+    record_id: int,
+    user_id: Optional[int] = None,
+    details: Optional[str] = None,
+):
     """Log a CREATE operation."""
     audit_logger.log_create(table_name, record_id, user_id, details)
 
 
-def log_read(table_name: str, record_id: Optional[int] = None, user_id: Optional[int] = None, details: Optional[str] = None):
+def log_read(
+    table_name: str,
+    record_id: Optional[int] = None,
+    user_id: Optional[int] = None,
+    details: Optional[str] = None,
+):
     """Log a READ operation."""
     audit_logger.log_read(table_name, record_id, user_id, details)
 
 
-def log_update(table_name: str, record_id: int, user_id: Optional[int] = None, details: Optional[str] = None):
+def log_update(
+    table_name: str,
+    record_id: int,
+    user_id: Optional[int] = None,
+    details: Optional[str] = None,
+):
     """Log an UPDATE operation."""
     audit_logger.log_update(table_name, record_id, user_id, details)
 
 
-def log_delete(table_name: str, record_id: int, user_id: Optional[int] = None, details: Optional[str] = None):
+def log_delete(
+    table_name: str,
+    record_id: int,
+    user_id: Optional[int] = None,
+    details: Optional[str] = None,
+):
     """Log a DELETE operation."""
     audit_logger.log_delete(table_name, record_id, user_id, details)

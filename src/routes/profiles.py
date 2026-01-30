@@ -1,106 +1,116 @@
 """Profile routes with authentication and ownership checks."""
+
 from flask import Blueprint, request, jsonify, Response
 from flask_login import login_required, current_user
 from pydantic import BaseModel, validator
 from typing import Optional
 from datetime import datetime
 from src.models.profile import Profile
-from src.services.asset_service import assets_to_csv, csv_to_assets, merge_assets, sync_legacy_arrays
+from src.services.asset_service import (
+    assets_to_csv,
+    csv_to_assets,
+    merge_assets,
+    sync_legacy_arrays,
+)
 from src.services.encryption_service import get_encryption_service
 from src.services.enhanced_audit_logger import enhanced_audit_logger
 from src.extensions import limiter
 
-profiles_bp = Blueprint('profiles', __name__, url_prefix='/api')
+profiles_bp = Blueprint("profiles", __name__, url_prefix="/api")
 
 
 class ProfileCreateSchema(BaseModel):
     """Schema for creating a profile."""
+
     name: str
     birth_date: Optional[str] = None
     retirement_date: Optional[str] = None
     data: Optional[dict] = None
 
-    @validator('name')
+    @validator("name")
     def validate_name(cls, v):
         import re
+
         if not v or not v.strip():
-            raise ValueError('Profile name is required')
+            raise ValueError("Profile name is required")
         if len(v) > 100:
-            raise ValueError('Profile name must be less than 100 characters')
+            raise ValueError("Profile name must be less than 100 characters")
         # Prevent path traversal attacks - reject any path separators or traversal sequences
-        if '..' in v or '/' in v or '\\' in v:
-            raise ValueError('Profile name cannot contain path traversal characters')
+        if ".." in v or "/" in v or "\\" in v:
+            raise ValueError("Profile name cannot contain path traversal characters")
         # Additional security: only allow alphanumeric, spaces, hyphens, underscores, and basic punctuation
-        if not re.match(r'^[a-zA-Z0-9 _\-\(\)\.]+$', v):
-            raise ValueError('Profile name contains invalid characters')
+        if not re.match(r"^[a-zA-Z0-9 _\-\(\)\.]+$", v):
+            raise ValueError("Profile name contains invalid characters")
         return v.strip()
 
-    @validator('birth_date', 'retirement_date')
+    @validator("birth_date", "retirement_date")
     def validate_date(cls, v):
         if v:
             try:
                 datetime.fromisoformat(v)
             except ValueError:
-                raise ValueError('Invalid date format. Use ISO format (YYYY-MM-DD)')
+                raise ValueError("Invalid date format. Use ISO format (YYYY-MM-DD)")
         return v
 
 
 class ProfileUpdateSchema(BaseModel):
     """Schema for updating a profile."""
+
     name: Optional[str] = None
     birth_date: Optional[str] = None
     retirement_date: Optional[str] = None
     data: Optional[dict] = None
 
-    @validator('name')
+    @validator("name")
     def validate_name(cls, v):
         import re
+
         if v is not None:
             if not v.strip():
-                raise ValueError('Profile name cannot be empty')
+                raise ValueError("Profile name cannot be empty")
             if len(v) > 100:
-                raise ValueError('Profile name must be less than 100 characters')
+                raise ValueError("Profile name must be less than 100 characters")
             # Prevent path traversal attacks - reject any path separators or traversal sequences
-            if '..' in v or '/' in v or '\\' in v:
-                raise ValueError('Profile name cannot contain path traversal characters')
+            if ".." in v or "/" in v or "\\" in v:
+                raise ValueError(
+                    "Profile name cannot contain path traversal characters"
+                )
             # Additional security: only allow alphanumeric, spaces, hyphens, underscores, and basic punctuation
-            if not re.match(r'^[a-zA-Z0-9 _\-\(\)\.]+$', v):
-                raise ValueError('Profile name contains invalid characters')
+            if not re.match(r"^[a-zA-Z0-9 _\-\(\)\.]+$", v):
+                raise ValueError("Profile name contains invalid characters")
             return v.strip()
         return v
 
-    @validator('birth_date', 'retirement_date')
+    @validator("birth_date", "retirement_date")
     def validate_date(cls, v):
         if v:
             try:
                 datetime.fromisoformat(v)
             except ValueError:
-                raise ValueError('Invalid date format. Use ISO format (YYYY-MM-DD)')
+                raise ValueError("Invalid date format. Use ISO format (YYYY-MM-DD)")
         return v
 
 
-@profiles_bp.route('/profiles', methods=['GET'])
+@profiles_bp.route("/profiles", methods=["GET"])
 @login_required
 def list_profiles():
     """List all profiles for the current user."""
     try:
         profiles = Profile.list_by_user(current_user.id)
         enhanced_audit_logger.log(
-            action='LIST_PROFILES',
-            details={'profile_count': len(profiles)},
-            status_code=200
+            action="LIST_PROFILES",
+            details={"profile_count": len(profiles)},
+            status_code=200,
         )
-        return jsonify({'profiles': profiles}), 200
+        return jsonify({"profiles": profiles}), 200
     except Exception as e:
         enhanced_audit_logger.log(
-            action='LIST_PROFILES_ERROR',
-            details={'error': str(e)},
-            status_code=500
+            action="LIST_PROFILES_ERROR", details={"error": str(e)}, status_code=500
         )
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
-@profiles_bp.route('/profile/<name>', methods=['GET'])
+@profiles_bp.route("/profile/<name>", methods=["GET"])
 @login_required
 def get_profile(name: str):
     """Get a specific profile by name (with ownership check)."""
@@ -108,30 +118,30 @@ def get_profile(name: str):
         profile = Profile.get_by_name(name, current_user.id)
         if not profile:
             enhanced_audit_logger.log(
-                action='VIEW_PROFILE_NOT_FOUND',
-                details={'profile_name': name},
-                status_code=404
+                action="VIEW_PROFILE_NOT_FOUND",
+                details={"profile_name": name},
+                status_code=404,
             )
-            return jsonify({'error': 'Profile not found'}), 404
+            return jsonify({"error": "Profile not found"}), 404
 
         enhanced_audit_logger.log(
-            action='VIEW_PROFILE',
-            table_name='profile',
+            action="VIEW_PROFILE",
+            table_name="profile",
             record_id=profile.id,
-            details={'profile_name': name},
-            status_code=200
+            details={"profile_name": name},
+            status_code=200,
         )
-        return jsonify({'profile': profile.to_dict()}), 200
+        return jsonify({"profile": profile.to_dict()}), 200
     except Exception as e:
         enhanced_audit_logger.log(
-            action='VIEW_PROFILE_ERROR',
-            details={'profile_name': name, 'error': str(e)},
-            status_code=500
+            action="VIEW_PROFILE_ERROR",
+            details={"profile_name": name, "error": str(e)},
+            status_code=500,
         )
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
-@profiles_bp.route('/profiles', methods=['POST'])
+@profiles_bp.route("/profiles", methods=["POST"])
 @login_required
 def create_profile():
     """Create a new profile for the current user."""
@@ -139,22 +149,22 @@ def create_profile():
         data = ProfileCreateSchema(**request.json)
     except Exception as e:
         enhanced_audit_logger.log(
-            action='CREATE_PROFILE_VALIDATION_ERROR',
-            details={'error': str(e)},
-            status_code=400
+            action="CREATE_PROFILE_VALIDATION_ERROR",
+            details={"error": str(e)},
+            status_code=400,
         )
-        return jsonify({'error': str(e)}), 400
+        return jsonify({"error": str(e)}), 400
 
     try:
         # Check if profile with same name already exists for this user
         existing = Profile.get_by_name(data.name, current_user.id)
         if existing:
             enhanced_audit_logger.log(
-                action='CREATE_PROFILE_DUPLICATE',
-                details={'profile_name': data.name},
-                status_code=409
+                action="CREATE_PROFILE_DUPLICATE",
+                details={"profile_name": data.name},
+                status_code=409,
             )
-            return jsonify({'error': 'Profile with this name already exists'}), 409
+            return jsonify({"error": "Profile with this name already exists"}), 409
 
         # Create new profile
         profile = Profile(
@@ -162,35 +172,40 @@ def create_profile():
             name=data.name,
             birth_date=data.birth_date,
             retirement_date=data.retirement_date,
-            data=data.data
+            data=data.data,
         )
         profile.save()
 
         enhanced_audit_logger.log(
-            action='CREATE_PROFILE',
-            table_name='profile',
+            action="CREATE_PROFILE",
+            table_name="profile",
             record_id=profile.id,
             details={
-                'profile_name': data.name,
-                'birth_date': data.birth_date,
-                'retirement_date': data.retirement_date
+                "profile_name": data.name,
+                "birth_date": data.birth_date,
+                "retirement_date": data.retirement_date,
             },
-            status_code=201
+            status_code=201,
         )
-        return jsonify({
-            'message': 'Profile created successfully',
-            'profile': profile.to_dict()
-        }), 201
+        return (
+            jsonify(
+                {
+                    "message": "Profile created successfully",
+                    "profile": profile.to_dict(),
+                }
+            ),
+            201,
+        )
     except Exception as e:
         enhanced_audit_logger.log(
-            action='CREATE_PROFILE_ERROR',
-            details={'profile_name': data.name, 'error': str(e)},
-            status_code=500
+            action="CREATE_PROFILE_ERROR",
+            details={"profile_name": data.name, "error": str(e)},
+            status_code=500,
         )
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
-@profiles_bp.route('/profile/<name>', methods=['PUT'])
+@profiles_bp.route("/profile/<name>", methods=["PUT"])
 @login_required
 def update_profile(name: str):
     """Update a profile (with ownership check)."""
@@ -198,22 +213,22 @@ def update_profile(name: str):
         data = ProfileUpdateSchema(**request.json)
     except Exception as e:
         enhanced_audit_logger.log(
-            action='UPDATE_PROFILE_VALIDATION_ERROR',
-            details={'profile_name': name, 'error': str(e)},
-            status_code=400
+            action="UPDATE_PROFILE_VALIDATION_ERROR",
+            details={"profile_name": name, "error": str(e)},
+            status_code=400,
         )
-        return jsonify({'error': str(e)}), 400
+        return jsonify({"error": str(e)}), 400
 
     try:
         # Get profile with ownership check
         profile = Profile.get_by_name(name, current_user.id)
         if not profile:
             enhanced_audit_logger.log(
-                action='UPDATE_PROFILE_NOT_FOUND',
-                details={'profile_name': name},
-                status_code=404
+                action="UPDATE_PROFILE_NOT_FOUND",
+                details={"profile_name": name},
+                status_code=404,
             )
-            return jsonify({'error': 'Profile not found'}), 404
+            return jsonify({"error": "Profile not found"}), 404
 
         # Track what fields are being updated
         updated_fields = []
@@ -225,71 +240,77 @@ def update_profile(name: str):
                 existing = Profile.get_by_name(data.name, current_user.id)
                 if existing:
                     enhanced_audit_logger.log(
-                        action='UPDATE_PROFILE_NAME_CONFLICT',
-                        details={'profile_name': name, 'new_name': data.name},
-                        status_code=409
+                        action="UPDATE_PROFILE_NAME_CONFLICT",
+                        details={"profile_name": name, "new_name": data.name},
+                        status_code=409,
                     )
-                    return jsonify({'error': 'Profile with this name already exists'}), 409
-                updated_fields.append('name')
+                    return (
+                        jsonify({"error": "Profile with this name already exists"}),
+                        409,
+                    )
+                updated_fields.append("name")
             profile.name = data.name
 
         if data.birth_date is not None:
-            updated_fields.append('birth_date')
+            updated_fields.append("birth_date")
             profile.birth_date = data.birth_date
 
         if data.retirement_date is not None:
-            updated_fields.append('retirement_date')
+            updated_fields.append("retirement_date")
             profile.retirement_date = data.retirement_date
 
         if data.data is not None:
-            updated_fields.append('data')
+            updated_fields.append("data")
             # CRITICAL: Preserve existing api_keys - they get masked in to_dict()
             # and we don't want to overwrite real keys with masked values
             existing_data = profile.data_dict or {}
             new_data = data.data
-            if 'api_keys' in existing_data and existing_data['api_keys']:
+            if "api_keys" in existing_data and existing_data["api_keys"]:
                 # Check if incoming api_keys are masked (contain bullet chars)
-                incoming_keys = new_data.get('api_keys', {})
+                incoming_keys = new_data.get("api_keys", {})
                 if incoming_keys:
-                    masked_chars = ['•', '●', '∙', '⋅', '⦁']
+                    masked_chars = ["•", "●", "∙", "⋅", "⦁"]
                     is_masked = any(
                         any(char in str(v) for char in masked_chars)
-                        for v in incoming_keys.values() if v
+                        for v in incoming_keys.values()
+                        if v
                     )
                     if is_masked:
                         # Preserve existing keys, don't save masked values
-                        new_data['api_keys'] = existing_data['api_keys']
+                        new_data["api_keys"] = existing_data["api_keys"]
                 else:
                     # No api_keys in incoming data, preserve existing
-                    new_data['api_keys'] = existing_data['api_keys']
+                    new_data["api_keys"] = existing_data["api_keys"]
             profile.data = new_data
 
         profile.save()
 
         enhanced_audit_logger.log(
-            action='UPDATE_PROFILE',
-            table_name='profile',
+            action="UPDATE_PROFILE",
+            table_name="profile",
             record_id=profile.id,
-            details={
-                'profile_name': name,
-                'updated_fields': updated_fields
-            },
-            status_code=200
+            details={"profile_name": name, "updated_fields": updated_fields},
+            status_code=200,
         )
-        return jsonify({
-            'message': 'Profile updated successfully',
-            'profile': profile.to_dict()
-        }), 200
+        return (
+            jsonify(
+                {
+                    "message": "Profile updated successfully",
+                    "profile": profile.to_dict(),
+                }
+            ),
+            200,
+        )
     except Exception as e:
         enhanced_audit_logger.log(
-            action='UPDATE_PROFILE_ERROR',
-            details={'profile_name': name, 'error': str(e)},
-            status_code=500
+            action="UPDATE_PROFILE_ERROR",
+            details={"profile_name": name, "error": str(e)},
+            status_code=500,
         )
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
-@profiles_bp.route('/profile/<name>', methods=['DELETE'])
+@profiles_bp.route("/profile/<name>", methods=["DELETE"])
 @login_required
 def delete_profile(name: str):
     """Delete a profile (with ownership check)."""
@@ -298,33 +319,33 @@ def delete_profile(name: str):
         profile = Profile.get_by_name(name, current_user.id)
         if not profile:
             enhanced_audit_logger.log(
-                action='DELETE_PROFILE_NOT_FOUND',
-                details={'profile_name': name},
-                status_code=404
+                action="DELETE_PROFILE_NOT_FOUND",
+                details={"profile_name": name},
+                status_code=404,
             )
-            return jsonify({'error': 'Profile not found'}), 404
+            return jsonify({"error": "Profile not found"}), 404
 
         profile_id = profile.id
         profile.delete()
 
         enhanced_audit_logger.log(
-            action='DELETE_PROFILE',
-            table_name='profile',
+            action="DELETE_PROFILE",
+            table_name="profile",
             record_id=profile_id,
-            details={'profile_name': name},
-            status_code=200
+            details={"profile_name": name},
+            status_code=200,
         )
-        return jsonify({'message': 'Profile deleted successfully'}), 200
+        return jsonify({"message": "Profile deleted successfully"}), 200
     except Exception as e:
         enhanced_audit_logger.log(
-            action='DELETE_PROFILE_ERROR',
-            details={'profile_name': name, 'error': str(e)},
-            status_code=500
+            action="DELETE_PROFILE_ERROR",
+            details={"profile_name": name, "error": str(e)},
+            status_code=500,
         )
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
-@profiles_bp.route('/profile/<name>/clone', methods=['POST'])
+@profiles_bp.route("/profile/<name>/clone", methods=["POST"])
 @login_required
 def clone_profile(name: str):
     """Clone an existing profile (with ownership check)."""
@@ -333,45 +354,53 @@ def clone_profile(name: str):
         source_profile = Profile.get_by_name(name, current_user.id)
         if not source_profile:
             enhanced_audit_logger.log(
-                action='CLONE_PROFILE_NOT_FOUND',
-                details={'source_profile': name},
-                status_code=404
+                action="CLONE_PROFILE_NOT_FOUND",
+                details={"source_profile": name},
+                status_code=404,
             )
-            return jsonify({'error': 'Profile not found'}), 404
+            return jsonify({"error": "Profile not found"}), 404
 
         # Get new profile name from request body
-        new_name = request.json.get('new_name', f"{name} (Copy)")
+        new_name = request.json.get("new_name", f"{name} (Copy)")
 
         # Validate new name
         if not new_name or not new_name.strip():
             enhanced_audit_logger.log(
-                action='CLONE_PROFILE_VALIDATION_ERROR',
-                details={'source_profile': name, 'error': 'New profile name is required'},
-                status_code=400
+                action="CLONE_PROFILE_VALIDATION_ERROR",
+                details={
+                    "source_profile": name,
+                    "error": "New profile name is required",
+                },
+                status_code=400,
             )
-            return jsonify({'error': 'New profile name is required'}), 400
+            return jsonify({"error": "New profile name is required"}), 400
 
         new_name = new_name.strip()
         if len(new_name) > 100:
             enhanced_audit_logger.log(
-                action='CLONE_PROFILE_VALIDATION_ERROR',
-                details={'source_profile': name, 'error': 'Name too long'},
-                status_code=400
+                action="CLONE_PROFILE_VALIDATION_ERROR",
+                details={"source_profile": name, "error": "Name too long"},
+                status_code=400,
             )
-            return jsonify({'error': 'Profile name must be less than 100 characters'}), 400
+            return (
+                jsonify({"error": "Profile name must be less than 100 characters"}),
+                400,
+            )
 
         # Check if profile with new name already exists
         existing = Profile.get_by_name(new_name, current_user.id)
         if existing:
             enhanced_audit_logger.log(
-                action='CLONE_PROFILE_DUPLICATE',
-                details={'source_profile': name, 'new_name': new_name},
-                status_code=409
+                action="CLONE_PROFILE_DUPLICATE",
+                details={"source_profile": name, "new_name": new_name},
+                status_code=409,
             )
-            return jsonify({'error': 'Profile with this name already exists'}), 409
+            return jsonify({"error": "Profile with this name already exists"}), 409
 
         # Clone the profile data
-        cloned_data = source_profile.data_dict.copy() if source_profile.data_dict else {}
+        cloned_data = (
+            source_profile.data_dict.copy() if source_profile.data_dict else {}
+        )
 
         # Create new profile with cloned data
         cloned_profile = Profile(
@@ -379,35 +408,40 @@ def clone_profile(name: str):
             name=new_name,
             birth_date=source_profile.birth_date,
             retirement_date=source_profile.retirement_date,
-            data=cloned_data
+            data=cloned_data,
         )
         cloned_profile.save()
 
         enhanced_audit_logger.log(
-            action='CLONE_PROFILE',
-            table_name='profile',
+            action="CLONE_PROFILE",
+            table_name="profile",
             record_id=cloned_profile.id,
             details={
-                'source_profile': name,
-                'source_profile_id': source_profile.id,
-                'new_profile_name': new_name
+                "source_profile": name,
+                "source_profile_id": source_profile.id,
+                "new_profile_name": new_name,
             },
-            status_code=201
+            status_code=201,
         )
-        return jsonify({
-            'message': f'Profile cloned successfully as "{new_name}"',
-            'profile': cloned_profile.to_dict()
-        }), 201
+        return (
+            jsonify(
+                {
+                    "message": f'Profile cloned successfully as "{new_name}"',
+                    "profile": cloned_profile.to_dict(),
+                }
+            ),
+            201,
+        )
     except Exception as e:
         enhanced_audit_logger.log(
-            action='CLONE_PROFILE_ERROR',
-            details={'source_profile': name, 'error': str(e)},
-            status_code=500
+            action="CLONE_PROFILE_ERROR",
+            details={"source_profile": name, "error": str(e)},
+            status_code=500,
         )
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
-@profiles_bp.route('/profile/<name>/assets/export', methods=['GET'])
+@profiles_bp.route("/profile/<name>/assets/export", methods=["GET"])
 @login_required
 def export_assets_csv(name: str):
     """Export all assets as CSV file."""
@@ -416,21 +450,24 @@ def export_assets_csv(name: str):
         profile = Profile.get_by_name(name, current_user.id)
         if not profile:
             enhanced_audit_logger.log(
-                action='EXPORT_ASSETS_NOT_FOUND',
-                details={'profile_name': name},
-                status_code=404
+                action="EXPORT_ASSETS_NOT_FOUND",
+                details={"profile_name": name},
+                status_code=404,
             )
-            return jsonify({'error': 'Profile not found'}), 404
+            return jsonify({"error": "Profile not found"}), 404
 
         # Get assets from profile data
         data_dict = profile.data_dict
-        assets = data_dict.get('assets', {
-            'retirement_accounts': [],
-            'taxable_accounts': [],
-            'real_estate': [],
-            'pensions_annuities': [],
-            'other_assets': []
-        })
+        assets = data_dict.get(
+            "assets",
+            {
+                "retirement_accounts": [],
+                "taxable_accounts": [],
+                "real_estate": [],
+                "pensions_annuities": [],
+                "other_assets": [],
+            },
+        )
 
         # Count assets for logging
         asset_count = sum(len(v) for v in assets.values() if isinstance(v, list))
@@ -439,37 +476,35 @@ def export_assets_csv(name: str):
         csv_content = assets_to_csv(assets)
 
         # Create response with CSV content
-        timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
         filename = f"{name.replace(' ', '_')}_assets_{timestamp}.csv"
 
         enhanced_audit_logger.log(
-            action='EXPORT_ASSETS_CSV',
-            table_name='profile',
+            action="EXPORT_ASSETS_CSV",
+            table_name="profile",
             record_id=profile.id,
             details={
-                'profile_name': name,
-                'asset_count': asset_count,
-                'filename': filename
+                "profile_name": name,
+                "asset_count": asset_count,
+                "filename": filename,
             },
-            status_code=200
+            status_code=200,
         )
         return Response(
             csv_content,
-            mimetype='text/csv',
-            headers={
-                'Content-Disposition': f'attachment; filename={filename}'
-            }
+            mimetype="text/csv",
+            headers={"Content-Disposition": f"attachment; filename={filename}"},
         )
     except Exception as e:
         enhanced_audit_logger.log(
-            action='EXPORT_ASSETS_ERROR',
-            details={'profile_name': name, 'error': str(e)},
-            status_code=500
+            action="EXPORT_ASSETS_ERROR",
+            details={"profile_name": name, "error": str(e)},
+            status_code=500,
         )
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
-@profiles_bp.route('/profile/<name>/assets/import', methods=['POST'])
+@profiles_bp.route("/profile/<name>/assets/import", methods=["POST"])
 @login_required
 def import_assets_csv(name: str):
     """Import assets from CSV file (appends to existing assets)."""
@@ -478,59 +513,66 @@ def import_assets_csv(name: str):
         profile = Profile.get_by_name(name, current_user.id)
         if not profile:
             enhanced_audit_logger.log(
-                action='IMPORT_ASSETS_NOT_FOUND',
-                details={'profile_name': name},
-                status_code=404
+                action="IMPORT_ASSETS_NOT_FOUND",
+                details={"profile_name": name},
+                status_code=404,
             )
-            return jsonify({'error': 'Profile not found'}), 404
+            return jsonify({"error": "Profile not found"}), 404
 
         # Check if file was uploaded
-        if 'file' not in request.files:
+        if "file" not in request.files:
             enhanced_audit_logger.log(
-                action='IMPORT_ASSETS_NO_FILE',
-                details={'profile_name': name},
-                status_code=400
+                action="IMPORT_ASSETS_NO_FILE",
+                details={"profile_name": name},
+                status_code=400,
             )
-            return jsonify({'error': 'No file uploaded'}), 400
+            return jsonify({"error": "No file uploaded"}), 400
 
-        file = request.files['file']
-        if file.filename == '':
+        file = request.files["file"]
+        if file.filename == "":
             enhanced_audit_logger.log(
-                action='IMPORT_ASSETS_NO_FILE',
-                details={'profile_name': name},
-                status_code=400
+                action="IMPORT_ASSETS_NO_FILE",
+                details={"profile_name": name},
+                status_code=400,
             )
-            return jsonify({'error': 'No file selected'}), 400
+            return jsonify({"error": "No file selected"}), 400
 
         # Read and parse CSV
-        csv_content = file.read().decode('utf-8')
+        csv_content = file.read().decode("utf-8")
 
         try:
             new_assets = csv_to_assets(csv_content)
         except ValueError as e:
             enhanced_audit_logger.log(
-                action='IMPORT_ASSETS_INVALID_CSV',
-                details={'profile_name': name, 'filename': file.filename, 'error': str(e)},
-                status_code=400
+                action="IMPORT_ASSETS_INVALID_CSV",
+                details={
+                    "profile_name": name,
+                    "filename": file.filename,
+                    "error": str(e),
+                },
+                status_code=400,
             )
-            return jsonify({'error': f'Invalid CSV format: {str(e)}'}), 400
+            return jsonify({"error": f"Invalid CSV format: {str(e)}"}), 400
 
         # Get current profile data
         data_dict = profile.data_dict
 
         # Merge new assets with existing ones
-        existing_assets = data_dict.get('assets', {
-            'retirement_accounts': [],
-            'taxable_accounts': [],
-            'real_estate': [],
-            'pensions_annuities': [],
-            'other_assets': []
-        })
+        existing_assets = data_dict.get(
+            "assets",
+            {
+                "retirement_accounts": [],
+                "taxable_accounts": [],
+                "real_estate": [],
+                "pensions_annuities": [],
+                "other_assets": [],
+            },
+        )
 
         merged_assets = merge_assets(existing_assets, new_assets)
 
         # Update profile data
-        data_dict['assets'] = merged_assets
+        data_dict["assets"] = merged_assets
 
         # Sync legacy arrays for backward compatibility
         data_dict = sync_legacy_arrays(data_dict)
@@ -543,33 +585,39 @@ def import_assets_csv(name: str):
         imported_count = sum(len(v) for v in new_assets.values())
 
         enhanced_audit_logger.log(
-            action='IMPORT_ASSETS_CSV',
-            table_name='profile',
+            action="IMPORT_ASSETS_CSV",
+            table_name="profile",
             record_id=profile.id,
             details={
-                'profile_name': name,
-                'filename': file.filename,
-                'imported_count': imported_count
+                "profile_name": name,
+                "filename": file.filename,
+                "imported_count": imported_count,
             },
-            status_code=200
+            status_code=200,
         )
-        return jsonify({
-            'message': f'Successfully imported {imported_count} assets',
-            'assets': merged_assets,
-            'profile': profile.to_dict()
-        }), 200
+        return (
+            jsonify(
+                {
+                    "message": f"Successfully imported {imported_count} assets",
+                    "assets": merged_assets,
+                    "profile": profile.to_dict(),
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         enhanced_audit_logger.log(
-            action='IMPORT_ASSETS_ERROR',
-            details={'profile_name': name, 'error': str(e)},
-            status_code=500
+            action="IMPORT_ASSETS_ERROR",
+            details={"profile_name": name, "error": str(e)},
+            status_code=500,
         )
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
 class APIKeySchema(BaseModel):
     """Schema for API key management."""
+
     claude_api_key: Optional[str] = None
     gemini_api_key: Optional[str] = None
     openai_api_key: Optional[str] = None
@@ -586,69 +634,117 @@ class APIKeySchema(BaseModel):
     ollama_model: Optional[str] = None
     preferred_ai_provider: Optional[str] = None
 
-    @validator('claude_api_key', 'gemini_api_key', 'openai_api_key', 'grok_api_key',
-               'openrouter_api_key', 'deepseek_api_key', 'mistral_api_key',
-               'together_api_key', 'huggingface_api_key', 'zhipu_api_key')
+    @validator(
+        "claude_api_key",
+        "gemini_api_key",
+        "openai_api_key",
+        "grok_api_key",
+        "openrouter_api_key",
+        "deepseek_api_key",
+        "mistral_api_key",
+        "together_api_key",
+        "huggingface_api_key",
+        "zhipu_api_key",
+    )
     def validate_api_key(cls, v, values, **kwargs):
         if v is not None:
             v = v.strip()
 
             # Comprehensive masked character detection
-            masked_chars = ['•', '●', '∙', '⋅', '⦁', '◦', '▪', '▫', '■', '□', '▬', '─', '━', '▂', '▃', '▄']
+            masked_chars = [
+                "•",
+                "●",
+                "∙",
+                "⋅",
+                "⦁",
+                "◦",
+                "▪",
+                "▫",
+                "■",
+                "□",
+                "▬",
+                "─",
+                "━",
+                "▂",
+                "▃",
+                "▄",
+            ]
             if any(char in v for char in masked_chars):
-                raise ValueError('Cannot save masked API key - contains bullet/masking characters')
+                raise ValueError(
+                    "Cannot save masked API key - contains bullet/masking characters"
+                )
 
             # Reject common placeholder patterns
-            placeholder_patterns = ['****', '...', 'xxx', 'XXX', 'XXXX', 'xxxx', 'your_api_key',
-                                   'your-api-key', 'api-key-here', 'enter_key_here', 'placeholder']
+            placeholder_patterns = [
+                "****",
+                "...",
+                "xxx",
+                "XXX",
+                "XXXX",
+                "xxxx",
+                "your_api_key",
+                "your-api-key",
+                "api-key-here",
+                "enter_key_here",
+                "placeholder",
+            ]
             if any(pattern in v.lower() for pattern in placeholder_patterns):
-                raise ValueError('Cannot save placeholder value - enter your actual API key')
+                raise ValueError(
+                    "Cannot save placeholder value - enter your actual API key"
+                )
 
             # Length validation
             if len(v) < 20:
-                raise ValueError('API key appears invalid - must be at least 20 characters')
+                raise ValueError(
+                    "API key appears invalid - must be at least 20 characters"
+                )
             if len(v) > 500:
-                raise ValueError('API key is too long (max 500 characters)')
+                raise ValueError("API key is too long (max 500 characters)")
 
             # Must contain alphanumeric characters (not all symbols)
             import re
-            if not re.search(r'[A-Za-z0-9]', v):
-                raise ValueError('API key must contain alphanumeric characters')
+
+            if not re.search(r"[A-Za-z0-9]", v):
+                raise ValueError("API key must contain alphanumeric characters")
 
             # Format validation for known key patterns
             # Note: We can't easily get field name in Pydantic v1 validator, so check format patterns
-            if v.startswith('REDACTED_GAPI_'):
+            if v.startswith("REDACTED_GAPI_"):
                 # Gemini key
                 if len(v) != 39:
-                    raise ValueError('Gemini API keys are exactly 39 characters')
-            elif v.startswith('REDACTED_ANTH_'):
+                    raise ValueError("Gemini API keys are exactly 39 characters")
+            elif v.startswith("REDACTED_ANTH_"):
                 # Claude key - no additional validation needed
                 pass
-            elif v.startswith(('sk-', 'REDACTED_OPENAI_')) and not v.startswith('REDACTED_OR_') and not v.startswith('REDACTED_ANTH_'):
+            elif (
+                v.startswith(("sk-", "REDACTED_OPENAI_"))
+                and not v.startswith("REDACTED_OR_")
+                and not v.startswith("REDACTED_ANTH_")
+            ):
                 # OpenAI key - no additional validation needed
                 pass
-            elif v.startswith('xai-'):
+            elif v.startswith("xai-"):
                 # Grok key - no additional validation needed
                 pass
-            elif v.startswith('REDACTED_OR_'):
+            elif v.startswith("REDACTED_OR_"):
                 # OpenRouter key - no additional validation needed
                 pass
-            elif v.startswith('hf_'):
+            elif v.startswith("hf_"):
                 # Hugging Face token - no additional validation needed
                 pass
 
         return v
 
-    @validator('lmstudio_url', 'localai_url', 'ollama_url')
+    @validator("lmstudio_url", "localai_url", "ollama_url")
     def validate_local_urls(cls, v):
         if v is not None:
             v = v.strip()
-            if not v.startswith(('http://', 'https://')):
-                raise ValueError('URL must start with http:// or https://')
+            if not v.startswith(("http://", "https://")):
+                raise ValueError("URL must start with http:// or https://")
         return v
 
 
-@profiles_bp.route('/profiles/<name>/api-keys', methods=['GET'])
+@profiles_bp.route("/profiles/<name>/api-keys", methods=["GET"])
 @login_required
 def get_api_keys(name: str):
     """Get API keys for a profile (returns masked versions for display)."""
@@ -657,83 +753,80 @@ def get_api_keys(name: str):
         profile = Profile.get_by_name(name, current_user.id)
         if not profile:
             enhanced_audit_logger.log(
-                action='VIEW_API_KEYS_NOT_FOUND',
-                details={'profile_name': name},
-                status_code=404
+                action="VIEW_API_KEYS_NOT_FOUND",
+                details={"profile_name": name},
+                status_code=404,
             )
-            return jsonify({'error': 'Profile not found'}), 404
+            return jsonify({"error": "Profile not found"}), 404
 
         # Get profile data
         data_dict = profile.data_dict
-        api_keys = data_dict.get('api_keys', {})
+        api_keys = data_dict.get("api_keys", {})
 
         # Return masked versions (last 4 characters only)
         result = {}
         keys_configured = []
-        if api_keys.get('claude_api_key'):
-            result['claude_api_key'] = api_keys['claude_api_key'][-4:]
-            keys_configured.append('claude')
-        if api_keys.get('gemini_api_key'):
-            result['gemini_api_key'] = api_keys['gemini_api_key'][-4:]
-            keys_configured.append('gemini')
-        if api_keys.get('openai_api_key'):
-            result['openai_api_key'] = api_keys['openai_api_key'][-4:]
-            keys_configured.append('openai')
-        if api_keys.get('grok_api_key'):
-            result['grok_api_key'] = api_keys['grok_api_key'][-4:]
-            keys_configured.append('grok')
-        if api_keys.get('openrouter_api_key'):
-            result['openrouter_api_key'] = api_keys['openrouter_api_key'][-4:]
-            keys_configured.append('openrouter')
-        if api_keys.get('deepseek_api_key'):
-            result['deepseek_api_key'] = api_keys['deepseek_api_key'][-4:]
-            keys_configured.append('deepseek')
-        if api_keys.get('mistral_api_key'):
-            result['mistral_api_key'] = api_keys['mistral_api_key'][-4:]
-            keys_configured.append('mistral')
-        if api_keys.get('together_api_key'):
-            result['together_api_key'] = api_keys['together_api_key'][-4:]
-            keys_configured.append('together')
-        if api_keys.get('huggingface_api_key'):
-            result['huggingface_api_key'] = api_keys['huggingface_api_key'][-4:]
-            keys_configured.append('huggingface')
-        if api_keys.get('lmstudio_url'):
-            result['lmstudio_url'] = api_keys['lmstudio_url']
-            keys_configured.append('lmstudio')
-        if api_keys.get('localai_url'):
-            result['localai_url'] = api_keys['localai_url']
-            keys_configured.append('localai')
-        if api_keys.get('ollama_url'):
-            result['ollama_url'] = api_keys['ollama_url']
-            keys_configured.append('ollama')
-        if api_keys.get('ollama_model'):
-            result['ollama_model'] = api_keys['ollama_model']
+        if api_keys.get("claude_api_key"):
+            result["claude_api_key"] = api_keys["claude_api_key"][-4:]
+            keys_configured.append("claude")
+        if api_keys.get("gemini_api_key"):
+            result["gemini_api_key"] = api_keys["gemini_api_key"][-4:]
+            keys_configured.append("gemini")
+        if api_keys.get("openai_api_key"):
+            result["openai_api_key"] = api_keys["openai_api_key"][-4:]
+            keys_configured.append("openai")
+        if api_keys.get("grok_api_key"):
+            result["grok_api_key"] = api_keys["grok_api_key"][-4:]
+            keys_configured.append("grok")
+        if api_keys.get("openrouter_api_key"):
+            result["openrouter_api_key"] = api_keys["openrouter_api_key"][-4:]
+            keys_configured.append("openrouter")
+        if api_keys.get("deepseek_api_key"):
+            result["deepseek_api_key"] = api_keys["deepseek_api_key"][-4:]
+            keys_configured.append("deepseek")
+        if api_keys.get("mistral_api_key"):
+            result["mistral_api_key"] = api_keys["mistral_api_key"][-4:]
+            keys_configured.append("mistral")
+        if api_keys.get("together_api_key"):
+            result["together_api_key"] = api_keys["together_api_key"][-4:]
+            keys_configured.append("together")
+        if api_keys.get("huggingface_api_key"):
+            result["huggingface_api_key"] = api_keys["huggingface_api_key"][-4:]
+            keys_configured.append("huggingface")
+        if api_keys.get("lmstudio_url"):
+            result["lmstudio_url"] = api_keys["lmstudio_url"]
+            keys_configured.append("lmstudio")
+        if api_keys.get("localai_url"):
+            result["localai_url"] = api_keys["localai_url"]
+            keys_configured.append("localai")
+        if api_keys.get("ollama_url"):
+            result["ollama_url"] = api_keys["ollama_url"]
+            keys_configured.append("ollama")
+        if api_keys.get("ollama_model"):
+            result["ollama_model"] = api_keys["ollama_model"]
 
-        if data_dict.get('preferred_ai_provider'):
-            result['preferred_ai_provider'] = data_dict['preferred_ai_provider']
+        if data_dict.get("preferred_ai_provider"):
+            result["preferred_ai_provider"] = data_dict["preferred_ai_provider"]
 
         enhanced_audit_logger.log(
-            action='VIEW_API_KEYS',
-            table_name='profile',
+            action="VIEW_API_KEYS",
+            table_name="profile",
             record_id=profile.id,
-            details={
-                'profile_name': name,
-                'keys_configured': keys_configured
-            },
-            status_code=200
+            details={"profile_name": name, "keys_configured": keys_configured},
+            status_code=200,
         )
         return jsonify(result), 200
 
     except Exception as e:
         enhanced_audit_logger.log(
-            action='VIEW_API_KEYS_ERROR',
-            details={'profile_name': name, 'error': str(e)},
-            status_code=500
+            action="VIEW_API_KEYS_ERROR",
+            details={"profile_name": name, "error": str(e)},
+            status_code=500,
         )
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
-@profiles_bp.route('/profiles/<name>/api-keys', methods=['POST'])
+@profiles_bp.route("/profiles/<name>/api-keys", methods=["POST"])
 @login_required
 def save_api_keys(name: str):
     """Save encrypted API keys for a profile."""
@@ -742,170 +835,168 @@ def save_api_keys(name: str):
         data = APIKeySchema(**request.json)
     except Exception as e:
         enhanced_audit_logger.log(
-            action='SAVE_API_KEYS_VALIDATION_ERROR',
-            details={'profile_name': name, 'error': str(e)},
-            status_code=400
+            action="SAVE_API_KEYS_VALIDATION_ERROR",
+            details={"profile_name": name, "error": str(e)},
+            status_code=400,
         )
-        return jsonify({'error': str(e)}), 400
+        return jsonify({"error": str(e)}), 400
 
     try:
         # Get profile with ownership check
         profile = Profile.get_by_name(name, current_user.id)
         if not profile:
             enhanced_audit_logger.log(
-                action='SAVE_API_KEYS_NOT_FOUND',
-                details={'profile_name': name},
-                status_code=404
+                action="SAVE_API_KEYS_NOT_FOUND",
+                details={"profile_name": name},
+                status_code=404,
             )
-            return jsonify({'error': 'Profile not found'}), 404
+            return jsonify({"error": "Profile not found"}), 404
 
         # Get current profile data
         data_dict = profile.data_dict
 
         # Initialize api_keys section if not present
-        if 'api_keys' not in data_dict:
-            data_dict['api_keys'] = {}
+        if "api_keys" not in data_dict:
+            data_dict["api_keys"] = {}
 
         # Track which keys are being updated
         keys_updated = []
         if data.claude_api_key:
-            data_dict['api_keys']['claude_api_key'] = data.claude_api_key
-            keys_updated.append('claude')
+            data_dict["api_keys"]["claude_api_key"] = data.claude_api_key
+            keys_updated.append("claude")
         if data.gemini_api_key:
-            data_dict['api_keys']['gemini_api_key'] = data.gemini_api_key
-            keys_updated.append('gemini')
+            data_dict["api_keys"]["gemini_api_key"] = data.gemini_api_key
+            keys_updated.append("gemini")
         if data.openai_api_key:
-            data_dict['api_keys']['openai_api_key'] = data.openai_api_key
-            keys_updated.append('openai')
+            data_dict["api_keys"]["openai_api_key"] = data.openai_api_key
+            keys_updated.append("openai")
         if data.grok_api_key:
-            data_dict['api_keys']['grok_api_key'] = data.grok_api_key
-            keys_updated.append('grok')
+            data_dict["api_keys"]["grok_api_key"] = data.grok_api_key
+            keys_updated.append("grok")
         if data.openrouter_api_key:
-            data_dict['api_keys']['openrouter_api_key'] = data.openrouter_api_key
-            keys_updated.append('openrouter')
+            data_dict["api_keys"]["openrouter_api_key"] = data.openrouter_api_key
+            keys_updated.append("openrouter")
         if data.deepseek_api_key:
-            data_dict['api_keys']['deepseek_api_key'] = data.deepseek_api_key
-            keys_updated.append('deepseek')
+            data_dict["api_keys"]["deepseek_api_key"] = data.deepseek_api_key
+            keys_updated.append("deepseek")
         if data.mistral_api_key:
-            data_dict['api_keys']['mistral_api_key'] = data.mistral_api_key
-            keys_updated.append('mistral')
+            data_dict["api_keys"]["mistral_api_key"] = data.mistral_api_key
+            keys_updated.append("mistral")
         if data.together_api_key:
-            data_dict['api_keys']['together_api_key'] = data.together_api_key
-            keys_updated.append('together')
+            data_dict["api_keys"]["together_api_key"] = data.together_api_key
+            keys_updated.append("together")
         if data.huggingface_api_key:
-            data_dict['api_keys']['huggingface_api_key'] = data.huggingface_api_key
-            keys_updated.append('huggingface')
+            data_dict["api_keys"]["huggingface_api_key"] = data.huggingface_api_key
+            keys_updated.append("huggingface")
         if data.zhipu_api_key:
-            data_dict['api_keys']['zhipu_api_key'] = data.zhipu_api_key
-            keys_updated.append('zhipu')
+            data_dict["api_keys"]["zhipu_api_key"] = data.zhipu_api_key
+            keys_updated.append("zhipu")
         if data.lmstudio_url:
-            data_dict['api_keys']['lmstudio_url'] = data.lmstudio_url
-            keys_updated.append('lmstudio')
+            data_dict["api_keys"]["lmstudio_url"] = data.lmstudio_url
+            keys_updated.append("lmstudio")
         if data.localai_url:
-            data_dict['api_keys']['localai_url'] = data.localai_url
-            keys_updated.append('localai')
+            data_dict["api_keys"]["localai_url"] = data.localai_url
+            keys_updated.append("localai")
         if data.ollama_url:
-            data_dict['api_keys']['ollama_url'] = data.ollama_url
-            keys_updated.append('ollama')
+            data_dict["api_keys"]["ollama_url"] = data.ollama_url
+            keys_updated.append("ollama")
         if data.ollama_model:
-            data_dict['api_keys']['ollama_model'] = data.ollama_model
+            data_dict["api_keys"]["ollama_model"] = data.ollama_model
 
         if data.preferred_ai_provider:
-            data_dict['preferred_ai_provider'] = data.preferred_ai_provider
-            keys_updated.append('preferred_provider')
+            data_dict["preferred_ai_provider"] = data.preferred_ai_provider
+            keys_updated.append("preferred_provider")
 
         # Save profile (encryption happens automatically via the data property setter)
         profile.data = data_dict
         profile.save()
 
         enhanced_audit_logger.log(
-            action='SAVE_API_KEYS',
-            table_name='profile',
+            action="SAVE_API_KEYS",
+            table_name="profile",
             record_id=profile.id,
-            details={
-                'profile_name': name,
-                'keys_updated': keys_updated
-            },
-            status_code=200
+            details={"profile_name": name, "keys_updated": keys_updated},
+            status_code=200,
         )
-        return jsonify({
-            'message': 'API keys saved successfully',
-            'encrypted': True
-        }), 200
+        return (
+            jsonify({"message": "API keys saved successfully", "encrypted": True}),
+            200,
+        )
 
     except Exception as e:
         enhanced_audit_logger.log(
-            action='SAVE_API_KEYS_ERROR',
-            details={'profile_name': name, 'error': str(e)},
-            status_code=500
+            action="SAVE_API_KEYS_ERROR",
+            details={"profile_name": name, "error": str(e)},
+            status_code=500,
         )
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
-@profiles_bp.route('/test-api-key', methods=['POST'])
+@profiles_bp.route("/test-api-key", methods=["POST"])
 @login_required
 @limiter.exempt
 def test_api_key():
     """Test an API key to verify it works."""
     try:
         data = request.json
-        provider = data.get('provider')
-        api_key = data.get('api_key')
+        provider = data.get("provider")
+        api_key = data.get("api_key")
 
         if not provider or not api_key:
             enhanced_audit_logger.log(
-                action='TEST_API_KEY_VALIDATION_ERROR',
-                details={'provider': provider, 'error': 'Missing provider or api_key'},
-                status_code=400
+                action="TEST_API_KEY_VALIDATION_ERROR",
+                details={"provider": provider, "error": "Missing provider or api_key"},
+                status_code=400,
             )
-            return jsonify({'error': 'Missing provider or api_key'}), 400
+            return jsonify({"error": "Missing provider or api_key"}), 400
 
         enhanced_audit_logger.log(
-            action='TEST_API_KEY',
-            details={'provider': provider},
-            status_code=200
+            action="TEST_API_KEY", details={"provider": provider}, status_code=200
         )
 
         # Test based on provider
-        if provider == 'claude':
+        if provider == "claude":
             return test_claude_api_key(api_key)
-        elif provider == 'gemini':
+        elif provider == "gemini":
             return test_gemini_api_key(api_key)
-        elif provider == 'openai':
+        elif provider == "openai":
             return test_openai_api_key(api_key)
-        elif provider == 'grok':
+        elif provider == "grok":
             return test_grok_api_key(api_key)
-        elif provider == 'openrouter':
+        elif provider == "openrouter":
             return test_openrouter_api_key(api_key)
-        elif provider == 'deepseek':
+        elif provider == "deepseek":
             return test_deepseek_api_key(api_key)
-        elif provider == 'mistral':
+        elif provider == "mistral":
             return test_mistral_api_key(api_key)
-        elif provider == 'together':
+        elif provider == "together":
             return test_together_api_key(api_key)
-        elif provider == 'huggingface':
+        elif provider == "huggingface":
             return test_huggingface_api_key(api_key)
-        elif provider == 'zhipu':
+        elif provider == "zhipu":
             return test_zhipu_api_key(api_key)
-        elif provider == 'lmstudio':
+        elif provider == "lmstudio":
             return test_lmstudio_api_key(api_key)
-        elif provider == 'localai':
+        elif provider == "localai":
             return test_localai_api_key(api_key)
         else:
             enhanced_audit_logger.log(
-                action='TEST_API_KEY_UNKNOWN_PROVIDER',
-                details={'provider': provider},
-                status_code=400
+                action="TEST_API_KEY_UNKNOWN_PROVIDER",
+                details={"provider": provider},
+                status_code=400,
             )
-            return jsonify({'error': f'Unknown provider: {provider}'}), 400
+            return jsonify({"error": f"Unknown provider: {provider}"}), 400
 
     except Exception as e:
         enhanced_audit_logger.log(
-            action='TEST_API_KEY_ERROR',
-            details={'provider': provider if 'provider' in dir() else None, 'error': str(e)},
-            status_code=500
+            action="TEST_API_KEY_ERROR",
+            details={
+                "provider": provider if "provider" in dir() else None,
+                "error": str(e),
+            },
+            status_code=500,
         )
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
 def test_claude_api_key(api_key: str):
@@ -915,38 +1006,45 @@ def test_claude_api_key(api_key: str):
 
         # Try latest Claude models
         models_to_try = [
-            'claude-opus-4-5-20251101',      # Claude Opus 4.5 (Nov 2025)
-            'claude-sonnet-4-5-20250929',    # Claude Sonnet 4.5 (Sep 2025)
-            'claude-4-sonnet-20250514',      # Claude 4.0 Sonnet (May 2025)
-            'claude-3-5-sonnet-20241022'     # Legacy fallback
+            "claude-opus-4-5-20251101",  # Claude Opus 4.5 (Nov 2025)
+            "claude-sonnet-4-5-20250929",  # Claude Sonnet 4.5 (Sep 2025)
+            "claude-4-sonnet-20250514",  # Claude 4.0 Sonnet (May 2025)
+            "claude-3-5-sonnet-20241022",  # Legacy fallback
         ]
 
         last_error = None
         for model in models_to_try:
             try:
                 response = requests.post(
-                    'https://api.anthropic.com/v1/messages',
+                    "https://api.anthropic.com/v1/messages",
                     headers={
-                        'x-api-key': api_key,
-                        'anthropic-version': '2023-06-01',
-                        'content-type': 'application/json'
+                        "x-api-key": api_key,
+                        "anthropic-version": "2023-06-01",
+                        "content-type": "application/json",
                     },
                     json={
-                        'model': model,
-                        'max_tokens': 10,
-                        'messages': [{'role': 'user', 'content': 'Hi'}]
+                        "model": model,
+                        "max_tokens": 10,
+                        "messages": [{"role": "user", "content": "Hi"}],
                     },
-                    timeout=10
+                    timeout=10,
                 )
 
                 if response.status_code == 200:
-                    return jsonify({
-                        'success': True,
-                        'message': f'Claude API key is valid (tested with {model})',
-                        'model': model
-                    }), 200
+                    return (
+                        jsonify(
+                            {
+                                "success": True,
+                                "message": f"Claude API key is valid (tested with {model})",
+                                "model": model,
+                            }
+                        ),
+                        200,
+                    )
                 else:
-                    last_error = response.json().get('error', {}).get('message', 'Unknown error')
+                    last_error = (
+                        response.json().get("error", {}).get("message", "Unknown error")
+                    )
                     # Try next model
                     continue
             except Exception as e:
@@ -954,15 +1052,20 @@ def test_claude_api_key(api_key: str):
                 continue
 
         # All models failed
-        return jsonify({
-            'success': False,
-            'error': f'API Error: {last_error or "All models failed"}'
-        }), 400
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": f'API Error: {last_error or "All models failed"}',
+                }
+            ),
+            400,
+        )
 
     except requests.Timeout:
-        return jsonify({'success': False, 'error': 'Request timed out'}), 408
+        return jsonify({"success": False, "error": "Request timed out"}), 408
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 400
+        return jsonify({"success": False, "error": str(e)}), 400
 
 
 def test_gemini_api_key(api_key: str):
@@ -972,256 +1075,341 @@ def test_gemini_api_key(api_key: str):
 
         # Test with a simple models list request
         response = requests.get(
-            f'https://generativelanguage.googleapis.com/v1beta/models?key={api_key}',
-            timeout=10
+            f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}",
+            timeout=10,
         )
 
         if response.status_code == 200:
-            models = response.json().get('models', [])
-            model_name = models[0]['name'] if models else 'gemini-pro'
-            return jsonify({
-                'success': True,
-                'message': 'Gemini API key is valid',
-                'model': model_name
-            }), 200
+            models = response.json().get("models", [])
+            model_name = models[0]["name"] if models else "gemini-pro"
+            return (
+                jsonify(
+                    {
+                        "success": True,
+                        "message": "Gemini API key is valid",
+                        "model": model_name,
+                    }
+                ),
+                200,
+            )
         else:
-            error_detail = response.json().get('error', {}).get('message', 'Unknown error')
-            return jsonify({
-                'success': False,
-                'error': f'API Error: {error_detail}'
-            }), 400
+            error_detail = (
+                response.json().get("error", {}).get("message", "Unknown error")
+            )
+            return (
+                jsonify({"success": False, "error": f"API Error: {error_detail}"}),
+                400,
+            )
 
     except requests.Timeout:
-        return jsonify({'success': False, 'error': 'Request timed out'}), 408
+        return jsonify({"success": False, "error": "Request timed out"}), 408
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 400
+        return jsonify({"success": False, "error": str(e)}), 400
 
 
 def test_openai_api_key(api_key: str):
     """Test OpenAI API key."""
     try:
         import requests
+
         response = requests.post(
-            'https://api.openai.com/v1/chat/completions',
+            "https://api.openai.com/v1/chat/completions",
             headers={
-                'Authorization': f'Bearer {api_key}',
-                'Content-Type': 'application/json'
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
             },
             json={
-                'model': 'gpt-5.2',
-                'messages': [{'role': 'user', 'content': 'Hi'}],
-                'max_tokens': 5
+                "model": "gpt-5.2",
+                "messages": [{"role": "user", "content": "Hi"}],
+                "max_tokens": 5,
             },
-            timeout=10
+            timeout=10,
         )
         if response.status_code == 200:
-            return jsonify({'success': True, 'message': 'OpenAI API key is valid'}), 200
+            return jsonify({"success": True, "message": "OpenAI API key is valid"}), 200
         else:
-            error_msg = 'Unknown error'
+            error_msg = "Unknown error"
             try:
-                error_msg = response.json().get('error', {}).get('message', 'Unknown error')
+                error_msg = (
+                    response.json().get("error", {}).get("message", "Unknown error")
+                )
             except:
                 pass
-            return jsonify({'success': False, 'error': f"API Error: {error_msg}"}), 400
+            return jsonify({"success": False, "error": f"API Error: {error_msg}"}), 400
     except requests.Timeout:
-        return jsonify({'success': False, 'error': 'Request timed out'}), 408
+        return jsonify({"success": False, "error": "Request timed out"}), 408
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 400
+        return jsonify({"success": False, "error": str(e)}), 400
 
 
 def test_grok_api_key(api_key: str):
     """Test Grok (xAI) API key."""
     try:
         import requests
+
         response = requests.post(
-            'https://api.x.ai/v1/chat/completions',
+            "https://api.x.ai/v1/chat/completions",
             headers={
-                'Authorization': f'Bearer {api_key}',
-                'Content-Type': 'application/json'
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
             },
             json={
-                'model': 'grok-5',
-                'messages': [{'role': 'user', 'content': 'Hi'}],
-                'max_tokens': 5
+                "model": "grok-5",
+                "messages": [{"role": "user", "content": "Hi"}],
+                "max_tokens": 5,
             },
-            timeout=10
+            timeout=10,
         )
         if response.status_code == 200:
-            return jsonify({'success': True, 'message': 'Grok API key is valid'}), 200
+            return jsonify({"success": True, "message": "Grok API key is valid"}), 200
         else:
-            error_msg = 'Unknown error'
+            error_msg = "Unknown error"
             try:
-                error_msg = response.json().get('error', {}).get('message', 'Unknown error')
+                error_msg = (
+                    response.json().get("error", {}).get("message", "Unknown error")
+                )
             except:
                 pass
-            return jsonify({'success': False, 'error': f"API Error: {error_msg}"}), 400
+            return jsonify({"success": False, "error": f"API Error: {error_msg}"}), 400
     except requests.Timeout:
-        return jsonify({'success': False, 'error': 'Request timed out'}), 408
+        return jsonify({"success": False, "error": "Request timed out"}), 408
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 400
+        return jsonify({"success": False, "error": str(e)}), 400
 
 
 def test_openrouter_api_key(api_key: str):
     """Test OpenRouter API key."""
     try:
         import requests
+
         response = requests.get(
-            'https://openrouter.ai/api/v1/models',
-            headers={'Authorization': f'Bearer {api_key}'},
-            timeout=10
+            "https://openrouter.ai/api/v1/models",
+            headers={"Authorization": f"Bearer {api_key}"},
+            timeout=10,
         )
         if response.status_code == 200:
-            return jsonify({'success': True, 'message': 'OpenRouter API key is valid'}), 200
+            return (
+                jsonify({"success": True, "message": "OpenRouter API key is valid"}),
+                200,
+            )
         else:
-            return jsonify({'success': False, 'error': f"API Error: {response.text}"}), 400
+            return (
+                jsonify({"success": False, "error": f"API Error: {response.text}"}),
+                400,
+            )
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 400
+        return jsonify({"success": False, "error": str(e)}), 400
 
 
 def test_deepseek_api_key(api_key: str):
     """Test DeepSeek API key."""
     try:
         import requests
+
         response = requests.post(
-            'https://api.deepseek.com/chat/completions',
+            "https://api.deepseek.com/chat/completions",
             headers={
-                'Authorization': f'Bearer {api_key}',
-                'Content-Type': 'application/json'
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
             },
             json={
-                'model': 'deepseek-chat',
-                'messages': [{'role': 'user', 'content': 'Hi'}],
-                'max_tokens': 5
+                "model": "deepseek-chat",
+                "messages": [{"role": "user", "content": "Hi"}],
+                "max_tokens": 5,
             },
-            timeout=10
+            timeout=10,
         )
         if response.status_code == 200:
-            return jsonify({'success': True, 'message': 'DeepSeek API key is valid'}), 200
+            return (
+                jsonify({"success": True, "message": "DeepSeek API key is valid"}),
+                200,
+            )
         else:
-            return jsonify({'success': False, 'error': f"API Error: {response.text}"}), 400
+            return (
+                jsonify({"success": False, "error": f"API Error: {response.text}"}),
+                400,
+            )
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 400
+        return jsonify({"success": False, "error": str(e)}), 400
 
 
 def test_mistral_api_key(api_key: str):
     """Test Mistral API key."""
     try:
         import requests
+
         response = requests.get(
-            'https://api.mistral.ai/v1/models',
-            headers={'Authorization': f'Bearer {api_key}'},
-            timeout=10
+            "https://api.mistral.ai/v1/models",
+            headers={"Authorization": f"Bearer {api_key}"},
+            timeout=10,
         )
         if response.status_code == 200:
-            return jsonify({'success': True, 'message': 'Mistral API key is valid'}), 200
+            return (
+                jsonify({"success": True, "message": "Mistral API key is valid"}),
+                200,
+            )
         else:
-            return jsonify({'success': False, 'error': f"API Error: {response.text}"}), 400
+            return (
+                jsonify({"success": False, "error": f"API Error: {response.text}"}),
+                400,
+            )
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 400
+        return jsonify({"success": False, "error": str(e)}), 400
 
 
 def test_together_api_key(api_key: str):
     """Test Together AI API key."""
     try:
         import requests
+
         response = requests.get(
-            'https://api.together.xyz/v1/models',
-            headers={'Authorization': f'Bearer {api_key}'},
-            timeout=10
+            "https://api.together.xyz/v1/models",
+            headers={"Authorization": f"Bearer {api_key}"},
+            timeout=10,
         )
         if response.status_code == 200:
-            return jsonify({'success': True, 'message': 'Together AI API key is valid'}), 200
+            return (
+                jsonify({"success": True, "message": "Together AI API key is valid"}),
+                200,
+            )
         else:
-            return jsonify({'success': False, 'error': f"API Error: {response.text}"}), 400
+            return (
+                jsonify({"success": False, "error": f"API Error: {response.text}"}),
+                400,
+            )
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 400
+        return jsonify({"success": False, "error": str(e)}), 400
 
 
 def test_huggingface_api_key(api_key: str):
     """Test Hugging Face API key."""
     try:
         import requests
+
         response = requests.get(
-            'https://huggingface.co/api/whoami-v2',
-            headers={'Authorization': f'Bearer {api_key}'},
-            timeout=10
+            "https://huggingface.co/api/whoami-v2",
+            headers={"Authorization": f"Bearer {api_key}"},
+            timeout=10,
         )
         if response.status_code == 200:
-            return jsonify({'success': True, 'message': 'Hugging Face API key is valid'}), 200
+            return (
+                jsonify({"success": True, "message": "Hugging Face API key is valid"}),
+                200,
+            )
         else:
-            return jsonify({'success': False, 'error': f"API Error: {response.text}"}), 400
+            return (
+                jsonify({"success": False, "error": f"API Error: {response.text}"}),
+                400,
+            )
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 400
+        return jsonify({"success": False, "error": str(e)}), 400
 
 
 def test_zhipu_api_key(api_key: str):
     """Test Zhipu AI GLM API key."""
     try:
         import requests
+
         response = requests.post(
-            'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+            "https://open.bigmodel.cn/api/paas/v4/chat/completions",
             headers={
-                'Authorization': f'Bearer {api_key}',
-                'Content-Type': 'application/json'
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
             },
             json={
-                'model': 'glm-4-flash',
-                'messages': [{'role': 'user', 'content': 'Hi'}],
-                'max_tokens': 10
+                "model": "glm-4-flash",
+                "messages": [{"role": "user", "content": "Hi"}],
+                "max_tokens": 10,
             },
-            timeout=10
+            timeout=10,
         )
         if response.status_code == 200:
-            return jsonify({
-                'success': True,
-                'message': 'Zhipu AI API key is valid (tested with glm-4-flash)',
-                'model': 'glm-4-flash'
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "success": True,
+                        "message": "Zhipu AI API key is valid (tested with glm-4-flash)",
+                        "model": "glm-4-flash",
+                    }
+                ),
+                200,
+            )
         else:
-            return jsonify({'success': False, 'error': f"Zhipu Error: {response.text}"}), 400
+            return (
+                jsonify({"success": False, "error": f"Zhipu Error: {response.text}"}),
+                400,
+            )
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 400
+        return jsonify({"success": False, "error": str(e)}), 400
 
 
 def test_lmstudio_api_key(url: str):
     """Test LM Studio connection."""
     try:
         import requests
+
         # LM Studio is OpenAI compatible, test /v1/models
-        response = requests.get(f'{url}/v1/models', timeout=5)
+        response = requests.get(f"{url}/v1/models", timeout=5)
         if response.status_code == 200:
-            models = response.json().get('data', [])
-            return jsonify({
-                'success': True, 
-                'message': f'Connected to LM Studio ({len(models)} models found)',
-                'model': models[0]['id'] if models else 'lmstudio'
-            }), 200
+            models = response.json().get("data", [])
+            return (
+                jsonify(
+                    {
+                        "success": True,
+                        "message": f"Connected to LM Studio ({len(models)} models found)",
+                        "model": models[0]["id"] if models else "lmstudio",
+                    }
+                ),
+                200,
+            )
         else:
-            return jsonify({'success': False, 'error': f"LM Studio Error: {response.status_code}"}), 400
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": f"LM Studio Error: {response.status_code}",
+                    }
+                ),
+                400,
+            )
     except Exception as e:
-        return jsonify({'success': False, 'error': f"Connection failed: {str(e)}"}), 400
+        return jsonify({"success": False, "error": f"Connection failed: {str(e)}"}), 400
 
 
 def test_localai_api_key(url: str):
     """Test LocalAI connection."""
     try:
         import requests
+
         # LocalAI is OpenAI compatible, test /v1/models
-        response = requests.get(f'{url}/v1/models', timeout=5)
+        response = requests.get(f"{url}/v1/models", timeout=5)
         if response.status_code == 200:
-            models = response.json().get('data', [])
-            return jsonify({
-                'success': True,
-                'message': f'Connected to LocalAI ({len(models)} models found)',
-                'model': models[0]['id'] if models else 'localai'
-            }), 200
+            models = response.json().get("data", [])
+            return (
+                jsonify(
+                    {
+                        "success": True,
+                        "message": f"Connected to LocalAI ({len(models)} models found)",
+                        "model": models[0]["id"] if models else "localai",
+                    }
+                ),
+                200,
+            )
         else:
-            return jsonify({'success': False, 'error': f"LocalAI Error: {response.status_code}"}), 400
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": f"LocalAI Error: {response.status_code}",
+                    }
+                ),
+                400,
+            )
     except Exception as e:
-        return jsonify({'success': False, 'error': f"Connection failed: {str(e)}"}), 400
+        return jsonify({"success": False, "error": f"Connection failed: {str(e)}"}), 400
 
 
-@profiles_bp.route('/profiles/<name>/test-stored-key', methods=['POST'])
+@profiles_bp.route("/profiles/<name>/test-stored-key", methods=["POST"])
 @login_required
 @limiter.exempt
 def test_stored_api_key(name: str):
@@ -1230,74 +1418,74 @@ def test_stored_api_key(name: str):
         profile = Profile.get_by_name(name, current_user.id)
         if not profile:
             enhanced_audit_logger.log(
-                action='TEST_STORED_KEY_NOT_FOUND',
-                details={'profile_name': name},
-                status_code=404
+                action="TEST_STORED_KEY_NOT_FOUND",
+                details={"profile_name": name},
+                status_code=404,
             )
-            return jsonify({'error': 'Profile not found'}), 404
+            return jsonify({"error": "Profile not found"}), 404
 
-        provider = request.json.get('provider')
+        provider = request.json.get("provider")
         if not provider:
-            return jsonify({'error': 'Provider required'}), 400
+            return jsonify({"error": "Provider required"}), 400
 
         # Get stored key
-        api_keys = profile.data_dict.get('api_keys', {})
+        api_keys = profile.data_dict.get("api_keys", {})
 
         # Handle both API keys and local URLs
-        if provider in ['lmstudio', 'localai']:
-            stored_value = api_keys.get(f'{provider}_url')
-            value_type = 'URL'
+        if provider in ["lmstudio", "localai"]:
+            stored_value = api_keys.get(f"{provider}_url")
+            value_type = "URL"
         else:
-            stored_value = api_keys.get(f'{provider}_api_key')
-            value_type = 'API key'
+            stored_value = api_keys.get(f"{provider}_api_key")
+            value_type = "API key"
 
         if not stored_value:
-            return jsonify({'error': f'No {value_type} configured for {provider}'}), 404
+            return jsonify({"error": f"No {value_type} configured for {provider}"}), 404
 
         enhanced_audit_logger.log(
-            action='TEST_STORED_KEY',
-            details={'provider': provider, 'profile_name': name},
-            status_code=200
+            action="TEST_STORED_KEY",
+            details={"provider": provider, "profile_name": name},
+            status_code=200,
         )
 
         # Test using existing test functions
-        if provider == 'claude':
+        if provider == "claude":
             return test_claude_api_key(stored_value)
-        elif provider == 'gemini':
+        elif provider == "gemini":
             return test_gemini_api_key(stored_value)
-        elif provider == 'openai':
+        elif provider == "openai":
             return test_openai_api_key(stored_value)
-        elif provider == 'grok':
+        elif provider == "grok":
             return test_grok_api_key(stored_value)
-        elif provider == 'openrouter':
+        elif provider == "openrouter":
             return test_openrouter_api_key(stored_value)
-        elif provider == 'deepseek':
+        elif provider == "deepseek":
             return test_deepseek_api_key(stored_value)
-        elif provider == 'mistral':
+        elif provider == "mistral":
             return test_mistral_api_key(stored_value)
-        elif provider == 'together':
+        elif provider == "together":
             return test_together_api_key(stored_value)
-        elif provider == 'huggingface':
+        elif provider == "huggingface":
             return test_huggingface_api_key(stored_value)
-        elif provider == 'zhipu':
+        elif provider == "zhipu":
             return test_zhipu_api_key(stored_value)
-        elif provider == 'lmstudio':
+        elif provider == "lmstudio":
             return test_lmstudio_api_key(stored_value)
-        elif provider == 'localai':
+        elif provider == "localai":
             return test_localai_api_key(stored_value)
         else:
-            return jsonify({'error': f'Unknown provider: {provider}'}), 400
+            return jsonify({"error": f"Unknown provider: {provider}"}), 400
 
     except Exception as e:
         enhanced_audit_logger.log(
-            action='TEST_STORED_KEY_ERROR',
-            details={'provider': provider, 'profile_name': name, 'error': str(e)},
-            status_code=500
+            action="TEST_STORED_KEY_ERROR",
+            details={"provider": provider, "profile_name": name, "error": str(e)},
+            status_code=500,
         )
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
-@profiles_bp.route('/profiles/<name>/delete-api-key', methods=['POST'])
+@profiles_bp.route("/profiles/<name>/delete-api-key", methods=["POST"])
 @login_required
 def delete_api_key(name: str):
     """Delete a specific API key from profile."""
@@ -1305,52 +1493,52 @@ def delete_api_key(name: str):
         profile = Profile.get_by_name(name, current_user.id)
         if not profile:
             enhanced_audit_logger.log(
-                action='DELETE_API_KEY_NOT_FOUND',
-                details={'profile_name': name},
-                status_code=404
+                action="DELETE_API_KEY_NOT_FOUND",
+                details={"profile_name": name},
+                status_code=404,
             )
-            return jsonify({'error': 'Profile not found'}), 404
+            return jsonify({"error": "Profile not found"}), 404
 
-        provider = request.json.get('provider')
+        provider = request.json.get("provider")
         if not provider:
-            return jsonify({'error': 'Provider required'}), 400
+            return jsonify({"error": "Provider required"}), 400
 
         data_dict = profile.data_dict
-        if 'api_keys' not in data_dict:
-            return jsonify({'error': 'No API keys configured'}), 404
+        if "api_keys" not in data_dict:
+            return jsonify({"error": "No API keys configured"}), 404
 
         # Handle both API keys and local URLs
-        if provider in ['lmstudio', 'localai']:
-            key_name = f'{provider}_url'
+        if provider in ["lmstudio", "localai"]:
+            key_name = f"{provider}_url"
         else:
-            key_name = f'{provider}_api_key'
+            key_name = f"{provider}_api_key"
 
-        if key_name in data_dict['api_keys']:
-            del data_dict['api_keys'][key_name]
+        if key_name in data_dict["api_keys"]:
+            del data_dict["api_keys"][key_name]
             profile.data = data_dict
             profile.save()
 
             enhanced_audit_logger.log(
-                action='DELETE_API_KEY',
-                table_name='profile',
+                action="DELETE_API_KEY",
+                table_name="profile",
                 record_id=profile.id,
-                details={'provider': provider, 'profile_name': name},
-                status_code=200
+                details={"provider": provider, "profile_name": name},
+                status_code=200,
             )
-            return jsonify({'message': f'{provider} key deleted successfully'}), 200
+            return jsonify({"message": f"{provider} key deleted successfully"}), 200
 
-        return jsonify({'error': 'Key not found'}), 404
+        return jsonify({"error": "Key not found"}), 404
 
     except Exception as e:
         enhanced_audit_logger.log(
-            action='DELETE_API_KEY_ERROR',
-            details={'provider': provider, 'profile_name': name, 'error': str(e)},
-            status_code=500
+            action="DELETE_API_KEY_ERROR",
+            details={"provider": provider, "profile_name": name, "error": str(e)},
+            status_code=500,
         )
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
-@profiles_bp.route('/profile/<name>/transactions/import', methods=['POST'])
+@profiles_bp.route("/profile/<name>/transactions/import", methods=["POST"])
 @login_required
 @limiter.limit("10 per hour")
 def import_transactions_stream(name: str):
@@ -1365,7 +1553,7 @@ def import_transactions_stream(name: str):
         sanitize_transaction,
         detect_income_patterns,
         detect_expense_patterns,
-        reconcile_income
+        reconcile_income,
     )
 
     def generate():
@@ -1373,13 +1561,17 @@ def import_transactions_stream(name: str):
             # Verify ownership
             profile = Profile.get_by_name(name, current_user.id)
             if not profile:
-                yield json.dumps({'status': 'error', 'error': 'Profile not found'}) + '\n'
+                yield json.dumps(
+                    {"status": "error", "error": "Profile not found"}
+                ) + "\n"
                 return
 
             # Get uploaded file
-            file = request.files.get('file')
+            file = request.files.get("file")
             if not file:
-                yield json.dumps({'status': 'error', 'error': 'No file uploaded'}) + '\n'
+                yield json.dumps(
+                    {"status": "error", "error": "No file uploaded"}
+                ) + "\n"
                 return
 
             # Validate file size (5MB limit)
@@ -1388,41 +1580,47 @@ def import_transactions_stream(name: str):
             file.seek(0)  # Reset to beginning
 
             if file_size > 5 * 1024 * 1024:  # 5MB
-                yield json.dumps({'status': 'error', 'error': 'File too large (max 5MB)'}) + '\n'
+                yield json.dumps(
+                    {"status": "error", "error": "File too large (max 5MB)"}
+                ) + "\n"
                 return
 
             # Step 1: Parse CSV
-            yield json.dumps({
-                'status': 'parsing',
-                'progress': 10,
-                'message': 'Reading CSV file...'
-            }) + '\n'
+            yield json.dumps(
+                {"status": "parsing", "progress": 10, "message": "Reading CSV file..."}
+            ) + "\n"
 
-            csv_content = file.read().decode('utf-8-sig')  # Handle BOM
+            csv_content = file.read().decode("utf-8-sig")  # Handle BOM
             transactions = parse_transaction_csv(csv_content)
 
             if len(transactions) < 3:
-                yield json.dumps({
-                    'status': 'error',
-                    'error': 'Not enough transactions (minimum 3 required)'
-                }) + '\n'
+                yield json.dumps(
+                    {
+                        "status": "error",
+                        "error": "Not enough transactions (minimum 3 required)",
+                    }
+                ) + "\n"
                 return
 
             # Step 2: Sanitize (strip PII)
-            yield json.dumps({
-                'status': 'sanitizing',
-                'progress': 30,
-                'message': 'Removing sensitive data...'
-            }) + '\n'
+            yield json.dumps(
+                {
+                    "status": "sanitizing",
+                    "progress": 30,
+                    "message": "Removing sensitive data...",
+                }
+            ) + "\n"
 
             sanitized = [sanitize_transaction(t) for t in transactions]
 
             # Step 3: Detect patterns
-            yield json.dumps({
-                'status': 'detecting',
-                'progress': 50,
-                'message': 'Analyzing patterns...'
-            }) + '\n'
+            yield json.dumps(
+                {
+                    "status": "detecting",
+                    "progress": 50,
+                    "message": "Analyzing patterns...",
+                }
+            ) + "\n"
 
             income_txns = [t for t in sanitized if t.amount > 0]
             expense_txns = [t for t in sanitized if t.amount < 0]
@@ -1431,75 +1629,85 @@ def import_transactions_stream(name: str):
             detected_expenses = detect_expense_patterns(expense_txns)
 
             # Step 4: Reconcile with existing data
-            yield json.dumps({
-                'status': 'reconciling',
-                'progress': 80,
-                'message': 'Comparing with your data...'
-            }) + '\n'
+            yield json.dumps(
+                {
+                    "status": "reconciling",
+                    "progress": 80,
+                    "message": "Comparing with your data...",
+                }
+            ) + "\n"
 
             data_dict = profile.data_dict
-            specified_income = data_dict.get('income_streams', [])
+            specified_income = data_dict.get("income_streams", [])
             reconciliation = reconcile_income(specified_income, detected_income)
 
             # Step 5: Complete
             dates = [t.date for t in sanitized]
             date_range = {
-                'start': min(dates).isoformat(),
-                'end': max(dates).isoformat()
+                "start": min(dates).isoformat(),
+                "end": max(dates).isoformat(),
             }
 
             # Convert dataclasses to dicts
             from dataclasses import asdict
 
-            yield json.dumps({
-                'status': 'complete',
-                'progress': 100,
-                'message': 'Analysis complete!',
-                'data': {
-                    'transaction_count': len(transactions),
-                    'income_count': len(income_txns),
-                    'expense_count': len(expense_txns),
-                    'date_range': date_range,
-                    'detected_income': [asdict(d) for d in detected_income],
-                    'detected_expenses': {
-                        cat: [asdict(e) for e in expenses]
-                        for cat, expenses in detected_expenses.items()
+            yield json.dumps(
+                {
+                    "status": "complete",
+                    "progress": 100,
+                    "message": "Analysis complete!",
+                    "data": {
+                        "transaction_count": len(transactions),
+                        "income_count": len(income_txns),
+                        "expense_count": len(expense_txns),
+                        "date_range": date_range,
+                        "detected_income": [asdict(d) for d in detected_income],
+                        "detected_expenses": {
+                            cat: [asdict(e) for e in expenses]
+                            for cat, expenses in detected_expenses.items()
+                        },
+                        "reconciliation": {
+                            "matches": [asdict(m) for m in reconciliation.matches],
+                            "new_detected": [
+                                asdict(d) for d in reconciliation.new_detected
+                            ],
+                            "manual_only": reconciliation.manual_only,
+                            "summary": reconciliation.summary,
+                        },
                     },
-                    'reconciliation': {
-                        'matches': [asdict(m) for m in reconciliation.matches],
-                        'new_detected': [asdict(d) for d in reconciliation.new_detected],
-                        'manual_only': reconciliation.manual_only,
-                        'summary': reconciliation.summary
-                    }
                 }
-            }) + '\n'
+            ) + "\n"
 
             # Audit logging
             enhanced_audit_logger.log(
-                action='CSV_TRANSACTION_IMPORT',
-                table_name='profile',
+                action="CSV_TRANSACTION_IMPORT",
+                table_name="profile",
                 record_id=profile.id,
                 details={
-                    'transaction_count': len(transactions),
-                    'date_range': f"{date_range['start']} to {date_range['end']}",
-                    'patterns_detected': len(detected_income) + sum(len(e) for e in detected_expenses.values()),
-                    'file_size_kb': round(len(csv_content) / 1024, 2)
+                    "transaction_count": len(transactions),
+                    "date_range": f"{date_range['start']} to {date_range['end']}",
+                    "patterns_detected": len(detected_income)
+                    + sum(len(e) for e in detected_expenses.values()),
+                    "file_size_kb": round(len(csv_content) / 1024, 2),
                 },
-                status_code=200
+                status_code=200,
             )
 
         except ValueError as e:
-            yield json.dumps({'status': 'error', 'error': str(e)}) + '\n'
+            yield json.dumps({"status": "error", "error": str(e)}) + "\n"
         except Exception as e:
             import logging
+
             logger = logging.getLogger(__name__)
             logger.exception("CSV import failed")
-            yield json.dumps({'status': 'error', 'error': 'Import failed. Please check CSV format.'}) + '\n'
+            yield json.dumps(
+                {"status": "error", "error": "Import failed. Please check CSV format."}
+            ) + "\n"
 
-    return Response(generate(), mimetype='application/x-ndjson')
+    return Response(generate(), mimetype="application/x-ndjson")
 
 
-@profiles_bp.route('/profile/<name>/transactions/reconcile', methods=['POST'])
+@profiles_bp.route("/profile/<name>/transactions/reconcile", methods=["POST"])
 @login_required
 def reconcile_transactions(name: str):
     """
@@ -1510,15 +1718,15 @@ def reconcile_transactions(name: str):
         profile = Profile.get_by_name(name, current_user.id)
         if not profile:
             enhanced_audit_logger.log(
-                action='RECONCILE_TRANSACTIONS_NOT_FOUND',
-                details={'profile_name': name},
-                status_code=404
+                action="RECONCILE_TRANSACTIONS_NOT_FOUND",
+                details={"profile_name": name},
+                status_code=404,
             )
-            return jsonify({'error': 'Profile not found'}), 404
+            return jsonify({"error": "Profile not found"}), 404
 
-        actions = request.json.get('actions', [])
+        actions = request.json.get("actions", [])
         if not actions:
-            return jsonify({'error': 'No actions provided'}), 400
+            return jsonify({"error": "No actions provided"}), 400
 
         data_dict = profile.data_dict
         applied_count = 0
@@ -1526,67 +1734,71 @@ def reconcile_transactions(name: str):
         expenses_added = 0
 
         # Ensure income_streams exists
-        if 'income_streams' not in data_dict:
-            data_dict['income_streams'] = []
+        if "income_streams" not in data_dict:
+            data_dict["income_streams"] = []
 
         # Ensure budget structure exists
-        if 'budget' not in data_dict:
-            data_dict['budget'] = {'expenses': {'current': {}, 'future': {}}}
-        if 'expenses' not in data_dict['budget']:
-            data_dict['budget']['expenses'] = {'current': {}, 'future': {}}
-        if 'current' not in data_dict['budget']['expenses']:
-            data_dict['budget']['expenses']['current'] = {}
+        if "budget" not in data_dict:
+            data_dict["budget"] = {"expenses": {"current": {}, "future": {}}}
+        if "expenses" not in data_dict["budget"]:
+            data_dict["budget"]["expenses"] = {"current": {}, "future": {}}
+        if "current" not in data_dict["budget"]["expenses"]:
+            data_dict["budget"]["expenses"]["current"] = {}
 
         for action in actions:
-            action_type = action.get('type')
+            action_type = action.get("type")
 
-            if action_type == 'merge':
+            if action_type == "merge":
                 # Update existing income stream with detected data
-                stream_idx = action.get('stream_index')
-                updates = action.get('updates', {})
+                stream_idx = action.get("stream_index")
+                updates = action.get("updates", {})
 
-                if stream_idx is not None and 0 <= stream_idx < len(data_dict['income_streams']):
-                    data_dict['income_streams'][stream_idx].update({
-                        'amount': updates.get('amount'),
-                        'frequency': updates.get('frequency'),
-                        'source': 'merged',
-                        'detected_from': updates.get('detected_from'),
-                        'confidence': updates.get('confidence'),
-                        'variance': updates.get('variance'),
-                        'first_seen': updates.get('first_seen'),
-                        'last_seen': updates.get('last_seen'),
-                        'detected_date': datetime.now().isoformat()
-                    })
+                if stream_idx is not None and 0 <= stream_idx < len(
+                    data_dict["income_streams"]
+                ):
+                    data_dict["income_streams"][stream_idx].update(
+                        {
+                            "amount": updates.get("amount"),
+                            "frequency": updates.get("frequency"),
+                            "source": "merged",
+                            "detected_from": updates.get("detected_from"),
+                            "confidence": updates.get("confidence"),
+                            "variance": updates.get("variance"),
+                            "first_seen": updates.get("first_seen"),
+                            "last_seen": updates.get("last_seen"),
+                            "detected_date": datetime.now().isoformat(),
+                        }
+                    )
                     applied_count += 1
                     income_added += 1
 
-            elif action_type == 'add_new':
+            elif action_type == "add_new":
                 # Add new detected income stream
-                new_stream = action.get('stream', {})
-                new_stream['source'] = 'detected'
-                new_stream['detected_date'] = datetime.now().isoformat()
-                data_dict['income_streams'].append(new_stream)
+                new_stream = action.get("stream", {})
+                new_stream["source"] = "detected"
+                new_stream["detected_date"] = datetime.now().isoformat()
+                data_dict["income_streams"].append(new_stream)
                 applied_count += 1
                 income_added += 1
 
-            elif action_type == 'ignore':
+            elif action_type == "ignore":
                 # Just log - no action needed
                 applied_count += 1
 
-            elif action_type == 'add_expense':
+            elif action_type == "add_expense":
                 # Add detected expense to budget
-                category = action.get('category', 'other')
-                expense = action.get('expense', {})
-                expense['source'] = 'detected'
-                expense['detected_date'] = datetime.now().isoformat()
+                category = action.get("category", "other")
+                expense = action.get("expense", {})
+                expense["source"] = "detected"
+                expense["detected_date"] = datetime.now().isoformat()
 
                 # Default to pre-retirement expenses
-                period = 'current'
+                period = "current"
 
-                if category not in data_dict['budget']['expenses'][period]:
-                    data_dict['budget']['expenses'][period][category] = []
+                if category not in data_dict["budget"]["expenses"][period]:
+                    data_dict["budget"]["expenses"][period][category] = []
 
-                data_dict['budget']['expenses'][period][category].append(expense)
+                data_dict["budget"]["expenses"][period][category].append(expense)
                 applied_count += 1
                 expenses_added += 1
 
@@ -1596,30 +1808,35 @@ def reconcile_transactions(name: str):
 
         # Audit log
         enhanced_audit_logger.log(
-            action='CSV_RECONCILE_APPLIED',
-            table_name='profile',
+            action="CSV_RECONCILE_APPLIED",
+            table_name="profile",
             record_id=profile.id,
             details={
-                'actions_applied': applied_count,
-                'income_patterns_added': income_added,
-                'expense_patterns_added': expenses_added,
-                'profile_name': name
+                "actions_applied": applied_count,
+                "income_patterns_added": income_added,
+                "expense_patterns_added": expenses_added,
+                "profile_name": name,
             },
-            status_code=200
+            status_code=200,
         )
 
-        return jsonify({
-            'success': True,
-            'actions_applied': applied_count,
-            'income_added': income_added,
-            'expenses_added': expenses_added,
-            'message': f'Successfully applied {applied_count} changes'
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "actions_applied": applied_count,
+                    "income_added": income_added,
+                    "expenses_added": expenses_added,
+                    "message": f"Successfully applied {applied_count} changes",
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         enhanced_audit_logger.log(
-            action='RECONCILE_TRANSACTIONS_ERROR',
-            details={'profile_name': name, 'error': str(e)},
-            status_code=500
+            action="RECONCILE_TRANSACTIONS_ERROR",
+            details={"profile_name": name, "error": str(e)},
+            status_code=500,
         )
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500

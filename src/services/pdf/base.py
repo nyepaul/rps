@@ -1,4 +1,5 @@
 """Base utilities and formatters for PDF generation."""
+
 import io
 from datetime import datetime
 from reportlab.lib import colors
@@ -13,55 +14,55 @@ class ColorPalette:
 
     # Basic palette (original pdf_service.py)
     BASIC = {
-        'primary': colors.HexColor('#2c3e50'),
-        'secondary': colors.HexColor('#3498db'),
-        'accent': colors.HexColor('#34495e'),
-        'success': colors.HexColor('#27ae60'),
-        'warning': colors.HexColor('#e74c3c'),
-        'text': colors.HexColor('#2c3e50'),
-        'text_light': colors.HexColor('#7f8c8d'),
-        'border': colors.HexColor('#bdc3c7'),
-        'bg_light': colors.HexColor('#ecf0f1'),
-        'bg_alt': colors.HexColor('#f8f9fa'),
-        'white': colors.white,
+        "primary": colors.HexColor("#2c3e50"),
+        "secondary": colors.HexColor("#3498db"),
+        "accent": colors.HexColor("#34495e"),
+        "success": colors.HexColor("#27ae60"),
+        "warning": colors.HexColor("#e74c3c"),
+        "text": colors.HexColor("#2c3e50"),
+        "text_light": colors.HexColor("#7f8c8d"),
+        "border": colors.HexColor("#bdc3c7"),
+        "bg_light": colors.HexColor("#ecf0f1"),
+        "bg_alt": colors.HexColor("#f8f9fa"),
+        "white": colors.white,
     }
 
     # Professional palette (pdf_service_pro.py style)
     PROFESSIONAL = {
-        'primary': colors.HexColor('#1a237e'),
-        'secondary': colors.HexColor('#0277bd'),
-        'accent': colors.HexColor('#00acc1'),
-        'success': colors.HexColor('#2e7d32'),
-        'warning': colors.HexColor('#f57c00'),
-        'danger': colors.HexColor('#c62828'),
-        'text': colors.HexColor('#212121'),
-        'text_light': colors.HexColor('#757575'),
-        'border': colors.HexColor('#e0e0e0'),
-        'bg_light': colors.HexColor('#f5f5f5'),
-        'bg_alt': colors.HexColor('#fafafa'),
-        'white': colors.white,
+        "primary": colors.HexColor("#1a237e"),
+        "secondary": colors.HexColor("#0277bd"),
+        "accent": colors.HexColor("#00acc1"),
+        "success": colors.HexColor("#2e7d32"),
+        "warning": colors.HexColor("#f57c00"),
+        "danger": colors.HexColor("#c62828"),
+        "text": colors.HexColor("#212121"),
+        "text_light": colors.HexColor("#757575"),
+        "border": colors.HexColor("#e0e0e0"),
+        "bg_light": colors.HexColor("#f5f5f5"),
+        "bg_alt": colors.HexColor("#fafafa"),
+        "white": colors.white,
     }
 
     # Elite palette (pdf_service_elite.py style - Fortune 500)
     ELITE = {
-        'navy': colors.HexColor('#003057'),
-        'navy_dark': colors.HexColor('#001f3f'),
-        'gold': colors.HexColor('#C79E5B'),
-        'gold_light': colors.HexColor('#E5D4B5'),
-        'teal': colors.HexColor('#006E7F'),
-        'green': colors.HexColor('#00864C'),
-        'red': colors.HexColor('#C4122F'),
-        'text': colors.HexColor('#4A4A4A'),
-        'text_light': colors.HexColor('#757575'),
-        'border': colors.HexColor('#DEDEDE'),
-        'bg_light': colors.HexColor('#F7F7F7'),
-        'white': colors.white,
+        "navy": colors.HexColor("#003057"),
+        "navy_dark": colors.HexColor("#001f3f"),
+        "gold": colors.HexColor("#C79E5B"),
+        "gold_light": colors.HexColor("#E5D4B5"),
+        "teal": colors.HexColor("#006E7F"),
+        "green": colors.HexColor("#00864C"),
+        "red": colors.HexColor("#C4122F"),
+        "text": colors.HexColor("#4A4A4A"),
+        "text_light": colors.HexColor("#757575"),
+        "border": colors.HexColor("#DEDEDE"),
+        "bg_light": colors.HexColor("#F7F7F7"),
+        "white": colors.white,
         # Aliases for consistency
-        'primary': colors.HexColor('#003057'),
-        'secondary': colors.HexColor('#006E7F'),
-        'success': colors.HexColor('#00864C'),
-        'warning': colors.HexColor('#f57c00'),
-        'danger': colors.HexColor('#C4122F'),
+        "primary": colors.HexColor("#003057"),
+        "secondary": colors.HexColor("#006E7F"),
+        "success": colors.HexColor("#00864C"),
+        "warning": colors.HexColor("#f57c00"),
+        "danger": colors.HexColor("#C4122F"),
     }
 
 
@@ -76,7 +77,7 @@ def format_currency(value, abbreviated=False):
         Formatted currency string
     """
     if value is None:
-        return '$0'
+        return "$0"
 
     if abbreviated:
         if abs(value) >= 1_000_000:
@@ -98,7 +99,7 @@ def format_percent(value, decimals=1):
         Formatted percentage string
     """
     if value is None:
-        return '0%'
+        return "0%"
     return f"{value:.{decimals}f}%"
 
 
@@ -126,10 +127,10 @@ class NumberedCanvas(canvas.Canvas):
     """
 
     def __init__(self, *args, **kwargs):
-        self.profile_name = kwargs.pop('profile_name', 'Client')
-        self.report_type = kwargs.pop('report_type', 'Financial Report')
-        self.colors = kwargs.pop('colors', ColorPalette.ELITE)
-        self.skip_first_page = kwargs.pop('skip_first_page', True)
+        self.profile_name = kwargs.pop("profile_name", "Client")
+        self.report_type = kwargs.pop("report_type", "Financial Report")
+        self.colors = kwargs.pop("colors", ColorPalette.ELITE)
+        self.skip_first_page = kwargs.pop("skip_first_page", True)
         canvas.Canvas.__init__(self, *args, **kwargs)
         self._saved_page_states = []
 
@@ -156,35 +157,42 @@ class NumberedCanvas(canvas.Canvas):
         self.saveState()
 
         # Header
-        self.setFillColor(self.colors.get('primary', self.colors.get('navy')))
-        self.setFont('Helvetica-Bold', 10)
-        self.drawString(1.0*inch, letter[1] - 0.6*inch, "RPS Wealth Advisory")
+        self.setFillColor(self.colors.get("primary", self.colors.get("navy")))
+        self.setFont("Helvetica-Bold", 10)
+        self.drawString(1.0 * inch, letter[1] - 0.6 * inch, "RPS Wealth Advisory")
 
-        self.setFont('Helvetica', 9)
-        self.setFillColor(self.colors.get('text_light'))
-        self.drawRightString(letter[0] - 1.0*inch, letter[1] - 0.6*inch, self.report_type)
+        self.setFont("Helvetica", 9)
+        self.setFillColor(self.colors.get("text_light"))
+        self.drawRightString(
+            letter[0] - 1.0 * inch, letter[1] - 0.6 * inch, self.report_type
+        )
 
         # Header line
-        self.setStrokeColor(self.colors.get('primary', self.colors.get('navy')))
+        self.setStrokeColor(self.colors.get("primary", self.colors.get("navy")))
         self.setLineWidth(0.25)
-        self.line(1.0*inch, letter[1] - 0.7*inch, letter[0] - 1.0*inch, letter[1] - 0.7*inch)
+        self.line(
+            1.0 * inch,
+            letter[1] - 0.7 * inch,
+            letter[0] - 1.0 * inch,
+            letter[1] - 0.7 * inch,
+        )
 
         # Footer
-        self.setFillColor(self.colors.get('text_light'))
-        self.setFont('Helvetica', 8)
-        self.drawString(1.0*inch, 0.5*inch, "Confidential - For Client Use Only")
+        self.setFillColor(self.colors.get("text_light"))
+        self.setFont("Helvetica", 8)
+        self.drawString(1.0 * inch, 0.5 * inch, "Confidential - For Client Use Only")
 
         date_str = format_date()
-        text_width = self.stringWidth(date_str, 'Helvetica', 8)
-        self.drawString((letter[0] - text_width) / 2, 0.5*inch, date_str)
+        text_width = self.stringWidth(date_str, "Helvetica", 8)
+        self.drawString((letter[0] - text_width) / 2, 0.5 * inch, date_str)
 
         page_text = f"Page {page_num} of {page_count}"
-        self.drawRightString(letter[0] - 1.0*inch, 0.5*inch, page_text)
+        self.drawRightString(letter[0] - 1.0 * inch, 0.5 * inch, page_text)
 
         # Footer line
-        self.setStrokeColor(self.colors.get('border'))
+        self.setStrokeColor(self.colors.get("border"))
         self.setLineWidth(0.25)
-        self.line(1.0*inch, 0.7*inch, letter[0] - 1.0*inch, 0.7*inch)
+        self.line(1.0 * inch, 0.7 * inch, letter[0] - 1.0 * inch, 0.7 * inch)
 
         self.restoreState()
 
@@ -205,16 +213,16 @@ def create_document(pagesize=letter, margins=None, title=None):
     buffer = io.BytesIO()
 
     if margins is None:
-        margins = {'top': 1.0, 'bottom': 1.0, 'left': 1.0, 'right': 1.0}
+        margins = {"top": 1.0, "bottom": 1.0, "left": 1.0, "right": 1.0}
 
     doc = SimpleDocTemplate(
         buffer,
         pagesize=pagesize,
-        topMargin=margins['top'] * inch,
-        bottomMargin=margins['bottom'] * inch,
-        leftMargin=margins['left'] * inch,
-        rightMargin=margins['right'] * inch,
-        title=title or "RPS Financial Report"
+        topMargin=margins["top"] * inch,
+        bottomMargin=margins["bottom"] * inch,
+        leftMargin=margins["left"] * inch,
+        rightMargin=margins["right"] * inch,
+        title=title or "RPS Financial Report",
     )
 
     return buffer, doc

@@ -1,4 +1,5 @@
 """AES-256-GCM encryption service for sensitive data."""
+
 import os
 import base64
 import secrets
@@ -12,6 +13,7 @@ from typing import Tuple, Optional
 
 from flask import session
 
+
 class EncryptionService:
     """Service for encrypting and decrypting sensitive data using AES-256-GCM."""
 
@@ -24,22 +26,30 @@ class EncryptionService:
         """
         if key is None:
             # Get key from environment or use default (change in production!)
-            key_material = os.environ.get('ENCRYPTION_KEY', 'default-key-change-in-production')
+            key_material = os.environ.get(
+                "ENCRYPTION_KEY", "default-key-change-in-production"
+            )
             key = self._derive_key(key_material)
 
         self.key = key
         self.aesgcm = AESGCM(key)
 
-    def _derive_key(self, key_material: str, salt: bytes = b'retirement-planning-salt') -> bytes:
+    def _derive_key(
+        self, key_material: str, salt: bytes = b"retirement-planning-salt"
+    ) -> bytes:
         """Derive a 32-byte key from material."""
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
             salt=salt,
             iterations=100000,
-            backend=default_backend()
+            backend=default_backend(),
         )
-        return kdf.derive(key_material.encode('utf-8') if isinstance(key_material, str) else key_material)
+        return kdf.derive(
+            key_material.encode("utf-8")
+            if isinstance(key_material, str)
+            else key_material
+        )
 
     @staticmethod
     def generate_dek() -> bytes:
@@ -54,51 +64,57 @@ class EncryptionService:
         return secrets.token_hex(8).upper()
 
     @staticmethod
-    def get_kek_from_password(password: str, salt: bytes = b'user-kek-salt', iterations: int = 600000) -> bytes:
+    def get_kek_from_password(
+        password: str, salt: bytes = b"user-kek-salt", iterations: int = 600000
+    ) -> bytes:
         """Derive a Key Encryption Key (KEK) from a user password."""
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
             salt=salt,
             iterations=iterations,
-            backend=default_backend()
+            backend=default_backend(),
         )
-        return kdf.derive(password.encode('utf-8'))
+        return kdf.derive(password.encode("utf-8"))
 
     @staticmethod
-    def get_recovery_kek(recovery_code: str, salt: bytes, iterations: int = 600000) -> bytes:
+    def get_recovery_kek(
+        recovery_code: str, salt: bytes, iterations: int = 600000
+    ) -> bytes:
         """Derive a Key Encryption Key (KEK) from a recovery code."""
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
             salt=salt,
             iterations=iterations,
-            backend=default_backend()
+            backend=default_backend(),
         )
         # Normalize code (uppercase, strip spaces)
-        code = recovery_code.upper().replace(' ', '').replace('-', '').strip()
-        return kdf.derive(code.encode('utf-8'))
+        code = recovery_code.upper().replace(" ", "").replace("-", "").strip()
+        return kdf.derive(code.encode("utf-8"))
 
     @staticmethod
     def get_email_kek(email: str, salt: bytes, iterations: int = 600000) -> bytes:
         """Derive a Key Encryption Key (KEK) from an email address.
-        
+
         Uses a server-side pepper to prevent offline brute-force attacks if the DB is leaked.
         """
-        pepper = os.environ.get('BACKUP_KEY_PEPPER', 'default-pepper-change-in-production')
-        
+        pepper = os.environ.get(
+            "BACKUP_KEY_PEPPER", "default-pepper-change-in-production"
+        )
+
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
             salt=salt,
             iterations=iterations,
-            backend=default_backend()
+            backend=default_backend(),
         )
         # Normalize email (lowercase, strip)
         normalized_email = email.lower().strip()
         # Combine email + pepper
         combined_secret = f"{normalized_email}:{pepper}"
-        return kdf.derive(combined_secret.encode('utf-8'))
+        return kdf.derive(combined_secret.encode("utf-8"))
 
     def encrypt(self, plaintext: str) -> Tuple[str, str]:
         """
@@ -117,12 +133,12 @@ class EncryptionService:
         iv = os.urandom(12)
 
         # Encrypt the data
-        ciphertext = self.aesgcm.encrypt(iv, plaintext.encode('utf-8'), None)
+        ciphertext = self.aesgcm.encrypt(iv, plaintext.encode("utf-8"), None)
 
         # Return base64-encoded ciphertext and IV
         return (
-            base64.b64encode(ciphertext).decode('utf-8'),
-            base64.b64encode(iv).decode('utf-8')
+            base64.b64encode(ciphertext).decode("utf-8"),
+            base64.b64encode(iv).decode("utf-8"),
         )
 
     def decrypt(self, ciphertext: str, iv: str) -> Optional[str]:
@@ -147,7 +163,7 @@ class EncryptionService:
             # Decrypt
             plaintext_bytes = self.aesgcm.decrypt(iv_bytes, ciphertext_bytes, None)
 
-            return plaintext_bytes.decode('utf-8')
+            return plaintext_bytes.decode("utf-8")
         except Exception as e:
             # Decryption failed (wrong key, corrupted data, etc.)
             raise ValueError(f"Decryption failed: {str(e)}")
@@ -232,7 +248,7 @@ def get_encryption_service() -> EncryptionService:
     Prefers user-specific DEK from session if available."""
     try:
         # Try to get user DEK from session
-        user_dek_b64 = session.get('user_dek')
+        user_dek_b64 = session.get("user_dek")
         if user_dek_b64:
             user_dek = base64.b64decode(user_dek_b64)
             return EncryptionService(key=user_dek)
@@ -260,7 +276,7 @@ def decrypt(ciphertext: str, iv: str) -> Optional[str]:
         return service.decrypt(ciphertext, iv)
     except Exception:
         # If decryption failed and we were using a user key, try fallback to global
-        if 'user_dek' in session:
+        if "user_dek" in session:
             global _encryption_service
             if _encryption_service is None:
                 _encryption_service = EncryptionService()
@@ -280,7 +296,7 @@ def decrypt_dict(ciphertext: str, iv: str) -> Optional[dict]:
     """Decrypt dictionary using global or session-based service."""
     if not ciphertext or not iv:
         return None
-    
+
     plaintext = decrypt(ciphertext, iv)
     if plaintext:
         return json.loads(plaintext)
@@ -296,7 +312,7 @@ def decrypt_list(ciphertext: str, iv: str) -> Optional[list]:
     """Decrypt list using global or session-based service."""
     if not ciphertext or not iv:
         return None
-    
+
     plaintext = decrypt(ciphertext, iv)
     if plaintext:
         return json.loads(plaintext)

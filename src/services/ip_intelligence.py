@@ -14,26 +14,34 @@ class IPIntelligence:
 
     # Known VPN/Proxy IP ranges (simplified - production would use comprehensive databases)
     VPN_ASN_RANGES = [
-        'AS13335',  # Cloudflare
-        'AS14061',  # DigitalOcean
-        'AS16509',  # Amazon AWS
-        'AS20473',  # Choopa (Vultr)
-        'AS24940',  # Hetzner
-        'AS36352',  # ColoCrossing
-        'AS47583',  # Hostinger
-        'AS62041',  # Plesk
+        "AS13335",  # Cloudflare
+        "AS14061",  # DigitalOcean
+        "AS16509",  # Amazon AWS
+        "AS20473",  # Choopa (Vultr)
+        "AS24940",  # Hetzner
+        "AS36352",  # ColoCrossing
+        "AS47583",  # Hostinger
+        "AS62041",  # Plesk
     ]
 
     # Common hosting providers
     HOSTING_KEYWORDS = [
-        'amazon', 'aws', 'azure', 'google', 'digitalocean', 'linode',
-        'vultr', 'ovh', 'hetzner', 'rackspace', 'cloudflare', 'fastly'
+        "amazon",
+        "aws",
+        "azure",
+        "google",
+        "digitalocean",
+        "linode",
+        "vultr",
+        "ovh",
+        "hetzner",
+        "rackspace",
+        "cloudflare",
+        "fastly",
     ]
 
     # Known malicious indicators
-    MALICIOUS_KEYWORDS = [
-        'tor', 'proxy', 'vpn', 'anonymous', 'privacy', 'hide'
-    ]
+    MALICIOUS_KEYWORDS = ["tor", "proxy", "vpn", "anonymous", "privacy", "hide"]
 
     @staticmethod
     def analyze_ip(ip_address: str) -> Dict[str, Any]:
@@ -51,62 +59,63 @@ class IPIntelligence:
         - risk_indicators: List of risk factors
         - risk_score: 0-100 risk score
         """
-        result = {
-            'ip': ip_address,
-            'risk_indicators': [],
-            'risk_score': 0
-        }
+        result = {"ip": ip_address, "risk_indicators": [], "risk_score": 0}
 
         try:
             ip_obj = ipaddress.ip_address(ip_address)
 
             # Basic IP properties
-            result['type'] = 'IPv6' if ip_obj.version == 6 else 'IPv4'
-            result['is_private'] = ip_obj.is_private
-            result['is_reserved'] = ip_obj.is_reserved
-            result['is_loopback'] = ip_obj.is_loopback
-            result['is_multicast'] = ip_obj.is_multicast
-            result['is_global'] = ip_obj.is_global
+            result["type"] = "IPv6" if ip_obj.version == 6 else "IPv4"
+            result["is_private"] = ip_obj.is_private
+            result["is_reserved"] = ip_obj.is_reserved
+            result["is_loopback"] = ip_obj.is_loopback
+            result["is_multicast"] = ip_obj.is_multicast
+            result["is_global"] = ip_obj.is_global
 
             # Reverse DNS lookup
-            result['reverse_dns'] = IPIntelligence.reverse_dns_lookup(ip_address)
+            result["reverse_dns"] = IPIntelligence.reverse_dns_lookup(ip_address)
 
             # Analyze reverse DNS for indicators
-            if result['reverse_dns']:
-                rdns_lower = result['reverse_dns'].lower()
+            if result["reverse_dns"]:
+                rdns_lower = result["reverse_dns"].lower()
 
                 # Check for hosting providers
-                if any(keyword in rdns_lower for keyword in IPIntelligence.HOSTING_KEYWORDS):
-                    result['risk_indicators'].append('hosting_provider')
-                    result['risk_score'] += 15
-                    result['is_hosting'] = True
+                if any(
+                    keyword in rdns_lower for keyword in IPIntelligence.HOSTING_KEYWORDS
+                ):
+                    result["risk_indicators"].append("hosting_provider")
+                    result["risk_score"] += 15
+                    result["is_hosting"] = True
 
                 # Check for malicious keywords
-                if any(keyword in rdns_lower for keyword in IPIntelligence.MALICIOUS_KEYWORDS):
-                    result['risk_indicators'].append('suspicious_hostname')
-                    result['risk_score'] += 30
-                    result['is_suspicious'] = True
+                if any(
+                    keyword in rdns_lower
+                    for keyword in IPIntelligence.MALICIOUS_KEYWORDS
+                ):
+                    result["risk_indicators"].append("suspicious_hostname")
+                    result["risk_score"] += 30
+                    result["is_suspicious"] = True
 
             # Additional checks for private/reserved IPs
-            if result['is_private']:
-                result['risk_indicators'].append('private_ip')
+            if result["is_private"]:
+                result["risk_indicators"].append("private_ip")
 
-            if result['is_reserved']:
-                result['risk_indicators'].append('reserved_ip')
-                result['risk_score'] += 10
+            if result["is_reserved"]:
+                result["risk_indicators"].append("reserved_ip")
+                result["risk_score"] += 10
 
             # Risk classification
-            if result['risk_score'] >= 60:
-                result['risk_level'] = 'high'
-            elif result['risk_score'] >= 30:
-                result['risk_level'] = 'medium'
+            if result["risk_score"] >= 60:
+                result["risk_level"] = "high"
+            elif result["risk_score"] >= 30:
+                result["risk_level"] = "medium"
             else:
-                result['risk_level'] = 'low'
+                result["risk_level"] = "low"
 
         except ValueError as e:
-            result['error'] = f'Invalid IP address: {str(e)}'
-            result['risk_score'] = 100
-            result['risk_level'] = 'high'
+            result["error"] = f"Invalid IP address: {str(e)}"
+            result["risk_score"] = 100
+            result["risk_level"] = "high"
 
         return result
 
@@ -121,15 +130,15 @@ class IPIntelligence:
             # Try using dnspython with timeout if available
             import dns.resolver
             import dns.reversename
-            
+
             resolver = dns.resolver.Resolver()
             resolver.timeout = 2
             resolver.lifetime = 2
-            
+
             addr = dns.reversename.from_address(ip_address)
-            hostname = str(resolver.resolve(addr, 'PTR')[0])
-            return hostname.rstrip('.')
-            
+            hostname = str(resolver.resolve(addr, "PTR")[0])
+            return hostname.rstrip(".")
+
         except ImportError:
             # Fallback to socket if dnspython not installed
             try:
@@ -156,7 +165,7 @@ class IPIntelligence:
         # Simplified check - would need comprehensive Tor exit node database
         reverse_dns = IPIntelligence.reverse_dns_lookup(ip_address)
         if reverse_dns:
-            return 'tor' in reverse_dns.lower()
+            return "tor" in reverse_dns.lower()
         return False
 
     @staticmethod
@@ -170,12 +179,7 @@ class IPIntelligence:
         - confidence: 0-100 confidence score
         - indicators: List of detection indicators
         """
-        result = {
-            'is_vpn': False,
-            'is_proxy': False,
-            'confidence': 0,
-            'indicators': []
-        }
+        result = {"is_vpn": False, "is_proxy": False, "confidence": 0, "indicators": []}
 
         # Check reverse DNS
         reverse_dns = IPIntelligence.reverse_dns_lookup(ip_address)
@@ -183,117 +187,113 @@ class IPIntelligence:
             rdns_lower = reverse_dns.lower()
 
             # VPN indicators in hostname
-            vpn_keywords = ['vpn', 'proxy', 'tunnel', 'hide', 'anonymous', 'privacy']
+            vpn_keywords = ["vpn", "proxy", "tunnel", "hide", "anonymous", "privacy"]
             if any(keyword in rdns_lower for keyword in vpn_keywords):
-                result['is_vpn'] = True
-                result['confidence'] += 40
-                result['indicators'].append('vpn_in_hostname')
+                result["is_vpn"] = True
+                result["confidence"] += 40
+                result["indicators"].append("vpn_in_hostname")
 
             # Hosting provider indicators
-            if any(provider in rdns_lower for provider in IPIntelligence.HOSTING_KEYWORDS):
-                result['confidence'] += 20
-                result['indicators'].append('hosting_provider')
+            if any(
+                provider in rdns_lower for provider in IPIntelligence.HOSTING_KEYWORDS
+            ):
+                result["confidence"] += 20
+                result["indicators"].append("hosting_provider")
 
         # Check if Tor exit node
         if IPIntelligence.is_tor_exit_node(ip_address):
-            result['is_proxy'] = True
-            result['is_vpn'] = True
-            result['confidence'] += 50
-            result['indicators'].append('tor_exit_node')
+            result["is_proxy"] = True
+            result["is_vpn"] = True
+            result["confidence"] += 50
+            result["indicators"].append("tor_exit_node")
 
         # User agent analysis
         if user_agent:
             ua_lower = user_agent.lower()
-            if 'tor' in ua_lower or 'onion' in ua_lower:
-                result['is_vpn'] = True
-                result['confidence'] += 30
-                result['indicators'].append('tor_user_agent')
+            if "tor" in ua_lower or "onion" in ua_lower:
+                result["is_vpn"] = True
+                result["confidence"] += 30
+                result["indicators"].append("tor_user_agent")
 
         # Cap confidence at 100
-        result['confidence'] = min(result['confidence'], 100)
+        result["confidence"] = min(result["confidence"], 100)
 
         # Set risk level
-        if result['confidence'] >= 70:
-            result['risk_level'] = 'high'
-        elif result['confidence'] >= 40:
-            result['risk_level'] = 'medium'
+        if result["confidence"] >= 70:
+            result["risk_level"] = "high"
+        elif result["confidence"] >= 40:
+            result["risk_level"] = "medium"
         else:
-            result['risk_level'] = 'low'
+            result["risk_level"] = "low"
 
         return result
 
     @staticmethod
     def analyze_ip_location_mismatch(
-        ip_geolocation: Dict,
-        browser_timezone: str = None,
-        browser_language: str = None
+        ip_geolocation: Dict, browser_timezone: str = None, browser_language: str = None
     ) -> Dict[str, Any]:
         """
         Detect mismatches between IP location and browser settings.
 
         Indicates potential VPN/proxy use or location spoofing.
         """
-        mismatches = {
-            'has_mismatch': False,
-            'indicators': [],
-            'confidence': 0
-        }
+        mismatches = {"has_mismatch": False, "indicators": [], "confidence": 0}
 
         if not ip_geolocation:
             return mismatches
 
-        ip_country = ip_geolocation.get('country_code', '').upper()
+        ip_country = ip_geolocation.get("country_code", "").upper()
 
         # Timezone mismatch
         if browser_timezone:
             # Common timezone to country mappings (simplified)
             timezone_countries = {
-                'America/New_York': 'US',
-                'America/Chicago': 'US',
-                'America/Denver': 'US',
-                'America/Los_Angeles': 'US',
-                'Europe/London': 'GB',
-                'Europe/Paris': 'FR',
-                'Europe/Berlin': 'DE',
-                'Asia/Tokyo': 'JP',
-                'Asia/Shanghai': 'CN',
-                'Australia/Sydney': 'AU'
+                "America/New_York": "US",
+                "America/Chicago": "US",
+                "America/Denver": "US",
+                "America/Los_Angeles": "US",
+                "Europe/London": "GB",
+                "Europe/Paris": "FR",
+                "Europe/Berlin": "DE",
+                "Asia/Tokyo": "JP",
+                "Asia/Shanghai": "CN",
+                "Australia/Sydney": "AU",
             }
 
             expected_country = timezone_countries.get(browser_timezone)
             if expected_country and expected_country != ip_country:
-                mismatches['has_mismatch'] = True
-                mismatches['indicators'].append('timezone_country_mismatch')
-                mismatches['confidence'] += 30
+                mismatches["has_mismatch"] = True
+                mismatches["indicators"].append("timezone_country_mismatch")
+                mismatches["confidence"] += 30
 
         # Language mismatch
         if browser_language:
             # Extract primary language code
-            lang_code = browser_language.split('-')[0].upper()
+            lang_code = browser_language.split("-")[0].upper()
 
             # Common language to country mappings (simplified)
             language_countries = {
-                'EN': ['US', 'GB', 'CA', 'AU', 'NZ'],
-                'ES': ['ES', 'MX', 'AR', 'CO'],
-                'FR': ['FR', 'CA', 'BE'],
-                'DE': ['DE', 'AT', 'CH'],
-                'JA': ['JP'],
-                'ZH': ['CN', 'TW', 'HK']
+                "EN": ["US", "GB", "CA", "AU", "NZ"],
+                "ES": ["ES", "MX", "AR", "CO"],
+                "FR": ["FR", "CA", "BE"],
+                "DE": ["DE", "AT", "CH"],
+                "JA": ["JP"],
+                "ZH": ["CN", "TW", "HK"],
             }
 
             expected_countries = language_countries.get(lang_code, [])
             if expected_countries and ip_country not in expected_countries:
-                mismatches['has_mismatch'] = True
-                mismatches['indicators'].append('language_country_mismatch')
-                mismatches['confidence'] += 20
+                mismatches["has_mismatch"] = True
+                mismatches["indicators"].append("language_country_mismatch")
+                mismatches["confidence"] += 20
 
         # Risk assessment
-        if mismatches['confidence'] >= 40:
-            mismatches['risk_level'] = 'high'
-        elif mismatches['confidence'] >= 20:
-            mismatches['risk_level'] = 'medium'
+        if mismatches["confidence"] >= 40:
+            mismatches["risk_level"] = "high"
+        elif mismatches["confidence"] >= 20:
+            mismatches["risk_level"] = "medium"
         else:
-            mismatches['risk_level'] = 'low'
+            mismatches["risk_level"] = "low"
 
         return mismatches
 
@@ -312,24 +312,24 @@ class IPIntelligence:
         For now, returns basic reputation analysis.
         """
         reputation = {
-            'score': 50,  # Neutral score
-            'sources_checked': 0,
-            'blacklisted': False,
-            'whitelisted': False,
-            'reports': []
+            "score": 50,  # Neutral score
+            "sources_checked": 0,
+            "blacklisted": False,
+            "whitelisted": False,
+            "reports": [],
         }
 
         # Check if private/internal IP
         try:
             ip_obj = ipaddress.ip_address(ip_address)
             if ip_obj.is_private or ip_obj.is_loopback:
-                reputation['whitelisted'] = True
-                reputation['score'] = 100
-                reputation['reports'].append('Internal/Private IP - Trusted')
+                reputation["whitelisted"] = True
+                reputation["score"] = 100
+                reputation["reports"].append("Internal/Private IP - Trusted")
         except ValueError:
-            reputation['score'] = 0
-            reputation['blacklisted'] = True
-            reputation['reports'].append('Invalid IP address format')
+            reputation["score"] = 0
+            reputation["blacklisted"] = True
+            reputation["reports"].append("Invalid IP address format")
 
         return reputation
 

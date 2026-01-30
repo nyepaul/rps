@@ -28,12 +28,17 @@ except ImportError:
     print("Please install bcrypt: pip3 install bcrypt")
     sys.exit(1)
 
+
 def main():
-    parser = argparse.ArgumentParser(description='Reset a user password.')
-    parser.add_argument('username', help='Username to reset')
-    parser.add_argument('password', help='New password (min 8 chars)')
-    parser.add_argument('--force', action='store_true', help='Skip data loss confirmation')
-    parser.add_argument('--db-path', default='data/planning.db', help='Path to SQLite database')
+    parser = argparse.ArgumentParser(description="Reset a user password.")
+    parser.add_argument("username", help="Username to reset")
+    parser.add_argument("password", help="New password (min 8 chars)")
+    parser.add_argument(
+        "--force", action="store_true", help="Skip data loss confirmation"
+    )
+    parser.add_argument(
+        "--db-path", default="data/planning.db", help="Path to SQLite database"
+    )
 
     args = parser.parse_args()
 
@@ -59,7 +64,10 @@ def main():
         cursor = conn.cursor()
 
         # Check if user exists
-        cursor.execute('SELECT id, username, is_active, encrypted_dek, dek_iv FROM users WHERE username = ?', (username,))
+        cursor.execute(
+            "SELECT id, username, is_active, encrypted_dek, dek_iv FROM users WHERE username = ?",
+            (username,),
+        )
         user = cursor.fetchone()
 
         if not user:
@@ -70,7 +78,7 @@ def main():
         user_id, user_name, is_active, encrypted_dek, dek_iv = user
         has_encrypted_data = bool(encrypted_dek and dek_iv)
 
-        print(f'Found user: {user_name} (ID: {user_id}, Active: {is_active})')
+        print(f"Found user: {user_name} (ID: {user_id}, Active: {is_active})")
 
         # Warn if user has encrypted data
         if has_encrypted_data:
@@ -98,20 +106,25 @@ def main():
                 print()
 
         # Hash the password
-        print('Hashing password...')
-        password_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        print("Hashing password...")
+        password_hash = bcrypt.hashpw(
+            new_password.encode("utf-8"), bcrypt.gensalt()
+        ).decode("utf-8")
 
         # Update password and clear DEK if needed
-        print('Updating password...')
+        print("Updating password...")
         if has_encrypted_data:
             # Clear encrypted DEK - data is now inaccessible
             cursor.execute(
-                'UPDATE users SET password_hash = ?, encrypted_dek = NULL, dek_iv = NULL WHERE username = ?',
-                (password_hash, username)
+                "UPDATE users SET password_hash = ?, encrypted_dek = NULL, dek_iv = NULL WHERE username = ?",
+                (password_hash, username),
             )
-            print('🗑️  Encrypted data keys cleared (data now inaccessible)')
+            print("🗑️  Encrypted data keys cleared (data now inaccessible)")
         else:
-            cursor.execute('UPDATE users SET password_hash = ? WHERE username = ?', (password_hash, username))
+            cursor.execute(
+                "UPDATE users SET password_hash = ? WHERE username = ?",
+                (password_hash, username),
+            )
 
         conn.commit()
         conn.close()
@@ -120,13 +133,14 @@ def main():
         print("=" * 60)
         print(f"✅ Password for '{username}' reset successfully!")
         print("=" * 60)
-        
+
         if has_encrypted_data:
             print("🔴 Note: Profile data was cleared due to encryption key reset.")
 
     except Exception as e:
-        print(f'❌ Error: {e}')
+        print(f"❌ Error: {e}")
         sys.exit(1)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
