@@ -579,6 +579,7 @@ def logout():
 
 
 @auth_bp.route("/session", methods=["GET"])
+@limiter.exempt
 def session_check():
     """Check if current session is valid and return user data."""
     if not current_user.is_authenticated:

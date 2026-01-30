@@ -4,6 +4,7 @@ Authored by: pan
 """
 
 from flask import Flask, send_from_directory, jsonify, request, g, session
+from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_login import current_user, logout_user
 from datetime import datetime, timedelta
 from src.config import config
@@ -105,7 +106,10 @@ def create_app(config_name="development"):
     # Initialize extensions
     init_extensions(app)
 
-    # Request timing tracking
+    # Wrap with ProxyFix to correctly handle X-Forwarded-For and X-Forwarded-Proto
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
+
+    # Request start time for performance tracking
     @app.before_request
     def track_request_start():
         """Track request start time for response timing measurement."""
