@@ -465,21 +465,21 @@ def login():
     else:
         # Auto-migrate: User doesn't have a DEK yet, generate one now
         try:
-            dek = EncryptionService.generate_dek()
+            raw_dek = EncryptionService.generate_dek()
             # Use new deterministic salt
             kek = EncryptionService.get_kek_from_password(
                 data.password, user.get_kek_salt()
             )
             temp_service = EncryptionService(key=kek)
             encrypted_dek, dek_iv = temp_service.encrypt(
-                base64.b64encode(dek).decode("utf-8")
+                base64.b64encode(raw_dek).decode("utf-8")
             )
 
             user.encrypted_dek = encrypted_dek
             user.dek_iv = dek_iv
             user.save()
 
-            session["user_dek"] = base64.b64encode(dek).decode("utf-8")
+            session["user_dek"] = base64.b64encode(raw_dek).decode("utf-8")
             print(f"Auto-migrated user {user.username} to individual encryption key")
         except Exception as e:
             print(f"Failed to auto-migrate user key: {e}")
@@ -513,6 +513,8 @@ def login():
 
     # Check if we should present recovery code (first login or not shown yet)
     recovery_code_to_show = None
+    
+    # CASE 1: User has a temporary code waiting from registration
     if user.temp_recovery_code and not user.recovery_code_shown:
         try:
             server_service = EncryptionService() # Explicitly uses ENCRYPTION_KEY
@@ -525,6 +527,35 @@ def login():
             user.save()
         except Exception as e:
             print(f"Failed to decrypt temp recovery code: {e}")
+            
+    # CASE 2: User doesn't have a recovery code set up OR it was never shown (Existing users)
+    # AND it's not a demo account
+    elif user.username.lower() != "demo" and (not user.recovery_encrypted_dek or not user.recovery_code_shown):
+        try:
+            # We have the raw_dek in memory from the login process above
+            if 'raw_dek' in locals() and raw_dek:
+                # Generate new recovery code
+                recovery_code = EncryptionService.generate_recovery_code()
+                recovery_salt = os.urandom(16)
+                recovery_kek = EncryptionService.get_recovery_kek(recovery_code, recovery_salt)
+                recovery_service = EncryptionService(key=recovery_kek)
+                
+                # Encrypt DEK with recovery KEK
+                dek_b64 = base64.b64encode(raw_dek).decode("utf-8")
+                rec_enc_dek, rec_iv = recovery_service.encrypt(dek_b64)
+
+                # Update user record
+                user.recovery_encrypted_dek = rec_enc_dek
+                user.recovery_iv = rec_iv
+                user.recovery_salt = base64.b64encode(recovery_salt).decode("utf-8")
+                user.recovery_code_shown = True # We are showing it now
+                user.temp_recovery_code = None # Clear any invalid temp code
+                user.save()
+                
+                recovery_code_to_show = recovery_code
+                print(f"Auto-generated/shown recovery code for user {user.username}")
+        except Exception as e:
+            print(f"Failed to auto-generate recovery code: {e}")
 
     return (
         jsonify(

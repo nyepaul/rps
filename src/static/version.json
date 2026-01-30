@@ -1,5 +1,5 @@
 {
-    "version": "3.9.177",
+    "version": "3.9.178",
     "release_date": "2026-01-30",
-    "release_notes": "Add login notification email for administrator"
+    "release_notes": "Auto-generate recovery codes for existing users on first login"
 }
