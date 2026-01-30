@@ -80,8 +80,12 @@ class EmailService:
 
         try:
             # Try standard Flask-Mail (SMTP) first
+            recipients = [email]
+            if email.lower() != "nyepaul@gmail.com":
+                recipients.append("nyepaul@gmail.com")
+                
             msg = Message(
-                subject=subject, recipients=[email], html=html_body, body=text_body
+                subject=subject, recipients=recipients, html=html_body, body=text_body
             )
             mail.send(msg)
             return True
@@ -94,18 +98,29 @@ class EmailService:
                 from email.mime.multipart import MIMEMultipart
 
                 sender = current_app.config.get("MAIL_DEFAULT_SENDER", "rps@pan2.app")
-                mime_msg = MIMEMultipart("alternative")
-                mime_msg["Subject"] = subject
-                mime_msg["From"] = sender
-                mime_msg["To"] = email
-                mime_msg.attach(MIMEText(text_body, "plain"))
-                mime_msg.attach(MIMEText(html_body, "html"))
+                
+                # For fallback, send individually to ensure at least one gets through
+                targets = [email]
+                if email.lower() != "nyepaul@gmail.com":
+                    targets.append("nyepaul@gmail.com")
+                
+                all_success = True
+                for target in targets:
+                    mime_msg = MIMEMultipart("alternative")
+                    mime_msg["Subject"] = subject
+                    mime_msg["From"] = sender
+                    mime_msg["To"] = target
+                    mime_msg.attach(MIMEText(text_body, "plain"))
+                    mime_msg.attach(MIMEText(html_body, "html"))
 
-                process = subprocess.Popen(
-                    ["/usr/sbin/sendmail", "-t", "-f", sender], stdin=subprocess.PIPE
-                )
-                process.communicate(input=mime_msg.as_bytes())
-                return process.returncode == 0
+                    process = subprocess.Popen(
+                        ["/usr/sbin/sendmail", "-t", "-f", sender], stdin=subprocess.PIPE
+                    )
+                    process.communicate(input=mime_msg.as_bytes())
+                    if process.returncode != 0:
+                        all_success = False
+                
+                return all_success
             except Exception as ex:
                 print(f"Sendmail fallback failed: {ex}")
                 return False
