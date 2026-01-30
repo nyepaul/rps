@@ -1,5 +1,5 @@
 {
-    "version": "3.9.148",
+    "version": "3.9.149",
     "release_date": "2026-01-29",
-    "release_notes": "Fix verification email links to point to rps.pan2.app"
+    "release_notes": "Fix Resend Verification delivery and UI navigation"
 }

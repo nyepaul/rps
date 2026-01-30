@@ -23,7 +23,7 @@ class EmailService:
             bool: True if email sent successfully
         """
         if not base_url:
-            base_url = os.getenv("APP_BASE_URL", "https://rps.pan2.app")
+            base_url = current_app.config.get("APP_BASE_URL") or os.getenv("APP_BASE_URL", "https://rps.pan2.app")
 
         verification_link = f"{base_url}/verify-email.html?token={token}"
         subject = "Verify your RPS Account"
@@ -99,7 +99,7 @@ class EmailService:
                 mime_msg.attach(MIMEText(html_body, "html"))
 
                 process = subprocess.Popen(
-                    ["/usr/sbin/sendmail", "-t"], stdin=subprocess.PIPE
+                    ["/usr/sbin/sendmail", "-t", "-f", sender], stdin=subprocess.PIPE
                 )
                 process.communicate(input=mime_msg.as_bytes())
                 return process.returncode == 0
@@ -121,7 +121,7 @@ class EmailService:
         """
         # Determine base URL
         if not base_url:
-            base_url = os.getenv("APP_BASE_URL", "https://rps.pan2.app")
+            base_url = current_app.config.get("APP_BASE_URL") or os.getenv("APP_BASE_URL", "https://rps.pan2.app")
 
         # Generate reset link
         reset_link = f"{base_url}/account-recovery.html?token={token}"
@@ -308,7 +308,7 @@ class EmailService:
                     mime_msg.attach(part2)
 
                     process = subprocess.Popen(
-                        ["/usr/sbin/sendmail", "-t"],
+                        ["/usr/sbin/sendmail", "-t", "-f", sender],
                         stdin=subprocess.PIPE,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
@@ -354,7 +354,7 @@ class EmailService:
         from datetime import datetime
 
         if not base_url:
-            base_url = os.getenv("APP_BASE_URL", "https://rps.pan2.app")
+            base_url = current_app.config.get("APP_BASE_URL") or os.getenv("APP_BASE_URL", "https://rps.pan2.app")
 
         # Get all super admin emails, excluding .local domains
         super_admin_emails = [
@@ -445,7 +445,7 @@ Admin Panel: {base_url}/admin.html
                     mime_msg.attach(MIMEText(html_body, "html"))
 
                     process = subprocess.Popen(
-                        ["/usr/sbin/sendmail", "-t"], stdin=subprocess.PIPE
+                        ["/usr/sbin/sendmail", "-t", "-f", sender], stdin=subprocess.PIPE
                     )
                     process.communicate(input=mime_msg.as_bytes())
                     if process.returncode == 0:

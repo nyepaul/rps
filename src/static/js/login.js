@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (toggleLink) {
         toggleLink.addEventListener('click', (e) => {
             e.preventDefault();
-            if (currentMode === 'login' || currentMode === 'resend') {
+            if (currentMode === 'login') {
                 showMode('register');
             } else {
                 showMode('login');
