@@ -474,7 +474,7 @@ def list_users():
                 count_query += " WHERE (u.username LIKE ? OR u.email LIKE ?)"
                 count_params = [f"%{search}%", f"%{search}%"]
 
-            count_result = connection.db.execute(count_query, count_params).fetchone()
+            count_result = connection.db.execute_one(count_query, count_params)
             total = count_result["total"] if count_result else 0
 
             # Data query with pagination
@@ -508,7 +508,7 @@ def list_users():
                 count_query += " AND (u.username LIKE ? OR u.email LIKE ?)"
                 count_params.extend([f"%{search}%", f"%{search}%"])
 
-            count_result = connection.db.execute(count_query, count_params).fetchone()
+            count_result = connection.db.execute_one(count_query, count_params)
             total = count_result["total"] if count_result else 0
 
             data_query = """
