@@ -136,11 +136,20 @@ async function checkAuth() {
                 });
             }
         } else {
+            // Force hide sidebar and tabs before redirecting
+            const sidebar = document.getElementById('tabs-container');
+            if (sidebar) sidebar.style.display = 'none';
+            
             // Redirect to login if not authenticated
             window.location.href = '/login';
         }
     } catch (error) {
         console.error('❌ Auth check failed:', error);
+        
+        // Force hide sidebar on error too
+        const sidebar = document.getElementById('tabs-container');
+        if (sidebar) sidebar.style.display = 'none';
+        
         // Redirect to login on error
         window.location.href = '/login';
     }

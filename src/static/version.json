@@ -1,5 +1,5 @@
 {
-    "version": "3.9.155",
+    "version": "3.9.156",
     "release_date": "2026-01-31",
-    "release_notes": "robust alignment for deployment boxes"
+    "release_notes": "fix recurring logout/login loop"
 }

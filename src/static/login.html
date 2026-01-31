@@ -6,9 +6,8 @@
     <title>Login - Retirement Planning System</title>
 
     <!-- Password Manager Site Identification -->
-    <meta name="application-name" content="Retirement Planning System - rps.pan2.app">
-    <meta property="og:site_name" content="rps.pan2.app">
-    <link rel="canonical" href="https://rps.pan2.app/login">
+    <meta name="application-name" content="Retirement Planning System">
+    <link rel="canonical" href="/login">
 
     <link rel="stylesheet" href="/css/login.css">
 </head>
@@ -20,8 +19,7 @@
         <div id="message"></div>
         
         <!-- Login Form -->
-        <form id="loginForm" action="https://rps.pan2.app/api/auth/login" method="post">
-            <input type="hidden" name="site" value="rps.pan2.app">
+        <form id="loginForm" action="/api/auth/login" method="post">
             <div class="form-group">
                 <label for="loginUsername">Username</label>
                 <input type="text" id="loginUsername" name="username" required autocomplete="username">
@@ -41,8 +39,7 @@
         </form>
 
         <!-- Register Form -->
-        <form id="registerForm" class="hidden" action="https://rps.pan2.app/api/auth/register" method="post">
-            <input type="hidden" name="site" value="rps.pan2.app">
+        <form id="registerForm" class="hidden" action="/api/auth/register" method="post">
             <div class="form-group">
                 <label for="registerUsername">Username</label>
                 <input type="text" id="registerUsername" name="username" required autocomplete="username">
