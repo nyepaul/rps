@@ -1,5 +1,5 @@
 {
-    "version": "3.9.166",
+    "version": "3.9.167",
     "release_date": "2026-01-31",
-    "release_notes": "Add minimal test mode and defensive data access checks"
+    "release_notes": "Fix calculation report: handle expense values stored as lists"
 }

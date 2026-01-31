@@ -1407,6 +1407,19 @@ def get_calculation_report():
             total_expenses_annual = 0
             for key, label in expense_categories:
                 amount_monthly = current_expenses.get(key, 0)
+
+                # Handle case where expense value might be a list
+                if isinstance(amount_monthly, list):
+                    # If it's a list, sum the values or take first element
+                    amount_monthly = sum(amount_monthly) if amount_monthly else 0
+
+                # Ensure it's a number
+                try:
+                    amount_monthly = float(amount_monthly) if amount_monthly else 0
+                except (ValueError, TypeError):
+                    logger.error(f"Invalid expense value for {key}: {amount_monthly}")
+                    amount_monthly = 0
+
                 amount_annual = amount_monthly * 12
                 if amount_annual > 0:
                     expenses_section["items"].append({
