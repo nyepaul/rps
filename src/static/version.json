@@ -1,5 +1,5 @@
 {
-    "version": "3.9.155",
+    "version": "3.9.156",
     "release_date": "2026-01-31",
-    "release_notes": "Fix missing variable declarations in login.js"
+    "release_notes": "Fix cash flow chart tooltip to show correct account labels"
 }

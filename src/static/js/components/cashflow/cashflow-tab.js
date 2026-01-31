@@ -697,7 +697,9 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
                     displayColors: true,
                     callbacks: {
                         label: function(context) {
-                            let label = context.label || '';
+                            // Use dataset.label for the series name (e.g., "Work Income")
+                            // context.label is the x-axis value (year)
+                            let label = context.dataset.label || '';
                             if (label) {
                                 label += ': ';
                             }
