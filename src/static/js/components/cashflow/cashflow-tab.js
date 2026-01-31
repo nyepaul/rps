@@ -1745,13 +1745,13 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
         const stateRate = financial.tax_bracket_state || 0.05;
         const ficaRate = 0.0765;
 
-        // FICA only on work income
+        // FICA only on work income (salary - not rental/business income)
         monthlyFicaTax = workIncome * ficaRate;
-        
-        // Income stacking for Federal/State (Work + Pension + SS taxable portion)
+
+        // Income stacking for Federal/State (All income: Work + Budget + Pension + SS taxable portion)
         // SS taxation: rough rule of thumb (50% taxable for most)
         const taxableSS = (isRetired ? (financial.social_security_benefit || 0) * 0.5 : 0);
-        const monthlyTaxableOrdinary = workIncome + (isRetired ? (financial.pension_benefit || 0) : 0) + taxableSS + investmentIncome;
+        const monthlyTaxableOrdinary = totalWorkIncome + (isRetired ? (financial.pension_benefit || 0) : 0) + taxableSS + investmentIncome;
         
         // Apply standard deduction (monthly)
         const filingStatus = financial.filing_status || 'mfj';
@@ -1763,7 +1763,7 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
 
         // Total expenses including taxes
         const totalExpensesThisMonth = expenses + monthlyFederalTax + monthlyStateTax + monthlyFicaTax;
-        const totalIncome = workIncome + retirementBenefits + investmentIncome;
+        const totalIncome = totalWorkIncome + retirementBenefits + investmentIncome;
         const netCashFlow = totalIncome - totalExpensesThisMonth;
 
         // --- Update Portfolio Balance ---
@@ -1776,7 +1776,7 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
         monthlyData.push({
             date: currentDate,
             label: monthLabel,
-            workIncome: workIncome,
+            workIncome: totalWorkIncome,  // Include all income (salary + rental + consulting + business + other)
             retirementBenefits,
             investmentIncome,
             totalIncome,

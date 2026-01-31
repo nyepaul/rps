@@ -1,5 +1,5 @@
 {
-    "version": "3.9.154",
+    "version": "3.9.155",
     "release_date": "2026-01-31",
-    "release_notes": "Fix 401k contributions not being saved or used in calculations"
+    "release_notes": "Fix cash flow net income to include all income sources (rental, consulting, business)"
 }
