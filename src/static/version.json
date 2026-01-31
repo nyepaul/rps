@@ -1,5 +1,5 @@
 {
-    "version": "3.9.158",
+    "version": "3.9.159",
     "release_date": "2026-01-31",
-    "release_notes": "final fix for logout loop and demo session persistence"
+    "release_notes": "improve version visibility on login screen and fix module loading"
 }
