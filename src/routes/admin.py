@@ -461,7 +461,8 @@ def list_users():
         from src.database import connection
 
         # Parse pagination parameters
-        limit = min(int(request.args.get("limit", 50)), 500)
+        # Allow up to 1000 for backwards compatibility with existing frontend
+        limit = min(int(request.args.get("limit", 50)), 1000)
         offset = int(request.args.get("offset", 0))
         search = request.args.get("search", "").strip()
 
@@ -473,7 +474,8 @@ def list_users():
                 count_query += " WHERE (u.username LIKE ? OR u.email LIKE ?)"
                 count_params = [f"%{search}%", f"%{search}%"]
 
-            total = connection.db.execute(count_query, count_params).fetchone()["total"]
+            count_result = connection.db.execute(count_query, count_params).fetchone()
+            total = count_result["total"] if count_result else 0
 
             # Data query with pagination
             data_query = """
@@ -506,7 +508,8 @@ def list_users():
                 count_query += " AND (u.username LIKE ? OR u.email LIKE ?)"
                 count_params.extend([f"%{search}%", f"%{search}%"])
 
-            total = connection.db.execute(count_query, count_params).fetchone()["total"]
+            count_result = connection.db.execute(count_query, count_params).fetchone()
+            total = count_result["total"] if count_result else 0
 
             data_query = """
                 SELECT DISTINCT u.id, u.username, u.email, u.is_active, u.is_admin, u.is_super_admin, u.created_at, u.last_login,
