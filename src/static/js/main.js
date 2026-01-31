@@ -995,8 +995,8 @@ async function logout() {
             document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=" + window.location.hostname;
         }
 
-        // Force hard redirect to login (no cache)
-        window.location.replace('/login?t=' + Date.now());
+        // Force hard redirect to login (no cache) with logout flag to prevent session check
+        window.location.replace('/login?logout=1&t=' + Date.now());
     }
 }
 

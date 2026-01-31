@@ -430,6 +430,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Check if already logged in using standardized client
     async function checkExistingSession() {
+        // Skip session check if we just logged out (prevents login loop)
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('logout') === '1') {
+            console.debug('Skipping session check after logout');
+            return;
+        }
+
         try {
             // CRITICAL: Disable auto-redirect on 401 to prevent login-page loop
             const data = await apiClient.get(API_ENDPOINTS.AUTH_SESSION, { autoRedirect: false });
@@ -441,7 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.debug('No active session found');
         }
     }
-    
+
     checkExistingSession();
 
     // Load version info
