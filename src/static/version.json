@@ -1,5 +1,5 @@
 {
-    "version": "3.9.159",
+    "version": "3.9.160",
     "release_date": "2026-01-31",
-    "release_notes": "Fix calculation report data access - profile.data_dict returns content directly, not wrapped in data key"
+    "release_notes": "Fix missing date import in calculation report"
 }
