@@ -35,7 +35,8 @@ class Person:
     retirement_date: datetime
     social_security: float
     ss_claiming_age: int = 67  # New: Social Security claiming age
-    annual_401k_contribution: float = 0.0  # Annual 401k/403b contribution
+    annual_401k_contribution: float = 0.0  # DEPRECATED: Use annual_401k_contribution_rate instead
+    annual_401k_contribution_rate: float = 0.0  # 401k contribution as % of salary (e.g., 0.10 for 10%)
     employer_match_rate: float = (
         0.0  # Employer match as % of salary (e.g., 0.06 for 6%)
     )
@@ -1045,19 +1046,30 @@ class RetirementModel:
 
                 # Person 1 contributions (if working)
                 if not p1_retired:
-                    p1_401k = safe_float(
-                        self.profile.person1.annual_401k_contribution, 0
+                    # Get person 1's salary
+                    p1_salary = (
+                        employment_income
+                        if not p2_retired
+                        else current_employment.get("primary_person", 0)
                     )
+
+                    # Calculate 401k contribution as % of salary (preferred method)
+                    contribution_rate = safe_float(
+                        self.profile.person1.annual_401k_contribution_rate, 0
+                    )
+                    if contribution_rate == 0:
+                        # Fallback to legacy fixed amount if rate not set
+                        contribution_rate = safe_float(
+                            self.profile.person1.annual_401k_contribution, 0
+                        ) / max(p1_salary, 1)  # Convert fixed to rate
+
+                    p1_401k = p1_salary * contribution_rate
+
                     if p1_401k > 0:
                         # Track total contributions to subtract from cash flow
                         total_401k_contributions += p1_401k
                         pretax_std += p1_401k  # Add 401k contribution to retirement account
                         # Add employer match (free money - doesn't reduce take-home)
-                        p1_salary = (
-                            employment_income
-                            if not p2_retired
-                            else current_employment.get("primary_person", 0)
-                        )
                         employer_match = p1_salary * safe_float(
                             self.profile.person1.employer_match_rate, 0
                         )

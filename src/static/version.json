@@ -1,5 +1,5 @@
 {
-    "version": "3.9.163",
+    "version": "3.9.164",
     "release_date": "2026-01-31",
-    "release_notes": "Add UI fields for 401k contributions and employer match"
+    "release_notes": "Change 401k contribution from fixed amount to percentage of salary"
 }

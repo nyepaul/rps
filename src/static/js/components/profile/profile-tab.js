@@ -110,9 +110,12 @@ export function renderProfileTab(container) {
                         </h3>
                         <div class="form-grid" style="grid-template-columns: repeat(2, 1fr); gap: 10px;">
                             <div class="form-group">
-                                <label for="annual_401k">401k/403b Annual Contribution</label>
-                                <input type="number" id="annual_401k" name="annual_401k" value="${person.annual_401k_contribution || 0}" placeholder="$0" step="100">
-                                <small style="color: var(--text-secondary); font-size: 11px;">Pre-tax, reduces take-home income</small>
+                                <label for="annual_401k">401k/403b Contribution Rate</label>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <input type="number" id="annual_401k" name="annual_401k" value="${(person.annual_401k_contribution_rate || 0) * 100}" placeholder="0" step="0.5" min="0" max="100" style="flex: 1;">
+                                    <span style="font-size: 13px;">%</span>
+                                </div>
+                                <small style="color: var(--text-secondary); font-size: 11px;">% of salary (pre-tax, reduces take-home)</small>
                             </div>
                             <div class="form-group">
                                 <label for="employer_match">Employer Match Rate</label>
@@ -120,7 +123,7 @@ export function renderProfileTab(container) {
                                     <input type="number" id="employer_match" name="employer_match" value="${(person.employer_match_rate || 0) * 100}" placeholder="0" step="0.5" min="0" max="100" style="flex: 1;">
                                     <span style="font-size: 13px;">%</span>
                                 </div>
-                                <small style="color: var(--text-secondary); font-size: 11px;">e.g., 6 for 6% match</small>
+                                <small style="color: var(--text-secondary); font-size: 11px;">% of salary (employer adds this)</small>
                             </div>
                         </div>
                     </div>
@@ -513,7 +516,7 @@ function setupProfileFormHandlers(container, profile) {
                         ...(profile.data?.financial || {}),
                         social_security_benefit: parseFloat(formData.get('ss_benefit') || 0),
                         ss_claiming_age: parseInt(formData.get('ss_claiming_age') || 67),
-                        annual_401k_contribution: parseFloat(formData.get('annual_401k') || 0),
+                        annual_401k_contribution_rate: (parseFloat(formData.get('annual_401k') || 0) / 100),
                         employer_match_rate: (parseFloat(formData.get('employer_match') || 0) / 100)
                     }
                 }
