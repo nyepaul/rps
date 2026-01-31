@@ -1020,24 +1020,15 @@ class RetirementModel:
             # Add IRMAA surcharges for high-income Medicare beneficiaries
             target_spending += irmaa_expense
 
-            # D. Calculate Shortfall/Surplus
+            # D. Calculate Shortfall/Surplus (BEFORE retirement contributions)
             # During working years: income typically exceeds expenses → surplus saved to investments
             # During retirement: expenses typically exceed income → shortfall withdrawn from investments
             net_cash_flow = total_income - target_spending
-            shortfall = np.maximum(
-                0, -net_cash_flow
-            )  # Positive when expenses > income (need withdrawals)
-            surplus = np.maximum(
-                0, net_cash_flow
-            )  # Positive when income > expenses (can save)
 
-            # D2. Handle Pre-Retirement Contributions and Surplus
-            # When working: add salary surplus and retirement contributions to investment accounts
-            # This grows the portfolio before retirement, accounting for:
-            # - 401k/403b contributions (pre-tax)
-            # - Employer matching contributions (free money!)
-            # - IRA contributions (split between traditional and Roth)
-            # - General savings from surplus income
+            # D2. Handle Pre-Retirement Contributions
+            # CRITICAL: Subtract retirement contributions from available cash flow FIRST
+            # This ensures 401k contributions reduce take-home income (pre-tax deduction)
+            total_401k_contributions = 0
             if not p1_retired or not p2_retired:
                 # Get employment income for calculating employer match
                 employment_income = 0
@@ -1058,8 +1049,10 @@ class RetirementModel:
                         self.profile.person1.annual_401k_contribution, 0
                     )
                     if p1_401k > 0:
-                        pretax_std += p1_401k  # Add 401k contribution
-                        # Add employer match
+                        # Track total contributions to subtract from cash flow
+                        total_401k_contributions += p1_401k
+                        pretax_std += p1_401k  # Add 401k contribution to retirement account
+                        # Add employer match (free money - doesn't reduce take-home)
                         p1_salary = (
                             employment_income
                             if not p2_retired
@@ -1081,10 +1074,24 @@ class RetirementModel:
                 # IRA contributions (from profile level)
                 ira_contrib = safe_float(self.profile.annual_ira_contribution, 0)
                 if ira_contrib > 0:
+                    # IRA contributions are post-tax, so they reduce available cash
+                    total_401k_contributions += ira_contrib
                     # Split between pretax and Roth based on allocation or default 50/50
                     pretax_std += ira_contrib * 0.5
                     roth += ira_contrib * 0.5
 
+            # D3. Calculate final surplus/shortfall AFTER retirement contributions
+            # Subtract 401k/IRA contributions from net cash flow (these are pre-tax/post-tax deductions)
+            net_cash_flow -= total_401k_contributions
+            shortfall = np.maximum(
+                0, -net_cash_flow
+            )  # Positive when expenses > income (need withdrawals)
+            surplus = np.maximum(
+                0, net_cash_flow
+            )  # Positive when income > expenses (can save)
+
+            # D4. Allocate remaining surplus to investment accounts
+            if not p1_retired or not p2_retired:
                 # Handle remaining surplus - allocate to investment accounts
                 if np.any(surplus > 0):
                     # Default allocation if not specified

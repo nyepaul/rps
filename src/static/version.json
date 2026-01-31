@@ -1,5 +1,5 @@
 {
-    "version": "3.9.161",
+    "version": "3.9.162",
     "release_date": "2026-01-31",
-    "release_notes": "Remove profile loaded successfully notification"
+    "release_notes": "Fix 401k contribution double-counting bug in retirement model"
 }
