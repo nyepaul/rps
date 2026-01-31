@@ -105,7 +105,7 @@ Once deployed, follow the testing guide:
 After deployment:
 
 - [ ] New file accessible: `curl http://127.0.0.1:5137/js/utils/csv-parser.js`
-- [ ] Version shows 3.9.99: Check admin panel or API
+- [ ] Version shows 3.9.150: Check admin panel or API
 - [ ] No JavaScript errors in browser console (F12)
 - [ ] Income CSV import works
 - [ ] Budget CSV import works
@@ -137,8 +137,8 @@ b6d8783 (HEAD -> main) feat: standardize CSV parsing with unified parser utility
 03bcfbc feat: standardize button layouts across Income, Budget, and Asset tabs
 ```
 
-**Current version on production**: 3.9.98 (commit 7826850)
-**New version after deployment**: 3.9.99 (commit b6d8783)
+**Current version on production**: 3.9.149
+**New version after deployment**: 3.9.150
 
 ## Why Deployment is Safe
 
