@@ -10,6 +10,7 @@ import { analysisAPI } from '../../api/analysis.js';
 import { APP_CONFIG } from '../../config.js';
 import { calculateAllocation } from '../../utils/financial-calculations.js';
 import { getChartThemeColors, registerChartForThemeUpdates } from '../../utils/charts.js';
+import { showCalculationReport } from '../analysis/calculation-report.js';
 
 // Track metric visibility state across chart refreshes
 const metricVisibilityState = {
@@ -73,11 +74,16 @@ export function renderCashFlowTab(container) {
     container.innerHTML = `
         <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-2) var(--space-3);">
             <!-- Header -->
-            <div style="margin-bottom: var(--space-3);">
-                <h1 style="font-size: var(--font-2xl); margin-bottom: 2px;">💸 Cash Flow</h1>
-                <p style="color: var(--text-secondary); margin: 0; font-size: 13px;">
-                    Visualize money coming in and going out over time. Investment withdrawals follow the tax-efficient strategy.
-                </p>
+            <div style="margin-bottom: var(--space-3); display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h1 style="font-size: var(--font-2xl); margin-bottom: 2px;">💸 Cash Flow</h1>
+                    <p style="color: var(--text-secondary); margin: 0; font-size: 13px;">
+                        Visualize money coming in and going out over time. Investment withdrawals follow the tax-efficient strategy.
+                    </p>
+                </div>
+                <button id="show-calculation-report" style="display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; white-space: nowrap;">
+                    <span>📊</span> View Calculation Report
+                </button>
             </div>
 
             <!-- Controls -->
@@ -284,6 +290,14 @@ function setupEventHandlers(container, profile, monthsToLifeExpectancy, lifeExpe
                 card.style.opacity = '1';
                 card.style.boxShadow = '0 4px 20px rgba(0,0,0,0.25)';
             });
+        });
+    }
+
+    // Calculation report button
+    const calculationReportBtn = container.querySelector('#show-calculation-report');
+    if (calculationReportBtn) {
+        calculationReportBtn.addEventListener('click', () => {
+            showCalculationReport();
         });
     }
 

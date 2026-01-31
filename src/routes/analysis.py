@@ -1064,6 +1064,8 @@ def get_calculation_report():
         spouse_data = data.get("spouse", {})
         financial_data = data.get("financial", {})
         budget_data = data.get("budget", {})
+        income_streams = data.get("income_streams", [])
+        assets_data = data.get("assets", {})
 
         # Build report sections
         report = {
@@ -1073,15 +1075,14 @@ def get_calculation_report():
         }
 
         # 1. PROFILE SUMMARY
-        birth_date_str = person_data.get("birth_date", "1980-01-01")
-        current_age = (datetime.now() - datetime.fromisoformat(birth_date_str)).days // 365
-        retirement_date_str = person_data.get("retirement_date", "2045-01-01")
-        retirement_age = (datetime.fromisoformat(retirement_date_str) - datetime.fromisoformat(birth_date_str)).days // 365
+        # Use profile-level fields (birth_date, retirement_date) not person_data
+        current_age = person_data.get("current_age", 40)
+        retirement_age = person_data.get("retirement_age", 65)
 
         profile_summary = {
             "title": "Profile Summary",
             "items": [
-                {"label": "Primary Person", "value": person_data.get("name", "Primary")},
+                {"label": "Primary Person", "value": profile.name},
                 {"label": "Current Age", "value": f"{current_age} years"},
                 {"label": "Retirement Age", "value": f"{retirement_age} years"},
                 {"label": "Years to Retirement", "value": f"{max(0, retirement_age - current_age)} years"},
@@ -1089,8 +1090,7 @@ def get_calculation_report():
         }
 
         if spouse_data.get("name"):
-            spouse_birth = spouse_data.get("birth_date", "1980-01-01")
-            spouse_age = (datetime.now() - datetime.fromisoformat(spouse_birth)).days // 365
+            spouse_age = spouse_data.get("current_age", 40)
             profile_summary["items"].extend([
                 {"label": "Spouse", "value": spouse_data.get("name")},
                 {"label": "Spouse Age", "value": f"{spouse_age} years"},
@@ -1098,52 +1098,50 @@ def get_calculation_report():
 
         report["sections"].append(profile_summary)
 
-        # 2. INCOME SOURCES (Annual)
+        # 2. INCOME SOURCES (Annual) - Read from income_streams
         income_section = {
             "title": "Annual Income Sources",
             "items": [],
             "total": 0
         }
 
-        # Work Income
+        # Calculate current active income from income_streams
         work_income_annual = 0
-        if budget_data.get("income", {}).get("current", {}).get("employment"):
-            emp = budget_data["income"]["current"]["employment"]
-            primary_income = emp.get("primary_person", 0) * 12
-            spouse_income = emp.get("spouse", 0) * 12
-            work_income_annual = primary_income + spouse_income
-            if primary_income > 0:
-                income_section["items"].append({
-                    "label": "Primary Employment",
-                    "value": f"${primary_income:,.0f}",
-                    "amount": primary_income
-                })
-            if spouse_income > 0:
-                income_section["items"].append({
-                    "label": "Spouse Employment",
-                    "value": f"${spouse_income:,.0f}",
-                    "amount": spouse_income
-                })
+        from datetime import date
+        today = date.today()
 
-        # Other Income (rental, consulting, business, other)
-        other_income_annual = 0
-        if budget_data.get("income", {}).get("current", {}).get("other"):
-            other = budget_data["income"]["current"]["other"]
-            for income_type in ["rental_income", "part_time_consulting", "business_income", "other_income"]:
-                amount = other.get(income_type, 0) * 12
-                if amount > 0:
-                    label_map = {
-                        "rental_income": "Rental Income",
-                        "part_time_consulting": "Consulting Income",
-                        "business_income": "Business Income",
-                        "other_income": "Other Income"
-                    }
-                    income_section["items"].append({
-                        "label": label_map[income_type],
-                        "value": f"${amount:,.0f}",
-                        "amount": amount
-                    })
-                    other_income_annual += amount
+        for stream in income_streams:
+            # Check if stream is currently active
+            start_date = stream.get("start_date")
+            end_date = stream.get("end_date")
+            is_active = True
+
+            if start_date:
+                try:
+                    if date.fromisoformat(start_date) > today:
+                        is_active = False
+                except:
+                    pass
+
+            if end_date and is_active:
+                try:
+                    if date.fromisoformat(end_date) < today:
+                        is_active = False
+                except:
+                    pass
+
+            if is_active:
+                amount_monthly = stream.get("amount", 0)
+                amount_annual = amount_monthly * 12
+                work_income_annual += amount_annual
+
+                owner = stream.get("owner", "primary")
+                label = f"{stream.get('name', 'Income')} ({owner.title()})"
+                income_section["items"].append({
+                    "label": label,
+                    "value": f"${amount_annual:,.0f}",
+                    "amount": amount_annual
+                })
 
         # Social Security (if eligible)
         p1_ss_annual = 0
@@ -1159,8 +1157,7 @@ def get_calculation_report():
                 })
 
         if spouse_data.get("name"):
-            spouse_birth = spouse_data.get("birth_date", "1980-01-01")
-            spouse_age = (datetime.now() - datetime.fromisoformat(spouse_birth)).days // 365
+            spouse_age = spouse_data.get("current_age", 40)
             p2_claiming_age = spouse_data.get("ss_claiming_age", 67)
             if spouse_age >= p2_claiming_age:
                 p2_ss_annual = (spouse_data.get("social_security_benefit", 0) or 0) * 12
@@ -1182,7 +1179,7 @@ def get_calculation_report():
                     "amount": pension_annual
                 })
 
-        total_income_annual = work_income_annual + other_income_annual + p1_ss_annual + p2_ss_annual + pension_annual
+        total_income_annual = work_income_annual + p1_ss_annual + p2_ss_annual + pension_annual
         income_section["total"] = total_income_annual
         income_section["items"].append({
             "label": "TOTAL INCOME",
@@ -1199,13 +1196,44 @@ def get_calculation_report():
             "total": 0
         }
 
-        # 401k Contributions
+        # 401k Contributions - Calculate from actual income streams
         contrib_rate_p1 = financial_data.get("annual_401k_contribution_rate", 0)
         match_rate_p1 = financial_data.get("employer_match_rate", 0)
 
-        if work_income_annual > 0 and current_age < retirement_age:
-            # Estimate primary person contribution (assume 60% of work income)
-            primary_salary = work_income_annual * 0.6 if spouse_data.get("name") else work_income_annual
+        if current_age < retirement_age:
+            # Calculate primary person's salary from active income streams
+            primary_salary = 0
+            spouse_salary = 0
+
+            for stream in income_streams:
+                # Check if stream is currently active
+                start_date = stream.get("start_date")
+                end_date = stream.get("end_date")
+                is_active = True
+
+                if start_date:
+                    try:
+                        if date.fromisoformat(start_date) > today:
+                            is_active = False
+                    except:
+                        pass
+
+                if end_date and is_active:
+                    try:
+                        if date.fromisoformat(end_date) < today:
+                            is_active = False
+                    except:
+                        pass
+
+                if is_active:
+                    amount_annual = stream.get("amount", 0) * 12
+                    owner = stream.get("owner", "primary")
+                    if owner == "primary":
+                        primary_salary += amount_annual
+                    elif owner == "spouse":
+                        spouse_salary += amount_annual
+
+            # Primary 401k
             p1_401k = primary_salary * contrib_rate_p1
             p1_match = primary_salary * match_rate_p1
 
@@ -1226,8 +1254,7 @@ def get_calculation_report():
             # Spouse 401k
             contrib_rate_p2 = spouse_data.get("annual_401k_contribution_rate", 0)
             match_rate_p2 = spouse_data.get("employer_match_rate", 0)
-            if spouse_data.get("name") and (contrib_rate_p2 > 0 or match_rate_p2 > 0):
-                spouse_salary = work_income_annual * 0.4
+            if spouse_data.get("name") and spouse_salary > 0:
                 p2_401k = spouse_salary * contrib_rate_p2
                 p2_match = spouse_salary * match_rate_p2
 
@@ -1330,9 +1357,9 @@ def get_calculation_report():
         }
 
         # Calculate taxable income
-        # Ordinary income = work + other + pension + (50% of SS)
+        # Ordinary income = work + pension + (50% of SS)
         taxable_ss = (p1_ss_annual + p2_ss_annual) * 0.5
-        ordinary_income = work_income_annual + other_income_annual + pension_annual + taxable_ss
+        ordinary_income = work_income_annual + pension_annual + taxable_ss
 
         # Apply 401k deductions
         ordinary_income_after_401k = ordinary_income - sum(
@@ -1495,9 +1522,6 @@ def get_calculation_report():
             "title": "Current Portfolio",
             "items": []
         }
-
-        # Get assets
-        assets_data = profile_data.get("data", {}).get("assets", {})
 
         # Retirement accounts
         retirement_total = 0
