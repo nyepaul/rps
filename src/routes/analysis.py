@@ -1047,6 +1047,11 @@ def get_calculation_report():
     """Generate detailed calculation report showing all income, expenses, taxes, and portfolio calculations."""
     json_data = request.get_json(silent=True) or {}
     profile_name = None
+
+    # Quick version check - return immediately if version check requested
+    if json_data.get("version_check"):
+        return jsonify({"version": "3.9.164", "status": "ok"}), 200
+
     try:
         profile_name = json_data.get("profile_name")
 
@@ -1101,39 +1106,49 @@ def get_calculation_report():
                 })
 
         # Calculate ages (used by multiple sections)
-        current_age = 40  # default
-        retirement_age = 65  # default
-        spouse_age = 40  # default
+        try:
+            current_age = 40  # default
+            retirement_age = 65  # default
+            spouse_age = 40  # default
 
-        if profile.birth_date:
-            try:
-                birth_dt = datetime.fromisoformat(str(profile.birth_date))
-                current_age = int((datetime.now() - birth_dt).days // 365)
-            except Exception as e:
-                logger.error(f"Error calculating current_age from {profile.birth_date}: {e}")
-                current_age = 40
+            if profile.birth_date:
+                try:
+                    birth_dt = datetime.fromisoformat(str(profile.birth_date))
+                    current_age = int((datetime.now() - birth_dt).days // 365)
+                except Exception as e:
+                    logger.error(f"Error calculating current_age from {profile.birth_date}: {e}")
+                    current_age = 40
 
-        if profile.retirement_date and profile.birth_date:
-            try:
-                birth_dt = datetime.fromisoformat(str(profile.birth_date))
-                retirement_dt = datetime.fromisoformat(str(profile.retirement_date))
-                retirement_age = int((retirement_dt - birth_dt).days // 365)
-            except Exception as e:
-                logger.error(f"Error calculating retirement_age: {e}")
-                retirement_age = 65
+            if profile.retirement_date and profile.birth_date:
+                try:
+                    birth_dt = datetime.fromisoformat(str(profile.birth_date))
+                    retirement_dt = datetime.fromisoformat(str(profile.retirement_date))
+                    retirement_age = int((retirement_dt - birth_dt).days // 365)
+                except Exception as e:
+                    logger.error(f"Error calculating retirement_age: {e}")
+                    retirement_age = 65
 
-        if spouse_data.get("name") and spouse_data.get("birth_date"):
-            try:
-                spouse_birth_dt = datetime.fromisoformat(str(spouse_data["birth_date"]))
-                spouse_age = int((datetime.now() - spouse_birth_dt).days // 365)
-            except Exception as e:
-                logger.error(f"Error calculating spouse_age: {e}")
-                spouse_age = 40
+            if spouse_data.get("name") and spouse_data.get("birth_date"):
+                try:
+                    spouse_birth_dt = datetime.fromisoformat(str(spouse_data["birth_date"]))
+                    spouse_age = int((datetime.now() - spouse_birth_dt).days // 365)
+                except Exception as e:
+                    logger.error(f"Error calculating spouse_age: {e}")
+                    spouse_age = 40
 
-        # Ensure these are integers, not lists
-        current_age = int(current_age) if not isinstance(current_age, list) else 40
-        retirement_age = int(retirement_age) if not isinstance(retirement_age, list) else 65
-        spouse_age = int(spouse_age) if not isinstance(spouse_age, list) else 40
+            # Ensure these are integers, not lists
+            current_age = int(current_age) if not isinstance(current_age, list) else 40
+            retirement_age = int(retirement_age) if not isinstance(retirement_age, list) else 65
+            spouse_age = int(spouse_age) if not isinstance(spouse_age, list) else 40
+
+        except Exception as e:
+            logger.error(f"Fatal error in age calculations: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            # Set safe defaults
+            current_age = 40
+            retirement_age = 65
+            spouse_age = 40
 
         # 1. PROFILE SUMMARY
         def build_profile_summary():

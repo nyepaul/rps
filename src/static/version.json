@@ -1,5 +1,5 @@
 {
-    "version": "3.9.164",
+    "version": "3.9.165",
     "release_date": "2026-01-31",
-    "release_notes": "Add per-section error handling to calculation report for debugging"
+    "release_notes": "Add error handling for age calculations and version check endpoint"
 }
