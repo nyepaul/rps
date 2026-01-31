@@ -70,8 +70,8 @@ export async function renderUserManagement(container) {
  * Render user row
  */
 function renderUserRow(user, currentUser) {
-    const createdDate = new Date(user.created_at).toLocaleDateString();
-    const lastLogin = user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never';
+    const createdDate = new Date(user.created_at).toLocaleString();
+    const lastLogin = user.last_login ? new Date(user.last_login).toLocaleString() : 'Never';
 
     return `
         <tr class="user-row" data-user-id="${user.id}" data-username="${user.username}" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='transparent'">

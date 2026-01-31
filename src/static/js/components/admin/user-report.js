@@ -118,11 +118,11 @@ function renderUserInfoSection(user) {
                 </div>
                 <div>
                     <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Account Created</div>
-                    <div style="font-size: 14px;">${formatDate(user.created_at)}</div>
+                    <div style="font-size: 14px;">${formatDateTime(user.created_at)}</div>
                 </div>
                 <div>
                     <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Last Login</div>
-                    <div style="font-size: 14px;">${user.last_login ? formatDate(user.last_login) : 'Never'}</div>
+                    <div style="font-size: 14px;">${user.last_login ? formatDateTime(user.last_login) : 'Never'}</div>
                 </div>
             </div>
         </div>
