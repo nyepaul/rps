@@ -1,5 +1,5 @@
 {
-    "version": "3.9.145",
+    "version": "3.9.146",
     "release_date": "2026-01-30",
-    "release_notes": "Clean up Income Streams header and consolidate options"
+    "release_notes": "Standardize Data Options header in Assets and Budget tabs"
 }

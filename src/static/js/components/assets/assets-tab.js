@@ -140,22 +140,31 @@ export function renderAssetsTab(container) {
                         Tracking <strong>${profile.name}'s</strong> portfolio
                     </p>
                 </div>
-                <div style="display: flex; gap: 4px; flex-wrap: wrap; flex-shrink: 0;">
-                    <button id="add-asset-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px;">
-                        + Add Asset
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button id="add-asset-btn" style="padding: 6px 14px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <span>＋</span> Add Asset
                     </button>
-                    <button id="ai-import-assets-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
-                        AI Import
-                    </button>
-                    <div style="display: flex; border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden;">
-                        <button id="csv-export-btn" style="padding: 6px 10px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-right: 1px solid var(--border-color); cursor: pointer; font-size: 11px;">
-                            Export
+                    
+                    <div style="position: relative;">
+                        <button id="asset-actions-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                            Data Options <span>▼</span>
                         </button>
-                        <button id="csv-import-btn" style="padding: 6px 10px; background: var(--bg-tertiary); color: var(--text-primary); border: none; cursor: pointer; font-size: 11px;">
-                            TXT/CSV
-                        </button>
+                        <div id="asset-actions-menu" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 4px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); width: 200px; z-index: 50; overflow: hidden;">
+                            <div class="action-menu-item" data-action="ai-import" style="padding: 10px 16px; cursor: pointer; font-size: 13px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px;">
+                                <span>🤖</span> AI Import
+                            </div>
+                            <div class="action-menu-item" data-action="csv-import" style="padding: 10px 16px; cursor: pointer; font-size: 13px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px;">
+                                <span>📁</span> Import CSV
+                            </div>
+                            <div class="action-menu-item" data-action="csv-export" style="padding: 10px 16px; cursor: pointer; font-size: 13px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                                <span>⬇️</span> Export CSV
+                            </div>
+                        </div>
                     </div>
-                    <button id="delete-all-assets-btn" style="padding: 6px 10px; background: var(--bg-tertiary); color: var(--danger-color); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px;" title="Delete all assets">
+
+                    <div style="width: 1px; height: 24px; background: var(--border-color); margin: 0 4px;"></div>
+
+                    <button id="delete-all-assets-btn" style="padding: 6px 10px; background: var(--bg-tertiary); color: var(--danger-color); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 14px;" title="Delete all assets">
                         🗑️
                     </button>
                 </div>
@@ -367,173 +376,198 @@ function setupGeneralHandlers(container, profile, assets, refreshCallback) {
         });
     }
 
-    // AI Import button
-    const aiImportBtn = container.querySelector('#ai-import-assets-btn');
-    if (aiImportBtn) {
-        aiImportBtn.addEventListener('click', () => {
-            showAIImportModal('assets', profile.name, async (extractedAssets) => {
-                let added = 0, updated = 0;
+    // Actions dropdown menu
+    const actionsBtn = container.querySelector('#asset-actions-btn');
+    const actionsMenu = container.querySelector('#asset-actions-menu');
+    
+    if (actionsBtn && actionsMenu) {
+        // Toggle menu
+        actionsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            actionsMenu.style.display = actionsMenu.style.display === 'none' ? 'block' : 'none';
+        });
 
-                // Helper: extract account number digits from name or account_number field
-                const extractAccountDigits = (str) => {
-                    if (!str) return null;
-                    // Extract last 4+ digits, handling formats like "8737", "(8737)", "Wells Fargo 8737", "WF (8737)"
-                    const matches = str.match(/\(?(\d{4,})\)?/g);
-                    if (matches && matches.length > 0) {
-                        // Get the last match and extract just digits
-                        return matches[matches.length - 1].replace(/[^\d]/g, '');
-                    }
-                    return null;
-                };
+        // Close menu when clicking outside
+        document.addEventListener('click', () => {
+            actionsMenu.style.display = 'none';
+        });
 
-                // Helper: check if two assets are likely duplicates (fuzzy match)
-                const isFuzzyMatch = (item, existing) => {
-                    // Extract account digits from both name and account_number fields
-                    const itemDigits = extractAccountDigits(item.account_number) || extractAccountDigits(item.name);
-                    const existingDigits = extractAccountDigits(existing.account_number) || extractAccountDigits(existing.name);
-
-                    // If both have account digits and they match, it's likely a duplicate
-                    if (itemDigits && existingDigits && itemDigits === existingDigits) {
-                        // Also check institution matches (fuzzy)
-                        const itemInst = (item.institution || '').toLowerCase().replace(/[^a-z]/g, '');
-                        const existingInst = (existing.institution || '').toLowerCase().replace(/[^a-z]/g, '');
-                        if (itemInst && existingInst && (itemInst.includes(existingInst) || existingInst.includes(itemInst))) {
-                            return true;
-                        }
-                        // If no institution but same digits, still likely duplicate
-                        if (!itemInst || !existingInst) {
-                            return true;
-                        }
-                    }
-                    return false;
-                };
-
-                // Helper: find existing asset across all categories using multiple markers
-                const findExistingAsset = (item) => {
-                    const allCategories = ['retirement_accounts', 'taxable_accounts', 'real_estate', 'pensions_annuities', 'education_accounts', 'other_assets', 'liabilities'];
-
-                    for (const cat of allCategories) {
-                        if (!assets[cat]) continue;
-
-                        for (let i = 0; i < assets[cat].length; i++) {
-                            const existing = assets[cat][i];
-
-                            // Priority 1: Exact account_number match
-                            if (item.account_number && existing.account_number &&
-                                item.account_number === existing.account_number) {
-                                return { category: cat, index: i, existing };
-                            }
-
-                            // Priority 2: Fuzzy match on account digits (handles "8737" vs "(8737)")
-                            if (isFuzzyMatch(item, existing)) {
-                                return { category: cat, index: i, existing, fuzzy: true };
-                            }
-
-                            // Priority 3: Match by name + institution (both must match exactly)
-                            if (item.institution && existing.institution &&
-                                item.name?.toLowerCase() === existing.name?.toLowerCase() &&
-                                item.institution.toLowerCase() === existing.institution.toLowerCase()) {
-                                return { category: cat, index: i, existing };
-                            }
-                        }
-                    }
-
-                    return null;
-                };
-
-                // Process each extracted asset with reconciliation
-                for (const item of extractedAssets) {
-                    const type = item.type || 'brokerage';
-                    let targetCategory = 'taxable_accounts';
-
-                    if (['401k', '403b', '457', 'traditional_ira', 'roth_ira'].includes(type)) {
-                        targetCategory = 'retirement_accounts';
-                    } else if (['savings', 'checking', 'brokerage'].includes(type)) {
-                        targetCategory = 'taxable_accounts';
-                    }
-
-                    if (!assets[targetCategory]) assets[targetCategory] = [];
-
-                    const match = findExistingAsset(item);
-
-                    if (match) {
-                        // Update existing asset - preserve id and allocation, update value/cost_basis
-                        console.log(`Matched "${item.name}" to existing "${match.existing.name}"${match.fuzzy ? ' (fuzzy)' : ''}`);
-                        assets[match.category][match.index] = {
-                            ...match.existing,
-                            value: item.value ?? match.existing.value,
-                            cost_basis: item.cost_basis ?? match.existing.cost_basis,
-                            institution: item.institution || match.existing.institution,
-                            account_number: item.account_number || match.existing.account_number
-                        };
-                        updated++;
-                    } else {
-                        // Add new asset
-                        assets[targetCategory].push({
-                            id: crypto.randomUUID(),
-                            name: item.name,
-                            type: type,
-                            value: item.value || 0,
-                            cost_basis: item.cost_basis || 0,
-                            institution: item.institution || '',
-                            account_number: item.account_number || '',
-                            stock_pct: 0.6,
-                            bond_pct: 0.3,
-                            cash_pct: 0.1
-                        });
-                        added++;
-                    }
-                }
-
-                await saveAssets(profile, assets);
-                if (refreshCallback) refreshCallback();
-
-                // Detect potential duplicates after import
-                const duplicates = detectPotentialDuplicates(assets);
-
-                // Show summary of what happened
-                const parts = [];
-                if (added > 0) parts.push(`${added} added`);
-                if (updated > 0) parts.push(`${updated} updated`);
-                if (duplicates.length > 0) parts.push(`${duplicates.length} potential duplicates detected`);
-                if (parts.length > 0) {
-                    if (duplicates.length > 0) {
-                        showError(`Assets imported: ${parts.join(', ')}. Review highlighted items.`);
-                    } else {
-                        showSuccess(`Assets imported: ${parts.join(', ')}`);
-                    }
-                }
+        // Menu item hover effects
+        actionsMenu.querySelectorAll('.action-menu-item').forEach(item => {
+            item.addEventListener('mouseenter', () => {
+                item.style.background = 'var(--bg-tertiary)';
+            });
+            item.addEventListener('mouseleave', () => {
+                item.style.background = 'var(--bg-secondary)';
             });
         });
-    }
 
-    // CSV Export button
-    const csvExportBtn = container.querySelector('#csv-export-btn');
-    if (csvExportBtn) {
-        csvExportBtn.addEventListener('click', async () => {
-            try {
-                await exportAssetsCSV(profile.name);
-                showSuccess('Assets exported successfully!');
-            } catch (error) {
-                showError(`Error exporting CSV: ${error.message}`);
-            }
-        });
-    }
+        // Handle menu actions
+        actionsMenu.querySelectorAll('.action-menu-item').forEach(item => {
+            item.addEventListener('click', async () => {
+                const action = item.dataset.action;
+                actionsMenu.style.display = 'none';
 
-    // CSV Import button
-    const csvImportBtn = container.querySelector('#csv-import-btn');
-    if (csvImportBtn) {
-        csvImportBtn.addEventListener('click', async () => {
-            try {
-                await importAssetsCSV(profile.name, (updatedProfile) => {
-                    store.setState({ currentProfile: updatedProfile });
-                    // Full refresh needed as profile object changed
-                    if (refreshCallback) refreshCallback();
-                    showSuccess('Assets imported successfully!');
-                });
-            } catch (error) {
-                showError(`Error importing CSV: ${error.message}`);
-            }
+                switch (action) {
+                    case 'ai-import':
+                        showAIImportModal('assets', profile.name, async (extractedAssets) => {
+                            let added = 0, updated = 0;
+
+                            // Helper: extract account number digits from name or account_number field
+                            const extractAccountDigits = (str) => {
+                                if (!str) return null;
+                                // Extract last 4+ digits, handling formats like "8737", "(8737)", "Wells Fargo 8737", "WF (8737)"
+                                const matches = str.match(/\(?(\d{4,})\)?/g);
+                                if (matches && matches.length > 0) {
+                                    // Get the last match and extract just digits
+                                    return matches[matches.length - 1].replace(/[^\d]/g, '');
+                                }
+                                return null;
+                            };
+
+                            // Helper: check if two assets are likely duplicates (fuzzy match)
+                            const isFuzzyMatch = (item, existing) => {
+                                // Extract account digits from both name and account_number fields
+                                const itemDigits = extractAccountDigits(item.account_number) || extractAccountDigits(item.name);
+                                const existingDigits = extractAccountDigits(existing.account_number) || extractAccountDigits(existing.name);
+
+                                // If both have account digits and they match, it's likely a duplicate
+                                if (itemDigits && existingDigits && itemDigits === existingDigits) {
+                                    // Also check institution matches (fuzzy)
+                                    const itemInst = (item.institution || '').toLowerCase().replace(/[^a-z]/g, '');
+                                    const existingInst = (existing.institution || '').toLowerCase().replace(/[^a-z]/g, '');
+                                    if (itemInst && existingInst && (itemInst.includes(existingInst) || existingInst.includes(itemInst))) {
+                                        return true;
+                                    }
+                                    // If no institution but same digits, still likely duplicate
+                                    if (!itemInst || !existingInst) {
+                                        return true;
+                                    }
+                                }
+                                return false;
+                            };
+
+                            // Helper: find existing asset across all categories using multiple markers
+                            const findExistingAsset = (item) => {
+                                const allCategories = ['retirement_accounts', 'taxable_accounts', 'real_estate', 'pensions_annuities', 'education_accounts', 'other_assets', 'liabilities'];
+
+                                for (const cat of allCategories) {
+                                    if (!assets[cat]) continue;
+
+                                    for (let i = 0; i < assets[cat].length; i++) {
+                                        const existing = assets[cat][i];
+
+                                        // Priority 1: Exact account_number match
+                                        if (item.account_number && existing.account_number &&
+                                            item.account_number === existing.account_number) {
+                                            return { category: cat, index: i, existing };
+                                        }
+
+                                        // Priority 2: Fuzzy match on account digits (handles "8737" vs "(8737)")
+                                        if (isFuzzyMatch(item, existing)) {
+                                            return { category: cat, index: i, existing, fuzzy: true };
+                                        }
+
+                                        // Priority 3: Match by name + institution (both must match exactly)
+                                        if (item.institution && existing.institution &&
+                                            item.name?.toLowerCase() === existing.name?.toLowerCase() &&
+                                            item.institution.toLowerCase() === existing.institution.toLowerCase()) {
+                                            return { category: cat, index: i, existing };
+                                        }
+                                    }
+                                }
+
+                                return null;
+                            };
+
+                            // Process each extracted asset with reconciliation
+                            for (const item of extractedAssets) {
+                                const type = item.type || 'brokerage';
+                                let targetCategory = 'taxable_accounts';
+
+                                if (['401k', '403b', '457', 'traditional_ira', 'roth_ira'].includes(type)) {
+                                    targetCategory = 'retirement_accounts';
+                                } else if (['savings', 'checking', 'brokerage'].includes(type)) {
+                                    targetCategory = 'taxable_accounts';
+                                }
+
+                                if (!assets[targetCategory]) assets[targetCategory] = [];
+
+                                const match = findExistingAsset(item);
+
+                                if (match) {
+                                    // Update existing asset - preserve id and allocation, update value/cost_basis
+                                    console.log(`Matched "${item.name}" to existing "${match.existing.name}"${match.fuzzy ? ' (fuzzy)' : ''}`);
+                                    assets[match.category][match.index] = {
+                                        ...match.existing,
+                                        value: item.value ?? match.existing.value,
+                                        cost_basis: item.cost_basis ?? match.existing.cost_basis,
+                                        institution: item.institution || match.existing.institution,
+                                        account_number: item.account_number || match.existing.account_number
+                                    };
+                                    updated++;
+                                } else {
+                                    // Add new asset
+                                    assets[targetCategory].push({
+                                        id: crypto.randomUUID(),
+                                        name: item.name,
+                                        type: type,
+                                        value: item.value || 0,
+                                        cost_basis: item.cost_basis || 0,
+                                        institution: item.institution || '',
+                                        account_number: item.account_number || '',
+                                        stock_pct: 0.6,
+                                        bond_pct: 0.3,
+                                        cash_pct: 0.1
+                                    });
+                                    added++;
+                                }
+                            }
+
+                            await saveAssets(profile, assets);
+                            if (refreshCallback) refreshCallback();
+
+                            // Detect potential duplicates after import
+                            const duplicates = detectPotentialDuplicates(assets);
+
+                            // Show summary of what happened
+                            const parts = [];
+                            if (added > 0) parts.push(`${added} added`);
+                            if (updated > 0) parts.push(`${updated} updated`);
+                            if (duplicates.length > 0) parts.push(`${duplicates.length} potential duplicates detected`);
+                            if (parts.length > 0) {
+                                if (duplicates.length > 0) {
+                                    showError(`Assets imported: ${parts.join(', ')}. Review highlighted items.`);
+                                } else {
+                                    showSuccess(`Assets imported: ${parts.join(', ')}`);
+                                }
+                            }
+                        });
+                        break;
+
+                    case 'csv-import':
+                        try {
+                            await importAssetsCSV(profile.name, (updatedProfile) => {
+                                store.setState({ currentProfile: updatedProfile });
+                                // Full refresh needed as profile object changed
+                                if (refreshCallback) refreshCallback();
+                                showSuccess('Assets imported successfully!');
+                            });
+                        } catch (error) {
+                            showError(`Error importing CSV: ${error.message}`);
+                        }
+                        break;
+
+                    case 'csv-export':
+                        try {
+                            await exportAssetsCSV(profile.name);
+                            showSuccess('Assets exported successfully!');
+                        } catch (error) {
+                            showError(`Error exporting CSV: ${error.message}`);
+                        }
+                        break;
+                }
+            });
         });
     }
 

@@ -86,36 +86,35 @@ export function renderBudgetTab(container) {
                         Tracking <strong>${profile.name}'s</strong> recurring costs
                     </p>
                 </div>
-                <div style="display: flex; gap: 4px; flex-wrap: wrap;">
-                    <button id="ai-import-expenses-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
-                        AI Import
-                    </button>
-                    <div style="display: flex; border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden;">
-                        <button id="export-expenses-btn" style="padding: 6px 10px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-right: 1px solid var(--border-color); cursor: pointer; font-size: 11px;">
-                            Export
-                        </button>
-                        <button id="import-expenses-csv-btn" style="padding: 6px 10px; background: var(--bg-tertiary); color: var(--text-primary); border: none; cursor: pointer; font-size: 11px;">
-                            TXT/CSV
-                        </button>
-                    </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
                     <div style="position: relative;">
-                        <button id="expense-actions-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
-                            Actions ▾
+                        <button id="expense-actions-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                            Data Options <span>▼</span>
                         </button>
-                        <div id="expense-actions-menu" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 200px; z-index: 100;">
-                            <button class="action-menu-item" data-action="copy-to-post" style="width: 100%; padding: 10px 14px; border: none; background: none; text-align: left; cursor: pointer; font-size: 13px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-                                📋 Copy Pre → Post Retirement
-                            </button>
-                            <button class="action-menu-item" data-action="copy-to-pre" style="width: 100%; padding: 10px 14px; border: none; background: none; text-align: left; cursor: pointer; font-size: 13px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-                                📋 Copy Post → Pre Retirement
-                            </button>
-                            <div style="height: 1px; background: var(--border-color); margin: 4px 0;"></div>
-                            <button class="action-menu-item" data-action="clear-current" style="width: 100%; padding: 10px 14px; border: none; background: none; text-align: left; cursor: pointer; font-size: 13px; color: var(--danger-color); display: flex; align-items: center; gap: 8px;">
-                                🗑️ Clear Current Period
-                            </button>
-                            <button class="action-menu-item" data-action="clear-all" style="width: 100%; padding: 10px 14px; border: none; background: none; text-align: left; cursor: pointer; font-size: 13px; color: var(--danger-color); display: flex; align-items: center; gap: 8px;">
-                                🗑️ Clear All Expenses
-                            </button>
+                        <div id="expense-actions-menu" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); width: 220px; z-index: 100; overflow: hidden;">
+                            <div class="action-menu-item" data-action="ai-import" style="padding: 10px 16px; cursor: pointer; font-size: 13px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px;">
+                                <span>🤖</span> AI Import
+                            </div>
+                            <div class="action-menu-item" data-action="import-csv" style="padding: 10px 16px; cursor: pointer; font-size: 13px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px;">
+                                <span>📁</span> Import CSV
+                            </div>
+                            <div class="action-menu-item" data-action="export-csv" style="padding: 10px 16px; cursor: pointer; font-size: 13px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px;">
+                                <span>⬇️</span> Export CSV
+                            </div>
+                            
+                            <div class="action-menu-item" data-action="copy-to-post" style="padding: 10px 16px; cursor: pointer; font-size: 13px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px;">
+                                <span>📋</span> Copy Pre → Post
+                            </div>
+                            <div class="action-menu-item" data-action="copy-to-pre" style="padding: 10px 16px; cursor: pointer; font-size: 13px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px;">
+                                <span>📋</span> Copy Post → Pre
+                            </div>
+                            
+                            <div class="action-menu-item" data-action="clear-current" style="padding: 10px 16px; cursor: pointer; font-size: 13px; color: var(--danger-color); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px;">
+                                <span>🗑️</span> Clear Current Period
+                            </div>
+                            <div class="action-menu-item" data-action="clear-all" style="padding: 10px 16px; cursor: pointer; font-size: 13px; color: var(--danger-color); display: flex; align-items: center; gap: 8px;">
+                                <span>🗑️</span> Clear All Expenses
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2247,88 +2246,6 @@ function showExpenseEditorModal(parentContainer, category) {
  * Setup expense event handlers
  */
 function setupBudgetEventHandlers(profile, container) {
-    // AI Import button
-    const aiImportBtn = container.querySelector('#ai-import-expenses-btn');
-    if (aiImportBtn) {
-        aiImportBtn.addEventListener('click', () => {
-            showAIImportModal('expenses', profile.name, async (extractedExpenses) => {
-                let added = 0, updated = 0;
-
-                // Map extracted expenses with reconciliation
-                for (const item of extractedExpenses) {
-                    const category = item.category || 'other';
-                    if (!budgetData.expenses[currentPeriod][category]) {
-                        budgetData.expenses[currentPeriod][category] = [];
-                    }
-
-                    // Find existing expense by name in same category (case-insensitive)
-                    const existingIndex = budgetData.expenses[currentPeriod][category].findIndex(
-                        e => e.name?.toLowerCase() === item.name?.toLowerCase()
-                    );
-
-                    if (existingIndex >= 0) {
-                        // Update existing expense - preserve settings, update amount
-                        const existing = budgetData.expenses[currentPeriod][category][existingIndex];
-                        budgetData.expenses[currentPeriod][category][existingIndex] = {
-                            ...existing,
-                            amount: item.amount ?? existing.amount,
-                            frequency: item.frequency || existing.frequency
-                        };
-                        updated++;
-                    } else {
-                        // Add new expense
-                        budgetData.expenses[currentPeriod][category].push({
-                            name: item.name,
-                            amount: item.amount || 0,
-                            frequency: item.frequency || 'monthly',
-                            inflation_adjusted: true,
-                            ongoing: true,
-                            start_date: null,
-                            end_date: null
-                        });
-                        added++;
-                    }
-                }
-
-                renderExpenseSection(container);
-                renderBudgetSummary(container);
-                await saveBudget(profile, container);
-
-                // Show summary
-                const parts = [];
-                if (added > 0) parts.push(`${added} added`);
-                if (updated > 0) parts.push(`${updated} updated`);
-                if (parts.length > 0) {
-                    showSuccess(`Expenses imported: ${parts.join(', ')}`);
-                }
-            });
-        });
-    }
-
-    // Export button
-    const exportBtn = container.querySelector("#export-expenses-btn");
-    if (exportBtn) {
-        exportBtn.addEventListener("click", () => exportExpensesCSV(profile));
-    }
-
-    // CSV Import button
-    const csvImportBtn = container.querySelector("#import-expenses-csv-btn");
-    if (csvImportBtn) {
-        csvImportBtn.addEventListener("click", () => {
-            showCSVImportModal({
-                title: "Import Expenses from CSV",
-                config: EXPENSE_CONFIG,
-                profileName: profile.name,
-                extraData: { period: currentPeriod },
-                onComplete: (updatedProfile) => {
-                    budgetData = updatedProfile.data?.budget || budgetData;
-                    renderExpenseSection(container);
-                    renderBudgetSummary(container);
-                },
-            });
-        });
-    }
-
     // Actions dropdown menu
     const actionsBtn = container.querySelector('#expense-actions-btn');
     const actionsMenu = container.querySelector('#expense-actions-menu');
@@ -2350,7 +2267,7 @@ function setupBudgetEventHandlers(profile, container) {
                 item.style.background = 'var(--bg-tertiary)';
             });
             item.addEventListener('mouseleave', () => {
-                item.style.background = 'none';
+                item.style.background = 'var(--bg-secondary)'; // Updated to match menu background
             });
         });
 
@@ -2361,6 +2278,88 @@ function setupBudgetEventHandlers(profile, container) {
                 actionsMenu.style.display = 'none';
 
                 switch (action) {
+                    case "ai-import":
+                        showAIImportModal('expenses', profile.name, async (extractedExpenses) => {
+                            let added = 0, updated = 0;
+                            // Basic mapping from AI categories to expense categories
+                            const categoryMap = {
+                                'housing': 'housing',
+                                'mortgage': 'housing',
+                                'rent': 'housing',
+                                'utilities': 'utilities',
+                                'electricity': 'utilities',
+                                'water': 'utilities',
+                                'internet': 'utilities',
+                                'transportation': 'transportation',
+                                'car': 'transportation',
+                                'gas': 'transportation',
+                                'food': 'food',
+                                'groceries': 'food',
+                                'dining': 'dining_out',
+                                'restaurants': 'dining_out',
+                                'healthcare': 'healthcare',
+                                'medical': 'healthcare',
+                                'insurance': 'insurance',
+                                'travel': 'travel',
+                                'vacation': 'travel',
+                                'entertainment': 'entertainment',
+                                'subscriptions': 'subscriptions',
+                                'debt': 'debt_payments',
+                                'loans': 'debt_payments',
+                                'credit_card': 'debt_payments',
+                                'taxes': 'taxes'
+                            };
+
+                            for (const item of extractedExpenses) {
+                                // Determine category
+                                let category = 'other';
+                                if (item.category) {
+                                    const lowerCat = item.category.toLowerCase();
+                                    // Try direct match
+                                    if (budgetData.expenses[currentPeriod][lowerCat]) {
+                                        category = lowerCat;
+                                    } else {
+                                        // Try mapping
+                                        for (const [key, target] of Object.entries(categoryMap)) {
+                                            if (lowerCat.includes(key)) {
+                                                category = target;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Ensure category array exists
+                                if (!budgetData.expenses[currentPeriod][category]) {
+                                    budgetData.expenses[currentPeriod][category] = [];
+                                }
+
+                                // Add expense
+                                budgetData.expenses[currentPeriod][category].push({
+                                    name: item.name || 'Imported Expense',
+                                    amount: item.amount || 0,
+                                    frequency: item.frequency || 'monthly',
+                                    inflation_adjusted: true,
+                                    ongoing: true
+                                });
+                                added++;
+                            }
+
+                            if (added > 0) {
+                                renderExpenseSection(container);
+                                renderBudgetSummary(container);
+                                showSuccess(`Imported ${added} expenses from AI analysis`);
+                                
+                                // Save changes
+                                await profilesAPI.update(profile.name, {
+                                    data: {
+                                        ...profile.data,
+                                        budget: budgetData
+                                    }
+                                });
+                            }
+                        });
+                        break;
                     case "import-csv":
                         showCSVImportModal({
                             title: "Import Expenses from CSV",
@@ -2373,6 +2372,9 @@ function setupBudgetEventHandlers(profile, container) {
                                 renderBudgetSummary(container);
                             },
                         });
+                        break;
+                    case "export-csv":
+                        exportExpensesCSV(profile);
                         break;
                     case "copy-to-post":
                         showCopyExpensesModal(profile, container, 'current', 'future');
