@@ -1553,6 +1553,7 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
     const monthlyInflationRate = (marketProfile.inflation_mean || 0.03) / 12;
 
     const monthlyData = [];
+    let cumulativeInflation = 1.0;  // Track cumulative inflation multiplier
 
     for (let i = 0; i < months; i++) {
         const currentDate = new Date(startDate);
@@ -1560,6 +1561,9 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
 
         const monthLabel = currentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
         const dateStr = currentDate.toISOString().split('T')[0];
+
+        // Apply inflation (compounds each month)
+        cumulativeInflation *= (1 + monthlyInflationRate);
 
         // Check if retired
         const isRetired = retirementDate && currentDate >= retirementDate;
@@ -1609,13 +1613,18 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
         }
 
         // Calculate retirement benefits (Social Security, Pension)
+        // Track separately for proper tax calculation
         let retirementBenefits = 0;
+        let p1SocialSecurity = 0;
+        let p1Pension = 0;
+        let p2SocialSecurity = 0;
+        let p2Pension = 0;
 
         // --- Person 1 Social Security (based on claiming age) ---
         const p1ClaimingAge = financial.ss_claiming_age || 67;
         const p1BirthDate = profile.birth_date ? new Date(profile.birth_date) : null;
         let p1SSStarted = false;
-        
+
         if (p1BirthDate) {
             const p1SSDate = new Date(p1BirthDate);
             p1SSDate.setFullYear(p1SSDate.getFullYear() + p1ClaimingAge);
@@ -1626,12 +1635,14 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
         }
 
         if (p1SSStarted) {
-            retirementBenefits += financial.social_security_benefit || 0;
+            p1SocialSecurity = financial.social_security_benefit || 0;
+            retirementBenefits += p1SocialSecurity;
         }
-        
+
         // Pension always starts at retirement
         if (isRetired) {
-            retirementBenefits += financial.pension_benefit || 0;
+            p1Pension = financial.pension_benefit || 0;
+            retirementBenefits += p1Pension;
         }
 
         // --- Person 2 (spouse) Social Security ---
@@ -1639,7 +1650,7 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
             const p2ClaimingAge = data.spouse.ss_claiming_age || 67;
             const p2BirthDate = data.spouse.birth_date ? new Date(data.spouse.birth_date) : null;
             let p2SSStarted = false;
-            
+
             if (p2BirthDate) {
                 const p2SSDate = new Date(p2BirthDate);
                 p2SSDate.setFullYear(p2SSDate.getFullYear() + p2ClaimingAge);
@@ -1650,14 +1661,16 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
             }
 
             if (p2SSStarted) {
-                retirementBenefits += data.spouse.social_security_benefit || 0;
+                p2SocialSecurity = data.spouse.social_security_benefit || 0;
+                retirementBenefits += p2SocialSecurity;
             }
-            
+
             // Spouse pension starts at their retirement
             const spouseRetirementDate = data.spouse.retirement_date ? new Date(data.spouse.retirement_date) : null;
             const spouseIsRetired = spouseRetirementDate && currentDate >= spouseRetirementDate;
             if (spouseIsRetired) {
-                retirementBenefits += data.spouse.pension_benefit || 0;
+                p2Pension = data.spouse.pension_benefit || 0;
+                retirementBenefits += p2Pension;
             }
         }
 
@@ -1699,6 +1712,9 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
                 const futureExpenses = calculatePeriodExpenses(budget, 'future', currentDate);
                 expenses = (currentExpenses * 0.5) + (futureExpenses * 0.5);
             }
+
+            // Apply cumulative inflation to expenses
+            expenses *= cumulativeInflation;
         }
 
         // Combine work income and budget income (rental, consulting, business, other)
@@ -1750,25 +1766,96 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
 
         // Income stacking for Federal/State (All income: Work + Budget + Pension + SS taxable portion)
         // SS taxation: rough rule of thumb (50% taxable for most)
-        const taxableSS = (isRetired ? (financial.social_security_benefit || 0) * 0.5 : 0);
-        const monthlyTaxableOrdinary = totalWorkIncome + (isRetired ? (financial.pension_benefit || 0) : 0) + taxableSS + investmentIncome;
-        
+        // Include both Person 1 and Person 2 (spouse) SS and pension
+        const taxableSS = (p1SocialSecurity + p2SocialSecurity) * 0.5;
+        const totalPension = p1Pension + p2Pension;
+
+        // Investment income tax treatment: Split into basis return and capital gains
+        // Assume 40% is return of basis (tax-free), 60% is long-term capital gains
+        const investmentBasisReturn = investmentIncome * 0.4;  // Tax-free
+        const investmentCapitalGains = investmentIncome * 0.6;  // Taxed at LTCG rates
+
+        // Ordinary income (excludes investment gains - those are taxed separately)
+        const monthlyTaxableOrdinary = totalWorkIncome + totalPension + taxableSS;
+
         // Apply standard deduction (monthly)
         const filingStatus = financial.filing_status || 'mfj';
         const stdDeductionMonthly = (filingStatus === 'mfj' ? 29200 : 14600) / 12;
-        
+
         const taxableAfterDeduction = Math.max(0, monthlyTaxableOrdinary - stdDeductionMonthly);
         monthlyFederalTax = taxableAfterDeduction * fedRate;
         monthlyStateTax = taxableAfterDeduction * stateRate;
 
+        // Long-term capital gains tax (stacked on ordinary income)
+        // Use 0%, 15%, or 20% based on income level
+        let ltcgTax = 0;
+        if (investmentCapitalGains > 0) {
+            // Simplified LTCG brackets for 2024 (most people fall in 15% bracket)
+            const ltcgThreshold0 = (filingStatus === 'mfj' ? 94050 : 47025) / 12;  // Monthly 0% threshold
+            const ltcgThreshold15 = (filingStatus === 'mfj' ? 583750 : 518900) / 12;  // Monthly 15%->20% threshold
+
+            // Stack capital gains on top of ordinary income
+            const totalIncomeForLTCG = monthlyTaxableOrdinary;
+
+            if (totalIncomeForLTCG < ltcgThreshold0) {
+                // 0% bracket
+                const room = ltcgThreshold0 - totalIncomeForLTCG;
+                const gainsAt0 = Math.min(investmentCapitalGains, room);
+                const gainsAt15 = investmentCapitalGains - gainsAt0;
+                ltcgTax = gainsAt15 * 0.15;
+            } else if (totalIncomeForLTCG < ltcgThreshold15) {
+                // 15% bracket
+                ltcgTax = investmentCapitalGains * 0.15;
+            } else {
+                // 20% bracket
+                ltcgTax = investmentCapitalGains * 0.20;
+            }
+        }
+
+        // Add LTCG tax to federal tax
+        monthlyFederalTax += ltcgTax;
+
+        // --- 401k Retirement Contributions (Pre-retirement only) ---
+        let monthly401kContribution = 0;
+        let monthlyEmployerMatch = 0;
+
+        if (!isRetired && workIncome > 0) {
+            // Extract 401k rates from financial data
+            const contributionRate = financial.annual_401k_contribution_rate || 0;
+            const matchRate = financial.employer_match_rate || 0;
+
+            // Calculate monthly contributions (401k is on salary only, not budget income)
+            monthly401kContribution = workIncome * contributionRate;
+            monthlyEmployerMatch = workIncome * matchRate;
+        }
+
+        // --- IRA Contributions (Pre-retirement only) ---
+        let monthlyIRAContribution = 0;
+
+        if (!isRetired) {
+            // Extract annual IRA contribution from financial data
+            const annualIRAContribution = financial.annual_ira_contribution || 0;
+            monthlyIRAContribution = annualIRAContribution / 12;
+        }
+
         // Total expenses including taxes
         const totalExpensesThisMonth = expenses + monthlyFederalTax + monthlyStateTax + monthlyFicaTax;
         const totalIncome = totalWorkIncome + retirementBenefits + investmentIncome;
-        const netCashFlow = totalIncome - totalExpensesThisMonth;
+
+        // Calculate net cash flow AFTER subtracting retirement contributions
+        // 401k is pre-tax, IRA is post-tax (both reduce take-home)
+        const netCashFlow = totalIncome - totalExpensesThisMonth - monthly401kContribution - monthlyIRAContribution;
 
         // --- Update Portfolio Balance ---
         // Add surplus or subtract shortfall (remaining after withdrawals)
         currentPortfolio += netCashFlow;
+
+        // Add 401k contributions (employee + employer match) to portfolio
+        // These go into tax-deferred retirement accounts
+        currentPortfolio += monthly401kContribution + monthlyEmployerMatch;
+
+        // Add IRA contributions to portfolio (split between pre-tax and Roth)
+        currentPortfolio += monthlyIRAContribution;
 
         // Floor portfolio at 0
         if (currentPortfolio < 0) currentPortfolio = 0;

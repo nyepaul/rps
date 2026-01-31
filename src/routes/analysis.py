@@ -265,6 +265,8 @@ def run_analysis():
             social_security=spouse_data.get("social_security_benefit")
             or 0,  # Already monthly
             ss_claiming_age=spouse_data.get("ss_claiming_age") or 67,
+            annual_401k_contribution_rate=spouse_data.get("annual_401k_contribution_rate") or 0,
+            employer_match_rate=spouse_data.get("employer_match_rate") or 0,
         )
 
         # Get assets from profile and transform to investment_types format
@@ -618,6 +620,8 @@ def get_cashflow_details():
             ),
             social_security=spouse_data.get("social_security_benefit") or 0,
             ss_claiming_age=spouse_data.get("ss_claiming_age") or 67,
+            annual_401k_contribution_rate=spouse_data.get("annual_401k_contribution_rate") or 0,
+            employer_match_rate=spouse_data.get("employer_match_rate") or 0,
         )
 
         # Get assets

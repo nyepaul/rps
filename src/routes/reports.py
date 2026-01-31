@@ -135,6 +135,8 @@ def run_analysis_for_report(profile):
             else 0
         ),
         ss_claiming_age=spouse_data.get("ss_claiming_age") or 67,
+        annual_401k_contribution_rate=spouse_data.get("annual_401k_contribution_rate") or 0,
+        employer_match_rate=spouse_data.get("employer_match_rate") or 0,
     )
 
     assets_data = profile_data.get("assets", {})

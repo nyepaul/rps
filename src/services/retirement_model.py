@@ -779,6 +779,14 @@ class RetirementModel:
         p1_retirement_year = self.profile.person1.retirement_date.year
         p2_retirement_year = self.profile.person2.retirement_date.year
 
+        # Track prior years' MAGI for IRMAA (IRS uses 2-year lookback)
+        # Store last 3 years: current, -1, -2
+        prior_year_magi = {
+            0: np.zeros(simulations),  # Current year
+            -1: np.zeros(simulations),  # 1 year ago
+            -2: np.zeros(simulations),  # 2 years ago
+        }
+
         # Pre-calculate Spending Multipliers based on Model
         spending_multipliers = np.ones(years)
         if spending_model == "retirement_smile":
@@ -970,10 +978,12 @@ class RetirementModel:
             # --- Tax Step 4: IRMAA ---
             irmaa_expense = np.zeros(simulations)
             if p1_age >= 65 or p2_age >= 65:
-                # MAGI ≈ AGI (Total Ordinary Taxable Gross)
+                # IRMAA uses MAGI from 2 years prior (IRS rule)
+                # For first 2 years of simulation, use current year as fallback
+                magi_for_irmaa = prior_year_magi[-2] if year_idx >= 2 else total_ordinary_taxable_gross
                 both_on_medicare = (p1_age >= 65) and (p2_age >= 65)
                 irmaa_expense = self._vectorized_irmaa(
-                    total_ordinary_taxable_gross, both_on_medicare=both_on_medicare
+                    magi_for_irmaa, both_on_medicare=both_on_medicare
                 )
 
             # --- Net Cash Available Before Withdrawals ---
@@ -1080,8 +1090,26 @@ class RetirementModel:
                     # For person2, we need to extract their salary separately
                     if self.profile.budget:
                         p2_salary = current_employment.get("spouse", 0)
-                        # Note: Person dataclass doesn't have person2-specific 401k fields yet
-                        # For now, use person1's fields as template - can be extended later
+
+                        # Calculate 401k contribution as % of salary
+                        p2_contribution_rate = safe_float(
+                            self.profile.person2.annual_401k_contribution_rate, 0
+                        )
+                        if p2_contribution_rate == 0:
+                            # Fallback to legacy fixed amount if rate not set
+                            p2_contribution_rate = safe_float(
+                                self.profile.person2.annual_401k_contribution, 0
+                            ) / max(p2_salary, 1)
+
+                        p2_401k = p2_salary * p2_contribution_rate
+                        total_401k_contributions += p2_401k
+                        pretax_std += p2_401k  # Add 401k contribution to retirement account
+
+                        # Add employer match (free money - doesn't reduce take-home)
+                        p2_employer_match = p2_salary * safe_float(
+                            self.profile.person2.employer_match_rate, 0
+                        )
+                        pretax_std += p2_employer_match
 
                 # IRA contributions (from profile level)
                 ira_contrib = safe_float(self.profile.annual_ira_contribution, 0)
@@ -1136,7 +1164,7 @@ class RetirementModel:
                         taxable_gain = np.maximum(0, gain - exclusion)
                         # Use income-stacked LTCG tax instead of flat 15%
                         capital_gains_tax = self._vectorized_ltcg_tax(
-                            taxable_gain, year_ordinary_income
+                            taxable_gain, cumulative_ordinary_gross
                         )
                         net_proceeds = (
                             gross_proceeds
@@ -1340,6 +1368,12 @@ class RetirementModel:
             # Floor at 0
             total_portfolio = np.maximum(0, total_portfolio)
             all_paths[:, year_idx] = total_portfolio
+
+            # Update prior year MAGI tracking for IRMAA (2-year lookback)
+            # Shift: -2 <- -1 <- 0 <- current
+            prior_year_magi[-2] = prior_year_magi[-1].copy()
+            prior_year_magi[-1] = prior_year_magi[0].copy()
+            prior_year_magi[0] = total_ordinary_taxable_gross.copy()
 
         # 5. Final Statistics
         ending_balances = all_paths[:, -1]
