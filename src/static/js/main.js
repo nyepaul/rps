@@ -109,16 +109,17 @@ function updateHeaderDisplay() {
     }
 
     // Update profile name
-    const profileContainerEl = document.getElementById('header-profile-container');
     const profileNameEl = document.getElementById('header-profile-name');
+    const separatorEl = document.getElementById('header-profile-separator');
 
-    if (profileContainerEl && profileNameEl) {
+    if (profileNameEl && separatorEl) {
         if (currentProfile && currentProfile.name) {
             profileNameEl.textContent = currentProfile.name;
-            profileContainerEl.style.display = 'flex';
+            profileNameEl.style.display = 'inline';
+            separatorEl.style.display = 'inline';
         } else {
-            profileNameEl.textContent = 'No profile selected';
-            profileContainerEl.style.display = 'none';
+            profileNameEl.style.display = 'none';
+            separatorEl.style.display = 'none';
         }
     }
 }

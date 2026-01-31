@@ -1,5 +1,5 @@
 {
-    "version": "3.9.159",
+    "version": "3.9.160",
     "release_date": "2026-01-31",
-    "release_notes": "Fix API key test and save by adding credentials to fetch calls"
+    "release_notes": "Redesign header user/profile display to match button style"
 }

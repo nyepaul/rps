@@ -292,7 +292,24 @@
         header .logout-btn:active {
             transform: translateY(0);
         }
-        
+
+        header .user-info-badge {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: var(--header-text);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        header .user-info-badge:hover {
+            background: rgba(255,255,255,0.15);
+        }
+
         h1 {
             font-size: 18px;
             font-weight: 600;
