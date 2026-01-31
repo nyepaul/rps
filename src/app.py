@@ -129,9 +129,6 @@ def create_app(config_name="development"):
         ):
             return
 
-        # Make session permanent so PERMANENT_SESSION_LIFETIME applies
-        session.permanent = True
-
         if current_user.is_authenticated:
             last_activity = session.get("last_activity")
             now = datetime.utcnow()
