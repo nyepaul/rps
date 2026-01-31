@@ -496,7 +496,7 @@ class EnhancedAuditLogger:
 
                 visitor_data = json_lib.loads(cf_visitor)
                 cf_metadata["cf_scheme"] = visitor_data.get("scheme", "unknown")
-            except:
+            except Exception:
                 cf_metadata["cf_visitor"] = cf_visitor
 
         # CF-Connecting-IP: Real client IP (already captured separately)
@@ -1003,7 +1003,7 @@ class EnhancedAuditLogger:
                     )
                     details_dict["ip_intelligence"] = ip_intel_data
                     audit_data["details"] = json.dumps(details_dict)
-                except:
+                except Exception:
                     pass
             else:
                 audit_data["details"] = json.dumps({"ip_intelligence": ip_intel_data})
@@ -1022,7 +1022,7 @@ class EnhancedAuditLogger:
                         )
                         details_dict["network"] = network_meta
                         audit_data["details"] = json.dumps(details_dict)
-                    except:
+                    except Exception:
                         pass
                 else:
                     audit_data["details"] = json.dumps({"network": network_meta})
@@ -1067,7 +1067,7 @@ class EnhancedAuditLogger:
                         existing_device_info = json.loads(audit_data["device_info"])
                         existing_device_info["fingerprint"] = fingerprint
                         audit_data["device_info"] = json.dumps(existing_device_info)
-                    except:
+                    except Exception:
                         pass
                 else:
                     audit_data["device_info"] = json.dumps({"fingerprint": fingerprint})
@@ -1108,7 +1108,7 @@ class EnhancedAuditLogger:
                         )
                         details_dict["risk_assessment"] = risk_data
                         audit_data["details"] = json.dumps(details_dict)
-                    except:
+                    except Exception:
                         pass
 
         # Collect detailed session metadata
@@ -1125,7 +1125,7 @@ class EnhancedAuditLogger:
                         )
                         details_dict["session_metadata"] = session_meta
                         audit_data["details"] = json.dumps(details_dict)
-                    except:
+                    except Exception:
                         # If details is a string and can't be parsed, wrap it
                         details_dict = {
                             "original_details": audit_data["details"],
@@ -1663,7 +1663,7 @@ class EnhancedAuditLogger:
                 if geo_str:
                     try:
                         filtered_log["geo_location"] = json.loads(geo_str)
-                    except:
+                    except Exception:
                         pass
 
             if display_config.get("device_info", True):
@@ -1671,7 +1671,7 @@ class EnhancedAuditLogger:
                 if device_str:
                     try:
                         filtered_log["device_info"] = json.loads(device_str)
-                    except:
+                    except Exception:
                         pass
 
             if display_config.get("request_method", True):
@@ -1702,7 +1702,7 @@ class EnhancedAuditLogger:
                         cf_data = headers_data.get("cloudflare")
                         if cf_data:
                             filtered_log["cloudflare"] = cf_data
-                    except:
+                    except Exception:
                         pass
 
             # Always include details
@@ -1710,7 +1710,7 @@ class EnhancedAuditLogger:
             if details_str:
                 try:
                     filtered_log["details"] = json.loads(details_str)
-                except:
+                except Exception:
                     filtered_log["details"] = details_str
 
             filtered_logs.append(filtered_log)
@@ -1781,7 +1781,7 @@ class EnhancedAuditLogger:
                 geo = json.loads(row["geo_location"])
                 country = geo.get("country", "Unknown")
                 country_counts[country] = country_counts.get(country, 0) + row["count"]
-            except:
+            except Exception:
                 pass
         stats["by_country"] = country_counts
 

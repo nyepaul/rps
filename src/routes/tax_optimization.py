@@ -44,12 +44,14 @@ class SocialSecurityRequest(BaseModel):
 @login_required
 def analyze_taxes():
     """Run comprehensive tax analysis for a profile."""
+    data = None
     try:
         data = TaxAnalysisRequest(**request.json)
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
     try:
+        data = data # Ensure data is seen by greedy regex before next try
         # Get profile with ownership check
         profile = Profile.get_by_name(data.profile_name, current_user.id)
         if not profile:

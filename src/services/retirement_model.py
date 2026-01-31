@@ -719,7 +719,7 @@ class RetirementModel:
                             "type": s.get("type", "other"),
                         }
                     )
-                except:
+                except Exception:
                     pass
 
         # Prepare Homes data structure (Vectorized)
@@ -741,7 +741,7 @@ class RetirementModel:
                         sale_year = datetime.fromisoformat(
                             prop["planned_sale_date"]
                         ).year
-                    except:
+                    except Exception:
                         pass
 
                 home_props_state.append(
@@ -1454,7 +1454,7 @@ class RetirementModel:
                             "type": s.get("type"),
                         }
                     )
-                except:
+                except Exception:
                     pass
 
         # Prepare Homes
@@ -1475,7 +1475,7 @@ class RetirementModel:
                         sale_year = datetime.fromisoformat(
                             prop["planned_sale_date"]
                         ).year
-                    except:
+                    except Exception:
                         pass
 
                 home_props_state.append(
@@ -1920,7 +1920,7 @@ class RetirementModel:
                     start_year = datetime.fromisoformat(s["start_date"]).year
                     if start_year <= rmd_year:
                         pension_annual += safe_float(s.get("amount", 0))
-                except:
+                except Exception:
                     pass
         retirement_income = (
             self.profile.person1.social_security * 12
@@ -2013,7 +2013,7 @@ class RetirementModel:
         if start_date:
             try:
                 start_year = datetime.fromisoformat(start_date).year
-            except:
+            except Exception:
                 pass
         else:
             # If no start date specified, assume current year (today)
@@ -2024,7 +2024,7 @@ class RetirementModel:
         if end_date:
             try:
                 end_year = datetime.fromisoformat(end_date).year
-            except:
+            except Exception:
                 pass
 
         # Check if simulation year is within range
@@ -2096,7 +2096,7 @@ class RetirementModel:
                                 period_total += amount * current_cpi
                             else:
                                 period_total += amount
-                    except:
+                    except Exception:
                         pass
             return period_total
 

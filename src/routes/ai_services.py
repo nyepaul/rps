@@ -123,14 +123,14 @@ def resilient_parse_llm_json(text_response, list_key):
             markdown_content = clean_text.split("```json")[1].split("```")[0].strip()
             data = json.loads(markdown_content)
             return normalize_to_list(data, list_key)
-        except:
+        except Exception:
             pass
     elif "```" in clean_text:
         try:
             markdown_content = clean_text.split("```")[1].split("```")[0].strip()
             data = json.loads(markdown_content)
             return normalize_to_list(data, list_key)
-        except:
+        except Exception:
             pass
 
     # 3. Use regex to find the first JSON-like structure
@@ -142,7 +142,7 @@ def resilient_parse_llm_json(text_response, list_key):
         try:
             data = json.loads(array_match.group(0))
             return normalize_to_list(data, list_key)
-        except:
+        except Exception:
             pass
 
     # Look for a single object { ... }
@@ -155,9 +155,9 @@ def resilient_parse_llm_json(text_response, list_key):
                     try:
                         data = json.loads(full_potential[:i])
                         return normalize_to_list(data, list_key)
-                    except:
+                    except Exception:
                         continue
-        except:
+        except Exception:
             pass
 
     # 4. Final Fallback: Regex-based field extraction (for non-JSON or badly malformed output)
@@ -199,9 +199,9 @@ def resilient_parse_llm_json(text_response, list_key):
                     "frequency": freq_match.group(1) if freq_match else "monthly",
                 }
                 return [dummy_obj]
-            except:
+            except Exception:
                 pass
-    except:
+    except Exception:
         pass
 
     print(f"Failed to parse LLM response as JSON: {text_response[:200]}...")
@@ -330,7 +330,7 @@ def call_gemini_with_fallback(
                             mime_type = "image/png"
                         elif img.format == "WEBP":
                             mime_type = "image/webp"
-                    except:
+                    except Exception:
                         # If it's not an image, check for PDF magic bytes
                         if file_bytes[:4] == b"%PDF":
                             mime_type = "application/pdf"

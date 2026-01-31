@@ -1346,9 +1346,9 @@ def reset_password_with_recovery():
 @limiter.limit("5 per hour")
 def request_admin_reset():
     """Request a password reset from admin (when SMTP is down)."""
-    data = request.json
-    username = data.get("username")
-    email = data.get("email")
+    json_data = request.json
+    username = json_data.get("username")
+    email = json_data.get("email")
 
     if not username or not email:
         return jsonify({"error": "Username and email are required"}), 400

@@ -10,28 +10,9 @@ from src.models.conversation import Conversation
 
 
 @pytest.fixture
-def app():
-    app = create_app("testing")
-    app.config.update({"LOGIN_DISABLED": True, "WTF_CSRF_ENABLED": False})
-    return app
-
-
-@pytest.fixture
-def client(app):
-    return app.test_client()
-
-
-@pytest.fixture
-def mock_user_profile(monkeypatch):
-    user = User(
-        id=1, username="testuser", email="test@example.com", password_hash="hash"
-    )
-    profile = MagicMock(spec=Profile)
-    profile.id = 1
-    profile.user_id = 1
+def mock_user_profile(monkeypatch, test_user, test_profile):
+    profile = test_profile
     profile.name = "testprofile"
-    profile.birth_date = "1980-01-01"
-    profile.retirement_date = "2045-01-01"
     profile.data_dict = {
         "preferred_ai_provider": "ollama",
         "api_keys": {
@@ -41,11 +22,9 @@ def mock_user_profile(monkeypatch):
         "financial": {},
         "assets": {},
     }
+    profile.save()
 
-    # Mock property access if needed
-    type(profile).data = MagicMock()
-
-    monkeypatch.setattr("src.routes.ai_services.current_user", user)
+    monkeypatch.setattr("src.routes.ai_services.current_user", test_user)
     monkeypatch.setattr(
         "src.models.profile.Profile.get_by_name", lambda name, user_id: profile
     )

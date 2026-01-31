@@ -168,7 +168,7 @@ def create_scenario():
     except Exception as e:
         enhanced_audit_logger.log(
             action="CREATE_SCENARIO_ERROR",
-            details={"scenario_name": data.name, "error": str(e)},
+            details={"scenario_name": request.json.get("name"), "error": str(e)},
             status_code=500,
         )
         return jsonify({"error": str(e)}), 500

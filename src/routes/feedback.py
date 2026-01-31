@@ -234,7 +234,7 @@ def submit_feedback():
         print(f"Error saving feedback: {e}")
         enhanced_audit_logger.log(
             action="SUBMIT_FEEDBACK_ERROR",
-            details={"type": data.type if "data" in dir() else None, "error": str(e)},
+            details={"type": request.json.get("type"), "error": str(e)},
             status_code=500,
         )
         return jsonify({"error": "Failed to save feedback"}), 500

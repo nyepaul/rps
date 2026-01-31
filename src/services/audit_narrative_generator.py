@@ -120,7 +120,7 @@ class AuditNarrativeGenerator:
             # Parse details JSON
             try:
                 details_dict = json.loads(details) if isinstance(details, str) else {}
-            except:
+            except Exception:
                 details_dict = {}
 
             # Check for human-readable description in details
@@ -407,7 +407,7 @@ class AuditNarrativeGenerator:
                     location_parts.append(geo_data["country"])
                 if location_parts:
                     context["location"] = ", ".join(location_parts)
-            except:
+            except Exception:
                 pass
 
         # Device info
@@ -425,7 +425,7 @@ class AuditNarrativeGenerator:
                     context["os"] = device_data["os"]
                 if device_data.get("device_type"):
                     context["device"] = device_data["device_type"]
-            except:
+            except Exception:
                 pass
 
         # Profile/scenario context
@@ -489,7 +489,7 @@ class AuditNarrativeGenerator:
             try:
                 dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
                 time_str = dt.strftime("%I:%M %p").lstrip("0")
-            except:
+            except Exception:
                 time_str = timestamp
 
             # Add connector words for flow

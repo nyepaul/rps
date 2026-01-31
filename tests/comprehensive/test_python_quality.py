@@ -227,20 +227,24 @@ class TestPythonCriticalIssues:
                 content = py_file.read_text()
 
                 # Look for except blocks that reference variables from try blocks
-                except_pattern = r"except\s+\w+\s+as\s+\w+:\s*\n(.*?)(?=\n\s*(?:except|finally|def|class|$))"
+                except_pattern = r"except\s+\w+\s+as\s+\w+:\s*\n(.*?)(?=\n\s*(?:except|finally|try|def|class|$))"
                 matches = re.finditer(except_pattern, content, re.DOTALL)
 
                 for match in matches:
                     except_block = match.group(1)
 
                     # Look for variable references that might not be defined
-                    if "data." in except_block:
-                        # Check if 'data' is defined before the try block
-                        before_try = content[: match.start()]
-                        if "data = " not in before_try.split("\n")[-10:]:
-                            issues.append(
-                                f"{py_file.relative_to(PY_BASE_DIR)} - May reference undefined 'data' in except block"
-                            )
+                    if "data." in except_block and re.search(r"data\.[a-zA-Z_]", except_block):
+                        # Check if 'data' is defined before the except block
+                        # We search for the last 'def ' to scope it to the current function
+                        content_before = content[: match.start()]
+                        last_def_idx = content_before.rfind("def ")
+                        if last_def_idx != -1:
+                            function_content = content_before[last_def_idx:]
+                            if "data = " not in function_content:
+                                issues.append(
+                                    f"{py_file.relative_to(PY_BASE_DIR)} - May reference undefined 'data' in except block"
+                                )
 
             except Exception:
                 pass

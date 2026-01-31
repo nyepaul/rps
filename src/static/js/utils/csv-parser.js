@@ -72,6 +72,9 @@ export function parseCSV(text, config) {
                 const validation = config.validateItem ? config.validateItem(item) : { valid: true };
 
                 if (validation.valid) {
+                    if (validation.warnings) {
+                        result.warnings.push(`Line ${lineNum}: ${validation.warnings}`);
+                    }
                     result.items.push(item);
                 } else {
                     result.warnings.push(`Line ${lineNum}: ${validation.message}`);

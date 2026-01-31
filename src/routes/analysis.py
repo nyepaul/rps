@@ -165,7 +165,7 @@ class AnalysisRequestSchema(BaseModel):
 @login_required
 def run_analysis():
     """Run Monte Carlo analysis for a profile."""
-    data = {}
+    data = None
     try:
         data = AnalysisRequestSchema(**request.json)
     except Exception as e:
@@ -507,14 +507,14 @@ def run_analysis():
     except KeyError as e:
         enhanced_audit_logger.log(
             action="RUN_ANALYSIS_KEY_ERROR",
-            details={"profile_name": data.profile_name, "error": str(e)},
+            details={"profile_name": request.json.get("profile_name"), "error": str(e)},
             status_code=400,
         )
         return jsonify({"error": f"Missing required field: {str(e)}"}), 400
     except Exception as e:
         enhanced_audit_logger.log(
             action="RUN_ANALYSIS_ERROR",
-            details={"profile_name": data.profile_name, "error": str(e)},
+            details={"profile_name": request.json.get("profile_name"), "error": str(e)},
             status_code=500,
         )
         return jsonify({"error": str(e)}), 500
@@ -524,7 +524,7 @@ def run_analysis():
 @login_required
 def get_cashflow_details():
     """Run a detailed deterministic projection for cashflow visualization."""
-    data = {}
+    data = None
     try:
         data = AnalysisRequestSchema(**request.json)
     except Exception as e:

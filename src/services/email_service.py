@@ -74,7 +74,7 @@ class EmailService:
                     "info": "Link logged to server for recovery in case of email delivery failure."
                 }
             )
-        except:
+        except Exception:
             pass
 
         try:
@@ -379,7 +379,7 @@ class EmailService:
         try:
             mail_username = current_app.config.get("MAIL_USERNAME")
             return bool(mail_username)
-        except:
+        except Exception:
             return False
 
     @staticmethod

@@ -199,7 +199,7 @@ def create_profile():
     except Exception as e:
         enhanced_audit_logger.log(
             action="CREATE_PROFILE_ERROR",
-            details={"profile_name": data.name, "error": str(e)},
+            details={"profile_name": request.json.get("name"), "error": str(e)},
             status_code=500,
         )
         return jsonify({"error": str(e)}), 500
@@ -1133,7 +1133,7 @@ def test_openai_api_key(api_key: str):
                 error_msg = (
                     response.json().get("error", {}).get("message", "Unknown error")
                 )
-            except:
+            except Exception:
                 pass
             return jsonify({"success": False, "error": f"API Error: {error_msg}"}), 400
     except requests.Timeout:
@@ -1168,7 +1168,7 @@ def test_grok_api_key(api_key: str):
                 error_msg = (
                     response.json().get("error", {}).get("message", "Unknown error")
                 )
-            except:
+            except Exception:
                 pass
             return jsonify({"success": False, "error": f"API Error: {error_msg}"}), 400
     except requests.Timeout:
