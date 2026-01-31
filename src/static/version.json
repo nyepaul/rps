@@ -1,5 +1,5 @@
 {
-    "version": "3.9.147",
+    "version": "3.9.148",
     "release_date": "2026-01-30",
-    "release_notes": "Add 'How Calculations Work' explainer to Analysis tab"
+    "release_notes": "Add sorting capability to asset list (Category, Value, Name, Institution)"
 }

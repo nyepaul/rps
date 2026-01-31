@@ -11,6 +11,21 @@ import { showError, showSuccess } from '../../utils/dom.js';
 import { isPotentialDuplicate, updateDuplicateDetection } from './assets-tab.js';
 
 /**
+ * Asset list component - Simple flat list of all assets
+ */
+
+import { formatCurrency } from '../../utils/formatters.js';
+import { getAssetTypeLabel, generateFormFields, extractFormData, getAllAccountTypeOptions, getCategoryForType } from './asset-form-fields.js';
+import { makeRowEditable } from './inline-editor.js';
+import { store } from '../../state/store.js';
+import { profilesAPI } from '../../api/profiles.js';
+import { showError, showSuccess } from '../../utils/dom.js';
+import { isPotentialDuplicate, updateDuplicateDetection } from './assets-tab.js';
+
+// Track current sort state
+let currentSort = 'category';
+
+/**
  * Render all assets in a simple flat list
  */
 export function renderAssetList(assets, container, onSaveCallback) {
@@ -43,15 +58,29 @@ export function renderAssetList(assets, container, onSaveCallback) {
         });
     }
 
-    // Sort by category, then by value (descending)
+    // Sort assets based on currentSort
     allAssets.sort((a, b) => {
+        const getVal = (item) => item.value || item.current_value || item.monthly_benefit || 0;
+
+        if (currentSort === 'value-desc') {
+            return getVal(b) - getVal(a);
+        }
+        if (currentSort === 'value-asc') {
+            return getVal(a) - getVal(b);
+        }
+        if (currentSort === 'name-asc') {
+            return (a.name || '').localeCompare(b.name || '');
+        }
+        if (currentSort === 'institution-asc') {
+            return (a.institution || '').localeCompare(b.institution || '');
+        }
+
+        // Default: Sort by category, then by value (descending)
         const categoryOrder = ['retirement_accounts', 'taxable_accounts', 'real_estate', 'pensions_annuities', 'education_accounts', 'other_assets', 'liabilities'];
         const catDiff = categoryOrder.indexOf(a.categoryKey) - categoryOrder.indexOf(b.categoryKey);
         if (catDiff !== 0) return catDiff;
 
-        const aVal = a.value || a.current_value || a.monthly_benefit || 0;
-        const bVal = b.value || b.current_value || b.monthly_benefit || 0;
-        return bVal - aVal;
+        return getVal(b) - getVal(a);
     });
 
     if (allAssets.length === 0) {
@@ -67,7 +96,23 @@ export function renderAssetList(assets, container, onSaveCallback) {
 
     container.innerHTML = `
         <div style="background: var(--bg-secondary); border-radius: 12px; padding: 12px;">
-            <div style="padding: 8px 12px; margin-bottom: 8px; background: var(--bg-tertiary); border-radius: 6px; border-left: 3px solid var(--accent-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div style="font-size: 13px; font-weight: 600; color: var(--text-secondary);">
+                    ${allAssets.length} Assets
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 12px; color: var(--text-secondary);">Sort by</span>
+                    <select id="asset-sort-select" style="padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); font-size: 12px; cursor: pointer; outline: none;">
+                        <option value="category" ${currentSort === 'category' ? 'selected' : ''}>Category</option>
+                        <option value="value-desc" ${currentSort === 'value-desc' ? 'selected' : ''}>Value (High to Low)</option>
+                        <option value="value-asc" ${currentSort === 'value-asc' ? 'selected' : ''}>Value (Low to High)</option>
+                        <option value="name-asc" ${currentSort === 'name-asc' ? 'selected' : ''}>Name (A-Z)</option>
+                        <option value="institution-asc" ${currentSort === 'institution-asc' ? 'selected' : ''}>Institution (A-Z)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="padding: 8px 12px; margin-bottom: 12px; background: var(--bg-tertiary); border-radius: 6px; border-left: 3px solid var(--accent-color);">
                 <p style="margin: 0; font-size: 12px; color: var(--text-secondary);">
                     <strong style="color: var(--text-primary);">💡 Tip:</strong> Click on any asset to edit its details
                 </p>
@@ -77,6 +122,16 @@ export function renderAssetList(assets, container, onSaveCallback) {
             </div>
         </div>
     `;
+
+    // Handle Sort Change
+    const sortSelect = container.querySelector('#asset-sort-select');
+    if (sortSelect) {
+        sortSelect.addEventListener('change', (e) => {
+            currentSort = e.target.value;
+            // Re-render the list with the new sort order
+            renderAssetList(assets, container, onSaveCallback);
+        });
+    }
 
     // Add click-to-edit functionality - opens asset wizard modal
     container.querySelectorAll('.asset-row').forEach((row, idx) => {
