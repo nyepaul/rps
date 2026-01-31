@@ -51,7 +51,7 @@ def analyze_taxes():
     except ValidationError as e:
         return jsonify({"error": sanitize_pydantic_error(e)}), 400
     except Exception as e:
-        return jsonify({"error": "Invalid request data"}), 400
+        return jsonify({"error": f"Invalid request data: {str(e)}"}), 400
 
     try:
         # Get profile with ownership check
@@ -140,7 +140,7 @@ def analyze_roth_conversion():
     except ValidationError as e:
         return jsonify({"error": sanitize_pydantic_error(e)}), 400
     except Exception as e:
-        return jsonify({"error": "Invalid request data"}), 400
+        return jsonify({"error": f"Invalid request data: {str(e)}"}), 400
 
     try:
         # Get profile with ownership check
@@ -215,7 +215,7 @@ def analyze_social_security_timing():
     except ValidationError as e:
         return jsonify({"error": sanitize_pydantic_error(e)}), 400
     except Exception as e:
-        return jsonify({"error": "Invalid request data"}), 400
+        return jsonify({"error": f"Invalid request data: {str(e)}"}), 400
 
     try:
         # Get profile with ownership check

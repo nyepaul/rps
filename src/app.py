@@ -240,7 +240,7 @@ def create_app(config_name="development"):
     app.register_blueprint(budget_bp)
 
     # Configure logging
-    if not app.debug:
+    if True:  # Always log to file
         if not os.path.exists(os.path.dirname(app.config["LOG_FILE"])):
             os.makedirs(os.path.dirname(app.config["LOG_FILE"]))
 

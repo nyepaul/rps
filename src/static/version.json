@@ -1,5 +1,5 @@
 {
-    "version": "3.9.153",
+    "version": "3.9.154",
     "release_date": "2026-01-31",
-    "release_notes": "fix: analysis and tax route validation; fix comparison tab syntax error"
+    "release_notes": "fix: retirement analysis validation and error reporting; improve server logging"
 }

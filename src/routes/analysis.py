@@ -3,7 +3,7 @@
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from pydantic import BaseModel, validator, ValidationError
-from typing import Optional
+from typing import Optional, List
 from src.models.profile import Profile
 from src.services.retirement_model import (
     Person,
@@ -141,8 +141,8 @@ class MarketPeriodsSchema(BaseModel):
     """Schema for period-based market conditions."""
 
     type: str  # 'timeline' or 'cycle'
-    periods: Optional[list] = None  # For timeline type
-    pattern: Optional[list] = None  # For cycle type
+    periods: Optional[List[MarketPeriodSchema]] = None  # For timeline type
+    pattern: Optional[List[MarketPeriodSchema]] = None  # For cycle type
     repeat: Optional[bool] = True  # For cycle type
 
 
@@ -152,7 +152,7 @@ class AnalysisRequestSchema(BaseModel):
     profile_name: str
     simulations: Optional[int] = 10000
     market_profile: Optional[MarketProfileSchema] = None
-    market_periods: Optional[dict] = None  # New: period-based market conditions
+    market_periods: Optional[MarketPeriodsSchema] = None  # Use specific schema
     spending_model: Optional[str] = "constant_real"
 
     @validator("simulations")
@@ -177,7 +177,10 @@ def run_analysis():
         )
         return jsonify({"error": sanitize_pydantic_error(e)}), 400
     except Exception as e:
-        return jsonify({"error": "Invalid request data"}), 400
+        # Log the unexpected error
+        import logging
+        logging.error(f"Unexpected analysis validation error: {str(e)}", exc_info=True)
+        return jsonify({"error": f"Invalid request data: {str(e)}"}), 400
 
     try:
         # Get profile with ownership check
@@ -474,7 +477,7 @@ def run_analysis():
                 simulations=data.simulations,
                 assumptions=market_assumptions,
                 spending_model=data.spending_model,
-                market_periods=data.market_periods,  # Pass period-based market conditions
+                market_periods=data.market_periods.dict() if data.market_periods else None,
             )
             scenario_result["scenario_name"] = scenario_config["name"]
             scenario_result["description"] = scenario_config["description"]
@@ -535,7 +538,9 @@ def get_cashflow_details():
     except ValidationError as e:
         return jsonify({"error": sanitize_pydantic_error(e)}), 400
     except Exception as e:
-        return jsonify({"error": "Invalid request data"}), 400
+        import logging
+        logging.error(f"Unexpected cashflow validation error: {str(e)}", exc_info=True)
+        return jsonify({"error": f"Invalid request data: {str(e)}"}), 400
 
     try:
         # Get profile with ownership check
