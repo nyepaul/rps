@@ -668,6 +668,12 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
                             // Update summary card visual state
                             updateSummaryCardVisuals(container);
                         }
+                    },
+                    onHover: (e, legendItem, legend) => {
+                        e.native.target.style.cursor = 'pointer';
+                    },
+                    onLeave: (e, legendItem, legend) => {
+                        e.native.target.style.cursor = 'default';
                     }
                 },
                 tooltip: {
@@ -820,7 +826,7 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
 
     // Update summary cards (after chart is created)
     try {
-        renderSummaryCards(container, chartData);
+        renderSummaryCards(container, chartData, monthlyData.length, profile);
     } catch (error) {
         console.error('Error rendering summary cards:', error);
     }
@@ -845,7 +851,7 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
 /**
  * Render summary cards
  */
-function renderSummaryCards(container, chartData) {
+function renderSummaryCards(container, chartData, totalMonths, profile) {
     const summaryContainer = container.querySelector('#summary-cards');
     if (!summaryContainer) {
         console.warn('Summary cards container not found');
@@ -858,37 +864,56 @@ function renderSummaryCards(container, chartData) {
     const totalIncome = chartData.reduce((sum, d) => sum + d.totalIncome, 0);
     const totalExpenses = chartData.reduce((sum, d) => sum + d.expenses, 0);
     const totalNet = totalIncome - totalExpenses;
-    const avgMonthlyIncome = totalIncome / chartData.length;
-    const avgMonthlyExpenses = totalExpenses / chartData.length;
-    const avgMonthlyNet = totalNet / chartData.length;
+
+    // FIX: Use totalMonths for accurate monthly averages (not chartData.length which could be years)
+    const avgMonthlyIncome = totalIncome / totalMonths;
+    const avgMonthlyExpenses = totalExpenses / totalMonths;
+    const avgMonthlyNet = totalNet / totalMonths;
+    const totalYears = Math.round(totalMonths / 12 * 10) / 10; // e.g., 35.2 years
+
+    // Store data for detail modal
+    window.cashFlowSummaryData = {
+        workIncome: { total: totalWorkIncome, avgMonthly: totalWorkIncome / totalMonths },
+        retirementBenefits: { total: totalRetirementBenefits, avgMonthly: totalRetirementBenefits / totalMonths },
+        withdrawals: { total: totalInvestmentIncome, avgMonthly: totalInvestmentIncome / totalMonths },
+        expenses: { total: totalExpenses, avgMonthly: avgMonthlyExpenses },
+        netCashFlow: { total: totalNet, avgMonthly: avgMonthlyNet },
+        totalMonths,
+        totalYears,
+        chartData,
+        profile
+    };
 
     summaryContainer.innerHTML = `
-        <div class="metric-card" data-metric="work-income" style="background: linear-gradient(135deg, #2ed573, #26d07c); padding: 10px; border-radius: 6px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+        <div class="metric-card" data-metric="work-income" data-detail="true" style="background: linear-gradient(135deg, #2ed573, #26d07c); padding: 10px; border-radius: 6px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
             <div style="font-size: 10px; opacity: 0.9; margin-bottom: 2px;">Work Income</div>
             <div style="font-size: 16px; font-weight: 700; margin-bottom: 1px;">${formatCurrency(totalWorkIncome, 0)}</div>
-            <div style="font-size: 9px; opacity: 0.8;">Salary & other</div>
+            <div style="font-size: 9px; opacity: 0.8;">${formatCurrency(totalWorkIncome / totalMonths, 0)}/mo avg</div>
         </div>
-        <div class="metric-card" data-metric="retirement-benefits" style="background: linear-gradient(135deg, #3498db, #5faee3); padding: 10px; border-radius: 6px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+        <div class="metric-card" data-metric="retirement-benefits" data-detail="true" style="background: linear-gradient(135deg, #3498db, #5faee3); padding: 10px; border-radius: 6px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
             <div style="font-size: 10px; opacity: 0.9; margin-bottom: 2px;">Retirement Benefits</div>
             <div style="font-size: 16px; font-weight: 700; margin-bottom: 1px;">${formatCurrency(totalRetirementBenefits, 0)}</div>
-            <div style="font-size: 9px; opacity: 0.8;">SS & Pension</div>
+            <div style="font-size: 9px; opacity: 0.8;">${formatCurrency(totalRetirementBenefits / totalMonths, 0)}/mo avg</div>
         </div>
-        <div class="metric-card" data-metric="investment-withdrawals" style="background: linear-gradient(135deg, #9b59b6, #8e44ad); padding: 10px; border-radius: 6px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+        <div class="metric-card" data-metric="investment-withdrawals" data-detail="true" style="background: linear-gradient(135deg, #9b59b6, #8e44ad); padding: 10px; border-radius: 6px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
             <div style="font-size: 10px; opacity: 0.9; margin-bottom: 2px;">Withdrawals</div>
             <div style="font-size: 16px; font-weight: 700; margin-bottom: 1px;">${formatCurrency(totalInvestmentIncome, 0)}</div>
-            <div style="font-size: 9px; opacity: 0.8;">Portfolio</div>
+            <div style="font-size: 9px; opacity: 0.8;">${formatCurrency(totalInvestmentIncome / totalMonths, 0)}/mo avg</div>
         </div>
-        <div class="metric-card" data-metric="expenses" style="background: linear-gradient(135deg, #ff6b6b, #ee5a6f); padding: 10px; border-radius: 6px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+        <div class="metric-card" data-metric="expenses" data-detail="true" style="background: linear-gradient(135deg, #ff6b6b, #ee5a6f); padding: 10px; border-radius: 6px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
             <div style="font-size: 10px; opacity: 0.9; margin-bottom: 2px;">Expenses</div>
             <div style="font-size: 16px; font-weight: 700; margin-bottom: 1px;">${formatCurrency(totalExpenses, 0)}</div>
-            <div style="font-size: 9px; opacity: 0.8;">Avg: ${formatCurrency(avgMonthlyExpenses, 0)}/mo</div>
+            <div style="font-size: 9px; opacity: 0.8;">${formatCurrency(avgMonthlyExpenses, 0)}/mo avg</div>
         </div>
-        <div class="metric-card" data-metric="net-cash-flow" style="background: linear-gradient(135deg, ${totalNet >= 0 ? '#f1c40f, #f39c12' : '#e74c3c, #c0392b'}); padding: 10px; border-radius: 6px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+        <div class="metric-card" data-metric="net-cash-flow" data-detail="true" style="background: linear-gradient(135deg, ${totalNet >= 0 ? '#f1c40f, #f39c12' : '#e74c3c, #c0392b'}); padding: 10px; border-radius: 6px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
             <div style="font-size: 10px; opacity: 0.9; margin-bottom: 2px;">Net Cash Flow</div>
             <div style="font-size: 16px; font-weight: 700; margin-bottom: 1px;">${totalNet >= 0 ? '+' : ''}${formatCurrency(totalNet, 0)}</div>
-            <div style="font-size: 9px; opacity: 0.8;">Avg: ${avgMonthlyNet >= 0 ? '+' : ''}${formatCurrency(avgMonthlyNet, 0)}/mo</div>
+            <div style="font-size: 9px; opacity: 0.8;">${avgMonthlyNet >= 0 ? '+' : ''}${formatCurrency(avgMonthlyNet, 0)}/mo avg</div>
         </div>
     `;
+
+    // Setup click handlers for detail modals (shift+click for details, regular click toggles chart)
+    setupCardDetailHandlers(container);
 }
 
 /**
@@ -921,6 +946,313 @@ function restoreMetricVisibility() {
     });
 
     chart.update();
+}
+
+/**
+ * Setup click handlers for card detail modals
+ */
+function setupCardDetailHandlers(container) {
+    const metricCards = container.querySelectorAll('.metric-card[data-detail="true"]');
+
+    metricCards.forEach(card => {
+        // Single click shows detail modal
+        card.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const metric = card.getAttribute('data-metric');
+            showCardDetailModal(metric);
+        });
+
+        // Add visual hint
+        card.title = 'Click for details';
+    });
+}
+
+/**
+ * Show detailed breakdown modal for a metric card
+ */
+function showCardDetailModal(metric) {
+    const data = window.cashFlowSummaryData;
+    if (!data) return;
+
+    const { chartData, totalMonths, totalYears, profile } = data;
+    const profileData = profile?.data || {};
+    const financial = profileData.financial || {};
+    const spouse = profileData.spouse || null;
+
+    // Build detail content based on metric type
+    let title = '';
+    let content = '';
+
+    // Aggregate by year for the breakdown table
+    const yearlyBreakdown = {};
+    chartData.forEach(d => {
+        const year = d.label?.toString().includes('-')
+            ? d.date?.getFullYear()
+            : parseInt(d.label);
+        if (!yearlyBreakdown[year]) {
+            yearlyBreakdown[year] = { workIncome: 0, retirementBenefits: 0, investmentIncome: 0, expenses: 0, netCashFlow: 0 };
+        }
+        yearlyBreakdown[year].workIncome += d.workIncome || 0;
+        yearlyBreakdown[year].retirementBenefits += d.retirementBenefits || 0;
+        yearlyBreakdown[year].investmentIncome += d.investmentIncome || 0;
+        yearlyBreakdown[year].expenses += d.expenses || 0;
+        yearlyBreakdown[year].netCashFlow += d.netCashFlow || 0;
+    });
+
+    const years = Object.keys(yearlyBreakdown).sort((a, b) => a - b);
+
+    switch (metric) {
+        case 'work-income':
+            title = '💼 Work Income Details';
+            const incomeStreams = profileData.income_streams || [];
+            content = `
+                <div style="margin-bottom: 16px;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 14px;">Summary</h4>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 13px;">
+                        Total: <strong>${formatCurrency(data.workIncome.total, 0)}</strong> over ${totalYears} years<br>
+                        Average: <strong>${formatCurrency(data.workIncome.avgMonthly, 0)}/month</strong>
+                    </p>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 14px;">Income Sources</h4>
+                    ${incomeStreams.length > 0 ? incomeStreams.map(s => `
+                        <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border-color); font-size: 13px;">
+                            <span>${s.name || s.type || 'Income'}</span>
+                            <span>${formatCurrency(s.amount || 0, 0)}/mo ${s.end_date ? `(ends ${s.end_date})` : ''}</span>
+                        </div>
+                    `).join('') : '<p style="color: var(--text-secondary); font-size: 13px;">No income streams configured</p>'}
+                </div>
+                ${buildYearlyTable(years.slice(0, 10), yearlyBreakdown, 'workIncome', 'Annual Work Income')}
+            `;
+            break;
+
+        case 'retirement-benefits':
+            title = '🏖️ Retirement Benefits Details';
+            const p1SS = financial.social_security_benefit || 0;
+            const p1Pension = financial.pension_benefit || 0;
+            const p1ClaimingAge = financial.ss_claiming_age || 67;
+            const p2SS = spouse?.social_security_benefit || 0;
+            const p2Pension = spouse?.pension_benefit || 0;
+            const p2ClaimingAge = spouse?.ss_claiming_age || 67;
+
+            content = `
+                <div style="margin-bottom: 16px;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 14px;">Summary</h4>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 13px;">
+                        Total: <strong>${formatCurrency(data.retirementBenefits.total, 0)}</strong> over ${totalYears} years<br>
+                        Average: <strong>${formatCurrency(data.retirementBenefits.avgMonthly, 0)}/month</strong>
+                    </p>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 14px;">Person 1 Benefits</h4>
+                    <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border-color); font-size: 13px;">
+                        <span>Social Security (claiming at age ${p1ClaimingAge})</span>
+                        <span>${formatCurrency(p1SS, 0)}/mo</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border-color); font-size: 13px;">
+                        <span>Pension (starts at retirement)</span>
+                        <span>${formatCurrency(p1Pension, 0)}/mo</span>
+                    </div>
+                    ${spouse ? `
+                    <h4 style="margin: 16px 0 8px 0; font-size: 14px;">Spouse Benefits</h4>
+                    <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border-color); font-size: 13px;">
+                        <span>Social Security (claiming at age ${p2ClaimingAge})</span>
+                        <span>${formatCurrency(p2SS, 0)}/mo</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border-color); font-size: 13px;">
+                        <span>Pension</span>
+                        <span>${formatCurrency(p2Pension, 0)}/mo</span>
+                    </div>
+                    ` : ''}
+                    <div style="margin-top: 12px; padding: 8px; background: var(--bg-tertiary); border-radius: 4px; font-size: 12px; color: var(--text-secondary);">
+                        <strong>Note:</strong> This is the lifetime total of all retirement benefits collected.
+                        Monthly benefits are ${formatCurrency((p1SS + p1Pension + p2SS + p2Pension), 0)}/mo combined when all benefits are active.
+                    </div>
+                </div>
+                ${buildYearlyTable(years.slice(0, 10), yearlyBreakdown, 'retirementBenefits', 'Annual Benefits')}
+            `;
+            break;
+
+        case 'investment-withdrawals':
+            title = '📊 Portfolio Withdrawals Details';
+            const withdrawalRate = profileData.withdrawal_strategy?.withdrawal_rate || 0.04;
+            content = `
+                <div style="margin-bottom: 16px;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 14px;">Summary</h4>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 13px;">
+                        Total: <strong>${formatCurrency(data.withdrawals.total, 0)}</strong> over ${totalYears} years<br>
+                        Average: <strong>${formatCurrency(data.withdrawals.avgMonthly, 0)}/month</strong>
+                    </p>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 14px;">Withdrawal Strategy</h4>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 13px;">
+                        Target Rate: <strong>${(withdrawalRate * 100).toFixed(1)}%</strong> annually<br>
+                        Strategy: Tax-efficient waterfall (Taxable → Tax-Deferred → Roth)
+                    </p>
+                    <div style="margin-top: 12px; padding: 8px; background: var(--bg-tertiary); border-radius: 4px; font-size: 12px; color: var(--text-secondary);">
+                        <strong>Note:</strong> Withdrawals only occur after retirement to cover shortfalls between income/benefits and expenses.
+                        The actual withdrawal each month is the minimum of your target rate and the amount needed.
+                    </div>
+                </div>
+                ${buildYearlyTable(years.slice(0, 10), yearlyBreakdown, 'investmentIncome', 'Annual Withdrawals')}
+            `;
+            break;
+
+        case 'expenses':
+            title = '💸 Expenses Details';
+            const annualExpenses = financial.annual_expenses || 0;
+            content = `
+                <div style="margin-bottom: 16px;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 14px;">Summary</h4>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 13px;">
+                        Total: <strong>${formatCurrency(data.expenses.total, 0)}</strong> over ${totalYears} years<br>
+                        Average: <strong>${formatCurrency(data.expenses.avgMonthly, 0)}/month</strong> (${formatCurrency(data.expenses.avgMonthly * 12, 0)}/year)
+                    </p>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 14px;">Expense Configuration</h4>
+                    <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border-color); font-size: 13px;">
+                        <span>Annual Expenses (from profile)</span>
+                        <span>${formatCurrency(annualExpenses, 0)}/year</span>
+                    </div>
+                    <div style="margin-top: 12px; padding: 8px; background: var(--bg-tertiary); border-radius: 4px; font-size: 12px; color: var(--text-secondary);">
+                        <strong>Includes:</strong> Living expenses + Federal tax + State tax + FICA tax.<br>
+                        Expenses are adjusted based on retirement status (current vs. future budget).
+                    </div>
+                </div>
+                ${buildYearlyTable(years.slice(0, 10), yearlyBreakdown, 'expenses', 'Annual Expenses')}
+            `;
+            break;
+
+        case 'net-cash-flow':
+            title = '📈 Net Cash Flow Details';
+            content = `
+                <div style="margin-bottom: 16px;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 14px;">Summary</h4>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 13px;">
+                        Total: <strong style="color: ${data.netCashFlow.total >= 0 ? 'var(--success-color)' : 'var(--danger-color)'}">
+                            ${data.netCashFlow.total >= 0 ? '+' : ''}${formatCurrency(data.netCashFlow.total, 0)}</strong> over ${totalYears} years<br>
+                        Average: <strong>${data.netCashFlow.avgMonthly >= 0 ? '+' : ''}${formatCurrency(data.netCashFlow.avgMonthly, 0)}/month</strong>
+                    </p>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 14px;">Calculation</h4>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 13px;">
+                        Net Cash Flow = (Work Income + Retirement Benefits + Withdrawals) - Expenses
+                    </p>
+                    <div style="margin-top: 12px; padding: 8px; background: var(--bg-tertiary); border-radius: 4px; font-size: 12px; color: var(--text-secondary);">
+                        ${data.netCashFlow.total < 0
+                            ? '<strong>Note:</strong> A negative net cash flow over the projection period indicates your plan may need adjustments. Consider reducing expenses, increasing income, or adjusting your retirement date.'
+                            : '<strong>Note:</strong> A positive net cash flow indicates you have surplus funds that will grow your portfolio over time.'}
+                    </div>
+                </div>
+                ${buildYearlyTable(years.slice(0, 10), yearlyBreakdown, 'netCashFlow', 'Annual Net Cash Flow', true)}
+            `;
+            break;
+
+        default:
+            return;
+    }
+
+    // Create and show modal
+    showModal(title, content);
+}
+
+/**
+ * Build a yearly breakdown table
+ */
+function buildYearlyTable(years, yearlyBreakdown, field, title, showSign = false) {
+    if (years.length === 0) return '';
+
+    const rows = years.map(year => {
+        const value = yearlyBreakdown[year]?.[field] || 0;
+        const displayValue = showSign && value >= 0 ? `+${formatCurrency(value, 0)}` : formatCurrency(value, 0);
+        const color = showSign ? (value >= 0 ? 'var(--success-color)' : 'var(--danger-color)') : 'inherit';
+        return `<tr>
+            <td style="padding: 4px 8px; border-bottom: 1px solid var(--border-color);">${year}</td>
+            <td style="padding: 4px 8px; border-bottom: 1px solid var(--border-color); text-align: right; color: ${color};">${displayValue}</td>
+        </tr>`;
+    }).join('');
+
+    return `
+        <div>
+            <h4 style="margin: 0 0 8px 0; font-size: 14px;">${title} (First ${years.length} Years)</h4>
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                    <tr style="background: var(--bg-tertiary);">
+                        <th style="padding: 6px 8px; text-align: left; border-bottom: 2px solid var(--border-color);">Year</th>
+                        <th style="padding: 6px 8px; text-align: right; border-bottom: 2px solid var(--border-color);">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>
+    `;
+}
+
+/**
+ * Show a modal dialog
+ */
+function showModal(title, content) {
+    // Remove existing modal if any
+    const existing = document.querySelector('.cashflow-detail-modal-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'cashflow-detail-modal-overlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        backdrop-filter: blur(2px);
+    `;
+
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        background: var(--bg-primary);
+        border-radius: 12px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    `;
+
+    modal.innerHTML = `
+        <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; font-size: 16px;">${title}</h3>
+            <button class="modal-close-btn" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-secondary); padding: 4px 8px; border-radius: 4px;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='none'">&times;</button>
+        </div>
+        <div style="padding: 20px; overflow-y: auto; flex: 1;">
+            ${content}
+        </div>
+    `;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // Close handlers
+    const closeBtn = modal.querySelector('.modal-close-btn');
+    closeBtn.addEventListener('click', () => overlay.remove());
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.remove();
+    });
+    document.addEventListener('keydown', function escHandler(e) {
+        if (e.key === 'Escape') {
+            overlay.remove();
+            document.removeEventListener('keydown', escHandler);
+        }
+    });
 }
 
 /**
@@ -958,7 +1290,8 @@ function updateSummaryCardVisuals(container) {
  * Setup metric isolation - toggle chart datasets when clicking summary cards
  */
 function setupMetricIsolation(container) {
-    const metricCards = container.querySelectorAll('.metric-card');
+    // Note: Click handlers for details are set up in setupCardDetailHandlers()
+    // This function now only restores visual state on initial setup
     const chart = window.cashFlowChart;
 
     if (!chart) {
@@ -966,51 +1299,8 @@ function setupMetricIsolation(container) {
         return;
     }
 
-    // Map metric names to dataset indices
-    const metricToDatasetMap = {
-        'work-income': [0],              // Work Income
-        'retirement-benefits': [1],       // Retirement Benefits (SS/Pension)
-        'investment-withdrawals': [2],    // Investment Withdrawals
-        'expenses': [3],                  // Expenses
-        'net-cash-flow': [4]              // Net Cash Flow
-    };
-
     // Restore visual state of cards on initial setup
     restoreCardVisualState(container);
-
-    metricCards.forEach(card => {
-        card.addEventListener('click', () => {
-            const metric = card.getAttribute('data-metric');
-            const datasetIndices = metricToDatasetMap[metric] || [];
-
-            // Toggle visibility of this metric's datasets
-            datasetIndices.forEach(index => {
-                const dataset = chart.data.datasets[index];
-                if (dataset) {
-                    dataset.hidden = !dataset.hidden;
-                }
-            });
-
-            // Update saved state
-            const isHidden = datasetIndices.every(index => chart.data.datasets[index]?.hidden);
-            metricVisibilityState[metric] = isHidden;
-
-            // Update card styling based on visibility
-            if (isHidden) {
-                // Dataset is hidden - show dim styling
-                card.style.borderColor = 'transparent';
-                card.style.opacity = '0.4';
-                card.style.boxShadow = 'none';
-            } else {
-                // Dataset is visible - show highlighted styling
-                card.style.borderColor = 'rgba(255, 255, 255, 0.9)';
-                card.style.opacity = '1';
-                card.style.boxShadow = '0 4px 20px rgba(0,0,0,0.25)';
-            }
-
-            chart.update();
-        });
-    });
 }
 
 /**
