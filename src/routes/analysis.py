@@ -1091,18 +1091,24 @@ def get_calculation_report():
 
         if profile.birth_date:
             try:
-                birth_dt = datetime.fromisoformat(profile.birth_date)
-                current_age = (datetime.now() - birth_dt).days // 365
-            except:
-                pass
+                birth_dt = datetime.fromisoformat(str(profile.birth_date))
+                current_age = int((datetime.now() - birth_dt).days // 365)
+            except Exception as e:
+                logger.error(f"Error calculating current_age from {profile.birth_date}: {e}")
+                current_age = 40
 
         if profile.retirement_date and profile.birth_date:
             try:
-                birth_dt = datetime.fromisoformat(profile.birth_date)
-                retirement_dt = datetime.fromisoformat(profile.retirement_date)
-                retirement_age = (retirement_dt - birth_dt).days // 365
-            except:
-                pass
+                birth_dt = datetime.fromisoformat(str(profile.birth_date))
+                retirement_dt = datetime.fromisoformat(str(profile.retirement_date))
+                retirement_age = int((retirement_dt - birth_dt).days // 365)
+            except Exception as e:
+                logger.error(f"Error calculating retirement_age: {e}")
+                retirement_age = 65
+
+        # Ensure these are integers, not lists
+        current_age = int(current_age) if not isinstance(current_age, list) else 40
+        retirement_age = int(retirement_age) if not isinstance(retirement_age, list) else 65
 
         profile_summary = {
             "title": "Profile Summary",
@@ -1118,17 +1124,21 @@ def get_calculation_report():
         spouse_age = 40  # default
         if spouse_data.get("name") and spouse_data.get("birth_date"):
             try:
-                spouse_birth_dt = datetime.fromisoformat(spouse_data["birth_date"])
-                spouse_age = (datetime.now() - spouse_birth_dt).days // 365
+                spouse_birth_dt = datetime.fromisoformat(str(spouse_data["birth_date"]))
+                spouse_age = int((datetime.now() - spouse_birth_dt).days // 365)
                 profile_summary["items"].extend([
                     {"label": "Spouse", "value": spouse_data.get("name")},
                     {"label": "Spouse Age", "value": f"{spouse_age} years"},
                 ])
-            except:
+            except Exception as e:
+                logger.error(f"Error calculating spouse_age: {e}")
                 profile_summary["items"].extend([
                     {"label": "Spouse", "value": spouse_data.get("name")},
                     {"label": "Spouse Age", "value": "Unknown"},
                 ])
+
+        # Ensure spouse_age is an integer
+        spouse_age = int(spouse_age) if not isinstance(spouse_age, list) else 40
 
         report["sections"].append(profile_summary)
 
@@ -1162,6 +1172,13 @@ def get_calculation_report():
         p1_ss_annual = 0
         p2_ss_annual = 0
         p1_claiming_age = financial_data.get("ss_claiming_age", 67)
+
+        # Ensure claiming age is an integer
+        try:
+            p1_claiming_age = int(p1_claiming_age) if p1_claiming_age else 67
+        except (ValueError, TypeError):
+            p1_claiming_age = 67
+
         if current_age >= p1_claiming_age:
             p1_ss_annual = (financial_data.get("social_security_benefit", 0) or 0) * 12
             if p1_ss_annual > 0:
@@ -1172,8 +1189,15 @@ def get_calculation_report():
                 })
 
         if spouse_data.get("name"):
-            spouse_age = spouse_data.get("current_age", 40)
+            # Use the spouse_age we already calculated above, don't re-read from data
             p2_claiming_age = spouse_data.get("ss_claiming_age", 67)
+
+            # Ensure claiming age is an integer
+            try:
+                p2_claiming_age = int(p2_claiming_age) if p2_claiming_age else 67
+            except (ValueError, TypeError):
+                p2_claiming_age = 67
+
             if spouse_age >= p2_claiming_age:
                 p2_ss_annual = (spouse_data.get("social_security_benefit", 0) or 0) * 12
                 if p2_ss_annual > 0:

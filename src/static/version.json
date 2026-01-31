@@ -1,5 +1,5 @@
 {
-    "version": "3.9.162",
+    "version": "3.9.163",
     "release_date": "2026-01-31",
-    "release_notes": "Remove date filtering from calculation report to fix comparison error"
+    "release_notes": "Fix calculation report: ensure all ages and claiming ages are integers, not lists"
 }
