@@ -1,5 +1,5 @@
 {
-    "version": "3.9.154",
+    "version": "3.9.155",
     "release_date": "2026-01-31",
-    "release_notes": "fix deployment header box"
+    "release_notes": "robust alignment for deployment boxes"
 }

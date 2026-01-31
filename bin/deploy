@@ -31,7 +31,7 @@ if [ -f "$SOURCE_DIR/src/static/version.json" ]; then
 fi
 
 echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║              RPS Deployment to Production                      ║${NC}"
+echo -e "${GREEN}║$(printf '%-64s' "              RPS Deployment to Production")║${NC}"
 echo -e "${GREEN}║$(printf '%-64s' "              Version: $VERSION")║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
@@ -286,7 +286,7 @@ chown www-data:www-data "$PREV_COMMIT_FILE"
 
 echo ""
 echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║                    DEPLOYMENT COMPLETE                         ║${NC}"
+echo -e "${GREEN}║$(printf '%-64s' "                    DEPLOYMENT COMPLETE")║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
