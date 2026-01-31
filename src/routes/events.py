@@ -28,7 +28,7 @@ def log_click():
         y: Click Y coordinate
     """
     try:
-        data = request.json or {}
+        data = request.get_json(silent=True) or {}
 
         # Extract and sanitize click data
         element_type = str(data.get("element_type", "unknown"))[:50]
@@ -84,7 +84,7 @@ def log_batch():
         performance: Performance metrics (optional)
     """
     try:
-        data = request.json or {}
+        data = request.get_json(silent=True) or {}
         events = data.get("events", [])
 
         # Extract enhanced client data
@@ -199,7 +199,7 @@ def log_page_view():
         timestamp: Client-side timestamp
     """
     try:
-        data = request.json or {}
+        data = request.get_json(silent=True) or {}
 
         page = str(data.get("page", ""))[:100]
         profile_name = str(data.get("profile_name", ""))[:100]
@@ -251,7 +251,7 @@ def log_session_event():
         performance: Page performance metrics (optional)
     """
     try:
-        data = request.json or {}
+        data = request.get_json(silent=True) or {}
 
         event = str(data.get("event", ""))[:50]
         duration = data.get("duration")
@@ -393,7 +393,7 @@ def log_client_error():
         timestamp: Client-side timestamp
     """
     try:
-        data = request.json or {}
+        data = request.get_json(silent=True) or {}
 
         message = str(data.get("message", ""))[:500]
         source = str(data.get("source", ""))[:200]

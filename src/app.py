@@ -337,6 +337,8 @@ def create_app(config_name="development"):
 
     @app.errorhandler(400)
     def bad_request(e):
+        # Log the error
+        app.logger.warning(f"Bad Request: {e}")
         # Sanitize error messages to avoid exposing framework details
         error_msg = str(e)
         # Remove Pydantic URLs and technical details

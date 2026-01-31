@@ -776,9 +776,10 @@ def get_cashflow_details():
 @login_required
 def analyze_social_security():
     """Analyze optimal Social Security claiming age."""
+    json_data = request.get_json(silent=True) or {}
     profile_name = None
     try:
-        profile_name = request.json.get("profile_name")
+        profile_name = json_data.get("profile_name")
         if not profile_name:
             enhanced_audit_logger.log(
                 action="ANALYZE_SS_VALIDATION_ERROR",
@@ -872,10 +873,11 @@ def analyze_social_security():
 @login_required
 def analyze_roth_conversion():
     """Analyze Roth conversion strategies."""
+    json_data = request.get_json(silent=True) or {}
     profile_name = None
     try:
-        profile_name = request.json.get("profile_name")
-        conversion_amount = request.json.get("conversion_amount", 50000)
+        profile_name = json_data.get("profile_name")
+        conversion_amount = json_data.get("conversion_amount", 50000)
 
         if not profile_name:
             enhanced_audit_logger.log(
@@ -973,10 +975,11 @@ def analyze_roth_conversion():
 @login_required
 def analyze_rebalancing():
     """Analyze current allocation and suggest rebalancing."""
+    json_data = request.get_json(silent=True) or {}
     profile_name = None
     try:
-        profile_name = request.json.get("profile_name")
-        target_allocation = request.json.get(
+        profile_name = json_data.get("profile_name")
+        target_allocation = json_data.get(
             "target_allocation", {"stocks": 0.6, "bonds": 0.4, "cash": 0.0}
         )
 

@@ -1,5 +1,5 @@
 {
-    "version": "3.9.154",
+    "version": "3.9.155",
     "release_date": "2026-01-31",
-    "release_notes": "fix: retirement analysis validation and error reporting; improve server logging"
+    "release_notes": "fix: global json parsing and improved error logging in routes and app handler"
 }
