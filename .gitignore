@@ -53,3 +53,4 @@ scripts/test_email_config.py
 bandit_assessment.json
 safety_assessment.json
 scripts/debug_user_model.py
+.audit_venv/
