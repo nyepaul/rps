@@ -1,21 +1,12 @@
+import { apiClient } from './api/client.js';
+import { API_ENDPOINTS } from './config.js';
+
 document.addEventListener('DOMContentLoaded', () => {
     // Explicitly set site identifier for password managers
     window.location.hostname; // Force evaluation of full hostname
 
     const API_URL = '/api';
-    const loginForm = document.getElementById('loginForm');
-    const registerForm = document.getElementById('registerForm');
-    const resetRequestForm = document.getElementById('resetRequestForm');
-    const resetPasswordForm = document.getElementById('resetPasswordForm');
-    const resendVerificationForm = document.getElementById('resendVerificationForm');
-    const toggleLink = document.getElementById('toggleLink');
-    const toggleText = document.getElementById('toggleText');
-    const resendToggle = document.getElementById('resendToggle');
-    const resendLinkContainer = document.getElementById('resendLinkContainer');
-    const backToLoginLink = document.getElementById('backToLoginLink');
-    const messageDiv = document.getElementById('message');
-    let currentMode = 'login'; // 'login', 'register', 'resetRequest', 'resetPassword', 'resend'
-    let resetToken = null;
+    // ... rest of selectors
     
     // Toggle between login and register
     if (toggleLink) {
@@ -437,15 +428,20 @@ document.addEventListener('DOMContentLoaded', () => {
         showMode('resetPassword');
     }
 
-    // Check if already logged in
-    fetch(`${API_URL}/auth/session`)
-        .then(res => res.json())
-        .then(data => {
+    // Check if already logged in using standardized client
+    async function checkExistingSession() {
+        try {
+            const data = await apiClient.get(API_ENDPOINTS.AUTH_SESSION);
             if (data.authenticated) {
                 window.location.href = '/';
             }
-        })
-        .catch(() => {});
+        } catch (error) {
+            // Silently ignore auth check failures on login page
+            console.debug('No active session found');
+        }
+    }
+    
+    checkExistingSession();
 
     // Load version info
     fetch('/version.json')

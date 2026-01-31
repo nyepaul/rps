@@ -613,11 +613,17 @@ def logout():
     # Create response
     response = make_response(jsonify({"message": "Logout successful"}), 200)
 
-    # Explicitly clear the session cookie
-    # This is a fallback in case Flask-Login's logout_user didn't fully clear it
-    # and prevents the "sticky session" issue where the browser keeps sending the old cookie
-    cookie_name = current_app.config.get("SESSION_COOKIE_NAME", "session")
-    response.set_cookie(cookie_name, "", expires=0, path="/")
+    # Explicitly clear all possible session cookies
+    # This prevents the "sticky session" issue where the browser keeps sending old credentials
+    cookie_names = [
+        current_app.config.get("SESSION_COOKIE_NAME", "session"),
+        "remember_token",
+        "user_id",
+        "_user_id"
+    ]
+    
+    for cookie_name in cookie_names:
+        response.set_cookie(cookie_name, "", expires=0, path="/")
 
     return response
 

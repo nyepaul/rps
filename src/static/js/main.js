@@ -984,6 +984,17 @@ async function logout() {
         localStorage.clear();
         sessionStorage.clear();
 
+        // Explicitly clear cookies on client side as a fallback
+        const cookies = document.cookie.split(";");
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i];
+            const eqPos = cookie.indexOf("=");
+            const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+            // Clear for current path and root
+            document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+            document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=" + window.location.hostname;
+        }
+
         // Force hard redirect to login (no cache)
         window.location.replace('/login?t=' + Date.now());
     }
