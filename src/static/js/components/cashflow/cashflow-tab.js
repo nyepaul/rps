@@ -902,7 +902,7 @@ function renderSummaryCards(container, chartData, totalMonths, profile) {
             <div style="font-size: 9px; opacity: 0.8;">${formatCurrency(totalRetirementBenefits / totalMonths, 0)}/mo avg</div>
         </div>
         <div class="metric-card" data-metric="investment-withdrawals" data-detail="true" style="background: linear-gradient(135deg, #9b59b6, #8e44ad); padding: 10px; border-radius: 6px; color: white; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-            <div style="font-size: 10px; opacity: 0.9; margin-bottom: 2px;">Withdrawals</div>
+            <div style="font-size: 10px; opacity: 0.9; margin-bottom: 2px;">Portfolio Withdrawals</div>
             <div style="font-size: 16px; font-weight: 700; margin-bottom: 1px;">${formatCurrency(totalInvestmentIncome, 0)}</div>
             <div style="font-size: 9px; opacity: 0.8;">${formatCurrency(totalInvestmentIncome / totalMonths, 0)}/mo avg</div>
         </div>
