@@ -10,18 +10,6 @@ import { profilesAPI } from '../../api/profiles.js';
 import { showError, showSuccess } from '../../utils/dom.js';
 import { isPotentialDuplicate, updateDuplicateDetection } from './assets-tab.js';
 
-/**
- * Asset list component - Simple flat list of all assets
- */
-
-import { formatCurrency } from '../../utils/formatters.js';
-import { getAssetTypeLabel, generateFormFields, extractFormData, getAllAccountTypeOptions, getCategoryForType } from './asset-form-fields.js';
-import { makeRowEditable } from './inline-editor.js';
-import { store } from '../../state/store.js';
-import { profilesAPI } from '../../api/profiles.js';
-import { showError, showSuccess } from '../../utils/dom.js';
-import { isPotentialDuplicate, updateDuplicateDetection } from './assets-tab.js';
-
 // Track current sort state
 let currentSort = 'category';
 
