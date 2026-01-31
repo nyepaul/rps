@@ -32,7 +32,7 @@ fi
 
 echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${GREEN}║              RPS Deployment to Production                      ║${NC}"
-echo -e "${GREEN}║              Version: $VERSION                            ║${NC}"
+echo -e "${GREEN}║$(printf '%-64s' "              Version: $VERSION")║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
