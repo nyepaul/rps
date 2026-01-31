@@ -1,5 +1,5 @@
 {
-    "version": "3.9.152",
+    "version": "3.9.153",
     "release_date": "2026-01-31",
-    "release_notes": "Remove tip message from asset list UI"
+    "release_notes": "Consolidate taxes in cash flow chart - show as single color with breakdown in tooltip"
 }

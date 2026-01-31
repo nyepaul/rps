@@ -427,8 +427,9 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
                     period.federalTax = row.federal_tax + (row.ltcg_tax || 0);
                     period.stateTax = row.state_tax;
                     period.ficaTax = row.fica_tax;
+                    period.totalTax = period.federalTax + period.stateTax + period.ficaTax;
                     period.livingExpenses = row.expenses_excluding_tax;
-                    period.totalExpenses = period.federalTax + period.stateTax + period.ficaTax + period.livingExpenses;
+                    period.totalExpenses = period.totalTax + period.livingExpenses;
                     period.portfolioValue = row.portfolio_balance;
                 }
             } else {
@@ -440,8 +441,9 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
                     period.federalTax = row.federal_tax + (row.ltcg_tax || 0);
                     period.stateTax = row.state_tax;
                     period.ficaTax = row.fica_tax;
+                    period.totalTax = period.federalTax + period.stateTax + period.ficaTax;
                     period.livingExpenses = row.expenses_excluding_tax;
-                    period.totalExpenses = period.federalTax + period.stateTax + period.ficaTax + period.livingExpenses;
+                    period.totalExpenses = period.totalTax + period.livingExpenses;
                     period.portfolioValue = row.portfolio_balance;
                 }
             }
@@ -529,31 +531,19 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
             stack: 'expenses'
         },
         {
-            label: 'Federal Tax',
-            data: chartData.map(d => -(d.federalTax || 0)),
-            backgroundColor: 'rgba(231, 76, 60, 0.9)', // Darker Red
+            label: 'Taxes',
+            data: chartData.map(d => -(d.totalTax || 0)),
+            backgroundColor: 'rgba(231, 76, 60, 0.9)', // Red
             borderColor: 'rgba(192, 57, 43, 1)',
             borderWidth: 1,
             stack: 'expenses',
-            hidden: !detailedLedger // Hide if no data
-        },
-        {
-            label: 'State Tax',
-            data: chartData.map(d => -(d.stateTax || 0)),
-            backgroundColor: 'rgba(230, 126, 34, 0.9)', // Orange
-            borderColor: 'rgba(211, 84, 0, 1)',
-            borderWidth: 1,
-            stack: 'expenses',
-            hidden: !detailedLedger
-        },
-        {
-            label: 'FICA Tax',
-            data: chartData.map(d => -(d.ficaTax || 0)),
-            backgroundColor: 'rgba(241, 196, 15, 0.9)', // Yellow
-            borderColor: 'rgba(243, 156, 18, 1)',
-            borderWidth: 1,
-            stack: 'expenses',
-            hidden: !detailedLedger
+            hidden: !detailedLedger, // Hide if no data
+            // Store tax breakdown for tooltip
+            taxBreakdown: chartData.map(d => ({
+                federal: d.federalTax || 0,
+                state: d.stateTax || 0,
+                fica: d.ficaTax || 0
+            }))
         },
         // --------------------------------------
         {
@@ -660,8 +650,9 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
                             0: 'work-income',
                             1: 'retirement-benefits',
                             2: 'investment-withdrawals',
-                            3: 'expenses',
-                            4: 'net-cash-flow'
+                            3: 'expenses',  // Living Expenses
+                            4: 'expenses',  // Taxes (consolidated)
+                            5: 'net-cash-flow'
                         };
 
                         const metric = datasetToMetricMap[index];
@@ -700,6 +691,20 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
                             // Use dataset.label for the series name (e.g., "Work Income")
                             // context.label is the x-axis value (year)
                             let label = context.dataset.label || '';
+
+                            // Special handling for consolidated Taxes dataset
+                            if (label === 'Taxes' && context.dataset.taxBreakdown) {
+                                const breakdown = context.dataset.taxBreakdown[context.dataIndex];
+                                const total = Math.abs(context.parsed.y);
+
+                                return [
+                                    `${label}: ${formatCurrency(total, 0)}`,
+                                    `  Federal: ${formatCurrency(breakdown.federal, 0)}`,
+                                    `  State: ${formatCurrency(breakdown.state, 0)}`,
+                                    `  FICA: ${formatCurrency(breakdown.fica, 0)}`
+                                ];
+                            }
+
                             if (label) {
                                 label += ': ';
                             }
@@ -934,8 +939,8 @@ function restoreMetricVisibility() {
         'work-income': [0],
         'retirement-benefits': [1],
         'investment-withdrawals': [2],
-        'expenses': [3],
-        'net-cash-flow': [4]
+        'expenses': [3, 4],  // Living Expenses + Taxes (consolidated)
+        'net-cash-flow': [5]
     };
 
     // Apply saved visibility state to datasets
