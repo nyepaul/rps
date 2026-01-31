@@ -1,5 +1,5 @@
 {
-    "version": "3.9.162",
+    "version": "3.9.163",
     "release_date": "2026-01-31",
-    "release_notes": "Fix 401k contribution double-counting bug in retirement model"
+    "release_notes": "Add UI fields for 401k contributions and employer match"
 }
