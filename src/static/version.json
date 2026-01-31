@@ -1,5 +1,5 @@
 {
-    "version": "3.9.146",
+    "version": "3.9.147",
     "release_date": "2026-01-30",
-    "release_notes": "Standardize Data Options header in Assets and Budget tabs"
+    "release_notes": "Add 'How Calculations Work' explainer to Analysis tab"
 }

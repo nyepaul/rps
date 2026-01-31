@@ -69,11 +69,16 @@ export function renderAnalysisTab(container) {
                         Monte Carlo simulations for <strong>${profile.name}</strong>
                     </p>
                 </div>
-                <div id="scenario-loader-container" style="display: flex; gap: 8px; align-items: center;">
-                    <span style="font-size: 11px; color: var(--text-secondary); font-weight: 700;">LOAD SAVED:</span>
-                    <select id="saved-scenario-select" style="padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); font-size: 12px; min-width: 180px;">
-                        <option value="">-- Select Scenario --</option>
-                    </select>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button id="show-calculation-info" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                        <span>📐</span> How Calculations Work
+                    </button>
+                    <div id="scenario-loader-container" style="display: flex; gap: 8px; align-items: center;">
+                        <span style="font-size: 11px; color: var(--text-secondary); font-weight: 700;">LOAD SAVED:</span>
+                        <select id="saved-scenario-select" style="padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); font-size: 12px; min-width: 180px;">
+                            <option value="">-- Select Scenario --</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -1628,103 +1633,99 @@ async function setupMultiSaveScenarioHandler(container, profile) {
 }
 
 /**
- * Show modal explaining spending strategy with expenses
+ * Show calculation explanation modal
  */
-function showSpendingStrategyExplanationModal() {
+function showCalculationExplanationModal() {
     const modal = document.createElement('div');
     modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 10000; padding: 20px;';
 
     modal.innerHTML = `
-        <div style="background: var(--bg-primary); border-radius: 12px; max-width: 750px; max-height: 90vh; overflow-y: auto; padding: var(--space-6); position: relative;">
-            <button id="close-spending-modal" style="position: absolute; top: 15px; right: 15px; background: var(--bg-tertiary); border: none; color: var(--text-primary); font-size: 24px; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">×</button>
+        <div style="background: var(--bg-primary); border-radius: 12px; max-width: 750px; max-height: 90vh; overflow-y: auto; padding: 30px; position: relative;">
+            <button id="close-calc-modal" style="position: absolute; top: 15px; right: 15px; background: var(--bg-tertiary); border: none; color: var(--text-primary); font-size: 24px; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">×</button>
 
-            <h2 style="font-size: 28px; margin-bottom: 20px; color: var(--accent-color);">💰 How Spending Strategies Work</h2>
+            <h2 style="font-size: 28px; margin-bottom: 20px; color: var(--accent-color);">📐 How Calculations Work</h2>
 
             <div style="line-height: 1.8; color: var(--text-primary);">
-                <div style="background: linear-gradient(135deg, var(--accent-color), #5faee3); padding: 20px; border-radius: 12px; margin-bottom: 20px; color: white;">
-                    <h3 style="font-size: 20px; margin: 0 0 12px 0; font-weight: bold;">🎯 Key Concept</h3>
-                    <p style="margin: 0; font-size: 15px; line-height: 1.6;">
-                        <strong>Your actual expenses from the Expenses tab are ALWAYS the foundation.</strong><br><br>
-                        Spending strategies are applied as MULTIPLIERS on top of your real expenses to model how spending patterns naturally change as you age.
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--accent-color);">
+                    <h3 style="font-size: 20px; margin: 0 0 12px 0;">💰 Portfolio Balance Calculation</h3>
+                    <div style="font-family: monospace; background: var(--bg-primary); padding: 15px; border-radius: 6px; margin-bottom: 10px; font-size: 14px;">
+                        End Balance = (Start Balance + Net Cash Flow) × (1 + Investment Return)
+                    </div>
+                    <p style="margin: 0; color: var(--text-secondary);">
+                        Each year, your portfolio changes based on what you add/withdraw and how much the market grows.
                     </p>
                 </div>
 
-                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">The Formula</h3>
-                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 20px; font-family: monospace; text-align: center;">
-                    <div style="font-size: 16px; color: var(--text-primary); font-weight: bold; margin-bottom: 10px;">
-                        Final Spending = (Your Expenses - Housing) × Strategy Multiplier + Housing
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--success-color);">
+                    <h3 style="font-size: 20px; margin: 0 0 12px 0;">💵 Net Cash Flow</h3>
+                    <div style="font-family: monospace; background: var(--bg-primary); padding: 15px; border-radius: 6px; margin-bottom: 10px; font-size: 14px;">
+                        Net Cash Flow = (Income + Pensions + Social Security) - (Expenses + Taxes)
                     </div>
-                    <div style="font-size: 13px; color: var(--text-secondary); margin-top: 10px;">
-                        Note: Housing costs remain constant regardless of strategy
-                    </div>
+                    <p style="margin: 0; color: var(--text-secondary);">
+                        • <strong>Positive Cash Flow:</strong> Money is ADDED to your portfolio.<br>
+                        • <strong>Negative Cash Flow:</strong> Money is WITHDRAWN from your portfolio to cover the deficit.
+                    </p>
                 </div>
 
-                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">The Three Strategies</h3>
+                <h3 style="font-size: 20px; margin-top: 25px; margin-bottom: 15px; color: var(--text-primary);">❓ Common Questions</h3>
+
+                <div style="margin-bottom: 20px;">
+                    <h4 style="font-size: 16px; margin-bottom: 8px; color: var(--text-primary); font-weight: 700;">Why are Portfolio and Expenses on the same graph?</h4>
+                    <p style="margin: 0; color: var(--text-secondary);">
+                        They are shown together to visualize <strong>sustainability</strong>. Comparing the scale of your Expenses (the drain) to your Portfolio (the reservoir) helps you see if your nest egg is large enough to support your lifestyle. If Expenses are rising faster than your Portfolio is growing, the lines will eventually cross (depletion).
+                    </p>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <h4 style="font-size: 16px; margin-bottom: 8px; color: var(--text-primary); font-weight: 700;">How can my portfolio grow if I'm withdrawing money?</h4>
+                    <p style="margin: 0; color: var(--text-secondary);">
+                        Your portfolio grows if <strong>Investment Returns > Withdrawal Amount</strong>.
+                        <br><br>
+                        <em>Example:</em> If you have $1M and withdraw $40k (4%), but the market grows by 7% ($70k), your portfolio still grows by $30k net ($70k gain - $40k withdrawal).
+                    </p>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <h4 style="font-size: 16px; margin-bottom: 8px; color: var(--text-primary); font-weight: 700;">What is Sequence of Returns Risk?</h4>
+                    <p style="margin: 0; color: var(--text-secondary);">
+                        If bad market returns happen early in retirement while you are withdrawing money, your portfolio value drops significantly, leaving less money to grow when the market recovers. This is why "Success Rate" matters more than "Average Return."
+                    </p>
+                </div>
+
+                <h3 style="font-size: 20px; margin-top: 25px; margin-bottom: 15px; color: var(--text-primary);">🧮 Detailed Steps per Year</h3>
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                    <h4 style="font-size: 16px; margin-bottom: 10px; color: var(--accent-color);">1. Determine Inflation</h4>
+                    <p style="margin: 0; color: var(--text-secondary);">An inflation rate is randomly selected based on your Market Profile (e.g., 2% - 4%).</p>
+                </div>
 
                 <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
-                    <h4 style="font-size: 16px; margin-bottom: 10px; color: var(--success-color);">✓ Constant Inflation-Adjusted</h4>
-                    <p style="margin: 0 0 10px 0; color: var(--text-secondary);">
-                        <strong>Multiplier:</strong> Always 1.0x (no change)<br>
-                        <strong>Best For:</strong> Conservative planning, maintaining lifestyle<br>
-                        <strong>Reality:</strong> Assumes you'll spend the same (inflation-adjusted) amount every year
-                    </p>
-                    <div style="background: var(--bg-primary); padding: 10px; border-radius: 6px; border-left: 3px solid var(--success-color);">
-                        <strong>Example:</strong> $80,000/year stays $80,000/year (adjusted for inflation)
-                    </div>
+                    <h4 style="font-size: 16px; margin-bottom: 10px; color: var(--accent-color);">2. Adjust Income & Expenses</h4>
+                    <p style="margin: 0; color: var(--text-secondary);">Social Security, Pensions (if COLA), and Expenses are increased by this year's inflation rate.</p>
                 </div>
 
                 <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
-                    <h4 style="font-size: 16px; margin-bottom: 10px; color: var(--warning-color);">📈 Retirement Smile</h4>
-                    <p style="margin: 0 0 10px 0; color: var(--text-secondary);">
-                        <strong>Multiplier:</strong> 1.0x → 0.8x → 1.2x (varies by age)<br>
-                        <strong>Best For:</strong> Realistic planning based on typical behavior<br>
-                        <strong>Reality:</strong> High spending early (travel, activities), lower in middle years, higher again for healthcare
-                    </p>
-                    <div style="background: var(--bg-primary); padding: 10px; border-radius: 6px; border-left: 3px solid var(--warning-color);">
-                        <strong>Example:</strong> $80,000/year → $72,000 at age 75 (0.9x) → $64,000 at age 80 (0.8x) → $76,000 at age 85 (0.95x) → rises for healthcare
-                    </div>
+                    <h4 style="font-size: 16px; margin-bottom: 10px; color: var(--accent-color);">3. Calculate Taxes</h4>
+                    <p style="margin: 0; color: var(--text-secondary);">Federal and State taxes are calculated based on your taxable income (withdrawals, pensions, SS).</p>
                 </div>
 
-                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                    <h4 style="font-size: 16px; margin-bottom: 10px; color: var(--info-color);">📉 Conservative Decline</h4>
-                    <p style="margin: 0 0 10px 0; color: var(--text-secondary);">
-                        <strong>Multiplier:</strong> 1.0x → gradually decreases 1%/year after age 70<br>
-                        <strong>Best For:</strong> Conservative planning, assuming reduced activity<br>
-                        <strong>Reality:</strong> Spending gradually decreases as you become less active
-                    </p>
-                    <div style="background: var(--bg-primary); padding: 10px; border-radius: 6px; border-left: 3px solid var(--info-color);">
-                        <strong>Example:</strong> $80,000/year → $72,000 at age 80 (0.9x) → $64,000 at age 90 (0.8x)
-                    </div>
-                </div>
-
-                <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">Step-by-Step Example</h3>
-                <div style="background: var(--accent-color); padding: 20px; border-radius: 8px; color: white;">
-                    <p style="margin: 0 0 15px 0; font-size: 15px;">
-                        <strong>Your Profile:</strong><br>
-                        • Annual Expenses (from Expenses tab): $80,000<br>
-                        • Housing Costs: $20,000<br>
-                        • Other Expenses: $60,000<br>
-                        • Selected Strategy: Retirement Smile<br>
-                        • Your Age: 75
-                    </p>
-                    <p style="margin: 0 0 10px 0; font-size: 15px;">
-                        <strong>Calculation at Age 75:</strong><br>
-                        1. Multiplier for age 75 in Retirement Smile: 0.9x<br>
-                        2. Non-Housing Expenses: $60,000 × 0.9 = $54,000<br>
-                        3. Add Housing Back: $54,000 + $20,000 = <strong>$74,000</strong>
-                    </p>
-                    <p style="margin: 0; font-size: 14px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px;">
-                        <strong>Result:</strong> The simulation uses $74,000 for your expenses at age 75, instead of the constant $80,000.
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                    <h4 style="font-size: 16px; margin-bottom: 10px; color: var(--accent-color);">4. Process Cash Flow</h4>
+                    <p style="margin: 0; color: var(--text-secondary);">
+                        If (Income > Expenses + Taxes): Surplus is added to Taxable Account.<br>
+                        If (Income < Expenses + Taxes): Deficit is withdrawn from accounts (Taxable first, then Tax-Advantaged).
                     </p>
                 </div>
 
-                <div style="background: var(--warning-color); padding: 15px; border-radius: 8px; margin-top: 20px; color: white;">
-                    <strong>💡 Important:</strong> Spending strategies help model realistic behavior patterns while still using YOUR specific expense data as the foundation. This gives you more accurate projections than assuming constant spending forever.
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                    <h4 style="font-size: 16px; margin-bottom: 10px; color: var(--accent-color);">5. Apply Investment Returns</h4>
+                    <p style="margin: 0; color: var(--text-secondary);">
+                        The remaining portfolio balance grows (or shrinks) based on market returns for that specific year (randomized based on volatility).
+                    </p>
                 </div>
             </div>
 
             <div style="text-align: center; margin-top: 30px;">
-                <button id="close-spending-modal-btn" style="padding: 12px 30px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <button id="close-calc-modal-btn" style="padding: 12px 30px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
                     Got It!
                 </button>
             </div>
@@ -1735,8 +1736,8 @@ function showSpendingStrategyExplanationModal() {
 
     // Close handlers
     const closeModal = () => modal.remove();
-    modal.querySelector('#close-spending-modal').addEventListener('click', closeModal);
-    modal.querySelector('#close-spending-modal-btn').addEventListener('click', closeModal);
+    modal.querySelector('#close-calc-modal').addEventListener('click', closeModal);
+    modal.querySelector('#close-calc-modal-btn').addEventListener('click', closeModal);
     modal.addEventListener('click', (e) => {
         if (e.target === modal) closeModal();
     });
