@@ -1,5 +1,5 @@
 {
-    "version": "3.9.158",
+    "version": "3.9.159",
     "release_date": "2026-01-31",
-    "release_notes": "Add user and profile display to header"
+    "release_notes": "Fix API key test and save by adding credentials to fetch calls"
 }

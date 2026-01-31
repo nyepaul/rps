@@ -321,6 +321,7 @@ async function testNewKey(provider, container) {
         const response = await fetch('/api/auth/test-api-key', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({ provider, api_key: value })
         });
 
@@ -361,6 +362,7 @@ async function testStoredKey(provider, container) {
         const response = await fetch('/api/auth/test-stored-key', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({ provider })
         });
 
@@ -397,6 +399,7 @@ async function deleteKey(provider, container) {
         const response = await fetch('/api/auth/delete-api-key', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({ provider })
         });
 
@@ -424,7 +427,9 @@ async function deleteKey(provider, container) {
 
 async function loadExistingKeys(container) {
     try {
-        const response = await fetch('/api/auth/api-keys');
+        const response = await fetch('/api/auth/api-keys', {
+            credentials: 'include'
+        });
         if (!response.ok) return;
 
         const data = await response.json();
@@ -514,6 +519,7 @@ export async function saveAllSettings(container) {
         const response = await fetch('/api/auth/api-keys', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify(payload)
         });
 
@@ -541,7 +547,7 @@ function updateStatusSummary(container) {
     const summaryEl = container.querySelector('#status-summary');
     if (!summaryEl) return;
 
-    fetch('/api/auth/api-keys')
+    fetch('/api/auth/api-keys', { credentials: 'include' })
         .then(r => r.json())
         .then(data => {
             const configured = [];
