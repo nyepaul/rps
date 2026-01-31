@@ -47,7 +47,7 @@ Features:
 ### 4. Security & Data
 - **Local-First**: All data stored in SQLite (`data/planning.db`).
 - **Encryption**: Profile data encrypted at rest using AES-256-GCM (`src/services/encryption_service.py`).
-- **Audit Logging**: Enhanced logging with **IP Geolocation** tracking (`docs/GEOLOCATION_LOGGING.md`) using `maxminddb-geolite2` and `geoip2`.
+- **Audit Logging**: Enhanced logging with **IP Geolocation** tracking (`docs/GEOLOCATION_LOGGING.md`) using `geoip2` and `ip-api.com`.
 - **Data Portability**: Full CSV Import/Export capabilities for assets.
 - **Fingerprinting**: Browser/Device fingerprinting for security (`src/routes/fingerprint.py`).
 

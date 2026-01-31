@@ -2,6 +2,7 @@ import pytest
 import base64
 import json
 from unittest.mock import patch, MagicMock
+from PIL import Image
 from src.app import create_app
 from src.auth.models import User
 from src.models.profile import Profile
@@ -64,25 +65,33 @@ def test_ollama_automatic_vision_switching(client, mock_user_profile):
         "choices": [{"message": {"content": '[]'}}]
     }
 
-    with patch("requests.post", return_value=mock_response) as mock_post:
-        # We don't provide llm_provider, so it should use preferred_ai_provider (ollama)
-        response = client.post(
-            "/api/extract-items/expenses",
-            json={
-                "image": base64.b64encode(b"fake-data").decode("utf-8"),
-                "mime_type": "image/png",
-                "profile_name": "testprofile",
-            },
-        )
+    # Mock Image.open to bypass validation
+    with patch("PIL.Image.open") as mock_image_open:
+        mock_image = MagicMock()
+        mock_image.format = "PNG"
+        mock_image_open.return_value = mock_image
         
-        # Consume response to trigger generator
-        _ = response.get_data()
-
-        assert response.status_code == 200
-        # Check that llama3.2-vision was used even though qwen:latest is the profile default
-        args, kwargs = mock_post.call_args
-        # The current implementation defaults to llama3.2 for images (with placeholder text)
-        assert kwargs["json"]["model"] == "llama3.2"
+        with patch("requests.post", return_value=mock_response) as mock_post:
+            # We don't provide llm_provider, so it should use preferred_ai_provider (ollama)
+            # Use valid 1x1 PNG base64
+            valid_png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGP6AgAA+gD3od9x5gAAAABJRU5ErkJggg=="
+            response = client.post(
+                "/api/extract-items/expenses",
+                json={
+                    "image": valid_png,
+                    "mime_type": "image/png",
+                    "profile_name": "testprofile",
+                },
+            )
+            
+            # Consume response to trigger generator
+            _ = response.get_data()
+    
+            assert response.status_code == 200
+            # Check that llama3.2-vision was used even though qwen:latest is the profile default
+            args, kwargs = mock_post.call_args
+            # The current implementation defaults to llama3.2 for images (with placeholder text)
+            assert kwargs["json"]["model"] == "llama3.2"
 
 
 def test_ollama_respects_configured_vision_model(client, mock_user_profile):
@@ -95,24 +104,32 @@ def test_ollama_respects_configured_vision_model(client, mock_user_profile):
         "choices": [{"message": {"content": '[]'}}]
     }
 
-    with patch("requests.post", return_value=mock_response) as mock_post:
-        response = client.post(
-            "/api/extract-items/expenses",
-            json={
-                "image": base64.b64encode(b"fake-data").decode("utf-8"),
-                "mime_type": "image/png",
-                "profile_name": "testprofile",
-                # Pass the model explicitly to force it
-                "llm_model": "custom-vision-v1"
-            },
-        )
-        
-        # Consume response
-        _ = response.get_data()
+    # Mock Image.open to bypass validation
+    with patch("PIL.Image.open") as mock_image_open:
+        mock_image = MagicMock()
+        mock_image.format = "PNG"
+        mock_image_open.return_value = mock_image
 
-        assert response.status_code == 200
-        args, kwargs = mock_post.call_args
-        assert kwargs["json"]["model"] == "custom-vision-v1"
+        with patch("requests.post", return_value=mock_response) as mock_post:
+            # Use valid 1x1 PNG base64
+            valid_png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGP6AgAA+gD3od9x5gAAAABJRU5ErkJggg=="
+            response = client.post(
+                "/api/extract-items/expenses",
+                json={
+                    "image": valid_png,
+                    "mime_type": "image/png",
+                    "profile_name": "testprofile",
+                    # Pass the model explicitly to force it
+                    "llm_model": "custom-vision-v1"
+                },
+            )
+            
+            # Consume response
+            _ = response.get_data()
+    
+            assert response.status_code == 200
+            args, kwargs = mock_post.call_args
+            assert kwargs["json"]["model"] == "custom-vision-v1"
 
 
 def test_advisor_chat_ollama_model_override(client, mock_user_profile):
@@ -152,10 +169,12 @@ def test_ollama_no_api_key_required(client, mock_user_profile):
 
     with patch("requests.post", return_value=mock_response):
         # Should NOT return 400 API key missing
+        # Use valid PDF header
+        valid_pdf = "JVBERi0xLjU=" # %PDF-1.5
         response = client.post(
             "/api/extract-items/income",
             json={
-                "image": base64.b64encode(b"fake-data").decode("utf-8"),
+                "image": valid_pdf,
                 "mime_type": "application/pdf",
                 "profile_name": "testprofile",
             },
@@ -169,10 +188,12 @@ def test_cloud_provider_still_requires_key(client, mock_user_profile):
     # Preferred is ollama, but we explicitly request gemini without a key in profile
     mock_user_profile.data_dict["api_keys"] = {}
 
+    # Use valid PDF header
+    valid_pdf = "JVBERi0xLjU=" # %PDF-1.5
     response = client.post(
         "/api/extract-items/assets",
         json={
-            "image": base64.b64encode(b"fake-data").decode("utf-8"),
+            "image": valid_pdf,
             "mime_type": "application/pdf",
             "profile_name": "testprofile",
             "llm_provider": "gemini",

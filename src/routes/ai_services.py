@@ -1148,7 +1148,12 @@ def extract_items(item_type):
 
     config = EXTRACT_CONFIGS[item_type]
     data = request.json
+    
+    # 1. Validate Payload Size (Max 10MB)
     image_b64 = data.get("image")
+    if image_b64 and len(image_b64) > 10 * 1024 * 1024 * 1.37: # ~10MB encoded
+        return jsonify({"error": "File too large (max 10MB)"}), 400
+
     mime_type = data.get("mime_type")
     file_name = data.get("file_name", "")
     requested_provider = data.get("llm_provider")
@@ -1166,6 +1171,26 @@ def extract_items(item_type):
 
     if not image_b64 or not profile_name:
         return jsonify({"error": "image and profile_name are required"}), 400
+
+    # 2. Validate File Content (Magic Bytes)
+    try:
+        file_bytes = base64.b64decode(image_b64)
+        
+        if mime_type == "application/pdf":
+            if not file_bytes.startswith(b"%PDF"):
+                return jsonify({"error": "Invalid PDF file"}), 400
+        elif mime_type in ["image/jpeg", "image/png", "image/webp"]:
+            try:
+                img = Image.open(BytesIO(file_bytes))
+                img.verify() # Verify integrity
+                if mime_type == "image/jpeg" and img.format != "JPEG":
+                     return jsonify({"error": "Invalid JPEG file"}), 400
+                if mime_type == "image/png" and img.format != "PNG":
+                     return jsonify({"error": "Invalid PNG file"}), 400
+            except Exception:
+                return jsonify({"error": "Invalid image file"}), 400
+    except Exception as e:
+        return jsonify({"error": f"Invalid file content: {str(e)}"}), 400
 
     try:
         profile = Profile.get_by_name(profile_name, current_user.id)

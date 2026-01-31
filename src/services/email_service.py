@@ -64,7 +64,6 @@ class EmailService:
             print(f"Failed to log email to file: {log_ex}")
 
         # Logging for development and troubleshooting
-        print(f"DEBUG: Verification link for {email}: {verification_link}")
         try:
             from src.services.enhanced_audit_logger import enhanced_audit_logger
             enhanced_audit_logger.log(

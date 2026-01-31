@@ -230,7 +230,7 @@ Potential future improvements:
 
 1. **Persistent Cache** - Store cache in Redis/database
 2. **Batch Lookups** - Lookup multiple IPs in single request
-3. **Alternative Provider** - Fallback to MaxMind GeoLite2
+3. **Alternative Provider** - Consider modern MaxMind GeoIP2 integration (requires subscription)
 4. **Privacy Mode** - Optional geolocation disable per user
 5. **Anonymization** - Hash IPs for privacy-conscious deployments
 

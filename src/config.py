@@ -50,7 +50,7 @@ class Config:
     # CSRF - Exempt API endpoints (REST API uses session auth + CORS)
     WTF_CSRF_ENABLED = True
     WTF_CSRF_TIME_LIMIT = None  # No time limit
-    WTF_CSRF_CHECK_DEFAULT = False  # Disable by default, enable for HTML forms
+    WTF_CSRF_CHECK_DEFAULT = True  # Enable globally for security
 
     # CORS
     CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "*").split(",")

@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from flask import Blueprint, request, jsonify, session, make_response
 from flask_login import login_user, logout_user, current_user, login_required
 from src.auth.models import User, PasswordResetRequest
-from src.extensions import limiter
+from src.extensions import limiter, csrf
 from src.services.encryption_service import EncryptionService
 from src.services.enhanced_audit_logger import EnhancedAuditLogger
 from src.utils.error_sanitizer import sanitize_pydantic_error
@@ -127,6 +127,7 @@ class LoginSchema(BaseModel):
 
 @auth_bp.route("/register", methods=["POST"])
 @limiter.limit("20 per hour")
+@csrf.exempt
 def register():
     """Register a new user and initialize their encryption key."""
     data = {}
@@ -357,6 +358,7 @@ def verify_email():
 
 @auth_bp.route("/login", methods=["POST"])
 @limiter.limit("10 per minute")
+@csrf.exempt
 def login():
     """Log in a user and decrypt their encryption key."""
     data = {}
@@ -705,6 +707,7 @@ class PasswordResetSchema(BaseModel):
 
 @auth_bp.route("/password-reset/request", methods=["POST"])
 @limiter.limit("3 per hour")
+@csrf.exempt
 def request_password_reset():
     """Request a password reset token.
 
@@ -792,6 +795,7 @@ def request_password_reset():
 
 @auth_bp.route("/password-reset/reset", methods=["POST"])
 @limiter.limit("5 per hour")
+@csrf.exempt
 def reset_password():
     """Reset password using a valid reset token.
 
@@ -896,6 +900,7 @@ def reset_password():
 
 @auth_bp.route("/password-reset/validate-token", methods=["POST"])
 @limiter.limit("10 per minute")
+@csrf.exempt
 def validate_reset_token():
     """Validate a password reset token without resetting the password."""
     try:

@@ -1,5 +1,5 @@
 {
-    "version": "3.9.150",
+    "version": "3.9.84",
     "release_date": "2026-01-30",
-    "release_notes": "Fix duplicate function declaration in analysis-tab.js"
+    "release_notes": "Security hardening: CSRF protection, DoS prevention, and dependency updates"
 }

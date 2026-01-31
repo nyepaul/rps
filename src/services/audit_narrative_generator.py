@@ -6,6 +6,7 @@ Describes user actions in plain English for easy comprehension.
 """
 
 import json
+import html
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from src.database import connection
@@ -166,11 +167,11 @@ class AuditNarrativeGenerator:
         # Login/Authentication actions
         if action == "LOGIN_ATTEMPT":
             success = details.get("success", False)
-            username = details.get("username", "unknown user")
+            username = html.escape(str(details.get("username", "unknown user")))
             if success:
                 return f"Successfully logged in as {username}"
             else:
-                error = details.get("error_message", "unknown error")
+                error = html.escape(str(details.get("error_message", "unknown error")))
                 return f"Failed login attempt for {username} - {error}"
 
         elif action == "LOGIN_SUCCESS":
@@ -181,11 +182,11 @@ class AuditNarrativeGenerator:
 
         # Profile actions
         elif action == "CREATE" and table == "profile":
-            profile_name = details.get("name", "a new profile")
+            profile_name = html.escape(str(details.get("name", "a new profile")))
             return f"Created profile '{profile_name}'"
 
         elif action == "UPDATE" and table == "profile":
-            profile_name = details.get("name") or details.get("profile_name", "profile")
+            profile_name = html.escape(str(details.get("name") or details.get("profile_name", "profile")))
             changes = details.get("changes", {})
             if changes:
                 field_names = ", ".join(changes.keys())
@@ -193,45 +194,43 @@ class AuditNarrativeGenerator:
             return f"Updated profile '{profile_name}'"
 
         elif action == "DELETE" and table == "profile":
-            profile_name = details.get("name", "a profile")
+            profile_name = html.escape(str(details.get("name", "a profile")))
             return f"Deleted profile '{profile_name}'"
 
         elif action == "READ" and table == "profile":
-            profile_name = details.get("name", "a profile")
+            profile_name = html.escape(str(details.get("name", "a profile")))
             return f"Viewed profile '{profile_name}'"
 
         # Scenario actions
         elif action == "CREATE" and table == "scenario":
-            scenario_name = details.get("name", "a new scenario")
+            scenario_name = html.escape(str(details.get("name", "a new scenario")))
             return f"Created scenario '{scenario_name}'"
 
         elif action == "UPDATE" and table == "scenario":
-            scenario_name = details.get("name") or details.get(
-                "scenario_name", "scenario"
-            )
+            scenario_name = html.escape(str(details.get("name") or details.get("scenario_name", "scenario")))
             return f"Updated scenario '{scenario_name}'"
 
         elif action == "DELETE" and table == "scenario":
-            scenario_name = details.get("name", "a scenario")
+            scenario_name = html.escape(str(details.get("name", "a scenario")))
             return f"Deleted scenario '{scenario_name}'"
 
         elif action == "RUN_ANALYSIS":
-            scenario_name = details.get("scenario_name", "a scenario")
-            profile_name = details.get("profile_name", "")
+            scenario_name = html.escape(str(details.get("scenario_name", "a scenario")))
+            profile_name = html.escape(str(details.get("profile_name", "")))
             if profile_name:
                 return f"Ran Monte Carlo analysis for {profile_name} - {scenario_name}"
             return f"Ran Monte Carlo analysis for {scenario_name}"
 
         # Asset/Income/Expense actions
         elif action == "CREATE" and table == "asset":
-            asset_name = details.get("name", "an asset")
-            asset_type = details.get("type", "")
+            asset_name = html.escape(str(details.get("name", "an asset")))
+            asset_type = html.escape(str(details.get("type", "")))
             if asset_type:
                 return f"Added {asset_type} asset '{asset_name}'"
             return f"Added asset '{asset_name}'"
 
         elif action == "UPDATE" and table == "asset":
-            asset_name = details.get("name", "an asset")
+            asset_name = html.escape(str(details.get("name", "an asset")))
             changes = details.get("changes", {})
             if "balance" in changes:
                 old_val = changes["balance"].get("old")
@@ -240,39 +239,37 @@ class AuditNarrativeGenerator:
             return f"Updated asset '{asset_name}'"
 
         elif action == "CREATE" and table == "income":
-            income_name = details.get("name", "income source")
+            income_name = html.escape(str(details.get("name", "income source")))
             return f"Added income source '{income_name}'"
 
         elif action == "UPDATE" and table == "income":
-            income_name = details.get("name", "income source")
+            income_name = html.escape(str(details.get("name", "income source")))
             return f"Updated income source '{income_name}'"
 
         elif action == "CREATE" and table == "expense":
-            expense_name = details.get("name", "expense")
+            expense_name = html.escape(str(details.get("name", "expense")))
             return f"Added expense '{expense_name}'"
 
         elif action == "UPDATE" and table == "expense":
-            expense_name = details.get("name", "expense")
+            expense_name = html.escape(str(details.get("name", "expense")))
             return f"Updated expense '{expense_name}'"
 
         # UI Navigation actions
         elif action == "UI_PAGE_VIEW":
-            page = details.get("page", "unknown page")
-            profile_name = details.get("profile_name")
+            page = html.escape(str(details.get("page", "unknown page")))
+            profile_name = html.escape(str(details.get("profile_name") or ""))
             if profile_name:
                 return f"Navigated to {page} page (viewing {profile_name})"
             return f"Navigated to {page} page"
 
         elif action == "UI_TAB_SWITCH":
-            tab = details.get("tab", "unknown tab")
+            tab = html.escape(str(details.get("tab", "unknown tab")))
             return f"Switched to {tab} tab"
 
         elif action == "UI_CLICK":
             # Try to extract meaningful info from click
-            element_text = details.get("element_text") or details.get(
-                "interactive_text", ""
-            )
-            interactive_type = details.get("interactive_type", details.get("tag", ""))
+            element_text = html.escape(str(details.get("element_text") or details.get("interactive_text", "")))
+            interactive_type = html.escape(str(details.get("interactive_type") or details.get("tag") or details.get("element_type", "")))
 
             if element_text:
                 if interactive_type == "button":
@@ -285,11 +282,11 @@ class AuditNarrativeGenerator:
             return "Clicked on page element"
 
         elif action == "UI_FORM_SUBMIT":
-            form_name = details.get("form_name") or details.get("form_id", "form")
+            form_name = html.escape(str(details.get("form_name") or details.get("form_id", "form")))
             return f"Submitted {form_name}"
 
         elif action == "UI_SEARCH":
-            search_term = details.get("search_term", "")
+            search_term = html.escape(str(details.get("search_term", "")))
             result_count = details.get("result_count")
             if search_term and result_count is not None:
                 return f"Searched for '{search_term}' ({result_count} results)"
@@ -298,15 +295,15 @@ class AuditNarrativeGenerator:
             return "Performed a search"
 
         elif action == "UI_MODAL_OPEN":
-            modal_id = details.get("modal_id", "modal")
+            modal_id = html.escape(str(details.get("modal_id", "modal")))
             return f"Opened {modal_id} modal"
 
         elif action == "UI_MODAL_CLOSE":
-            modal_id = details.get("modal_id", "modal")
+            modal_id = html.escape(str(details.get("modal_id", "modal")))
             return f"Closed {modal_id} modal"
 
         elif action == "UI_DOWNLOAD":
-            filename = details.get("filename", "file")
+            filename = html.escape(str(details.get("filename", "file")))
             return f"Downloaded {filename}"
 
         # Session events
@@ -337,8 +334,8 @@ class AuditNarrativeGenerator:
 
         # Network access
         elif action == "NETWORK_ACCESS":
-            endpoint = details.get("endpoint") or log.get("request_endpoint", "")
-            method = details.get("method") or log.get("request_method", "")
+            endpoint = html.escape(str(details.get("endpoint") or log.get("request_endpoint", "")))
+            method = html.escape(str(details.get("method") or log.get("request_method", "")))
             if endpoint:
                 # Try to make a more readable description
                 if endpoint.startswith("/api/"):
@@ -363,11 +360,11 @@ class AuditNarrativeGenerator:
 
         # Report generation
         elif action == "GENERATE_REPORT":
-            report_type = details.get("report_type", "report")
+            report_type = html.escape(str(details.get("report_type", "report")))
             return f"Generated {report_type} report"
 
         elif action == "DOWNLOAD_REPORT":
-            report_type = details.get("report_type", "report")
+            report_type = html.escape(str(details.get("report_type", "report")))
             return f"Downloaded {report_type} report"
 
         # Generic CRUD

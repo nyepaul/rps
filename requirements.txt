@@ -25,7 +25,6 @@ python-dateutil==2.9.0.post0
 
 # Audit Logging & Tracking
 user-agents==2.2.0
-maxminddb-geolite2==2018.703  # Enhanced geolocation with local DB
 pytz==2025.2  # Timezone handling
 python-whois==0.9.6  # WHOIS lookups for IP investigation
 geoip2==5.2.0  # MaxMind GeoIP2 for ASN/ISP lookup

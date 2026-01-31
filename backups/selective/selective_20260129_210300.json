@@ -1,0 +1,36 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "type": "selective",
+    "created_at": "2026-01-29T21:03:00.578041",
+    "created_by": null,
+    "label": null,
+    "profile_ids": [
+      1
+    ],
+    "group_ids": []
+  },
+  "users": {
+    "1": {
+      "id": 1,
+      "username": "testuser",
+      "email": "test@example.com"
+    }
+  },
+  "profiles": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "name": "Test Profile",
+      "birth_date": "1980-01-15",
+      "retirement_date": "2050-01-15",
+      "data": "1gHYnPzu2ovmAOgxCIvha7/BaH9UcYRiY2W51oISXf9wvCldSDc4d6knLYWMU5hGzOvUoIZ/JbnUOQYiP5jtVW+Oup3o2n1zErLT1KamPuVNpfIkQKXULGGO88LKq4baa1Utz9CwlJpIH3fj3bcQHK+DDlVL3FUyON0ScFxVvczzgqU9j5SPPQXR0Gq22A4u80dCzCNxg6Ahtwpjss4qBW+QcqWfX88IIcrm5gLa/iD3PQNUwc6mnaOJYjnIdRli4Q1mkpH1QEePWcSPUFlNRlgGGCpQMox5G/3p8xiiCwR+KrWlZtStLXyZW+VYITfDDLyFFwk=",
+      "data_iv": "dV8Mhi/7nPBp8Gpb",
+      "created_at": "2026-01-29T21:03:00.569716",
+      "updated_at": "2026-01-29T21:03:00.569707"
+    }
+  ],
+  "scenarios": [],
+  "action_items": [],
+  "conversations": []
+}

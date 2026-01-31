@@ -1,0 +1,36 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "type": "selective",
+    "created_at": "2026-01-29T21:02:59.929249",
+    "created_by": 1,
+    "label": "Test Backup",
+    "profile_ids": [
+      1
+    ],
+    "group_ids": []
+  },
+  "users": {
+    "1": {
+      "id": 1,
+      "username": "testuser",
+      "email": "test@example.com"
+    }
+  },
+  "profiles": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "name": "Test Profile",
+      "birth_date": "1980-01-15",
+      "retirement_date": "2050-01-15",
+      "data": "2RV7PkYCOdO6fIB5j70gWIN1ZhLj0EPf5pCkxPZTY6eNCVC2KCzf9iebqXYlLlhW7fqcG7coydOA47tK9MKd9dVXaTVvAR7GYuTtTCG6FL4pu64zv08erbkTWvDohMcrzNwHjm2G7YbQPskFXyCfJx8tCgNuseJcjFQeANQpnKazbky58hTFNBn3+auW1PjX9mG5rGSVKXDFB4wPMJ/xFPkAlBZTyYGUKBTUyMXW7ZJ5bcncqfOfPz2wRfYXipIdk4+awOKawwn0akg9MKGvvRVtfQg85PJcWB3cp5FKvb6Y0LwuinGUqDHzuTl69u1j6iAzfl8=",
+      "data_iv": "3P66MrRmNJCgSJe7",
+      "created_at": "2026-01-29T21:02:59.920886",
+      "updated_at": "2026-01-29T21:02:59.920880"
+    }
+  ],
+  "scenarios": [],
+  "action_items": [],
+  "conversations": []
+}

@@ -99,7 +99,9 @@ def test_db(test_db_dir, request):
                 email_salt TEXT,
                 preferences TEXT,
                 email_verified BOOLEAN DEFAULT 0,
-                email_verification_sent_at TEXT
+                email_verification_sent_at TEXT,
+                temp_recovery_code TEXT,
+                recovery_code_shown BOOLEAN DEFAULT 0
             )
         """)
 
