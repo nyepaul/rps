@@ -2,7 +2,7 @@
 
 This document describes the organization of the Retirement Planning System (RPS) codebase.
 
-**Last Updated:** 2026-01-25 (v3.9.26)
+**Last Updated:** 2026-01-30 (v3.9.150)
 
 ## Directory Structure
 
@@ -323,7 +323,7 @@ The following directories are gitignored:
 
 ## Version History
 
-- **v3.9.26** (2026-01-25) - Documentation updates, Cash Flow fixes
+- **v3.9.150** (2026-01-30) - Documentation updates, Cash Flow fixes, and security hardening
 - **v3.9.x** (2026-01-23+) - Monte Carlo tax engine improvements
 - **v3.8.168** (2026-01-22) - Selective backup: backup/restore specific profiles or groups
 - **v3.8.167** (2026-01-22) - Per-user backup and restore

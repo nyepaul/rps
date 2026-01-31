@@ -320,7 +320,7 @@ cat tests/test_data/sample_bank_csvs/sample_bank_transactions.csv
 
 ## Version History
 
-- **v3.9.84** (2026-01-29): Initial release
+- **v3.9.150** (2026-01-29): Initial release
   - CSV import with pattern detection
   - Income/expense reconciliation
   - Auto-categorization

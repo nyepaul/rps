@@ -124,7 +124,7 @@ git revert HEAD
 sudo ./bin/deploy
 
 # Or checkout previous commit
-git checkout 7826850  # Previous commit before Phase 1
+git checkout 58cef7b  # Previous commit before skew correction
 sudo ./bin/deploy
 ```
 
@@ -132,9 +132,9 @@ sudo ./bin/deploy
 
 ```bash
 $ git log --oneline -3
-b6d8783 (HEAD -> main) feat: standardize CSV parsing with unified parser utility (Phase 1)
-7826850 feat: rename import buttons for clarity across all tabs
-03bcfbc feat: standardize button layouts across Income, Budget, and Asset tabs
+d2b1e9e (HEAD -> main) chore: correct version skew to 3.9.150
+58cef7b docs: sync README.md version to 3.9.84
+5cbc881 chore: remove temporary email test script
 ```
 
 **Current version on production**: 3.9.149

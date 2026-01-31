@@ -61,7 +61,7 @@ Navigate to each tab and use the "Import CSV" button to test.
 
 ## Version
 
-Bumped to **3.9.99** and committed to git:
+Bumped to **3.9.150** and committed to git:
 ```
 feat: standardize CSV parsing with unified parser utility (Phase 1)
 ```
@@ -197,4 +197,4 @@ Phase 1 is complete and committed. The foundation is in place for the hybrid CSV
 
 ---
 
-**Built with Claude Code** | **Version**: 3.9.99 | **Date**: 2026-01-28
+**Built with Claude Code** | **Version**: 3.9.150 | **Date**: 2026-01-28

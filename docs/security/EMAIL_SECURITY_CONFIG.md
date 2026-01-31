@@ -1,7 +1,7 @@
 # Email Security Configuration & Audit (January 2026)
 
 ## Overview
-This document details the security configuration for the Email Service implemented in v3.9.58 (Jan 26, 2026). The system uses a local Postfix relay with a robust fallback mechanism.
+This document details the security configuration for the Email Service implemented in v3.9.150 (Jan 26, 2026). The system uses a local Postfix relay with a robust fallback mechanism.
 
 ## 1. Architecture
 
