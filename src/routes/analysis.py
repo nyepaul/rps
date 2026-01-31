@@ -1085,9 +1085,25 @@ def get_calculation_report():
             "sections": []
         }
 
-        # 1. PROFILE SUMMARY - Calculate ages from birth_date and retirement_date
+        # Wrap each section in try-except to isolate errors
+        def add_section_safely(section_builder, section_name):
+            try:
+                section = section_builder()
+                if section:
+                    report["sections"].append(section)
+            except Exception as e:
+                logger.error(f"Error building {section_name}: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
+                report["sections"].append({
+                    "title": f"⚠️ {section_name} (Error)",
+                    "items": [{"label": "Error", "value": str(e)}]
+                })
+
+        # Calculate ages (used by multiple sections)
         current_age = 40  # default
         retirement_age = 65  # default
+        spouse_age = 40  # default
 
         if profile.birth_date:
             try:
@@ -1106,41 +1122,40 @@ def get_calculation_report():
                 logger.error(f"Error calculating retirement_age: {e}")
                 retirement_age = 65
 
-        # Ensure these are integers, not lists
-        current_age = int(current_age) if not isinstance(current_age, list) else 40
-        retirement_age = int(retirement_age) if not isinstance(retirement_age, list) else 65
-
-        profile_summary = {
-            "title": "Profile Summary",
-            "items": [
-                {"label": "Primary Person", "value": profile.name},
-                {"label": "Current Age", "value": f"{current_age} years"},
-                {"label": "Retirement Age", "value": f"{retirement_age} years"},
-                {"label": "Years to Retirement", "value": f"{max(0, retirement_age - current_age)} years"},
-            ]
-        }
-
-        # Spouse age calculation
-        spouse_age = 40  # default
         if spouse_data.get("name") and spouse_data.get("birth_date"):
             try:
                 spouse_birth_dt = datetime.fromisoformat(str(spouse_data["birth_date"]))
                 spouse_age = int((datetime.now() - spouse_birth_dt).days // 365)
-                profile_summary["items"].extend([
+            except Exception as e:
+                logger.error(f"Error calculating spouse_age: {e}")
+                spouse_age = 40
+
+        # Ensure these are integers, not lists
+        current_age = int(current_age) if not isinstance(current_age, list) else 40
+        retirement_age = int(retirement_age) if not isinstance(retirement_age, list) else 65
+        spouse_age = int(spouse_age) if not isinstance(spouse_age, list) else 40
+
+        # 1. PROFILE SUMMARY
+        def build_profile_summary():
+            section = {
+                "title": "Profile Summary",
+                "items": [
+                    {"label": "Primary Person", "value": profile.name},
+                    {"label": "Current Age", "value": f"{current_age} years"},
+                    {"label": "Retirement Age", "value": f"{retirement_age} years"},
+                    {"label": "Years to Retirement", "value": f"{max(0, retirement_age - current_age)} years"},
+                ]
+            }
+
+            if spouse_data.get("name"):
+                section["items"].extend([
                     {"label": "Spouse", "value": spouse_data.get("name")},
                     {"label": "Spouse Age", "value": f"{spouse_age} years"},
                 ])
-            except Exception as e:
-                logger.error(f"Error calculating spouse_age: {e}")
-                profile_summary["items"].extend([
-                    {"label": "Spouse", "value": spouse_data.get("name")},
-                    {"label": "Spouse Age", "value": "Unknown"},
-                ])
 
-        # Ensure spouse_age is an integer
-        spouse_age = int(spouse_age) if not isinstance(spouse_age, list) else 40
+            return section
 
-        report["sections"].append(profile_summary)
+        add_section_safely(build_profile_summary, "Profile Summary")
 
         # 2. INCOME SOURCES (Annual) - Read from income_streams
         income_section = {
