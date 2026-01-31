@@ -1,5 +1,5 @@
 {
-    "version": "3.9.152",
+    "version": "3.9.153",
     "release_date": "2026-01-31",
-    "release_notes": "Fix login loop by skipping session check after logout"
+    "release_notes": "Fix session persistence by clearing cookies with matching security attributes"
 }

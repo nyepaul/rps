@@ -617,16 +617,34 @@ def logout():
     response = make_response(jsonify({"message": "Logout successful"}), 200)
 
     # Explicitly clear all possible session cookies with max_age=0 for maximum browser compatibility
-    # This prevents the "sticky session" issue where the browser keeps sending old credentials
+    # CRITICAL: Must use same attributes (secure, httponly, samesite) as when cookie was set
+    # Otherwise browser treats it as a different cookie and won't clear the original
     cookie_names = [
         current_app.config.get("SESSION_COOKIE_NAME", "session"),
         "remember_token",
         "user_id",
         "_user_id"
     ]
-    
+
+    # Get cookie security settings from config to match how they were set
+    secure = current_app.config.get("SESSION_COOKIE_SECURE", True)
+    httponly = current_app.config.get("SESSION_COOKIE_HTTPONLY", True)
+    samesite = current_app.config.get("SESSION_COOKIE_SAMESITE", "Lax")
+    domain = current_app.config.get("SESSION_COOKIE_DOMAIN", None)
+
     for cookie_name in cookie_names:
-        response.set_cookie(cookie_name, "", max_age=0, path="/")
+        # Clear cookie with matching security attributes
+        response.set_cookie(
+            cookie_name,
+            "",
+            max_age=0,
+            expires=0,
+            path="/",
+            secure=secure,
+            httponly=httponly,
+            samesite=samesite,
+            domain=domain
+        )
 
     return response
 
