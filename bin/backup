@@ -231,17 +231,18 @@ main() {
     log INFO "Backing up configuration files..."
     [[ -f "${PROJECT_ROOT}/.env" ]] && cp "${PROJECT_ROOT}/.env" "${TEMP_DIR}/config/" || true
     [[ -f "${PROJECT_ROOT}/.env.production" ]] && cp "${PROJECT_ROOT}/.env.production" "${TEMP_DIR}/config/" || true
-    [[ -f "${PROJECT_ROOT}/alembic.ini" ]] && cp "${PROJECT_ROOT}/alembic.ini" "${TEMP_DIR}/config/" || true
-    [[ -f "${PROJECT_ROOT}/requirements.txt" ]] && cp "${PROJECT_ROOT}/requirements.txt" "${TEMP_DIR}/config/" || true
+    [[ -f "${PROJECT_ROOT}/config/alembic.ini" ]] && cp "${PROJECT_ROOT}/config/alembic.ini" "${TEMP_DIR}/config/" || true
+    [[ -f "${PROJECT_ROOT}/config/requirements.txt" ]] && cp "${PROJECT_ROOT}/config/requirements.txt" "${TEMP_DIR}/config/" || true
     [[ -f "${PROJECT_ROOT}/pyproject.toml" ]] && cp "${PROJECT_ROOT}/pyproject.toml" "${TEMP_DIR}/config/" || true
     [[ -f "${PROJECT_ROOT}/setup.py" ]] && cp "${PROJECT_ROOT}/setup.py" "${TEMP_DIR}/config/" || true
-    [[ -f "${PROJECT_ROOT}/pytest.ini" ]] && cp "${PROJECT_ROOT}/pytest.ini" "${TEMP_DIR}/config/" || true
+    [[ -f "${PROJECT_ROOT}/config/pytest.ini" ]] && cp "${PROJECT_ROOT}/config/pytest.ini" "${TEMP_DIR}/config/" || true
     [[ -f "${PROJECT_ROOT}/.gitignore" ]] && cp "${PROJECT_ROOT}/.gitignore" "${TEMP_DIR}/config/" || true
 
     # Backup root-level documentation
-    for doc in CLAUDE.md README.md DEPLOYMENT.md LICENSE; do
+    for doc in CLAUDE.md README.md GEMINI.md LICENSE; do
         [[ -f "${PROJECT_ROOT}/${doc}" ]] && cp "${PROJECT_ROOT}/${doc}" "${TEMP_DIR}/config/" || true
     done
+    [[ -f "${PROJECT_ROOT}/docs/deployment/DEPLOYMENT.md" ]] && cp "${PROJECT_ROOT}/docs/deployment/DEPLOYMENT.md" "${TEMP_DIR}/config/" || true
 
     # Backup recent logs (last 7 days)
     log INFO "Backing up recent logs..."

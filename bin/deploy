@@ -119,7 +119,7 @@ echo -e "  ✓ Virtual environment ready"
 # Install dependencies
 echo -e "${YELLOW}→ Installing Python dependencies...${NC}"
 "$TARGET_DIR/venv/bin/pip" install --quiet --upgrade pip 2>&1 | grep -E "ERROR|WARNING" || true
-PIP_OUTPUT=$("$TARGET_DIR/venv/bin/pip" install --quiet -r "$TARGET_DIR/requirements.txt" 2>&1)
+PIP_OUTPUT=$("$TARGET_DIR/venv/bin/pip" install --quiet -r "$TARGET_DIR/config/requirements.txt" 2>&1)
 if [ $? -eq 0 ]; then
     echo -e "  ✓ Dependencies installed"
 else
@@ -142,7 +142,7 @@ if [ -f "$DB_FILE" ]; then
     # Run Alembic migrations (suppress expected errors, log to file)
     cd "$TARGET_DIR"
     if [ -d "migrations" ]; then
-        ALEMBIC_OUTPUT=$("$TARGET_DIR/venv/bin/alembic" upgrade head 2>&1 || true)
+        ALEMBIC_OUTPUT=$("$TARGET_DIR/venv/bin/alembic" -c config/alembic.ini upgrade head 2>&1 || true)
         echo "$ALEMBIC_OUTPUT" > "$MIGRATION_LOG"
 
         # Check if there were real errors (not expected "no such column" errors)

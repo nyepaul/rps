@@ -34,7 +34,8 @@ echo
 
 echo "Step 3: Running database migration..."
 cd "$PROD_DIR"
-sudo -u www-data ./venv/bin/python -m alembic upgrade head
+sudo -u www-data ./venv/bin/pip install alembic # Ensure alembic is installed in venv
+sudo -u www-data ./venv/bin/python -m alembic -c config/alembic.ini upgrade head
 echo "✓ Migration completed"
 echo
 

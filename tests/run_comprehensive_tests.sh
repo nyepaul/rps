@@ -59,7 +59,7 @@ run_test_suite() {
     echo "================================================================================"
     echo ""
 
-    if pytest "$test_file" -v --tb=short 2>&1 | tee -a "$REPORT_FILE"; then
+    if pytest -c config/pytest.ini "$test_file" -v --tb=short 2>&1 | tee -a "$REPORT_FILE"; then
         echo -e "${GREEN}✓ $suite_name PASSED${NC}"
         return 0
     else

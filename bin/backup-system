@@ -78,14 +78,15 @@ main() {
     log INFO "Backing up configuration files..."
     [[ -f "${PROJECT_ROOT}/.env" ]] && cp "${PROJECT_ROOT}/.env" "${TEMP_DIR}/config/" || true
     [[ -f "${PROJECT_ROOT}/.env.production" ]] && cp "${PROJECT_ROOT}/.env.production" "${TEMP_DIR}/config/" || true
-    [[ -f "${PROJECT_ROOT}/alembic.ini" ]] && cp "${PROJECT_ROOT}/alembic.ini" "${TEMP_DIR}/config/" || true
-    [[ -f "${PROJECT_ROOT}/.backup_config" ]] && cp "${PROJECT_ROOT}/.backup_config" "${TEMP_DIR}/config/" || true
+    [[ -f "${PROJECT_ROOT}/config/alembic.ini" ]] && cp "${PROJECT_ROOT}/config/alembic.ini" "${TEMP_DIR}/config/" || true
+    [[ -f "${PROJECT_ROOT}/config/.backup_config" ]] && cp "${PROJECT_ROOT}/config/.backup_config" "${TEMP_DIR}/config/" || true
 
     # Backup version and documentation
     [[ -f "${PROJECT_ROOT}/src/__version__.py" ]] && cp "${PROJECT_ROOT}/src/__version__.py" "${TEMP_DIR}/config/" || true
-    for doc in CLAUDE.md README.md DEPLOYMENT.md; do
+    for doc in CLAUDE.md README.md GEMINI.md; do
         [[ -f "${PROJECT_ROOT}/${doc}" ]] && cp "${PROJECT_ROOT}/${doc}" "${TEMP_DIR}/config/" || true
     done
+    [[ -f "${PROJECT_ROOT}/docs/deployment/DEPLOYMENT.md" ]] && cp "${PROJECT_ROOT}/docs/deployment/DEPLOYMENT.md" "${TEMP_DIR}/config/" || true
 
     # Backup systemd files
     log INFO "Backing up systemd configuration..."

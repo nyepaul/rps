@@ -133,9 +133,9 @@ sudo systemctl status rps-backup.timer
 
 7. **Configuration Files**
    - `.env` and `.env.production` (environment variables)
-   - `alembic.ini` (database migration config)
+   - `config/alembic.ini` (database migration config)
    - `requirements.txt`, `pyproject.toml`, `setup.py`
-   - `pytest.ini`, `.gitignore`
+   - `config/pytest.ini`, `.gitignore`
    - Root-level docs: `CLAUDE.md`, `README.md`, `DEPLOYMENT.md`, `LICENSE`
 
 8. **Recent Logs** (last 7 days)

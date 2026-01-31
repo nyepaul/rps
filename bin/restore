@@ -283,6 +283,8 @@ restore_backup() {
                 log INFO "Restoring configuration files..."
                 [[ -f "${extract_dir}/config/.env" ]] && cp "${extract_dir}/config/.env" "${PROJECT_ROOT}/" || true
                 [[ -f "${extract_dir}/config/.env.production" ]] && cp "${extract_dir}/config/.env.production" "${PROJECT_ROOT}/" || true
+                [[ -f "${extract_dir}/config/alembic.ini" ]] && cp "${extract_dir}/config/alembic.ini" "${PROJECT_ROOT}/config/" || true
+                [[ -f "${extract_dir}/config/pytest.ini" ]] && cp "${extract_dir}/config/pytest.ini" "${PROJECT_ROOT}/config/" || true
             fi
             ;;
 
@@ -308,6 +310,8 @@ restore_backup() {
             if [[ -d "${extract_dir}/config" ]]; then
                 [[ -f "${extract_dir}/config/.env" ]] && cp "${extract_dir}/config/.env" "${PROJECT_ROOT}/" || true
                 [[ -f "${extract_dir}/config/.env.production" ]] && cp "${extract_dir}/config/.env.production" "${PROJECT_ROOT}/" || true
+                [[ -f "${extract_dir}/config/alembic.ini" ]] && cp "${extract_dir}/config/alembic.ini" "${PROJECT_ROOT}/config/" || true
+                [[ -f "${extract_dir}/config/pytest.ini" ]] && cp "${extract_dir}/config/pytest.ini" "${PROJECT_ROOT}/config/" || true
                 log SUCCESS "Configuration restored"
             else
                 error_exit "No configuration found in backup"

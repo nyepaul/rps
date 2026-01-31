@@ -159,7 +159,7 @@ main() {
     log INFO "Backing up configuration files..."
     [[ -f "${PROJECT_ROOT}/.env" ]] && cp "${PROJECT_ROOT}/.env" "${TEMP_DIR}/config/" || true
     [[ -f "${PROJECT_ROOT}/.env.production" ]] && cp "${PROJECT_ROOT}/.env.production" "${TEMP_DIR}/config/" || true
-    [[ -f "${PROJECT_ROOT}/alembic.ini" ]] && cp "${PROJECT_ROOT}/alembic.ini" "${TEMP_DIR}/config/" || true
+    [[ -f "${PROJECT_ROOT}/config/alembic.ini" ]] && cp "${PROJECT_ROOT}/config/alembic.ini" "${TEMP_DIR}/config/" || true
 
     # Backup version info to track what version the data came from
     if [[ -f "${PROJECT_ROOT}/src/static/version.json" ]]; then
