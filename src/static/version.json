@@ -1,5 +1,5 @@
 {
-    "version": "3.9.164",
+    "version": "3.9.165",
     "release_date": "2026-01-31",
-    "release_notes": "Change 401k contribution from fixed amount to percentage of salary"
+    "release_notes": "Add 401k contribution rate defaults to demo profiles"
 }

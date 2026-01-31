@@ -82,7 +82,11 @@ def seed_demo_data():
                 "name": "Alex Junior",
                 "birth_date": "2000-05-15",
                 "retirement_date": "2065-05-15",
-                "life_expectancy": 95
+                "life_expectancy": 95,
+                "annual_401k_contribution_rate": 0.10,
+                "employer_match_rate": 0.06,
+                "social_security_benefit": 2400,
+                "ss_claiming_age": 67
             },
             "spouse": {},
             "children": [],
@@ -177,12 +181,20 @@ def seed_demo_data():
                 "name": "Tom Thompson",
                 "birth_date": "1979-06-15",
                 "retirement_date": "2044-06-15",
-                "life_expectancy": 90
+                "life_expectancy": 90,
+                "annual_401k_contribution_rate": 0.15,
+                "employer_match_rate": 0.06,
+                "social_security_benefit": 3800,
+                "ss_claiming_age": 67
             },
             "spouse": {
                 "name": "Tara Thompson",
                 "birth_date": "1981-08-20",
-                "retirement_date": "2046-08-20"
+                "retirement_date": "2046-08-20",
+                "annual_401k_contribution_rate": 0.15,
+                "employer_match_rate": 0.06,
+                "social_security_benefit": 3200,
+                "ss_claiming_age": 67
             },
             "children": [
                 {"name": "Tyler", "birth_date": "2008-03-12"},
@@ -300,12 +312,20 @@ def seed_demo_data():
                 "name": "Steve Starman",
                 "birth_date": "1984-03-10",
                 "retirement_date": "2049-03-10",
-                "life_expectancy": 92
+                "life_expectancy": 92,
+                "annual_401k_contribution_rate": 0.12,
+                "employer_match_rate": 0.06,
+                "social_security_benefit": 2800,
+                "ss_claiming_age": 67
             },
             "spouse": {
                 "name": "Sarah Starman",
                 "birth_date": "1986-07-22",
-                "retirement_date": "2051-07-22"
+                "retirement_date": "2051-07-22",
+                "annual_401k_contribution_rate": 0.10,
+                "employer_match_rate": 0.05,
+                "social_security_benefit": 2200,
+                "ss_claiming_age": 67
             },
             "children": [
                 {"name": "Sophie", "birth_date": "2012-04-15"},
@@ -416,7 +436,11 @@ def seed_demo_data():
                 "name": "Dan Dudeman",
                 "birth_date": "1974-11-05",
                 "retirement_date": "2036-11-05",
-                "life_expectancy": 85
+                "life_expectancy": 85,
+                "annual_401k_contribution_rate": 0.08,
+                "employer_match_rate": 0.04,
+                "social_security_benefit": 2600,
+                "ss_claiming_age": 62
             },
             "spouse": {},
             "children": [],
