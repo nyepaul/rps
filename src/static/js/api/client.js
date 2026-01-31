@@ -30,7 +30,7 @@ class APIClient {
     /**
      * Make HTTP request
      */
-    async request(url, options = {}) {
+    async function request(url, options = {}) {
         const config = {
             ...options,
             headers: {
@@ -39,6 +39,9 @@ class APIClient {
             },
             credentials: 'include', // Include cookies for session
         };
+
+        // Option to disable automatic redirect on 401 (critical for login page)
+        const autoRedirect = options.autoRedirect !== false;
 
         // Add CSRF token for non-GET requests
         if (options.method && options.method !== 'GET') {
@@ -57,7 +60,7 @@ class APIClient {
             const response = await fetch(`${this.baseURL}${url}`, config);
 
             // Handle authentication errors
-            if (response.status === 401) {
+            if (response.status === 401 && autoRedirect) {
                 // Redirect to login
                 window.location.href = '/login';
                 throw new Error('Unauthorized');

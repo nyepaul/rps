@@ -431,7 +431,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check if already logged in using standardized client
     async function checkExistingSession() {
         try {
-            const data = await apiClient.get(API_ENDPOINTS.AUTH_SESSION);
+            // CRITICAL: Disable auto-redirect on 401 to prevent login-page loop
+            const data = await apiClient.get(API_ENDPOINTS.AUTH_SESSION, { autoRedirect: false });
             if (data.authenticated) {
                 window.location.href = '/';
             }

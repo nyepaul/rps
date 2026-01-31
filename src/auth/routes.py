@@ -490,9 +490,12 @@ def login():
     user.update_last_login()
 
     # Log user in (remember=False to allow easy switching between users)
+    # Note: Flask-Login doesn't automatically set session.permanent
     login_user(user, remember=False)
 
-    # Initialize session with last activity timestamp for inactivity timeout
+    # Only make session permanent if we want it to persist across browser restarts
+    # For now, we'll keep it True to support the PERMANENT_SESSION_LIFETIME (30m)
+    # but we ensure it's cleared properly on logout.
     session.permanent = True
     session["last_activity"] = datetime.utcnow().isoformat()
 
@@ -603,9 +606,9 @@ def logout():
     # Logout user FIRST (this removes _user_id from session)
     logout_user()
 
-    # Clear ALL session data
-    for key in list(session.keys()):
-        session.pop(key)
+    # Reset permanent flag and clear ALL session data
+    session.permanent = False
+    session.clear()
 
     # Mark session as modified to force Flask to regenerate the session cookie
     session.modified = True
@@ -613,7 +616,7 @@ def logout():
     # Create response
     response = make_response(jsonify({"message": "Logout successful"}), 200)
 
-    # Explicitly clear all possible session cookies
+    # Explicitly clear all possible session cookies with max_age=0 for maximum browser compatibility
     # This prevents the "sticky session" issue where the browser keeps sending old credentials
     cookie_names = [
         current_app.config.get("SESSION_COOKIE_NAME", "session"),
@@ -623,7 +626,7 @@ def logout():
     ]
     
     for cookie_name in cookie_names:
-        response.set_cookie(cookie_name, "", expires=0, path="/")
+        response.set_cookie(cookie_name, "", max_age=0, path="/")
 
     return response
 

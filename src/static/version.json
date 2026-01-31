@@ -1,5 +1,5 @@
 {
-    "version": "3.9.159",
+    "version": "3.9.160",
     "release_date": "2026-01-31",
-    "release_notes": "improve version visibility on login screen and fix module loading"
+    "release_notes": "prevent redirect loop on login page and further strengthen logout"
 }
