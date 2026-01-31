@@ -1,5 +1,5 @@
 {
-    "version": "3.9.160",
+    "version": "3.9.161",
     "release_date": "2026-01-31",
-    "release_notes": "Fix missing date import in calculation report"
+    "release_notes": "Add detailed error logging to calculation report to debug date comparison issue"
 }

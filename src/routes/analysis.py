@@ -1141,8 +1141,9 @@ def get_calculation_report():
 
         # Calculate current active income from income_streams
         work_income_annual = 0
-        from datetime import date
         today = date.today()
+
+        logger.info(f"Income streams type: {type(income_streams)}, value: {income_streams}")
 
         for stream in income_streams:
             # Check if stream is currently active
@@ -1152,16 +1153,20 @@ def get_calculation_report():
 
             if start_date:
                 try:
-                    if date.fromisoformat(start_date) > today:
+                    start_dt = date.fromisoformat(start_date)
+                    if start_dt > today:
                         is_active = False
-                except:
+                except Exception as e:
+                    logger.error(f"Error parsing start_date: {start_date}, error: {e}")
                     pass
 
             if end_date and is_active:
                 try:
-                    if date.fromisoformat(end_date) < today:
+                    end_dt = date.fromisoformat(end_date)
+                    if end_dt < today:
                         is_active = False
-                except:
+                except Exception as e:
+                    logger.error(f"Error parsing end_date: {end_date}, error: {e}")
                     pass
 
             if is_active:
@@ -1247,16 +1252,20 @@ def get_calculation_report():
 
                 if start_date:
                     try:
-                        if date.fromisoformat(start_date) > today:
+                        start_dt = date.fromisoformat(start_date)
+                        if start_dt > today:
                             is_active = False
-                    except:
+                    except Exception as e:
+                        logger.error(f"Error parsing start_date in 401k: {start_date}, error: {e}")
                         pass
 
                 if end_date and is_active:
                     try:
-                        if date.fromisoformat(end_date) < today:
+                        end_dt = date.fromisoformat(end_date)
+                        if end_dt < today:
                             is_active = False
-                    except:
+                    except Exception as e:
+                        logger.error(f"Error parsing end_date in 401k: {end_date}, error: {e}")
                         pass
 
                 if is_active:
@@ -1626,12 +1635,16 @@ def get_calculation_report():
         return jsonify(report), 200
 
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        logger.error(f"Calculation report error: {error_trace}")
         enhanced_audit_logger.log(
             action="GENERATE_CALCULATION_REPORT_ERROR",
             details={
                 "profile_name": profile_name if "profile_name" in dir() else None,
                 "error": str(e),
+                "trace": error_trace
             },
             status_code=500,
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": f"{str(e)} - Check server logs for details"}), 500
