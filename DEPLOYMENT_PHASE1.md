@@ -3,7 +3,7 @@
 ## Current Status
 
 ✅ **Phase 1 code is complete and committed**
-- Version bumped to 3.9.99
+- Version bumped to 3.9.151
 - All changes committed to git (commit b6d8783)
 - Production service is running old code (3.9.98)
 
@@ -105,7 +105,7 @@ Once deployed, follow the testing guide:
 After deployment:
 
 - [ ] New file accessible: `curl http://127.0.0.1:5137/js/utils/csv-parser.js`
-- [ ] Version shows 3.9.150: Check admin panel or API
+- [ ] Version shows 3.9.151: Check admin panel or API
 - [ ] No JavaScript errors in browser console (F12)
 - [ ] Income CSV import works
 - [ ] Budget CSV import works
@@ -137,8 +137,8 @@ d2b1e9e (HEAD -> main) chore: correct version skew to 3.9.150
 5cbc881 chore: remove temporary email test script
 ```
 
-**Current version on production**: 3.9.149
-**New version after deployment**: 3.9.150
+**Current version on production**: 3.9.150
+**New version after deployment**: 3.9.151
 
 ## Why Deployment is Safe
 

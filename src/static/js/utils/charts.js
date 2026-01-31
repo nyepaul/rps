@@ -7,37 +7,86 @@ import { formatCurrency, formatCompact } from './formatters.js';
 // Keep track of all active chart instances for theme updates
 const activeCharts = new Set();
 
-// Listen for theme changes to update all charts
-window.addEventListener('themeChanged', () => {
+/**
+ * Register a chart instance to be updated when the theme changes
+ * @param {Chart} chart - The Chart.js instance
+ */
+export function registerChartForThemeUpdates(chart) {
+    if (!chart) return;
+    activeCharts.add(chart);
+    
+    // Override destroy to remove from set
+    const originalDestroy = chart.destroy.bind(chart);
+    chart.destroy = () => {
+        activeCharts.delete(chart);
+        originalDestroy();
+    };
+}
+
+/**
+ * Get theme-aware colors for charts
+ * @returns {Object} Chart colors based on current theme
+ */
+export function getChartThemeColors() {
     const style = getComputedStyle(document.body);
-    const successColor = style.getPropertyValue('--success-color').trim() || '#28a745';
-    const dangerColor = style.getPropertyValue('--danger-color').trim() || '#dc3545';
-    const accentColor = style.getPropertyValue('--accent-color').trim() || '#3498db';
-    const textPrimary = style.getPropertyValue('--text-primary').trim() || '#212529';
+    return {
+        textPrimary: style.getPropertyValue('--chart-text-primary').trim() || style.getPropertyValue('--text-primary').trim() || '#212529',
+        textSecondary: style.getPropertyValue('--chart-text-secondary').trim() || style.getPropertyValue('--text-secondary').trim() || '#666',
+        borderColor: style.getPropertyValue('--border-color').trim() || '#dee2e6',
+        gridColor: 'rgba(128, 128, 128, 0.15)',
+        bgSecondary: style.getPropertyValue('--bg-secondary').trim() || '#ffffff',
+        bgTertiary: style.getPropertyValue('--bg-tertiary').trim() || '#f8f9fa',
+        successColor: style.getPropertyValue('--success-color').trim() || '#28a745',
+        dangerColor: style.getPropertyValue('--danger-color').trim() || '#dc3545',
+        accentColor: style.getPropertyValue('--accent-color').trim() || '#3498db'
+    };
+}
+
+// Listen for theme changes to update all registered charts
+window.addEventListener('themeChanged', () => {
+    const colors = getChartThemeColors();
     
     activeCharts.forEach(chart => {
-        // Update chart options
-        if (chart.options.scales.x.ticks) chart.options.scales.x.ticks.color = textPrimary;
-        if (chart.options.scales.x.title) chart.options.scales.x.title.color = textPrimary;
-        if (chart.options.scales.y.ticks) chart.options.scales.y.ticks.color = textPrimary;
+        // Update scale options
+        if (chart.options.scales) {
+            Object.values(chart.options.scales).forEach(scale => {
+                if (scale.ticks) scale.ticks.color = colors.textSecondary;
+                if (scale.title) scale.title.color = colors.textPrimary;
+                if (scale.grid) scale.grid.color = colors.gridColor;
+            });
+        }
         
-        if (chart.options.plugins.legend && chart.options.plugins.legend.labels) {
-            chart.options.plugins.legend.labels.color = textPrimary;
+        // Update plugin options
+        if (chart.options.plugins) {
+            if (chart.options.plugins.legend && chart.options.plugins.legend.labels) {
+                chart.options.plugins.legend.labels.color = colors.textPrimary;
+            }
+            if (chart.options.plugins.title) {
+                chart.options.plugins.title.color = colors.textPrimary;
+            }
         }
 
         // Update datasets colors if they match standard theme colors
-        // This is a heuristic; for perfect results, we'd store the "intent" of the dataset
         chart.data.datasets.forEach(dataset => {
-            // We re-apply the standard colors based on the dataset order/label usually used
-            // This assumes the standard timeline chart structure
-            if (dataset.label.includes('95th') || dataset.label.includes('Optimistic')) {
-                dataset.borderColor = successColor;
-                dataset.backgroundColor = successColor + '20';
-            } else if (dataset.label.includes('Median')) {
-                dataset.borderColor = accentColor;
-            } else if (dataset.label.includes('5th') || dataset.label.includes('Conservative')) {
-                dataset.borderColor = dangerColor;
-                dataset.backgroundColor = dangerColor + '20';
+            if (dataset.label) {
+                if (dataset.label.includes('95th') || dataset.label.includes('Optimistic') || dataset.label === 'Income') {
+                    dataset.borderColor = colors.successColor;
+                    if (dataset.backgroundColor && dataset.backgroundColor.startsWith('rgba')) {
+                        dataset.backgroundColor = colors.successColor + '20';
+                    }
+                } else if (dataset.label.includes('Median') || dataset.label === 'Savings') {
+                    dataset.borderColor = colors.accentColor;
+                } else if (dataset.label.includes('5th') || dataset.label.includes('Conservative') || dataset.label === 'Expenses') {
+                    dataset.borderColor = colors.dangerColor;
+                    if (dataset.backgroundColor && dataset.backgroundColor.startsWith('rgba')) {
+                        dataset.backgroundColor = colors.dangerColor + '20';
+                    }
+                }
+            }
+            
+            // Update point border colors if hardcoded white
+            if (dataset.pointBorderColor === '#fff' || dataset.pointBorderColor === '#ffffff') {
+                dataset.pointBorderColor = colors.bgSecondary;
             }
         });
 
@@ -84,12 +133,7 @@ export function renderStandardTimelineChart(timeline, canvasOrId, existingInstan
     }
 
     // 2. Setup colors and styles
-    const style = getComputedStyle(document.body);
-    const successColor = style.getPropertyValue('--success-color').trim() || '#28a745';
-    const dangerColor = style.getPropertyValue('--danger-color').trim() || '#dc3545';
-    const accentColor = style.getPropertyValue('--accent-color').trim() || '#3498db';
-    const textPrimary = style.getPropertyValue('--text-primary').trim() || '#212529';
-    const textSecondary = style.getPropertyValue('--text-secondary').trim() || '#666';
+    const colors = getChartThemeColors();
 
     // 3. Handle Multi-Scenario vs Single
     // If timeline is from a multi-scenario result, it might be nested
@@ -113,8 +157,8 @@ export function renderStandardTimelineChart(timeline, canvasOrId, existingInstan
                 {
                     label: '95th Percentile (Optimistic)',
                     data: p95,
-                    borderColor: successColor,
-                    backgroundColor: successColor + '20',
+                    borderColor: colors.successColor,
+                    backgroundColor: colors.successColor + '20',
                     fill: '+1',
                     tension: 0.3,
                     borderWidth: 2,
@@ -124,7 +168,7 @@ export function renderStandardTimelineChart(timeline, canvasOrId, existingInstan
                 {
                     label: 'Median',
                     data: median,
-                    borderColor: accentColor,
+                    borderColor: colors.accentColor,
                     backgroundColor: 'transparent',
                     borderWidth: 3,
                     tension: 0.3,
@@ -134,8 +178,8 @@ export function renderStandardTimelineChart(timeline, canvasOrId, existingInstan
                 {
                     label: '5th Percentile (Conservative)',
                     data: p5,
-                    borderColor: dangerColor,
-                    backgroundColor: dangerColor + '20',
+                    borderColor: colors.dangerColor,
+                    backgroundColor: colors.dangerColor + '20',
                     fill: '-1',
                     tension: 0.3,
                     borderWidth: 2,
@@ -155,7 +199,7 @@ export function renderStandardTimelineChart(timeline, canvasOrId, existingInstan
                 legend: {
                     position: 'top',
                     labels: {
-                        color: textPrimary,
+                        color: colors.textPrimary,
                         usePointStyle: true,
                         padding: 15,
                         font: {
@@ -210,9 +254,9 @@ export function renderStandardTimelineChart(timeline, canvasOrId, existingInstan
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: { color: 'rgba(128,128,128,0.2)' },
+                    grid: { color: colors.gridColor },
                     ticks: {
-                        color: textPrimary,
+                        color: colors.textSecondary,
                         font: {
                             size: 13,
                             weight: '500'
@@ -223,7 +267,7 @@ export function renderStandardTimelineChart(timeline, canvasOrId, existingInstan
                 x: {
                     grid: { display: false },
                     ticks: {
-                        color: textPrimary,
+                        color: colors.textSecondary,
                         maxTicksLimit: 15,
                         font: {
                             size: 13,
@@ -233,7 +277,7 @@ export function renderStandardTimelineChart(timeline, canvasOrId, existingInstan
                     title: {
                         display: true,
                         text: 'Year',
-                        color: textPrimary,
+                        color: colors.textPrimary,
                         font: {
                             size: 14,
                             weight: '600'
@@ -245,14 +289,7 @@ export function renderStandardTimelineChart(timeline, canvasOrId, existingInstan
     });
 
     // Track active instance for theme updates
-    activeCharts.add(chart);
-    
-    // Override destroy to remove from set
-    const originalDestroy = chart.destroy.bind(chart);
-    chart.destroy = () => {
-        activeCharts.delete(chart);
-        originalDestroy();
-    };
+    registerChartForThemeUpdates(chart);
 
     if (existingInstances) {
         existingInstances[canvasId] = chart;

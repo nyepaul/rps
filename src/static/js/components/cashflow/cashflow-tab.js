@@ -9,6 +9,7 @@ import { scenariosAPI } from '../../api/scenarios.js';
 import { analysisAPI } from '../../api/analysis.js';
 import { APP_CONFIG } from '../../config.js';
 import { calculateAllocation } from '../../utils/financial-calculations.js';
+import { getChartThemeColors, registerChartForThemeUpdates } from '../../utils/charts.js';
 
 // Track metric visibility state across chart refreshes
 const metricVisibilityState = {
@@ -602,6 +603,8 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
         });
     }
 
+    const colors = getChartThemeColors();
+
     try {
         if (typeof Chart === 'undefined') {
             console.error('Chart.js is not loaded');
@@ -629,7 +632,7 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
                         size: 18,
                         weight: 'bold'
                     },
-                    color: getComputedStyle(document.body).getPropertyValue('--text-primary').trim()
+                    color: colors.textPrimary
                 },
                 legend: {
                     display: true,
@@ -639,7 +642,7 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
                             size: 14,
                             weight: '600'
                         },
-                        color: getComputedStyle(document.body).getPropertyValue('--text-primary').trim(),
+                        color: colors.textPrimary,
                         padding: 15,
                         usePointStyle: true
                     },
@@ -694,7 +697,7 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
                     displayColors: true,
                     callbacks: {
                         label: function(context) {
-                            let label = context.dataset.label || '';
+                            let label = context.label || '';
                             if (label) {
                                 label += ': ';
                             }
@@ -741,20 +744,20 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
                             size: 14,
                             weight: '600'
                         },
-                        color: getComputedStyle(document.body).getPropertyValue('--text-primary').trim()
+                        color: colors.textPrimary
                     },
                     ticks: {
                         font: {
                             size: 13,
                             weight: '500'
                         },
-                        color: getComputedStyle(document.body).getPropertyValue('--text-primary').trim(),
+                        color: colors.textPrimary,
                         callback: function(value) {
                             return formatCurrency(Math.abs(value), 0);
                         }
                     },
                     grid: {
-                        color: 'rgba(128, 128, 128, 0.2)'
+                        color: colors.gridColor
                     }
                 },
                 y1: {
@@ -768,14 +771,14 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
                             size: 14,
                             weight: '600'
                         },
-                        color: getComputedStyle(document.body).getPropertyValue('--text-primary').trim()
+                        color: colors.textPrimary
                     },
                     ticks: {
                         font: {
                             size: 13,
                             weight: '500'
                         },
-                        color: getComputedStyle(document.body).getPropertyValue('--text-primary').trim(),
+                        color: colors.textPrimary,
                         callback: function(value) {
                             return formatCurrency(value, 0);
                         }
@@ -790,7 +793,7 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
                             size: 13,
                             weight: '500'
                         },
-                        color: getComputedStyle(document.body).getPropertyValue('--text-primary').trim()
+                        color: colors.textPrimary
                     },
                     grid: {
                         display: false
@@ -802,6 +805,7 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
         }
         });
 
+        registerChartForThemeUpdates(window.cashFlowChart);
         console.log('Cash flow chart created successfully');
     } catch (error) {
         console.error('Error creating cash flow chart:', error);

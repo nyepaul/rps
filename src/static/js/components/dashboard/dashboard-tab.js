@@ -9,6 +9,7 @@ import { formatCurrency, formatCompact } from '../../utils/formatters.js';
 import { showSuccess, showError, showSpinner, hideSpinner } from '../../utils/dom.js';
 import { STORAGE_KEYS } from '../../config.js';
 import { calculateNetWorth, calculateLiquidAssets, calculateRetirementAssets, calculateRealEstateEquity, calculateTotalDebts } from '../../utils/financial-calculations.js';
+import { getChartThemeColors, registerChartForThemeUpdates } from '../../utils/charts.js';
 
 export async function renderDashboardTab(container) {
     const currentUser = store.get('currentUser');
@@ -158,6 +159,9 @@ function renderFinancialSummary(profile) {
     const savingsGaugeId = `savings-gauge-${Date.now()}`;
 
     setTimeout(() => {
+        // Setup theme-aware colors
+        const colors = getChartThemeColors();
+
         // Asset Allocation Pie Chart
         const assetCanvas = document.getElementById(assetChartId);
         if (assetCanvas && window.Chart) {
@@ -177,11 +181,11 @@ function renderFinancialSummary(profile) {
                         '#95a5a6'  // gray
                     ],
                     borderWidth: 2,
-                    borderColor: '#fff'
+                    borderColor: colors.bgSecondary
                 }]
             };
 
-            new Chart(assetCanvas, {
+            const chart = new Chart(assetCanvas, {
                 type: 'doughnut',
                 data: chartData,
                 options: {
@@ -193,7 +197,7 @@ function renderFinancialSummary(profile) {
                             labels: {
                                 padding: 10,
                                 font: { size: 13, weight: 'bold' },
-                                color: getComputedStyle(document.documentElement).getPropertyValue('--chart-text-primary').trim()
+                                color: colors.textPrimary
                             }
                         },
                         tooltip: {
@@ -210,12 +214,13 @@ function renderFinancialSummary(profile) {
                     }
                 }
             });
+            registerChartForThemeUpdates(chart);
         }
 
         // Income vs Expenses Bar Chart
         const cashflowCanvas = document.getElementById(cashflowChartId);
         if (cashflowCanvas && window.Chart) {
-            new Chart(cashflowCanvas, {
+            const chart = new Chart(cashflowCanvas, {
                 type: 'bar',
                 data: {
                     labels: ['Annual Cash Flow'],
@@ -250,7 +255,7 @@ function renderFinancialSummary(profile) {
                             labels: {
                                 padding: 8,
                                 font: { size: 13, weight: 'bold' },
-                                color: getComputedStyle(document.documentElement).getPropertyValue('--chart-text-primary').trim()
+                                color: colors.textPrimary
                             }
                         },
                         tooltip: {
@@ -268,16 +273,16 @@ function renderFinancialSummary(profile) {
                                     return '$' + (value / 1000).toFixed(0) + 'K';
                                 },
                                 font: { size: 11, weight: 'bold' },
-                                color: getComputedStyle(document.documentElement).getPropertyValue('--chart-text-secondary').trim()
+                                color: colors.textSecondary
                             },
                             grid: {
-                                color: getComputedStyle(document.documentElement).getPropertyValue('--border-color').trim()
+                                color: colors.borderColor
                             }
                         },
                         y: {
                             ticks: {
                                 font: { size: 11, weight: 'bold' },
-                                color: getComputedStyle(document.documentElement).getPropertyValue('--chart-text-secondary').trim()
+                                color: colors.textSecondary
                             },
                             grid: {
                                 display: false
@@ -286,20 +291,21 @@ function renderFinancialSummary(profile) {
                     }
                 }
             });
+            registerChartForThemeUpdates(chart);
         }
 
         // Savings Rate Gauge (using doughnut)
         const gaugeCanvas = document.getElementById(savingsGaugeId);
         if (gaugeCanvas && window.Chart) {
             const displayRate = Math.min(100, Math.max(0, savingsRate));
-            new Chart(gaugeCanvas, {
+            const chart = new Chart(gaugeCanvas, {
                 type: 'doughnut',
                 data: {
                     datasets: [{
                         data: [displayRate, 100 - displayRate],
                         backgroundColor: [
                             displayRate >= 20 ? '#2ecc71' : displayRate >= 10 ? '#f39c12' : '#e74c3c',
-                            '#ecf0f1'
+                            colors.bgTertiary
                         ],
                         borderWidth: 0
                     }]
@@ -325,7 +331,7 @@ function renderFinancialSummary(profile) {
                         const fontSize = (height / 70).toFixed(2);
                         ctx.font = `900 ${fontSize}em sans-serif`;
                         ctx.textBaseline = 'middle';
-                        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--chart-text-primary').trim();
+                        ctx.fillStyle = colors.textPrimary;
 
                         const text = displayRate.toFixed(0) + '%';
                         const textX = Math.round((width - ctx.measureText(text).width) / 2);
@@ -336,6 +342,7 @@ function renderFinancialSummary(profile) {
                     }
                 }]
             });
+            registerChartForThemeUpdates(chart);
         }
     }, 100);
 

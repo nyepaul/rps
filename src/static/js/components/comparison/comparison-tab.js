@@ -6,7 +6,7 @@ import { store } from '../../state/store.js';
 import { scenariosAPI } from '../../api/scenarios.js';
 import { formatCurrency, formatPercent, formatDate, formatCompact } from '../../utils/formatters.js';
 import { showLoading, showError, showSuccess } from '../../utils/dom.js';
-import { renderStandardTimelineChart } from '../../utils/charts.js';
+import { renderStandardTimelineChart, getChartThemeColors, registerChartForThemeUpdates } from '../../utils/charts.js';
 
 let comparisonChartInstances = {};
 
@@ -387,12 +387,10 @@ function renderComparisonChart(container, selectedIds, allScenarios) {
         return;
     }
 
-    const style = getComputedStyle(document.body);
-    const textPrimary = style.getPropertyValue('--text-primary').trim() || '#212529';
-    const textSecondary = style.getPropertyValue('--text-secondary').trim() || '#666';
+    const colors = getChartThemeColors();
     const ChartConstructor = typeof Chart !== 'undefined' ? Chart : window.Chart;
 
-    comparisonChartInstances[canvasId] = new ChartConstructor(ctx, {
+    const chart = new ChartConstructor(ctx, {
         type: 'line',
         data: { labels, datasets },
         options: {
@@ -402,7 +400,7 @@ function renderComparisonChart(container, selectedIds, allScenarios) {
                 legend: {
                     position: 'top',
                     labels: {
-                        color: textPrimary,
+                        color: colors.textPrimary,
                         usePointStyle: true,
                         padding: 15,
                         font: {
@@ -462,9 +460,9 @@ function renderComparisonChart(container, selectedIds, allScenarios) {
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: { color: 'rgba(128,128,128,0.2)' },
+                    grid: { color: colors.gridColor },
                     ticks: {
-                        color: textPrimary,
+                        color: colors.textSecondary,
                         font: {
                             size: 13,
                             weight: '500'
@@ -475,7 +473,7 @@ function renderComparisonChart(container, selectedIds, allScenarios) {
                 x: {
                     grid: { display: false },
                     ticks: {
-                        color: textPrimary,
+                        color: colors.textSecondary,
                         maxTicksLimit: 15,
                         font: {
                             size: 13,
@@ -485,7 +483,7 @@ function renderComparisonChart(container, selectedIds, allScenarios) {
                     title: {
                         display: true,
                         text: 'Year',
-                        color: textPrimary,
+                        color: colors.textPrimary,
                         font: {
                             size: 14,
                             weight: '600'
@@ -495,4 +493,7 @@ function renderComparisonChart(container, selectedIds, allScenarios) {
             }
         }
     });
+
+    registerChartForThemeUpdates(chart);
+    comparisonChartInstances[canvasId] = chart;
 }

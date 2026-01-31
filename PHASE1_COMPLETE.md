@@ -151,7 +151,7 @@ Press F12 to open developer tools. Look for:
 1. ✅ Verify all tests pass
 2. ✅ Verify no regressions in existing functionality
 3. ✅ Update checklist in `docs/CSV_IMPORT_IMPLEMENTATION.md`
-4. ✅ Bump version to **3.9.150** with description "Standardize CSV parsing"
+4. ✅ Bump version to **3.9.151** with description "Standardize CSV parsing"
 
 ### Proceed to Phase 2
 Once Phase 1 is validated:
