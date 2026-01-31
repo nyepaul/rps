@@ -1,5 +1,5 @@
 {
-    "version": "3.9.140",
+    "version": "3.9.141",
     "release_date": "2026-01-30",
-    "release_notes": "Cash flow: show all years in annual table"
+    "release_notes": "Admin performance: fix N+1 queries, add pagination, add DB indexes"
 }

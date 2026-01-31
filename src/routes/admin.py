@@ -450,24 +450,65 @@ def update_audit_config():
 @login_required
 @admin_required
 def list_users():
-    """List all users in the system with their group assignments."""
+    """List all users in the system with their group assignments.
+
+    Query Parameters:
+    - limit: Maximum number of users to return (default: 50, max: 500)
+    - offset: Number of users to skip (default: 0)
+    - search: Search term for username or email (optional)
+    """
     try:
         from src.database import connection
 
+        # Parse pagination parameters
+        limit = min(int(request.args.get("limit", 50)), 500)
+        offset = int(request.args.get("offset", 0))
+        search = request.args.get("search", "").strip()
+
         if current_user.is_super_admin:
-            rows = connection.db.execute("""
+            # Count query
+            count_query = "SELECT COUNT(DISTINCT u.id) as total FROM users u"
+            count_params = []
+            if search:
+                count_query += " WHERE (u.username LIKE ? OR u.email LIKE ?)"
+                count_params = [f"%{search}%", f"%{search}%"]
+
+            total = connection.db.execute(count_query, count_params).fetchone()["total"]
+
+            # Data query with pagination
+            data_query = """
                 SELECT u.id, u.username, u.email, u.is_active, u.is_admin, u.is_super_admin, u.created_at, u.last_login,
                        GROUP_CONCAT(g.name, ', ') as group_names
                 FROM users u
                 LEFT JOIN user_groups ug ON u.id = ug.user_id
                 LEFT JOIN groups g ON ug.group_id = g.id
-                GROUP BY u.id
-                ORDER BY u.created_at DESC
-            """)
+            """
+            data_params = []
+            if search:
+                data_query += " WHERE (u.username LIKE ? OR u.email LIKE ?)"
+                data_params = [f"%{search}%", f"%{search}%"]
+
+            data_query += " GROUP BY u.id ORDER BY u.created_at DESC LIMIT ? OFFSET ?"
+            data_params.extend([limit, offset])
+
+            rows = connection.db.execute(data_query, data_params)
         else:
             # Only show users in groups managed by this admin
-            rows = connection.db.execute(
-                """
+            count_query = """
+                SELECT COUNT(DISTINCT u.id) as total
+                FROM users u
+                JOIN user_groups ug ON u.id = ug.user_id
+                JOIN admin_groups ag ON ug.group_id = ag.group_id
+                WHERE ag.user_id = ?
+            """
+            count_params = [current_user.id]
+            if search:
+                count_query += " AND (u.username LIKE ? OR u.email LIKE ?)"
+                count_params.extend([f"%{search}%", f"%{search}%"])
+
+            total = connection.db.execute(count_query, count_params).fetchone()["total"]
+
+            data_query = """
                 SELECT DISTINCT u.id, u.username, u.email, u.is_active, u.is_admin, u.is_super_admin, u.created_at, u.last_login,
                        (SELECT GROUP_CONCAT(g2.name, ', ')
                         FROM groups g2
@@ -477,19 +518,31 @@ def list_users():
                 JOIN user_groups ug ON u.id = ug.user_id
                 JOIN admin_groups ag ON ug.group_id = ag.group_id
                 WHERE ag.user_id = ?
-                ORDER BY u.created_at DESC
-            """,
-                (current_user.id,),
-            )
+            """
+            data_params = [current_user.id]
+            if search:
+                data_query += " AND (u.username LIKE ? OR u.email LIKE ?)"
+                data_params.extend([f"%{search}%", f"%{search}%"])
+
+            data_query += " ORDER BY u.created_at DESC LIMIT ? OFFSET ?"
+            data_params.extend([limit, offset])
+
+            rows = connection.db.execute(data_query, data_params)
 
         users = [dict(row) for row in rows]
 
         # Log admin action
         enhanced_audit_logger.log_admin_action(
-            action="LIST_USERS", details={"count": len(users)}, user_id=current_user.id
+            action="LIST_USERS", details={"count": len(users), "total": total}, user_id=current_user.id
         )
 
-        return jsonify({"users": users}), 200
+        return jsonify({
+            "users": users,
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "has_more": offset + len(users) < total
+        }), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -2456,7 +2509,16 @@ def get_users_by_location_report():
             ORDER BY l.user_id, access_count DESC
         """
 
-        rows = connection.db.execute(query, (cutoff_date,))
+        rows = list(connection.db.execute(query, (cutoff_date,)))
+
+        # Pre-fetch all users in one query to avoid N+1
+        unique_user_ids = list(set(row["user_id"] for row in rows if row["user_id"]))
+        users_cache = {}
+        if unique_user_ids:
+            placeholders = ",".join("?" * len(unique_user_ids))
+            users_query = f"SELECT id, username, email, is_active FROM users WHERE id IN ({placeholders})"
+            for user_row in connection.db.execute(users_query, unique_user_ids):
+                users_cache[user_row["id"]] = user_row
 
         # Organize data by user
         users_by_location = {}
@@ -2465,16 +2527,16 @@ def get_users_by_location_report():
             user_id = row["user_id"]
 
             if user_id not in users_by_location:
-                # Get user details
-                user = User.get_by_id(user_id)
+                # Get user details from cache
+                user = users_cache.get(user_id)
                 if not user:
                     continue
 
                 users_by_location[user_id] = {
                     "user_id": user_id,
-                    "username": user.username,
-                    "email": user.email,
-                    "is_active": user.is_active,
+                    "username": user["username"],
+                    "email": user["email"],
+                    "is_active": user["is_active"],
                     "locations": [],
                     "total_accesses": 0,
                     "unique_locations": 0,
@@ -2720,100 +2782,99 @@ def get_user_activity_report():
             "ORDER BY total_actions DESC"
         )
 
-        user_activity_rows = connection.db.execute(activity_query, params)
+        user_activity_rows = list(connection.db.execute(activity_query, params))
         users_activity = []
 
-        for row in user_activity_rows:
-            user_data = dict(row)
+        # Collect user IDs for batch queries
+        all_user_ids = [row["user_id"] for row in user_activity_rows if row["user_id"]]
 
-            # Get top actions for this user
+        # Batch query for top actions per user (using window function)
+        top_actions_map = {}
+        top_tables_map = {}
+        daily_activity_map = {}
+
+        if all_user_ids:
+            user_placeholders = ",".join(["?"] * len(all_user_ids))
             action_filter = (
                 f"AND action IN ({','.join(['?'] * len(action_types))}) "
                 if action_types
                 else ""
             )
-            top_actions_query = (
-                "SELECT action, COUNT(*) as count "
-                "FROM enhanced_audit_log "
-                "WHERE user_id = ? "
-                "AND created_at >= ? AND created_at <= ? "
-                f"{action_filter}"
-                "GROUP BY action "
-                "ORDER BY count DESC "
-                "LIMIT 5"
-            )
-            top_actions_params = [
-                user_data["user_id"],
-                start_date + " 00:00:00",
-                end_date + " 23:59:59",
-            ]
+
+            # Batch: Top 5 actions per user
+            batch_actions_query = f"""
+                SELECT user_id, action, count FROM (
+                    SELECT user_id, action, COUNT(*) as count,
+                           ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY COUNT(*) DESC) as rn
+                    FROM enhanced_audit_log
+                    WHERE user_id IN ({user_placeholders})
+                    AND created_at >= ? AND created_at <= ?
+                    {action_filter}
+                    GROUP BY user_id, action
+                ) WHERE rn <= 5
+            """
+            batch_actions_params = all_user_ids + [start_date + " 00:00:00", end_date + " 23:59:59"]
             if action_types:
-                top_actions_params.extend(action_types)
+                batch_actions_params.extend(action_types)
 
-            top_actions_rows = connection.db.execute(
-                top_actions_query, top_actions_params)
-            user_data["top_actions"] = [
-                {"action": r["action"], "count": r["count"]} for r in top_actions_rows
-            ]
+            for r in connection.db.execute(batch_actions_query, batch_actions_params):
+                uid = r["user_id"]
+                if uid not in top_actions_map:
+                    top_actions_map[uid] = []
+                top_actions_map[uid].append({"action": r["action"], "count": r["count"]})
 
-            # Get most active tables for this user
-            top_tables_query = (
-                "SELECT table_name, COUNT(*) as count "
-                "FROM enhanced_audit_log "
-                "WHERE user_id = ? "
-                "AND created_at >= ? AND created_at <= ? "
-                "AND table_name IS NOT NULL "
-                + (
-                    f"AND action IN ({','.join(['?'] * len(action_types))}) "
-                    if action_types
-                    else ""
-                )
-                + "GROUP BY table_name "
-                "ORDER BY count DESC "
-                "LIMIT 5"
-            )
-            top_tables_params = [
-                user_data["user_id"],
-                start_date + " 00:00:00",
-                end_date + " 23:59:59",
-            ]
+            # Batch: Top 5 tables per user
+            batch_tables_query = f"""
+                SELECT user_id, table_name, count FROM (
+                    SELECT user_id, table_name, COUNT(*) as count,
+                           ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY COUNT(*) DESC) as rn
+                    FROM enhanced_audit_log
+                    WHERE user_id IN ({user_placeholders})
+                    AND created_at >= ? AND created_at <= ?
+                    AND table_name IS NOT NULL
+                    {action_filter}
+                    GROUP BY user_id, table_name
+                ) WHERE rn <= 5
+            """
+            batch_tables_params = all_user_ids + [start_date + " 00:00:00", end_date + " 23:59:59"]
             if action_types:
-                top_tables_params.extend(action_types)
+                batch_tables_params.extend(action_types)
 
-            top_tables_rows = connection.db.execute(
-                top_tables_query, top_tables_params)
-            user_data["top_tables"] = [
-                {"table": r["table_name"], "count": r["count"]} for r in top_tables_rows
-            ]
+            for r in connection.db.execute(batch_tables_query, batch_tables_params):
+                uid = r["user_id"]
+                if uid not in top_tables_map:
+                    top_tables_map[uid] = []
+                top_tables_map[uid].append({"table": r["table_name"], "count": r["count"]})
 
-            # Get daily activity pattern
-            daily_query = (
-                "SELECT DATE(created_at) as date, COUNT(*) as count "
-                "FROM enhanced_audit_log "
-                "WHERE user_id = ? "
-                "AND created_at >= ? AND created_at <= ? "
-                + (
-                    f"AND action IN ({','.join(['?'] * len(action_types))}) "
-                    if action_types
-                    else ""
-                )
-                + "GROUP BY DATE(created_at) "
-                "ORDER BY date DESC "
-                "LIMIT 30"
-            )
-            daily_params = [
-                user_data["user_id"],
-                start_date + " 00:00:00",
-                end_date + " 23:59:59",
-            ]
+            # Batch: Daily activity (last 30 days per user)
+            batch_daily_query = f"""
+                SELECT user_id, date, count FROM (
+                    SELECT user_id, DATE(created_at) as date, COUNT(*) as count,
+                           ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY DATE(created_at) DESC) as rn
+                    FROM enhanced_audit_log
+                    WHERE user_id IN ({user_placeholders})
+                    AND created_at >= ? AND created_at <= ?
+                    {action_filter}
+                    GROUP BY user_id, DATE(created_at)
+                ) WHERE rn <= 30
+            """
+            batch_daily_params = all_user_ids + [start_date + " 00:00:00", end_date + " 23:59:59"]
             if action_types:
-                daily_params.extend(action_types)
+                batch_daily_params.extend(action_types)
 
-            daily_rows = connection.db.execute(daily_query, daily_params)
-            user_data["daily_activity"] = [
-                {"date": r["date"], "count": r["count"]} for r in daily_rows
-            ]
+            for r in connection.db.execute(batch_daily_query, batch_daily_params):
+                uid = r["user_id"]
+                if uid not in daily_activity_map:
+                    daily_activity_map[uid] = []
+                daily_activity_map[uid].append({"date": r["date"], "count": r["count"]})
 
+        # Build final user activity list using batch data
+        for row in user_activity_rows:
+            user_data = dict(row)
+            uid = user_data["user_id"]
+            user_data["top_actions"] = top_actions_map.get(uid, [])
+            user_data["top_tables"] = top_tables_map.get(uid, [])
+            user_data["daily_activity"] = daily_activity_map.get(uid, [])
             users_activity.append(user_data)
 
         # Generate summary statistics
