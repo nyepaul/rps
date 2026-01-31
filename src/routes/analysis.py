@@ -234,6 +234,8 @@ def run_analysis():
             social_security=financial_data.get("social_security_benefit")
             or 0,  # Already monthly
             ss_claiming_age=financial_data.get("ss_claiming_age") or 67,
+            annual_401k_contribution_rate=financial_data.get("annual_401k_contribution_rate") or 0,
+            employer_match_rate=financial_data.get("employer_match_rate") or 0,
         )
 
         # Create person2 (spouse) if spouse data exists
@@ -586,6 +588,8 @@ def get_cashflow_details():
             ),
             social_security=financial_data.get("social_security_benefit") or 0,
             ss_claiming_age=financial_data.get("ss_claiming_age") or 67,
+            annual_401k_contribution_rate=financial_data.get("annual_401k_contribution_rate") or 0,
+            employer_match_rate=financial_data.get("employer_match_rate") or 0,
         )
 
         # Create person2

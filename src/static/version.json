@@ -1,5 +1,5 @@
 {
-    "version": "3.9.153",
+    "version": "3.9.154",
     "release_date": "2026-01-31",
-    "release_notes": "Consolidate taxes in cash flow chart - show as single color with breakdown in tooltip"
+    "release_notes": "Fix 401k contributions not being saved or used in calculations"
 }

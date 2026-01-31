@@ -112,7 +112,7 @@ export function renderProfileTab(container) {
                             <div class="form-group">
                                 <label for="annual_401k">401k/403b Contribution Rate</label>
                                 <div style="display: flex; align-items: center; gap: 8px;">
-                                    <input type="number" id="annual_401k" name="annual_401k" value="${(person.annual_401k_contribution_rate || 0) * 100}" placeholder="0" step="0.5" min="0" max="100" style="flex: 1;">
+                                    <input type="number" id="annual_401k" name="annual_401k" value="${(financial.annual_401k_contribution_rate || 0) * 100}" placeholder="0" step="0.5" min="0" max="100" style="flex: 1;">
                                     <span style="font-size: 13px;">%</span>
                                 </div>
                                 <small style="color: var(--text-secondary); font-size: 11px;">% of salary (pre-tax, reduces take-home)</small>
@@ -120,7 +120,7 @@ export function renderProfileTab(container) {
                             <div class="form-group">
                                 <label for="employer_match">Employer Match Rate</label>
                                 <div style="display: flex; align-items: center; gap: 8px;">
-                                    <input type="number" id="employer_match" name="employer_match" value="${(person.employer_match_rate || 0) * 100}" placeholder="0" step="0.5" min="0" max="100" style="flex: 1;">
+                                    <input type="number" id="employer_match" name="employer_match" value="${(financial.employer_match_rate || 0) * 100}" placeholder="0" step="0.5" min="0" max="100" style="flex: 1;">
                                     <span style="font-size: 13px;">%</span>
                                 </div>
                                 <small style="color: var(--text-secondary); font-size: 11px;">% of salary (employer adds this)</small>

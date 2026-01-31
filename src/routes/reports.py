@@ -103,6 +103,9 @@ def run_analysis_for_report(profile):
             else datetime(2045, 1, 1)
         ),
         social_security=financial_data.get("social_security_benefit", 0),
+        ss_claiming_age=financial_data.get("ss_claiming_age") or 67,
+        annual_401k_contribution_rate=financial_data.get("annual_401k_contribution_rate") or 0,
+        employer_match_rate=financial_data.get("employer_match_rate") or 0,
     )
 
     spouse_birth = (
@@ -131,6 +134,7 @@ def run_analysis_for_report(profile):
             if spouse_data.get("social_security_benefit")
             else 0
         ),
+        ss_claiming_age=spouse_data.get("ss_claiming_age") or 67,
     )
 
     assets_data = profile_data.get("assets", {})
