@@ -290,6 +290,31 @@ Options:
 ./bin/restore --latest --yes
 ```
 
+## Personal Data Backups (Export/Import)
+
+RPS provides a simple way for users to backup and transport their own planning data without needing server access or administrative privileges.
+
+### Features
+- **Downloadable Snapshots**: Save your data as a `.json` file to your computer.
+- **Portability**: Move your profiles and scenarios between different RPS instances.
+- **Total Coverage**: Includes profiles, investment accounts, income streams, scenarios, action items, AI chat history, and personal settings (including API keys).
+- **Safety First**: The system automatically creates a "safety backup" of your current state before you import any file.
+
+### How to Export/Download Your Data
+1. Open the **Settings** (gear icon) in the top header.
+2. Click the **💾 Backups** tab.
+3. Click **+ New Backup** to create a snapshot on the server.
+4. Click **⬇️ Download** next to your backup to save the file to your computer.
+
+### How to Import/Restore Your Data
+1. Open the **Settings** > **💾 Backups** tab.
+2. Click **📥 Import File**.
+3. Select your RPS backup `.json` file.
+4. Confirm the replacement of your current data.
+5. The system will refresh, and your imported data will be ready.
+
+---
+
 ## Selective Profile/Group Backups (Admin Feature)
 
 The RPS backup system includes a powerful selective backup feature that allows super administrators to backup and restore specific profiles or entire groups of users. This is useful for:

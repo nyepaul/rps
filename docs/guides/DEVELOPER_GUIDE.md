@@ -28,28 +28,23 @@
 
 ```
 rps/
-├── src/
-│   ├── app.py                    # Flask application factory
-│   ├── routes/                   # API endpoints (blueprints)
-│   ├── services/                 # Business logic (retirement_model.py)
-│   ├── models/                   # Domain models
-│   ├── schemas/                  # Pydantic validation
-│   └── static/
-│       ├── index.html            # SPA shell (~124 lines)
-│       └── js/
-│           ├── main.js           # Entry point
-│           ├── components/       # UI components (60+ files)
-│           ├── api/              # API client modules
-│           ├── state/            # State management
-│           └── utils/            # Utility functions
-├── data/
-│   └── planning.db               # SQLite database (encrypted)
-├── skills/                       # Educational markdown files (11 total)
-├── docs/                         # Documentation
-├── tests/                        # Test suite
 ├── bin/                          # Executable scripts
-├── logs/                         # Application logs
-└── requirements.txt              # Python dependencies
+├── config/                       # Centralized tool configurations
+│   ├── alembic.ini
+│   ├── pytest.ini
+│   └── requirements.txt
+├── data/                         # SQLite database (encrypted)
+├── docs/                         # Categorized documentation
+├── scripts/                      # Administrative Python scripts
+├── src/                          # Application source code
+│   ├── app.py                    # Flask application factory
+│   ├── routes/                   # API endpoints
+│   ├── services/                 # Business logic
+│   └── static/                   # Frontend SPA
+├── skills/                       # Educational markdown files
+├── test_results/                 # Test and scan results
+├── tests/                        # Test suite
+└── logs/                         # Consolidated logs
 ```
 
 ---
@@ -920,13 +915,13 @@ describe('Progression System', () => {
 
 ```bash
 # Setup
-cd /Users/paul/src/rps
-uv venv
-uv pip install -r requirements.txt
+cd /home/paul/src/rps
+python3 -m venv venv
+source venv/bin/activate
+pip install -r config/requirements.txt
 
 # Run
-source .venv/bin/activate
-python3 src/app.py
+./bin/start
 
 # Access
 open http://127.0.0.1:5137
@@ -1130,7 +1125,7 @@ if not file_path.startswith(skills_dir):
 **Solutions:**
 1. Verify skills directory exists: `/Users/paul/src/rps/skills/`
 2. Check file names match exactly (case-sensitive)
-3. Verify Flask server is running on port 8080
+3. Verify Flask server is running on port 5137
 4. Check backend logs for errors
 
 ### Progress Indicator Not Updating

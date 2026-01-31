@@ -13,8 +13,8 @@ The application is now running with **Advanced AI Integration** and **Dynamic Pe
 Navigate to: **[http://127.0.0.1:5137](http://127.0.0.1:5137)**
 
 ### 3. Load & Optimize
-- Go to the **Profile & Data** tab.
-- Select your profile (e.g., "Initial") and click **Load**.
+- **First Time?** Click **"Create New Profile"** to start the financial wizard.
+- **Returning?** Go to the **Profile & Data** tab, select your profile and click **Load**.
 - **Adjust Pension**: Under "Income Streams," you can modify pension amounts, start dates, and inflation rules.
 - **Get AI Advice**: Go to the **Analysis** tab and click **AI Recommendations**.
 

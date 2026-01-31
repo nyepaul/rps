@@ -869,11 +869,11 @@ def advisor_chat():
         if not profile:
             return jsonify({"error": "Profile not found"}), 404
 
-        data_dict = profile.data_dict
-        api_keys = data_dict.get("api_keys", {})
+        # Get API keys from user account (not profile)
+        api_keys = current_user.api_keys_dict
 
-        # Determine provider: priority = request > profile preference > Gemini (if key exists)
-        provider = requested_provider or data_dict.get("preferred_ai_provider")
+        # Determine provider: priority = request > account preference > Gemini (if key exists)
+        provider = requested_provider or api_keys.get("preferred_ai_provider") or data_dict.get("preferred_ai_provider")
 
         # If no preferred provider, find first available key
         if not provider:
@@ -1198,9 +1198,9 @@ def extract_items(item_type):
             return jsonify({"error": "Profile not found"}), 404
 
         data_dict = profile.data_dict
-        api_keys = data_dict.get("api_keys", {})
+        api_keys = current_user.api_keys_dict
         provider = (
-            requested_provider or data_dict.get("preferred_ai_provider") or "gemini"
+            requested_provider or api_keys.get("preferred_ai_provider") or data_dict.get("preferred_ai_provider") or "gemini"
         )
 
         # Get the appropriate key/url
@@ -1429,9 +1429,9 @@ def enhance_csv_import():
 
         # 1. Determine Provider and API Key
         data_dict = profile.data_dict
-        api_keys = data_dict.get("api_keys", {})
+        api_keys = current_user.api_keys_dict
         provider = (
-            requested_provider or data_dict.get("preferred_ai_provider") or "gemini"
+            requested_provider or api_keys.get("preferred_ai_provider") or data_dict.get("preferred_ai_provider") or "gemini"
         )
         api_key = api_keys.get(f"{provider}_api_key")
 

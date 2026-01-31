@@ -18,10 +18,18 @@ export function renderUserBackups(container) {
                         Snapshot your profiles, scenarios, and preferences for safekeeping
                     </p>
                 </div>
-                <button id="create-user-backup-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                    + New Backup
-                </button>
+                <div style="display: flex; gap: 10px;">
+                    <button id="import-user-backup-btn" style="padding: 10px 20px; background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        📥 Import File
+                    </button>
+                    <button id="create-user-backup-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        + New Backup
+                    </button>
+                </div>
             </div>
+
+            <!-- Hidden file input for import -->
+            <input type="file" id="backup-import-input" accept=".json" style="display: none;">
 
             <div id="user-backups-list" style="min-height: 200px;">
                 <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
@@ -58,7 +66,56 @@ export function renderUserBackups(container) {
     const createBtn = container.querySelector('#create-user-backup-btn');
     createBtn.addEventListener('click', () => showCreateBackupModal(container));
 
+    const importBtn = container.querySelector('#import-user-backup-btn');
+    const fileInput = container.querySelector('#backup-import-input');
+    
+    importBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => handleImport(e, container));
+
     loadUserBackups(container);
+}
+
+/**
+ * Handle backup file import
+ */
+async function handleImport(event, container) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (confirm(`⚠️ WARNING: Importing this file will replace all your current profiles and data. A safety backup of your current state will be created first. Proceed?`)) {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // Show loading state
+            const importBtn = container.querySelector('#import-user-backup-btn');
+            const originalText = importBtn.textContent;
+            importBtn.disabled = true;
+            importBtn.textContent = 'Importing...';
+
+            const response = await fetch('/api/backups/import', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Import failed');
+            }
+
+            showSuccess('Backup imported and restored successfully! Refreshing...');
+            setTimeout(() => window.location.reload(), 1500);
+        } catch (error) {
+            showError(`Import failed: ${error.message}`);
+            // Reset button
+            const importBtn = container.querySelector('#import-user-backup-btn');
+            importBtn.disabled = false;
+            importBtn.textContent = '📥 Import File';
+        }
+    }
+    
+    // Clear input
+    event.target.value = '';
 }
 
 /**
@@ -96,6 +153,9 @@ async function loadUserBackups(container) {
                             </div>
                         </div>
                         <div style="display: flex; gap: 8px;">
+                            <button class="download-backup-btn" data-id="${backup.id}" style="padding: 6px 12px; background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                                ⬇️ Download
+                            </button>
                             <button class="restore-backup-btn" data-id="${backup.id}" style="padding: 6px 12px; background: var(--warning-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
                                 ↻ Restore
                             </button>
@@ -109,6 +169,10 @@ async function loadUserBackups(container) {
         `;
 
         // Setup handlers
+        listContainer.querySelectorAll('.download-backup-btn').forEach(btn => {
+            btn.addEventListener('click', () => downloadBackup(btn.dataset.id));
+        });
+
         listContainer.querySelectorAll('.restore-backup-btn').forEach(btn => {
             btn.addEventListener('click', () => confirmRestore(btn.dataset.id, container));
         });
@@ -160,6 +224,13 @@ function showCreateBackupModal(parentContainer) {
             showError(`Failed to create backup: ${error.message}`);
         }
     };
+}
+
+/**
+ * Download a backup file
+ */
+function downloadBackup(backupId) {
+    window.location.href = `/api/backups/${backupId}/download`;
 }
 
 /**

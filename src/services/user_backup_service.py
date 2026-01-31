@@ -46,6 +46,8 @@ class UserBackupService:
                 "label": label,
             },
             "preferences": user.preferences,
+            "api_keys": user.api_keys,
+            "api_keys_iv": user.api_keys_iv,
             "profiles": [],
             "scenarios": [],
             "action_items": [],
@@ -108,6 +110,36 @@ class UserBackupService:
             "filename": filename,
             "size_bytes": size_bytes,
             "created_at": backup_data["metadata"]["created_at"],
+        }
+
+    @staticmethod
+    def save_imported_backup(user_id: int, backup_data: Dict[str, Any], label: str) -> Dict[str, Any]:
+        """Save imported backup data to a file and record in DB."""
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"user_{user_id}_{timestamp}_imported.json"
+        
+        backup_path = UserBackupService.get_backup_dir() / filename
+        with open(backup_path, "w") as f:
+            json.dump(backup_data, f, indent=2)
+
+        # Record in database
+        size_bytes = backup_path.stat().st_size
+        with connection.db.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                INSERT INTO user_backups (user_id, filename, label, size_bytes)
+                VALUES (?, ?, ?, ?)
+            """,
+                (user_id, filename, label, size_bytes),
+            )
+            backup_id = cursor.lastrowid
+            conn.commit()
+
+        return {
+            "id": backup_id,
+            "filename": filename,
+            "size_bytes": size_bytes
         }
 
     @staticmethod
@@ -175,12 +207,16 @@ class UserBackupService:
             cursor.execute("DELETE FROM scenarios WHERE user_id = ?", (user_id,))
             cursor.execute("DELETE FROM conversations WHERE user_id = ?", (user_id,))
 
-            # 2. Restore preferences
-            if backup_data.get("preferences"):
-                cursor.execute(
-                    "UPDATE users SET preferences = ? WHERE id = ?",
-                    (backup_data["preferences"], user_id),
-                )
+            # 2. Restore preferences and API keys
+            cursor.execute(
+                "UPDATE users SET preferences = ?, api_keys = ?, api_keys_iv = ? WHERE id = ?",
+                (
+                    backup_data.get("preferences"),
+                    backup_data.get("api_keys"),
+                    backup_data.get("api_keys_iv"),
+                    user_id,
+                ),
+            )
 
             # 3. Restore profiles and build ID map
             profile_id_map = {}

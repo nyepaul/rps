@@ -108,27 +108,12 @@ const PROVIDERS = {
  * Render AI settings section
  */
 export async function renderAPIKeysSettings(container) {
-    const profile = store.get('currentProfile');
-
-    if (!profile) {
-        container.innerHTML = `
-            <div style="text-align: center; padding: 40px 20px;">
-                <div style="font-size: 48px; margin-bottom: 15px;">🤖</div>
-                <h3 style="margin-bottom: 10px;">No Profile Selected</h3>
-                <p style="color: var(--text-secondary); margin: 0;">
-                    Please create or select a profile to manage AI settings.
-                </p>
-            </div>
-        `;
-        return;
-    }
-
     container.innerHTML = `
         <!-- Header -->
         <div style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); padding: 20px; border-radius: 8px; margin-bottom: 20px; color: white;">
             <h3 style="margin: 0 0 8px 0; font-size: 18px;">🧠 AI Provider Configuration</h3>
             <p style="margin: 0; font-size: 13px; opacity: 0.9;">
-                Configure AI providers for smart retirement advice and analysis. Keys are encrypted with AES-256-GCM.
+                Configure AI providers globally for your account. Keys are encrypted with AES-256-GCM.
             </p>
             <p style="margin: 8px 0 0 0; font-size: 12px; opacity: 0.8; font-style: italic;">
                 💡 Tip: Keys are automatically saved after successful testing
@@ -202,13 +187,13 @@ export async function renderAPIKeysSettings(container) {
     renderProviderSection(container, 'more-providers', PROVIDERS.more);
 
     // Setup handlers
-    setupHandlers(container, profile);
+    setupHandlers(container);
 
     // Load existing keys
-    await loadExistingKeys(container, profile);
+    await loadExistingKeys(container);
 
     // Update status summary
-    updateStatusSummary(container, profile);
+    updateStatusSummary(container);
 }
 
 function renderProviderSection(container, elementId, providers) {
@@ -262,7 +247,7 @@ function renderProviderCard(provider) {
     `;
 }
 
-function setupHandlers(container, profile) {
+function setupHandlers(container) {
     // Toggle visibility buttons
     container.querySelectorAll('.toggle-visibility-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -277,7 +262,7 @@ function setupHandlers(container, profile) {
     container.querySelectorAll('.test-key-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
             const provider = btn.dataset.provider;
-            await testNewKey(provider, container, profile);
+            await testNewKey(provider, container);
         });
     });
 
@@ -285,7 +270,7 @@ function setupHandlers(container, profile) {
     container.querySelectorAll('.verify-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
             const provider = btn.dataset.provider;
-            await testStoredKey(provider, container, profile);
+            await testStoredKey(provider, container);
         });
     });
 
@@ -294,7 +279,7 @@ function setupHandlers(container, profile) {
         btn.addEventListener('click', async () => {
             const provider = btn.dataset.provider;
             if (confirm(`Delete the stored ${provider.toUpperCase()} API key?`)) {
-                await deleteKey(provider, container, profile);
+                await deleteKey(provider, container);
             }
         });
     });
@@ -309,7 +294,7 @@ function setupHandlers(container, profile) {
     });
 }
 
-async function testNewKey(provider, container, profile) {
+async function testNewKey(provider, container) {
     const isUrl = ['lmstudio', 'localai'].includes(provider);
     const inputId = isUrl ? `${provider}-url` : `${provider}-api-key`;
     const input = container.querySelector(`#${inputId}`);
@@ -333,7 +318,7 @@ async function testNewKey(provider, container, profile) {
     statusEl.innerHTML = '<span style="color: var(--text-secondary);">⏳ Testing...</span>';
 
     try {
-        const response = await fetch('/api/test-api-key', {
+        const response = await fetch('/api/auth/test-api-key', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ provider, api_key: value })
@@ -345,7 +330,7 @@ async function testNewKey(provider, container, profile) {
             statusEl.innerHTML = `<span style="color: var(--success-color);">✓ Valid! ${result.model || ''} - Saving...</span>`;
 
             // Save immediately
-            const saveSuccess = await saveAllSettings(container, profile);
+            const saveSuccess = await saveAllSettings(container);
 
             if (saveSuccess) {
                 statusEl.innerHTML = `<span style="color: var(--success-color);">✓ Saved and verified!</span>`;
@@ -366,14 +351,14 @@ async function testNewKey(provider, container, profile) {
     }
 }
 
-async function testStoredKey(provider, container, profile) {
+async function testStoredKey(provider, container) {
     const btn = container.querySelector(`.verify-btn[data-provider="${provider}"]`);
     const originalText = btn.textContent;
     btn.textContent = '...';
     btn.disabled = true;
 
     try {
-        const response = await fetch(`/api/profiles/${encodeURIComponent(profile.name)}/test-stored-key`, {
+        const response = await fetch('/api/auth/test-stored-key', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ provider })
@@ -407,9 +392,9 @@ async function testStoredKey(provider, container, profile) {
     }
 }
 
-async function deleteKey(provider, container, profile) {
+async function deleteKey(provider, container) {
     try {
-        const response = await fetch(`/api/profiles/${encodeURIComponent(profile.name)}/delete-api-key`, {
+        const response = await fetch('/api/auth/delete-api-key', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ provider })
@@ -427,7 +412,7 @@ async function deleteKey(provider, container, profile) {
             container.querySelector(`#${inputId}`).value = '';
 
             showSuccess(`${provider.toUpperCase()} key deleted`);
-            updateStatusSummary(container, profile);
+            updateStatusSummary(container);
         } else {
             const result = await response.json();
             showError(result.error || 'Failed to delete key');
@@ -437,9 +422,9 @@ async function deleteKey(provider, container, profile) {
     }
 }
 
-async function loadExistingKeys(container, profile) {
+async function loadExistingKeys(container) {
     try {
-        const response = await fetch(`/api/profiles/${encodeURIComponent(profile.name)}/api-keys`);
+        const response = await fetch('/api/auth/api-keys');
         if (!response.ok) return;
 
         const data = await response.json();
@@ -489,7 +474,7 @@ async function loadExistingKeys(container, profile) {
     }
 }
 
-export async function saveAllSettings(container, profile) {
+export async function saveAllSettings(container) {
     const payload = {};
     const allProviders = [...PROVIDERS.recommended, ...PROVIDERS.budget, ...PROVIDERS.local, ...PROVIDERS.more];
     const validationErrors = [];
@@ -526,7 +511,7 @@ export async function saveAllSettings(container, profile) {
     payload.preferred_ai_provider = preferredProvider;
 
     try {
-        const response = await fetch(`/api/profiles/${encodeURIComponent(profile.name)}/api-keys`, {
+        const response = await fetch('/api/auth/api-keys', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -552,11 +537,11 @@ export async function saveAllSettings(container, profile) {
     }
 }
 
-function updateStatusSummary(container, profile) {
+function updateStatusSummary(container) {
     const summaryEl = container.querySelector('#status-summary');
     if (!summaryEl) return;
 
-    fetch(`/api/profiles/${encodeURIComponent(profile.name)}/api-keys`)
+    fetch('/api/auth/api-keys')
         .then(r => r.json())
         .then(data => {
             const configured = [];

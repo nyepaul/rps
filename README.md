@@ -49,11 +49,11 @@ A local-first financial planning application for Monte Carlo retirement simulati
 ## Documentation
 
 - [Quick Start Guide](docs/guides/QUICKSTART.md)
-- [Developer Guide](docs/DEVELOPER_GUIDE.md)
+- [Developer Guide](docs/guides/DEVELOPER_GUIDE.md)
 - [Admin System](docs/reference/ADMIN_SYSTEM_GUIDE.md)
 - [Deployment](docs/deployment/DEPLOYMENT.md)
 - [Security](docs/security/SYSTEM_SECURITY_DOCUMENTATION.md)
-- [Backup & Restore](docs/BACKUP_GUIDE.md)
+- [Backup & Restore](docs/guides/BACKUP_GUIDE.md)
 
 ## Environment Variables (System/Test)
 

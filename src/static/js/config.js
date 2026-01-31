@@ -12,6 +12,10 @@ export const API_ENDPOINTS = {
     AUTH_LOGOUT: '/api/auth/logout',
     AUTH_REGISTER: '/api/auth/register',
     AUTH_SESSION: '/api/auth/session',
+    AUTH_API_KEYS: '/api/auth/api-keys',
+    AUTH_TEST_API_KEY: '/api/auth/test-api-key',
+    AUTH_TEST_STORED_KEY: '/api/auth/test-stored-key',
+    AUTH_DELETE_API_KEY: '/api/auth/delete-api-key',
 
     // Profiles
     PROFILES_LIST: '/api/profiles',

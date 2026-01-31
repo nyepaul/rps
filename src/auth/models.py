@@ -40,6 +40,8 @@ class User(UserMixin):
         email_verification_sent_at=None,
         temp_recovery_code=None,
         recovery_code_shown=False,
+        api_keys=None,
+        api_keys_iv=None,
         **kwargs,
     ):
         self.id = id
@@ -71,6 +73,46 @@ class User(UserMixin):
         self.email_verification_sent_at = email_verification_sent_at
         self.temp_recovery_code = temp_recovery_code
         self.recovery_code_shown = bool(recovery_code_shown) if recovery_code_shown is not None else False
+        self._api_keys = api_keys  # Encrypted ciphertext
+        self.api_keys_iv = api_keys_iv  # IV for API keys
+        self._decrypted_api_keys = None
+
+    @property
+    def api_keys(self):
+        """Get encrypted API keys."""
+        return self._api_keys
+
+    @api_keys.setter
+    def api_keys(self, value):
+        """Set API keys - can be dict or encrypted string."""
+        if isinstance(value, dict):
+            self._decrypted_api_keys = value
+            self._api_keys = None
+        else:
+            self._api_keys = value
+            self._decrypted_api_keys = None
+
+    @property
+    def api_keys_dict(self):
+        """Get API keys as dictionary (decrypts if encrypted)."""
+        from src.services.encryption_service import decrypt_dict
+
+        if self._decrypted_api_keys is not None:
+            return self._decrypted_api_keys
+
+        if self._api_keys and self.api_keys_iv:
+            try:
+                self._decrypted_api_keys = decrypt_dict(self._api_keys, self.api_keys_iv)
+                return self._decrypted_api_keys or {}
+            except Exception:
+                pass
+
+        return {}
+
+    @api_keys_dict.setter
+    def api_keys_dict(self, value):
+        """Set API keys from dictionary."""
+        self._decrypted_api_keys = value
 
     @property
     def is_active(self):
@@ -169,6 +211,14 @@ class User(UserMixin):
 
     def save(self):
         """Save or update user in database."""
+        from src.services.encryption_service import encrypt_dict
+
+        # Encrypt API keys if we have decrypted ones
+        if self._decrypted_api_keys is not None:
+            enc_data, iv = encrypt_dict(self._decrypted_api_keys)
+            self._api_keys = enc_data
+            self.api_keys_iv = iv
+
         with connection.db.get_connection() as conn:
             cursor = conn.cursor()
             if self.id is None:
@@ -178,8 +228,8 @@ class User(UserMixin):
                     INSERT INTO users (username, email, password_hash, is_active, is_admin, is_super_admin, created_at, updated_at, 
                                      encrypted_dek, dek_iv, recovery_encrypted_dek, recovery_iv, recovery_salt,
                                      email_encrypted_dek, email_iv, email_salt, preferences, email_verified,
-                                     temp_recovery_code, recovery_code_shown)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                     temp_recovery_code, recovery_code_shown, api_keys, api_keys_iv)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                     (
                         self.username,
@@ -202,6 +252,8 @@ class User(UserMixin):
                         1 if self.email_verified else 0,
                         self.temp_recovery_code,
                         1 if self.recovery_code_shown else 0,
+                        self._api_keys,
+                        self.api_keys_iv,
                     ),
                 )  # Default to 0 for new, but if set explicitly respect it
                 self.id = cursor.lastrowid
@@ -214,7 +266,8 @@ class User(UserMixin):
                         is_admin = ?, is_super_admin = ?, last_login = ?, encrypted_dek = ?, dek_iv = ?,
                         recovery_encrypted_dek = ?, recovery_iv = ?, recovery_salt = ?,
                         email_encrypted_dek = ?, email_iv = ?, email_salt = ?, preferences = ?,
-                        email_verified = ?, temp_recovery_code = ?, recovery_code_shown = ?
+                        email_verified = ?, temp_recovery_code = ?, recovery_code_shown = ?,
+                        api_keys = ?, api_keys_iv = ?
                     WHERE id = ?
                 """,
                     (
@@ -237,6 +290,8 @@ class User(UserMixin):
                         1 if self.email_verified else 0,
                         self.temp_recovery_code,
                         1 if self.recovery_code_shown else 0,
+                        self._api_keys,
+                        self.api_keys_iv,
                         self.id,
                     ),
                 )

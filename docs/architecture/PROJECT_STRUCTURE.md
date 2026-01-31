@@ -74,12 +74,6 @@ rps/
 │   │   ├── START-HERE.md
 │   │   ├── QUICKSTART.md
 │   │   ├── BACKUP_GUIDE.md
-│   │   ├── DEV_SERVER.md
-│   │   ├── DEVELOPER_GUIDE.md
-│   │   ├── IMPLEMENTATION_PLAN.md
-│   │   ├── NEW_FEATURES_GUIDE.md
-│   │   ├── QUICK_START_GUIDE.md
-│   │   ├── RESTART-INSTRUCTIONS.md
 │   │   ├── IMPLEMENTATION_STATUS.md
 │   │   ├── IMPROVEMENT_LOG.md
 │   │   └── TROUBLESHOOTING.md

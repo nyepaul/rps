@@ -12,7 +12,7 @@ from src.extensions import limiter, csrf
 from src.services.encryption_service import EncryptionService
 from src.services.enhanced_audit_logger import EnhancedAuditLogger
 from src.utils.error_sanitizer import sanitize_pydantic_error
-from typing import Any
+from typing import Any, Optional, Dict
 from pydantic import BaseModel, EmailStr, validator, ValidationError
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
@@ -679,6 +679,332 @@ def update_preferences():
         return jsonify({"error": str(e)}), 500
 
 
+class APIKeySchema(BaseModel):
+    """Schema for API key management."""
+
+    claude_api_key: Optional[str] = None
+    gemini_api_key: Optional[str] = None
+    openai_api_key: Optional[str] = None
+    grok_api_key: Optional[str] = None
+    openrouter_api_key: Optional[str] = None
+    deepseek_api_key: Optional[str] = None
+    mistral_api_key: Optional[str] = None
+    together_api_key: Optional[str] = None
+    huggingface_api_key: Optional[str] = None
+    zhipu_api_key: Optional[str] = None
+    lmstudio_url: Optional[str] = None
+    localai_url: Optional[str] = None
+    ollama_url: Optional[str] = None
+    ollama_model: Optional[str] = None
+    preferred_ai_provider: Optional[str] = None
+
+    @validator(
+        "claude_api_key",
+        "gemini_api_key",
+        "openai_api_key",
+        "grok_api_key",
+        "openrouter_api_key",
+        "deepseek_api_key",
+        "mistral_api_key",
+        "together_api_key",
+        "huggingface_api_key",
+        "zhipu_api_key",
+    )
+    def validate_api_key(cls, v, values, **kwargs):
+        if v is not None:
+            v = v.strip()
+
+            # Comprehensive masked character detection
+            masked_chars = [
+                "•",
+                "●",
+                "∙",
+                "⋅",
+                "⦁",
+                "◦",
+                "▪",
+                "▫",
+                "■",
+                "□",
+                "▬",
+                "─",
+                "━",
+                "▂",
+                "▃",
+                "▄",
+            ]
+            if any(char in v for char in masked_chars):
+                raise ValueError(
+                    "Cannot save masked API key - contains bullet/masking characters"
+                )
+
+            # Reject common placeholder patterns
+            placeholder_patterns = [
+                "****",
+                "...",
+                "xxx",
+                "XXX",
+                "XXXX",
+                "xxxx",
+                "your_api_key",
+                "your-api-key",
+                "api-key-here",
+                "enter_key_here",
+                "placeholder",
+            ]
+            if any(pattern in v.lower() for pattern in placeholder_patterns):
+                raise ValueError(
+                    "Cannot save placeholder value - enter your actual API key"
+                )
+
+            # Length validation
+            if len(v) < 20:
+                raise ValueError(
+                    "API key appears invalid - must be at least 20 characters"
+                )
+            if len(v) > 500:
+                raise ValueError("API key is too long (max 500 characters)")
+
+            # Must contain alphanumeric characters (not all symbols)
+            import re
+
+            if not re.search(r"[A-Za-z0-9]", v):
+                raise ValueError("API key must contain alphanumeric characters")
+
+            # Format validation for known key patterns
+            if v.startswith("REDACTED_GAPI_"):
+                if len(v) != 39:
+                    raise ValueError("Gemini API keys are exactly 39 characters")
+
+        return v
+
+    @validator("lmstudio_url", "localai_url", "ollama_url")
+    def validate_local_urls(cls, v):
+        if v is not None:
+            v = v.strip()
+            if not v.startswith(("http://", "https://")):
+                raise ValueError("URL must start with http:// or https://")
+        return v
+
+
+@auth_bp.route("/api-keys", methods=["GET"])
+@login_required
+def get_api_keys():
+    """Get API keys for the current user (returns masked versions for display)."""
+    try:
+        api_keys = current_user.api_keys_dict
+
+        # Return masked versions (last 4 characters only)
+        result = {}
+        keys_configured = []
+        for key, value in api_keys.items():
+            if key.endswith("_api_key") and value:
+                result[key] = value[-4:]
+                keys_configured.append(key.replace("_api_key", ""))
+            elif key.endswith("_url") or key == "ollama_model":
+                result[key] = value
+                if value:
+                    keys_configured.append(key)
+
+        # Get preferred provider from preferences if not in api_keys
+        prefs = json.loads(current_user.preferences) if current_user.preferences else {}
+        if "preferred_ai_provider" in api_keys:
+            result["preferred_ai_provider"] = api_keys["preferred_ai_provider"]
+        elif "preferred_ai_provider" in prefs:
+            result["preferred_ai_provider"] = prefs["preferred_ai_provider"]
+
+        EnhancedAuditLogger.log(
+            action="VIEW_USER_API_KEYS",
+            table_name="users",
+            user_id=current_user.id,
+            details=json.dumps({"keys_configured": keys_configured}),
+            status_code=200,
+        )
+        return jsonify(result), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@auth_bp.route("/api-keys", methods=["POST"])
+@login_required
+def save_api_keys():
+    """Save encrypted API keys for the current user."""
+    try:
+        # Validate input
+        data = APIKeySchema(**request.json)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+    try:
+        # Get current user's keys
+        api_keys = current_user.api_keys_dict
+
+        # Track which keys are being updated
+        keys_updated = []
+        fields = [
+            "claude_api_key", "gemini_api_key", "openai_api_key", "grok_api_key",
+            "openrouter_api_key", "deepseek_api_key", "mistral_api_key",
+            "together_api_key", "huggingface_api_key", "zhipu_api_key",
+            "lmstudio_url", "localai_url", "ollama_url", "ollama_model",
+            "preferred_ai_provider"
+        ]
+
+        for field in fields:
+            val = getattr(data, field)
+            if val is not None:
+                api_keys[field] = val
+                keys_updated.append(field)
+
+        # Save to user account
+        current_user.api_keys_dict = api_keys
+        current_user.save()
+
+        EnhancedAuditLogger.log(
+            action="SAVE_USER_API_KEYS",
+            table_name="users",
+            user_id=current_user.id,
+            details=json.dumps({"keys_updated": keys_updated}),
+            status_code=200,
+        )
+        return jsonify({"message": "API keys saved successfully"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@auth_bp.route("/test-api-key", methods=["POST"])
+@login_required
+@limiter.exempt
+def test_api_key():
+    """Test an API key to verify it works."""
+    try:
+        from src.utils.ai_test_helpers import (
+            test_claude_api_key, test_gemini_api_key, test_openai_api_key,
+            test_grok_api_key, test_openrouter_api_key, test_deepseek_api_key,
+            test_mistral_api_key, test_together_api_key, test_huggingface_api_key,
+            test_zhipu_api_key, test_lmstudio_api_key, test_localai_api_key
+        )
+
+        data = request.json
+        provider = data.get("provider")
+        api_key = data.get("api_key")
+
+        if not provider or not api_key:
+            return jsonify({"error": "Missing provider or api_key"}), 400
+
+        # Test based on provider
+        if provider == "claude":
+            return test_claude_api_key(api_key)
+        elif provider == "gemini":
+            return test_gemini_api_key(api_key)
+        elif provider == "openai":
+            return test_openai_api_key(api_key)
+        elif provider == "grok":
+            return test_grok_api_key(api_key)
+        elif provider == "openrouter":
+            return test_openrouter_api_key(api_key)
+        elif provider == "deepseek":
+            return test_deepseek_api_key(api_key)
+        elif provider == "mistral":
+            return test_mistral_api_key(api_key)
+        elif provider == "together":
+            return test_together_api_key(api_key)
+        elif provider == "huggingface":
+            return test_huggingface_api_key(api_key)
+        elif provider == "zhipu":
+            return test_zhipu_api_key(api_key)
+        elif provider == "lmstudio":
+            return test_lmstudio_api_key(api_key)
+        elif provider == "localai":
+            return test_localai_api_key(api_key)
+        else:
+            return jsonify({"error": f"Unknown provider: {provider}"}), 400
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@auth_bp.route("/test-stored-key", methods=["POST"])
+@login_required
+def test_stored_key():
+    """Test a stored API key."""
+    try:
+        from src.utils.ai_test_helpers import (
+            test_claude_api_key, test_gemini_api_key, test_openai_api_key,
+            test_grok_api_key, test_openrouter_api_key, test_deepseek_api_key,
+            test_mistral_api_key, test_together_api_key, test_huggingface_api_key,
+            test_zhipu_api_key, test_lmstudio_api_key, test_localai_api_key
+        )
+
+        provider = request.json.get("provider")
+        if not provider:
+            return jsonify({"error": "Provider is required"}), 400
+
+        api_keys = current_user.api_keys_dict
+        is_url = provider in ["lmstudio", "localai", "ollama"]
+        key_name = f"{provider}_url" if is_url else f"{provider}_api_key"
+        stored_value = api_keys.get(key_name)
+
+        if not stored_value:
+            return jsonify({"error": f"No {provider} key configured"}), 404
+
+        # Test based on provider
+        if provider == "claude":
+            return test_claude_api_key(stored_value)
+        elif provider == "gemini":
+            return test_gemini_api_key(stored_value)
+        elif provider == "openai":
+            return test_openai_api_key(stored_value)
+        elif provider == "grok":
+            return test_grok_api_key(stored_value)
+        elif provider == "openrouter":
+            return test_openrouter_api_key(stored_value)
+        elif provider == "deepseek":
+            return test_deepseek_api_key(stored_value)
+        elif provider == "mistral":
+            return test_mistral_api_key(stored_value)
+        elif provider == "together":
+            return test_together_api_key(stored_value)
+        elif provider == "huggingface":
+            return test_huggingface_api_key(stored_value)
+        elif provider == "zhipu":
+            return test_zhipu_api_key(stored_value)
+        elif provider == "lmstudio":
+            return test_lmstudio_api_key(stored_value)
+        elif provider == "localai":
+            return test_localai_api_key(stored_value)
+        else:
+            return jsonify({"error": f"Unknown provider: {provider}"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@auth_bp.route("/delete-api-key", methods=["POST"])
+@login_required
+def delete_api_key():
+    """Delete a stored API key."""
+    try:
+        provider = request.json.get("provider")
+        if not provider:
+            return jsonify({"error": "Provider is required"}), 400
+
+        api_keys = current_user.api_keys_dict
+        key_name = f"{provider}_api_key"
+        if key_name not in api_keys:
+            key_name = f"{provider}_url"
+
+        if key_name in api_keys:
+            del api_keys[key_name]
+            current_user.api_keys_dict = api_keys
+            current_user.save()
+            return jsonify({"message": f"{provider} key deleted"}), 200
+        else:
+            return jsonify({"error": "Key not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 class PasswordResetRequestSchema(BaseModel):
     """Password reset request validation schema."""
 
@@ -778,6 +1104,7 @@ def request_password_reset():
         "message": "If the account exists and the email matches, a password reset link has been sent.",
         "username": data.username,
         "email_sent": email_sent,
+        "is_admin": user.is_admin if user else False,
     }
 
     # In development mode, expose the token to the frontend for easy testing
@@ -932,6 +1259,7 @@ def validate_reset_token():
                     # 'email': user.email, # Don't expose email
                     "has_encrypted_data": has_encrypted_data,
                     "can_recover_via_email": can_recover_via_email,
+                    "is_admin": user.is_admin,
                     "warning": warning,
                 }
             ),
@@ -1361,6 +1689,17 @@ def request_admin_reset():
                 {"message": "If the account exists, a request has been submitted."}
             ),
             200,
+        )
+
+    # Restrict to admins only
+    if not user.is_admin and not user.is_super_admin:
+        return (
+            jsonify(
+                {
+                    "error": "Manual admin reset is only available for administrator profiles. Please use Recovery Code or Email Token."
+                }
+            ),
+            403,
         )
 
     # Create request

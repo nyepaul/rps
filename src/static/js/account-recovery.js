@@ -177,6 +177,11 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.disabled = true;
             btn.innerHTML = 'Processing...';
             setHtml('message-container', ''); // Clear alerts
+            
+            // Hide Admin Help initially
+            hide('admin-help-link');
+            const sep = get('admin-help-separator');
+            if (sep) sep.style.display = 'none';
 
             // Harvest Values
             state.username = get('username') ? get('username').value : '';
@@ -221,6 +226,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Request failed');
         
+        // Show Admin Help link if user is admin
+        if (data.is_admin) {
+            show('admin-help-link');
+            const sep = get('admin-help-separator');
+            if (sep) sep.style.display = 'inline-block';
+        }
+
         if (data.token) { // Dev mode
             showAlert('success', '<strong>Dev Mode:</strong> Token generated: ' + data.token);
             state.token = data.token;
@@ -245,6 +257,13 @@ document.addEventListener('DOMContentLoaded', () => {
         state.username = data.username;
         state.hasEncryptedData = data.has_encrypted_data;
         state.canRecoverViaEmail = data.can_recover_via_email;
+
+        // Show Admin Help link if user is admin
+        if (data.is_admin) {
+            show('admin-help-link');
+            const sep = get('admin-help-separator');
+            if (sep) sep.style.display = 'inline-block';
+        }
 
         setupResetView();
         switchView('view-reset');
