@@ -1050,7 +1050,22 @@ def get_calculation_report():
 
     # Quick version check - return immediately if version check requested
     if json_data.get("version_check"):
-        return jsonify({"version": "3.9.164", "status": "ok"}), 200
+        return jsonify({"version": "3.9.165", "status": "ok"}), 200
+
+    # TEMPORARY: Return minimal hardcoded response to test endpoint
+    if json_data.get("minimal_test"):
+        return jsonify({
+            "profile_name": "Test",
+            "generated_at": datetime.now().isoformat(),
+            "sections": [
+                {
+                    "title": "Test Section",
+                    "items": [
+                        {"label": "Status", "value": "Endpoint is working"}
+                    ]
+                }
+            ]
+        }), 200
 
     try:
         profile_name = json_data.get("profile_name")
@@ -1063,25 +1078,39 @@ def get_calculation_report():
         if not profile:
             return jsonify({"error": "Profile not found"}), 404
 
-        profile_data = profile.data_dict
+        # Wrap data access in try-except
+        try:
+            profile_data = profile.data_dict
 
-        # Debug: log the structure we're receiving
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.info(f"Profile data keys: {list(profile_data.keys())}")
+            # Debug: log the structure we're receiving
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Profile data type: {type(profile_data)}")
+            logger.info(f"Profile data keys: {list(profile_data.keys()) if isinstance(profile_data, dict) else 'NOT A DICT'}")
 
-        # Profile data comes back as {"data": {...}} from to_dict()
-        # But data_dict returns the actual data content
-        # So we should access fields directly from profile_data, not profile_data["data"]
-        person_data = profile_data.get("person", {})
-        spouse_data = profile_data.get("spouse", {})
-        financial_data = profile_data.get("financial", {})
-        budget_data = profile_data.get("budget", {})
-        income_streams = profile_data.get("income_streams", [])
-        assets_data = profile_data.get("assets", {})
+            # Ensure profile_data is a dict
+            if not isinstance(profile_data, dict):
+                logger.error(f"profile_data is not a dict! Type: {type(profile_data)}, Value: {profile_data}")
+                return jsonify({"error": "Invalid profile data structure"}), 500
 
-        logger.info(f"Income streams count: {len(income_streams)}")
-        logger.info(f"Assets data keys: {list(assets_data.keys()) if assets_data else []}")
+            # Profile data comes back as {"data": {...}} from to_dict()
+            # But data_dict returns the actual data content
+            # So we should access fields directly from profile_data, not profile_data["data"]
+            person_data = profile_data.get("person", {})
+            spouse_data = profile_data.get("spouse", {})
+            financial_data = profile_data.get("financial", {})
+            budget_data = profile_data.get("budget", {})
+            income_streams = profile_data.get("income_streams", [])
+            assets_data = profile_data.get("assets", {})
+
+            logger.info(f"Income streams type: {type(income_streams)}, count: {len(income_streams) if isinstance(income_streams, list) else 'NOT A LIST'}")
+            logger.info(f"Assets data type: {type(assets_data)}")
+
+        except Exception as e:
+            logger.error(f"Error accessing profile data: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return jsonify({"error": f"Error accessing profile data: {str(e)}"}), 500
 
         # Build report sections
         report = {
