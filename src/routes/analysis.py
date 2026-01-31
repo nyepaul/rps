@@ -1038,3 +1038,541 @@ def analyze_rebalancing():
             status_code=500,
         )
         return jsonify({"error": str(e)}), 500
+
+
+@analysis_bp.route("/analysis/calculation-report", methods=["POST"])
+@login_required
+def get_calculation_report():
+    """Generate detailed calculation report showing all income, expenses, taxes, and portfolio calculations."""
+    json_data = request.get_json(silent=True) or {}
+    profile_name = None
+    try:
+        profile_name = json_data.get("profile_name")
+
+        if not profile_name:
+            return jsonify({"error": "profile_name is required"}), 400
+
+        # Get profile with ownership check
+        profile = Profile.get_by_name(profile_name, current_user.id)
+        if not profile:
+            return jsonify({"error": "Profile not found"}), 404
+
+        profile_data = profile.data_dict
+        data = profile_data.get("data", {})
+        person_data = data.get("person", {})
+        spouse_data = data.get("spouse", {})
+        financial_data = data.get("financial", {})
+        budget_data = data.get("budget", {})
+
+        # Build report sections
+        report = {
+            "profile_name": profile.name,
+            "generated_at": datetime.now().isoformat(),
+            "sections": []
+        }
+
+        # 1. PROFILE SUMMARY
+        birth_date_str = person_data.get("birth_date", "1980-01-01")
+        current_age = (datetime.now() - datetime.fromisoformat(birth_date_str)).days // 365
+        retirement_date_str = person_data.get("retirement_date", "2045-01-01")
+        retirement_age = (datetime.fromisoformat(retirement_date_str) - datetime.fromisoformat(birth_date_str)).days // 365
+
+        profile_summary = {
+            "title": "Profile Summary",
+            "items": [
+                {"label": "Primary Person", "value": person_data.get("name", "Primary")},
+                {"label": "Current Age", "value": f"{current_age} years"},
+                {"label": "Retirement Age", "value": f"{retirement_age} years"},
+                {"label": "Years to Retirement", "value": f"{max(0, retirement_age - current_age)} years"},
+            ]
+        }
+
+        if spouse_data.get("name"):
+            spouse_birth = spouse_data.get("birth_date", "1980-01-01")
+            spouse_age = (datetime.now() - datetime.fromisoformat(spouse_birth)).days // 365
+            profile_summary["items"].extend([
+                {"label": "Spouse", "value": spouse_data.get("name")},
+                {"label": "Spouse Age", "value": f"{spouse_age} years"},
+            ])
+
+        report["sections"].append(profile_summary)
+
+        # 2. INCOME SOURCES (Annual)
+        income_section = {
+            "title": "Annual Income Sources",
+            "items": [],
+            "total": 0
+        }
+
+        # Work Income
+        work_income_annual = 0
+        if budget_data.get("income", {}).get("current", {}).get("employment"):
+            emp = budget_data["income"]["current"]["employment"]
+            primary_income = emp.get("primary_person", 0) * 12
+            spouse_income = emp.get("spouse", 0) * 12
+            work_income_annual = primary_income + spouse_income
+            if primary_income > 0:
+                income_section["items"].append({
+                    "label": "Primary Employment",
+                    "value": f"${primary_income:,.0f}",
+                    "amount": primary_income
+                })
+            if spouse_income > 0:
+                income_section["items"].append({
+                    "label": "Spouse Employment",
+                    "value": f"${spouse_income:,.0f}",
+                    "amount": spouse_income
+                })
+
+        # Other Income (rental, consulting, business, other)
+        other_income_annual = 0
+        if budget_data.get("income", {}).get("current", {}).get("other"):
+            other = budget_data["income"]["current"]["other"]
+            for income_type in ["rental_income", "part_time_consulting", "business_income", "other_income"]:
+                amount = other.get(income_type, 0) * 12
+                if amount > 0:
+                    label_map = {
+                        "rental_income": "Rental Income",
+                        "part_time_consulting": "Consulting Income",
+                        "business_income": "Business Income",
+                        "other_income": "Other Income"
+                    }
+                    income_section["items"].append({
+                        "label": label_map[income_type],
+                        "value": f"${amount:,.0f}",
+                        "amount": amount
+                    })
+                    other_income_annual += amount
+
+        # Social Security (if eligible)
+        p1_ss_annual = 0
+        p2_ss_annual = 0
+        p1_claiming_age = financial_data.get("ss_claiming_age", 67)
+        if current_age >= p1_claiming_age:
+            p1_ss_annual = (financial_data.get("social_security_benefit", 0) or 0) * 12
+            if p1_ss_annual > 0:
+                income_section["items"].append({
+                    "label": "Social Security (Primary)",
+                    "value": f"${p1_ss_annual:,.0f}",
+                    "amount": p1_ss_annual
+                })
+
+        if spouse_data.get("name"):
+            spouse_birth = spouse_data.get("birth_date", "1980-01-01")
+            spouse_age = (datetime.now() - datetime.fromisoformat(spouse_birth)).days // 365
+            p2_claiming_age = spouse_data.get("ss_claiming_age", 67)
+            if spouse_age >= p2_claiming_age:
+                p2_ss_annual = (spouse_data.get("social_security_benefit", 0) or 0) * 12
+                if p2_ss_annual > 0:
+                    income_section["items"].append({
+                        "label": "Social Security (Spouse)",
+                        "value": f"${p2_ss_annual:,.0f}",
+                        "amount": p2_ss_annual
+                    })
+
+        # Pension (if retired)
+        pension_annual = 0
+        if current_age >= retirement_age:
+            pension_annual = (financial_data.get("pension_benefit", 0) or 0) * 12
+            if pension_annual > 0:
+                income_section["items"].append({
+                    "label": "Pension Income",
+                    "value": f"${pension_annual:,.0f}",
+                    "amount": pension_annual
+                })
+
+        total_income_annual = work_income_annual + other_income_annual + p1_ss_annual + p2_ss_annual + pension_annual
+        income_section["total"] = total_income_annual
+        income_section["items"].append({
+            "label": "TOTAL INCOME",
+            "value": f"${total_income_annual:,.0f}",
+            "amount": total_income_annual,
+            "is_total": True
+        })
+        report["sections"].append(income_section)
+
+        # 3. RETIREMENT CONTRIBUTIONS (Annual)
+        contributions_section = {
+            "title": "Retirement Contributions (Pre-Tax)",
+            "items": [],
+            "total": 0
+        }
+
+        # 401k Contributions
+        contrib_rate_p1 = financial_data.get("annual_401k_contribution_rate", 0)
+        match_rate_p1 = financial_data.get("employer_match_rate", 0)
+
+        if work_income_annual > 0 and current_age < retirement_age:
+            # Estimate primary person contribution (assume 60% of work income)
+            primary_salary = work_income_annual * 0.6 if spouse_data.get("name") else work_income_annual
+            p1_401k = primary_salary * contrib_rate_p1
+            p1_match = primary_salary * match_rate_p1
+
+            if p1_401k > 0:
+                contributions_section["items"].append({
+                    "label": "401k Employee Contribution (Primary)",
+                    "value": f"${p1_401k:,.0f}",
+                    "amount": p1_401k
+                })
+            if p1_match > 0:
+                contributions_section["items"].append({
+                    "label": "401k Employer Match (Primary)",
+                    "value": f"${p1_match:,.0f}",
+                    "amount": p1_match,
+                    "note": "Free money!"
+                })
+
+            # Spouse 401k
+            contrib_rate_p2 = spouse_data.get("annual_401k_contribution_rate", 0)
+            match_rate_p2 = spouse_data.get("employer_match_rate", 0)
+            if spouse_data.get("name") and (contrib_rate_p2 > 0 or match_rate_p2 > 0):
+                spouse_salary = work_income_annual * 0.4
+                p2_401k = spouse_salary * contrib_rate_p2
+                p2_match = spouse_salary * match_rate_p2
+
+                if p2_401k > 0:
+                    contributions_section["items"].append({
+                        "label": "401k Employee Contribution (Spouse)",
+                        "value": f"${p2_401k:,.0f}",
+                        "amount": p2_401k
+                    })
+                if p2_match > 0:
+                    contributions_section["items"].append({
+                        "label": "401k Employer Match (Spouse)",
+                        "value": f"${p2_match:,.0f}",
+                        "amount": p2_match,
+                        "note": "Free money!"
+                    })
+
+        # IRA Contributions
+        ira_annual = financial_data.get("annual_ira_contribution", 0) or 0
+        if ira_annual > 0 and current_age < retirement_age:
+            contributions_section["items"].append({
+                "label": "IRA Contribution",
+                "value": f"${ira_annual:,.0f}",
+                "amount": ira_annual,
+                "note": "Post-tax contribution"
+            })
+
+        total_contributions = sum(item["amount"] for item in contributions_section["items"])
+        contributions_section["total"] = total_contributions
+        if total_contributions > 0:
+            contributions_section["items"].append({
+                "label": "TOTAL CONTRIBUTIONS",
+                "value": f"${total_contributions:,.0f}",
+                "amount": total_contributions,
+                "is_total": True
+            })
+            report["sections"].append(contributions_section)
+
+        # 4. EXPENSES (Annual)
+        expenses_section = {
+            "title": "Annual Expenses",
+            "items": [],
+            "total": 0
+        }
+
+        # Calculate from budget
+        if budget_data.get("expenses"):
+            current_expenses = budget_data["expenses"].get("current", {})
+            expense_categories = [
+                ("housing", "Housing"),
+                ("utilities", "Utilities"),
+                ("transportation", "Transportation"),
+                ("food", "Food/Groceries"),
+                ("dining_out", "Dining Out"),
+                ("healthcare", "Healthcare"),
+                ("insurance", "Insurance"),
+                ("travel", "Travel/Vacation"),
+                ("entertainment", "Entertainment"),
+                ("personal_care", "Personal Care"),
+                ("clothing", "Clothing"),
+                ("gifts", "Gifts/Donations"),
+                ("childcare_education", "Childcare/Education"),
+                ("charitable_giving", "Charitable Giving"),
+                ("subscriptions", "Subscriptions"),
+                ("pet_care", "Pet Care"),
+                ("home_maintenance", "Home Maintenance"),
+                ("debt_payments", "Debt Payments"),
+                ("discretionary", "Discretionary"),
+                ("other", "Other"),
+            ]
+
+            total_expenses_annual = 0
+            for key, label in expense_categories:
+                amount_monthly = current_expenses.get(key, 0)
+                amount_annual = amount_monthly * 12
+                if amount_annual > 0:
+                    expenses_section["items"].append({
+                        "label": label,
+                        "value": f"${amount_annual:,.0f}",
+                        "amount": amount_annual
+                    })
+                    total_expenses_annual += amount_annual
+
+            expenses_section["total"] = total_expenses_annual
+            expenses_section["items"].append({
+                "label": "TOTAL LIVING EXPENSES",
+                "value": f"${total_expenses_annual:,.0f}",
+                "amount": total_expenses_annual,
+                "is_total": True
+            })
+
+        report["sections"].append(expenses_section)
+
+        # 5. TAX CALCULATIONS (Annual)
+        tax_section = {
+            "title": "Estimated Annual Taxes",
+            "items": [],
+            "total": 0,
+            "note": "Simplified calculation - actual taxes may vary"
+        }
+
+        # Calculate taxable income
+        # Ordinary income = work + other + pension + (50% of SS)
+        taxable_ss = (p1_ss_annual + p2_ss_annual) * 0.5
+        ordinary_income = work_income_annual + other_income_annual + pension_annual + taxable_ss
+
+        # Apply 401k deductions
+        ordinary_income_after_401k = ordinary_income - sum(
+            item["amount"] for item in contributions_section.get("items", [])
+            if "Employee Contribution" in item["label"]
+        )
+
+        # Standard deduction
+        filing_status = financial_data.get("filing_status", "mfj")
+        std_deduction = 29200 if filing_status == "mfj" else 14600
+        taxable_income = max(0, ordinary_income_after_401k - std_deduction)
+
+        tax_section["items"].append({
+            "label": "Gross Ordinary Income",
+            "value": f"${ordinary_income:,.0f}",
+            "amount": ordinary_income
+        })
+        tax_section["items"].append({
+            "label": "Less: 401k Contributions",
+            "value": f"$({sum(item['amount'] for item in contributions_section.get('items', []) if 'Employee Contribution' in item['label']):,.0f})",
+            "amount": 0
+        })
+        tax_section["items"].append({
+            "label": "Less: Standard Deduction",
+            "value": f"$({std_deduction:,.0f})",
+            "amount": 0
+        })
+        tax_section["items"].append({
+            "label": "Taxable Income",
+            "value": f"${taxable_income:,.0f}",
+            "amount": taxable_income
+        })
+
+        # Federal Tax (simplified)
+        fed_rate = financial_data.get("tax_bracket_federal", 0.12)
+        federal_tax = taxable_income * fed_rate
+        tax_section["items"].append({
+            "label": f"Federal Income Tax ({fed_rate*100:.0f}% rate)",
+            "value": f"${federal_tax:,.0f}",
+            "amount": federal_tax
+        })
+
+        # State Tax
+        state_rate = financial_data.get("tax_bracket_state", 0.05)
+        state_tax = taxable_income * state_rate
+        tax_section["items"].append({
+            "label": f"State Income Tax ({state_rate*100:.0f}% rate)",
+            "value": f"${state_tax:,.0f}",
+            "amount": state_tax
+        })
+
+        # FICA (on work income only, if under retirement)
+        fica_tax = 0
+        if current_age < retirement_age:
+            fica_tax = work_income_annual * 0.0765
+            tax_section["items"].append({
+                "label": "FICA Tax (7.65%)",
+                "value": f"${fica_tax:,.0f}",
+                "amount": fica_tax
+            })
+
+        total_tax = federal_tax + state_tax + fica_tax
+        tax_section["total"] = total_tax
+        tax_section["items"].append({
+            "label": "TOTAL TAXES",
+            "value": f"${total_tax:,.0f}",
+            "amount": total_tax,
+            "is_total": True
+        })
+
+        report["sections"].append(tax_section)
+
+        # 6. NET CASH FLOW
+        net_section = {
+            "title": "Annual Net Cash Flow",
+            "items": []
+        }
+
+        gross_income = total_income_annual
+        employee_contributions = sum(
+            item["amount"] for item in contributions_section.get("items", [])
+            if "Employee Contribution" in item["label"]
+        )
+        ira_contrib = sum(
+            item["amount"] for item in contributions_section.get("items", [])
+            if "IRA" in item["label"]
+        )
+        living_expenses = expenses_section["total"]
+        taxes = total_tax
+
+        net_section["items"].append({
+            "label": "Gross Income",
+            "value": f"${gross_income:,.0f}",
+            "amount": gross_income
+        })
+        net_section["items"].append({
+            "label": "Less: 401k Contributions",
+            "value": f"$({employee_contributions:,.0f})",
+            "amount": -employee_contributions
+        })
+        net_section["items"].append({
+            "label": "Less: IRA Contributions",
+            "value": f"$({ira_contrib:,.0f})",
+            "amount": -ira_contrib
+        })
+        net_section["items"].append({
+            "label": "Less: Taxes",
+            "value": f"$({taxes:,.0f})",
+            "amount": -taxes
+        })
+        net_section["items"].append({
+            "label": "Less: Living Expenses",
+            "value": f"$({living_expenses:,.0f})",
+            "amount": -living_expenses
+        })
+
+        net_cash_flow = gross_income - employee_contributions - ira_contrib - taxes - living_expenses
+        net_section["items"].append({
+            "label": "NET CASH FLOW",
+            "value": f"${net_cash_flow:,.0f}",
+            "amount": net_cash_flow,
+            "is_total": True,
+            "color": "positive" if net_cash_flow > 0 else "negative"
+        })
+
+        # Portfolio additions
+        employer_match = sum(
+            item["amount"] for item in contributions_section.get("items", [])
+            if "Employer Match" in item["label"]
+        )
+        total_to_portfolio = net_cash_flow + employee_contributions + ira_contrib + employer_match
+
+        net_section["items"].append({
+            "label": "Add: 401k Employee Contributions",
+            "value": f"${employee_contributions:,.0f}",
+            "amount": employee_contributions
+        })
+        net_section["items"].append({
+            "label": "Add: 401k Employer Match",
+            "value": f"${employer_match:,.0f}",
+            "amount": employer_match
+        })
+        net_section["items"].append({
+            "label": "Add: IRA Contributions",
+            "value": f"${ira_contrib:,.0f}",
+            "amount": ira_contrib
+        })
+        net_section["items"].append({
+            "label": "TOTAL PORTFOLIO ADDITION",
+            "value": f"${total_to_portfolio:,.0f}",
+            "amount": total_to_portfolio,
+            "is_total": True,
+            "color": "positive"
+        })
+
+        report["sections"].append(net_section)
+
+        # 7. PORTFOLIO SUMMARY
+        portfolio_section = {
+            "title": "Current Portfolio",
+            "items": []
+        }
+
+        # Get assets
+        assets_data = profile_data.get("data", {}).get("assets", {})
+
+        # Retirement accounts
+        retirement_total = 0
+        for account in assets_data.get("retirement_accounts", []):
+            retirement_total += account.get("current_value", 0)
+        if retirement_total > 0:
+            portfolio_section["items"].append({
+                "label": "Retirement Accounts (401k, IRA)",
+                "value": f"${retirement_total:,.0f}",
+                "amount": retirement_total
+            })
+
+        # Taxable accounts
+        taxable_total = 0
+        for account in assets_data.get("taxable_accounts", []):
+            taxable_total += account.get("current_value", 0)
+        if taxable_total > 0:
+            portfolio_section["items"].append({
+                "label": "Taxable Brokerage Accounts",
+                "value": f"${taxable_total:,.0f}",
+                "amount": taxable_total
+            })
+
+        # Real estate (equity)
+        real_estate_total = 0
+        for property in assets_data.get("real_estate", []):
+            value = property.get("current_value", 0)
+            mortgage = property.get("mortgage_balance", 0)
+            equity = value - mortgage
+            real_estate_total += equity
+        if real_estate_total > 0:
+            portfolio_section["items"].append({
+                "label": "Real Estate Equity",
+                "value": f"${real_estate_total:,.0f}",
+                "amount": real_estate_total
+            })
+
+        # Other assets
+        other_total = 0
+        for asset in assets_data.get("other_assets", []):
+            other_total += asset.get("current_value", 0)
+        if other_total > 0:
+            portfolio_section["items"].append({
+                "label": "Other Assets",
+                "value": f"${other_total:,.0f}",
+                "amount": other_total
+            })
+
+        total_portfolio = retirement_total + taxable_total + real_estate_total + other_total
+        portfolio_section["items"].append({
+            "label": "TOTAL PORTFOLIO VALUE",
+            "value": f"${total_portfolio:,.0f}",
+            "amount": total_portfolio,
+            "is_total": True
+        })
+
+        if len(portfolio_section["items"]) > 0:
+            report["sections"].append(portfolio_section)
+
+        enhanced_audit_logger.log(
+            action="GENERATE_CALCULATION_REPORT",
+            table_name="profile",
+            record_id=profile.id,
+            details={"profile_name": profile_name},
+            status_code=200,
+        )
+
+        return jsonify(report), 200
+
+    except Exception as e:
+        enhanced_audit_logger.log(
+            action="GENERATE_CALCULATION_REPORT_ERROR",
+            details={
+                "profile_name": profile_name if "profile_name" in dir() else None,
+                "error": str(e),
+            },
+            status_code=500,
+        )
+        return jsonify({"error": str(e)}), 500

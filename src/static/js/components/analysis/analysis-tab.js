@@ -9,6 +9,7 @@ import { showSuccess, showError, showErrorInContainer, showLoading } from '../..
 import { formatCurrency, formatPercent, formatCompact } from '../../utils/formatters.js';
 import { renderStandardTimelineChart } from '../../utils/charts.js';
 import { APP_CONFIG } from '../../config.js';
+import { showCalculationReport } from './calculation-report.js';
 
 // Store last analysis result for saving as scenario
 let lastAnalysisResult = null;
@@ -70,6 +71,9 @@ export function renderAnalysisTab(container) {
                     </p>
                 </div>
                 <div style="display: flex; gap: 8px; align-items: center;">
+                    <button id="show-calculation-report" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                        <span>📊</span> View Calculation Report
+                    </button>
                     <button id="show-calculation-info" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
                         <span>📐</span> How Calculations Work
                     </button>
@@ -687,6 +691,14 @@ function setupAnalysisHandlers(container, profile) {
     if (!runBtn || !resultsContainer) {
         console.error('Analysis form elements not found');
         return;
+    }
+
+    // Show calculation report
+    const showCalcReportBtn = container.querySelector('#show-calculation-report');
+    if (showCalcReportBtn) {
+        showCalcReportBtn.addEventListener('click', () => {
+            showCalculationReport();
+        });
     }
 
     // Show calculation explanation modal
