@@ -53,25 +53,34 @@ export function renderIncomeTab(container) {
                         Tracking <strong>${profile.name}'s</strong> recurring income
                     </p>
                 </div>
-                <div style="display: flex; gap: 4px; flex-wrap: wrap;">
-                    <button id="add-income-stream-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px;">
-                        + Add Income
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button id="add-income-stream-btn" style="padding: 6px 14px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <span>＋</span> Add Income
                     </button>
-                    <button id="ai-import-income-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px;">
-                        AI Import
-                    </button>
-                    <button id="transaction-import-btn" style="padding: 6px 12px; background: var(--info-color, #2196F3); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px;" title="Import bank transactions CSV">
-                        📊 Import CSV
-                    </button>
-                    <div style="display: flex; border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden;">
-                        <button id="csv-export-income-btn" style="padding: 6px 10px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-right: 1px solid var(--border-color); cursor: pointer; font-size: 11px;">
-                            Export
+                    
+                    <div style="position: relative;">
+                        <button id="income-actions-btn" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                            Data Options <span>▼</span>
                         </button>
-                        <button id="csv-import-income-btn" style="padding: 6px 10px; background: var(--bg-tertiary); color: var(--text-primary); border: none; cursor: pointer; font-size: 11px;">
-                            TXT/CSV
-                        </button>
+                        <div id="income-actions-menu" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 4px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); width: 200px; z-index: 50; overflow: hidden;">
+                            <div class="action-menu-item" data-action="ai-import" style="padding: 10px 16px; cursor: pointer; font-size: 13px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px;">
+                                <span>🤖</span> AI Import
+                            </div>
+                            <div class="action-menu-item" data-action="transaction-import" style="padding: 10px 16px; cursor: pointer; font-size: 13px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px;">
+                                <span>📊</span> Import Bank CSV
+                            </div>
+                            <div class="action-menu-item" data-action="csv-import" style="padding: 10px 16px; cursor: pointer; font-size: 13px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px;">
+                                <span>📁</span> Import Data CSV
+                            </div>
+                            <div class="action-menu-item" data-action="csv-export" style="padding: 10px 16px; cursor: pointer; font-size: 13px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                                <span>⬇️</span> Export CSV
+                            </div>
+                        </div>
                     </div>
-                    <button id="delete-all-income-btn" style="padding: 6px 10px; background: var(--bg-tertiary); color: var(--danger-color); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px;" title="Delete all income streams">
+
+                    <div style="width: 1px; height: 24px; background: var(--border-color); margin: 0 4px;"></div>
+
+                    <button id="delete-all-income-btn" style="padding: 6px 10px; background: var(--bg-tertiary); color: var(--danger-color); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 14px;" title="Delete all income streams">
                         🗑️
                     </button>
                 </div>
@@ -94,100 +103,101 @@ export function renderIncomeTab(container) {
 function setupIncomeStreamsHandlers(container, profile, incomeStreams) {
     renderIncomeStreamsList(container, incomeStreams);
 
-    // AI Import button
-    const aiBtn = container.querySelector('#ai-import-income-btn');
-    if (aiBtn) {
-        aiBtn.addEventListener('click', () => {
-            showAIImportModal('income', profile.name, async (extractedIncome) => {
-                let added = 0, updated = 0;
+    // Actions dropdown menu
+    const actionsBtn = container.querySelector('#income-actions-btn');
+    const actionsMenu = container.querySelector('#income-actions-menu');
+    
+    if (actionsBtn && actionsMenu) {
+        // Toggle menu
+        actionsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            actionsMenu.style.display = actionsMenu.style.display === 'none' ? 'block' : 'none';
+        });
 
-                // Add extracted items with reconciliation
-                for (const item of extractedIncome) {
-                    // Find existing income stream by name (case-insensitive)
-                    const existingIndex = incomeStreams.findIndex(
-                        s => s.name?.toLowerCase() === item.name?.toLowerCase()
-                    );
+        // Close menu when clicking outside
+        document.addEventListener('click', () => {
+            actionsMenu.style.display = 'none';
+        });
 
-                    if (existingIndex >= 0) {
-                        // Update existing - preserve dates, update amount
-                        const existing = incomeStreams[existingIndex];
-                        incomeStreams[existingIndex] = {
-                            ...existing,
-                            amount: item.amount ?? existing.amount,
-                            description: existing.description || `Imported via AI | ${item.frequency || ''}`
-                        };
-                        updated++;
-                    } else {
-                        // Add new income stream
-                        incomeStreams.push({
-                            name: item.name,
-                            amount: item.amount || 0,
-                            start_date: new Date().toISOString().split('T')[0],
-                            end_date: profile.retirement_date || null,
-                            description: `Imported via AI | ${item.frequency || ''}`
+        // Menu item hover effects
+        actionsMenu.querySelectorAll('.action-menu-item').forEach(item => {
+            item.addEventListener('mouseenter', () => {
+                item.style.background = 'var(--bg-tertiary)';
+            });
+            item.addEventListener('mouseleave', () => {
+                item.style.background = 'var(--bg-secondary)';
+            });
+        });
+
+        // Handle menu actions
+        actionsMenu.querySelectorAll('.action-menu-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const action = item.dataset.action;
+                actionsMenu.style.display = 'none';
+
+                switch (action) {
+                    case 'ai-import':
+                        showAIImportModal('income', profile.name, async (extractedIncome) => {
+                            let added = 0, updated = 0;
+                            for (const item of extractedIncome) {
+                                const existingIndex = incomeStreams.findIndex(
+                                    s => s.name?.toLowerCase() === item.name?.toLowerCase()
+                                );
+                                if (existingIndex >= 0) {
+                                    const existing = incomeStreams[existingIndex];
+                                    incomeStreams[existingIndex] = {
+                                        ...existing,
+                                        amount: item.amount ?? existing.amount,
+                                        description: existing.description || `Imported via AI | ${item.frequency || ''}`
+                                    };
+                                    updated++;
+                                } else {
+                                    incomeStreams.push({
+                                        name: item.name,
+                                        amount: item.amount || 0,
+                                        start_date: new Date().toISOString().split('T')[0],
+                                        end_date: profile.retirement_date || null,
+                                        description: `Imported via AI | ${item.frequency || ''}`
+                                    });
+                                    added++;
+                                }
+                            }
+                            await saveIncomeStreams(profile, incomeStreams);
+                            renderIncomeStreamsList(container, incomeStreams);
+                            const parts = [];
+                            if (added > 0) parts.push(`${added} added`);
+                            if (updated > 0) parts.push(`${updated} updated`);
+                            if (parts.length > 0) showSuccess(`Income streams imported: ${parts.join(', ')}`);
                         });
-                        added++;
-                    }
+                        break;
+
+                    case 'transaction-import':
+                        showTransactionImportModal(profile.name, incomeStreams, async () => {
+                            await profilesAPI.get(profile.name);
+                            const updatedProfile = store.get('currentProfile');
+                            if (updatedProfile) {
+                                const updatedStreams = updatedProfile.data?.income_streams || [];
+                                renderIncomeStreamsList(container, updatedStreams);
+                                showSuccess('Transactions imported successfully!');
+                            }
+                        });
+                        break;
+
+                    case 'csv-import':
+                        showCSVImportModal({
+                            title: "Import Income from CSV",
+                            config: INCOME_CONFIG,
+                            profileName: profile.name,
+                            onComplete: (updatedProfile) => {
+                                renderIncomeStreamsList(container, updatedProfile.data?.income_streams || []);
+                            },
+                        });
+                        break;
+
+                    case 'csv-export':
+                        exportIncomeCSV(profile, incomeStreams);
+                        break;
                 }
-
-                await saveIncomeStreams(profile, incomeStreams);
-                renderIncomeStreamsList(container, incomeStreams);
-
-                // Show summary
-                const parts = [];
-                if (added > 0) parts.push(`${added} added`);
-                if (updated > 0) parts.push(`${updated} updated`);
-                if (parts.length > 0) {
-                    showSuccess(`Income streams imported: ${parts.join(', ')}`);
-                }
-            });
-        });
-    }
-
-    // Transaction Import button
-    const transactionBtn = container.querySelector('#transaction-import-btn');
-    if (transactionBtn) {
-        transactionBtn.addEventListener('click', () => {
-            showTransactionImportModal(profile.name, incomeStreams, async () => {
-                // Reload profile after import
-                await profilesAPI.get(profile.name);
-                const updatedProfile = store.get('currentProfile');
-                if (updatedProfile) {
-                    const updatedStreams = updatedProfile.data?.income_streams || [];
-                    renderIncomeStreamsList(container, updatedStreams);
-                    showSuccess('Transactions imported successfully!');
-                }
-            });
-        });
-    }
-
-    // Add income stream button
-    const addBtn = container.querySelector('#add-income-stream-btn');
-    if (addBtn) {
-        addBtn.addEventListener('click', () => {
-            showIncomeStreamModal(container, profile, null, incomeStreams);
-        });
-    }
-
-    // CSV Export button
-    const csvExportBtn = container.querySelector('#csv-export-income-btn');
-    if (csvExportBtn) {
-        csvExportBtn.addEventListener('click', () => {
-            exportIncomeCSV(profile, incomeStreams);
-        });
-    }
-
-    // CSV Import button
-    const csvImportBtn = container.querySelector("#csv-import-income-btn");
-    if (csvImportBtn) {
-        csvImportBtn.addEventListener("click", () => {
-            showCSVImportModal({
-                title: "Import Income from CSV",
-                config: INCOME_CONFIG,
-                profileName: profile.name,
-                onComplete: (updatedProfile) => {
-                    renderIncomeStreamsList(container, updatedProfile.data?.income_streams || []);
-                },
             });
         });
     }
