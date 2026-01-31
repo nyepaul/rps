@@ -1022,7 +1022,7 @@ function showCardDetailModal(metric) {
                         </div>
                     `).join('') : '<p style="color: var(--text-secondary); font-size: 13px;">No income streams configured</p>'}
                 </div>
-                ${buildYearlyTable(years.slice(0, 10), yearlyBreakdown, 'workIncome', 'Annual Work Income')}
+                ${buildYearlyTable(years, yearlyBreakdown, 'workIncome', 'Annual Work Income')}
             `;
             break;
 
@@ -1069,7 +1069,7 @@ function showCardDetailModal(metric) {
                         Monthly benefits are ${formatCurrency((p1SS + p1Pension + p2SS + p2Pension), 0)}/mo combined when all benefits are active.
                     </div>
                 </div>
-                ${buildYearlyTable(years.slice(0, 10), yearlyBreakdown, 'retirementBenefits', 'Annual Benefits')}
+                ${buildYearlyTable(years, yearlyBreakdown, 'retirementBenefits', 'Annual Benefits')}
             `;
             break;
 
@@ -1095,7 +1095,7 @@ function showCardDetailModal(metric) {
                         The actual withdrawal each month is the minimum of your target rate and the amount needed.
                     </div>
                 </div>
-                ${buildYearlyTable(years.slice(0, 10), yearlyBreakdown, 'investmentIncome', 'Annual Withdrawals')}
+                ${buildYearlyTable(years, yearlyBreakdown, 'investmentIncome', 'Annual Withdrawals')}
             `;
             break;
 
@@ -1121,7 +1121,7 @@ function showCardDetailModal(metric) {
                         Expenses are adjusted based on retirement status (current vs. future budget).
                     </div>
                 </div>
-                ${buildYearlyTable(years.slice(0, 10), yearlyBreakdown, 'expenses', 'Annual Expenses')}
+                ${buildYearlyTable(years, yearlyBreakdown, 'expenses', 'Annual Expenses')}
             `;
             break;
 
@@ -1147,7 +1147,7 @@ function showCardDetailModal(metric) {
                             : '<strong>Note:</strong> A positive net cash flow indicates you have surplus funds that will grow your portfolio over time.'}
                     </div>
                 </div>
-                ${buildYearlyTable(years.slice(0, 10), yearlyBreakdown, 'netCashFlow', 'Annual Net Cash Flow', true)}
+                ${buildYearlyTable(years, yearlyBreakdown, 'netCashFlow', 'Annual Net Cash Flow', true)}
             `;
             break;
 
@@ -1177,7 +1177,7 @@ function buildYearlyTable(years, yearlyBreakdown, field, title, showSign = false
 
     return `
         <div>
-            <h4 style="margin: 0 0 8px 0; font-size: 14px;">${title} (First ${years.length} Years)</h4>
+            <h4 style="margin: 0 0 8px 0; font-size: 14px;">${title} (${years.length} Years)</h4>
             <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
                 <thead>
                     <tr style="background: var(--bg-tertiary);">
@@ -1313,9 +1313,9 @@ function renderCashFlowTable(container, displayData, viewType) {
         return;
     }
 
-    // Limit display based on view type
-    const maxRows = viewType === 'annual' ? 20 : 24;
-    const limitedData = displayData.slice(0, maxRows);
+    // Limit display based on view type (show all years in annual view, limit months)
+    const maxRows = viewType === 'annual' ? displayData.length : 24;
+    const limitedData = viewType === 'annual' ? displayData : displayData.slice(0, maxRows);
     const periodLabel = viewType === 'annual' ? 'Year' : 'Month';
 
     tableContainer.innerHTML = `

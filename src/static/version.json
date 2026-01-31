@@ -1,5 +1,5 @@
 {
-    "version": "3.9.139",
+    "version": "3.9.140",
     "release_date": "2026-01-30",
-    "release_notes": "Cash flow chart: pointer cursor on legend hover"
+    "release_notes": "Cash flow: show all years in annual table"
 }
