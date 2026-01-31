@@ -1,5 +1,5 @@
 {
-    "version": "3.9.149",
+    "version": "3.9.150",
     "release_date": "2026-01-30",
-    "release_notes": "Fix duplicated imports in asset-list.js"
+    "release_notes": "Fix duplicate function declaration in analysis-tab.js"
 }
