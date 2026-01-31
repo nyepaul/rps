@@ -4,6 +4,7 @@ from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from pydantic import BaseModel, validator, ValidationError
 from typing import Optional, List
+from datetime import datetime
 from src.models.profile import Profile
 from src.services.retirement_model import (
     Person,
