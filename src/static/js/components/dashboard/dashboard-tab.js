@@ -759,8 +759,6 @@ async function loadProfile(profileName, container) {
         // Set as default profile
         localStorage.setItem(STORAGE_KEYS.DEFAULT_PROFILE, profileName);
 
-        showSuccess(`Profile "${profileName}" loaded successfully!`);
-
         // Refresh dashboard
         await renderDashboardTab(container);
     } catch (error) {

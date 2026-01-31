@@ -1,5 +1,5 @@
 {
-    "version": "3.9.160",
+    "version": "3.9.161",
     "release_date": "2026-01-31",
-    "release_notes": "Redesign header user/profile display to match button style"
+    "release_notes": "Remove profile loaded successfully notification"
 }
