@@ -30,7 +30,7 @@ class APIClient {
     /**
      * Make HTTP request
      */
-    async function request(url, options = {}) {
+    async request(url, options = {}) {
         const config = {
             ...options,
             headers: {

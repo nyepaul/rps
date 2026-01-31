@@ -1,5 +1,5 @@
 {
-    "version": "3.9.160",
+    "version": "3.9.161",
     "release_date": "2026-01-31",
-    "release_notes": "prevent redirect loop on login page and further strengthen logout"
+    "release_notes": "fix: correct class method syntax error in apiClient.js causing app initialization failure"
 }
