@@ -5,10 +5,11 @@ Authored by: pan
 
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, ValidationError
 from typing import Optional, List
 from src.models.profile import Profile
 from src.services.tax_optimization_service import TaxOptimizationService
+from src.utils.error_sanitizer import sanitize_pydantic_error
 
 tax_optimization_bp = Blueprint(
     "tax_optimization", __name__, url_prefix="/api/tax-optimization"
@@ -44,14 +45,15 @@ class SocialSecurityRequest(BaseModel):
 @login_required
 def analyze_taxes():
     """Run comprehensive tax analysis for a profile."""
-    data = None
+    json_data = request.get_json(silent=True) or {}
     try:
-        data = TaxAnalysisRequest(**request.json)
+        data = TaxAnalysisRequest(**json_data)
+    except ValidationError as e:
+        return jsonify({"error": sanitize_pydantic_error(e)}), 400
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": "Invalid request data"}), 400
 
     try:
-        data = data # Ensure data is seen by greedy regex before next try
         # Get profile with ownership check
         profile = Profile.get_by_name(data.profile_name, current_user.id)
         if not profile:
@@ -132,10 +134,13 @@ def analyze_taxes():
 @login_required
 def analyze_roth_conversion():
     """Analyze Roth conversion opportunities."""
+    json_data = request.get_json(silent=True) or {}
     try:
-        data = RothConversionRequest(**request.json)
+        data = RothConversionRequest(**json_data)
+    except ValidationError as e:
+        return jsonify({"error": sanitize_pydantic_error(e)}), 400
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": "Invalid request data"}), 400
 
     try:
         # Get profile with ownership check
@@ -204,10 +209,13 @@ def analyze_roth_conversion():
 @login_required
 def analyze_social_security_timing():
     """Analyze Social Security claiming strategies."""
+    json_data = request.get_json(silent=True) or {}
     try:
-        data = SocialSecurityRequest(**request.json)
+        data = SocialSecurityRequest(**json_data)
+    except ValidationError as e:
+        return jsonify({"error": sanitize_pydantic_error(e)}), 400
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": "Invalid request data"}), 400
 
     try:
         # Get profile with ownership check
@@ -258,8 +266,9 @@ def analyze_social_security_timing():
 @login_required
 def get_tax_snapshot():
     """Get current tax snapshot without full analysis."""
+    json_data = request.get_json(silent=True) or {}
     try:
-        profile_name = request.json.get("profile_name")
+        profile_name = json_data.get("profile_name")
         if not profile_name:
             return jsonify({"error": "profile_name is required"}), 400
 
@@ -277,7 +286,7 @@ def get_tax_snapshot():
         tax_settings = profile_data.get("tax_settings", {})
         address = profile_data.get("address", {})
 
-        gross_income = financial.get("annual_income", 0) or 0
+        gross_income = (financial.get("annual_income", 0) or 0)
         pension = (financial.get("pension_benefit", 0) or 0) * 12
         ss_benefit = (financial.get("social_security_benefit", 0) or 0) * 12
 
@@ -309,8 +318,9 @@ def get_tax_snapshot():
 @login_required
 def compare_states():
     """Compare tax burden across states."""
+    json_data = request.get_json(silent=True) or {}
     try:
-        profile_name = request.json.get("profile_name")
+        profile_name = json_data.get("profile_name")
         if not profile_name:
             return jsonify({"error": "profile_name is required"}), 400
 
@@ -337,7 +347,7 @@ def compare_states():
 
         # Get taxable income
         financial = profile_data.get("financial", {})
-        gross_income = financial.get("annual_income", 0) or 0
+        gross_income = (financial.get("annual_income", 0) or 0)
         pension = (financial.get("pension_benefit", 0) or 0) * 12
         ss_benefit = (financial.get("social_security_benefit", 0) or 0) * 12
 
@@ -375,10 +385,11 @@ def compare_states():
 @login_required
 def project_rmds():
     """Project Required Minimum Distributions."""
+    json_data = request.get_json(silent=True) or {}
     try:
-        profile_name = request.json.get("profile_name")
-        growth_rate = request.json.get("growth_rate", 0.05)
-        years = request.json.get("years", 20)
+        profile_name = json_data.get("profile_name")
+        growth_rate = json_data.get("growth_rate", 0.05)
+        years = json_data.get("years", 20)
 
         if not profile_name:
             return jsonify({"error": "profile_name is required"}), 400

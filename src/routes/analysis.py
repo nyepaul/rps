@@ -2,7 +2,7 @@
 
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, ValidationError
 from typing import Optional
 from src.models.profile import Profile
 from src.services.retirement_model import (
@@ -13,6 +13,7 @@ from src.services.retirement_model import (
 )
 from src.services.rebalancing_service import RebalancingService
 from src.services.enhanced_audit_logger import enhanced_audit_logger
+from src.utils.error_sanitizer import sanitize_pydantic_error
 
 analysis_bp = Blueprint("analysis", __name__, url_prefix="/api")
 
@@ -110,10 +111,10 @@ class MarketProfileSchema(BaseModel):
     crypto_allocation: Optional[float] = 0.0
 
     # Returns
-    stock_return_mean: float
-    stock_return_std: float
-    bond_return_mean: float
-    bond_return_std: float
+    stock_return_mean: Optional[float] = 0.10
+    stock_return_std: Optional[float] = 0.18
+    bond_return_mean: Optional[float] = 0.04
+    bond_return_std: Optional[float] = 0.06
     cash_return_mean: Optional[float] = 0.015
     cash_return_std: Optional[float] = 0.005
     reit_return_mean: Optional[float] = 0.08
@@ -122,8 +123,8 @@ class MarketProfileSchema(BaseModel):
     gold_return_std: Optional[float] = 0.15
     crypto_return_mean: Optional[float] = 0.20
     crypto_return_std: Optional[float] = 0.60
-    inflation_mean: float
-    inflation_std: float
+    inflation_mean: Optional[float] = 0.03
+    inflation_std: Optional[float] = 0.01
     ss_discount_rate: Optional[float] = 0.03
 
 
@@ -165,16 +166,18 @@ class AnalysisRequestSchema(BaseModel):
 @login_required
 def run_analysis():
     """Run Monte Carlo analysis for a profile."""
-    data = None
+    json_data = request.get_json(silent=True) or {}
     try:
-        data = AnalysisRequestSchema(**request.json)
-    except Exception as e:
+        data = AnalysisRequestSchema(**json_data)
+    except ValidationError as e:
         enhanced_audit_logger.log(
             action="RUN_ANALYSIS_VALIDATION_ERROR",
-            details={"error": str(e)},
+            details={"profile_name": json_data.get("profile_name"), "error": str(e)},
             status_code=400,
         )
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": sanitize_pydantic_error(e)}), 400
+    except Exception as e:
+        return jsonify({"error": "Invalid request data"}), 400
 
     try:
         # Get profile with ownership check
@@ -505,16 +508,18 @@ def run_analysis():
         return jsonify(response), 200
 
     except KeyError as e:
+        profile_name = json_data.get("profile_name")
         enhanced_audit_logger.log(
             action="RUN_ANALYSIS_KEY_ERROR",
-            details={"profile_name": request.json.get("profile_name"), "error": str(e)},
+            details={"profile_name": profile_name, "error": str(e)},
             status_code=400,
         )
         return jsonify({"error": f"Missing required field: {str(e)}"}), 400
     except Exception as e:
+        profile_name = json_data.get("profile_name")
         enhanced_audit_logger.log(
             action="RUN_ANALYSIS_ERROR",
-            details={"profile_name": request.json.get("profile_name"), "error": str(e)},
+            details={"profile_name": profile_name, "error": str(e)},
             status_code=500,
         )
         return jsonify({"error": str(e)}), 500
@@ -524,11 +529,13 @@ def run_analysis():
 @login_required
 def get_cashflow_details():
     """Run a detailed deterministic projection for cashflow visualization."""
-    data = None
+    json_data = request.get_json(silent=True) or {}
     try:
-        data = AnalysisRequestSchema(**request.json)
+        data = AnalysisRequestSchema(**json_data)
+    except ValidationError as e:
+        return jsonify({"error": sanitize_pydantic_error(e)}), 400
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": "Invalid request data"}), 400
 
     try:
         # Get profile with ownership check

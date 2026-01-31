@@ -387,7 +387,7 @@ function renderComparisonChart(container, selectedIds, allScenarios) {
         return;
     }
 
-    const colors = getChartThemeColors();
+    const themeColors = getChartThemeColors();
     const ChartConstructor = typeof Chart !== 'undefined' ? Chart : window.Chart;
 
     const chart = new ChartConstructor(ctx, {
@@ -400,7 +400,7 @@ function renderComparisonChart(container, selectedIds, allScenarios) {
                 legend: {
                     position: 'top',
                     labels: {
-                        color: colors.textPrimary,
+                        color: themeColors.textPrimary,
                         usePointStyle: true,
                         padding: 15,
                         font: {
@@ -460,9 +460,9 @@ function renderComparisonChart(container, selectedIds, allScenarios) {
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: { color: colors.gridColor },
+                    grid: { color: themeColors.gridColor },
                     ticks: {
-                        color: colors.textSecondary,
+                        color: themeColors.textSecondary,
                         font: {
                             size: 13,
                             weight: '500'
@@ -473,7 +473,7 @@ function renderComparisonChart(container, selectedIds, allScenarios) {
                 x: {
                     grid: { display: false },
                     ticks: {
-                        color: colors.textSecondary,
+                        color: themeColors.textSecondary,
                         maxTicksLimit: 15,
                         font: {
                             size: 13,
@@ -483,7 +483,7 @@ function renderComparisonChart(container, selectedIds, allScenarios) {
                     title: {
                         display: true,
                         text: 'Year',
-                        color: colors.textPrimary,
+                        color: themeColors.textPrimary,
                         font: {
                             size: 14,
                             weight: '600'
