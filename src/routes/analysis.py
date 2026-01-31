@@ -1059,13 +1059,24 @@ def get_calculation_report():
             return jsonify({"error": "Profile not found"}), 404
 
         profile_data = profile.data_dict
-        data = profile_data.get("data", {})
-        person_data = data.get("person", {})
-        spouse_data = data.get("spouse", {})
-        financial_data = data.get("financial", {})
-        budget_data = data.get("budget", {})
-        income_streams = data.get("income_streams", [])
-        assets_data = data.get("assets", {})
+
+        # Debug: log the structure we're receiving
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Profile data keys: {list(profile_data.keys())}")
+
+        # Profile data comes back as {"data": {...}} from to_dict()
+        # But data_dict returns the actual data content
+        # So we should access fields directly from profile_data, not profile_data["data"]
+        person_data = profile_data.get("person", {})
+        spouse_data = profile_data.get("spouse", {})
+        financial_data = profile_data.get("financial", {})
+        budget_data = profile_data.get("budget", {})
+        income_streams = profile_data.get("income_streams", [])
+        assets_data = profile_data.get("assets", {})
+
+        logger.info(f"Income streams count: {len(income_streams)}")
+        logger.info(f"Assets data keys: {list(assets_data.keys()) if assets_data else []}")
 
         # Build report sections
         report = {
@@ -1074,10 +1085,24 @@ def get_calculation_report():
             "sections": []
         }
 
-        # 1. PROFILE SUMMARY
-        # Use profile-level fields (birth_date, retirement_date) not person_data
-        current_age = person_data.get("current_age", 40)
-        retirement_age = person_data.get("retirement_age", 65)
+        # 1. PROFILE SUMMARY - Calculate ages from birth_date and retirement_date
+        current_age = 40  # default
+        retirement_age = 65  # default
+
+        if profile.birth_date:
+            try:
+                birth_dt = datetime.fromisoformat(profile.birth_date)
+                current_age = (datetime.now() - birth_dt).days // 365
+            except:
+                pass
+
+        if profile.retirement_date and profile.birth_date:
+            try:
+                birth_dt = datetime.fromisoformat(profile.birth_date)
+                retirement_dt = datetime.fromisoformat(profile.retirement_date)
+                retirement_age = (retirement_dt - birth_dt).days // 365
+            except:
+                pass
 
         profile_summary = {
             "title": "Profile Summary",
@@ -1089,12 +1114,21 @@ def get_calculation_report():
             ]
         }
 
-        if spouse_data.get("name"):
-            spouse_age = spouse_data.get("current_age", 40)
-            profile_summary["items"].extend([
-                {"label": "Spouse", "value": spouse_data.get("name")},
-                {"label": "Spouse Age", "value": f"{spouse_age} years"},
-            ])
+        # Spouse age calculation
+        spouse_age = 40  # default
+        if spouse_data.get("name") and spouse_data.get("birth_date"):
+            try:
+                spouse_birth_dt = datetime.fromisoformat(spouse_data["birth_date"])
+                spouse_age = (datetime.now() - spouse_birth_dt).days // 365
+                profile_summary["items"].extend([
+                    {"label": "Spouse", "value": spouse_data.get("name")},
+                    {"label": "Spouse Age", "value": f"{spouse_age} years"},
+                ])
+            except:
+                profile_summary["items"].extend([
+                    {"label": "Spouse", "value": spouse_data.get("name")},
+                    {"label": "Spouse Age", "value": "Unknown"},
+                ])
 
         report["sections"].append(profile_summary)
 

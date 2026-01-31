@@ -1,5 +1,5 @@
 {
-    "version": "3.9.158",
+    "version": "3.9.159",
     "release_date": "2026-01-31",
-    "release_notes": "Fix calculation report to read from correct data sources (income_streams, person.current_age, assets)"
+    "release_notes": "Fix calculation report data access - profile.data_dict returns content directly, not wrapped in data key"
 }
