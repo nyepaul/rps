@@ -6,8 +6,20 @@ document.addEventListener('DOMContentLoaded', () => {
     window.location.hostname; // Force evaluation of full hostname
 
     const API_URL = '/api';
-    // ... rest of selectors
-    
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const resetRequestForm = document.getElementById('resetRequestForm');
+    const resetPasswordForm = document.getElementById('resetPasswordForm');
+    const resendVerificationForm = document.getElementById('resendVerificationForm');
+    const toggleLink = document.getElementById('toggleLink');
+    const toggleText = document.getElementById('toggleText');
+    const resendToggle = document.getElementById('resendToggle');
+    const resendLinkContainer = document.getElementById('resendLinkContainer');
+    const backToLoginLink = document.getElementById('backToLoginLink');
+    const messageDiv = document.getElementById('message');
+    let currentMode = 'login';
+    let resetToken = null;
+
     // Toggle between login and register
     if (toggleLink) {
         toggleLink.addEventListener('click', (e) => {
