@@ -621,6 +621,8 @@ def logout():
     # Otherwise browser treats it as a different cookie and won't clear the original
     cookie_names = [
         current_app.config.get("SESSION_COOKIE_NAME", "session"),
+        "session",  # Old default name before we changed it
+        "rps_session_v2",  # New session cookie name
         "remember_token",
         "user_id",
         "_user_id"

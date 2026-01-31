@@ -45,6 +45,8 @@ class Config:
     SESSION_COOKIE_SAMESITE = "Lax"
     # Set to None to allow cookies across different hostnames (IP, domain, local hostname)
     SESSION_COOKIE_DOMAIN = os.environ.get("SESSION_COOKIE_DOMAIN", None)
+    # Change cookie name to invalidate all existing sessions (security fix 2026-01-31)
+    SESSION_COOKIE_NAME = "rps_session_v2"
     PERMANENT_SESSION_LIFETIME = 1800  # 30 minutes inactivity timeout
 
     # CSRF - Exempt API endpoints (REST API uses session auth + CORS)
