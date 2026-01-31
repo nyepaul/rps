@@ -30,6 +30,16 @@
                     <img src="/rps-logo.svg" alt="RPS" style="height: 40px;">
                 </div>
             </div>
+            <div id="user-profile-display" style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 16px; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-color);">
+                <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text-primary);">
+                    <span style="opacity: 0.7;">👤</span>
+                    <span id="header-username">...</span>
+                </div>
+                <div id="header-profile-container" style="display: none; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary);">
+                    <span style="opacity: 0.6;">📋</span>
+                    <span id="header-profile-name">No profile selected</span>
+                </div>
+            </div>
             <div class="header-buttons">
                 <button class="setup-btn" id="setup-btn" style="display: none;">
                     <span class="setup-icon">📋</span>
@@ -117,6 +127,6 @@
     </div>
 
     <!-- ES6 Module Entry Point -->
-    <script type="module" src="/js/main.js?v=3.9.157"></script>
+    <script type="module" src="/js/main.js?v=3.9.158"></script>
 </body>
 </html>

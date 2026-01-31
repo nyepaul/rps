@@ -28,6 +28,11 @@ async function init() {
         console.warn('Could not fetch version info');
     }
 
+    // Subscribe to state changes to update header display
+    store.subscribe((state) => {
+        updateHeaderDisplay();
+    });
+
     // Check authentication status
     await checkAuth();
 
@@ -91,6 +96,34 @@ async function loadVersion() {
 }
 
 /**
+ * Update header display with current user and profile
+ */
+function updateHeaderDisplay() {
+    const currentUser = store.get('currentUser');
+    const currentProfile = store.get('currentProfile');
+
+    // Update username
+    const usernameEl = document.getElementById('header-username');
+    if (usernameEl && currentUser) {
+        usernameEl.textContent = currentUser.username;
+    }
+
+    // Update profile name
+    const profileContainerEl = document.getElementById('header-profile-container');
+    const profileNameEl = document.getElementById('header-profile-name');
+
+    if (profileContainerEl && profileNameEl) {
+        if (currentProfile && currentProfile.name) {
+            profileNameEl.textContent = currentProfile.name;
+            profileContainerEl.style.display = 'flex';
+        } else {
+            profileNameEl.textContent = 'No profile selected';
+            profileContainerEl.style.display = 'none';
+        }
+    }
+}
+
+/**
  * Load default profile on startup
  */
 async function loadDefaultProfileOnStartup() {
@@ -102,10 +135,12 @@ async function loadDefaultProfileOnStartup() {
         const data = await profilesAPI.get(defaultProfileName);
         store.setState({ currentProfile: data.profile });
         console.log('✅ Default profile loaded:', defaultProfileName);
+        updateHeaderDisplay();
     } catch (error) {
         // Default profile no longer exists, clear it
         console.warn('⚠️ Default profile not found, clearing:', defaultProfileName);
         localStorage.removeItem(STORAGE_KEYS.DEFAULT_PROFILE);
+        updateHeaderDisplay();
     }
 }
 
@@ -118,6 +153,9 @@ async function checkAuth() {
         if (data.authenticated) {
             store.setState({ currentUser: data.user });
             console.log('✅ User authenticated:', data.user.username);
+
+            // Update header username display
+            updateHeaderDisplay();
 
             // Load user-specific preferences
             loadThemePreference();
