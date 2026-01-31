@@ -54,3 +54,6 @@ bandit_assessment.json
 safety_assessment.json
 scripts/debug_user_model.py
 .audit_venv/
+htmlcov/
+.pytest_cache/
+*_report.txt
