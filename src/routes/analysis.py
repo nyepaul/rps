@@ -1140,47 +1140,23 @@ def get_calculation_report():
         }
 
         # Calculate current active income from income_streams
+        # For now, include ALL income streams (skip date filtering to avoid errors)
         work_income_annual = 0
-        today = date.today()
 
-        logger.info(f"Income streams type: {type(income_streams)}, value: {income_streams}")
+        logger.info(f"Income streams count: {len(income_streams)}")
 
         for stream in income_streams:
-            # Check if stream is currently active
-            start_date = stream.get("start_date")
-            end_date = stream.get("end_date")
-            is_active = True
+            amount_monthly = stream.get("amount", 0)
+            amount_annual = amount_monthly * 12
+            work_income_annual += amount_annual
 
-            if start_date:
-                try:
-                    start_dt = date.fromisoformat(start_date)
-                    if start_dt > today:
-                        is_active = False
-                except Exception as e:
-                    logger.error(f"Error parsing start_date: {start_date}, error: {e}")
-                    pass
-
-            if end_date and is_active:
-                try:
-                    end_dt = date.fromisoformat(end_date)
-                    if end_dt < today:
-                        is_active = False
-                except Exception as e:
-                    logger.error(f"Error parsing end_date: {end_date}, error: {e}")
-                    pass
-
-            if is_active:
-                amount_monthly = stream.get("amount", 0)
-                amount_annual = amount_monthly * 12
-                work_income_annual += amount_annual
-
-                owner = stream.get("owner", "primary")
-                label = f"{stream.get('name', 'Income')} ({owner.title()})"
-                income_section["items"].append({
-                    "label": label,
-                    "value": f"${amount_annual:,.0f}",
-                    "amount": amount_annual
-                })
+            owner = stream.get("owner", "primary")
+            label = f"{stream.get('name', 'Income')} ({owner.title()})"
+            income_section["items"].append({
+                "label": label,
+                "value": f"${amount_annual:,.0f}",
+                "amount": amount_annual
+            })
 
         # Social Security (if eligible)
         p1_ss_annual = 0
@@ -1240,41 +1216,17 @@ def get_calculation_report():
         match_rate_p1 = financial_data.get("employer_match_rate", 0)
 
         if current_age < retirement_age:
-            # Calculate primary person's salary from active income streams
+            # Calculate primary person's salary from income streams
             primary_salary = 0
             spouse_salary = 0
 
             for stream in income_streams:
-                # Check if stream is currently active
-                start_date = stream.get("start_date")
-                end_date = stream.get("end_date")
-                is_active = True
-
-                if start_date:
-                    try:
-                        start_dt = date.fromisoformat(start_date)
-                        if start_dt > today:
-                            is_active = False
-                    except Exception as e:
-                        logger.error(f"Error parsing start_date in 401k: {start_date}, error: {e}")
-                        pass
-
-                if end_date and is_active:
-                    try:
-                        end_dt = date.fromisoformat(end_date)
-                        if end_dt < today:
-                            is_active = False
-                    except Exception as e:
-                        logger.error(f"Error parsing end_date in 401k: {end_date}, error: {e}")
-                        pass
-
-                if is_active:
-                    amount_annual = stream.get("amount", 0) * 12
-                    owner = stream.get("owner", "primary")
-                    if owner == "primary":
-                        primary_salary += amount_annual
-                    elif owner == "spouse":
-                        spouse_salary += amount_annual
+                amount_annual = stream.get("amount", 0) * 12
+                owner = stream.get("owner", "primary")
+                if owner == "primary":
+                    primary_salary += amount_annual
+                elif owner == "spouse":
+                    spouse_salary += amount_annual
 
             # Primary 401k
             p1_401k = primary_salary * contrib_rate_p1

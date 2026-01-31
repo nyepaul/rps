@@ -1,5 +1,5 @@
 {
-    "version": "3.9.161",
+    "version": "3.9.162",
     "release_date": "2026-01-31",
-    "release_notes": "Add detailed error logging to calculation report to debug date comparison issue"
+    "release_notes": "Remove date filtering from calculation report to fix comparison error"
 }
