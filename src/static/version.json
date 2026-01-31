@@ -1,5 +1,5 @@
 {
-    "version": "3.9.165",
+    "version": "3.9.152",
     "release_date": "2026-01-31",
-    "release_notes": "Add 401k contribution rate defaults to demo profiles"
+    "release_notes": "Remove tip message from asset list UI"
 }

@@ -99,12 +99,6 @@ export function renderAssetList(assets, container, onSaveCallback) {
                     </select>
                 </div>
             </div>
-
-            <div style="padding: 8px 12px; margin-bottom: 12px; background: var(--bg-tertiary); border-radius: 6px; border-left: 3px solid var(--accent-color);">
-                <p style="margin: 0; font-size: 12px; color: var(--text-secondary);">
-                    <strong style="color: var(--text-primary);">💡 Tip:</strong> Click on any asset to edit its details
-                </p>
-            </div>
             <div style="display: flex; flex-direction: column; gap: 6px;">
                 ${allAssets.map(asset => renderAssetRow(asset)).join('')}
             </div>
