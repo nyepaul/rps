@@ -209,6 +209,12 @@ function updateTabVisibility() {
     if (percentage >= config.LEVEL_2.min) config.LEVEL_2.tabs.forEach(t => visibleTabs.add(t));
     if (percentage >= config.LEVEL_3.min) config.LEVEL_3.tabs.forEach(t => visibleTabs.add(t));
 
+    // Special handling for admin tab
+    const currentUser = store.get('currentUser');
+    if (currentUser && currentUser.is_admin) {
+        visibleTabs.add('admin');
+    }
+
     // Handle all tab buttons and their parent groups
     const allTabButtons = tabsContainer.querySelectorAll('.tab[data-tab]');
     
@@ -216,11 +222,12 @@ function updateTabVisibility() {
         const tabName = btn.getAttribute('data-tab');
         const isVisible = visibleTabs.has(tabName);
         
-        // Find if this button is inside a dropdown
-        const group = btn.closest('.nav-group');
-        
         if (isVisible) {
-            btn.style.display = ''; // Show
+            if (btn.classList.contains('admin-only-tab')) {
+                btn.style.display = 'inline-block';
+            } else {
+                btn.style.display = ''; // Revert to CSS
+            }
         } else {
             btn.style.display = 'none'; // Hide
         }
@@ -301,19 +308,6 @@ async function checkAuth() {
             // Load user-specific preferences
             loadThemePreference();
             loadCompactModePreference();
-
-            // Show admin tab if user is admin
-            if (data.user.is_admin) {
-                // Use requestAnimationFrame to ensure DOM is ready and force repaint
-                requestAnimationFrame(() => {
-                    const adminTab = document.querySelector('.admin-only-tab');
-                    if (adminTab) {
-                        adminTab.style.display = 'inline-block';
-                        // Force reflow to ensure the change is painted
-                        void adminTab.offsetHeight;
-                    }
-                });
-            }
         } else {
             // Force hide sidebar and tabs before redirecting
             const sidebar = document.getElementById('tabs-container');

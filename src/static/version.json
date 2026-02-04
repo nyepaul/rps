@@ -1,5 +1,5 @@
 {
-    "version": "3.9.183",
+    "version": "3.9.184",
     "release_date": "2026-02-04",
-    "release_notes": "Fix portfolio jump discrepancy in Cashflow view by accounting for Home Sales"
+    "release_notes": "Fix admin tab visibility for admin users"
 }
