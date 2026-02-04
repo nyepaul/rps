@@ -10,7 +10,8 @@ import { APP_CONFIG } from '../../config.js';
 import { showAIImportModal } from "../ai/ai-import-modal.js";
 import { apiClient } from "../../api/client.js";
 import { EXPENSE_CONFIG } from "../../utils/csv-parser.js";
-import { showCSVImportModal } from "../shared/csv-import-modal.js";
+import { renderCSVImportModal } from "../shared/csv-import-modal.js";
+import { renderImportPreviewModal } from "../shared/import-preview-modal.js";
 
 let currentPeriod = "current";
 let budgetData = null;
@@ -95,7 +96,7 @@ export function renderBudgetTab(container) {
                             <div class="action-menu-item" data-action="ai-import" style="padding: 10px 16px; cursor: pointer; font-size: 13px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px;">
                                 <span>🤖</span> AI Import
                             </div>
-                            <div class="action-menu-item" data-action="import-csv" style="padding: 10px 16px; cursor: pointer; font-size: 13px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px;">
+                            <div class="action-menu-item" data-action="csv-import" style="padding: 10px 16px; cursor: pointer; font-size: 13px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px;">
                                 <span>📁</span> Import CSV
                             </div>
                             <div class="action-menu-item" data-action="export-csv" style="padding: 10px 16px; cursor: pointer; font-size: 13px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px;">

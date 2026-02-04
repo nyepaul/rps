@@ -234,14 +234,15 @@ class TestPythonCriticalIssues:
                     except_block = match.group(1)
 
                     # Look for variable references that might not be defined
-                    if "data." in except_block and re.search(r"data\.[a-zA-Z_]", except_block):
+                    # Use word boundary to avoid false positives like spouse_data, json_data, etc.
+                    if re.search(r"\bdata\.[a-zA-Z_]", except_block):
                         # Check if 'data' is defined before the except block
                         # We search for the last 'def ' to scope it to the current function
                         content_before = content[: match.start()]
                         last_def_idx = content_before.rfind("def ")
                         if last_def_idx != -1:
                             function_content = content_before[last_def_idx:]
-                            if "data = " not in function_content:
+                            if "data = " not in function_content and re.search(r"\bdata\s*=\s*", function_content) is None:
                                 issues.append(
                                     f"{py_file.relative_to(PY_BASE_DIR)} - May reference undefined 'data' in except block"
                                 )

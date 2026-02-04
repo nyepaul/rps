@@ -6,6 +6,7 @@ import { profilesAPI } from '../../api/profiles.js';
 import { store } from '../../state/store.js';
 import { showSuccess, showError, showSpinner, hideSpinner } from '../../utils/dom.js';
 import { setupContextualHelp } from '../../utils/contextual-help.js';
+import { setFieldError, setFieldWarning, clearFieldError, validateAge } from '../../utils/validation.js';
 
 export function renderProfileTab(container) {
     const profile = store.get('currentProfile');
@@ -396,6 +397,27 @@ function setupProfileFormHandlers(container, profile) {
         }
     });
 
+    // Inline Validation Listeners
+    const lifeExpInput = container.querySelector('#life_expectancy');
+    if (lifeExpInput) {
+        lifeExpInput.addEventListener('blur', () => {
+            const val = parseInt(lifeExpInput.value);
+            if (val < 60) setFieldWarning(lifeExpInput, 'Short life expectancy may underestimate needed savings');
+            else if (val > 110) setFieldWarning(lifeExpInput, 'Unusually long life expectancy');
+            else clearFieldError(lifeExpInput);
+        });
+    }
+
+    const ssBenefitInput = container.querySelector('#ss_benefit');
+    if (ssBenefitInput) {
+        ssBenefitInput.addEventListener('blur', () => {
+            const val = parseFloat(ssBenefitInput.value);
+            if (val > 5000) setFieldWarning(ssBenefitInput, 'Unusually high SS benefit (max 2024 is ~$3,822)');
+            else if (val < 0) setFieldError(ssBenefitInput, 'Benefit cannot be negative');
+            else clearFieldError(ssBenefitInput);
+        });
+    }
+
     // Form submission
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -551,6 +573,56 @@ function setupProfileFormHandlers(container, profile) {
     // Add automatic age calculation
     setupAgeCalculation(container);
     setupSpouseAgeCalculation(container);
+    
+    // Setup smart defaults (IP geolocation)
+    setupSmartDefaults(container);
+}
+
+/**
+ * Setup smart defaults for form fields
+ */
+function setupSmartDefaults(container) {
+    const stateSelect = container.querySelector('#address_state');
+    
+    // Only fetch if state is not already selected
+    if (stateSelect && !stateSelect.value) {
+        // Use a timeout to not block rendering
+        setTimeout(async () => {
+            try {
+                const response = await fetch('https://ipapi.co/json/');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.region_code && data.country_code === 'US') {
+                        // Check if the option exists
+                        const option = stateSelect.querySelector(`option[value="${data.region_code}"]`);
+                        if (option) {
+                            stateSelect.value = data.region_code;
+                            
+                            // Visual cue
+                            stateSelect.style.transition = 'background-color 0.5s';
+                            stateSelect.style.backgroundColor = 'var(--info-bg)';
+                            setTimeout(() => {
+                                stateSelect.style.backgroundColor = '';
+                            }, 1000);
+                            
+                            // Add a small note
+                            const label = stateSelect.previousElementSibling;
+                            if (label) {
+                                const badge = document.createElement('span');
+                                badge.textContent = ' (Auto-detected)';
+                                badge.style.fontSize = '10px';
+                                badge.style.color = 'var(--accent-color)';
+                                badge.style.fontWeight = 'normal';
+                                label.appendChild(badge);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.warn('Failed to auto-detect location:', error);
+            }
+        }, 1000);
+    }
 }
 
 /**
@@ -732,11 +804,7 @@ function setupAgeCalculation(container) {
                     retirementAgeField.value = retirementAge;
                     
                     // VALIDATION: Check if retirement age is reasonable (> 18)
-                    if (retirementAge < 18) {
-                        setFieldError(retirementDateField, 'Retirement date must be at least 18 years after birth date');
-                    } else {
-                        clearFieldError(retirementDateField);
-                    }
+                    validateAge(retirementDateField, retirementAge, { min: 18, max: 90, label: 'Retirement Age' });
                 }
             } else {
                 clearFieldError(retirementDateField);
@@ -807,11 +875,7 @@ function setupSpouseAgeCalculation(container) {
                     spouseRetirementAgeField.value = retirementAge;
                     
                     // VALIDATION: Check if retirement age is reasonable (> 18)
-                    if (retirementAge < 18) {
-                        setFieldError(spouseRetirementDateField, 'Retirement date must be at least 18 years after birth date');
-                    } else {
-                        clearFieldError(spouseRetirementDateField);
-                    }
+                    validateAge(spouseRetirementDateField, retirementAge, { min: 18, max: 90, label: 'Spouse Retirement Age' });
                 }
             } else {
                 clearFieldError(spouseRetirementDateField);
@@ -833,35 +897,3 @@ function setupSpouseAgeCalculation(container) {
     updateSpouseAges();
 }
 
-// --- Validation Helpers ---
-
-function setFieldError(inputElement, message) {
-    // Check if error already exists
-    let errorDiv = inputElement.parentElement.querySelector('.field-error');
-    
-    inputElement.style.borderColor = 'var(--danger-color)';
-    
-    if (!errorDiv) {
-        errorDiv = document.createElement('div');
-        errorDiv.className = 'field-error';
-        errorDiv.style.color = 'var(--danger-color)';
-        errorDiv.style.fontSize = '11px';
-        errorDiv.style.marginTop = '4px';
-        inputElement.parentElement.appendChild(errorDiv);
-    }
-    
-    errorDiv.textContent = message;
-    inputElement.classList.add('is-invalid');
-}
-
-function clearFieldError(inputElement) {
-    if (!inputElement) return;
-    
-    const errorDiv = inputElement.parentElement.querySelector('.field-error');
-    if (errorDiv) {
-        errorDiv.remove();
-    }
-    
-    inputElement.style.borderColor = ''; // Reset to default (via CSS)
-    inputElement.classList.remove('is-invalid');
-}

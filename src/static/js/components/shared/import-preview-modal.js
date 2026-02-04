@@ -1,347 +1,335 @@
 /**
- * Unified Import Preview Modal
- * Allows users to review, edit actions, and confirm imported data
+ * Import Preview Modal Component
+ * Displays parsed CSV data for review before saving
  */
 
-import { profilesAPI } from '../../api/profiles.js';
-import { apiClient } from '../../api/client.js';
-import { store } from '../../state/store.js';
-import { showError, showSuccess, showSpinner, hideSpinner } from '../../utils/dom.js';
 import { formatCurrency } from '../../utils/formatters.js';
+import { aiAPI } from '../../api/ai.js';
+import { store } from '../../state/store.js';
+import { showSuccess, showError, showSpinner, hideSpinner } from '../../utils/dom.js';
 
 /**
- * Show the import preview modal
- * @param {Object} options - Configuration options
- * @param {Array} options.items - Parsed data items
- * @param {Array} options.warnings - Parsing warnings
- * @param {Object} options.config - Parser configuration (INCOME_CONFIG, etc.)
- * @param {string} options.profileName - Current profile name
- * @param {Function} options.onComplete - Callback when import finishes
- * @param {Object} options.extraData - Optional extra data (e.g., period)
+ * Render and show the preview modal
+ * @param {Array} items - Parsed items to import
+ * @param {string} type - 'income', 'expense', or 'asset'
+ * @param {function} onConfirm - Callback with confirmed items to save
+ * @param {string} filename - Name of the imported file
  */
-export function showImportPreviewModal({ items, warnings, config, profileName, onComplete, extraData = {} }) {
+export function renderImportPreviewModal(items, type, onConfirm, filename) {
+    // Remove existing modal
+    const existingModal = document.getElementById('import-preview-modal');
+    if (existingModal) existingModal.remove();
+
     const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
+    modal.id = 'import-preview-modal';
+    modal.className = 'modal';
     modal.style.cssText = `
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.7); display: flex; align-items: center;
-        justify-content: center; z-index: 2100;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
     `;
 
-    // Track state of each item (action: 'add', 'merge', 'skip')
-    // Default to 'add' for all initially
-    let itemStates = items.map(item => ({
-        item,
-        action: 'add',
-        ai_suggestion: null
-    }));
+    // Calculate totals
+    const totalAmount = items.reduce((sum, item) => sum + (parseFloat(item.amount || item.value) || 0), 0);
 
-    const renderModalContent = () => {
-        const counts = { add: 0, merge: 0, skip: 0 };
-        itemStates.forEach(s => counts[s.action]++);
-
-        modal.innerHTML = `
-        <div class="modal-content" style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; max-width: 1000px; width: 95%; max-height: 90vh; border: 1px solid var(--border-color); display: flex; flex-direction: column;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="margin: 0;">Review Imported ${config.type.charAt(0).toUpperCase() + config.type.slice(1)}s</h2>
-                <button id="close-preview-btn" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">&times;</button>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 300px; gap: 20px; margin-bottom: 20px;">
+    modal.innerHTML = `
+        <div class="modal-content" style="background: var(--bg-secondary); width: 90%; max-width: 800px; max-height: 90vh; display: flex; flex-direction: column; padding: 0; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+            <!-- Header -->
+            <div style="padding: 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    ${warnings.length > 0 ? `
-                        <div style="background: var(--warning-bg); border-left: 4px solid var(--warning-color); padding: 12px; margin-bottom: 15px; font-size: 13px;">
-                            <strong>⚠️ Parsing Warnings:</strong>
-                            <ul style="margin: 5px 0 0 20px; padding: 0;">
-                                ${warnings.slice(0, 3).map(w => `<li>${w}</li>`).join('')}
-                                ${warnings.length > 3 ? `<li>...and ${warnings.length - 3} more</li>` : ''}
-                            </ul>
-                        </div>
-                    ` : ''}
-
-                    <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">✨ Smart AI Optimization</div>
-                            <div style="font-size: 12px; color: var(--text-secondary);">Use AI to detect hidden duplicates and improve categorization.</div>
-                        </div>
-                        <button id="run-ai-btn" style="padding: 8px 16px; background: #764ba2; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; display: flex; align-items: center; gap: 6px;">
-                            <span>🚀</span> Run AI Analysis
-                        </button>
+                    <h3 style="margin: 0; font-size: 18px; font-weight: 600;">Preview Import</h3>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                        File: ${filename} • ${items.length} items found
                     </div>
                 </div>
-
-                <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
-                    <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px;">Import Options:</label>
-                    
-                    ${config.type === 'expense' ? `
-                        <div style="margin-bottom: 10px;">
-                            <span style="display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 4px;">Target Period</span>
-                            <select id="import-period-select" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
-                                <option value="current" ${extraData.period === 'current' ? 'selected' : ''}>Pre-Retirement</option>
-                                <option value="future" ${extraData.period === 'future' ? 'selected' : ''}>Post-Retirement</option>
-                                <option value="both">Both Periods</option>
-                            </select>
-                        </div>
-                    ` : ''}
-
-                    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-color);">
-                        <button id="apply-all-merge" style="width: 100%; padding: 6px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 4px; font-size: 11px; cursor: pointer; margin-bottom: 5px;">Set All to Merge</button>
-                        <button id="apply-all-add" style="width: 100%; padding: 6px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 4px; font-size: 11px; cursor: pointer;">Set All to Add</button>
-                    </div>
-                </div>
+                <button id="close-preview-modal" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">&times;</button>
             </div>
 
-            <div style="flex: 1; overflow-y: auto; margin-bottom: 20px; border: 1px solid var(--border-color); border-radius: 8px;">
+            <!-- Content -->
+            <div style="padding: 20px; overflow-y: auto; flex: 1;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-                    <thead style="position: sticky; top: 0; background: var(--bg-tertiary); z-index: 10;">
-                        <tr>
-                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid var(--border-color);">Name / AI Insight</th>
-                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid var(--border-color);">Amount</th>
-                            ${config.type === 'expense' ? '<th style="padding: 12px; text-align: left; border-bottom: 2px solid var(--border-color);">Category</th>' : ''}
-                            ${config.type === 'asset' ? '<th style="padding: 12px; text-align: left; border-bottom: 2px solid var(--border-color);">Type</th>' : ''}
-                            <th style="padding: 12px; text-align: center; border-bottom: 2px solid var(--border-color);">Action</th>
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border-color); text-align: left;">
+                            <th style="padding: 8px; width: 40px;"><input type="checkbox" id="select-all-import" checked></th>
+                            <th style="padding: 8px;">Name</th>
+                            <th style="padding: 8px;">${type === 'asset' ? 'Type' : 'Category'}</th>
+                            <th style="padding: 8px; text-align: right;">Amount</th>
+                            ${type === 'expense' ? '<th style="padding: 8px;">Frequency</th>' : ''}
                         </tr>
                     </thead>
-                    <tbody>
-                        ${itemStates.map((state, idx) => {
-                            const item = state.item;
-                            const ai = state.ai_suggestion;
-                            const isDuplicate = ai?.is_duplicate || item.match_status === 'match_found';
-                            const confidence = ai?.confidence || item.match_confidence || 0;
-
-                            return `
-                            <tr style="border-bottom: 1px solid var(--border-color); ${isDuplicate && state.action === 'add' ? 'background: var(--warning-bg)22;' : ''}">
-                                <td style="padding: 10px 12px;">
-                                    <div style="font-weight: 600;">${item.name}</div>
-                                    ${isDuplicate ? `
-                                        <div style="font-size: 11px; color: var(--warning-color); margin-top: 2px;">
-                                            ⚠️ Probable Duplicate of: <strong>${ai?.duplicate_of || item.matched_existing_item?.name}</strong> (${(confidence * 100).toFixed(0)}% match)
-                                        </div>
-                                    ` : ''}
-                                    ${ai?.suggested_category && ai.suggested_category.toLowerCase() !== item.category?.toLowerCase() ? `
-                                        <div style="font-size: 11px; color: var(--accent-color); margin-top: 2px;">
-                                            ✨ AI Suggests: <strong>${ai.suggested_category}</strong> (${ai.reasoning})
-                                        </div>
-                                    ` : ''}
-                                </td>
-                                <td style="padding: 10px 12px;">${formatCurrency(item.amount || item.balance || 0)}</td>
-                                ${config.type === 'expense' ? `<td style="padding: 10px 12px; text-transform: capitalize;">${item.category}</td>` : ''}
-                                ${config.type === 'asset' ? `<td style="padding: 10px 12px; text-transform: capitalize;">${item.type.replace('_', ' ')}</td>` : ''}
-                                <td style="padding: 10px 12px; text-align: center;">
-                                    <div class="action-toggles" data-index="${idx}" style="display: inline-flex; background: var(--bg-primary); border-radius: 6px; padding: 2px; border: 1px solid var(--border-color);">
-                                        <button class="toggle-btn ${state.action === 'add' ? 'active' : ''}" data-action="add" style="padding: 4px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; background: ${state.action === 'add' ? 'var(--accent-color)' : 'transparent'}; color: ${state.action === 'add' ? 'white' : 'var(--text-secondary)'};">Add</button>
-                                        <button class="toggle-btn ${state.action === 'merge' ? 'active' : ''}" data-action="merge" title="Update existing item with same name" style="padding: 4px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; background: ${state.action === 'merge' ? 'var(--info-color)' : 'transparent'}; color: ${state.action === 'merge' ? 'white' : 'var(--text-secondary)'};">Merge</button>
-                                        <button class="toggle-btn ${state.action === 'skip' ? 'active' : ''}" data-action="skip" style="padding: 4px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; background: ${state.action === 'skip' ? 'var(--danger-color)' : 'transparent'}; color: ${state.action === 'skip' ? 'white' : 'var(--text-secondary)'};">Skip</button>
-                                    </div>
-                                </td>
-                            </tr>
-                        `}).join('')}
+                    <tbody id="import-preview-body">
+                        <!-- Content rendered by renderRow -->
                     </tbody>
                 </table>
             </div>
 
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div style="font-size: 14px; color: var(--text-secondary);">
-                    Summary: <span id="summary-text" style="font-weight: 600; color: var(--text-primary);">Adding ${counts.add}, merging ${counts.merge}, skipping ${counts.skip}</span>
+            <!-- Footer -->
+            <div style="padding: 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--bg-tertiary);">
+                <div style="font-weight: 600;">
+                    Total: <span id="import-total">${formatCurrency(totalAmount, 0)}</span>
                 </div>
                 <div style="display: flex; gap: 10px;">
-                    <button id="cancel-preview-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 14px;">
-                        Back
+                    <button id="ai-enhance-btn" style="padding: 8px 16px; background: linear-gradient(135deg, #8b5cf6, #6366f1); color: white; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                        Enhance with AI
                     </button>
-                    <button id="confirm-import-btn" style="padding: 10px 25px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
-                        Confirm Import
+                    <div style="width: 1px; height: 30px; background: var(--border-color); margin: 0 5px;"></div>
+                    <button id="cancel-preview-btn" style="padding: 8px 16px; background: white; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;">Cancel</button>
+                    <button id="confirm-import-btn" style="padding: 8px 24px; background: var(--success-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                        Import ${items.length} Items
                     </button>
                 </div>
             </div>
         </div>
     `;
 
-        attachEventListeners();
-    };
+    document.body.appendChild(modal);
 
-    const attachEventListeners = () => {
-        // Close buttons
-        modal.querySelector('#close-preview-btn').onclick = () => modal.remove();
-        modal.querySelector('#cancel-preview-btn').onclick = () => modal.remove();
+    // Event Handlers
+    const closeBtn = modal.querySelector('#close-preview-modal');
+    const cancelBtn = modal.querySelector('#cancel-preview-btn');
+    const confirmBtn = modal.querySelector('#confirm-import-btn');
+    const aiBtn = modal.querySelector('#ai-enhance-btn');
+    const selectAll = modal.querySelector('#select-all-import');
+    const checkboxes = modal.querySelectorAll('.import-item-checkbox');
 
-        // Toggle handlers
-        modal.querySelectorAll('.toggle-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const container = btn.closest('.action-toggles');
-                const idx = parseInt(container.dataset.index);
-                const action = btn.dataset.action;
-                itemStates[idx].action = action;
-                renderModalContent();
-            });
-        });
+    const closeModal = () => modal.remove();
 
-        // Apply All buttons
-        modal.querySelector('#apply-all-merge').onclick = () => {
-            itemStates.forEach(s => s.action = 'merge');
-            renderModalContent();
-        };
-        modal.querySelector('#apply-all-add').onclick = () => {
-            itemStates.forEach(s => s.action = 'add');
-            renderModalContent();
-        };
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
 
-        // AI Optimization Button
-        modal.querySelector('#run-ai-btn').onclick = async () => {
-            await runAIEnhancement();
-        };
+    // AI Enhancement Handler
+    aiBtn.addEventListener('click', async () => {
+        const profile = store.get('currentProfile');
+        if (!profile) {
+            showError('No active profile to check against.');
+            return;
+        }
 
-        // Confirm button
-        modal.querySelector('#confirm-import-btn').onclick = handleConfirmImport;
-    };
-
-    const runAIEnhancement = async () => {
-        showSpinner('Analyzing with AI...');
         try {
-            const response = await apiClient.post('/api/enhance-csv-import', {
-                type: config.type,
-                items: itemStates.map(s => s.item),
-                profile_name: profileName,
-                extra_data: {
-                    period: modal.querySelector('#import-period-select')?.value || extraData.period
-                }
-            });
+            showSpinner('AI is analyzing your data...');
+            aiBtn.disabled = true;
+            aiBtn.style.opacity = '0.7';
 
-            if (response.items) {
-                // Update items with AI results
-                itemStates = response.items.map(enrichedItem => {
-                    const action = (enrichedItem.match_status === 'match_found' || enrichedItem.ai_suggestions?.is_duplicate) ? 'merge' : 'add';
-                    
-                    return {
-                        item: enrichedItem,
-                        action: action,
-                        ai_suggestion: enrichedItem.ai_suggestions || null
-                    };
+            // Prepare items for analysis
+            const itemsToAnalyze = items.map(item => ({
+                name: item.name,
+                amount: parseFloat(item.amount || item.value) || 0,
+                category: item.category || 'other', // Current category
+                type: item.type || 'other'
+            }));
+
+            const result = await aiAPI.enhanceCSV(profile.name, type, itemsToAnalyze);
+            
+            if (result.items) {
+                // Update local items with AI suggestions
+                // The backend returns the full list with "reconciliation" and "ai_suggestions" fields
+                
+                // Refresh table with new data
+                const tbody = modal.querySelector('#import-preview-body');
+                tbody.innerHTML = result.items.map((item, index) => renderRow(item, index, type)).join('');
+                
+                // Re-attach listeners to new inputs
+                attachRowListeners(modal, result.items);
+                
+                // Update original items ref
+                // Note: We need to update the original 'items' array reference carefully
+                // or just map results back to it
+                result.items.forEach((enhancedItem, i) => {
+                    if (items[i]) {
+                        items[i].category = enhancedItem.category || enhancedItem.ai_suggestions?.suggested_category || items[i].category;
+                        items[i]._reconciliation = enhancedItem.reconciliation;
+                        items[i]._ai = enhancedItem.ai_suggestions;
+                    }
                 });
 
-                showSuccess(`AI analysis complete: ${response.enhanced_count || 0} items optimized.`);
-                renderModalContent();
+                showSuccess(`Analysis complete! Found ${result.enhanced_count || 0} suggestions.`);
             }
+
         } catch (error) {
-            console.error('AI Enhancement Error:', error);
-            showError(`AI Analysis failed: ${error.message}`);
+            console.error('AI Enhance error:', error);
+            showError('AI analysis failed: ' + error.message);
         } finally {
             hideSpinner();
+            aiBtn.disabled = false;
+            aiBtn.style.opacity = '1';
         }
-    };
+    });
 
-    const handleConfirmImport = async () => {
-        showSpinner('Importing data...');
-        try {
-            // Get current profile data
-            const profile = store.get('currentProfile');
-            const profileData = profile.data || {};
+    // Select All Toggle
+    selectAll.addEventListener('change', (e) => {
+        checkboxes.forEach(cb => cb.checked = e.target.checked);
+        updateImportButton();
+    });
+
+    // Initial Render of Body
+    const tbody = modal.querySelector('#import-preview-body');
+    tbody.innerHTML = items.map((item, index) => renderRow(item, index, type)).join('');
+
+    // Function to attach listeners (re-usable)
+    function attachRowListeners(container, itemsRef) {
+        // Individual Checkbox Toggle
+        const checks = container.querySelectorAll('.import-item-checkbox');
+        checks.forEach(cb => {
+            cb.addEventListener('change', updateImportButton);
+        });
+
+        // Editable Fields
+        container.querySelectorAll('.edit-field, .edit-select').forEach(input => {
+            input.addEventListener('change', (e) => {
+                const index = e.target.dataset.index;
+                const field = e.target.dataset.field;
+                itemsRef[index][field] = e.target.value;
+            });
             
-            let dataKey = '';
-            let secondaryKey = ''; 
-
-            const periodSelect = modal.querySelector('#import-period-select');
-            const targetPeriod = periodSelect ? periodSelect.value : (extraData.period || 'current');
-
-            if (config.type === 'income') {
-                dataKey = 'income_streams';
-                if (!profileData.financial) profileData.financial = {};
-                if (!profileData.financial.income_streams) profileData.financial.income_streams = [];
-            } else if (config.type === 'expense') {
-                dataKey = 'budget';
-                if (!profileData.budget) profileData.budget = {};
-                if (targetPeriod !== 'both') {
-                    secondaryKey = targetPeriod;
-                    if (!profileData.budget[targetPeriod]) profileData.budget[targetPeriod] = {};
-                }
-            } else if (config.type === 'asset') {
-                if (!profileData.assets) profileData.assets = {};
-            }
-
-            const itemsToProcess = itemStates.filter(s => s.action !== 'skip');
+            // Add focus styles
+            input.addEventListener('focus', () => {
+                input.style.borderColor = 'var(--accent-color)';
+                input.style.background = 'var(--bg-primary)';
+            });
             
-            if (config.type === 'asset') {
-                itemsToProcess.forEach(({ item, action, ai_suggestion }) => {
-                    const category = ai_suggestion?.suggested_category || item.type;
-                    if (!profileData.assets[category]) profileData.assets[category] = [];
-                    
-                    const arr = profileData.assets[category];
-                    if (action === 'merge') {
-                        const matchName = ai_suggestion?.duplicate_of || item.matched_existing_item?.name || item.name;
-                        const existingIdx = arr.findIndex(ai => ai.name.toLowerCase() === matchName.toLowerCase());
-                        if (existingIdx !== -1) {
-                            arr[existingIdx] = { ...arr[existingIdx], ...item, type: category };
-                            return;
-                        }
-                    }
-                    arr.push({ ...item, id: Date.now() + Math.random(), type: category });
-                });
-            } else if (config.type === 'expense' && targetPeriod === 'both') {
-                ['current', 'future'].forEach(p => {
-                    if (!profileData.budget[p]) profileData.budget[p] = {};
-                    itemsToProcess.forEach(({ item, action, ai_suggestion }) => {
-                        const cat = ai_suggestion?.suggested_category || item.category || 'other';
-                        if (!profileData.budget[p][cat]) profileData.budget[p][cat] = [];
-                        
-                        const arr = profileData.budget[p][cat];
-                        if (action === 'merge') {
-                            const matchName = ai_suggestion?.duplicate_of || item.matched_existing_item?.name || item.name;
-                            const existingIdx = arr.findIndex(ti => ti.name.toLowerCase() === matchName.toLowerCase());
-                            if (existingIdx !== -1) {
-                                arr[existingIdx] = { ...arr[existingIdx], ...item, category: cat };
-                                return;
-                            }
-                        }
-                        arr.push({ ...item, id: Date.now() + Math.random(), category: cat });
-                    });
-                });
-            } else {
-                itemsToProcess.forEach(({ item, action, ai_suggestion }) => {
-                    const matchName = ai_suggestion?.duplicate_of || item.matched_existing_item?.name || item.name;
+            input.addEventListener('blur', () => {
+                input.style.borderColor = 'transparent';
+                input.style.background = 'transparent';
+            });
+        });
+    }
 
-                    if (action === 'merge') {
-                        let searchArray = [];
-                        if (config.type === 'expense') {
-                            const cat = ai_suggestion?.suggested_category || item.category || 'other';
-                            if (!profileData.budget[secondaryKey][cat]) profileData.budget[secondaryKey][cat] = [];
-                            searchArray = profileData.budget[secondaryKey][cat];
-                        } else {
-                            searchArray = profileData.financial.income_streams;
-                        }
+    // Initial attachment
+    attachRowListeners(modal, items);
 
-                        const existingIdx = searchArray.findIndex(ti => ti.name.toLowerCase() === matchName.toLowerCase());
-                        if (existingIdx !== -1) {
-                            searchArray[existingIdx] = { ...searchArray[existingIdx], ...item };
-                            if (config.type === 'expense') searchArray[existingIdx].category = ai_suggestion?.suggested_category || item.category;
-                            return;
-                        }
-                    }
-                    
-                    if (config.type === 'expense') {
-                        const cat = ai_suggestion?.suggested_category || item.category || 'other';
-                        if (!profileData.budget[secondaryKey][cat]) profileData.budget[secondaryKey][cat] = [];
-                        profileData.budget[secondaryKey][cat].push({ ...item, id: Date.now() + Math.random(), category: cat });
-                    } else {
-                        profileData.financial.income_streams.push({ ...item, id: Date.now() + Math.random() });
-                    }
-                });
-            }
-
-            const result = await profilesAPI.update(profile.name, { data: profileData });
-            store.setState({ currentProfile: result.profile });
-
-            hideSpinner();
-            showSuccess(`Successfully imported ${itemsToProcess.length} items.`);
-            modal.remove();
-            
-            if (onComplete) onComplete(result.profile);
-
-        } catch (error) {
-            hideSpinner();
-            console.error('Import confirmation error:', error);
-            showError(`Failed to save imported data: ${error.message}`);
+    // Update Import Button Text
+    function updateImportButton() {
+        const checkedCount = modal.querySelectorAll('.import-item-checkbox:checked').length;
+        confirmBtn.textContent = `Import ${checkedCount} Items`;
+        confirmBtn.disabled = checkedCount === 0;
+        if (checkedCount === 0) {
+            confirmBtn.style.opacity = '0.5';
+            confirmBtn.style.cursor = 'not-allowed';
+        } else {
+            confirmBtn.style.opacity = '1';
+            confirmBtn.style.cursor = 'pointer';
         }
-    };
+    }
 
-    // Initial render
-    renderModalContent();
+    // Confirm Import
+    confirmBtn.addEventListener('click', () => {
+        const selectedItems = [];
+        checkboxes.forEach((cb, i) => {
+            if (cb.checked) {
+                selectedItems.push(items[i]);
+            }
+        });
+        
+        modal.remove();
+        if (onConfirm) onConfirm(selectedItems);
+    });
+}
+
+/**
+ * Render a single row
+ */
+function renderRow(item, index, type) {
+    // Check for AI/Reconciliation status
+    const recon = item.reconciliation || {};
+    const ai = item.ai_suggestions || {};
+    
+    let statusBadge = '';
+    let rowStyle = 'border-bottom: 1px solid var(--border-color);';
+    let warningIcon = '';
+
+    if (recon.status === 'exact_match') {
+        statusBadge = `<span style="font-size: 10px; background: var(--bg-tertiary); color: var(--text-secondary); padding: 2px 6px; border-radius: 4px;">Skipping (Exists)</span>`;
+        rowStyle = 'border-bottom: 1px solid var(--border-color); opacity: 0.6;';
+    } else if (recon.status === 'potential_duplicate' || ai.is_duplicate) {
+        statusBadge = `<span style="font-size: 10px; background: #fff3cd; color: #b45309; padding: 2px 6px; border-radius: 4px;">Possible Duplicate</span>`;
+        warningIcon = '⚠️ ';
+    } else if (ai.suggested_category && ai.suggested_category !== (item.category || 'other')) {
+        statusBadge = `<span style="font-size: 10px; background: #eff6ff; color: #1e40af; padding: 2px 6px; border-radius: 4px;">AI Suggested</span>`;
+        // Apply suggestion
+        item.category = ai.suggested_category; 
+    }
+
+    return `
+        <tr style="${rowStyle}">
+            <td style="padding: 8px;">
+                <input type="checkbox" class="import-item-checkbox" data-index="${index}" ${recon.status === 'exact_match' ? '' : 'checked'}>
+            </td>
+            <td style="padding: 8px;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    ${warningIcon}
+                    <input type="text" class="edit-field" data-field="name" data-index="${index}" value="${item.name}" style="width: 100%; border: 1px solid transparent; background: transparent; padding: 4px;">
+                </div>
+                ${statusBadge ? `<div style="margin-left: 4px; margin-top: 2px;">${statusBadge}</div>` : ''}
+            </td>
+            <td style="padding: 8px;">
+                ${renderCategorySelect(type, item, index)}
+            </td>
+            <td style="padding: 8px; text-align: right;">
+                ${formatCurrency(item.amount || item.value, 0)}
+            </td>
+            ${type === 'expense' ? `<td style="padding: 8px;">${item.frequency || 'Monthly'}</td>` : ''}
+        </tr>
+    `;
+}
+
+/**
+ * Helper to render category/type select dropdown
+ */
+function renderCategorySelect(type, item, index) {
+    const value = type === 'asset' ? (item.type || 'other') : (item.category || 'other');
+    const field = type === 'asset' ? 'type' : 'category';
+    
+    let options = [];
+    
+    if (type === 'income') {
+        options = [
+            {v: 'salary', l: 'Salary'},
+            {v: 'bonus', l: 'Bonus'},
+            {v: 'rental', l: 'Rental'},
+            {v: 'dividend', l: 'Dividend'},
+            {v: 'interest', l: 'Interest'},
+            {v: 'pension', l: 'Pension'},
+            {v: 'social_security', l: 'Social Security'},
+            {v: 'other', l: 'Other'}
+        ];
+    } else if (type === 'expense') {
+        options = [
+            {v: 'housing', l: 'Housing'},
+            {v: 'food', l: 'Food'},
+            {v: 'transportation', l: 'Transportation'},
+            {v: 'utilities', l: 'Utilities'},
+            {v: 'healthcare', l: 'Healthcare'},
+            {v: 'insurance', l: 'Insurance'},
+            {v: 'debt', l: 'Debt'},
+            {v: 'entertainment', l: 'Entertainment'},
+            {v: 'other', l: 'Other'}
+        ];
+    } else if (type === 'asset') {
+        options = [
+            {v: '401k', l: '401(k)'},
+            {v: 'ira', l: 'IRA'},
+            {v: 'roth_ira', l: 'Roth IRA'},
+            {v: 'brokerage', l: 'Brokerage'},
+            {v: 'savings', l: 'Savings'},
+            {v: 'checking', l: 'Checking'},
+            {v: 'real_estate', l: 'Real Estate'},
+            {v: 'vehicle', l: 'Vehicle'},
+            {v: 'other', l: 'Other'}
+        ];
+    }
+
+    return `
+        <select class="edit-select" data-field="${field}" data-index="${index}" style="width: 100%; border: 1px solid transparent; background: transparent; padding: 4px;">
+            ${options.map(opt => `
+                <option value="${opt.v}" ${value.toLowerCase().includes(opt.v) ? 'selected' : ''}>${opt.l}</option>
+            `).join('')}
+        </select>
+    `;
 }

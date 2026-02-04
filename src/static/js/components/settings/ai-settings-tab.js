@@ -62,7 +62,7 @@ export function renderAPIKeysTab(container) {
                 <!-- Claude API Key -->
                 <div style="margin-bottom: 25px;">
                     <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px;">
-                        🤖 Anthropic Claude API Key
+                        Anthropic Claude API Key
                     </label>
                     <p style="color: var(--text-secondary); font-size: 12px; margin: 0 0 10px 0;">
                         Get your API key from <a href="https://console.anthropic.com/" target="_blank" style="color: var(--accent-color);">console.anthropic.com</a>
@@ -86,13 +86,13 @@ export function renderAPIKeysTab(container) {
                             id="test-claude-btn"
                             style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s;"
                         >
-                            🧪 Test Connection
+                            Test Connection
                         </button>
                         <button
                             id="clear-claude-btn"
                             style="padding: 8px 16px; background: transparent; color: var(--danger-color); border: 1px solid var(--danger-color); border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s;"
                         >
-                            🗑️ Clear
+                            Clear
                         </button>
                     </div>
                     <div id="claude-status" style="margin-top: 10px; font-size: 12px;"></div>
@@ -101,7 +101,7 @@ export function renderAPIKeysTab(container) {
                 <!-- Gemini API Key -->
                 <div style="margin-bottom: 25px;">
                     <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px;">
-                        ✨ Google Gemini API Key
+                        Google Gemini API Key
                     </label>
                     <p style="color: var(--text-secondary); font-size: 12px; margin: 0 0 10px 0;">
                         Get your API key from <a href="https://makersuite.google.com/app/apikey" target="_blank" style="color: var(--accent-color);">Google AI Studio</a>
@@ -125,13 +125,13 @@ export function renderAPIKeysTab(container) {
                             id="test-gemini-btn"
                             style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s;"
                         >
-                            🧪 Test Connection
+                            Test Connection
                         </button>
                         <button
                             id="clear-gemini-btn"
                             style="padding: 8px 16px; background: transparent; color: var(--danger-color); border: 1px solid var(--danger-color); border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s;"
                         >
-                            🗑️ Clear
+                            Clear
                         </button>
                     </div>
                     <div id="gemini-status" style="margin-top: 10px; font-size: 12px;"></div>
@@ -140,7 +140,7 @@ export function renderAPIKeysTab(container) {
                 <!-- Zhipu AI (GLM) API Key -->
                 <div style="margin-bottom: 25px;">
                     <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px;">
-                        🇨🇳 Zhipu AI (GLM) API Key
+                        Zhipu AI (GLM) API Key
                     </label>
                     <p style="color: var(--text-secondary); font-size: 12px; margin: 0 0 10px 0;">
                         Get your API key from <a href="https://open.bigmodel.cn/" target="_blank" style="color: var(--accent-color);">open.bigmodel.cn</a>
@@ -164,13 +164,13 @@ export function renderAPIKeysTab(container) {
                             id="test-zhipu-btn"
                             style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s;"
                         >
-                            🧪 Test Connection
+                            Test Connection
                         </button>
                         <button
                             id="clear-zhipu-btn"
                             style="padding: 8px 16px; background: transparent; color: var(--danger-color); border: 1px solid var(--danger-color); border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s;"
                         >
-                            🗑️ Clear
+                            Clear
                         </button>
                     </div>
                     <div id="zhipu-status" style="margin-top: 10px; font-size: 12px;"></div>

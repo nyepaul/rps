@@ -101,7 +101,7 @@ def test_test_api_key_endpoint(mock_get, client):
     mock_get.return_value = mock_response
 
     response = client.post(
-        "/api/test-api-key",
+        "/api/auth/test-api-key",
         json={"provider": "openrouter", "api_key": "REDACTED_OR_test-key"},
     )
 

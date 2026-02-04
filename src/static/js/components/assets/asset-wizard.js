@@ -6,6 +6,7 @@ import { store } from '../../state/store.js';
 import { generateFormFields, extractFormData, getAssetTypeLabel } from './asset-form-fields.js';
 import { formatCurrency } from '../../utils/formatters.js';
 import { showError } from '../../utils/dom.js';
+import { setFieldError, setFieldWarning, clearFieldError } from '../../utils/validation.js';
 
 const CATEGORIES = {
     retirement_accounts: { label: 'Retirement Accounts', icon: '🏦', description: '401(k), IRA, Roth IRA, etc.' },
@@ -266,6 +267,60 @@ function renderWizardStep(wizard, state, assets, onSave, modal, isEditing) {
 
     // Setup event handlers
     setupWizardHandlers(wizard, state, assets, onSave, modal, isEditing);
+
+    // Attach inline validation listeners if on form step
+    if (state.currentStep === 2) {
+        attachValidationListeners(wizard, state.category);
+    }
+}
+
+/**
+ * Attach inline validation listeners to form fields
+ */
+function attachValidationListeners(wizard, category) {
+    const form = wizard.querySelector('#asset-form');
+    if (!form) return;
+
+    // Asset Name validation
+    const nameInput = form.querySelector('[name="name"]');
+    if (nameInput) {
+        nameInput.addEventListener('blur', () => {
+            if (!nameInput.value.trim()) setFieldError(nameInput, 'Asset name is required');
+            else clearFieldError(nameInput);
+        });
+    }
+
+    // Value/Balance validation
+    const valueInput = form.querySelector('[name="value"]');
+    if (valueInput) {
+        valueInput.addEventListener('blur', () => {
+            const val = parseFloat(valueInput.value.replace(/[^0-9.-]+/g, ""));
+            if (isNaN(val) || val < 0) setFieldError(valueInput, 'Balance must be a positive number');
+            else if (val > 10000000) setFieldWarning(valueInput, 'Unusually high balance - please verify');
+            else clearFieldError(valueInput);
+        });
+    }
+
+    // Interest Rate validation
+    const rateInput = form.querySelector('[name="interest_rate"]');
+    if (rateInput) {
+        rateInput.addEventListener('blur', () => {
+            const val = parseFloat(rateInput.value);
+            if (val > 20) setFieldWarning(rateInput, 'Unusually high interest rate');
+            else if (val < 0) setFieldError(rateInput, 'Rate cannot be negative');
+            else clearFieldError(rateInput);
+        });
+    }
+
+    // Allocation validation (%)
+    const allocationInputs = form.querySelectorAll('[name$="_pct"]');
+    allocationInputs.forEach(input => {
+        input.addEventListener('blur', () => {
+            const val = parseFloat(input.value);
+            if (val < 0 || val > 100) setFieldError(input, 'Must be between 0 and 100');
+            else clearFieldError(input);
+        });
+    });
 }
 
 /**

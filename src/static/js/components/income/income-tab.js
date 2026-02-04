@@ -10,7 +10,8 @@ import { showError, showSuccess } from '../../utils/dom.js';
 import { showAIImportModal } from "../ai/ai-import-modal.js";
 import { showTransactionImportModal } from "../transactions/transaction-import-modal.js";
 import { INCOME_CONFIG } from "../../utils/csv-parser.js";
-import { showCSVImportModal } from "../shared/csv-import-modal.js";
+import { renderCSVImportModal } from "../shared/csv-import-modal.js";
+import { renderImportPreviewModal } from "../shared/import-preview-modal.js";
 
 export function renderIncomeTab(container) {
     const profile = store.get('currentProfile');
@@ -184,13 +185,24 @@ function setupIncomeStreamsHandlers(container, profile, incomeStreams) {
                         break;
 
                     case 'csv-import':
-                        showCSVImportModal({
-                            title: "Import Income from CSV",
-                            config: INCOME_CONFIG,
-                            profileName: profile.name,
-                            onComplete: (updatedProfile) => {
-                                renderIncomeStreamsList(container, updatedProfile.data?.income_streams || []);
-                            },
+                        renderCSVImportModal('income', INCOME_CONFIG, (parsedItems, filename) => {
+                            renderImportPreviewModal(parsedItems, 'income', async (confirmedItems) => {
+                                let added = 0;
+                                for (const item of confirmedItems) {
+                                    incomeStreams.push({
+                                        name: item.name,
+                                        amount: parseFloat(item.amount) || 0,
+                                        start_date: new Date().toISOString().split('T')[0],
+                                        end_date: profile.retirement_date || null,
+                                        description: `Imported from CSV (${filename}) | ${item.category || ''}`,
+                                        frequency: 'monthly'
+                                    });
+                                    added++;
+                                }
+                                await saveIncomeStreams(profile, incomeStreams);
+                                renderIncomeStreamsList(container, incomeStreams);
+                                showSuccess(`Successfully imported ${added} income streams`);
+                            }, filename);
                         });
                         break;
 

@@ -407,37 +407,47 @@ export function showSetupChecklist() {
  * Update setup button status
  */
 export function updateSetupButton() {
-    const setupBtn = document.getElementById('setup-btn');
-    if (!setupBtn) return;
+    const headerBadge = document.getElementById('setup-header-badge');
+    if (!headerBadge) return;
 
     const profile = store.get('currentProfile');
 
     if (!profile) {
-        setupBtn.style.display = 'none';
+        headerBadge.style.display = 'none';
         return;
     }
 
     const status = checkSetupCompletion(profile);
 
-    // Show/hide button
-    setupBtn.style.display = 'flex';
+    // Update the persistent header badge
+    if (headerBadge) {
+        headerBadge.style.display = status.isComplete ? 'none' : 'flex';
+        const text = headerBadge.querySelector('.badge-text');
+        const progress = headerBadge.querySelector('.badge-progress-inner');
+        
+        if (text) text.textContent = `Setup: ${status.percentage}%`;
+        if (progress) progress.style.width = `${status.percentage}%`;
 
-    // Update badge
-    const badge = setupBtn.querySelector('.setup-badge');
-    if (badge) {
-        badge.textContent = `${status.percentage}%`;
-    }
+        // Update colors based on progress
+        if (status.percentage >= 75) {
+            headerBadge.style.background = 'var(--success-bg)';
+            headerBadge.style.borderColor = 'var(--success-color)';
+            headerBadge.style.color = 'var(--success-text)';
+            if (progress) progress.style.background = 'var(--success-color)';
+        } else {
+            headerBadge.style.background = 'var(--warning-bg)';
+            headerBadge.style.borderColor = 'var(--warning-color)';
+            headerBadge.style.color = 'var(--warning-text)';
+            if (progress) progress.style.background = 'var(--warning-color)';
+        }
 
-    // Update button state - hide if complete
-    if (status.isComplete) {
-        setupBtn.style.display = 'none';
-    } else {
-        setupBtn.style.display = 'flex';
-        setupBtn.classList.remove('complete');
-        setupBtn.classList.add('incomplete');
-        const text = setupBtn.querySelector('.setup-text');
-        if (text) {
-            text.textContent = 'Complete Setup';
+        // Add click handler to show checklist
+        if (!headerBadge._hasListener) {
+            headerBadge.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showSetupChecklist();
+            });
+            headerBadge._hasListener = true;
         }
     }
 }

@@ -1314,177 +1314,99 @@
             background: var(--border-color);
             color: var(--text-secondary);
             border-radius: 10px;
-            font-size: 10px;
-            font-weight: 600;
-            margin-left: 4px;
-        }
+            font-size: 10px; font-weight: 600; margin-left: 4px; } .recon-tab.active .tab-badge { background: var(--accent-color); color: white; } .recon-item { transition: all 0.2s; } .recon-item:hover { transform: translateX(2px); box-shadow: 0 2px 8px var(--shadow); } .action-select { cursor: pointer; transition: border-color 0.2s; } .action-select:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); } .action-select:hover { border-color: var(--accent-color); } /* Source Badge Styles */ .source-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; white-space: nowrap; } .source-badge.specified { background: #10b981; color: white; } .source-badge.detected { background: #3b82f6; color: white; } .source-badge.merged { background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%); color: white; } /* Progress Bar Animation */ @keyframes progressPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } } #progress-bar { animation: progressPulse 1.5s ease-in-out infinite; } /* Reconciliation Tab Hover Effects */ .recon-tab { transition: all 0.2s; } .recon-tab:hover:not(.active) { background: var(--bg-tertiary); color: var(--text-primary); } /* Action Menu Item Hover */ .action-menu-item:hover { background: var(--bg-tertiary) !important; } /* Drop Zone Active State */ #drop-zone.drag-over { border-color: var(--accent-color); background: var(--bg-secondary); } /* Spinner Animation */ .spinner { border: 4px solid var(--border-color); border-top-color: var(--accent-color); border-radius: 50%; animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } } /* Modal Overlay */ .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 2000; animation: fadeIn 0.2s; } @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } } .modal-content { background: var(--bg-secondary); border-radius: 12px; padding: 24px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); animation: slideUp 0.3s; } @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } } /* Tooltip Styles */ [title] { position: relative; } /* Responsive adjustments for transaction import */ @media (max-width: 768px) { .modal-content { max-width: 100% !important; max-height: 95vh; overflow-y: auto; } .recon-tab { font-size: 11px !important; padding: 8px 12px !important; } .tab-badge { font-size: 9px !important; } } /* Contextual Help Tooltip */ .context-tooltip { position: absolute; background: var(--bg-tertiary); color: var(--text-primary); padding: 8px 12px; border-radius: 6px; font-size: 12px; max-width: 250px; z-index: 10000; pointer-events: none; box-shadow: 0 4px 12px var(--shadow-color); line-height: 1.4; opacity: 0; transition: opacity 0.2s; text-align: left; border: 1px solid var(--border-color); } .help-icon { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: var(--bg-tertiary); color: var(--text-secondary); font-size: 11px; font-weight: bold; cursor: help; border: 1px solid var(--border-color); margin-left: 6px; transition: all 0.2s; } .help-icon:hover { background: var(--accent-color); color: white; border-color: var(--accent-color); }
 
-        .recon-tab.active .tab-badge {
-            background: var(--accent-color);
-            color: white;
-        }
+/* Mobile Menu Styles */
+.mobile-menu-btn {
+    display: none;
+    flex-direction: column;
+    justify-content: space-around;
+    width: 24px;
+    height: 24px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 10001;
+}
 
-        .recon-item {
-            transition: all 0.2s;
-        }
+.mobile-menu-btn span {
+    width: 24px;
+    height: 2px;
+    background: white;
+    border-radius: 10px;
+    transition: all 0.3s linear;
+    position: relative;
+    transform-origin: 1px;
+}
 
-        .recon-item:hover {
-            transform: translateX(2px);
-            box-shadow: 0 2px 8px var(--shadow);
-        }
+@media (max-width: 639px) {
+    .mobile-menu-btn {
+        display: flex;
+    }
 
-        .action-select {
-            cursor: pointer;
-            transition: border-color 0.2s;
-        }
+    .tabs {
+        display: none !important; /* Hidden by default on mobile */
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 280px;
+        background: var(--bg-secondary);
+        z-index: 10000;
+        flex-direction: column;
+        padding: 80px 20px 20px 20px;
+        box-shadow: 4px 0 15px var(--shadow-color);
+        overflow-y: auto;
+        align-items: flex-start !important;
+    }
 
-        .action-select:focus {
-            outline: none;
-            border-color: var(--accent-color);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
+    .tabs.mobile-active {
+        display: flex !important;
+        animation: slideInLeft 0.3s ease-out;
+    }
 
-        .action-select:hover {
-            border-color: var(--accent-color);
-        }
+    .nav-group {
+        width: 100% !important;
+    }
 
-        /* Source Badge Styles */
-        .source-badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 10px;
-            font-weight: 600;
-            white-space: nowrap;
-        }
+    .nav-dropdown {
+        position: static !important;
+        display: block !important;
+        box-shadow: none !important;
+        padding-left: 15px !important;
+        border: none !important;
+    }
 
-        .source-badge.specified {
-            background: #10b981;
-            color: white;
-        }
+    .nav-group-label {
+        border-bottom: 1px solid var(--border-color) !important;
+        margin-bottom: 5px;
+    }
 
-        .source-badge.detected {
-            background: #3b82f6;
-            color: white;
-        }
+    .tab {
+        width: 100% !important;
+        border-radius: 4px !important;
+        margin-bottom: 2px !important;
+    }
 
-        .source-badge.merged {
-            background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
-            color: white;
-        }
+    @keyframes slideInLeft {
+        from { transform: translateX(-100%); }
+        to { transform: translateX(0); }
+    }
 
-        /* Progress Bar Animation */
-        @keyframes progressPulse {
-            0%, 100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.7;
-            }
-        }
+    /* Backdrop for mobile menu */
+    .menu-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0,0,0,0.5);
+        z-index: 9999;
+        display: none;
+    }
 
-        #progress-bar {
-            animation: progressPulse 1.5s ease-in-out infinite;
-        }
-
-        /* Reconciliation Tab Hover Effects */
-        .recon-tab {
-            transition: all 0.2s;
-        }
-
-        .recon-tab:hover:not(.active) {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-        }
-
-        /* Action Menu Item Hover */
-        .action-menu-item:hover {
-            background: var(--bg-tertiary) !important;
-        }
-
-        /* Drop Zone Active State */
-        #drop-zone.drag-over {
-            border-color: var(--accent-color);
-            background: var(--bg-secondary);
-        }
-
-        /* Spinner Animation */
-        .spinner {
-            border: 4px solid var(--border-color);
-            border-top-color: var(--accent-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* Modal Overlay */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            z-index: 2000;
-            animation: fadeIn 0.2s;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
-        }
-
-        .modal-content {
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            animation: slideUp 0.3s;
-        }
-
-        @keyframes slideUp {
-            from {
-                transform: translateY(20px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        /* Tooltip Styles */
-        [title] {
-            position: relative;
-        }
-
-        /* Responsive adjustments for transaction import */
-        @media (max-width: 768px) {
-            .modal-content {
-                max-width: 100% !important;
-                max-height: 95vh;
-                overflow-y: auto;
-            }
-
-            .recon-tab {
-                font-size: 11px !important;
-                padding: 8px 12px !important;
-            }
-
-            .tab-badge {
-                font-size: 9px !important;
-            }
-        }
+    .menu-backdrop.active {
+        display: block;
+    }
+}

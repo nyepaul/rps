@@ -70,6 +70,14 @@ export const APP_CONFIG = {
         info: '#17a2b8',
     },
 
+    // Progressive Disclosure Settings
+    PROGRESSIVE_TABS: {
+        ALWAYS: ['welcome', 'dashboard', 'profile', 'learn'],
+        LEVEL_1: { min: 20, tabs: ['income', 'expenses', 'assets'] },
+        LEVEL_2: { min: 50, tabs: ['cashflow', 'analysis', 'actions'] },
+        LEVEL_3: { min: 80, tabs: ['comparison', 'tax', 'withdrawal', 'advisor', 'summary'] }
+    },
+
     // Market Assumption Profiles
     MARKET_PROFILES: {
         // Base Scenarios
@@ -359,7 +367,7 @@ export const APP_CONFIG = {
         'early-crash': {
             name: 'Early Retirement Crash',
             description: 'Worst case: Market crash in first 3 years of retirement, then recovery',
-            icon: '📉',
+            icon: '',
             type: 'timeline',
             buildPeriods: (currentYear, retirementYear, yearsProjected) => {
                 return {
@@ -387,7 +395,7 @@ export const APP_CONFIG = {
         'lucky-start': {
             name: 'Lucky Start',
             description: 'Best case: Strong bull market in first 10 years, then normal markets',
-            icon: '📈',
+            icon: '',
             type: 'timeline',
             buildPeriods: (currentYear, retirementYear, yearsProjected) => {
                 return {
@@ -410,7 +418,7 @@ export const APP_CONFIG = {
         'mid-crisis': {
             name: 'Mid-Retirement Crisis',
             description: 'Market crash 10-12 years into retirement, then recovery',
-            icon: '⚠️',
+            icon: '',
             type: 'timeline',
             buildPeriods: (currentYear, retirementYear, yearsProjected) => {
                 return {
@@ -443,7 +451,7 @@ export const APP_CONFIG = {
         'realistic-cycles': {
             name: 'Realistic Market Cycles',
             description: 'Repeating pattern: 7 years expansion, 2 years recession, 3 years recovery',
-            icon: '🔄',
+            icon: '',
             type: 'cycle',
             buildPeriods: (currentYear, retirementYear, yearsProjected) => {
                 return {
@@ -469,7 +477,7 @@ export const APP_CONFIG = {
         'choppy-markets': {
             name: 'Choppy Markets',
             description: 'Alternating short cycles: good and bad years',
-            icon: '〰️',
+            icon: '',
             type: 'cycle',
             buildPeriods: (currentYear, retirementYear, yearsProjected) => {
                 return {
@@ -499,7 +507,7 @@ export const APP_CONFIG = {
         'slow-decline': {
             name: 'Slow Economic Decline',
             description: 'Prolonged period of below-average returns',
-            icon: '📊',
+            icon: '',
             type: 'timeline',
             buildPeriods: (currentYear, retirementYear, yearsProjected) => {
                 return {

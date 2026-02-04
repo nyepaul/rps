@@ -81,8 +81,8 @@ def test_api_key_validation():
 
     from pydantic import ValidationError
 
-    # Import the schema from routes (we need to test this works)
-    from src.routes.profiles import APIKeySchema
+    # Import the schema from auth routes
+    from src.auth.routes import APIKeySchema
 
     # Test valid keys
     try:

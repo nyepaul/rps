@@ -5,63 +5,31 @@
 import { profilesAPI } from '../../api/profiles.js';
 import { store } from '../../state/store.js';
 import { STORAGE_KEYS } from '../../config.js';
-import { showLoading, showError, createElement, showSuccess } from '../../utils/dom.js';
+import { showError, showSuccess } from '../../utils/dom.js';
 
 export function renderWelcomeTab(container) {
     container.innerHTML = `
-        <div style="max-width: 900px; margin: 0 auto; padding: var(--space-2);">
-            <!-- Overview Wizard -->
-            <div style="background: var(--bg-secondary); border-radius: 8px; padding: var(--space-3); margin-bottom: var(--space-2); border: 1px solid var(--border-color);">
-                <div id="getting-started-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2); cursor: pointer; user-select: none;">
-                    <h2 style="font-size: 16px; margin: 0;">📚 Getting Started Guide</h2>
-                    <button id="toggle-wizard-btn" style="padding: 4px 10px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px;">
-                        Show Guide
-                    </button>
-                </div>
-                <div id="wizard-content" style="display: none;">
-                    <div id="wizard-steps"></div>
-                    <div style="display: flex; gap: var(--space-2); justify-content: space-between; margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--border-color);">
-                        <button id="wizard-prev" style="padding: 6px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px;">
-                            ← Previous
-                        </button>
-                        <div id="wizard-dots" style="display: flex; gap: 6px; align-items: center;"></div>
-                        <button id="wizard-next" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px;">
-                            Next →
-                        </button>
-                    </div>
-                </div>
-            </div>
-
+        <div style="max-width: 800px; margin: 0 auto; padding: var(--space-4);">
             <!-- Profiles Section -->
-            <div style="background: var(--bg-secondary); border-radius: 8px; padding: var(--space-3); margin-bottom: var(--space-2); border: 1px solid var(--border-color);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2);">
-                    <h2 style="font-size: 16px; margin: 0;">Your Profiles</h2>
-                    <button id="create-profile-btn" style="padding: 4px 10px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px;">
+            <div style="background: var(--bg-secondary); border-radius: 12px; padding: var(--space-5); border: 1px solid var(--border-color); box-shadow: 0 4px 12px var(--shadow-color);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                    <h2 style="font-size: 18px; margin: 0; font-family: var(--font-display);">Your Profiles</h2>
+                    <button id="create-profile-btn" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
                         + New Profile
                     </button>
                 </div>
                 <div id="profiles-container">
-                    <div style="text-align: center; padding: var(--space-3); color: var(--text-secondary);">
+                    <div style="text-align: center; padding: var(--space-5); color: var(--text-secondary);">
+                        <div class="spinner" style="width: 24px; height: 24px; border: 3px solid var(--border-color); border-top-color: var(--accent-color); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 10px;"></div>
                         Loading profiles...
                     </div>
                 </div>
             </div>
-
-            <!-- Features Info -->
-            <div style="text-align: center; padding: var(--space-3); background: var(--info-bg); border-radius: 8px;">
-                <h3 style="margin-bottom: var(--space-2); font-size: 14px;">What You Can Do</h3>
-                <ul style="text-align: left; display: inline-block; margin: 0; font-size: 12px; line-height: 1.5;">
-                    <li>Run Monte Carlo simulations with 10,000+ scenarios</li>
-                    <li>Professional modeling with dynamic glide paths and indexed taxes</li>
-                    <li>Optimize Social Security claiming strategies</li>
-                    <li>Analyze Roth conversion opportunities</li>
-                    <li>Track net worth with integrated liability and debt tracking</li>
-                    <li>Get AI-powered financial recommendations</li>
-                    <li>Create multiple "what-if" scenarios</li>
-                    <li>Track action items and progress</li>
-                </ul>
-            </div>
         </div>
+        
+        <style>
+            @keyframes spin { to { transform: rotate(360deg); } }
+        </style>
     `;
 
     // Load and display profiles
@@ -72,271 +40,6 @@ export function renderWelcomeTab(container) {
     if (createBtn) {
         createBtn.addEventListener('click', () => showCreateProfileModal(container));
     }
-
-    // Initialize wizard
-    initializeWizard(container);
-}
-
-function initializeWizard(container) {
-    const wizardSteps = [
-        {
-            title: "Getting Started",
-            icon: "🚀",
-            content: `
-                <h3 style="font-size: 15px; margin-bottom: var(--space-2); color: var(--info-color);">High-Level Process Overview</h3>
-
-                <div style="background: var(--bg-primary); padding: var(--space-2); border-radius: 6px; margin-bottom: var(--space-2);">
-                    <div style="display: flex; align-items: start; gap: var(--space-2);">
-                        <div style="min-width: 26px; height: 26px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 13px;">1</div>
-                        <div style="flex: 1;">
-                            <strong style="font-size: 13px;">Create Your Profile</strong>
-                            <p style="font-size: 12px; color: var(--text-secondary); margin: 4px 0 0 0; line-height: 1.4;">
-                                Click "+ New Profile" below to create your retirement planning profile. Enter your name,
-                                birth date, and target retirement date to establish your baseline.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="background: var(--bg-primary); padding: var(--space-2); border-radius: 6px; margin-bottom: var(--space-2);">
-                    <div style="display: flex; align-items: start; gap: var(--space-2);">
-                        <div style="min-width: 26px; height: 26px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 13px;">2</div>
-                        <div style="flex: 1;">
-                            <strong style="font-size: 13px;">Add Assets, Liabilities, Expenses & Income</strong>
-                            <p style="font-size: 12px; color: var(--text-secondary); margin: 4px 0 0 0; line-height: 1.4;">
-                                Build your financial picture by adding all your assets (401k, IRA, brokerage, real estate),
-                                liabilities (mortgages, loans, debts), income sources (salary, SS, pensions), and detailed expenses.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="background: var(--bg-primary); padding: var(--space-2); border-radius: 6px; margin-bottom: var(--space-2);">
-                    <div style="display: flex; align-items: start; gap: var(--space-2);">
-                        <div style="min-width: 26px; height: 26px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 13px;">3</div>
-                        <div style="flex: 1;">
-                            <strong style="font-size: 13px;">Review Cash Flow, Withdrawals & Tax Strategy</strong>
-                            <p style="font-size: 12px; color: var(--text-secondary); margin: 4px 0 0 0; line-height: 1.4;">
-                                Examine your projected cash flow throughout retirement. Configure your withdrawal strategy
-                                (which accounts to draw from first) and explore tax optimization opportunities including Roth conversions.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="background: var(--bg-primary); padding: var(--space-2); border-radius: 6px; margin-bottom: var(--space-2);">
-                    <div style="display: flex; align-items: start; gap: var(--space-2);">
-                        <div style="min-width: 26px; height: 26px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 13px;">4</div>
-                        <div style="flex: 1;">
-                            <strong style="font-size: 13px;">Run Analysis & Compare Scenarios</strong>
-                            <p style="font-size: 12px; color: var(--text-secondary); margin: 4px 0 0 0; line-height: 1.4;">
-                                Execute Monte Carlo simulations (10,000+ scenarios) to test your plan under different economic conditions.
-                                Save multiple scenarios ("Base Case", "Early Retirement", "Conservative") and compare them side-by-side
-                                to make informed decisions.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="background: var(--bg-primary); padding: var(--space-2); border-radius: 6px; margin-bottom: var(--space-2);">
-                    <div style="display: flex; align-items: start; gap: var(--space-2);">
-                        <div style="min-width: 26px; height: 26px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 13px;">5</div>
-                        <div style="flex: 1;">
-                            <strong style="font-size: 13px;">Generate & Review Action Items</strong>
-                            <p style="font-size: 12px; color: var(--text-secondary); margin: 4px 0 0 0; line-height: 1.4;">
-                                Get AI-powered recommendations for optimizing your retirement plan. Convert insights into trackable
-                                action items with priorities, due dates, and completion tracking. Monitor progress toward your financial goals.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="background: var(--success-bg); padding: var(--space-2); border-radius: 6px; border-left: 4px solid var(--success-color); margin-top: var(--space-2);">
-                    <strong style="font-size: 13px;">💡 Getting Started Tip:</strong>
-                    <p style="font-size: 12px; margin: 4px 0 0 0;">
-                        Begin with a complete baseline profile, then create alternative scenarios to explore different strategies.
-                        The iterative process of testing various economic conditions builds confidence in your retirement plan.
-                    </p>
-                </div>
-            `
-        },
-        {
-            title: "Understanding the Data Model",
-            icon: "🏗️",
-            content: `
-                <h3 style="font-size: 15px; margin-bottom: var(--space-2); color: var(--accent-color);">How the App Organizes Your Data</h3>
-
-                <div style="background: var(--bg-primary); padding: var(--space-2); border-radius: 6px; margin-bottom: var(--space-2);">
-                    <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-1);">
-                        <div style="width: 32px; height: 32px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px;">👤</div>
-                        <div>
-                            <strong style="font-size: 14px;">Account</strong>
-                            <div style="font-size: 12px; color: var(--text-secondary);">Your login credentials (email + password)</div>
-                        </div>
-                    </div>
-                    <ul style="margin: var(--space-1) 0 0 42px; font-size: 12px; color: var(--text-secondary); line-height: 1.4;">
-                        <li>One account per user</li>
-                        <li>Linked to your email address</li>
-                        <li>Can contain multiple profiles</li>
-                    </ul>
-                </div>
-
-                <div style="text-align: center; margin: var(--space-1) 0; color: var(--text-secondary); font-size: 18px;">↓</div>
-
-                <div style="background: var(--bg-primary); padding: var(--space-2); border-radius: 6px; margin-bottom: var(--space-2);">
-                    <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-1);">
-                        <div style="width: 32px; height: 32px; background: var(--success-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px;">📋</div>
-                        <div>
-                            <strong style="font-size: 14px;">Profiles</strong>
-                            <div style="font-size: 12px; color: var(--text-secondary);">Different retirement plans (you, spouse, family)</div>
-                        </div>
-                    </div>
-                    <ul style="margin: var(--space-1) 0 0 42px; font-size: 12px; color: var(--text-secondary); line-height: 1.4;">
-                        <li>Multiple profiles per account (e.g., "John", "Joint Plan", "Early Retirement")</li>
-                        <li>Each profile contains all financial data: assets, income, expenses</li>
-                        <li>Profiles are independent and can model different situations</li>
-                    </ul>
-                </div>
-
-                <div style="text-align: center; margin: var(--space-1) 0; color: var(--text-secondary); font-size: 18px;">↓</div>
-
-                <div style="background: var(--bg-primary); padding: var(--space-2); border-radius: 6px;">
-                    <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-1);">
-                        <div style="width: 32px; height: 32px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px;">🎯</div>
-                        <div>
-                            <strong style="font-size: 14px;">Scenarios</strong>
-                            <div style="font-size: 12px; color: var(--text-secondary);">Monte Carlo simulations for "what-if" analysis</div>
-                        </div>
-                    </div>
-                    <ul style="margin: var(--space-1) 0 0 42px; font-size: 12px; color: var(--text-secondary); line-height: 1.4;">
-                        <li>Run multiple scenarios per profile (e.g., "Base Case", "Retire Early", "Conservative")</li>
-                        <li>Each scenario runs 10,000+ simulations with different market conditions</li>
-                        <li>Compare scenarios side-by-side to make informed decisions</li>
-                    </ul>
-                </div>
-            `
-        },
-        {
-            title: "Security & Encryption",
-            icon: "🔒",
-            content: `
-                <h3 style="font-size: 15px; margin-bottom: var(--space-2); color: var(--success-color);">Your Data is Protected</h3>
-
-                <div style="background: var(--bg-primary); padding: var(--space-2); border-radius: 6px; margin-bottom: var(--space-2);">
-                    <h4 style="font-size: 13px; margin-bottom: var(--space-1);">🔐 Encryption at Rest</h4>
-                    <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin: 0;">
-                        All profile data is encrypted using <strong>AES-256-GCM</strong> encryption before being stored in the database.
-                        Each record has a unique initialization vector (IV), ensuring maximum security even if the database is compromised.
-                    </p>
-                </div>
-
-                <div style="background: var(--bg-primary); padding: var(--space-2); border-radius: 6px; margin-bottom: var(--space-2);">
-                    <h4 style="font-size: 13px; margin-bottom: var(--space-1);">🔑 Password Security</h4>
-                    <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin: 0;">
-                        Passwords are hashed using <strong>bcrypt</strong> with a high work factor. Your password is never stored in plain text
-                        and cannot be recovered by anyone, including system administrators.
-                    </p>
-                </div>
-
-                <div style="background: var(--bg-primary); padding: var(--space-2); border-radius: 6px; margin-bottom: var(--space-2);">
-                    <h4 style="font-size: 13px; margin-bottom: var(--space-1);">🏠 Local-First Architecture</h4>
-                    <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin: 0;">
-                        The app runs on your local machine or private server. Your financial data stays under your control and never
-                        leaves your infrastructure unless you explicitly choose to share it.
-                    </p>
-                </div>
-
-                <div style="background: var(--bg-primary); padding: var(--space-2); border-radius: 6px; margin-bottom: var(--space-2);">
-                    <h4 style="font-size: 13px; margin-bottom: var(--space-1);">📝 Audit Logging</h4>
-                    <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin: 0;">
-                        All sensitive operations are logged for compliance and security monitoring. View the audit log in the Admin panel
-                        to track who accessed what and when.
-                    </p>
-                </div>
-
-                <div style="background: var(--warning-bg); padding: var(--space-2); border-radius: 6px; border-left: 4px solid var(--warning-color);">
-                    <strong style="font-size: 13px;">⚠️ Important:</strong>
-                    <p style="font-size: 12px; margin: 4px 0 0 0;">
-                        Keep your encryption keys and database backups secure. If you lose your encryption key, your data cannot be recovered.
-                    </p>
-                </div>
-            `
-        }
-    ];
-
-    let currentStep = 0;
-    const wizardContent = container.querySelector('#wizard-content');
-    const wizardStepsContainer = container.querySelector('#wizard-steps');
-    const toggleBtn = container.querySelector('#toggle-wizard-btn');
-    const prevBtn = container.querySelector('#wizard-prev');
-    const nextBtn = container.querySelector('#wizard-next');
-    const dotsContainer = container.querySelector('#wizard-dots');
-
-    function renderStep() {
-        const step = wizardSteps[currentStep];
-        wizardStepsContainer.innerHTML = `
-            <div style="text-align: center; margin-bottom: 10px;">
-                <div style="font-size: 32px; margin-bottom: 6px;">${step.icon}</div>
-                <h3 style="font-size: 16px; margin: 0;">${step.title}</h3>
-            </div>
-            <div style="font-size: 13px; line-height: 1.5;">
-                ${step.content}
-            </div>
-        `;
-
-        // Update navigation
-        prevBtn.disabled = currentStep === 0;
-        prevBtn.style.opacity = currentStep === 0 ? '0.5' : '1';
-        prevBtn.style.cursor = currentStep === 0 ? 'not-allowed' : 'pointer';
-
-        if (currentStep === wizardSteps.length - 1) {
-            nextBtn.textContent = '✓ Done';
-            nextBtn.style.background = 'var(--success-color)';
-        } else {
-            nextBtn.textContent = 'Next →';
-            nextBtn.style.background = 'var(--accent-color)';
-        }
-
-        // Update dots
-        dotsContainer.innerHTML = wizardSteps.map((_, idx) => `
-            <div style="width: 10px; height: 10px; border-radius: 50%; background: ${idx === currentStep ? 'var(--accent-color)' : 'var(--border-color)'}; transition: all 0.3s;"></div>
-        `).join('');
-    }
-
-    const toggleWizard = () => {
-        const isVisible = wizardContent.style.display !== 'none';
-        wizardContent.style.display = isVisible ? 'none' : 'block';
-        toggleBtn.textContent = isVisible ? 'Show Guide' : 'Hide Guide';
-    };
-
-    toggleBtn.addEventListener('click', (e) => {
-        e.stopPropagation(); // Prevent double trigger from parent
-        toggleWizard();
-    });
-
-    // Make the entire header row clickable
-    const headerRow = container.querySelector('#getting-started-header');
-    headerRow.addEventListener('click', toggleWizard);
-
-    prevBtn.addEventListener('click', () => {
-        if (currentStep > 0) {
-            currentStep--;
-            renderStep();
-        }
-    });
-
-    nextBtn.addEventListener('click', () => {
-        if (currentStep < wizardSteps.length - 1) {
-            currentStep++;
-            renderStep();
-        } else {
-            // Close wizard on done
-            wizardContent.style.display = 'none';
-            toggleBtn.textContent = 'Show Guide';
-        }
-    });
-
-    renderStep();
 }
 
 async function loadProfiles(container) {
@@ -406,7 +109,7 @@ function setupProfileHandlers(container, profiles) {
         // Hover effects
         item.addEventListener('mouseenter', () => {
             item.style.transform = 'translateY(-2px)';
-            item.style.boxShadow = '0 4px 12px var(--shadow)';
+            item.style.boxShadow = '0 4px 12px var(--shadow-color)';
         });
         item.addEventListener('mouseleave', () => {
             item.style.transform = 'translateY(0)';
@@ -467,31 +170,31 @@ function setupProfileHandlers(container, profiles) {
 
 function showCreateProfileModal(container) {
     const modal = createModal(`
-        <h2 style="margin-bottom: 20px;">Create New Profile</h2>
+        <h2 style="margin-bottom: 20px; font-family: var(--font-display);">Create New Profile</h2>
         <form id="profile-form">
             <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Profile Name *</label>
+                <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">Profile Name *</label>
                 <input type="text" name="name" required style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
             </div>
             <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Birth Date</label>
+                <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">Birth Date</label>
                 <input type="date" name="birth_date" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
             </div>
             <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Target Retirement Date</label>
+                <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">Target Retirement Date</label>
                 <input type="date" name="retirement_date" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
             </div>
             <div style="margin-bottom: 20px;">
-                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
                     <input type="checkbox" name="set_default">
                     <span>Set as default profile</span>
                 </label>
             </div>
             <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button type="button" class="cancel-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-radius: 6px; cursor: pointer;">
+                <button type="button" class="cancel-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">
                     Cancel
                 </button>
-                <button type="submit" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                <button type="submit" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
                     Create Profile
                 </button>
             </div>
@@ -530,25 +233,25 @@ function showCreateProfileModal(container) {
 
 function showEditProfileModal(container, profile) {
     const modal = createModal(`
-        <h2 style="margin-bottom: 20px;">Edit Profile</h2>
+        <h2 style="margin-bottom: 20px; font-family: var(--font-display);">Edit Profile</h2>
         <form id="profile-form">
             <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Profile Name *</label>
+                <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">Profile Name *</label>
                 <input type="text" name="name" value="${profile.name}" required style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
             </div>
             <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Birth Date</label>
+                <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">Birth Date</label>
                 <input type="date" name="birth_date" value="${profile.birth_date || ''}" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
             </div>
             <div style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Target Retirement Date</label>
+                <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">Target Retirement Date</label>
                 <input type="date" name="retirement_date" value="${profile.retirement_date || ''}" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
             </div>
             <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button type="button" class="cancel-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-radius: 6px; cursor: pointer;">
+                <button type="button" class="cancel-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">
                     Cancel
                 </button>
-                <button type="submit" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                <button type="submit" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
                     Save Changes
                 </button>
             </div>
@@ -613,6 +316,7 @@ function createModal(content) {
         border-radius: 12px;
         max-width: 500px;
         width: 90%;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     `;
     dialog.innerHTML = content;
 

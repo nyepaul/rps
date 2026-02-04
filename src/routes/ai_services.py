@@ -1435,76 +1435,43 @@ def enhance_csv_import():
         )
         api_key = api_keys.get(f"{provider}_api_key")
 
-        # Local providers setup
-        lmstudio_url = sanitize_url(
-            api_keys.get("lmstudio_url"), "http://localhost:1234"
-        )
-        localai_url = sanitize_url(api_keys.get("localai_url"), "http://localhost:8080")
-        ollama_url = sanitize_url(api_keys.get("ollama_url"), "http://localhost:11434")
-
-        if not api_key and provider not in ["lmstudio", "localai", "ollama"]:
-            return (
-                jsonify(
-                    {
-                        "error": f"{provider.capitalize()} API key not configured. Please configure in AI Settings."
-                    }
-                ),
-                400,
-            )
-
         # 2. Basic Reconciliation (First Pass)
         reconciled_items = []
-        existing_data = {}
-
         if item_type == "income":
-            existing_data = data_dict.get("financial", {}).get("income_streams", [])
-            reconciled_items = ReconciliationService.reconcile_income(
-                existing_data, items
-            )
+            existing = data_dict.get("income_streams", [])
+            reconciled_items = ReconciliationService.reconcile_income(existing, items)
         elif item_type == "expense":
             period = extra_data.get("period", "current")
-            existing_data = data_dict.get("budget", {}).get(period, {})
-            reconciled_items = ReconciliationService.reconcile_expenses(
-                existing_data, items
-            )
+            existing = data_dict.get("budget", {}).get("expenses", {}).get(period, {})
+            reconciled_items = ReconciliationService.reconcile_expenses(existing, items)
         elif item_type == "asset":
-            existing_data = data_dict.get("assets", {})
-            reconciled_items = ReconciliationService.reconcile_assets(
-                existing_data, items
-            )
+            existing = data_dict.get("assets", {})
+            reconciled_items = ReconciliationService.reconcile_assets(existing, items)
 
         # 3. AI Enhancement (Second Pass)
         # Prepare context for AI - only enhance items that aren't already confident matches
         items_to_enhance = [
-            i for i in reconciled_items if i.get("match_confidence", 0) < 0.90
+            i for i in reconciled_items if i.get("reconciliation", {}).get("match_confidence", 0) < 0.85
         ]
 
-        if not items_to_enhance:
+        if not items_to_enhance or not api_key:
             return (
-                jsonify({"items": reconciled_items, "status": "no_enhancement_needed"}),
+                jsonify({
+                    "items": reconciled_items, 
+                    "enhanced_count": 0,
+                    "status": "complete" if not items_to_enhance else "no_ai_key"
+                }),
                 200,
             )
 
-        # Truncate existing data if it's too large to fit in context efficiently
-        # (Just a basic safety check)
-        context_existing = (
-            existing_data[:100] if isinstance(existing_data, list) else existing_data
-        )
-
+        # Build prompt for AI enhancement
         prompt = f"""
         TASK: Enhance the following list of imported {item_type} items. 
         Detect hidden duplicates and suggest better categorizations.
 
-        EXISTING {item_type.upper()} ITEMS IN PROFILE:
-        {json.dumps(context_existing, indent=2)}
-
         NEW IMPORTED ITEMS TO PROCESS:
         {json.dumps(items_to_enhance, indent=2)}
 
-        INSTRUCTIONS:
-        1. Duplicate Detection: Find items that are clearly the same but have different names (e.g. "MSFT" vs "Microsoft").
-        2. Smart Categorization: If an item has category "other" or a vague name, suggest the best specific category from the standard list.
-        
         STANDARD CATEGORIES FOR {item_type.upper()}:
         {json.dumps(ReconciliationService.valid_categories.get(item_type, []), indent=2)}
 
@@ -1519,55 +1486,57 @@ def enhance_csv_import():
         CRITICAL: Return ONLY the JSON array.
         """
 
+        # Note: This requires call_llm which should be available in this scope
+        from src.routes.ai_services import call_llm
+        
         response_text = call_llm(
             provider,
             prompt,
             api_key,
-            system_prompt=f"You are a financial data reconciliation expert for the RPS system. Process {item_type} data accurately.",
-            lmstudio_url=lmstudio_url,
-            localai_url=localai_url,
-            ollama_url=ollama_url,
-            model=requested_model,
+            system_prompt=f"You are a financial data reconciliation expert for the RPS system. Process {item_type} data accurately."
         )
 
-        ai_enhancements = resilient_parse_llm_json(response_text, "enhancements")
-
-        # 4. Merge AI results back into reconciled_items
-        # Match by name or index if possible
-        enhanced_count = 0
-        for i, item in enumerate(items_to_enhance):
-            if i < len(ai_enhancements):
-                suggestion = ai_enhancements[i]
-                # Find original item in reconciled_items and add suggestions
-                # (Since order is preserved in our prompt)
-                item["ai_suggestions"] = suggestion
-                enhanced_count += 1
+        try:
+            # Basic JSON extraction from markdown if needed
+            if "```json" in response_text:
+                json_str = response_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in response_text:
+                json_str = response_text.split("```")[1].split("```")[0].strip()
+            else:
+                json_str = response_text.strip()
+            
+            ai_enhancements = json.loads(json_str)
+            
+            # Merge AI results back
+            enhanced_count = 0
+            for i, item in enumerate(items_to_enhance):
+                if i < len(ai_enhancements):
+                    item["ai_suggestions"] = ai_enhancements[i]
+                    enhanced_count += 1
+        except Exception as json_e:
+            print(f"AI JSON Parse Error: {str(json_e)}")
+            # Fallback to non-enhanced results
 
         enhanced_audit_logger.log(
             action="ENHANCE_CSV_IMPORT",
             details={
                 "type": item_type,
                 "total_items": len(items),
-                "enhanced_items": enhanced_count,
+                "enhanced_items": enhanced_count if 'enhanced_count' in locals() else 0,
                 "provider": provider,
             },
             status_code=200,
         )
 
         return (
-            jsonify(
-                {
-                    "items": reconciled_items,
-                    "enhanced_count": enhanced_count,
-                    "status": "complete",
-                }
-            ),
+            jsonify({
+                "items": reconciled_items,
+                "enhanced_count": enhanced_count if 'enhanced_count' in locals() else 0,
+                "status": "complete",
+            }),
             200,
         )
 
     except Exception as e:
         print(f"Enhance CSV error: {str(e)}")
-        import traceback
-
-        traceback.print_exc()
         return jsonify({"error": str(e)}), 500

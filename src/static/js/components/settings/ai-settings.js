@@ -83,24 +83,24 @@ function validateApiKey(provider, value) {
  */
 const PROVIDERS = {
     recommended: [
-        { id: 'gemini', name: '✨ Google Gemini', placeholder: 'REDACTED_GAPI_...', url: 'https://aistudio.google.com/app/apikey', desc: 'Free tier, fast, recommended' },
-        { id: 'claude', name: '🤖 Anthropic Claude', placeholder: 'REDACTED_ANTH_...', url: 'https://console.anthropic.com/', desc: 'Best reasoning, thoughtful' },
-        { id: 'openai', name: '🧠 OpenAI GPT-4', placeholder: 'sk-...', url: 'https://platform.openai.com/api-keys', desc: 'Industry standard, reliable' }
+        { id: 'gemini', name: 'Google Gemini', placeholder: 'REDACTED_GAPI_...', url: 'https://aistudio.google.com/app/apikey', desc: 'Free tier, fast, recommended' },
+        { id: 'claude', name: 'Anthropic Claude', placeholder: 'REDACTED_ANTH_...', url: 'https://console.anthropic.com/', desc: 'Best reasoning, thoughtful' },
+        { id: 'openai', name: 'OpenAI GPT-4', placeholder: 'sk-...', url: 'https://platform.openai.com/api-keys', desc: 'Industry standard, reliable' }
     ],
     budget: [
-        { id: 'openrouter', name: '🌐 OpenRouter', placeholder: 'REDACTED_OR_...', url: 'https://openrouter.ai/keys', desc: 'Pay per use, many models' },
-        { id: 'deepseek', name: '🐳 DeepSeek', placeholder: 'sk-...', url: 'https://platform.deepseek.com/', desc: 'Low cost, good quality' },
-        { id: 'grok', name: '🚀 xAI Grok', placeholder: 'xai-...', url: 'https://console.x.ai/', desc: 'Fast, conversational' }
+        { id: 'openrouter', name: 'OpenRouter', placeholder: 'REDACTED_OR_...', url: 'https://openrouter.ai/keys', desc: 'Pay per use, many models' },
+        { id: 'deepseek', name: 'DeepSeek', placeholder: 'sk-...', url: 'https://platform.deepseek.com/', desc: 'Low cost, good quality' },
+        { id: 'grok', name: 'xAI Grok', placeholder: 'xai-...', url: 'https://console.x.ai/', desc: 'Fast, conversational' }
     ],
     local: [
-        { id: 'lmstudio', name: '💻 LM Studio', placeholder: 'http://localhost:1234', isUrl: true, desc: '100% private, your hardware' },
-        { id: 'localai', name: '🤖 LocalAI', placeholder: 'http://localhost:8080', isUrl: true, desc: 'Self-hosted, open source' }
+        { id: 'lmstudio', name: 'LM Studio', placeholder: 'http://localhost:1234', isUrl: true, desc: '100% private, your hardware' },
+        { id: 'localai', name: 'LocalAI', placeholder: 'http://localhost:8080', isUrl: true, desc: 'Self-hosted, open source' }
     ],
     more: [
-        { id: 'mistral', name: '🌀 Mistral AI', placeholder: '...', url: 'https://console.mistral.ai/', desc: 'European, multilingual' },
-        { id: 'together', name: '🤝 Together AI', placeholder: '...', url: 'https://api.together.xyz/', desc: 'Fast inference' },
-        { id: 'huggingface', name: '🤗 Hugging Face', placeholder: 'hf_...', url: 'https://huggingface.co/settings/tokens', desc: 'Open models' },
-        { id: 'zhipu', name: '🇨🇳 Zhipu AI', placeholder: '...', url: 'https://open.bigmodel.cn/', desc: 'Chinese models' }
+        { id: 'mistral', name: 'Mistral AI', placeholder: '...', url: 'https://console.mistral.ai/', desc: 'European, multilingual' },
+        { id: 'together', name: 'Together AI', placeholder: '...', url: 'https://api.together.xyz/', desc: 'Fast inference' },
+        { id: 'huggingface', name: 'Hugging Face', placeholder: 'hf_...', url: 'https://huggingface.co/settings/tokens', desc: 'Open models' },
+        { id: 'zhipu', name: 'Zhipu AI', placeholder: '...', url: 'https://open.bigmodel.cn/', desc: 'Chinese models' }
     ]
 };
 
@@ -126,7 +126,7 @@ export async function renderAPIKeysSettings(container) {
         <!-- Recommended Providers -->
         <div style="margin-bottom: 25px;">
             <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--accent-color); display: flex; align-items: center; gap: 8px;">
-                ⭐ Recommended Providers
+                Recommended Providers
                 <span style="font-size: 11px; font-weight: normal; color: var(--text-secondary);">(Start here)</span>
             </h3>
             <div id="recommended-providers"></div>
@@ -134,14 +134,14 @@ export async function renderAPIKeysSettings(container) {
 
         <!-- Budget Options -->
         <div style="margin-bottom: 25px;">
-            <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--accent-color);">💰 Budget Options</h3>
+            <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--accent-color);">Budget Options</h3>
             <div id="budget-providers"></div>
         </div>
 
         <!-- Local AI -->
         <div style="margin-bottom: 25px;">
             <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--accent-color); display: flex; align-items: center; gap: 8px;">
-                🏠 Privacy First (100% Local)
+                Privacy First (100% Local)
                 <span style="font-size: 10px; font-weight: normal; background: var(--success-color); color: white; padding: 2px 6px; border-radius: 10px;">No Data Leaves Your PC</span>
             </h3>
             <div id="local-providers"></div>
@@ -149,7 +149,7 @@ export async function renderAPIKeysSettings(container) {
 
         <!-- Show More Toggle -->
         <div id="more-providers-section" style="margin-bottom: 25px; display: none;">
-            <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--accent-color);">🌍 More Providers</h3>
+            <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--accent-color);">More Providers</h3>
             <div id="more-providers"></div>
         </div>
 
@@ -159,23 +159,23 @@ export async function renderAPIKeysSettings(container) {
 
         <!-- Default Provider Selection -->
         <div style="padding: 15px; background: var(--bg-primary); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 25px;">
-            <h3 style="font-size: 14px; margin: 0 0 8px 0; color: var(--accent-color);">🎯 Default AI Provider</h3>
+            <h3 style="font-size: 14px; margin: 0 0 8px 0; color: var(--accent-color);">Default AI Provider</h3>
             <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 10px;">
                 Select which provider handles your advisor chat and analysis by default.
             </p>
             <select id="preferred-ai-provider" style="width: 100%; padding: 10px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 13px;">
-                <option value="gemini">✨ Google Gemini</option>
-                <option value="claude">🤖 Anthropic Claude</option>
-                <option value="openai">🧠 OpenAI GPT-4</option>
-                <option value="grok">🚀 xAI Grok</option>
-                <option value="openrouter">🌐 OpenRouter</option>
-                <option value="deepseek">🐳 DeepSeek</option>
-                <option value="mistral">🌀 Mistral AI</option>
-                <option value="together">🤝 Together AI</option>
-                <option value="huggingface">🤗 Hugging Face</option>
-                <option value="zhipu">🇨🇳 Zhipu AI</option>
-                <option value="lmstudio">💻 LM Studio</option>
-                <option value="localai">🤖 LocalAI</option>
+                <option value="gemini">Google Gemini</option>
+                <option value="claude">Anthropic Claude</option>
+                <option value="openai">OpenAI GPT-4</option>
+                <option value="grok">xAI Grok</option>
+                <option value="openrouter">OpenRouter</option>
+                <option value="deepseek">DeepSeek</option>
+                <option value="mistral">Mistral AI</option>
+                <option value="together">Together AI</option>
+                <option value="huggingface">Hugging Face</option>
+                <option value="zhipu">Zhipu AI</option>
+                <option value="lmstudio">LM Studio</option>
+                <option value="localai">LocalAI</option>
             </select>
         </div>
     `;

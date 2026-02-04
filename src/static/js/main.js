@@ -5,12 +5,15 @@
 import { store } from './state/store.js';
 import { apiClient } from './api/client.js';
 import { API_ENDPOINTS, STORAGE_KEYS, APP_CONFIG } from './config.js';
+import { checkSetupCompletion } from './utils/setup-checker.js';
 import { showSetupChecklist, updateSetupButton } from './components/setup/setup-checklist.js';
 import { showFeedbackModal } from './components/feedback/feedback-modal.js';
 import { showRoadmapViewer } from './components/roadmap/roadmap-viewer.js';
 import { activityTracker } from './utils/activityTracker.js';
 import { renderUserBackups } from './components/settings/user-backups.js';
 import { showSpinner, hideSpinner } from './utils/dom.js';
+import { startOnboarding } from './components/onboarding/onboarding-wizard.js';
+import { setupAriaLabels } from './utils/a11y.js';
 
 /**
  * Initialize application
@@ -31,6 +34,8 @@ async function init() {
     // Subscribe to state changes to update header display
     store.subscribe((state) => {
         updateHeaderDisplay();
+        updateTabVisibility();
+        setupAriaLabels();
     });
 
     // Check authentication status
@@ -41,6 +46,12 @@ async function init() {
 
     // Set up setup button
     setupSetupButton();
+    
+    // Initial tab visibility
+    updateTabVisibility();
+
+    // Accessibility
+    setupAriaLabels();
 
     // Set up feedback button
     setupFeedback();
@@ -53,6 +64,9 @@ async function init() {
 
     // Set up logout button
     setupLogout();
+
+    // Set up mobile menu
+    setupMobileMenu();
 
     // Load saved preferences
     loadThemePreference();
@@ -125,11 +139,126 @@ function updateHeaderDisplay() {
 }
 
 /**
+ * Set up mobile navigation menu
+ */
+function setupMobileMenu() {
+    const menuBtn = document.getElementById('mobile-menu-btn');
+    const tabsContainer = document.getElementById('tabs-container');
+    
+    if (!menuBtn || !tabsContainer) return;
+
+    // Create backdrop if not exists
+    let backdrop = document.querySelector('.menu-backdrop');
+    if (!backdrop) {
+        backdrop = document.createElement('div');
+        backdrop.className = 'menu-backdrop';
+        document.body.appendChild(backdrop);
+    }
+
+    const toggleMenu = () => {
+        const isActive = tabsContainer.classList.toggle('mobile-active');
+        backdrop.classList.toggle('active', isActive);
+        
+        // Hamburger animation
+        const spans = menuBtn.querySelectorAll('span');
+        if (isActive) {
+            spans[0].style.transform = 'rotate(45deg)';
+            spans[1].style.opacity = '0';
+            spans[2].style.transform = 'rotate(-45deg)';
+        } else {
+            spans[0].style.transform = 'none';
+            spans[1].style.opacity = '1';
+            spans[2].style.transform = 'none';
+        }
+    };
+
+    menuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleMenu();
+    });
+
+    backdrop.addEventListener('click', toggleMenu);
+
+    // Close menu when a tab is clicked
+    tabsContainer.addEventListener('click', (e) => {
+        if (e.target.classList.contains('tab')) {
+            if (tabsContainer.classList.contains('mobile-active')) {
+                toggleMenu();
+            }
+        }
+    });
+}
+
+/**
+ * Update tab visibility based on profile setup progress
+ */
+function updateTabVisibility() {
+    const profile = store.get('currentProfile');
+    const tabsContainer = document.getElementById('tabs-container');
+    if (!tabsContainer) return;
+
+    // If no profile, only show ALWAYS tabs
+    const status = profile ? checkSetupCompletion(profile) : { percentage: 0 };
+    const percentage = status.percentage;
+    const config = APP_CONFIG.PROGRESSIVE_TABS;
+
+    if (!config) return;
+
+    const visibleTabs = new Set(config.ALWAYS);
+    if (percentage >= config.LEVEL_1.min) config.LEVEL_1.tabs.forEach(t => visibleTabs.add(t));
+    if (percentage >= config.LEVEL_2.min) config.LEVEL_2.tabs.forEach(t => visibleTabs.add(t));
+    if (percentage >= config.LEVEL_3.min) config.LEVEL_3.tabs.forEach(t => visibleTabs.add(t));
+
+    // Handle all tab buttons and their parent groups
+    const allTabButtons = tabsContainer.querySelectorAll('.tab[data-tab]');
+    
+    allTabButtons.forEach(btn => {
+        const tabName = btn.getAttribute('data-tab');
+        const isVisible = visibleTabs.has(tabName);
+        
+        // Find if this button is inside a dropdown
+        const group = btn.closest('.nav-group');
+        
+        if (isVisible) {
+            btn.style.display = ''; // Show
+        } else {
+            btn.style.display = 'none'; // Hide
+        }
+    });
+
+    // Handle parent nav-groups - hide group if no children are visible
+    const allGroups = tabsContainer.querySelectorAll('.nav-group');
+    allGroups.forEach(group => {
+        const children = group.querySelectorAll('.tab[data-tab]');
+        const hasVisibleChild = Array.from(children).some(child => child.style.display !== 'none');
+        
+        if (hasVisibleChild) {
+            group.style.display = '';
+        } else {
+            group.style.display = 'none';
+        }
+    });
+}
+
+/**
  * Load default profile on startup
  */
 async function loadDefaultProfileOnStartup() {
     const defaultProfileName = localStorage.getItem(STORAGE_KEYS.DEFAULT_PROFILE);
-    if (!defaultProfileName) return;
+    if (!defaultProfileName) {
+        // No default profile, check if user has ANY profiles
+        try {
+            const { profilesAPI } = await import('./api/profiles.js');
+            const result = await profilesAPI.list();
+            if (result.profiles.length === 0) {
+                console.log('No profiles found - starting onboarding wizard');
+                startOnboarding();
+            }
+        } catch (error) {
+            console.warn('Error checking profiles for onboarding:', error);
+        }
+        return;
+    }
 
     try {
         const { profilesAPI } = await import('./api/profiles.js');
@@ -142,6 +271,17 @@ async function loadDefaultProfileOnStartup() {
         console.warn('⚠️ Default profile not found, clearing:', defaultProfileName);
         localStorage.removeItem(STORAGE_KEYS.DEFAULT_PROFILE);
         updateHeaderDisplay();
+        
+        // Check if we should show onboarding (if this was the only profile)
+        try {
+            const { profilesAPI } = await import('./api/profiles.js');
+            const result = await profilesAPI.list();
+            if (result.profiles.length === 0) {
+                startOnboarding();
+            }
+        } catch (e) {
+            // Ignore error here
+        }
     }
 }
 

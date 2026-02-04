@@ -10,6 +10,7 @@ import { showSuccess, showError, showSpinner, hideSpinner } from '../../utils/do
 import { STORAGE_KEYS } from '../../config.js';
 import { calculateNetWorth, calculateLiquidAssets, calculateRetirementAssets, calculateRealEstateEquity, calculateTotalDebts } from '../../utils/financial-calculations.js';
 import { getChartThemeColors, registerChartForThemeUpdates } from '../../utils/charts.js';
+import { animateChildren } from '../../utils/animations.js';
 
 export async function renderDashboardTab(container) {
     const currentUser = store.get('currentUser');
@@ -49,11 +50,7 @@ function renderProfileDashboard(container, profiles, currentProfile, currentUser
 
     container.innerHTML = `
         <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-2) var(--space-3);">
-            <!-- Header -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2); flex-wrap: wrap; gap: 8px;">
-                <div style="min-width: 0; flex: 1;">
-                    <h1 style="font-size: 15px; margin: 0; font-weight: 600;">📊 Profile Dashboard</h1>
-                </div>
+            <div style="display: flex; justify-content: flex-end; margin-bottom: var(--space-2);">
                 <button id="create-profile-btn" style="padding: 4px 8px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; flex-shrink: 0;">
                     + New
                 </button>
@@ -161,6 +158,15 @@ function renderFinancialSummary(profile) {
     setTimeout(() => {
         // Setup theme-aware colors
         const colors = getChartThemeColors();
+        const style = getComputedStyle(document.body);
+        const palette = {
+            primary: style.getPropertyValue('--accent-color').trim(),
+            secondary: style.getPropertyValue('--accent-secondary').trim(),
+            success: style.getPropertyValue('--success-color').trim(),
+            warning: style.getPropertyValue('--warning-color').trim(),
+            danger: style.getPropertyValue('--danger-color').trim(),
+            gray: style.getPropertyValue('--text-secondary').trim()
+        };
 
         // Asset Allocation Pie Chart
         const assetCanvas = document.getElementById(assetChartId);
@@ -175,10 +181,10 @@ function renderFinancialSummary(profile) {
                         breakdown.otherAssets
                     ],
                     backgroundColor: [
-                        '#3498db', // blue
-                        '#2ecc71', // green
-                        '#e74c3c', // red
-                        '#95a5a6'  // gray
+                        palette.primary, // Retirement
+                        palette.success, // Taxable
+                        palette.secondary, // Real Estate (was red, now secondary/amber)
+                        palette.gray  // Other
                     ],
                     borderWidth: 2,
                     borderColor: colors.bgSecondary
@@ -228,19 +234,19 @@ function renderFinancialSummary(profile) {
                         {
                             label: 'Income',
                             data: [totalAnnualIncome],
-                            backgroundColor: '#2ecc71',
+                            backgroundColor: palette.success,
                             borderWidth: 0
                         },
                         {
                             label: 'Expenses',
                             data: [totalAnnualExpenses],
-                            backgroundColor: '#e74c3c',
+                            backgroundColor: palette.danger,
                             borderWidth: 0
                         },
                         {
                             label: 'Savings',
                             data: [annualSavings],
-                            backgroundColor: annualSavings >= 0 ? '#3498db' : '#e67e22',
+                            backgroundColor: annualSavings >= 0 ? palette.primary : palette.warning,
                             borderWidth: 0
                         }
                     ]
@@ -304,7 +310,7 @@ function renderFinancialSummary(profile) {
                     datasets: [{
                         data: [displayRate, 100 - displayRate],
                         backgroundColor: [
-                            displayRate >= 20 ? '#2ecc71' : displayRate >= 10 ? '#f39c12' : '#e74c3c',
+                            displayRate >= 20 ? palette.success : displayRate >= 10 ? palette.warning : palette.danger,
                             colors.bgTertiary
                         ],
                         borderWidth: 0
@@ -344,24 +350,82 @@ function renderFinancialSummary(profile) {
             });
             registerChartForThemeUpdates(chart);
         }
-    }, 100);
 
-    return `
-        <!-- Active Profile Financial Summary -->
-        <div style="background: var(--bg-secondary); border-radius: 8px; padding: 16px; margin-bottom: 12px; border: 2px solid var(--accent-color); box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-            <!-- Header -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <span style="font-size: 11px; font-weight: 700; background: var(--accent-color); color: white; padding: 4px 10px; border-radius: 4px;">ACTIVE PROFILE</span>
-                    <h2 style="font-size: 20px; margin: 0; font-weight: 700;">${profile.name}</h2>
-                </div>
-                <button onclick="window.app.showTab('profile')" style="padding: 6px 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
-                    Edit Profile
-                </button>
-            </div>
-
-            <!-- Key Metrics Grid -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px;">
+            // Animate metric cards on load
+            animateChildren('.metric-grid', '.metric-card');
+            }, 100);
+        
+            // --- Readiness Score Calculation ---
+            let readinessScore = 0;
+            const checks = [];
+            
+            // 1. Emergency Fund (Liquidity)
+            const liquidAssets = calculateLiquidAssets(assets);
+            const monthlyExpenses = totalAnnualExpenses / 12;
+            const monthsOfExpenses = monthlyExpenses > 0 ? liquidAssets / monthlyExpenses : 0;
+            if (monthsOfExpenses >= 6) { readinessScore += 25; checks.push({ label: 'Emergency fund (6+ mo)', status: 'pass' }); }
+            else if (monthsOfExpenses >= 3) { readinessScore += 15; checks.push({ label: 'Emergency fund (3-6 mo)', status: 'warn' }); }
+            else { checks.push({ label: 'Emergency fund (<3 mo)', status: 'fail' }); }
+        
+            // 2. Savings Rate
+            if (savingsRate >= 20) { readinessScore += 25; checks.push({ label: 'Savings rate (20%+)', status: 'pass' }); }
+            else if (savingsRate >= 10) { readinessScore += 15; checks.push({ label: 'Savings rate (10-20%)', status: 'warn' }); }
+            else { checks.push({ label: 'Savings rate (<10%)', status: 'fail' }); }
+        
+            // 3. Debt Management
+            const debtRatio = totalAssets > 0 ? (totalDebts / totalAssets) : 0;
+            if (debtRatio === 0) { readinessScore += 25; checks.push({ label: 'Debt-free', status: 'pass' }); }
+            else if (debtRatio < 0.3) { readinessScore += 20; checks.push({ label: 'Low debt (<30%)', status: 'pass' }); }
+            else if (debtRatio < 0.5) { readinessScore += 10; checks.push({ label: 'Moderate debt', status: 'warn' }); }
+            else { checks.push({ label: 'High debt (>50%)', status: 'fail' }); }
+        
+            // 4. Retirement Savings (vs Income)
+            const retirementAssets = breakdown.retirementAssets;
+            const incomeRatio = totalAnnualIncome > 0 ? retirementAssets / totalAnnualIncome : 0;
+            // Simple age-based check
+            const targetRatio = currentAge ? (currentAge / 10) : 1; 
+            if (incomeRatio >= targetRatio) { readinessScore += 25; checks.push({ label: 'Retirement savings', status: 'pass' }); }
+            else if (incomeRatio >= targetRatio * 0.5) { readinessScore += 15; checks.push({ label: 'Retirement savings', status: 'warn' }); }
+            else { checks.push({ label: 'Retirement savings', status: 'fail' }); }
+        
+            const scoreColor = readinessScore >= 80 ? 'var(--success-color)' : readinessScore >= 50 ? 'var(--warning-color)' : 'var(--danger-color)';
+        
+            return `
+                <!-- Active Profile Financial Summary -->
+                <div style="background: var(--bg-secondary); border-radius: 8px; padding: 16px; margin-bottom: 12px; border: 2px solid var(--accent-color); box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <!-- Header -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span style="font-size: 11px; font-weight: 700; background: var(--accent-color); color: white; padding: 4px 10px; border-radius: 4px;">ACTIVE PROFILE</span>
+                            <h2 style="font-size: 20px; margin: 0; font-weight: 700;">${profile.name}</h2>
+                        </div>
+                        <button onclick="window.app.showTab('profile')" style="padding: 6px 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                            Edit Profile
+                        </button>
+                    </div>
+        
+                    <!-- Readiness Score Widget -->
+                    <div style="background: var(--bg-primary); border-radius: 8px; padding: 16px; margin-bottom: 20px; border: 1px solid var(--border-color); display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+                        <div style="flex: 0 0 100px; text-align: center; border-right: 1px solid var(--border-color); padding-right: 20px;">
+                            <div style="font-size: 36px; font-weight: 700; color: ${scoreColor}; line-height: 1;">${readinessScore}</div>
+                            <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; font-weight: 600;">Readiness Score</div>
+                        </div>
+                        <div style="flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px 16px;">
+                            ${checks.map(c => `
+                                <div style="display: flex; align-items: center; gap: 6px; font-size: 12px;">
+                                    <span style="font-size: 14px;">${c.status === 'pass' ? '✅' : c.status === 'warn' ? '⚠️' : '❌'}</span>
+                                    <span style="color: ${c.status === 'pass' ? 'var(--text-primary)' : 'var(--text-secondary)'};">${c.label}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div style="flex: 0 0 auto;">
+                            <button onclick="window.app.showTab('actions')" style="padding: 8px 16px; background: var(--bg-tertiary); border: 1px solid var(--accent-color); color: var(--accent-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">
+                                View Action Plan →
+                            </button>
+                        </div>
+                    </div>
+        
+                    <!-- Key Metrics Grid -->            <div class="metric-grid">
                 <!-- Net Worth -->
                 <div id="metric-networth" class="metric-card" style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 12px; border-radius: 6px; color: white; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
                     <div style="font-size: 10px; opacity: 0.9; margin-bottom: 4px;">💰 Net Worth</div>

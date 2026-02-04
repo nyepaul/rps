@@ -5,7 +5,7 @@ import re
 import json
 import base64
 from datetime import datetime, timedelta
-from flask import Blueprint, request, jsonify, session, make_response
+from flask import Blueprint, request, jsonify, session, make_response, current_app
 from flask_login import login_user, logout_user, current_user, login_required
 from src.auth.models import User, PasswordResetRequest
 from src.extensions import limiter, csrf

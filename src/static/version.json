@@ -1,5 +1,5 @@
 {
-    "version": "3.9.167",
-    "release_date": "2026-01-31",
-    "release_notes": "Fix calculation report: handle expense values stored as lists"
+    "version": "3.9.178",
+    "release_date": "2026-02-04",
+    "release_notes": "Eliminate UI marketing fluff and emojis"
 }

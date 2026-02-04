@@ -88,8 +88,8 @@ class TestAnalysisRequestSchema:
         }
         request = AnalysisRequestSchema(**data)
         assert request.market_periods is not None
-        assert request.market_periods["type"] == "timeline"
-        assert len(request.market_periods["periods"]) == 2
+        assert request.market_periods.type == "timeline"
+        assert len(request.market_periods.periods) == 2
 
     def test_market_periods_cycle_accepted(self):
         """Cycle market periods should be accepted."""
@@ -126,9 +126,9 @@ class TestAnalysisRequestSchema:
         }
         request = AnalysisRequestSchema(**data)
         assert request.market_periods is not None
-        assert request.market_periods["type"] == "cycle"
-        assert request.market_periods["repeat"] is True
-        assert len(request.market_periods["pattern"]) == 2
+        assert request.market_periods.type == "cycle"
+        assert request.market_periods.repeat is True
+        assert len(request.market_periods.pattern) == 2
 
 
 # Integration tests would go here if we had Flask test client setup
