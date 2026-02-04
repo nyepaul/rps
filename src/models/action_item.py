@@ -9,6 +9,7 @@ from src.services.encryption_service import (
     encrypt_list,
     decrypt_list,
 )
+from src.database.audit_logger import log_create, log_update, log_delete
 
 
 class ActionItem:
@@ -120,6 +121,13 @@ class ActionItem:
                     ),
                 )
                 self.id = cursor.lastrowid
+                # Log creation
+                log_create(
+                    "action_item",
+                    self.id,
+                    self.user_id,
+                    f"Created action item: {self.description}",
+                )
             else:
                 cursor.execute(
                     """
@@ -143,11 +151,25 @@ class ActionItem:
                         self.user_id,
                     ),
                 )
+                # Log update
+                log_update(
+                    "action_item",
+                    self.id,
+                    self.user_id,
+                    f"Updated action item: {self.description}",
+                )
         return self
 
     def delete(self):
         """Delete action item."""
         if self.id:
+            # Log deletion before deleting
+            log_delete(
+                "action_item",
+                self.id,
+                self.user_id,
+                f"Deleted action item: {self.description}",
+            )
             with connection.db.get_connection() as conn:
                 conn.execute(
                     "DELETE FROM action_items WHERE id = ? AND user_id = ?",
@@ -163,7 +185,7 @@ class ActionItem:
                 action_data_decrypted = decrypt_dict(
                     self.action_data, self.action_data_iv
                 )
-            except Exception:
+            except (ValueError, TypeError, json.JSONDecodeError):
                 # Fallback to plain JSON
                 if isinstance(self.action_data, str):
                     try:
@@ -183,7 +205,7 @@ class ActionItem:
         if self.subtasks and self.subtasks_iv:
             try:
                 subtasks_decrypted = decrypt_list(self.subtasks, self.subtasks_iv)
-            except Exception:
+            except (ValueError, TypeError, json.JSONDecodeError):
                 # Fallback to plain JSON
                 if isinstance(self.subtasks, str):
                     try:

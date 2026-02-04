@@ -1,0 +1,45 @@
+.form-section {
+    background: var(--bg-secondary);
+    padding: var(--space-3);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+.form-grid {
+    display: grid;
+    gap: var(--space-2);
+}
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+.form-group label {
+    font-weight: 600;
+    margin-bottom: 2px;
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+.form-group input, .form-group select {
+    padding: 6px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 13px;
+    transition: border-color 0.2s;
+}
+.form-group input:focus, .form-group select:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+.calculated-field {
+    background: var(--bg-tertiary) !important;
+    color: var(--text-secondary) !important;
+    font-weight: 600;
+    cursor: default;
+}
+@media (max-width: 900px) {
+    #profile-form > div {
+        grid-template-columns: 1fr !important;
+    }
+}

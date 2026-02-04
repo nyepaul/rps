@@ -1,0 +1,238 @@
+        <div style="max-width: 1100px; margin: 0 auto; padding: var(--space-3);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: var(--space-3);">
+                <div>
+                    <h1 style="font-size: var(--font-2xl); margin: 0;">Profile Settings</h1>
+                    <p style="color: var(--text-secondary); margin: 0; font-size: 13px;">
+                        Manage personal and dependent information for <strong id="profile-name-display"></strong>
+                    </p>
+                </div>
+                <div style="display: flex; gap: var(--space-2);">
+                    <button type="button" id="cancel-btn" style="padding: 6px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                        Cancel
+                    </button>
+                    <button type="submit" form="profile-form" id="save-btn" style="padding: 6px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+
+            <form id="profile-form">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: var(--space-3);">
+                    <!-- Column 1: Personal Details -->
+                    <div class="form-section" style="margin-bottom: 0;">
+                        <h2 style="font-size: 15px; margin-bottom: var(--space-3); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-2); color: var(--accent-color); display: flex; align-items: center; gap: 8px;">
+                            👤 Personal Details
+                        </h2>
+                        <div class="form-grid" style="grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="name">Profile Name *</label>
+                                <input type="text" id="name" name="name" value="" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="birth_date">Birth Date</label>
+                                <input type="date" id="birth_date" name="birth_date" value="">
+                            </div>
+                            <div class="form-group">
+                                <label for="retirement_date">Retirement Date</label>
+                                <input type="date" id="retirement_date" name="retirement_date" value="">
+                            </div>
+                            <div class="form-group">
+                                <label for="current_age">Current Age</label>
+                                <input type="number" id="current_age" value="" class="calculated-field" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="retirement_age">Retirement Age</label>
+                                <input type="number" id="retirement_age" value="" class="calculated-field" readonly>
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="life_expectancy">Life Expectancy (years) <button type="button" class="help-icon" data-tooltip="Used to calculate how long your portfolio needs to last. Conservative estimates (95-100) are recommended to ensure you don't outlive your money.">?</button></label>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <input type="number" id="life_expectancy" name="life_expectancy" value="" min="0" max="120" style="flex: 1;">
+                                    <span style="font-size: 11px; color: var(--text-secondary); white-space: nowrap;">Default: 95</span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="ss_benefit">Social Security (Monthly)</label>
+                                <input type="number" id="ss_benefit" name="ss_benefit" value="" placeholder="$0">
+                            </div>
+                            <div class="form-group">
+                                <label for="ss_claiming_age">Claiming Age</label>
+                                <select id="ss_claiming_age" name="ss_claiming_age">
+                                    <option value="62">62 (Early)</option>
+                                    <option value="67">67 (Full)</option>
+                                    <option value="70">70 (Max)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <h3 style="font-size: 14px; margin: 16px 0 8px 0; padding-top: 12px; border-top: 1px solid var(--border-color); color: var(--accent-color); display: flex; align-items: center; gap: 8px;">
+                            💰 Retirement Contributions
+                        </h3>
+                        <div class="form-grid" style="grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                            <div class="form-group">
+                                <label for="annual_401k">401k/403b Contribution Rate</label>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <input type="number" id="annual_401k" name="annual_401k" value="" placeholder="0" step="0.5" min="0" max="100" style="flex: 1;">
+                                    <span style="font-size: 13px;">%</span>
+                                </div>
+                                <small style="color: var(--text-secondary); font-size: 11px;">% of salary (pre-tax, reduces take-home)</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="employer_match">Employer Match Rate</label>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <input type="number" id="employer_match" name="employer_match" value="" placeholder="0" step="0.5" min="0" max="100" style="flex: 1;">
+                                    <span style="font-size: 13px;">%</span>
+                                </div>
+                                <small style="color: var(--text-secondary); font-size: 11px;">% of salary (employer adds this)</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Column 2: Address & Location -->
+                    <div class="form-section" style="margin-bottom: 0;">
+                        <h2 style="font-size: 15px; margin-bottom: var(--space-3); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-2); color: var(--accent-color); display: flex; align-items: center; gap: 8px;">
+                            📍 Location & Tax State
+                        </h2>
+                        <div class="form-grid" style="grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="address_street">Street Address</label>
+                                <input type="text" id="address_street" name="address_street" value="" placeholder="123 Main St">
+                            </div>
+                            <div class="form-group">
+                                <label for="address_city">City</label>
+                                <input type="text" id="address_city" name="address_city" value="" placeholder="City">
+                            </div>
+                            <div class="form-group">
+                                <label for="address_zip">ZIP Code</label>
+                                <input type="text" id="address_zip" name="address_zip" value="" placeholder="ZIP" maxlength="10">
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="address_state">State (for Tax Calculation)</label>
+                                <select id="address_state" name="address_state" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: 13px;">
+                                    <option value="">Select State</option>
+                                    <option value="AL">Alabama</option>
+                                    <option value="AK">Alaska</option>
+                                    <option value="AZ">Arizona</option>
+                                    <option value="AR">Arkansas</option>
+                                    <option value="CA">California</option>
+                                    <option value="CO">Colorado</option>
+                                    <option value="CT">Connecticut</option>
+                                    <option value="DE">Delaware</option>
+                                    <option value="FL">Florida</option>
+                                    <option value="GA">Georgia</option>
+                                    <option value="HI">Hawaii</option>
+                                    <option value="ID">Idaho</option>
+                                    <option value="IL">Illinois</option>
+                                    <option value="IN">Indiana</option>
+                                    <option value="IA">Iowa</option>
+                                    <option value="KS">Kansas</option>
+                                    <option value="KY">Kentucky</option>
+                                    <option value="LA">Louisiana</option>
+                                    <option value="ME">Maine</option>
+                                    <option value="MD">Maryland</option>
+                                    <option value="MA">Massachusetts</option>
+                                    <option value="MI">Michigan</option>
+                                    <option value="MN">Minnesota</option>
+                                    <option value="MS">Mississippi</option>
+                                    <option value="MO">Missouri</option>
+                                    <option value="MT">Montana</option>
+                                    <option value="NE">Nebraska</option>
+                                    <option value="NV">Nevada</option>
+                                    <option value="NH">New Hampshire</option>
+                                    <option value="NJ">New Jersey</option>
+                                    <option value="NM">New Mexico</option>
+                                    <option value="NY">New York</option>
+                                    <option value="NC">North Carolina</option>
+                                    <option value="ND">North Dakota</option>
+                                    <option value="OH">Ohio</option>
+                                    <option value="OK">Oklahoma</option>
+                                    <option value="OR">Oregon</option>
+                                    <option value="PA">Pennsylvania</option>
+                                    <option value="RI">Rhode Island</option>
+                                    <option value="SC">South Carolina</option>
+                                    <option value="SD">South Dakota</option>
+                                    <option value="TN">Tennessee</option>
+                                    <option value="TX">Texas</option>
+                                    <option value="UT">Utah</option>
+                                    <option value="VT">Vermont</option>
+                                    <option value="VA">Virginia</option>
+                                    <option value="WA">Washington</option>
+                                    <option value="WV">West Virginia</option>
+                                    <option value="WI">Wisconsin</option>
+                                    <option value="WY">Wyoming</option>
+                                    <option value="DC">District of Columbia</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Spouse Details -->
+                    <div class="form-section" style="margin-bottom: 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-2);">
+                            <h2 style="font-size: 15px; margin: 0; color: var(--accent-color); display: flex; align-items: center; gap: 8px;">
+                                💑 Spouse Details
+                            </h2>
+                            <button type="button" id="clear-spouse-btn" style="padding: 2px 8px; background: transparent; color: var(--danger-color); border: 1px solid var(--danger-color); border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; display: none;">
+                                Clear
+                            </button>
+                        </div>
+                        <div class="form-grid" style="grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="spouse_name">Name</label>
+                                <input type="text" id="spouse_name" name="spouse_name" value="" placeholder="Leave blank if no spouse">
+                            </div>
+                            <div class="form-group">
+                                <label for="spouse_birth_date">Birth Date</label>
+                                <input type="date" id="spouse_birth_date" name="spouse_birth_date" value="">
+                            </div>
+                            <div class="form-group">
+                                <label for="spouse_retirement_date">Retirement Date</label>
+                                <input type="date" id="spouse_retirement_date" name="spouse_retirement_date" value="">
+                            </div>
+                            <div class="form-group">
+                                <label for="spouse_current_age">Current Age</label>
+                                <input type="number" id="spouse_current_age" value="" class="calculated-field" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="spouse_retirement_age">Retirement Age</label>
+                                <input type="number" id="spouse_retirement_age" value="" class="calculated-field" readonly>
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="spouse_life_expectancy">Life Expectancy (years)</label>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <input type="number" id="spouse_life_expectancy" name="spouse_life_expectancy" value="95" min="0" max="120" style="flex: 1;">
+                                    <span style="font-size: 11px; color: var(--text-secondary); white-space: nowrap;">Default: 95</span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="spouse_ss_benefit">Social Security (Monthly)</label>
+                                <input type="number" id="spouse_ss_benefit" name="spouse_ss_benefit" value="0" placeholder="$0">
+                            </div>
+                            <div class="form-group">
+                                <label for="spouse_ss_claiming_age">Claiming Age</label>
+                                <select id="spouse_ss_claiming_age" name="spouse_ss_claiming_age">
+                                    <option value="62">62 (Early)</option>
+                                    <option value="67">67 (Full)</option>
+                                    <option value="70">70 (Max)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Children -->
+                    <div class="form-section" style="margin-bottom: 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-2);">
+                            <h2 style="font-size: 15px; margin: 0; color: var(--accent-color); display: flex; align-items: center; gap: 8px;">
+                                👶 Children
+                            </h2>
+                            <button type="button" id="add-child-btn" style="padding: 2px 8px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
+                                + Add
+                            </button>
+                        </div>
+                        <div id="children-list">
+                            <p style="color: var(--text-secondary); font-style: italic; font-size: 12px; margin: 10px 0;">No children added.</p>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>

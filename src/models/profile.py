@@ -87,7 +87,7 @@ class Profile:
     def get_by_id(profile_id: int, user_id: int):
         """Get profile by ID (with ownership check)."""
         row = connection.db.execute_one(
-            "SELECT * FROM profile WHERE id = ? AND user_id = ?", (profile_id, user_id)
+            "SELECT * FROM profiles WHERE id = ? AND user_id = ?", (profile_id, user_id)
         )
         if row:
             return Profile(**dict(row))
@@ -97,7 +97,7 @@ class Profile:
     def get_by_name(name: str, user_id: int):
         """Get profile by name (with ownership check)."""
         row = connection.db.execute_one(
-            "SELECT * FROM profile WHERE name = ? AND user_id = ?", (name, user_id)
+            "SELECT * FROM profiles WHERE name = ? AND user_id = ?", (name, user_id)
         )
         if row:
             return Profile(**dict(row))
@@ -107,7 +107,7 @@ class Profile:
     def list_by_user(user_id: int):
         """List all profiles for a user."""
         rows = connection.db.execute(
-            "SELECT * FROM profile WHERE user_id = ? ORDER BY updated_at DESC",
+            "SELECT * FROM profiles WHERE user_id = ? ORDER BY updated_at DESC",
             (user_id,),
         )
         profiles = []
@@ -155,7 +155,7 @@ class Profile:
                 # Insert new profile
                 cursor.execute(
                     """
-                    INSERT INTO profile (user_id, name, birth_date, retirement_date, data, data_iv, created_at, updated_at)
+                    INSERT INTO profiles (user_id, name, birth_date, retirement_date, data, data_iv, created_at, updated_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                     (
@@ -178,7 +178,7 @@ class Profile:
                 # Update existing profile
                 cursor.execute(
                     """
-                    UPDATE profile
+                    UPDATE profiles
                     SET name = ?, birth_date = ?, retirement_date = ?, data = ?, data_iv = ?, updated_at = ?
                     WHERE id = ? AND user_id = ?
                 """,
@@ -208,7 +208,7 @@ class Profile:
             )
             with connection.db.get_connection() as conn:
                 conn.execute(
-                    "DELETE FROM profile WHERE id = ? AND user_id = ?",
+                    "DELETE FROM profiles WHERE id = ? AND user_id = ?",
                     (self.id, self.user_id),
                 )
 

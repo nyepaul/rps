@@ -20,6 +20,7 @@ class Scenario:
         results=None,
         results_iv=None,
         created_at=None,
+        updated_at=None,
     ):
         self.id = id
         self.user_id = user_id
@@ -32,6 +33,7 @@ class Scenario:
         self._decrypted_parameters = None
         self._decrypted_results = None
         self.created_at = created_at or datetime.now().isoformat()
+        self.updated_at = updated_at or datetime.now().isoformat()
 
     @staticmethod
     def get_by_id(scenario_id: int, user_id: int):
@@ -75,8 +77,8 @@ class Scenario:
             if self.id is None:
                 cursor.execute(
                     """
-                    INSERT INTO scenarios (user_id, profile_id, name, parameters, parameters_iv, results, results_iv, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO scenarios (user_id, profile_id, name, parameters, parameters_iv, results, results_iv, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                     (
                         self.user_id,
@@ -87,14 +89,16 @@ class Scenario:
                         self.results,
                         self.results_iv,
                         self.created_at,
+                        self.updated_at,
                     ),
                 )
                 self.id = cursor.lastrowid
             else:
+                self.updated_at = datetime.now().isoformat()
                 cursor.execute(
                     """
                     UPDATE scenarios
-                    SET name = ?, parameters = ?, parameters_iv = ?, results = ?, results_iv = ?
+                    SET name = ?, parameters = ?, parameters_iv = ?, results = ?, results_iv = ?, updated_at = ?
                     WHERE id = ? AND user_id = ?
                 """,
                     (
@@ -168,4 +172,5 @@ class Scenario:
             "parameters": parameters_decrypted,
             "results": results_decrypted,
             "created_at": self.created_at,
+            "updated_at": self.updated_at,
         }

@@ -1,6 +1,7 @@
 """Conversation model with user and profile ownership and encryption."""
 
 from datetime import datetime
+import json
 from src.database import connection
 from src.services.encryption_service import encrypt, decrypt
 
@@ -17,6 +18,7 @@ class Conversation:
         content=None,
         content_iv=None,
         created_at=None,
+        updated_at=None,
     ):
         self.id = id
         self.user_id = user_id
@@ -26,6 +28,7 @@ class Conversation:
         self.content_iv = content_iv  # IV for content
         self._decrypted_content = None
         self.created_at = created_at or datetime.now().isoformat()
+        self.updated_at = updated_at or datetime.now().isoformat()
 
     @staticmethod
     def get_by_id(conversation_id: int, user_id: int):
@@ -73,8 +76,8 @@ class Conversation:
             if self.id is None:
                 cursor.execute(
                     """
-                    INSERT INTO conversations (user_id, profile_id, role, content, content_iv, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    INSERT INTO conversations (user_id, profile_id, role, content, content_iv, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                     (
                         self.user_id,
@@ -83,18 +86,19 @@ class Conversation:
                         self.content,
                         self.content_iv,
                         self.created_at,
+                        self.updated_at,
                     ),
                 )
                 self.id = cursor.lastrowid
             else:
-                # Conversations typically aren't updated, but support it anyway
+                self.updated_at = datetime.now().isoformat()
                 cursor.execute(
                     """
                     UPDATE conversations
-                    SET role = ?, content = ?, content_iv = ?
+                    SET role = ?, content = ?, content_iv = ?, updated_at = ?
                     WHERE id = ? AND user_id = ?
                 """,
-                    (self.role, self.content, self.content_iv, self.id, self.user_id),
+                    (self.role, self.content, self.content_iv, self.updated_at, self.id, self.user_id),
                 )
         return self
 
@@ -119,13 +123,24 @@ class Conversation:
     def to_dict(self):
         """Convert to dictionary (decrypts content)."""
         # Decrypt content
-        content_decrypted = self.content
+        content_decrypted = None
         if self.content and self.content_iv:
             try:
                 content_decrypted = decrypt(self.content, self.content_iv)
-            except Exception:
-                # Decryption failed, return as-is (backward compatibility)
+            except (ValueError, TypeError, json.JSONDecodeError):
+                # Fallback to plain JSON (if content might be JSON)
+                if isinstance(self.content, str):
+                    try:
+                        content_decrypted = json.loads(self.content)
+                    except json.JSONDecodeError:
+                        pass
+        elif isinstance(self.content, str):
+            try:
+                content_decrypted = json.loads(self.content)
+            except json.JSONDecodeError:
                 pass
+        else:
+            content_decrypted = self.content
 
         return {
             "id": self.id,
@@ -134,4 +149,5 @@ class Conversation:
             "role": self.role,
             "content": content_decrypted,
             "created_at": self.created_at,
+            "updated_at": self.updated_at,
         }
