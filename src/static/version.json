@@ -1,5 +1,5 @@
 {
-    "version": "3.9.178",
+    "version": "3.9.179",
     "release_date": "2026-02-04",
-    "release_notes": "Eliminate UI marketing fluff and emojis"
+    "release_notes": "Disable progressive disclosure to restore all tabs"
 }

@@ -70,12 +70,16 @@ export const APP_CONFIG = {
         info: '#17a2b8',
     },
 
-    // Progressive Disclosure Settings
+    // Progressive Disclosure Settings (All visible by default)
     PROGRESSIVE_TABS: {
-        ALWAYS: ['welcome', 'dashboard', 'profile', 'learn'],
-        LEVEL_1: { min: 20, tabs: ['income', 'expenses', 'assets'] },
-        LEVEL_2: { min: 50, tabs: ['cashflow', 'analysis', 'actions'] },
-        LEVEL_3: { min: 80, tabs: ['comparison', 'tax', 'withdrawal', 'advisor', 'summary'] }
+        ALWAYS: [
+            'welcome', 'dashboard', 'profile', 'income', 'expenses', 'assets', 
+            'cashflow', 'analysis', 'comparison', 'tax', 'withdrawal', 
+            'actions', 'advisor', 'summary', 'learn'
+        ],
+        LEVEL_1: { min: 20, tabs: [] },
+        LEVEL_2: { min: 50, tabs: [] },
+        LEVEL_3: { min: 80, tabs: [] }
     },
 
     // Market Assumption Profiles
