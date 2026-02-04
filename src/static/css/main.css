@@ -76,35 +76,61 @@
         }
 
         body.dark-mode {
-            /* Dark theme */
-            --bg-primary: #121212;
-            --bg-secondary: #1e1e1e;
-            --bg-tertiary: #2c2c2c;
-            --text-primary: #e9ecef;
-            --text-secondary: #adb5bd;
-            --text-light: #6c757d;
+            /* === SAGE & AMBER DARK THEME === */
+
+            /* Backgrounds - Rich blacks */
+            --bg-primary: #0f0f0f;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: #262626;
+
+            /* Text - Warm whites */
+            --text-primary: #f5f3f0;
+            --text-secondary: #a3a3a3;
+            --text-muted: #737373;
+            --text-light: #737373;
+
+            /* Header */
             --header-bg: #1a1a1a;
-            --header-text: #e9ecef;
-            --accent-color: #4dabf7;
-            --accent-hover: #339af0;
-            --border-color: #343a40;
-            --shadow: rgba(0,0,0,0.4);
-            --success-color: #40c057;
-            --warning-color: #ffd43b;
-            --danger-color: #ff8787;
-            --success-text: #40c057;
-            --warning-text: #ffd43b;
-            --success-bg: #2b2b2b;
-            --warning-bg: #2b2b2b;
-            --danger-bg: #2b2b2b;
+            --header-text: #f5f3f0;
+
+            /* Brand Colors - Lighter for dark mode */
+            --accent-color: #40916c;
+            --accent-hover: #52b788;
+            --accent-secondary: #e9c46a;
+            --accent-secondary-hover: #f4d58d;
+
+            /* Semantic Colors */
+            --success-color: #52b788;
+            --warning-color: #fbbf24;
+            --danger-color: #f87171;
+            --info-color: #60a5fa;
+
+            /* Semantic Text & Background Colors */
+            --success-text: #52b788;
+            --warning-text: #fbbf24;
+            --success-bg: #1a2a1a;
+            --warning-bg: #2a2a1a;
+            --danger-bg: #2a1a1a;
             --info-bg: #1a2a3a;
-            --info-color: #4dabf7;
-            --card-gradient-1: #5c7cfa;
-            --card-gradient-2: #9775fa;
+
+            /* Borders & Shadows */
+            --border-color: #404040;
+            --shadow: rgba(0, 0, 0, 0.4);
+            --shadow-color: rgba(0, 0, 0, 0.4);
+
+            /* Gradients */
+            --gradient-primary-start: #40916c;
+            --gradient-primary-end: #52b788;
+            --gradient-accent-start: #e9c46a;
+            --gradient-accent-end: #f4d58d;
+
+            /* Card Gradients */
+            --card-gradient-1: #40916c;
+            --card-gradient-2: #2d6a4f;
 
             /* Chart text colors */
-            --chart-text-primary: #e9ecef;
-            --chart-text-secondary: #adb5bd;
+            --chart-text-primary: #f5f3f0;
+            --chart-text-secondary: #a3a3a3;
         }
 
         body.high-contrast-mode {
