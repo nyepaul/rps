@@ -1695,11 +1695,47 @@ class RetirementModel:
                 m_available_cash = (m_ord_taxable + (m_gross_ss - m_taxable_ss)) - (
                     m_fed_tax + m_state_tax + m_fica_tax
                 )
+                
+                # Check for Home Sales this year (only once per year, usually first month)
+                m_liquidation_proceeds = 0
+                if month_idx == 0:
+                    for prop in home_props_state:
+                        if prop["sale_year"] and simulation_year == prop["sale_year"]:
+                            active_mask = ~prop["is_sold"]
+                            if np.any(active_mask):
+                                gross_proceeds = prop["values"]
+                                mortgage_payoff = prop["mortgages"]
+                                transaction_costs = gross_proceeds * 0.06
+                                gain = gross_proceeds - prop["purchase_price"]
+                                exclusion = (
+                                    500000
+                                    if prop["property_type"] == "Primary Residence"
+                                    else 0
+                                )
+                                taxable_gain = np.maximum(0, gain - exclusion)
+                                # Simplified LTCG for detailed (single run)
+                                capital_gains_tax = taxable_gain * 0.15
+                                net_proceeds = (
+                                    gross_proceeds
+                                    - mortgage_payoff
+                                    - transaction_costs
+                                    - capital_gains_tax
+                                )
+                                available_proceeds = net_proceeds - prop["replacement_cost"]
+                                
+                                proceeds_val = np.maximum(0, available_proceeds).item()
+                                m_liquidation_proceeds += proceeds_val
+                                
+                                # Liquidate
+                                prop["is_sold"] = np.where(active_mask, True, prop["is_sold"])
+                                prop["values"] = np.where(active_mask, 0, prop["values"])
+                
                 m_shortfall = np.maximum(0, m_target_spending - m_available_cash)
                 m_surplus = np.maximum(0, m_available_cash - m_target_spending)
 
                 # Update Balances
                 cash += m_surplus
+                taxable_val += m_liquidation_proceeds
 
                 # --- Handle Withdrawals (Robust Waterfall) ---
                 m_withdrawals = 0
@@ -1890,6 +1926,11 @@ class RetirementModel:
                             m_withdrawals.item()
                             if hasattr(m_withdrawals, "item")
                             else m_withdrawals
+                        ),
+                        "liquidation_proceeds": float(
+                            m_liquidation_proceeds.item()
+                            if hasattr(m_liquidation_proceeds, "item")
+                            else m_liquidation_proceeds
                         ),
                     }
                 )

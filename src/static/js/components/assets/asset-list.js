@@ -238,7 +238,7 @@ function renderAssetRow(asset) {
         ? 'border: 2px solid var(--warning-color, #f0ad4e); background: rgba(240, 173, 78, 0.1);'
         : 'border: 1px solid var(--border-color); background: var(--bg-primary);';
     const duplicateBadge = isDuplicate
-        ? '<span style="background: var(--warning-color, #f0ad4e); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; margin-left: 8px;">POSSIBLE DUPLICATE</span>'
+        ? '<span style="background: var(--warning-color); color: var(--text-on-warning); padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; margin-left: 8px;">POSSIBLE DUPLICATE</span>'
         : '';
 
     return `

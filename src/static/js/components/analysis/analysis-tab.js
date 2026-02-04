@@ -647,7 +647,7 @@ function showMarketConditionsExplanationModal() {
                     </p>
                 </div>
 
-                <div style="background: var(--accent-color); padding: 15px; border-radius: 8px; margin-top: 20px; color: white;">
+                <div style="background: var(--accent-color); padding: 15px; border-radius: 8px; margin-top: 20px; color: var(--text-on-accent);">
                     <strong>💡 Best Practice:</strong> Run analysis with multiple approaches:<br>
                     1. Start with "Early Retirement Crash" preset (worst case)<br>
                     2. Try "Realistic Market Cycles" preset (typical case)<br>
@@ -1995,7 +1995,7 @@ function showExpectedValueModal() {
                     </div>
                 </div>
 
-                <div style="background: var(--warning-color); padding: 15px; border-radius: 8px; margin-top: 20px; color: white;">
+                <div style="background: var(--warning-color); padding: 15px; border-radius: 8px; margin-top: 20px; color: var(--text-on-warning);">
                     <strong>⚠️ Important Warning:</strong> Because the expected value includes unlikely best-case scenarios, it's often 2-3x higher than the median. Don't mistake this for a typical outcome - use the median for realistic planning.
                 </div>
             </div>
@@ -2073,7 +2073,7 @@ function showStdDeviationModal() {
                 </div>
 
                 <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">Real-World Example</h3>
-                <div style="background: var(--accent-color); padding: 20px; border-radius: 8px; margin-bottom: 15px; color: white;">
+                <div style="background: var(--accent-color); padding: 20px; border-radius: 8px; margin-bottom: 15px; color: var(--text-on-accent);">
                     <p style="margin: 0; line-height: 1.6;">
                         <strong>Scenario A:</strong> Expected value = $5M, Std Dev = $2M<br>
                         → Most outcomes fall between $3M and $7M (within 1 standard deviation)<br><br>
@@ -2214,7 +2214,7 @@ function showCalculationExplanationModal() {
 
                 <h3 style="font-size: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">Understanding Results</h3>
 
-                <div style="background: linear-gradient(135deg, var(--success-color), #26d07c); padding: 15px; border-radius: 8px; margin-bottom: 10px; color: white;">
+                <div style="background: linear-gradient(135deg, var(--success-color), #26d07c); padding: 15px; border-radius: 8px; margin-bottom: 10px; color: var(--text-on-success);">
                     <strong>Success Rate:</strong> Percentage of simulations where portfolio lasts through life expectancy
                 </div>
 
@@ -2222,7 +2222,7 @@ function showCalculationExplanationModal() {
                     <strong>Median Balance:</strong> The middle outcome - half do better, half worse
                 </div>
 
-                <div style="background: linear-gradient(135deg, var(--warning-color), #f39c12); padding: 15px; border-radius: 8px; margin-bottom: 10px; color: white;">
+                <div style="background: linear-gradient(135deg, var(--warning-color), #f39c12); padding: 15px; border-radius: 8px; margin-bottom: 10px; color: var(--text-on-warning);">
                     <strong>10th Percentile:</strong> The "bad luck" scenario - only 10% do worse
                 </div>
 
@@ -2237,7 +2237,7 @@ function showCalculationExplanationModal() {
                     what could happen based on historical market patterns.
                 </p>
 
-                <div style="background: var(--accent-color); padding: 15px; border-radius: 8px; margin-top: 20px; color: white;">
+                <div style="background: var(--accent-color); padding: 15px; border-radius: 8px; margin-top: 20px; color: var(--text-on-accent);">
                     <strong>💡 Pro Tip:</strong> A 85-90%+ success rate is generally considered a robust retirement plan.
                     100% is often too conservative (leaves money on the table), while below 70% suggests adjustments are needed.
                 </div>

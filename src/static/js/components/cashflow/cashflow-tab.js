@@ -1378,6 +1378,7 @@ function renderCashFlowTable(container, displayData, viewType) {
                         </td>
                         <td style="padding: 4px 10px; text-align: right; font-size: 11px; font-weight: 600; color: ${period.netCashFlow >= 0 ? 'var(--success-color)' : 'var(--danger-color)'};">
                             ${period.netCashFlow >= 0 ? '+' : ''}${formatCurrency(period.netCashFlow, 0)}
+                            ${period.liquidationProceeds > 1000 ? `<span title="Asset Liquidation (e.g. Home Sale): ${formatCurrency(period.liquidationProceeds, 0)}" style="cursor: help; color: var(--accent-color); margin-left: 2px;">+</span>` : ''}
                         </td>
                         <td style="padding: 4px 10px; text-align: right; font-size: 11px; font-weight: 600; color: var(--text-primary);">
                             ${formatCurrency(period.portfolioValue || 0, 0)}
@@ -1580,8 +1581,32 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
         // Apply inflation (compounds each month)
         cumulativeInflation *= (1 + monthlyInflationRate);
 
-        // Check if retired
+        // Check for retired
         const isRetired = retirementDate && currentDate >= retirementDate;
+
+        // Check for Home Sales (liquidation events)
+        let liquidationProceeds = 0;
+        const homeProperties = data.home_properties || [];
+        homeProperties.forEach(prop => {
+            if (prop.planned_sale_date) {
+                const saleDate = new Date(prop.planned_sale_date);
+                if (saleDate.getFullYear() === currentDate.getFullYear() && 
+                    saleDate.getMonth() === currentDate.getMonth()) {
+                    
+                    const currentVal = (prop.current_value || 0) * Math.pow(1 + (prop.appreciation_rate || marketProfile.inflation_mean), i / 12);
+                    const mortgage = prop.mortgage_balance || 0;
+                    const costs = currentVal * 0.06;
+                    const gain = currentVal - (prop.purchase_price || currentVal);
+                    const exclusion = prop.property_type === 'Primary Residence' ? 500000 : 0;
+                    const taxableGain = Math.max(0, gain - exclusion);
+                    const ltcgTax = taxableGain * 0.15;
+                    const netProceeds = currentVal - mortgage - costs - ltcgTax;
+                    const available = netProceeds - (prop.replacement_value || 0);
+                    
+                    liquidationProceeds += Math.max(0, available);
+                }
+            }
+        });
 
         // Calculate work income for this month (from income_streams)
         let workIncome = 0;
@@ -1865,6 +1890,9 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
         // Add surplus or subtract shortfall (remaining after withdrawals)
         currentPortfolio += netCashFlow;
 
+        // Add liquidation proceeds (e.g. home sale) directly to portfolio
+        currentPortfolio += liquidationProceeds;
+
         // Add 401k contributions (employee + employer match) to portfolio
         // These go into tax-deferred retirement accounts
         currentPortfolio += monthly401kContribution + monthlyEmployerMatch;
@@ -1888,6 +1916,7 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
             ficaTax: monthlyFicaTax,
             livingExpenses: expenses,
             netCashFlow,
+            liquidationProceeds,
             portfolioValue: currentPortfolio,
             isRetired
         });
@@ -2002,6 +2031,7 @@ function aggregateToAnnual(monthlyData) {
                 ficaTax: 0,
                 ltcgTax: 0,
                 livingExpenses: 0,
+                liquidationProceeds: 0,
                 netCashFlow: 0,
                 portfolioValue: 0,
                 months: 0
@@ -2019,6 +2049,7 @@ function aggregateToAnnual(monthlyData) {
         yearData.ficaTax += (month.ficaTax || 0);
         yearData.ltcgTax += (month.ltcgTax || 0);
         yearData.livingExpenses += (month.livingExpenses || 0);
+        yearData.liquidationProceeds += (month.liquidationProceeds || 0);
         yearData.netCashFlow += month.netCashFlow;
         // Use end-of-year portfolio value (last month of year)
         yearData.portfolioValue = month.portfolioValue;
