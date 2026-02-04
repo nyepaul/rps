@@ -9,8 +9,114 @@ import { setupContextualHelp } from '../../utils/contextual-help.js';
 import { setFieldError, setFieldWarning, clearFieldError, validateAge } from '../../utils/validation.js';
 import { loadTemplate } from '../../utils/template-loader.js';
 
+export async function renderProfileTab(container) {
+    const profile = store.get('currentProfile');
 
+    if (!profile) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: var(--space-8) var(--space-5);">
+                <div style="font-size: 64px; margin-bottom: var(--space-5);">👤</div>
+                <h2 style="margin-bottom: var(--space-4);">No Profile Selected</h2>
+                <p style="color: var(--text-secondary); margin-bottom: var(--space-6);">
+                    Please create or select a profile to edit.
+                </p>
+                <button id="go-to-welcome-btn" style="padding: var(--space-3) var(--space-6); background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-md);">
+                    Go to Welcome
+                </button>
+            </div>
+        `;
+        setTimeout(() => {
+            const btn = container.querySelector('#go-to-welcome-btn');
+            if (btn) btn.addEventListener('click', () => window.app.showTab('welcome'));
+        }, 0);
+        return;
+    }
 
+    // Load template
+    const template = await loadTemplate('/static/js/components/profile/profile-tab.html');
+    container.innerHTML = template;
+
+    // Dynamically load CSS
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = '/static/css/profile-tab.css';
+    document.head.appendChild(link);
+
+    // Populate form fields with profile data
+    const data = profile.data || {};
+    const person = data.person || {};
+    const spouse = data.spouse || {};
+    const children = data.children || [];
+    const financial = data.financial || {};
+    const address = data.address || {};
+
+    container.querySelector('#profile-name-display').textContent = profile.name;
+    container.querySelector('#name').value = profile.name || '';
+    container.querySelector('#birth_date').value = profile.birth_date || '';
+    container.querySelector('#retirement_date').value = profile.retirement_date || '';
+    container.querySelector('#current_age').value = person.current_age || '';
+    container.querySelector('#retirement_age').value = person.retirement_age || '';
+    container.querySelector('#life_expectancy').value = person.life_expectancy || 95;
+    container.querySelector('#ss_benefit').value = financial.social_security_benefit || 0;
+    
+    // Select SS Claiming Age
+    const ssClaimingAgeSelect = container.querySelector('#ss_claiming_age');
+    if (ssClaimingAgeSelect) {
+        const valueToSelect = financial.ss_claiming_age ? financial.ss_claiming_age.toString() : '67';
+        ssClaimingAgeSelect.value = valueToSelect;
+    }
+
+    container.querySelector('#annual_401k').value = (financial.annual_401k_contribution_rate || 0) * 100;
+    container.querySelector('#employer_match').value = (financial.employer_match_rate || 0) * 100;
+
+    // Address
+    container.querySelector('#address_street').value = address.street || '';
+    container.querySelector('#address_city').value = address.city || '';
+    container.querySelector('#address_zip').value = address.zip || '';
+    const addressStateSelect = container.querySelector('#address_state');
+    if (addressStateSelect) {
+        addressStateSelect.value = address.state || '';
+    }
+
+    // Spouse
+    container.querySelector('#spouse_name').value = spouse.name || '';
+    container.querySelector('#spouse_birth_date').value = spouse.birth_date || '';
+    container.querySelector('#spouse_retirement_date').value = spouse.retirement_date || '';
+    container.querySelector('#spouse_current_age').value = spouse.current_age || '';
+    container.querySelector('#spouse_retirement_age').value = spouse.retirement_age || '';
+    container.querySelector('#spouse_life_expectancy').value = spouse.life_expectancy || 95;
+    container.querySelector('#spouse_ss_benefit').value = spouse.social_security_benefit || 0;
+    const spouseSSClaimingAgeSelect = container.querySelector('#spouse_ss_claiming_age');
+    if (spouseSSClaimingAgeSelect) {
+        const valueToSelect = spouse.ss_claiming_age ? spouse.ss_claiming_age.toString() : '67';
+        spouseSSClaimingAgeSelect.value = valueToSelect;
+    }
+    
+    // Show/hide clear spouse button
+    const clearSpouseBtn = container.querySelector('#clear-spouse-btn');
+    if (clearSpouseBtn) {
+        clearSpouseBtn.style.display = spouse.name ? 'inline-block' : 'none';
+    }
+
+    // Children
+    const childrenListContainer = container.querySelector('#children-list');
+    if (childrenListContainer) {
+        childrenListContainer.innerHTML = ''; // Clear initial "No children" message
+        if (children.length === 0) {
+            childrenListContainer.innerHTML = '<p style="color: var(--text-secondary); font-style: italic; font-size: 12px; margin: 10px 0;">No children added.</p>';
+        } else {
+            children.forEach((child, index) => {
+                addChildToForm(container, child, index);
+            });
+        }
+    }
+
+    // Initialize contextual help
+    setupContextualHelp(container);
+
+    // Set up event handlers
+    setupProfileFormHandlers(container, profile);
+}
 
 function setupProfileFormHandlers(container, profile) {
     const form = container.querySelector('#profile-form');
@@ -548,4 +654,3 @@ function setupSpouseAgeCalculation(container) {
     // Calculate initial values on load
     updateSpouseAges();
 }
-
