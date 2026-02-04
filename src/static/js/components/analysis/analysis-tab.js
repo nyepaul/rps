@@ -218,7 +218,7 @@ export function renderAnalysisTab(container) {
             }
             .market-mode-btn.active {
                 background: var(--accent-color) !important;
-                color: white !important;
+                color: var(--text-on-accent) !important;
                 border-color: var(--accent-color) !important;
             }
             .market-mode-btn:hover {
@@ -1905,7 +1905,7 @@ function showPercentileModal(percentile) {
                         </div>`}
                 </div>
 
-                <div style="background: ${color}; padding: 15px; border-radius: 8px; margin-top: 20px; color: white;">
+                <div style="background: ${color}; padding: 15px; border-radius: 8px; margin-top: 20px; color: ${is10th ? 'var(--text-on-warning)' : 'var(--text-on-success)'};">
                     <strong>💡 ${is10th ? 'Risk Management' : 'Opportunity Planning'}:</strong>
                     ${is10th
                         ? 'Focus on this metric for risk assessment. If you can survive the 10th percentile scenario comfortably, your plan is robust against market downturns.'
@@ -2032,7 +2032,7 @@ function showStdDeviationModal() {
             <h2 style="font-size: 28px; margin-bottom: 20px; color: #9b59b6;">📊 Standard Deviation</h2>
 
             <div style="line-height: 1.8; color: var(--text-primary);">
-                <div style="background: linear-gradient(135deg, #9b59b6, #8e44ad); padding: 20px; border-radius: 12px; margin-bottom: 20px; color: white;">
+                <div style="background: linear-gradient(135deg, #9b59b6, #8e44ad); padding: 20px; border-radius: 12px; margin-bottom: 20px; color: var(--text-on-accent);">
                     <h3 style="font-size: 20px; margin: 0 0 12px 0; font-weight: bold;">🎯 What It Means</h3>
                     <p style="margin: 0; font-size: 15px; line-height: 1.6;">
                         A measure of uncertainty and volatility. It shows how spread out the simulation outcomes are. Higher standard deviation = more uncertainty and wider range of possible outcomes.
@@ -2095,7 +2095,7 @@ function showStdDeviationModal() {
                     </p>
                 </div>
 
-                <div style="background: #9b59b6; padding: 15px; border-radius: 8px; margin-top: 20px; color: white;">
+                <div style="background: #9b59b6; padding: 15px; border-radius: 8px; margin-top: 20px; color: var(--text-on-accent);">
                     <strong>💡 Pro Tip:</strong> Don't obsess over this number - it's more of an academic metric. Focus on success rate and median balance for practical planning. Standard deviation is useful mainly for comparing allocation strategies.
                 </div>
             </div>
@@ -2226,7 +2226,7 @@ function showCalculationExplanationModal() {
                     <strong>10th Percentile:</strong> The "bad luck" scenario - only 10% do worse
                 </div>
 
-                <div style="background: linear-gradient(135deg, #9b59b6, #8e44ad); padding: 15px; border-radius: 8px; margin-bottom: 15px; color: white;">
+                <div style="background: linear-gradient(135deg, #9b59b6, #8e44ad); padding: 15px; border-radius: 8px; margin-bottom: 15px; color: var(--text-on-accent);">
                     <strong>90th Percentile:</strong> The "good luck" scenario - only 10% do better
                 </div>
 

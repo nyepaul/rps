@@ -1335,7 +1335,7 @@ async function showDeleteConfirmation(container, backupType, filename) {
                     <button id="cancel-delete" style="padding: 10px 20px; background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 6px; cursor: pointer; font-weight: 600;">
                         Cancel
                     </button>
-                    <button id="confirm-delete" style="padding: 10px 20px; background: var(--danger-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    <button id="confirm-delete" style="padding: 10px 20px; background: var(--danger-color); color: var(--text-on-danger); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                         Delete Backup
                     </button>
                 </div>

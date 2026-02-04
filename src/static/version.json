@@ -1,5 +1,5 @@
 {
-    "version": "3.9.184",
+    "version": "3.9.185",
     "release_date": "2026-02-04",
-    "release_notes": "Fix admin tab visibility for admin users"
+    "release_notes": "Final comprehensive fix for high-contrast readability including risk management box"
 }

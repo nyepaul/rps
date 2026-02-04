@@ -423,7 +423,7 @@ function makeCollegeExpenseRowEditable(rowElement, expense, index, parentContain
                 </div>
             </div>
             <div style="display: flex; gap: 6px; justify-content: space-between; padding-top: 6px; border-top: 1px solid var(--border-color);">
-                <button class="delete-college-expense" style="padding: 5px 12px; background: var(--danger-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
+                <button class="delete-college-expense" style="padding: 5px 12px; background: var(--danger-color); color: var(--text-on-danger); border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
                     Delete
                 </button>
                 <div style="display: flex; gap: 6px;">
@@ -575,7 +575,7 @@ function showCollegeExpenseModal(parentContainer, index) {
                     <strong>Note:</strong> College expenses are spread annually from ${expense.start_year} to ${expense.end_year}
                 </div>
                 <div style="grid-column: 1 / -1; display: flex; justify-content: space-between; gap: var(--space-2); padding-top: var(--space-2); border-top: 1px solid var(--border-color);">
-                    <button type="button" id="delete-college-btn" style="padding: var(--space-2) var(--space-3); background: var(--danger-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: var(--font-xs);">
+                    <button type="button" id="delete-college-btn" style="padding: var(--space-2) var(--space-3); background: var(--danger-color); color: var(--text-on-danger); border: none; border-radius: 4px; cursor: pointer; font-size: var(--font-xs);">
                         Delete
                     </button>
                     <div style="display: flex; gap: var(--space-2);">
@@ -1274,7 +1274,7 @@ function renderIncomeItem(item, category, index) {
                 <button class="edit-income-btn" data-category="${category}" data-index="${index}" style="padding: 4px 8px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px;">
                     Edit
                 </button>
-                <button class="delete-income-btn" data-category="${category}" data-index="${index}" style="padding: 4px 8px; background: var(--danger-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                <button class="delete-income-btn" data-category="${category}" data-index="${index}" style="padding: 4px 8px; background: var(--danger-color); color: var(--text-on-danger); border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">
                     Del
                 </button>
             </div>
@@ -2545,7 +2545,7 @@ function showClearExpensesModal(profile, container, period) {
 
             <div style="display: flex; gap: 10px; justify-content: flex-end;">
                 <button id="cancel-clear-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">Cancel</button>
-                <button id="confirm-clear-btn" style="padding: 10px 20px; background: var(--danger-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Clear ${label}</button>
+                <button id="confirm-clear-btn" style="padding: 10px 20px; background: var(--danger-color); color: var(--text-on-danger); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Clear ${label}</button>
             </div>
         </div>
     `;

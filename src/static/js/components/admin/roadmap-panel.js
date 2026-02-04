@@ -380,7 +380,7 @@ function showItemModal(container, item = null) {
                     </div>
                 </div>
                 <div style="display: flex; justify-content: ${isEdit ? 'space-between' : 'flex-end'}; margin-top: 24px; gap: 12px;">
-                    ${isEdit ? `<button type="button" id="delete-item-btn" style="padding: 10px 20px; background: var(--danger-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Delete</button>` : ''}
+                    ${isEdit ? `<button type="button" id="delete-item-btn" style="padding: 10px 20px; background: var(--danger-color); color: var(--text-on-danger); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Delete</button>` : ''}
                     <div style="display: flex; gap: 12px;">
                         <button type="button" id="cancel-item-btn" style="padding: 10px 20px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">Cancel</button>
                         <button type="submit" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">${isEdit ? 'Save Changes' : 'Add Item'}</button>

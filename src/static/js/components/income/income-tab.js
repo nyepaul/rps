@@ -725,7 +725,7 @@ function showDeleteAllIncomeModal(container, profile, incomeStreams) {
                     <button id="cancel-delete" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
                         Cancel
                     </button>
-                    <button id="confirm-delete" style="padding: 10px 20px; background: var(--danger-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    <button id="confirm-delete" style="padding: 10px 20px; background: var(--danger-color); color: var(--text-on-danger); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                         Delete All
                     </button>
                 </div>

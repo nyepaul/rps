@@ -643,7 +643,7 @@ function addChildToForm(container) {
         <div class="child-item" data-index="${newIndex}" style="background: var(--bg-primary); padding: 12px; border-radius: 8px; margin-bottom: 10px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                 <h3 style="font-size: 16px; margin: 0;">Child ${newIndex + 1}</h3>
-                <button type="button" class="remove-child-btn" data-index="${newIndex}" style="padding: 4px 12px; background: var(--danger-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
+                <button type="button" class="remove-child-btn" data-index="${newIndex}" style="padding: 4px 12px; background: var(--danger-color); color: var(--text-on-danger); border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
                     Remove
                 </button>
             </div>
