@@ -1092,13 +1092,13 @@ def get_user_report(user_id: int):
 
         # Count profiles
         result = connection.db.execute_one(
-            "SELECT COUNT(*) as count FROM profile WHERE user_id = ?", (user_id,)
+            "SELECT COUNT(*) as count FROM profiles WHERE user_id = ?", (user_id,)
         )
         report["profile_count"] = result["count"] if result else 0
 
         # Get profile list
         profiles = connection.db.execute(
-            "SELECT id, name, created_at FROM profile WHERE user_id = ? ORDER BY created_at DESC",
+            "SELECT id, name, created_at FROM profiles WHERE user_id = ? ORDER BY created_at DESC",
             (user_id,),
         )
         report["profiles"] = [dict(row) for row in profiles]
@@ -1243,7 +1243,7 @@ def delete_user(user_id: int):
 
             # Delete user's profiles (will cascade to scenarios and action
             # items via ON DELETE CASCADE)
-            cursor.execute("DELETE FROM profile WHERE user_id = ?", (user_id,))
+            cursor.execute("DELETE FROM profiles WHERE user_id = ?", (user_id,))
             profiles_deleted = cursor.rowcount
 
             # Delete user's conversations
@@ -1385,7 +1385,7 @@ def get_system_info():
 
         # Count profiles
         result = connection.db.execute_one(
-            "SELECT COUNT(*) as count FROM profile")
+            "SELECT COUNT(*) as count FROM profiles")
         stats["total_profiles"] = result["count"] if result else 0
 
         # Count scenarios
