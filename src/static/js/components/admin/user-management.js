@@ -177,13 +177,13 @@ function showUserManagementModal(user, currentUser, parentContainer) {
                 <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px;">
                     <h4 style="margin: 0 0 10px 0; font-size: 14px; color: var(--text-secondary);">Data & Management</h4>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <button id="view-profiles-btn" style="padding: 8px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                        <button id="view-profiles-btn" style="padding: 8px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer;">
                             📁 View Profiles
                         </button>
                         <button id="view-report-btn" style="padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
                             📊 Activity Report
                         </button>
-                        <button id="reset-password-btn" style="padding: 8px; background: #f59e0b; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                        <button id="reset-password-btn" style="padding: 8px; background: var(--warning-color); color: var(--text-on-warning); border: none; border-radius: 6px; cursor: pointer;">
                             🔑 Reset Password
                         </button>
                         <button id="manage-backups-btn" style="padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
@@ -542,7 +542,7 @@ async function showManageUserGroupsModal(userId, username, parentContainer) {
                 </div>
 
                 <div style="display: flex; justify-content: flex-end; margin-top: 25px; padding-top: 15px; border-top: 1px solid var(--border-color);">
-                    <button class="close-modal-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Done</button>
+                    <button class="close-modal-btn" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Done</button>
                 </div>
             </div>
         `;
@@ -604,7 +604,7 @@ async function showManageUserBackupsModal(userId, username) {
             </div>
 
             <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
-                <button id="admin-create-backup-btn" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
+                <button id="admin-create-backup-btn" style="padding: 8px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
                     + New Admin Backup
                 </button>
             </div>
@@ -643,7 +643,7 @@ async function showManageUserBackupsModal(userId, username) {
                                 <div style="font-size: 10px; color: var(--text-light);">${new Date(b.created_at).toLocaleString()}</div>
                             </div>
                             <div style="display: flex; gap: 5px;">
-                                <button class="admin-restore-btn" data-id="${b.id}" style="padding: 4px 8px; background: var(--warning-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Restore</button>
+                                <button class="admin-restore-btn" data-id="${b.id}" style="padding: 4px 8px; background: var(--warning-color); color: var(--text-on-warning); border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Restore</button>
                                 <button class="admin-delete-btn" data-id="${b.id}" style="padding: 4px 8px; background: transparent; border: 1px solid var(--danger-color); color: var(--danger-color); border-radius: 4px; cursor: pointer; font-size: 11px;">🗑️</button>
                             </div>
                         </div>

@@ -24,7 +24,7 @@ export function renderIncomeTab(container) {
                 <p style="color: var(--text-secondary); margin-bottom: var(--space-5);">
                     Please create or select a profile to manage income streams.
                 </p>
-                <button id="go-to-welcome-btn" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <button id="go-to-welcome-btn" style="padding: 12px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
                     Go to Welcome
                 </button>
             </div>
@@ -55,7 +55,7 @@ export function renderIncomeTab(container) {
                     </p>
                 </div>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <button id="add-income-stream-btn" style="padding: 6px 14px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <button id="add-income-stream-btn" style="padding: 6px 14px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                         <span>＋</span> Add Income
                     </button>
                     
@@ -352,9 +352,9 @@ function renderIncomeStreamRow(stream, index) {
     // Determine source badge
     const source = stream.source || 'specified';
     const sourceBadges = {
-        'specified': { color: '#10b981', text: '✓ Manual', borderColor: '#10b981' },
-        'detected': { color: '#3b82f6', text: '🔍 Detected', borderColor: '#3b82f6' },
-        'merged': { color: '#8b5cf6', text: '⚡ Merged', borderColor: '#8b5cf6' }
+        'specified': { color: 'var(--badge-specified-bg)', text: '✓ Manual', borderColor: 'var(--badge-specified-bg)' },
+        'detected': { color: 'var(--badge-detected-bg)', text: '🔍 Detected', borderColor: 'var(--badge-detected-bg)' },
+        'merged': { color: 'var(--badge-merged-bg)', text: '⚡ Merged', borderColor: 'var(--badge-merged-bg)' }
     };
     const badge = sourceBadges[source] || sourceBadges['specified'];
 
@@ -375,7 +375,7 @@ function renderIncomeStreamRow(stream, index) {
         <div class="income-row" data-index="${index}" style="padding: 8px 12px; background: var(--bg-primary); border-radius: 4px; border: 1px solid var(--border-color); border-left: 3px solid ${badge.borderColor}; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; flex-wrap: wrap; gap: var(--space-2);" onmouseover="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--accent-color)'" onmouseout="this.style.background='var(--bg-primary)'; this.style.borderColor='var(--border-color)'">
             <div style="display: flex; align-items: center; gap: var(--space-2); flex: 1; font-size: 13px; flex-wrap: wrap;">
                 <span style="font-weight: 700;">${stream.name}</span>
-                <span style="display: inline-block; padding: 2px 8px; background: ${badge.color}; color: white; border-radius: 12px; font-size: 10px; font-weight: 600;" ${tooltip ? `title="${tooltip}"` : ''}>${badge.text}</span>
+                <span style="display: inline-block; padding: 2px 8px; background: ${badge.color}; color: var(--text-on-badge); border-radius: 12px; font-size: 10px; font-weight: 600;" ${tooltip ? `title="${tooltip}"` : ''}>${badge.text}</span>
                 <span style="color: var(--text-secondary);">${formatCurrency(stream.amount, 0)}/mo (${formatCurrency(annual, 0)}/yr)</span>
                 <span style="font-size: 11px; color: var(--text-secondary); opacity: 0.8;">${dateInfo}</span>
             </div>
@@ -451,7 +451,7 @@ function makeIncomeRowEditable(rowElement, stream, index, incomeStreams, parentC
                 <button class="cancel-inline-edit" style="padding: 5px 12px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
                     Cancel
                 </button>
-                <button class="save-inline-edit" style="padding: 5px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                <button class="save-inline-edit" style="padding: 5px 12px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
                     💾 Save
                 </button>
             </div>
@@ -585,7 +585,7 @@ function showIncomeStreamModal(parentContainer, profile, editIndex, incomeStream
                     <button type="button" id="cancel-btn" style="padding: var(--space-2) var(--space-4); background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: var(--font-sm);">
                         Cancel
                     </button>
-                    <button type="submit" style="padding: var(--space-2) var(--space-4); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-sm); font-weight: 600;">
+                    <button type="submit" style="padding: var(--space-2) var(--space-4); background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-sm); font-weight: 600;">
                         ${isEdit ? 'Save Changes' : 'Add Income Stream'}
                     </button>
                 </div>

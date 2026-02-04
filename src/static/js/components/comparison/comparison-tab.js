@@ -27,7 +27,7 @@ export async function renderComparisonTab(container) {
                 <p style="color: var(--text-secondary); margin-bottom: var(--space-6);">
                     Please create or select a profile to compare scenarios.
                 </p>
-                <button id="go-to-welcome-btn" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <button id="go-to-welcome-btn" style="padding: 12px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
                     Go to Welcome
                 </button>
             </div>
@@ -66,7 +66,7 @@ function renderEmptyState(container, profile) {
             <p style="color: var(--text-secondary); margin-bottom: var(--space-6);">
                 Run an analysis and save it as a scenario to compare different strategies.
             </p>
-            <button onclick="window.app.showTab('analysis')" style="padding: var(--space-3) var(--space-6); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-md);">
+            <button onclick="window.app.showTab('analysis')" style="padding: var(--space-3) var(--space-6); background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-md);">
                 Run Analysis
             </button>
         </div>
@@ -83,7 +83,7 @@ function renderComparisonView(container, profile, scenarios) {
                         ${scenarios.length} saved scenario${scenarios.length !== 1 ? 's' : ''} for <strong>${profile.name}</strong>
                     </p>
                 </div>
-                <button onclick="window.app.showTab('analysis')" style="padding: 6px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; flex-shrink: 0;">
+                <button onclick="window.app.showTab('analysis')" style="padding: 6px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; flex-shrink: 0;">
                     + New Analysis
                 </button>
             </div>

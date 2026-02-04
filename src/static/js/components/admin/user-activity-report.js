@@ -127,7 +127,7 @@ export async function renderUserActivityReport(container) {
                 </div>
 
                 <div style="display: flex; gap: 10px;">
-                    <button id="apply-activity-filters" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    <button id="apply-activity-filters" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                         Apply Filters
                     </button>
                     <button id="clear-activity-filters" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
@@ -345,7 +345,7 @@ function addSelectedUser(userId, container) {
 
     const selectedContainer = container.querySelector('#selected-users');
     const tag = document.createElement('div');
-    tag.style.cssText = 'display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; background: var(--accent-color); color: white; border-radius: 6px; font-size: 13px;';
+    tag.style.cssText = 'display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; background: var(--accent-color); color: var(--text-on-accent); border-radius: 6px; font-size: 13px;';
     tag.innerHTML = `
         <span>${escapeHtml(user.username)}</span>
         <button
@@ -507,7 +507,7 @@ function renderActivityTable(users, container) {
                                     <button
                                         class="view-user-details"
                                         data-user='${JSON.stringify(user).replace(/'/g, "&apos;")}'
-                                        style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;"
+                                        style="padding: 6px 12px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 12px;"
                                     >
                                         View Details
                                     </button>

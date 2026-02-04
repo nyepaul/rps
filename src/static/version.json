@@ -1,5 +1,5 @@
 {
-    "version": "3.9.179",
+    "version": "3.9.180",
     "release_date": "2026-02-04",
-    "release_notes": "Disable progressive disclosure to restore all tabs"
+    "release_notes": "Improve readability in high-contrast mode"
 }

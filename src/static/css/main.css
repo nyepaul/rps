@@ -21,12 +21,20 @@
             --accent-hover: #1e4d38;
             --accent-secondary: #d4a373;
             --accent-secondary-hover: #c4956a;
+            --text-on-accent: #ffffff;
 
             /* Semantic Colors */
             --success-color: #2d6a4f;
             --warning-color: #b45309;
             --danger-color: #b91c1c;
             --info-color: #1e40af;
+            --text-on-success: #ffffff;
+            --text-on-warning: #ffffff;
+            --text-on-danger: #ffffff;
+            --badge-specified-bg: #10b981;
+            --badge-detected-bg: #3b82f6;
+            --badge-merged-bg: #8b5cf6;
+            --text-on-badge: #ffffff;
 
             /* Semantic Text & Background Colors */
             --success-text: #2d6a4f;
@@ -103,12 +111,20 @@
             --accent-hover: #52b788;
             --accent-secondary: #e9c46a;
             --accent-secondary-hover: #f4d58d;
+            --text-on-accent: #000000;
 
             /* Semantic Colors */
             --success-color: #52b788;
             --warning-color: #fbbf24;
             --danger-color: #f87171;
             --info-color: #60a5fa;
+            --text-on-success: #000000;
+            --text-on-warning: #000000;
+            --text-on-danger: #000000;
+            --badge-specified-bg: #10b981;
+            --badge-detected-bg: #3b82f6;
+            --badge-merged-bg: #8b5cf6;
+            --text-on-badge: #000000;
 
             /* Semantic Text & Background Colors */
             --success-text: #52b788;
@@ -162,12 +178,20 @@
             --accent-hover: #86efac;
             --accent-secondary: #fbbf24;
             --accent-secondary-hover: #fcd34d;
+            --text-on-accent: #000000;
 
             /* Semantic Colors - Bright for visibility */
             --success-color: #4ade80;
             --warning-color: #fbbf24;
             --danger-color: #f87171;
             --info-color: #60a5fa;
+            --text-on-success: #000000;
+            --text-on-warning: #000000;
+            --text-on-danger: #000000;
+            --badge-specified-bg: #4ade80;
+            --badge-detected-bg: #60a5fa;
+            --badge-merged-bg: #fbbf24;
+            --text-on-badge: #000000;
 
             /* Semantic Text & Background Colors */
             --success-text: #4ade80;
@@ -261,7 +285,7 @@
         header .setup-btn {
             background: linear-gradient(135deg, var(--success-color), #51cf66);
             border: 1px solid var(--success-color);
-            color: white;
+            color: var(--text-on-success);
             padding: 6px 12px;
             border-radius: 4px;
             cursor: pointer;
@@ -321,7 +345,7 @@
         header .feedback-btn {
             background: var(--accent-color);
             border: 1px solid var(--accent-color);
-            color: white;
+            color: var(--text-on-accent);
             padding: 6px 12px;
             border-radius: 4px;
             cursor: pointer;
@@ -365,7 +389,7 @@
         header .logout-btn {
             background: var(--danger-color);
             border: 1px solid var(--danger-color);
-            color: white;
+            color: var(--text-on-danger);
             padding: 6px 12px;
             border-radius: 4px;
             cursor: pointer;
@@ -570,7 +594,7 @@
             background: linear-gradient(135deg, var(--card-gradient-1) 0%, var(--card-gradient-2) 100%);
             padding: 15px;
             border-radius: 6px;
-            color: white;
+            color: var(--text-on-accent);
             box-shadow: 0 2px 4px var(--shadow);
             transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
         }
@@ -582,10 +606,12 @@
         
         .metric-card.success {
             background: linear-gradient(135deg, var(--success-color) 0%, #51cf66 100%);
+            color: var(--text-on-success);
         }
         
         .metric-card.warning {
             background: linear-gradient(135deg, var(--warning-color) 0%, #fab005 100%);
+            color: var(--text-on-warning);
         }
         
         .metric-label {
@@ -1314,7 +1340,62 @@
             background: var(--border-color);
             color: var(--text-secondary);
             border-radius: 10px;
-            font-size: 10px; font-weight: 600; margin-left: 4px; } .recon-tab.active .tab-badge { background: var(--accent-color); color: white; } .recon-item { transition: all 0.2s; } .recon-item:hover { transform: translateX(2px); box-shadow: 0 2px 8px var(--shadow); } .action-select { cursor: pointer; transition: border-color 0.2s; } .action-select:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); } .action-select:hover { border-color: var(--accent-color); } /* Source Badge Styles */ .source-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; white-space: nowrap; } .source-badge.specified { background: #10b981; color: white; } .source-badge.detected { background: #3b82f6; color: white; } .source-badge.merged { background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%); color: white; } /* Progress Bar Animation */ @keyframes progressPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } } #progress-bar { animation: progressPulse 1.5s ease-in-out infinite; } /* Reconciliation Tab Hover Effects */ .recon-tab { transition: all 0.2s; } .recon-tab:hover:not(.active) { background: var(--bg-tertiary); color: var(--text-primary); } /* Action Menu Item Hover */ .action-menu-item:hover { background: var(--bg-tertiary) !important; } /* Drop Zone Active State */ #drop-zone.drag-over { border-color: var(--accent-color); background: var(--bg-secondary); } /* Spinner Animation */ .spinner { border: 4px solid var(--border-color); border-top-color: var(--accent-color); border-radius: 50%; animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } } /* Modal Overlay */ .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 2000; animation: fadeIn 0.2s; } @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } } .modal-content { background: var(--bg-secondary); border-radius: 12px; padding: 24px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); animation: slideUp 0.3s; } @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } } /* Tooltip Styles */ [title] { position: relative; } /* Responsive adjustments for transaction import */ @media (max-width: 768px) { .modal-content { max-width: 100% !important; max-height: 95vh; overflow-y: auto; } .recon-tab { font-size: 11px !important; padding: 8px 12px !important; } .tab-badge { font-size: 9px !important; } } /* Contextual Help Tooltip */ .context-tooltip { position: absolute; background: var(--bg-tertiary); color: var(--text-primary); padding: 8px 12px; border-radius: 6px; font-size: 12px; max-width: 250px; z-index: 10000; pointer-events: none; box-shadow: 0 4px 12px var(--shadow-color); line-height: 1.4; opacity: 0; transition: opacity 0.2s; text-align: left; border: 1px solid var(--border-color); } .help-icon { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: var(--bg-tertiary); color: var(--text-secondary); font-size: 11px; font-weight: bold; cursor: help; border: 1px solid var(--border-color); margin-left: 6px; transition: all 0.2s; } .help-icon:hover { background: var(--accent-color); color: white; border-color: var(--accent-color); }
+            font-size: 10px;
+            font-weight: 600;
+            margin-left: 4px;
+        }
+
+        .recon-tab.active .tab-badge {
+            background: var(--accent-color);
+            color: var(--text-on-accent);
+        }
+
+        .recon-item {
+            transition: all 0.2s;
+        }
+
+        .recon-item:hover {
+            transform: translateX(2px);
+            box-shadow: 0 2px 8px var(--shadow);
+        }
+
+        .action-select {
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .action-select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .action-select:hover {
+            border-color: var(--accent-color);
+        }
+
+        /* Source Badge Styles */
+        .source-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+            color: var(--text-on-badge);
+        }
+
+        .source-badge.specified {
+            background: var(--badge-specified-bg);
+        }
+
+        .source-badge.detected {
+            background: var(--badge-detected-bg);
+        }
+
+        .source-badge.merged {
+            background: var(--badge-merged-bg);
+        } /* Progress Bar Animation */ @keyframes progressPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } } #progress-bar { animation: progressPulse 1.5s ease-in-out infinite; } /* Reconciliation Tab Hover Effects */ .recon-tab { transition: all 0.2s; } .recon-tab:hover:not(.active) { background: var(--bg-tertiary); color: var(--text-primary); } /* Action Menu Item Hover */ .action-menu-item:hover { background: var(--bg-tertiary) !important; } /* Drop Zone Active State */ #drop-zone.drag-over { border-color: var(--accent-color); background: var(--bg-secondary); } /* Spinner Animation */ .spinner { border: 4px solid var(--border-color); border-top-color: var(--accent-color); border-radius: 50%; animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } } /* Modal Overlay */ .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 2000; animation: fadeIn 0.2s; } @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } } .modal-content { background: var(--bg-secondary); border-radius: 12px; padding: 24px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); animation: slideUp 0.3s; } @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } } /* Tooltip Styles */ [title] { position: relative; } /* Responsive adjustments for transaction import */ @media (max-width: 768px) { .modal-content { max-width: 100% !important; max-height: 95vh; overflow-y: auto; } .recon-tab { font-size: 11px !important; padding: 8px 12px !important; } .tab-badge { font-size: 9px !important; } } /* Contextual Help Tooltip */ .context-tooltip { position: absolute; background: var(--bg-tertiary); color: var(--text-primary); padding: 8px 12px; border-radius: 6px; font-size: 12px; max-width: 250px; z-index: 10000; pointer-events: none; box-shadow: 0 4px 12px var(--shadow-color); line-height: 1.4; opacity: 0; transition: opacity 0.2s; text-align: left; border: 1px solid var(--border-color); } .help-icon { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: var(--bg-tertiary); color: var(--text-secondary); font-size: 11px; font-weight: bold; cursor: help; border: 1px solid var(--border-color); margin-left: 6px; transition: all 0.2s; } .help-icon:hover { background: var(--accent-color); color: white; border-color: var(--accent-color); }
 
 /* Mobile Menu Styles */
 .mobile-menu-btn {

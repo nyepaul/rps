@@ -35,7 +35,7 @@ export function makeRowEditable(rowElement, asset, category, index, onSave, onCa
                 <button class="cancel-inline-edit" style="padding: 5px 12px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
                     Cancel
                 </button>
-                <button class="save-inline-edit" style="padding: 5px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                <button class="save-inline-edit" style="padding: 5px 12px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
                     💾 Save
                 </button>
             </div>

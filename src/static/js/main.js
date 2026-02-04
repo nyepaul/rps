@@ -755,7 +755,7 @@ async function openSettings(defaultTab = 'general', focusElementId = null) {
                                 <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">Confirm New Password</label>
                                 <input type="password" id="confirm-password-input" placeholder="Re-enter new password" style="width: 100%; padding: 10px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
                             </div>
-                            <button id="update-password-btn" style="background: var(--accent-color); color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; margin-top: 5px;">
+                            <button id="update-password-btn" style="background: var(--accent-color); color: var(--text-on-accent); border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; margin-top: 5px;">
                                 Update Password
                             </button>
                         </div>
@@ -774,7 +774,7 @@ async function openSettings(defaultTab = 'general', focusElementId = null) {
                                 <div style="color: #dc3545; font-size: 12px; font-weight: 600;">⚠️ SAVE THIS CODE NOW. IT WILL NOT BE SHOWN AGAIN.</div>
                             </div>
                         </div>
-                        <button id="generate-recovery-btn" style="background: var(--accent-color); color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                        <button id="generate-recovery-btn" style="background: var(--accent-color); color: var(--text-on-accent); border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px;">
                             <span>🔐</span> Generate New Recovery Code
                         </button>
                     </div>
@@ -790,7 +790,7 @@ async function openSettings(defaultTab = 'general', focusElementId = null) {
                 <button id="close-settings-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
                     Close
                 </button>
-                <button id="save-settings-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                <button id="save-settings-btn" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer;">
                     Save Settings
                 </button>
             </div>

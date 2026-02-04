@@ -33,10 +33,10 @@ export async function renderUsersByLocationReport(container) {
                     <button id="view-map-report-btn" style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-weight: 600;">
                         🗺️ View Map
                     </button>
-                    <button id="refresh-report-btn" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    <button id="refresh-report-btn" style="padding: 8px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                         🔄 Refresh
                     </button>
-                    <button id="export-report-btn" style="padding: 8px 16px; background: var(--success-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    <button id="export-report-btn" style="padding: 8px 16px; background: var(--success-color); color: var(--text-on-success); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                         📥 Export CSV
                     </button>
                 </div>
@@ -287,7 +287,7 @@ function renderUserRow(user) {
                 ${user.security_flags.length > 0 ? securityBadges : '<span style="color: var(--success-color);">✓ No Flags</span>'}
             </td>
             <td style="padding: 12px; text-align: center;">
-                <button class="view-details-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                <button class="view-details-btn" style="padding: 6px 12px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
                     View Details
                 </button>
             </td>
@@ -400,7 +400,7 @@ function showUserDetails(user) {
             </div>
 
             <div style="margin-top: 20px; text-align: center;">
-                <button class="close-modal-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                <button class="close-modal-btn" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                     Close
                 </button>
             </div>
@@ -617,7 +617,7 @@ async function showIPLogs(userId, ipAddress, city, country) {
             <div id="ip-logs-container" style="flex: 1; overflow-y: auto; min-height: 300px;"></div>
 
             <div style="margin-top: 20px; text-align: center;">
-                <button class="close-logs-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                <button class="close-logs-btn" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                     Close
                 </button>
             </div>

@@ -709,7 +709,7 @@ function showActivityDetails(eventIndex) {
                         Next →
                     </button>
                 </div>
-                <button class="close-modal-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                <button class="close-modal-btn" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                     Close
                 </button>
             </div>

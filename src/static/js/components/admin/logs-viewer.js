@@ -130,7 +130,7 @@ export async function renderLogsViewer(container) {
                 </div>
             </div>
             <div style="margin-top: 15px; display: flex; gap: 10px;">
-                <button id="apply-filters-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                <button id="apply-filters-btn" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                     Apply Filters
                 </button>
                 <button id="clear-filters-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
@@ -541,7 +541,7 @@ function renderLogRow(log, index) {
                 </span>
             </td>
             <td style="padding: 12px; text-align: center;">
-                <button class="view-details-btn" data-log-id="${log.id}" style="padding: 4px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                <button class="view-details-btn" data-log-id="${log.id}" style="padding: 4px 12px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">
                     View
                 </button>
             </td>
@@ -676,7 +676,7 @@ async function showAuditLogDetailsWithNavigation(logIndex) {
                             Next →
                         </button>
                     </div>
-                    <button class="close-modal-btn" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
+                    <button class="close-modal-btn" style="padding: 8px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
                         Close
                     </button>
                 </div>
@@ -1215,7 +1215,7 @@ export async function showLogDetails(logId) {
                 </div>
 
                 <div style="margin-top: 20px; text-align: right;">
-                    <button class="close-modal-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    <button class="close-modal-btn" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                         Close
                     </button>
                 </div>
@@ -1464,7 +1464,7 @@ export async function showIPListView(days = null) {
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 15px;">
                     <h2 style="margin: 0; font-size: 20px;">🌐 Unique IP Addresses (${uniqueIPs.length} Total)</h2>
                     <div style="display: flex; gap: 10px; align-items: center;">
-                        <button id="view-map-btn" style="padding: 10px 20px; background: var(--success-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: opacity 0.2s;">
+                        <button id="view-map-btn" style="padding: 10px 20px; background: var(--success-color); color: var(--text-on-success); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: opacity 0.2s;">
                             🗺️ View Map
                         </button>
                         <button class="close-modal-btn" style="background: transparent; border: none; font-size: 28px; cursor: pointer; color: var(--text-secondary); padding: 0; line-height: 1;">×</button>
@@ -1488,7 +1488,7 @@ export async function showIPListView(days = null) {
                 </div>
 
                 <div style="margin-top: 15px; text-align: center;">
-                    <button class="close-modal-btn" style="padding: 10px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    <button class="close-modal-btn" style="padding: 10px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                         Close
                     </button>
                 </div>
@@ -1539,7 +1539,7 @@ export async function showIPListView(days = null) {
                                 </td>
                                 <td style="padding: 12px 20px; text-align: center;">
                                     <button class="view-ip-details-btn" data-ip="${ipData.ip}" data-city="${ipData.city}" data-region="${ipData.region}" data-country="${ipData.country}"
-                                            style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; transition: opacity 0.2s;">
+                                            style="padding: 8px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; transition: opacity 0.2s;">
                                         📋 View Details
                                     </button>
                                 </td>
@@ -1719,7 +1719,7 @@ export async function showIPLocationsMap(days = null) {
                     <div style="font-size: 12px; color: var(--text-secondary);">
                         💡 Click markers to see IP details • Larger markers = more access attempts
                     </div>
-                    <button class="close-modal-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    <button class="close-modal-btn" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                         Close
                     </button>
                 </div>
@@ -1965,7 +1965,7 @@ async function showLogDetailsWithNavigation(logIndex) {
                             Next →
                         </button>
                     </div>
-                    <button class="close-modal-btn" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
+                    <button class="close-modal-btn" style="padding: 8px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
                         Close
                     </button>
                 </div>
@@ -2440,7 +2440,7 @@ async function showLogDetailsWithNavigation(logIndex) {
                             Next →
                         </button>
                     </div>
-                    <button class="close-modal-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    <button class="close-modal-btn" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                         Close
                     </button>
                 </div>
@@ -2625,10 +2625,10 @@ async function showIPAccessDetails(ipAddress, city, region, country) {
                                         ${log.username || '<i style="color: var(--text-secondary);">anonymous</i>'}
                                     </td>
                                     <td style="padding: 12px; text-align: center;">
-                                        ${log.status_code ? `<span style="font-size: 11px; padding: 4px 8px; background: ${log.status_code >= 400 ? 'var(--danger-color)' : 'var(--success-color)'}; color: white; border-radius: 4px; font-weight: 600;">${log.status_code}</span>` : '—'}
+                                        ${log.status_code ? `<span style="font-size: 11px; padding: 4px 8px; background: ${log.status_code >= 400 ? 'var(--danger-color)' : 'var(--success-color)'}; color: var(--text-on-success); border-radius: 4px; font-weight: 600;">${log.status_code}</span>` : '—'}
                                     </td>
                                     <td style="padding: 12px; text-align: center;">
-                                        <button class="view-log-detail-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
+                                        <button class="view-log-detail-btn" style="padding: 6px 12px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
                                             View
                                         </button>
                                     </td>
@@ -2639,7 +2639,7 @@ async function showIPAccessDetails(ipAddress, city, region, country) {
                 </div>
 
                 <div style="display: flex; justify-content: flex-end;">
-                    <button class="close-access-modal-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    <button class="close-access-modal-btn" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                         Close
                     </button>
                 </div>

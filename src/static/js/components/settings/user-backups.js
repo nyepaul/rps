@@ -22,7 +22,7 @@ export function renderUserBackups(container) {
                     <button id="import-user-backup-btn" style="padding: 10px 20px; background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); border-radius: 6px; cursor: pointer; font-weight: 600;">
                         📥 Import File
                     </button>
-                    <button id="create-user-backup-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    <button id="create-user-backup-btn" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                         + New Backup
                     </button>
                 </div>
@@ -156,7 +156,7 @@ async function loadUserBackups(container) {
                             <button class="download-backup-btn" data-id="${backup.id}" style="padding: 6px 12px; background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
                                 ⬇️ Download
                             </button>
-                            <button class="restore-backup-btn" data-id="${backup.id}" style="padding: 6px 12px; background: var(--warning-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                            <button class="restore-backup-btn" data-id="${backup.id}" style="padding: 6px 12px; background: var(--warning-color); color: var(--text-on-warning); border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
                                 ↻ Restore
                             </button>
                             <button class="delete-backup-btn" data-id="${backup.id}" style="padding: 6px 12px; background: transparent; border: 1px solid var(--danger-color); color: var(--danger-color); border-radius: 4px; cursor: pointer; font-size: 12px;">
@@ -203,7 +203,7 @@ function showCreateBackupModal(parentContainer) {
             </div>
             <div style="display: flex; justify-content: flex-end; gap: 10px;">
                 <button id="cancel-create-btn" style="padding: 10px 20px; background: transparent; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">Cancel</button>
-                <button id="confirm-create-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Create Backup</button>
+                <button id="confirm-create-btn" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Create Backup</button>
             </div>
         </div>
     `;

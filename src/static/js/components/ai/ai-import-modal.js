@@ -102,7 +102,7 @@ export function showAIImportModal(type, profileName, onComplete) {
                 </div>
                 <div style="display: flex; gap: 10px; justify-content: flex-end;">
                     <button id="ai-cancel-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">Cancel</button>
-                    <button id="ai-confirm-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Import All Items</button>
+                    <button id="ai-confirm-btn" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Import All Items</button>
                 </div>
             </div>
         </div>

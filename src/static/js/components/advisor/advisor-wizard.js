@@ -34,7 +34,7 @@ export function showAdvisorWizard() {
                 <button id="close-wizard-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-radius: 6px; cursor: pointer;">
                     Close
                 </button>
-                <button id="next-wizard-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; display: none;">
+                <button id="next-wizard-btn" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; display: none;">
                     Next Step
                 </button>
             </div>
@@ -104,7 +104,7 @@ function runStep2(profile) {
                 <ul style="padding-left: 20px;">
                     <li style="margin-bottom: 10px;">
                         <strong>API Key:</strong> Configure your Gemini API key
-                        <button onclick="window.app.openSettings('api-keys', 'gemini-api-key'); document.querySelector('.modal-overlay').remove();" style="margin-left: 10px; padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                        <button onclick="window.app.openSettings('api-keys', 'gemini-api-key'); document.querySelector('.modal-overlay').remove();" style="margin-left: 10px; padding: 6px 12px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
                             🔐 Configure API Keys
                         </button>
                     </li>

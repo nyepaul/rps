@@ -18,7 +18,7 @@ export function renderActionsTab(container) {
                 <p style="color: var(--text-secondary); margin-bottom: var(--space-6);">
                     Please create or select a profile to view action items.
                 </p>
-                <button id="go-to-welcome-btn" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <button id="go-to-welcome-btn" style="padding: 12px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
                     Go to Welcome
                 </button>
             </div>
@@ -40,10 +40,10 @@ export function renderActionsTab(container) {
                     </p>
                 </div>
                 <div style="display: flex; gap: var(--space-2); flex-wrap: wrap; flex-shrink: 0;">
-                    <button id="generate-actions-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s ease;" onmouseover="this.style.background='var(--accent-hover)';" onmouseout="this.style.background='var(--accent-color)';">
+                    <button id="generate-actions-btn" style="padding: 6px 12px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s ease;" onmouseover="this.style.background='var(--accent-hover)';" onmouseout="this.style.background='var(--accent-color)';">
                         💡 Generate
                     </button>
-                    <button id="add-action-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                    <button id="add-action-btn" style="padding: 6px 12px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
                         + Add
                     </button>
                 </div>
@@ -186,7 +186,7 @@ async function loadActionItems(container, profile) {
                     <p style="color: var(--text-secondary); margin-bottom: 20px;">
                         Create action items to track tasks and recommendations for your retirement plan.
                     </p>
-                    <button id="add-first-action-btn" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; transition: all 0.2s ease;" onmouseover="this.style.background='var(--accent-hover)'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(59, 130, 246, 0.3)';" onmouseout="this.style.background='var(--accent-color)'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                    <button id="add-first-action-btn" style="padding: 12px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; transition: all 0.2s ease;" onmouseover="this.style.background='var(--accent-hover)'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(59, 130, 246, 0.3)';" onmouseout="this.style.background='var(--accent-color)'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
                         + Add First Action Item
                     </button>
                 </div>
@@ -428,7 +428,7 @@ function showActionItemModal(parentContainer, profile, item = null) {
                         <button type="button" id="cancel-modal-btn" style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 13px;">
                             Cancel
                         </button>
-                        <button type="submit" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                        <button type="submit" style="padding: 8px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
                             ${isEdit ? 'Save Changes' : 'Add Action Item'}
                         </button>
                     </div>

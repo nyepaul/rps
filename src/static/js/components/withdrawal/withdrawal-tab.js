@@ -16,7 +16,7 @@ export function renderWithdrawalTab(container) {
                 <p style="color: var(--text-secondary); margin-bottom: var(--space-6);">
                     Please create or select a profile to view withdrawal strategy.
                 </p>
-                <button id="go-to-welcome-btn" style="padding: var(--space-3) var(--space-6); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-md);">
+                <button id="go-to-welcome-btn" style="padding: var(--space-3) var(--space-6); background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-md);">
                     Go to Welcome
                 </button>
             </div>

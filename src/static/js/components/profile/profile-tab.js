@@ -19,7 +19,7 @@ export function renderProfileTab(container) {
                 <p style="color: var(--text-secondary); margin-bottom: var(--space-6);">
                     Please create or select a profile to edit.
                 </p>
-                <button id="go-to-welcome-btn" style="padding: var(--space-3) var(--space-6); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-md);">
+                <button id="go-to-welcome-btn" style="padding: var(--space-3) var(--space-6); background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-md);">
                     Go to Welcome
                 </button>
             </div>
@@ -51,7 +51,7 @@ export function renderProfileTab(container) {
                     <button type="button" id="cancel-btn" style="padding: 6px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
                         Cancel
                     </button>
-                    <button type="submit" form="profile-form" id="save-btn" style="padding: 6px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                    <button type="submit" form="profile-form" id="save-btn" style="padding: 6px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
                         Save Changes
                     </button>
                 </div>
@@ -268,7 +268,7 @@ export function renderProfileTab(container) {
                             <h2 style="font-size: 15px; margin: 0; color: var(--accent-color); display: flex; align-items: center; gap: 8px;">
                                 👶 Children
                             </h2>
-                            <button type="button" id="add-child-btn" style="padding: 2px 8px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
+                            <button type="button" id="add-child-btn" style="padding: 2px 8px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
                                 + Add
                             </button>
                         </div>

@@ -32,7 +32,7 @@ export function renderAnalysisTab(container) {
                 <p style="color: var(--text-secondary); margin-bottom: 20px;">
                     Please create or select a profile to run analysis.
                 </p>
-                <button id="go-to-welcome-btn" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <button id="go-to-welcome-btn" style="padding: 12px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
                     Go to Welcome
                 </button>
             </div>
@@ -97,7 +97,7 @@ export function renderAnalysisTab(container) {
 
                     <!-- Mode Selector -->
                     <div style="display: flex; gap: 8px; margin-bottom: 15px;">
-                        <button class="market-mode-btn" data-mode="simple" style="flex: 1; padding: 8px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                        <button class="market-mode-btn" data-mode="simple" style="flex: 1; padding: 8px 12px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
                             Simple
                         </button>
                         <button class="market-mode-btn" data-mode="preset" style="flex: 1; padding: 8px 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
@@ -150,7 +150,7 @@ export function renderAnalysisTab(container) {
                         <div id="timeline-periods-container" style="margin-bottom: 10px;">
                             <!-- Timeline periods will be added here dynamically -->
                         </div>
-                        <button id="add-timeline-period-btn" style="width: 100%; padding: 8px; background: var(--success-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                        <button id="add-timeline-period-btn" style="width: 100%; padding: 8px; background: var(--success-color); color: var(--text-on-success); border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
                             + Add Period
                         </button>
                     </div>
@@ -166,7 +166,7 @@ export function renderAnalysisTab(container) {
                         <div id="cycle-pattern-container" style="margin-bottom: 10px;">
                             <!-- Cycle pattern elements will be added here dynamically -->
                         </div>
-                        <button id="add-cycle-element-btn" style="width: 100%; padding: 8px; background: var(--success-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                        <button id="add-cycle-element-btn" style="width: 100%; padding: 8px; background: var(--success-color); color: var(--text-on-success); border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
                             + Add Phase
                         </button>
                     </div>
@@ -195,7 +195,7 @@ export function renderAnalysisTab(container) {
                         </select>
                     </div>
 
-                    <button id="run-analysis-btn" class="primary-btn" style="padding: 10px 24px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 700; height: fit-content;">
+                    <button id="run-analysis-btn" class="primary-btn" style="padding: 10px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 700; height: fit-content;">
                         RUN ANALYSIS
                     </button>
                 </div>
@@ -588,7 +588,7 @@ function showMarketConditionsExplanationModal() {
             <h2 style="font-size: 28px; margin-bottom: 20px; color: var(--accent-color);">📊 Why Market Conditions Matter</h2>
 
             <div style="line-height: 1.8; color: var(--text-primary);">
-                <div style="background: linear-gradient(135deg, var(--danger-color), #e74c3c); padding: 20px; border-radius: 12px; margin-bottom: 20px; color: white;">
+                <div style="background: linear-gradient(135deg, var(--danger-color), #e74c3c); padding: 20px; border-radius: 12px; margin-bottom: 20px; color: var(--text-on-danger);">
                     <h3 style="font-size: 20px; margin: 0 0 12px 0; font-weight: bold;">🚨 Critical Issue with "Simple" Mode</h3>
                     <p style="margin: 0; font-size: 15px; line-height: 1.6;">
                         <strong>Simple mode uses ONE market condition for your ENTIRE 30-40 year retirement.</strong><br><br>
@@ -657,7 +657,7 @@ function showMarketConditionsExplanationModal() {
             </div>
 
             <div style="text-align: center; margin-top: 30px;">
-                <button class="close-modal-bottom-btn" style="padding: 12px 30px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <button class="close-modal-bottom-btn" style="padding: 12px 30px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
                     Got It!
                 </button>
             </div>
@@ -975,7 +975,7 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
             </p>
 
             ${data.warnings && data.warnings.length > 0 ? `
-                <div style="background: linear-gradient(135deg, var(--warning-color), #f39c12); padding: 15px; border-radius: 8px; margin-bottom: 20px; color: white;">
+                <div style="background: linear-gradient(135deg, var(--warning-color), #f39c12); padding: 15px; border-radius: 8px; margin-bottom: 20px; color: var(--text-on-warning);">
                     <div style="font-weight: bold; margin-bottom: 10px; font-size: 16px;">⚠️ Market Period Warnings</div>
                     ${data.warnings.map(warning => `<div style="margin-bottom: 8px; font-size: 13px;">• ${warning}</div>`).join('')}
                 </div>
@@ -1111,13 +1111,13 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
         ` : ''}
 
         <div style="text-align: center; margin-top: 30px;">
-            <button id="save-scenario-btn" style="padding: 12px 24px; background: var(--success-color); color: white; border: none; border-radius: 6px; cursor: pointer; margin-right: 10px; font-weight: 600;">
+            <button id="save-scenario-btn" style="padding: 12px 24px; background: var(--success-color); color: var(--text-on-success); border: none; border-radius: 6px; cursor: pointer; margin-right: 10px; font-weight: 600;">
                 Save as Scenario
             </button>
             <button onclick="window.app.showTab('comparison')" class="secondary-btn" style="padding: 12px 24px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-radius: 6px; cursor: pointer; margin-right: 10px;">
                 Compare Scenarios
             </button>
-            <button onclick="window.app.showTab('actions')" class="primary-btn" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
+            <button onclick="window.app.showTab('actions')" class="primary-btn" style="padding: 12px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer;">
                 View Action Items
             </button>
         </div>
@@ -1179,7 +1179,7 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
             </p>
 
             ${allWarnings.length > 0 ? `
-                <div style="background: linear-gradient(135deg, var(--warning-color), #f39c12); padding: 15px; border-radius: 8px; margin-bottom: 20px; color: white;">
+                <div style="background: linear-gradient(135deg, var(--warning-color), #f39c12); padding: 15px; border-radius: 8px; margin-bottom: 20px; color: var(--text-on-warning);">
                     <div style="font-weight: bold; margin-bottom: 10px; font-size: 16px;">⚠️ Market Period Warnings</div>
                     ${allWarnings.map(warning => `<div style="margin-bottom: 8px; font-size: 13px;">• ${warning}</div>`).join('')}
                 </div>
@@ -1347,13 +1347,13 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
             }).join('')}
 
             <div style="text-align: center; margin-top: 30px;">
-                 <button id="save-multi-scenario-btn" style="padding: 12px 24px; background: var(--success-color); color: white; border: none; border-radius: 6px; cursor: pointer; margin-right: 10px; font-weight: 600;">
+                 <button id="save-multi-scenario-btn" style="padding: 12px 24px; background: var(--success-color); color: var(--text-on-success); border: none; border-radius: 6px; cursor: pointer; margin-right: 10px; font-weight: 600;">
                     Save as Scenario
                 </button>
                 <button onclick="window.app.showTab('comparison')" class="secondary-btn" style="padding: 12px 24px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-radius: 6px; cursor: pointer; margin-right: 10px;">
                     Compare Scenarios
                 </button>
-                <button onclick="window.app.showTab('actions')" class="primary-btn" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                <button onclick="window.app.showTab('actions')" class="primary-btn" style="padding: 12px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer;">
                     View Action Items
                 </button>
             </div>
@@ -1684,7 +1684,7 @@ function showSuccessRateModal() {
             <h2 style="font-size: 28px; margin-bottom: 20px; color: var(--success-color);">📊 Success Rate</h2>
 
             <div style="line-height: 1.8; color: var(--text-primary);">
-                <div style="background: linear-gradient(135deg, var(--success-color), #26d07c); padding: 20px; border-radius: 12px; margin-bottom: 20px; color: white;">
+                <div style="background: linear-gradient(135deg, var(--success-color), #26d07c); padding: 20px; border-radius: 12px; margin-bottom: 20px; color: var(--text-on-success);">
                     <h3 style="font-size: 20px; margin: 0 0 12px 0; font-weight: bold;">🎯 What It Means</h3>
                     <p style="margin: 0; font-size: 15px; line-height: 1.6;">
                         The percentage of Monte Carlo simulations where your portfolio lasted through your entire projected retirement without running out of money.
@@ -1729,7 +1729,7 @@ function showSuccessRateModal() {
             </div>
 
             <div style="text-align: center; margin-top: 30px;">
-                <button class="close-modal-bottom-btn" style="padding: 12px 30px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <button class="close-modal-bottom-btn" style="padding: 12px 30px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
                     Got It!
                 </button>
             </div>
@@ -1813,7 +1813,7 @@ function showMedianBalanceModal() {
             </div>
 
             <div style="text-align: center; margin-top: 30px;">
-                <button class="close-modal-bottom-btn" style="padding: 12px 30px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <button class="close-modal-bottom-btn" style="padding: 12px 30px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
                     Got It!
                 </button>
             </div>
@@ -1849,7 +1849,7 @@ function showPercentileModal(percentile) {
             <h2 style="font-size: 28px; margin-bottom: 20px; color: ${color};">${emoji} ${title}</h2>
 
             <div style="line-height: 1.8; color: var(--text-primary);">
-                <div style="background: linear-gradient(135deg, ${color}, ${is10th ? '#f39c12' : '#26d07c'}); padding: 20px; border-radius: 12px; margin-bottom: 20px; color: white;">
+                <div style="background: linear-gradient(135deg, ${color}, ${is10th ? '#f39c12' : '#26d07c'}); padding: 20px; border-radius: 12px; margin-bottom: 20px; color: ${is10th ? 'var(--text-on-warning)' : 'var(--text-on-success)'};">
                     <h3 style="font-size: 20px; margin: 0 0 12px 0; font-weight: bold;">🎯 What It Means</h3>
                     <p style="margin: 0; font-size: 15px; line-height: 1.6;">
                         ${is10th
@@ -1914,7 +1914,7 @@ function showPercentileModal(percentile) {
             </div>
 
             <div style="text-align: center; margin-top: 30px;">
-                <button class="close-modal-bottom-btn" style="padding: 12px 30px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <button class="close-modal-bottom-btn" style="padding: 12px 30px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
                     Got It!
                 </button>
             </div>
@@ -1945,7 +1945,7 @@ function showExpectedValueModal() {
             <h2 style="font-size: 28px; margin-bottom: 20px; color: var(--accent-color);">🎲 Expected Value</h2>
 
             <div style="line-height: 1.8; color: var(--text-primary);">
-                <div style="background: linear-gradient(135deg, var(--accent-color), #5faee3); padding: 20px; border-radius: 12px; margin-bottom: 20px; color: white;">
+                <div style="background: linear-gradient(135deg, var(--accent-color), #5faee3); padding: 20px; border-radius: 12px; margin-bottom: 20px; color: var(--text-on-accent);">
                     <h3 style="font-size: 20px; margin: 0 0 12px 0; font-weight: bold;">🎯 What It Means</h3>
                     <p style="margin: 0; font-size: 15px; line-height: 1.6;">
                         The mathematical average (mean) of all simulation outcomes. This is the simple average of all final portfolio balances across all simulations.
@@ -2001,7 +2001,7 @@ function showExpectedValueModal() {
             </div>
 
             <div style="text-align: center; margin-top: 30px;">
-                <button class="close-modal-bottom-btn" style="padding: 12px 30px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <button class="close-modal-bottom-btn" style="padding: 12px 30px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
                     Got It!
                 </button>
             </div>
@@ -2101,7 +2101,7 @@ function showStdDeviationModal() {
             </div>
 
             <div style="text-align: center; margin-top: 30px;">
-                <button class="close-modal-bottom-btn" style="padding: 12px 30px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <button class="close-modal-bottom-btn" style="padding: 12px 30px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
                     Got It!
                 </button>
             </div>
@@ -2244,7 +2244,7 @@ function showCalculationExplanationModal() {
             </div>
 
             <div style="text-align: center; margin-top: 30px;">
-                <button id="close-calc-modal-btn" style="padding: 12px 30px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <button id="close-calc-modal-btn" style="padding: 12px 30px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
                     Got It!
                 </button>
             </div>

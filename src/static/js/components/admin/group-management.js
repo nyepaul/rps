@@ -27,7 +27,7 @@ export async function renderGroupManagement(container) {
                         </p>
                     </div>
                     ${currentUser.is_super_admin ? `
-                        <button id="create-group-btn" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
+                        <button id="create-group-btn" style="padding: 8px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
                             + New Group
                         </button>
                     ` : ''}
@@ -54,7 +54,7 @@ export async function renderGroupManagement(container) {
                 <div style="font-size: 48px; margin-bottom: 15px;">❌</div>
                 <div>Failed to load groups</div>
                 <div style="color: var(--text-secondary); margin-top: 10px; font-size: 13px;">${error.message}</div>
-                <button id="retry-groups-btn" style="margin-top: 20px; padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">Retry</button>
+                <button id="retry-groups-btn" style="margin-top: 20px; padding: 8px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer;">Retry</button>
             </div>
         `;
         
@@ -177,7 +177,7 @@ function showGroupModal(container, group = null) {
                     ` : '<div></div>'}
                     <div style="display: flex; gap: 10px;">
                         <button class="cancel-modal-btn" style="padding: 8px 16px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">Cancel</button>
-                        <button class="save-group-btn" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">${isEdit ? 'Save Changes' : 'Create Group'}</button>
+                        <button class="save-group-btn" style="padding: 8px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">${isEdit ? 'Save Changes' : 'Create Group'}</button>
                     </div>
                 </div>
             </div>

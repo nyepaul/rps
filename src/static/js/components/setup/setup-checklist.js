@@ -38,7 +38,7 @@ export function renderSetupChecklist() {
     modal.innerHTML = `
         <div style="background: var(--bg-secondary); border-radius: 12px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.2);">
             <!-- Header -->
-            <div style="padding: 24px; border-bottom: 2px solid var(--border-color); background: linear-gradient(135deg, var(--success-color), #51cf66); color: white;">
+            <div style="padding: 24px; border-bottom: 2px solid var(--border-color); background: linear-gradient(135deg, var(--success-color), #51cf66); color: var(--text-on-success);">
                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
                     <div>
                         <h2 style="margin: 0 0 8px 0; font-size: 24px; font-weight: 700;">
@@ -48,7 +48,7 @@ export function renderSetupChecklist() {
                             ${getSetupMessage(status.percentage)}
                         </p>
                     </div>
-                    <button id="close-setup-modal" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+                    <button id="close-setup-modal" style="background: rgba(255,255,255,0.2); border: none; color: var(--text-on-success); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
                         ×
                     </button>
                 </div>
@@ -172,7 +172,7 @@ function updateModalContent(modal) {
     // Update the content while preserving the modal wrapper
     contentDiv.innerHTML = `
         <!-- Header -->
-        <div style="padding: 24px; border-bottom: 2px solid var(--border-color); background: linear-gradient(135deg, var(--success-color), #51cf66); color: white;">
+        <div style="padding: 24px; border-bottom: 2px solid var(--border-color); background: linear-gradient(135deg, var(--success-color), #51cf66); color: var(--text-on-success);">
             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
                 <div>
                     <h2 style="margin: 0 0 8px 0; font-size: 24px; font-weight: 700;">
@@ -182,7 +182,7 @@ function updateModalContent(modal) {
                         ${getSetupMessage(status.percentage)}
                     </p>
                 </div>
-                <button id="close-setup-modal" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+                <button id="close-setup-modal" style="background: rgba(255,255,255,0.2); border: none; color: var(--text-on-success); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
                     ×
                 </button>
             </div>

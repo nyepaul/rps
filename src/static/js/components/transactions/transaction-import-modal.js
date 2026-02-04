@@ -50,7 +50,7 @@ export function showTransactionImportModal(profileName, currentIncomeStreams, on
                     </label>
                 </div>
 
-                <button id="analyze-btn" disabled style="width: 100%; padding: 12px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; opacity: 0.5;">
+                <button id="analyze-btn" disabled style="width: 100%; padding: 12px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; opacity: 0.5;">
                     Analyze Transactions
                 </button>
 
@@ -116,7 +116,7 @@ export function showTransactionImportModal(profileName, currentIncomeStreams, on
                         <button id="cancel-recon-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
                             Cancel
                         </button>
-                        <button id="apply-changes-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        <button id="apply-changes-btn" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                             Apply Changes
                         </button>
                     </div>
@@ -131,7 +131,7 @@ export function showTransactionImportModal(profileName, currentIncomeStreams, on
                     <p id="confirmation-message" style="color: var(--text-secondary); margin-bottom: 30px;">
                         Successfully imported patterns from your CSV.
                     </p>
-                    <button id="done-btn" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    <button id="done-btn" style="padding: 12px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                         Done
                     </button>
                 </div>
@@ -343,12 +343,12 @@ export function showTransactionImportModal(profileName, currentIncomeStreams, on
             }
 
             tabContent.innerHTML = conflicts.map((match, idx) => `
-                <div class="recon-item" style="border: 1px solid var(--border-color); border-left: 4px solid ${match.match_type === 'major_conflict' ? '#f59e0b' : '#fbbf24'}; border-radius: 6px; padding: 15px; margin-bottom: 10px; background: var(--bg-secondary);">
+                <div class="recon-item" style="border: 1px solid var(--border-color); border-left: 4px solid var(--warning-color); border-radius: 6px; padding: 15px; margin-bottom: 10px; background: var(--bg-secondary);">
                     <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
                         <div style="flex: 1;">
                             <div style="font-weight: 600; margin-bottom: 5px;">
                                 ${match.specified_name}
-                                <span style="display: inline-block; padding: 2px 8px; background: ${match.match_type === 'major_conflict' ? '#f59e0b' : '#fbbf24'}; color: white; border-radius: 4px; font-size: 11px; margin-left: 8px;">
+                                <span style="display: inline-block; padding: 2px 8px; background: var(--warning-color); color: var(--text-on-warning); border-radius: 4px; font-size: 11px; margin-left: 8px;">
                                     ${match.variance_percent.toFixed(1)}% variance
                                 </span>
                             </div>
@@ -382,12 +382,12 @@ export function showTransactionImportModal(profileName, currentIncomeStreams, on
             }
 
             tabContent.innerHTML = new_detected.map((stream, idx) => `
-                <div class="recon-item" style="border: 1px solid var(--border-color); border-left: 4px solid #3b82f6; border-radius: 6px; padding: 15px; margin-bottom: 10px; background: var(--bg-secondary);">
+                <div class="recon-item" style="border: 1px solid var(--border-color); border-left: 4px solid var(--info-color); border-radius: 6px; padding: 15px; margin-bottom: 10px; background: var(--bg-secondary);">
                     <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
                         <div style="flex: 1;">
                             <div style="font-weight: 600; margin-bottom: 5px;">
                                 ${stream.name}
-                                <span style="display: inline-block; padding: 2px 8px; background: #3b82f6; color: white; border-radius: 4px; font-size: 11px; margin-left: 8px;">
+                                <span style="display: inline-block; padding: 2px 8px; background: var(--info-color); color: var(--text-on-accent); border-radius: 4px; font-size: 11px; margin-left: 8px;">
                                     New
                                 </span>
                             </div>
@@ -420,12 +420,12 @@ export function showTransactionImportModal(profileName, currentIncomeStreams, on
             }
 
             tabContent.innerHTML = exactMatches.map(match => `
-                <div class="recon-item" style="border: 1px solid var(--border-color); border-left: 4px solid #10b981; border-radius: 6px; padding: 15px; margin-bottom: 10px; background: var(--bg-secondary);">
+                <div class="recon-item" style="border: 1px solid var(--border-color); border-left: 4px solid var(--success-color); border-radius: 6px; padding: 15px; margin-bottom: 10px; background: var(--bg-secondary);">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div style="flex: 1;">
                             <div style="font-weight: 600; margin-bottom: 5px;">
                                 ${match.specified_name}
-                                <span style="display: inline-block; padding: 2px 8px; background: #10b981; color: white; border-radius: 4px; font-size: 11px; margin-left: 8px;">
+                                <span style="display: inline-block; padding: 2px 8px; background: var(--success-color); color: var(--text-on-success); border-radius: 4px; font-size: 11px; margin-left: 8px;">
                                     ✓ Match
                                 </span>
                             </div>
@@ -461,7 +461,7 @@ export function showTransactionImportModal(profileName, currentIncomeStreams, on
                         <div style="flex: 1;">
                             <div style="font-weight: 600; margin-bottom: 5px;">
                                 ${expense.name}
-                                <span style="display: inline-block; padding: 2px 8px; background: #8b5cf6; color: white; border-radius: 4px; font-size: 11px; margin-left: 8px;">
+                                <span style="display: inline-block; padding: 2px 8px; background: var(--badge-merged-bg); color: var(--text-on-badge); border-radius: 4px; font-size: 11px; margin-left: 8px;">
                                     ${expense.category}
                                 </span>
                             </div>

@@ -30,7 +30,7 @@ export function renderBudgetTab(container) {
                 <p style="color: var(--text-secondary); margin-bottom: var(--space-5);">
                     Please create or select a profile to manage your expenses.
                 </p>
-                <button id="go-to-welcome-btn" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <button id="go-to-welcome-btn" style="padding: 12px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
                     Go to Welcome
                 </button>
             </div>
@@ -136,7 +136,7 @@ export function renderBudgetTab(container) {
                         </button>
                     </div>
                 </div>
-                <button id="save-budget-btn" style="padding: 6px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 700;">
+                <button id="save-budget-btn" style="padding: 6px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 700;">
                     Save Changes
                 </button>
             </div>
@@ -305,7 +305,7 @@ function renderCollegeExpensesSection(parentContainer) {
                     <span style="font-size: var(--font-lg);">🎓</span>
                     College Expenses
                 </h2>
-                <button id="sync-children-btn" style="padding: var(--space-1) var(--space-3); background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: var(--font-sm);" title="Sync with children in profile">
+                <button id="sync-children-btn" style="padding: var(--space-1) var(--space-3); background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 4px; cursor: pointer; font-size: var(--font-sm);" title="Sync with children in profile">
                     🔄 Sync Children
                 </button>
             </div>
@@ -430,7 +430,7 @@ function makeCollegeExpenseRowEditable(rowElement, expense, index, parentContain
                     <button class="cancel-inline-edit" style="padding: 5px 12px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
                         Cancel
                     </button>
-                    <button class="save-inline-edit" style="padding: 5px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                    <button class="save-inline-edit" style="padding: 5px 12px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
                         💾 Save
                     </button>
                 </div>
@@ -582,7 +582,7 @@ function showCollegeExpenseModal(parentContainer, index) {
                         <button type="button" id="cancel-btn" style="padding: var(--space-2) var(--space-3); background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: var(--font-xs);">
                             Cancel
                         </button>
-                        <button type="submit" style="padding: var(--space-2) var(--space-3); background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: var(--font-xs);">
+                        <button type="submit" style="padding: var(--space-2) var(--space-3); background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 4px; cursor: pointer; font-size: var(--font-xs);">
                             Update
                         </button>
                     </div>
@@ -1091,7 +1091,7 @@ function renderIncomeSection(parentContainer) {
                         <span style="font-size: 14px;">${cat.icon}</span>
                         ${cat.label}
                     </h3>
-                    <button class="add-income-btn" data-category="${cat.key}" style="padding: 4px 8px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                    <button class="add-income-btn" data-category="${cat.key}" style="padding: 4px 8px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
                         + Add
                     </button>
                 </div>
@@ -1192,7 +1192,7 @@ function showInvestmentConfigModal(parentContainer) {
                     <button type="button" id="cancel-config-btn" style="padding: 6px 14px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 13px;">
                         Cancel
                     </button>
-                    <button type="submit" style="padding: 6px 14px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
+                    <button type="submit" style="padding: 6px 14px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
                         Update
                     </button>
                 </div>
@@ -1477,7 +1477,7 @@ function showIncomeItemModal(parentContainer, category, index) {
                     <button type="button" id="cancel-btn" style="padding: 6px 14px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 13px;">
                         Cancel
                     </button>
-                    <button type="submit" style="padding: 6px 14px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
+                    <button type="submit" style="padding: 6px 14px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
                         ${isEdit ? 'Update' : 'Add'}
                     </button>
                 </div>
@@ -1577,7 +1577,7 @@ function renderExpenseSection(parentContainer) {
                     <span style="font-size: 18px;">💳</span>
                     EXPENSE CATEGORIES
                 </h2>
-                <button id="add-custom-category-btn" style="padding: 4px 10px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 700;">
+                <button id="add-custom-category-btn" style="padding: 4px 10px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 700;">
                     + New
                 </button>
             </div>
@@ -1613,7 +1613,7 @@ function renderExpenseSection(parentContainer) {
                         <span style="font-weight: 700; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${cat.label}</span>
                         ${categoryTotal > 0 ? `<span style="color: var(--accent-color); font-weight: 700; font-size: 11px;">${formatCurrency(categoryTotal, 0)}/yr</span>` : ''}
                     </div>
-                    <button class="add-expense-btn" data-category="${cat.key}" style="padding: 2px 6px; background: var(--accent-color); color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px; flex-shrink: 0;">
+                    <button class="add-expense-btn" data-category="${cat.key}" style="padding: 2px 6px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 3px; cursor: pointer; font-size: 10px; flex-shrink: 0;">
                         +
                     </button>
                 </div>
@@ -1627,9 +1627,9 @@ function renderExpenseSection(parentContainer) {
                 // Determine source badge
                 const source = expense.source || 'specified';
                 const sourceBadges = {
-                    'specified': { color: '#10b981', text: '✓', borderColor: '#10b981' },
-                    'detected': { color: '#3b82f6', text: '🔍', borderColor: '#3b82f6' },
-                    'merged': { color: '#8b5cf6', text: '⚡', borderColor: '#8b5cf6' }
+                    'specified': { color: 'var(--badge-specified-bg)', text: '✓', borderColor: 'var(--badge-specified-bg)' },
+                    'detected': { color: 'var(--badge-detected-bg)', text: '🔍', borderColor: 'var(--badge-detected-bg)' },
+                    'merged': { color: 'var(--badge-merged-bg)', text: '⚡', borderColor: 'var(--badge-merged-bg)' }
                 };
                 const badge = sourceBadges[source] || sourceBadges['specified'];
 
@@ -1794,7 +1794,7 @@ function makeExpenseItemEditable(rowElement, category, index, expense, parentCon
                 <button class="cancel-inline-edit" style="padding: 5px 12px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
                     Cancel
                 </button>
-                <button class="save-inline-edit" style="padding: 5px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                <button class="save-inline-edit" style="padding: 5px 12px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
                     💾 Save
                 </button>
             </div>
@@ -2186,7 +2186,7 @@ function showExpenseEditorModal(parentContainer, category) {
                     <button type="button" id="cancel-btn" style="padding: var(--space-2) var(--space-4); background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: var(--font-sm);">
                         Cancel
                     </button>
-                    <button type="submit" style="padding: var(--space-2) var(--space-4); background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: var(--font-sm);">
+                    <button type="submit" style="padding: var(--space-2) var(--space-4); background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 4px; cursor: pointer; font-size: var(--font-sm);">
                         Update
                     </button>
                 </div>
@@ -2472,7 +2472,7 @@ function showCopyExpensesModal(profile, container, fromPeriod = 'current', toPer
 
             <div style="display: flex; gap: 10px; justify-content: flex-end;">
                 <button id="cancel-copy-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">Cancel</button>
-                <button id="confirm-copy-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Copy Now</button>
+                <button id="confirm-copy-btn" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Copy Now</button>
             </div>
         </div>
     `;

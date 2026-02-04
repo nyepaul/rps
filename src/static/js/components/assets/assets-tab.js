@@ -108,7 +108,7 @@ export function renderAssetsTab(container) {
                 <p style="color: var(--text-secondary); margin-bottom: 30px;">
                     Please create or select a profile to manage assets.
                 </p>
-                <button id="go-to-welcome-btn" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <button id="go-to-welcome-btn" style="padding: 12px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
                     Go to Welcome
                 </button>
             </div>
@@ -141,7 +141,7 @@ export function renderAssetsTab(container) {
                     </p>
                 </div>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <button id="add-asset-btn" style="padding: 6px 14px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <button id="add-asset-btn" style="padding: 6px 14px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                         <span>＋</span> Add Asset
                     </button>
                     

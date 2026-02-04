@@ -76,12 +76,12 @@ export function renderImportPreviewModal(items, type, onConfirm, filename) {
                     Total: <span id="import-total">${formatCurrency(totalAmount, 0)}</span>
                 </div>
                 <div style="display: flex; gap: 10px;">
-                    <button id="ai-enhance-btn" style="padding: 8px 16px; background: linear-gradient(135deg, #8b5cf6, #6366f1); color: white; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    <button id="ai-enhance-btn" style="padding: 8px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
                         Enhance with AI
                     </button>
                     <div style="width: 1px; height: 30px; background: var(--border-color); margin: 0 5px;"></div>
                     <button id="cancel-preview-btn" style="padding: 8px 16px; background: white; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;">Cancel</button>
-                    <button id="confirm-import-btn" style="padding: 8px 24px; background: var(--success-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                    <button id="confirm-import-btn" style="padding: 8px 24px; background: var(--success-color); color: var(--text-on-success); border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
                         Import ${items.length} Items
                     </button>
                 </div>
@@ -248,10 +248,10 @@ function renderRow(item, index, type) {
         statusBadge = `<span style="font-size: 10px; background: var(--bg-tertiary); color: var(--text-secondary); padding: 2px 6px; border-radius: 4px;">Skipping (Exists)</span>`;
         rowStyle = 'border-bottom: 1px solid var(--border-color); opacity: 0.6;';
     } else if (recon.status === 'potential_duplicate' || ai.is_duplicate) {
-        statusBadge = `<span style="font-size: 10px; background: #fff3cd; color: #b45309; padding: 2px 6px; border-radius: 4px;">Possible Duplicate</span>`;
+        statusBadge = `<span style="font-size: 10px; background: var(--warning-bg); color: var(--warning-text); padding: 2px 6px; border-radius: 4px;">Possible Duplicate</span>`;
         warningIcon = '⚠️ ';
     } else if (ai.suggested_category && ai.suggested_category !== (item.category || 'other')) {
-        statusBadge = `<span style="font-size: 10px; background: #eff6ff; color: #1e40af; padding: 2px 6px; border-radius: 4px;">AI Suggested</span>`;
+        statusBadge = `<span style="font-size: 10px; background: var(--info-bg); color: var(--info-color); padding: 2px 6px; border-radius: 4px;">AI Suggested</span>`;
         // Apply suggestion
         item.category = ai.suggested_category; 
     }

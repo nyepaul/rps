@@ -25,7 +25,7 @@ export async function renderRoadmapPanel(container) {
                         <h2 style="font-size: var(--font-2xl); margin: 0 0 var(--space-2) 0;">📋 Feature Roadmap</h2>
                         <p style="color: var(--text-secondary); margin: 0;">Product development planning and gap analysis tracking</p>
                     </div>
-                    <button id="add-roadmap-item-btn" style="padding: var(--space-3) var(--space-5); background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: var(--font-base);">
+                    <button id="add-roadmap-item-btn" style="padding: var(--space-3) var(--space-5); background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: var(--font-base);">
                         + Add Item
                     </button>
                 </div>
@@ -383,7 +383,7 @@ function showItemModal(container, item = null) {
                     ${isEdit ? `<button type="button" id="delete-item-btn" style="padding: 10px 20px; background: var(--danger-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Delete</button>` : ''}
                     <div style="display: flex; gap: 12px;">
                         <button type="button" id="cancel-item-btn" style="padding: 10px 20px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">Cancel</button>
-                        <button type="submit" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">${isEdit ? 'Save Changes' : 'Add Item'}</button>
+                        <button type="submit" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">${isEdit ? 'Save Changes' : 'Add Item'}</button>
                     </div>
                 </div>
             </form>

@@ -14,7 +14,7 @@ export function renderWelcomeTab(container) {
             <div style="background: var(--bg-secondary); border-radius: 12px; padding: var(--space-5); border: 1px solid var(--border-color); box-shadow: 0 4px 12px var(--shadow-color);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
                     <h2 style="font-size: 18px; margin: 0; font-family: var(--font-display);">Your Profiles</h2>
-                    <button id="create-profile-btn" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
+                    <button id="create-profile-btn" style="padding: 8px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
                         + New Profile
                     </button>
                 </div>
@@ -67,7 +67,7 @@ async function loadProfiles(container) {
                     <div style="flex: 1;">
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <strong style="font-size: 14px;">${profile.name}</strong>
-                            ${isDefault ? '<span style="font-size: 10px; padding: 2px 6px; background: var(--accent-color); color: white; border-radius: 8px;">DEFAULT</span>' : ''}
+                            ${isDefault ? '<span style="font-size: 10px; padding: 2px 6px; background: var(--accent-color); color: var(--text-on-accent); border-radius: 8px;">DEFAULT</span>' : ''}
                         </div>
                         <small style="color: var(--text-secondary); font-size: 11px;">Updated: ${new Date(profile.updated_at).toLocaleDateString()}</small>
                     </div>
@@ -194,7 +194,7 @@ function showCreateProfileModal(container) {
                 <button type="button" class="cancel-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">
                     Cancel
                 </button>
-                <button type="submit" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
+                <button type="submit" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
                     Create Profile
                 </button>
             </div>
@@ -251,7 +251,7 @@ function showEditProfileModal(container, profile) {
                 <button type="button" class="cancel-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">
                     Cancel
                 </button>
-                <button type="submit" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
+                <button type="submit" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
                     Save Changes
                 </button>
             </div>

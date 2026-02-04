@@ -98,7 +98,7 @@ export async function renderConfigEditor(container) {
 
                     <!-- Save Button -->
                     <div style="border-top: 1px solid var(--border-color); padding-top: 20px;">
-                        <button id="save-config-btn" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
+                        <button id="save-config-btn" style="padding: 12px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
                             💾 Save Configuration
                         </button>
                         <span id="save-status" style="margin-left: 15px; font-size: 13px;"></span>

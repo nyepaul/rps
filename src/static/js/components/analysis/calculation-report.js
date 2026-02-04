@@ -135,7 +135,7 @@ function renderReportModal(report) {
             ${sectionsHTML}
 
             <div style="margin-top: 32px; padding-top: 24px; border-top: 2px solid var(--border-color); text-align: center;">
-                <button id="print-report-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; margin-right: 12px;">
+                <button id="print-report-btn" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; margin-right: 12px;">
                     🖨️ Print Report
                 </button>
                 <button id="close-report-btn-2" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">

@@ -20,7 +20,7 @@ export function renderAdvisorTab(container) {
                 <p style="color: var(--text-secondary); margin-bottom: var(--space-6);">
                     Please create or select a profile to chat with your AI advisor.
                 </p>
-                <button id="go-to-welcome-btn" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <button id="go-to-welcome-btn" style="padding: 12px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
                     Go to Welcome
                 </button>
             </div>
@@ -88,7 +88,7 @@ export function renderAdvisorTab(container) {
                 ></textarea>
                 <button
                     id="send-btn"
-                    style="padding: 12px 30px; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; align-self: flex-end;"
+                    style="padding: 12px 30px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; align-self: flex-end;"
                 >
                     Send
                 </button>
@@ -369,7 +369,7 @@ async function sendMessage(profile, chatInput, chatContainer) {
         // Check if this is an API key error
         if (isApiKeyError) {
             const errorMsg = `Sorry, AI provider not configured. ${errorMessage}<br><br>
-                <button onclick="window.app.openSettings('api-keys', 'gemini-api-key')" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                <button onclick="window.app.openSettings('api-keys', 'gemini-api-key')" style="padding: 8px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
                     🤖 Configure AI Settings
                 </button>`;
             addMessage(chatContainer, 'assistant', errorMsg, true);
@@ -532,7 +532,7 @@ function addMessage(container, role, text, isHtml = false) {
     // Add "Add to Action Items" button for assistant messages
     const actionButton = role === 'assistant' && !isHtml ? `
         <button class="add-to-action-items-btn" data-message="${escapeHtml(text).replace(/"/g, '&quot;')}"
-            style="margin-top: 10px; padding: 6px 12px; background: var(--success-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s;">
+            style="margin-top: 10px; padding: 6px 12px; background: var(--success-color); color: var(--text-on-success); border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s;">
             ✅ Add to Action Items
         </button>
     ` : '';

@@ -20,7 +20,7 @@ export async function renderTaxTab(container) {
                 <p style="color: var(--text-secondary); margin-bottom: 20px;">
                     Please select a profile to view tax optimization analysis
                 </p>
-                <button onclick="window.app.showTab('dashboard')" style="padding: 10px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                <button onclick="window.app.showTab('dashboard')" style="padding: 10px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer;">
                     Go to Dashboard
                 </button>
             </div>
@@ -45,7 +45,7 @@ export async function renderTaxTab(container) {
                 <p style="color: var(--text-secondary); margin-bottom: 20px;">
                     ${error.message || 'Could not load tax optimization data'}
                 </p>
-                <button onclick="window.app.showTab('tax'); window.app.showTab('tax');" style="padding: 10px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                <button onclick="window.app.showTab('tax'); window.app.showTab('tax');" style="padding: 10px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer;">
                     Retry
                 </button>
             </div>
@@ -468,7 +468,7 @@ function showTaxSnapshotExplanation() {
                 </div>
 
                 <div style="margin-top: 20px; text-align: right;">
-                    <button id="close-tax-explanation" style="padding: 10px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
+                    <button id="close-tax-explanation" style="padding: 10px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
                         Got It
                     </button>
                 </div>
@@ -639,7 +639,7 @@ function showRecommendationDetail(recommendation) {
                 </div>
 
                 <div style="margin-top: 20px; text-align: right;">
-                    <button id="close-recommendation-detail" style="padding: 10px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
+                    <button id="close-recommendation-detail" style="padding: 10px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
                         Got It
                     </button>
                 </div>
@@ -740,7 +740,7 @@ function showRothConversionExplanation() {
                 </div>
 
                 <div style="margin-top: 20px; text-align: right;">
-                    <button id="close-roth-explanation" style="padding: 10px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
+                    <button id="close-roth-explanation" style="padding: 10px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
                         Got It
                     </button>
                 </div>
@@ -810,7 +810,7 @@ function showRMDAnalysisExplanation() {
                 </div>
 
                 <div style="margin-top: 20px; text-align: right;">
-                    <button id="close-rmd-explanation" style="padding: 10px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
+                    <button id="close-rmd-explanation" style="padding: 10px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
                         Got It
                     </button>
                 </div>

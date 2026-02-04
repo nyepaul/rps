@@ -142,7 +142,7 @@ export async function renderAPIKeysSettings(container) {
         <div style="margin-bottom: 25px;">
             <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--accent-color); display: flex; align-items: center; gap: 8px;">
                 Privacy First (100% Local)
-                <span style="font-size: 10px; font-weight: normal; background: var(--success-color); color: white; padding: 2px 6px; border-radius: 10px;">No Data Leaves Your PC</span>
+                <span style="font-size: 10px; font-weight: normal; background: var(--success-color); color: var(--text-on-success); padding: 2px 6px; border-radius: 10px;">No Data Leaves Your PC</span>
             </h3>
             <div id="local-providers"></div>
         </div>
@@ -221,7 +221,7 @@ function renderProviderCard(provider) {
                     <span style="color: var(--success-color); font-size: 12px; flex: 1;">
                         ✓ Configured: ••••••••<span id="${provider.id}-masked"></span>
                     </span>
-                    <button class="verify-btn" data-provider="${provider.id}" style="padding: 4px 10px; background: var(--success-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Test</button>
+                    <button class="verify-btn" data-provider="${provider.id}" style="padding: 4px 10px; background: var(--success-color); color: var(--text-on-success); border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Test</button>
                     <button class="delete-btn" data-provider="${provider.id}" style="padding: 4px 10px; background: transparent; color: var(--danger-color); border: 1px solid var(--danger-color); border-radius: 4px; cursor: pointer; font-size: 11px;">Delete</button>
                 </div>
             </div>

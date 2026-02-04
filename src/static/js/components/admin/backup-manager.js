@@ -29,7 +29,7 @@ export async function renderBackupManager(container) {
 
             <!-- Backup Mode Tabs -->
             <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                <button id="tab-system" class="backup-mode-tab active" style="padding: 10px 20px; border: none; background: var(--accent-color); color: white; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                <button id="tab-system" class="backup-mode-tab active" style="padding: 10px 20px; border: none; background: var(--accent-color); color: var(--text-on-accent); border-radius: 8px; cursor: pointer; font-weight: 600;">
                     System Backups
                 </button>
                 <button id="tab-selective" class="backup-mode-tab" style="padding: 10px 20px; border: 1px solid var(--border-color); background: transparent; color: var(--text-primary); border-radius: 8px; cursor: pointer; font-weight: 600;">
@@ -53,7 +53,7 @@ export async function renderBackupManager(container) {
                                 <div style="font-size: 11px; color: var(--text-secondary);">Total Backups</div>
                             </div>
                         </div>
-                        <button id="run-data-backup" style="width: 100%; padding: 12px; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s;">
+                        <button id="run-data-backup" style="width: 100%; padding: 12px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s;">
                             🔄 Create New Backup
                         </button>
                     </div>
@@ -91,7 +91,7 @@ export async function renderBackupManager(container) {
                             Backs up everything: database, configuration, logs, and documentation.
                         </p>
                     </div>
-                    <button id="run-full-backup" style="width: 100%; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; margin-top: 20px;">
+                    <button id="run-full-backup" style="width: 100%; padding: 12px; background: var(--success-color); color: var(--text-on-success); border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; margin-top: 20px;">
                         Run Full Backup
                     </button>
                 </div>
@@ -107,7 +107,7 @@ export async function renderBackupManager(container) {
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                         <h3 style="font-size: 18px; margin: 0;">📚 Backup History</h3>
                         <div style="display: flex; gap: 10px;">
-                            <button id="filter-all" class="backup-filter active" data-type="all" style="padding: 8px 16px; border: 1px solid var(--border-color); background: var(--accent-color); color: white; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                            <button id="filter-all" class="backup-filter active" data-type="all" style="padding: 8px 16px; border: 1px solid var(--border-color); background: var(--accent-color); color: var(--text-on-accent); border-radius: 6px; cursor: pointer; font-size: 13px;">
                                 All
                             </button>
                             <button id="filter-full" class="backup-filter" data-type="full" style="padding: 8px 16px; border: 1px solid var(--border-color); background: transparent; color: var(--text-primary); border-radius: 6px; cursor: pointer; font-size: 13px;">
@@ -190,7 +190,7 @@ export async function renderBackupManager(container) {
                         <div style="display: flex; gap: 10px; align-items: center;">
                             <input type="text" id="backup-label" placeholder="Optional backup label..."
                                    style="padding: 10px 15px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); width: 200px;">
-                            <button id="create-selective-backup" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; white-space: nowrap;">
+                            <button id="create-selective-backup" style="padding: 12px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 8px; cursor: pointer; font-weight: 600; white-space: nowrap;">
                                 Create Backup
                             </button>
                         </div>
@@ -561,7 +561,7 @@ function renderSelectiveBackups(container) {
                             <div style="font-size: 11px; color: var(--text-secondary); font-family: monospace;">${backup.filename}</div>
                         </td>
                         <td style="padding: 12px; text-align: center;">
-                            <span style="display: inline-block; padding: 4px 12px; background: var(--accent-color); color: white; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                            <span style="display: inline-block; padding: 4px 12px; background: var(--accent-color); color: var(--text-on-accent); border-radius: 12px; font-size: 12px; font-weight: 600;">
                                 ${backup.profile_count}
                             </span>
                         </td>
@@ -716,7 +716,7 @@ async function showSelectiveRestoreModal(container, filename) {
                         <button id="cancel-restore" style="padding: 10px 20px; background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 6px; cursor: pointer; font-weight: 600;">
                             Cancel
                         </button>
-                        <button id="confirm-restore" style="padding: 10px 20px; background: var(--warning-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        <button id="confirm-restore" style="padding: 10px 20px; background: var(--warning-color); color: var(--text-on-warning); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                             Restore Selected
                         </button>
                     </div>
@@ -1203,7 +1203,7 @@ async function showRestoreConfirmation(container, backupType, filename) {
                     <button id="cancel-restore" style="padding: 10px 20px; background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 6px; cursor: pointer; font-weight: 600;">
                         Cancel
                     </button>
-                    <button id="confirm-restore" style="padding: 10px 20px; background: var(--warning-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    <button id="confirm-restore" style="padding: 10px 20px; background: var(--warning-color); color: var(--text-on-warning); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                         Restore Backup
                     </button>
                 </div>
@@ -1277,7 +1277,7 @@ async function performRestore(container, backupType, filename, restoreType) {
                             sudo systemctl restart rps
                         </code>
                     </div>
-                    <button id="close-success" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    <button id="close-success" style="padding: 12px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                         OK
                     </button>
                 </div>

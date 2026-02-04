@@ -156,7 +156,7 @@ function handleReset(reqId, username, supportToken) {
                 <button class="delete-req-btn" style="padding: 10px 16px; background: transparent; border: 1px solid var(--danger-color); color: var(--danger-color); border-radius: 6px; cursor: pointer;">Delete Request</button>
                 <div style="display: flex; gap: 10px;">
                     <button class="cancel-modal-btn" style="padding: 10px 16px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">Cancel</button>
-                    <button class="process-reset-btn" style="padding: 10px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Process</button>
+                    <button class="process-reset-btn" style="padding: 10px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Process</button>
                 </div>
             </div>
         </div>
@@ -245,7 +245,7 @@ function showLinkModal(link, username) {
             </div>
 
             <div style="display: flex; gap: 10px; justify-content: center;">
-                <button class="copy-btn" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Copy Link</button>
+                <button class="copy-btn" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Copy Link</button>
                 <button class="close-btn" style="padding: 10px 20px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">Close</button>
             </div>
         </div>

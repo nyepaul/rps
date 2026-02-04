@@ -34,7 +34,7 @@ export async function renderDashboardTab(container) {
                 <p style="color: var(--text-secondary); margin-bottom: 20px;">
                     ${error.message || 'Could not load your profiles'}
                 </p>
-                <button onclick="window.location.reload()" style="padding: 10px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                <button onclick="window.location.reload()" style="padding: 10px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer;">
                     Retry
                 </button>
             </div>
@@ -51,7 +51,7 @@ function renderProfileDashboard(container, profiles, currentProfile, currentUser
     container.innerHTML = `
         <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-2) var(--space-3);">
             <div style="display: flex; justify-content: flex-end; margin-bottom: var(--space-2);">
-                <button id="create-profile-btn" style="padding: 4px 8px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; flex-shrink: 0;">
+                <button id="create-profile-btn" style="padding: 4px 8px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; flex-shrink: 0;">
                     + New
                 </button>
             </div>
@@ -73,7 +73,7 @@ function renderProfileDashboard(container, profiles, currentProfile, currentUser
                 <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 13px; max-width: 400px; margin-left: auto; margin-right: auto;">
                     Create your first financial planning profile to start modeling your retirement.
                 </p>
-                <button onclick="window.app.showTab('welcome')" style="padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                <button onclick="window.app.showTab('welcome')" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
                     Get Started
                 </button>
             </div>
@@ -396,7 +396,7 @@ function renderFinancialSummary(profile) {
                     <!-- Header -->
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                         <div style="display: flex; align-items: center; gap: 12px;">
-                            <span style="font-size: 11px; font-weight: 700; background: var(--accent-color); color: white; padding: 4px 10px; border-radius: 4px;">ACTIVE PROFILE</span>
+                            <span style="font-size: 11px; font-weight: 700; background: var(--accent-color); color: var(--text-on-accent); padding: 4px 10px; border-radius: 4px;">ACTIVE PROFILE</span>
                             <h2 style="font-size: 20px; margin: 0; font-weight: 700;">${profile.name}</h2>
                         </div>
                         <button onclick="window.app.showTab('profile')" style="padding: 6px 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
@@ -427,28 +427,28 @@ function renderFinancialSummary(profile) {
         
                     <!-- Key Metrics Grid -->            <div class="metric-grid">
                 <!-- Net Worth -->
-                <div id="metric-networth" class="metric-card" style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 12px; border-radius: 6px; color: white; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
+                <div id="metric-networth" class="metric-card" style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 12px; border-radius: 6px; color: var(--text-on-success); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
                     <div style="font-size: 10px; opacity: 0.9; margin-bottom: 4px;">💰 Net Worth</div>
                     <div style="font-size: 18px; font-weight: 700;">${formatCompact(netWorth)}</div>
                     <div style="font-size: 9px; opacity: 0.7; margin-top: 4px;">Click for details</div>
                 </div>
 
                 <!-- Annual Income -->
-                <div id="metric-income" class="metric-card" style="background: linear-gradient(135deg, #3498db, #2980b9); padding: 12px; border-radius: 6px; color: white; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
+                <div id="metric-income" class="metric-card" style="background: linear-gradient(135deg, #3498db, #2980b9); padding: 12px; border-radius: 6px; color: var(--text-on-accent); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
                     <div style="font-size: 10px; opacity: 0.9; margin-bottom: 4px;">📈 Annual Income</div>
                     <div style="font-size: 18px; font-weight: 700;">${totalAnnualIncome > 0 ? formatCompact(totalAnnualIncome) : 'Not set'}</div>
                     <div style="font-size: 9px; opacity: 0.7; margin-top: 4px;">Click for details</div>
                 </div>
 
                 <!-- Annual Expenses -->
-                <div id="metric-expenses" class="metric-card" style="background: linear-gradient(135deg, #e74c3c, #c0392b); padding: 12px; border-radius: 6px; color: white; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
+                <div id="metric-expenses" class="metric-card" style="background: linear-gradient(135deg, #e74c3c, #c0392b); padding: 12px; border-radius: 6px; color: var(--text-on-danger); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
                     <div style="font-size: 10px; opacity: 0.9; margin-bottom: 4px;">📉 Annual Expenses</div>
                     <div style="font-size: 18px; font-weight: 700;">${totalAnnualExpenses > 0 ? formatCompact(totalAnnualExpenses) : 'Not set'}</div>
                     <div style="font-size: 9px; opacity: 0.7; margin-top: 4px;">Click for details</div>
                 </div>
 
                 <!-- Savings Rate -->
-                <div id="metric-savings-rate" class="metric-card" style="background: linear-gradient(135deg, #9b59b6, #8e44ad); padding: 12px; border-radius: 6px; color: white; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
+                <div id="metric-savings-rate" class="metric-card" style="background: linear-gradient(135deg, #9b59b6, #8e44ad); padding: 12px; border-radius: 6px; color: var(--text-on-accent); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
                     <div style="font-size: 10px; opacity: 0.9; margin-bottom: 4px;">💵 Savings Rate</div>
                     <div style="font-size: 18px; font-weight: 700;">${totalAnnualIncome > 0 ? savingsRate.toFixed(1) + '%' : 'N/A'}</div>
                     <div style="font-size: 9px; opacity: 0.7; margin-top: 4px;">Click for details</div>
@@ -456,7 +456,7 @@ function renderFinancialSummary(profile) {
 
                 ${currentAge ? `
                 <!-- Current Age -->
-                <div id="metric-age" class="metric-card" style="background: linear-gradient(135deg, #1abc9c, #16a085); padding: 12px; border-radius: 6px; color: white; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
+                <div id="metric-age" class="metric-card" style="background: linear-gradient(135deg, #1abc9c, #16a085); padding: 12px; border-radius: 6px; color: var(--text-on-success); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
                     <div style="font-size: 10px; opacity: 0.9; margin-bottom: 4px;">👤 Current Age</div>
                     <div style="font-size: 18px; font-weight: 700;">${currentAge}</div>
                     <div style="font-size: 9px; opacity: 0.7; margin-top: 4px;">Click for details</div>
@@ -465,7 +465,7 @@ function renderFinancialSummary(profile) {
 
                 ${yearsToRetirement !== null ? `
                 <!-- Years to Retirement -->
-                <div id="metric-retirement" class="metric-card" style="background: linear-gradient(135deg, #f39c12, #e67e22); padding: 12px; border-radius: 6px; color: white; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
+                <div id="metric-retirement" class="metric-card" style="background: linear-gradient(135deg, #f39c12, #e67e22); padding: 12px; border-radius: 6px; color: var(--text-on-warning); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
                     <div style="font-size: 10px; opacity: 0.9; margin-bottom: 4px;">🏖️ To Retirement</div>
                     <div style="font-size: 18px; font-weight: 700;">${yearsToRetirement} ${yearsToRetirement === 1 ? 'year' : 'years'}</div>
                     <div style="font-size: 9px; opacity: 0.7; margin-top: 4px;">Click for details</div>
@@ -610,7 +610,7 @@ function renderProfileCard(profile, currentProfile) {
             <!-- Actions -->
             <div style="display: flex; gap: 3px;">
                 ${!isActive ? `
-                <button class="load-profile-btn" data-profile-name="${profile.name}" style="flex: 1; padding: 4px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: 600;">
+                <button class="load-profile-btn" data-profile-name="${profile.name}" style="flex: 1; padding: 4px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: 600;">
                     Load
                 </button>
                 ` : `

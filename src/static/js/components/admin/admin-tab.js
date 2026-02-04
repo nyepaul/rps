@@ -65,7 +65,7 @@ export async function renderAdminTab(container) {
                             animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
                         }
                     </style>
-                    <div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);" class="notification-pulse">
+                    <div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: var(--text-on-danger); padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);" class="notification-pulse">
                         <span style="font-size: 16px;">🔔</span>
                         <div id="notification-text" style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.3;">
                             <span id="notification-count" style="font-size: 14px;"></span>

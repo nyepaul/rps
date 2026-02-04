@@ -339,8 +339,8 @@ function renderProgressIndicator(currentStep) {
         return `
             <div style="flex: 1; display: flex; align-items: center; gap: 8px;">
                 <div style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; ${
-                    isActive ? 'background: var(--accent-color); color: white;' :
-                    isCompleted ? 'background: var(--success-color); color: white;' :
+                    isActive ? 'background: var(--accent-color); color: var(--text-on-accent);' :
+                    isCompleted ? 'background: var(--success-color); color: var(--text-on-success);' :
                     'background: var(--bg-tertiary); color: var(--text-secondary);'
                 }">
                     ${isCompleted ? '✓' : step.num}
@@ -365,7 +365,7 @@ function renderStep1CategorySelection(state) {
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h3 style="margin: 0; font-size: 20px;">Select the assets you want to add</h3>
                 ${selectedCount > 0 ? `
-                    <span style="padding: 6px 12px; background: var(--accent-color); color: white; border-radius: 20px; font-size: 13px; font-weight: 600;">
+                    <span style="padding: 6px 12px; background: var(--accent-color); color: var(--text-on-accent); border-radius: 20px; font-size: 13px; font-weight: 600;">
                         ${selectedCount} selected
                     </span>
                 ` : ''}
@@ -530,12 +530,12 @@ function renderFooterButtons(state, isEditing) {
                 </button>
             ` : ''}
             ${showNext ? `
-                <button id="next-btn" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                <button id="next-btn" style="padding: 12px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                     ${nextLabel}
                 </button>
             ` : ''}
             ${showSave ? `
-                <button id="save-btn" style="padding: 12px 24px; background: var(--success-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                <button id="save-btn" style="padding: 12px 24px; background: var(--success-color); color: var(--text-on-success); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                     ${saveLabel}
                 </button>
             ` : ''}

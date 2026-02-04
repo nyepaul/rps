@@ -315,7 +315,7 @@ function showSimpleEditModal(asset, originalCategory, assetIndex, allAssets) {
                     <button id="cancel-btn" style="padding: 12px 24px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">
                         Cancel
                     </button>
-                    <button id="save-btn" style="padding: 12px 24px; background: var(--success-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
+                    <button id="save-btn" style="padding: 12px 24px; background: var(--success-color); color: var(--text-on-success); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
                         Save Changes
                     </button>
                 </div>

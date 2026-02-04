@@ -131,7 +131,7 @@ export function renderSummaryTab(container) {
                 <p style="color: var(--text-secondary); margin-bottom: 30px;">
                     Please create or select a profile to generate reports.
                 </p>
-                <button id="go-to-welcome-btn" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <button id="go-to-welcome-btn" style="padding: 12px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
                     Go to Welcome
                 </button>
             </div>
@@ -169,7 +169,7 @@ export function renderSummaryTab(container) {
                                     Monte Carlo simulation results, success rates, scenario comparisons, and statistical analysis.
                                 </p>
                                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                                    <button id="btn-analysis-view" class="pdf-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
+                                    <button id="btn-analysis-view" class="pdf-btn" style="padding: 6px 12px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
                                         👁️ View
                                     </button>
                                     <button id="btn-analysis-save" class="pdf-btn" style="padding: 6px 12px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
@@ -189,7 +189,7 @@ export function renderSummaryTab(container) {
                                     Current assets breakdown, account allocations, retirement accounts, taxable accounts, and financial overview.
                                 </p>
                                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                                    <button id="btn-portfolio-view" class="pdf-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
+                                    <button id="btn-portfolio-view" class="pdf-btn" style="padding: 6px 12px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
                                         👁️ View
                                     </button>
                                     <button id="btn-portfolio-save" class="pdf-btn" style="padding: 6px 12px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
@@ -209,7 +209,7 @@ export function renderSummaryTab(container) {
                                     Prioritized action items, recommendations, and next steps for optimizing your retirement plan.
                                 </p>
                                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                                    <button id="btn-action-plan-view" class="pdf-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
+                                    <button id="btn-action-plan-view" class="pdf-btn" style="padding: 6px 12px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
                                         👁️ View
                                     </button>
                                     <button id="btn-action-plan-save" class="pdf-btn" style="padding: 6px 12px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">

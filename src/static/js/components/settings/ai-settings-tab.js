@@ -19,7 +19,7 @@ export function renderAPIKeysTab(container) {
                 <p style="color: var(--text-secondary); margin-bottom: 30px;">
                     Please create or select a profile to manage API keys.
                 </p>
-                <button id="go-to-welcome-btn" style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <button id="go-to-welcome-btn" style="padding: 12px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
                     Go to Welcome
                 </button>
             </div>
@@ -180,7 +180,7 @@ export function renderAPIKeysTab(container) {
                 <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border-color);">
                     <button
                         id="save-api-keys-btn"
-                        style="padding: 12px 24px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;"
+                        style="padding: 12px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;"
                     >
                         💾 Save API Keys
                     </button>

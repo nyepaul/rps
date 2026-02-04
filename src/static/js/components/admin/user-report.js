@@ -91,7 +91,7 @@ function renderUserInfoSection(user) {
         : '<span style="background: var(--danger-color)20; color: var(--danger-color); padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">Inactive</span>';
 
     const adminBadge = user.is_super_admin
-        ? '<span style="background: #e03131; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">⭐ Super Admin</span>'
+        ? '<span style="background: var(--danger-color); color: var(--text-on-danger); padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">⭐ Super Admin</span>'
         : user.is_admin
         ? '<span style="background: #764ba220; color: #764ba2; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">Admin</span>'
         : '<span style="background: var(--bg-tertiary); color: var(--text-secondary); padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">User</span>';
