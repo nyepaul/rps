@@ -134,34 +134,63 @@
         }
 
         body.high-contrast-mode {
-            /* High Contrast theme (WCAG AAA) - Improved readability */
+            /* === HIGH CONTRAST THEME (WCAG AAA) === */
+            /* Maximum contrast for accessibility - bright greens on pure black */
+
+            /* Backgrounds - Pure black */
             --bg-primary: #000000;
             --bg-secondary: #0a0a0a;
             --bg-tertiary: #1a1a1a;
+
+            /* Text - Maximum contrast whites */
             --text-primary: #ffffff;
-            --text-secondary: #b0b0b0;
-            --text-light: #d0d0d0;
+            --text-secondary: #e0e0e0;
+            --text-muted: #b0b0b0;
+            --text-light: #b0b0b0;
+
+            /* Header */
             --header-bg: #000000;
             --header-text: #ffffff;
-            --accent-color: #1e90ff;
-            --accent-hover: #4169e1;
-            --border-color: #ffffff;
-            --shadow: rgba(255,255,255,0.3);
-            --success-color: #32cd32;
-            --warning-color: #cc9900;
-            --danger-color: #ff4444;
-            --success-text: #7fff7f;
-            --warning-text: #ffeeaa;
-            --success-bg: #004400;
-            --warning-bg: #3d3520;
-            --danger-bg: #440000;
-            --info-bg: #002244;
-            --info-color: #87ceeb;
-            --card-gradient-1: #1e5090;
-            --card-gradient-2: #1e4080;
-            --focus-outline: 3px solid #4169e1;
 
-            /* Chart text colors - High contrast needs bright white */
+            /* Brand Colors - Bright sage green for AAA compliance */
+            --accent-color: #4ade80;
+            --accent-hover: #86efac;
+            --accent-secondary: #fbbf24;
+            --accent-secondary-hover: #fcd34d;
+
+            /* Semantic Colors - Bright for visibility */
+            --success-color: #4ade80;
+            --warning-color: #fbbf24;
+            --danger-color: #f87171;
+            --info-color: #60a5fa;
+
+            /* Semantic Text & Background Colors */
+            --success-text: #4ade80;
+            --warning-text: #fbbf24;
+            --success-bg: #0a1a0a;
+            --warning-bg: #1a1a0a;
+            --danger-bg: #1a0a0a;
+            --info-bg: #0a0a1a;
+
+            /* Borders & Shadows - High visibility */
+            --border-color: #ffffff;
+            --shadow: rgba(255, 255, 255, 0.3);
+            --shadow-color: rgba(255, 255, 255, 0.3);
+
+            /* Gradients */
+            --gradient-primary-start: #4ade80;
+            --gradient-primary-end: #22c55e;
+            --gradient-accent-start: #fbbf24;
+            --gradient-accent-end: #fcd34d;
+
+            /* Card Gradients */
+            --card-gradient-1: #4ade80;
+            --card-gradient-2: #22c55e;
+
+            /* Focus indicator - High visibility */
+            --focus-outline: 3px solid #4ade80;
+
+            /* Chart text colors - Maximum contrast */
             --chart-text-primary: #ffffff;
             --chart-text-secondary: #ffffff;
         }
