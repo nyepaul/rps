@@ -1,5 +1,5 @@
 {
-    "version": "3.9.181",
+    "version": "3.9.182",
     "release_date": "2026-02-04",
-    "release_notes": "Fix yellow button and badge readability in all themes"
+    "release_notes": "Fix UnboundLocalError when running analysis on profiles without budget data"
 }

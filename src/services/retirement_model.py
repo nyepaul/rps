@@ -1043,6 +1043,7 @@ class RetirementModel:
             if not p1_retired or not p2_retired:
                 # Get employment income for calculating employer match
                 employment_income = 0
+                current_employment = {}
                 if self.profile.budget:
                     current_employment = (
                         self.profile.budget.get("income", {})
@@ -1057,11 +1058,11 @@ class RetirementModel:
                 # Person 1 contributions (if working)
                 if not p1_retired:
                     # Get person 1's salary
-                    p1_salary = (
-                        employment_income
-                        if not p2_retired
-                        else current_employment.get("primary_person", 0)
-                    )
+                    if self.profile.budget:
+                        p1_salary = current_employment.get("primary_person", 0)
+                    else:
+                        # Fallback to gross employment income if no budget
+                        p1_salary = employment_income_gross
 
                     # Calculate 401k contribution as % of salary (preferred method)
                     contribution_rate = safe_float(
@@ -1071,11 +1072,11 @@ class RetirementModel:
                         # Fallback to legacy fixed amount if rate not set
                         contribution_rate = safe_float(
                             self.profile.person1.annual_401k_contribution, 0
-                        ) / max(p1_salary, 1)  # Convert fixed to rate
+                        ) / np.maximum(p1_salary, 1)  # Convert fixed to rate
 
                     p1_401k = p1_salary * contribution_rate
 
-                    if p1_401k > 0:
+                    if np.any(p1_401k > 0):
                         # Track total contributions to subtract from cash flow
                         total_401k_contributions += p1_401k
                         pretax_std += p1_401k  # Add 401k contribution to retirement account
@@ -1090,26 +1091,31 @@ class RetirementModel:
                     # For person2, we need to extract their salary separately
                     if self.profile.budget:
                         p2_salary = current_employment.get("spouse", 0)
+                    else:
+                        # Fallback to gross employment income if no budget
+                        # Note: if both working and no budget, p1 and p2 might both use full gross
+                        # which is an overestimation, but better than crashing.
+                        p2_salary = employment_income_gross
 
-                        # Calculate 401k contribution as % of salary
+                    # Calculate 401k contribution as % of salary
+                    p2_contribution_rate = safe_float(
+                        self.profile.person2.annual_401k_contribution_rate, 0
+                    )
+                    if p2_contribution_rate == 0:
+                        # Fallback to legacy fixed amount if rate not set
                         p2_contribution_rate = safe_float(
-                            self.profile.person2.annual_401k_contribution_rate, 0
-                        )
-                        if p2_contribution_rate == 0:
-                            # Fallback to legacy fixed amount if rate not set
-                            p2_contribution_rate = safe_float(
-                                self.profile.person2.annual_401k_contribution, 0
-                            ) / max(p2_salary, 1)
+                            self.profile.person2.annual_401k_contribution, 0
+                        ) / np.maximum(p2_salary, 1)
 
-                        p2_401k = p2_salary * p2_contribution_rate
-                        total_401k_contributions += p2_401k
-                        pretax_std += p2_401k  # Add 401k contribution to retirement account
+                    p2_401k = p2_salary * p2_contribution_rate
+                    total_401k_contributions += p2_401k
+                    pretax_std += p2_401k  # Add 401k contribution to retirement account
 
-                        # Add employer match (free money - doesn't reduce take-home)
-                        p2_employer_match = p2_salary * safe_float(
-                            self.profile.person2.employer_match_rate, 0
-                        )
-                        pretax_std += p2_employer_match
+                    # Add employer match (free money - doesn't reduce take-home)
+                    p2_employer_match = p2_salary * safe_float(
+                        self.profile.person2.employer_match_rate, 0
+                    )
+                    pretax_std += p2_employer_match
 
                 # IRA contributions (from profile level)
                 ira_contrib = safe_float(self.profile.annual_ira_contribution, 0)
