@@ -1,5 +1,5 @@
 {
-    "version": "3.9.185",
+    "version": "3.9.186",
     "release_date": "2026-02-04",
-    "release_notes": "Final comprehensive fix for high-contrast readability including risk management box"
+    "release_notes": "Fix portfolio jump discrepancy and home appreciation consistency"
 }

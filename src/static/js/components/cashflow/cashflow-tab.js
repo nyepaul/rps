@@ -414,23 +414,26 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
         if (viewType === 'annual') {
             detailedLedger.forEach(row => {
                 if (!annualLedgerMap[row.year]) {
-                    annualLedgerMap[row.year] = {
-                        federal_tax: 0,
-                        state_tax: 0,
-                        fica_tax: 0,
-                        ltcg_tax: 0,
-                        expenses_excluding_tax: 0,
-                        portfolio_balance: 0 // Will take the last one
-                    };
-                }
-                annualLedgerMap[row.year].federal_tax += (row.federal_tax || 0);
-                annualLedgerMap[row.year].state_tax += (row.state_tax || 0);
-                annualLedgerMap[row.year].fica_tax += (row.fica_tax || 0);
-                annualLedgerMap[row.year].ltcg_tax += (row.ltcg_tax || 0);
-                annualLedgerMap[row.year].expenses_excluding_tax += (row.expenses_excluding_tax || 0);
-                annualLedgerMap[row.year].portfolio_balance = row.portfolio_balance; // Year-end balance
-            });
-        }
+                                    annualLedgerMap[row.year] = {
+                                        federal_tax: 0,
+                                        state_tax: 0,
+                                        fica_tax: 0,
+                                        ltcg_tax: 0,
+                                        expenses_excluding_tax: 0,
+                                        liquidation_proceeds: 0,
+                                        withdrawals: 0,
+                                        portfolio_balance: 0 // Will take the last one
+                                    };
+                                }
+                                annualLedgerMap[row.year].federal_tax += (row.federal_tax || 0);
+                                annualLedgerMap[row.year].state_tax += (row.state_tax || 0);
+                                annualLedgerMap[row.year].fica_tax += (row.fica_tax || 0);
+                                annualLedgerMap[row.year].ltcg_tax += (row.ltcg_tax || 0);
+                                annualLedgerMap[row.year].expenses_excluding_tax += (row.expenses_excluding_tax || 0);
+                                annualLedgerMap[row.year].liquidation_proceeds += (row.liquidation_proceeds || 0);
+                                annualLedgerMap[row.year].withdrawals += (row.withdrawals || 0);
+                                annualLedgerMap[row.year].portfolio_balance = row.portfolio_balance; // Year-end balance
+                            });        }
 
         // Update chartData with tax specifics
         chartData.forEach(period => {
@@ -445,6 +448,14 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
                     period.livingExpenses = row.expenses_excluding_tax;
                     period.totalExpenses = period.totalTax + period.livingExpenses;
                     period.portfolioValue = row.portfolio_balance;
+                    period.investmentIncome = row.withdrawals;
+                    period.liquidationProceeds = row.liquidation_proceeds;
+                    
+                    // Recalculate netCashFlow from ledger data for consistency
+                    // Net = (External Income + Liquidation) - (Expenses + Taxes)
+                    // We don't include withdrawals in "Net" because they are internal transfers
+                    const externalIncome = period.workIncome + period.retirementBenefits + period.liquidationProceeds;
+                    period.netCashFlow = externalIncome - period.totalExpenses;
                 }
             } else {
                 const year = period.date.getFullYear();
@@ -459,6 +470,11 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
                     period.livingExpenses = row.expenses_excluding_tax;
                     period.totalExpenses = period.totalTax + period.livingExpenses;
                     period.portfolioValue = row.portfolio_balance;
+                    period.investmentIncome = row.withdrawals;
+                    period.liquidationProceeds = row.liquidation_proceeds;
+
+                    const externalIncome = period.workIncome + period.retirementBenefits + period.liquidationProceeds;
+                    period.netCashFlow = externalIncome - period.totalExpenses;
                 }
             }
         });
@@ -1880,7 +1896,7 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
 
         // Total expenses including taxes
         const totalExpensesThisMonth = expenses + monthlyFederalTax + monthlyStateTax + monthlyFicaTax;
-        const totalIncome = totalWorkIncome + retirementBenefits + investmentIncome;
+        const totalIncome = totalWorkIncome + retirementBenefits + investmentIncome + (liquidationProceeds || 0);
 
         // Calculate net cash flow AFTER subtracting retirement contributions
         // 401k is pre-tax, IRA is post-tax (both reduce take-home)

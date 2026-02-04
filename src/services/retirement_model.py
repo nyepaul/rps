@@ -1874,6 +1874,13 @@ class RetirementModel:
                 pretax_std *= 1 + m_ret
                 roth *= 1 + m_ret
 
+                # Apply home appreciation (monthly step)
+                for prop in home_props_state:
+                    if not prop["is_sold"]:
+                        # Standardized monthly appreciation
+                        m_apprec = prop["appreciation_rate"] / 12
+                        prop["values"] *= (1 + m_apprec)
+
                 detailed_ledger.append(
                     {
                         "year": int(simulation_year),
@@ -1884,12 +1891,14 @@ class RetirementModel:
                                 m_ord_taxable
                                 + (m_gross_ss - m_taxable_ss)
                                 + m_withdrawals
+                                + m_liquidation_proceeds
                             ).item()
                             if hasattr(m_ord_taxable, "item")
                             else (
                                 m_ord_taxable
                                 + (m_gross_ss - m_taxable_ss)
                                 + m_withdrawals
+                                + m_liquidation_proceeds
                             )
                         ),
                         "expenses_excluding_tax": float(
