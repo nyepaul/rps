@@ -21,8 +21,8 @@ def calculate_mortgage_payment(principal: float, annual_interest_rate: float, lo
     if (1 + monthly_interest_rate)**number_of_payments - 1 == 0:
         return 0 # Avoid division by zero for extremely long terms/zero interest
         
-    return principal * (monthly_interest_rate * (1 + monthly_interest_rate)**number_of_payments) / 
-           ((1 + monthly_interest_rate)**number_of_payments - 1)
+    return (principal * (monthly_interest_rate * (1 + monthly_interest_rate)**number_of_payments) / 
+            ((1 + monthly_interest_rate)**number_of_payments - 1))
 
 def project_future_value(present_value: float, annual_growth_rate: float, years: int) -> float:
     """Projects future value of an investment or asset."""
