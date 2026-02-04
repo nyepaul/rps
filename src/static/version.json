@@ -1,5 +1,5 @@
 {
-    "version": "3.9.180",
+    "version": "3.9.181",
     "release_date": "2026-02-04",
-    "release_notes": "Improve readability in high-contrast mode"
+    "release_notes": "Fix yellow button and badge readability in all themes"
 }

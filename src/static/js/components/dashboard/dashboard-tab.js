@@ -1595,9 +1595,9 @@ function showExpensesDetails(profile) {
 
     // Source badge colors
     const sourceBadges = {
-        'specified': { color: '#10b981', text: '✓ Manual', borderColor: '#10b981' },
-        'detected': { color: '#3b82f6', text: '🔍 Detected', borderColor: '#3b82f6' },
-        'merged': { color: '#8b5cf6', text: '⚡ Merged', borderColor: '#8b5cf6' }
+        'specified': { color: 'var(--badge-specified-bg)', text: '✓ Manual', borderColor: 'var(--badge-specified-bg)' },
+        'detected': { color: 'var(--badge-detected-bg)', text: '🔍 Detected', borderColor: 'var(--badge-detected-bg)' },
+        'merged': { color: 'var(--badge-merged-bg)', text: '⚡ Merged', borderColor: 'var(--badge-merged-bg)' }
     };
 
     // Category insights
@@ -1745,7 +1745,7 @@ function showExpensesDetails(profile) {
                                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 3px;">
                                     <span style="font-size: 13px; font-weight: 600; color: var(--text-primary);">${exp.name}</span>
                                     ${source !== 'specified' ? `
-                                        <span title="${tooltip}" style="font-size: 9px; padding: 2px 6px; background: ${badge.color}; color: white; border-radius: 3px; font-weight: 600; white-space: nowrap;">
+                                        <span title="${tooltip}" style="font-size: 9px; padding: 2px 6px; background: ${badge.color}; color: var(--text-on-badge); border-radius: 3px; font-weight: 600; white-space: nowrap;">
                                             ${badge.text}
                                         </span>
                                     ` : ''}

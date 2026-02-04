@@ -519,14 +519,14 @@ function getPriorityLabel(priority) {
 
 function getCategoryBadge(category) {
     const badges = {
-        'Retirement': '<span style="background: #dbeafe; color: #1e40af; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">💼 Retirement</span>',
-        'Healthcare': '<span style="background: #dcfce7; color: #15803d; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">🏥 Healthcare</span>',
-        'Savings': '<span style="background: #e0e7ff; color: #4338ca; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">💰 Savings</span>',
-        'Estate': '<span style="background: #fef3c7; color: #92400e; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">📜 Estate</span>',
-        'Education': '<span style="background: #fce7f3; color: #9f1239; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">🎓 Education</span>',
-        'Tax': '<span style="background: #fef2f2; color: #991b1b; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">📊 Tax</span>',
-        'Inheritance': '<span style="background: #f3e8ff; color: #6b21a8; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">🏛️ Inheritance</span>',
-        'Profile': '<span style="background: #e2e8f0; color: #475569; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">👤 Profile</span>'
+        'Retirement': '<span style="background: var(--info-bg); color: var(--info-color); padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">💼 Retirement</span>',
+        'Healthcare': '<span style="background: var(--success-bg); color: var(--success-text); padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">🏥 Healthcare</span>',
+        'Savings': '<span style="background: var(--info-bg); color: var(--info-color); padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">💰 Savings</span>',
+        'Estate': '<span style="background: var(--warning-bg); color: var(--warning-text); padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">📜 Estate</span>',
+        'Education': '<span style="background: var(--info-bg); color: var(--info-color); padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">🎓 Education</span>',
+        'Tax': '<span style="background: var(--danger-bg); color: var(--danger-color); padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">📊 Tax</span>',
+        'Inheritance': '<span style="background: var(--info-bg); color: var(--info-color); padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">🏛️ Inheritance</span>',
+        'Profile': '<span style="background: var(--bg-tertiary); color: var(--text-secondary); padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">👤 Profile</span>'
     };
-    return badges[category] || `<span style="background: #f1f5f9; color: #64748b; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">${category}</span>`;
+    return badges[category] || `<span style="background: var(--bg-tertiary); color: var(--text-secondary); padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">${category}</span>`;
 }

@@ -72,13 +72,13 @@ async function loadProfiles(container) {
                         <small style="color: var(--text-secondary); font-size: 11px;">Updated: ${new Date(profile.updated_at).toLocaleDateString()}</small>
                     </div>
                     <div style="display: flex; gap: 6px;" onclick="event.stopPropagation()">
-                        <button class="set-default-btn" data-profile="${profile.name}" title="${isDefault ? 'Current default' : 'Set as default'}" style="padding: 5px 8px; background: ${isDefault ? 'var(--text-secondary)' : 'var(--bg-tertiary)'}; color: ${isDefault ? 'white' : 'var(--text-primary)'}; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                        <button class="set-default-btn" data-profile="${profile.name}" title="${isDefault ? 'Current default' : 'Set as default'}" style="padding: 5px 8px; background: ${isDefault ? 'var(--text-secondary)' : 'var(--bg-tertiary)'}; color: ${isDefault ? 'var(--text-on-accent)' : 'var(--text-primary)'}; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">
                             ${isDefault ? '★ Default' : '☆ Set Default'}
                         </button>
                         <button class="edit-profile-btn" data-profile="${profile.name}" title="Edit profile" style="padding: 5px 8px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-radius: 4px; cursor: pointer;">
                             ✏️
                         </button>
-                        <button class="delete-profile-btn" data-profile="${profile.name}" title="Delete profile" style="padding: 5px 8px; background: var(--danger-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        <button class="delete-profile-btn" data-profile="${profile.name}" title="Delete profile" style="padding: 5px 8px; background: var(--danger-color); color: var(--text-on-danger); border: none; border-radius: 4px; cursor: pointer;">
                             🗑️
                         </button>
                     </div>
