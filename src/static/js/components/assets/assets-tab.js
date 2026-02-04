@@ -10,7 +10,7 @@ import { showAIImportModal } from '../ai/ai-import-modal.js';
 import { exportAssetsCSV, importAssetsCSV } from './asset-csv-handler.js';
 import { formatCurrency } from '../../utils/formatters.js';
 import { showSuccess, showError } from '../../utils/dom.js';
-import { calculateNetWorth } from '../../utils/financial-calculations.js';
+import { calculateNetWorth, calculateTotal } from '../../utils/financial_calculations.js';
 
 /**
  * Extract account number digits from a string

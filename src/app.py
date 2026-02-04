@@ -27,6 +27,7 @@ from src.routes.events import events_bp
 from src.routes.user_backups import user_backups_bp
 from src.routes.sitemap import sitemap_bp
 from src.routes.budget import budget_bp
+from src.routes.home_ownership import home_ownership_bp
 from src.__version__ import __version__, __release_date__, __release_notes__
 from src.services.enhanced_audit_logger import EnhancedAuditLogger
 import os
@@ -235,6 +236,7 @@ def create_app(config_name="development"):
     app.register_blueprint(user_backups_bp)
     app.register_blueprint(sitemap_bp)
     app.register_blueprint(budget_bp)
+    app.register_blueprint(home_ownership_bp)
 
     # Exempt API blueprints from CSRF
     from src.extensions import csrf
@@ -253,6 +255,7 @@ def create_app(config_name="development"):
     csrf.exempt(events_bp)
     csrf.exempt(user_backups_bp)
     csrf.exempt(budget_bp)
+    csrf.exempt(home_ownership_bp)
 
     # Configure logging
     if True:  # Always log to file

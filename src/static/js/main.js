@@ -439,6 +439,11 @@ async function loadTabComponent(tabName, container) {
             renderProfileTab(tabContent);
             break;
         }
+        case 'home': {
+            const { renderHomeTab } = await import('./components/home/home-tab.js');
+            renderHomeTab(tabContent);
+            break;
+        }
         case 'income': {
             const { renderIncomeTab } = await import('./components/income/income-tab.js');
             renderIncomeTab(tabContent);
@@ -482,6 +487,11 @@ async function loadTabComponent(tabName, container) {
         case 'comparison': {
             const { renderComparisonTab } = await import('./components/comparison/comparison-tab.js');
             renderComparisonTab(tabContent);
+            break;
+        }
+        case 'rent-vs-own': {
+            const { renderRentVsOwnScenario } = await import('./components/scenarios/rent-vs-own-scenario.js');
+            renderRentVsOwnScenario(tabContent);
             break;
         }
         case 'summary': {

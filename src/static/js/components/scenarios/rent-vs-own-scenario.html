@@ -1,0 +1,103 @@
+<div style="max-width: 1200px; margin: 0 auto; padding: var(--space-3);">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: var(--space-3);">
+        <div>
+            <h1 style="font-size: var(--font-2xl); margin: 0;">Rent vs. Own Scenario</h1>
+            <p style="color: var(--text-secondary); margin: 0; font-size: 13px;">
+                Compare the financial impact of renting versus owning a primary residence.
+            </p>
+        </div>
+        <div style="display: flex; gap: var(--space-2);">
+            <button type="button" id="cancel-btn" class="secondary-btn">
+                Cancel
+            </button>
+            <button type="submit" form="rent-vs-own-form" id="run-scenario-btn" class="primary-btn">
+                Run Scenario
+            </button>
+        </div>
+    </div>
+
+    <div class="form-grid-3-col">
+        <!-- Column 1: Scenario Configuration -->
+        <div class="form-section">
+            <h2 class="form-section-title">Scenario Configuration</h2>
+            <div class="form-group">
+                <label for="scenario_name">Scenario Name</label>
+                <input type="text" id="scenario_name" name="scenario_name" placeholder="e.g., Q1 2026 Analysis">
+            </div>
+            <div class="form-group">
+                <label for="existing_scenarios_select">Load Existing</label>
+                <select id="existing_scenarios_select" name="existing_scenarios_select">
+                    <option value="">Loading...</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="time_horizon_years">Time Horizon (Years)</label>
+                <input type="number" id="time_horizon_years" name="time_horizon_years" min="1" max="60" step="1">
+            </div>
+            <div class="form-group">
+                <label for="opportunity_cost_investment_return_pct">Opportunity Cost Return (%) <button type="button" class="help-icon" data-tooltip="Expected annual return on money invested instead of spent on down payment/costs."></button></label>
+                <input type="number" id="opportunity_cost_investment_return_pct" name="opportunity_cost_investment_return_pct" min="0" max="30" step="0.1">
+            </div>
+        </div>
+
+        <!-- Column 2: Owning Scenario Details -->
+        <div class="form-section">
+            <h2 class="form-section-title">Owning Scenario</h2>
+            <form id="rent-vs-own-form">
+                <div class="form-group">
+                    <label for="own_purchase_price">Purchase Price ($)</label>
+                    <input type="number" id="own_purchase_price" name="own_purchase_price" min="0" step="1000">
+                </div>
+                <div class="form-group">
+                    <label for="own_down_payment_pct">Down Payment (%)</label>
+                    <input type="number" id="own_down_payment_pct" name="own_down_payment_pct" min="0" max="100" step="1">
+                </div>
+                <div class="form-group">
+                    <label for="own_mortgage_term_years">Mortgage Term (Years)</label>
+                    <input type="number" id="own_mortgage_term_years" name="own_mortgage_term_years" min="5" max="50" step="1">
+                </div>
+                <div class="form-group">
+                    <label for="own_interest_rate_pct">Interest Rate (%)</label>
+                    <input type="number" id="own_interest_rate_pct" name="own_interest_rate_pct" min="0" max="20" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="own_property_tax_rate_pct">Property Tax Rate (%)</label>
+                    <input type="number" id="own_property_tax_rate_pct" name="own_property_tax_rate_pct" min="0" max="10" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="own_home_insurance_annual">Annual Home Insurance ($)</label>
+                    <input type="number" id="own_home_insurance_annual" name="own_home_insurance_annual" min="0" step="10">
+                </div>
+                <div class="form-group">
+                    <label for="own_maintenance_annual_pct">Annual Maintenance (%)</label>
+                    <input type="number" id="own_maintenance_annual_pct" name="own_maintenance_annual_pct" min="0" max="10" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="own_appreciation_annual_pct">Annual Appreciation (%)</label>
+                    <input type="number" id="own_appreciation_annual_pct" name="own_appreciation_annual_pct" min="0" max="20" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="own_closing_costs_pct">Closing Costs (%) <button type="button" class="help-icon" data-tooltip="One-time costs to buy, as percentage of purchase price."></button></label>
+                    <input type="number" id="own_closing_costs_pct" name="own_closing_costs_pct" min="0" max="10" step="0.1">
+                </div>
+            </form>
+        </div>
+
+        <!-- Column 3: Renting Scenario Details -->
+        <div class="form-section">
+            <h2 class="form-section-title">Renting Scenario</h2>
+            <div class="form-group">
+                <label for="rent_initial_monthly_rent">Initial Monthly Rent ($)</label>
+                <input type="number" id="rent_initial_monthly_rent" name="rent_initial_monthly_rent" min="0" step="100">
+            </div>
+            <div class="form-group">
+                <label for="rent_annual_rent_increase_pct">Annual Rent Increase (%)</label>
+                <input type="number" id="rent_annual_rent_increase_pct" name="rent_annual_rent_increase_pct" min="0" max="10" step="0.1">
+            </div>
+        </div>
+    </div>
+
+    <div id="scenario-results" style="margin-top: var(--space-5);">
+        <!-- Results will be displayed here -->
+    </div>
+</div>

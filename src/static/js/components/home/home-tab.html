@@ -1,0 +1,101 @@
+<div style="max-width: 1000px; margin: 0 auto; padding: var(--space-3);">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: var(--space-3);">
+        <div>
+            <h1 style="font-size: var(--font-2xl); margin: 0;">🏠 Home & Mortgage</h1>
+            <p style="color: var(--text-secondary); margin: 0; font-size: 13px;">
+                Manage details for your primary residence and mortgage.
+            </p>
+        </div>
+        <div style="display: flex; gap: var(--space-2);">
+            <button type="button" id="cancel-btn" style="padding: 6px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                Cancel
+            </button>
+            <button type="submit" form="home-form" id="save-btn" style="padding: 6px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                Save Changes
+            </button>
+        </div>
+    </div>
+
+    <form id="home-form">
+        <div class="form-grid-2-col">
+            <!-- Column 1: Home Details -->
+            <div class="form-section">
+                <h2 class="form-section-title">Home Details</h2>
+                <div class="form-group">
+                    <label for="home_name">Home Name</label>
+                    <input type="text" id="home_name" name="home_name" placeholder="e.g., Primary Residence">
+                </div>
+                <div class="form-group">
+                    <label for="current_value">Current Market Value ($)</label>
+                    <input type="number" id="current_value" name="current_value" min="0" step="1000">
+                </div>
+                <div class="form-group">
+                    <label for="appreciation_annual_pct">Annual Appreciation (%) <button type="button" class="help-icon" data-tooltip="Expected annual growth rate of your home's value."></button></label>
+                    <input type="number" id="appreciation_annual_pct" name="appreciation_annual_pct" min="0" max="100" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="property_tax_rate">Annual Property Tax Rate (%) <button type="button" class="help-icon" data-tooltip="Annual property tax as a percentage of your home's current market value."></button></label>
+                    <input type="number" id="property_tax_rate" name="property_tax_rate" min="0" max="10" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="home_insurance_annual">Annual Home Insurance ($)</label>
+                    <input type="number" id="home_insurance_annual" name="home_insurance_annual" min="0" step="10">
+                </div>
+                <div class="form-group">
+                    <label for="maintenance_annual_pct">Annual Maintenance (%) <button type="button" class="help-icon" data-tooltip="Estimated annual maintenance and repair costs as a percentage of your home's value."></button></label>
+                    <input type="number" id="maintenance_annual_pct" name="maintenance_annual_pct" min="0" max="10" step="0.01">
+                </div>
+            </div>
+
+            <!-- Column 2: Mortgage & Renting Details -->
+            <div class="form-section">
+                <h2 class="form-section-title">Mortgage Details</h2>
+                <div class="form-group">
+                    <label>Do you have a mortgage?</label>
+                    <div style="display: flex; gap: var(--space-3);">
+                        <label><input type="radio" id="has_mortgage_yes" name="has_mortgage" value="yes"> Yes</label>
+                        <label><input type="radio" id="has_mortgage_no" name="has_mortgage" value="no"> No</label>
+                    </div>
+                </div>
+
+                <div id="mortgage-details-section">
+                    <div class="form-group">
+                        <label for="purchase_price">Original Purchase Price ($)</label>
+                        <input type="number" id="purchase_price" name="purchase_price" min="0" step="1000">
+                    </div>
+                    <div class="form-group">
+                        <label for="down_payment">Original Down Payment ($)</label>
+                        <input type="number" id="down_payment" name="down_payment" min="0" step="1000">
+                    </div>
+                    <div class="form-group">
+                        <label for="loan_amount">Original Loan Amount ($)</label>
+                        <input type="number" id="loan_amount" name="loan_amount" min="0" step="1000" readonly class="calculated-field">
+                    </div>
+                    <div class="form-group">
+                        <label for="remaining_loan_balance">Remaining Loan Balance ($)</label>
+                        <input type="number" id="remaining_loan_balance" name="remaining_loan_balance" min="0" step="1000">
+                    </div>
+                    <div class="form-group">
+                        <label for="interest_rate">Interest Rate (%)</label>
+                        <input type="number" id="interest_rate" name="interest_rate" min="0" max="20" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="loan_term_years">Loan Term (Years)</label>
+                        <input type="number" id="loan_term_years" name="loan_term_years" min="1" max="50" step="1">
+                    </div>
+                </div>
+
+                <h2 class="form-section-title" style="margin-top: var(--space-5);">Renting Details (for comparison)</h2>
+                <p class="form-section-description">These values are used in "Rent vs. Own" scenarios if you were to rent a similar home.</p>
+                <div class="form-group">
+                    <label for="initial_rent_pm">Initial Monthly Rent ($)</label>
+                    <input type="number" id="initial_rent_pm" name="initial_rent_pm" min="0" step="100">
+                </div>
+                <div class="form-group">
+                    <label for="rent_increase_annual_pct">Annual Rent Increase (%)</label>
+                    <input type="number" id="rent_increase_annual_pct" name="rent_increase_annual_pct" min="0" max="10" step="0.1">
+                </div>
+            </div>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,166 @@
+/* src/static/css/rent-vs-own-scenario.css */
+
+.form-grid-3-col {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--space-3);
+}
+
+.form-section {
+    background: var(--bg-secondary);
+    padding: var(--space-3);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.form-section-title {
+    font-size: 15px;
+    margin-bottom: var(--space-3);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: var(--space-2);
+    color: var(--accent-color);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-section-description {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: -var(--space-2);
+    margin-bottom: var(--space-3);
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: var(--space-2);
+}
+
+.form-group label {
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group select {
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 13px;
+    transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.scenario-results-section {
+    background: var(--bg-secondary);
+    padding: var(--space-3);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    margin-top: var(--space-3);
+}
+
+.summary-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+}
+
+.summary-card {
+    background: var(--bg-primary);
+    padding: var(--space-3);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    text-align: center;
+}
+
+.summary-card.positive {
+    background-color: var(--success-bg);
+    border-color: var(--success-color);
+    color: var(--success-color);
+}
+
+.summary-card.negative {
+    background-color: var(--danger-bg);
+    border-color: var(--danger-color);
+    color: var(--danger-color);
+}
+
+.summary-card h4 {
+    font-size: 14px;
+    margin-top: 0;
+    margin-bottom: var(--space-1);
+    color: var(--text-secondary);
+}
+
+.summary-card .summary-value {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: var(--space-1);
+    color: var(--text-primary);
+}
+
+.summary-card.positive .summary-value,
+.summary-card.positive h4 {
+    color: var(--success-color);
+}
+
+.summary-card.negative .summary-value,
+.summary-card.negative h4 {
+    color: var(--danger-color);
+}
+
+.summary-card .summary-label {
+    font-size: 12px;
+    color: var(--text-light);
+}
+
+.results-comparison-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+}
+
+.own-results, .rent-results {
+    background: var(--bg-primary);
+    padding: var(--space-3);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.own-results ul, .rent-results ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.own-results li, .rent-results li {
+    padding: var(--space-1) 0;
+    border-bottom: 1px dashed var(--border-color);
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.own-results li:last-child, .rent-results li:last-child {
+    border-bottom: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+    .form-grid-3-col {
+        grid-template-columns: 1fr;
+    }
+}
