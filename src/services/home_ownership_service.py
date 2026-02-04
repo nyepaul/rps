@@ -70,9 +70,11 @@ class HomeOwnershipService:
         net_worth_rent = initial_owning_cash_outlay + opportunity_gain # cash not spent, invested
 
         # Total costs
-        total_owning_costs = results_own["total_mortgage_payments"] + results_own["total_property_tax"] + 
-                             results_own["total_insurance"] + results_own["total_maintenance"] + 
-                             owning_data["purchase_price"] * owning_data["closing_costs_pct"]
+        total_owning_costs = (
+            results_own["total_mortgage_payments"] + results_own["total_property_tax"] + 
+            results_own["total_insurance"] + results_own["total_maintenance"] + 
+            owning_data["purchase_price"] * owning_data["closing_costs_pct"]
+        )
         total_renting_costs = results_rent["total_rent_payments"]
 
         return {
