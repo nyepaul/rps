@@ -126,7 +126,7 @@ def get_profile(name: str):
 
         enhanced_audit_logger.log(
             action="VIEW_PROFILE",
-            table_name="profile",
+            table_name="profiles",
             record_id=profile.id,
             details={"profile_name": name},
             status_code=200,
@@ -178,7 +178,7 @@ def create_profile():
 
         enhanced_audit_logger.log(
             action="CREATE_PROFILE",
-            table_name="profile",
+            table_name="profiles",
             record_id=profile.id,
             details={
                 "profile_name": data.name,
@@ -287,7 +287,7 @@ def update_profile(name: str):
 
         enhanced_audit_logger.log(
             action="UPDATE_PROFILE",
-            table_name="profile",
+            table_name="profiles",
             record_id=profile.id,
             details={"profile_name": name, "updated_fields": updated_fields},
             status_code=200,
@@ -330,7 +330,7 @@ def delete_profile(name: str):
 
         enhanced_audit_logger.log(
             action="DELETE_PROFILE",
-            table_name="profile",
+            table_name="profiles",
             record_id=profile_id,
             details={"profile_name": name},
             status_code=200,
@@ -414,7 +414,7 @@ def clone_profile(name: str):
 
         enhanced_audit_logger.log(
             action="CLONE_PROFILE",
-            table_name="profile",
+            table_name="profiles",
             record_id=cloned_profile.id,
             details={
                 "source_profile": name,
@@ -481,7 +481,7 @@ def export_assets_csv(name: str):
 
         enhanced_audit_logger.log(
             action="EXPORT_ASSETS_CSV",
-            table_name="profile",
+            table_name="profiles",
             record_id=profile.id,
             details={
                 "profile_name": name,
@@ -586,7 +586,7 @@ def import_assets_csv(name: str):
 
         enhanced_audit_logger.log(
             action="IMPORT_ASSETS_CSV",
-            table_name="profile",
+            table_name="profiles",
             record_id=profile.id,
             details={
                 "profile_name": name,
@@ -786,7 +786,7 @@ def import_transactions_stream(name: str):
             # Audit logging
             enhanced_audit_logger.log(
                 action="CSV_TRANSACTION_IMPORT",
-                table_name="profile",
+                table_name="profiles",
                 record_id=profile.id,
                 details={
                     "transaction_count": len(transactions),
@@ -914,7 +914,7 @@ def reconcile_transactions(name: str):
         # Audit log
         enhanced_audit_logger.log(
             action="CSV_RECONCILE_APPLIED",
-            table_name="profile",
+            table_name="profiles",
             record_id=profile.id,
             details={
                 "actions_applied": applied_count,
