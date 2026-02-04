@@ -59,8 +59,10 @@ class HomeOwnershipService:
         results_rent = self._calculate_renting_costs(renting_data, time_horizon_years)
         
         # Calculate opportunity cost of down payment and closing costs
-        initial_owning_cash_outlay = owning_data["purchase_price"] * owning_data["down_payment_pct"] + 
-                                     owning_data["purchase_price"] * owning_data["closing_costs_pct"]
+        initial_owning_cash_outlay = (
+            owning_data["purchase_price"] * owning_data["down_payment_pct"] + 
+            owning_data["purchase_price"] * owning_data["closing_costs_pct"]
+        )
 
         opportunity_gain = project_future_value(initial_owning_cash_outlay, opportunity_cost_return, time_horizon_years) - initial_owning_cash_outlay
         
