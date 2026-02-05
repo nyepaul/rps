@@ -386,14 +386,14 @@ function setupSmartDefaults(container) {
 /**
  * Add a new child to the form
  */
-function addChildToForm(container) {
+function addChildToForm(container, child = {}, index = null) {
     const childrenList = container.querySelector('#children-list');
     const existingChildren = childrenList.querySelectorAll('.child-item');
-    const newIndex = existingChildren.length;
+    const newIndex = index !== null ? index : existingChildren.length;
 
     // Remove "no children" message if present
     const noChildrenMsg = childrenList.querySelector('p');
-    if (noChildrenMsg) {
+    if (noChildrenMsg && existingChildren.length === 0 && index === null) { // Only remove if actually adding first child
         noChildrenMsg.remove();
     }
 
@@ -408,15 +408,15 @@ function addChildToForm(container) {
             <div class="form-grid">
                 <div class="form-group">
                     <label for="child_${newIndex}_name">Name</label>
-                    <input id="child_${newIndex}_name" type="text" name="child_${newIndex}_name" value="" placeholder="Optional">
+                    <input id="child_${newIndex}_name" type="text" name="child_${newIndex}_name" value="${child.name || ''}" placeholder="Optional">
                 </div>
                 <div class="form-group">
                     <label for="child_${newIndex}_birth_year">Birth Year</label>
-                    <input id="child_${newIndex}_birth_year" type="number" name="child_${newIndex}_birth_year" value="" min="1900" max="2100" placeholder="e.g., 2010">
+                    <input id="child_${newIndex}_birth_year" type="number" name="child_${newIndex}_birth_year" value="${child.birth_year || ''}" min="1900" max="2100" placeholder="e.g., 2010">
                 </div>
                 <div class="form-group" style="grid-column: span 2;">
                     <label for="child_${newIndex}_notes">Notes</label>
-                    <input id="child_${newIndex}_notes" type="text" name="child_${newIndex}_notes" value="" placeholder="e.g., College 2028-2032">
+                    <input id="child_${newIndex}_notes" type="text" name="child_${newIndex}_notes" value="${child.notes || ''}" placeholder="e.g., College 2028-2032">
                 </div>
             </div>
         </div>
