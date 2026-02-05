@@ -1,5 +1,5 @@
 {
-    "version": "3.9.186",
+    "version": "patch",
     "release_date": "2026-02-04",
-    "release_notes": "Fix portfolio jump discrepancy and home appreciation consistency"
+    "release_notes": "Fix profile tab display, data population, and UI test issues"
 }
