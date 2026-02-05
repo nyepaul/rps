@@ -61,25 +61,34 @@ class Profile:
         # If we have both _data and data_iv, it's encrypted
         if self._data and self.data_iv:
             try:
+                logger.debug(f"DEBUG: Profile ID {self.id} data_dict - encrypted _data: {self._data[:50]}...")
+                logger.debug(f"DEBUG: Profile ID {self.id} data_dict - data_iv: {self.data_iv[:20]}...")
                 self._decrypted_data = decrypt_dict(self._data, self.data_iv)
+                logger.debug(f"DEBUG: Profile ID {self.id} data_dict - decrypted_data (from decrypt_dict): {self._decrypted_data}")
                 return self._decrypted_data or {}
-            except Exception:
+            except Exception as e:
+                logger.debug(f"DEBUG: Profile ID {self.id} data_dict - Decryption failed: {e}")
                 # Decryption failed, might be plain JSON (for backward compatibility)
                 pass
 
         # Fallback: treat as plain JSON
         if isinstance(self._data, str):
             try:
+                logger.debug(f"DEBUG: Profile ID {self.id} data_dict - attempting json.loads on _data: {self._data[:50]}...")
                 self._decrypted_data = json.loads(self._data)
+                logger.debug(f"DEBUG: Profile ID {self.id} data_dict - decrypted_data (from json.loads): {self._decrypted_data}")
                 return self._decrypted_data
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as e:
+                logger.debug(f"DEBUG: Profile ID {self.id} data_dict - json.loads failed: {e}")
                 return {}
 
+        logger.debug(f"DEBUG: Profile ID {self.id} data_dict - returning raw _data: {self._data}")
         return self._data or {}
 
     @data_dict.setter
     def data_dict(self, value):
         """Set data from dictionary (will be encrypted on save)."""
+        logger.debug(f"DEBUG: Profile ID {self.id} data_dict.setter - setting _decrypted_data: {value}")
         self._decrypted_data = value
         # Don't encrypt yet - will be done in save()
 
@@ -90,7 +99,10 @@ class Profile:
             "SELECT * FROM profiles WHERE id = ? AND user_id = ?", (profile_id, user_id)
         )
         if row:
-            return Profile(**dict(row))
+            profile_obj = Profile(**dict(row))
+            logger.debug(f"DEBUG: Profile ID {profile_obj.id} get_by_id - loaded _data: {profile_obj._data[:50] if profile_obj._data else 'None'}")
+            logger.debug(f"DEBUG: Profile ID {profile_obj.id} get_by_id - loaded data_iv: {profile_obj.data_iv[:20] if profile_obj.data_iv else 'None'}")
+            return profile_obj
         return None
 
     @staticmethod
@@ -100,7 +112,10 @@ class Profile:
             "SELECT * FROM profiles WHERE name = ? AND user_id = ?", (name, user_id)
         )
         if row:
-            return Profile(**dict(row))
+            profile_obj = Profile(**dict(row))
+            logger.debug(f"DEBUG: Profile ID {profile_obj.id} get_by_name - loaded _data: {profile_obj._data[:50] if profile_obj._data else 'None'}")
+            logger.debug(f"DEBUG: Profile ID {profile_obj.id} get_by_name - loaded data_iv: {profile_obj.data_iv[:20] if profile_obj.data_iv else 'None'}")
+            return profile_obj
         return None
 
     @staticmethod
@@ -138,21 +153,27 @@ class Profile:
                 elif isinstance(self._data, dict):
                     self._data = json.dumps(self._data)
                     self.data_iv = None
+                logger.debug(f"DEBUG: Profile ID {self.id} save() - Demo user, _data (JSON): {self._data[:50] if self._data else 'None'}")
             else:
                 # Encrypt data if we have decrypted data cached
                 if self._decrypted_data is not None:
+                    logger.debug(f"DEBUG: Profile ID {self.id} save() - Encrypting _decrypted_data: {self._decrypted_data}")
                     encrypted_data, data_iv = encrypt_dict(self._decrypted_data)
                     self._data = encrypted_data
                     self.data_iv = data_iv
                 elif isinstance(self._data, dict):
                     # Data is a plain dict, encrypt it
+                    logger.debug(f"DEBUG: Profile ID {self.id} save() - Encrypting dict _data: {self._data}")
                     encrypted_data, data_iv = encrypt_dict(self._data)
                     self._data = encrypted_data
                     self.data_iv = data_iv
+                logger.debug(f"DEBUG: Profile ID {self.id} save() - Encrypted _data: {self._data[:50] if self._data else 'None'}")
+                logger.debug(f"DEBUG: Profile ID {self.id} save() - data_iv: {self.data_iv[:20] if self.data_iv else 'None'}")
             # Otherwise, data is already encrypted (or plain JSON from old records)
 
             if is_new:
                 # Insert new profile
+                logger.debug(f"DEBUG: Profile ID {self.id} save() - Inserting new profile with _data: {self._data[:50] if self._data else 'None'}")
                 cursor.execute(
                     """
                     INSERT INTO profiles (user_id, name, birth_date, retirement_date, data, data_iv, created_at, updated_at)
@@ -170,12 +191,14 @@ class Profile:
                     ),
                 )
                 self.id = cursor.lastrowid
+                logger.debug(f"DEBUG: Profile ID {self.id} save() - Inserted, new ID: {self.id}")
                 # Log creation
                 log_create(
                     "profile", self.id, self.user_id, f"Created profile: {self.name}"
                 )
             else:
                 # Update existing profile
+                logger.debug(f"DEBUG: Profile ID {self.id} save() - Updating profile with _data: {self._data[:50] if self._data else 'None'}")
                 cursor.execute(
                     """
                     UPDATE profiles
@@ -193,6 +216,7 @@ class Profile:
                         self.user_id,
                     ),
                 )
+                logger.debug(f"DEBUG: Profile ID {self.id} save() - Updated profile ID: {self.id}")
                 # Log update
                 log_update(
                     "profile", self.id, self.user_id, f"Updated profile: {self.name}"
