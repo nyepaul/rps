@@ -36,21 +36,12 @@ export async function renderProfileTab(container) {
     const template = await loadTemplate('/static/profile-tab.html');
     container.innerHTML = template;
 
-    // Dynamically load CSS
-    // Removed dynamic CSS loading to avoid MIME type errors
-    // const link = document.createElement('link');
-    // link.rel = 'stylesheet';
-    // link.href = '/static/css/profile-tab.css';
-    // document.head.appendChild(link);
-
     // Populate form fields with profile data
     const data = profile.data || {};
     const person = data.person || {};
     const spouse = data.spouse || {};
     const children = data.children || [];
     const financial = data.financial || {};
-    const address = data.address || {};
-
     const address = data.address || {};
 
     container.querySelector('#profile-name-display').textContent = profile.name;
