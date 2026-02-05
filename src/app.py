@@ -272,9 +272,9 @@ def create_app(config_name="development"):
                 "%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]"
             )
         )
-        file_handler.setLevel(logging.INFO)
+        file_handler.setLevel(logging.DEBUG)
         app.logger.addHandler(file_handler)
-        app.logger.setLevel(logging.INFO)
+        app.logger.setLevel(logging.DEBUG)
         app.logger.info("Retirement Planning System startup")
 
     # Security headers - prevent caching of sensitive data
@@ -327,10 +327,10 @@ def create_app(config_name="development"):
         csp_directives = [
             "default-src 'self'",
             "script-src 'self' https://cdn.jsdelivr.net https://unpkg.com",
-            "style-src 'self' 'unsafe-inline' https://unpkg.com",  # unsafe-inline kept for style attributes
+            "style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com",  # unsafe-inline kept for style attributes
             "img-src 'self' data: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com",
-            "font-src 'self' data:",
-            "connect-src 'self' https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com",
+            "font-src 'self' data: https://fonts.gstatic.com",
+            "connect-src 'self' https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://cdn.jsdelivr.net https://unpkg.com",
             "frame-ancestors 'self'",
             "base-uri 'self'",
             "form-action 'self'",

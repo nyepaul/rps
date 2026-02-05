@@ -33,14 +33,15 @@ export async function renderProfileTab(container) {
     }
 
     // Load template
-    const template = await loadTemplate('/static/js/components/profile/profile-tab.html');
+    const template = await loadTemplate('/static/profile-tab.html');
     container.innerHTML = template;
 
     // Dynamically load CSS
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = '/static/css/profile-tab.css';
-    document.head.appendChild(link);
+    // Removed dynamic CSS loading to avoid MIME type errors
+    // const link = document.createElement('link');
+    // link.rel = 'stylesheet';
+    // link.href = '/static/css/profile-tab.css';
+    // document.head.appendChild(link);
 
     // Populate form fields with profile data
     const data = profile.data || {};
@@ -50,84 +51,54 @@ export async function renderProfileTab(container) {
     const financial = data.financial || {};
     const address = data.address || {};
 
-    console.log("DEBUG: Profile object:", profile);
-    console.log("DEBUG: Data object:", data);
-    console.log("DEBUG: Person object:", person);
-    console.log("DEBUG: Spouse object:", spouse);
-    console.log("DEBUG: Children array:", children);
-    console.log("DEBUG: Financial object:", financial);
-    console.log("DEBUG: Address object:", address);
+    const address = data.address || {};
 
     container.querySelector('#profile-name-display').textContent = profile.name;
-    console.log("DEBUG: #profile-name-display textContent:", container.querySelector('#profile-name-display').textContent);
     container.querySelector('#name').value = profile.name || '';
-    console.log("DEBUG: #name value:", container.querySelector('#name').value);
     container.querySelector('#birth_date').value = profile.birth_date || '';
-    console.log("DEBUG: #birth_date value:", container.querySelector('#birth_date').value);
     container.querySelector('#retirement_date').value = profile.retirement_date || '';
-    console.log("DEBUG: #retirement_date value:", container.querySelector('#retirement_date').value);
     container.querySelector('#current_age').value = person.current_age || '';
-    console.log("DEBUG: #current_age value:", container.querySelector('#current_age').value);
     container.querySelector('#retirement_age').value = person.retirement_age || '';
-    console.log("DEBUG: #retirement_age value:", container.querySelector('#retirement_age').value);
     container.querySelector('#life_expectancy').value = person.life_expectancy || 95;
-    console.log("DEBUG: #life_expectancy value:", container.querySelector('#life_expectancy').value);
     container.querySelector('#ss_benefit').value = financial.social_security_benefit || 0;
-    console.log("DEBUG: #ss_benefit value:", container.querySelector('#ss_benefit').value);
     
     // Select SS Claiming Age
     const ssClaimingAgeSelect = container.querySelector('#ss_claiming_age');
     if (ssClaimingAgeSelect) {
         const valueToSelect = financial.ss_claiming_age ? financial.ss_claiming_age.toString() : '67';
         ssClaimingAgeSelect.value = valueToSelect;
-        console.log("DEBUG: #ss_claiming_age value:", ssClaimingAgeSelect.value);
     }
 
     container.querySelector('#annual_401k').value = (financial.annual_401k_contribution_rate || 0) * 100;
-    console.log("DEBUG: #annual_401k value:", container.querySelector('#annual_401k').value);
     container.querySelector('#employer_match').value = (financial.employer_match_rate || 0) * 100;
-    console.log("DEBUG: #employer_match value:", container.querySelector('#employer_match').value);
 
     // Address
     container.querySelector('#address_street').value = address.street || '';
-    console.log("DEBUG: #address_street value:", container.querySelector('#address_street').value);
     container.querySelector('#address_city').value = address.city || '';
-    console.log("DEBUG: #address_city value:", container.querySelector('#address_city').value);
     container.querySelector('#address_zip').value = address.zip || '';
-    console.log("DEBUG: #address_zip value:", container.querySelector('#address_zip').value);
     const addressStateSelect = container.querySelector('#address_state');
     if (addressStateSelect) {
         addressStateSelect.value = address.state || '';
-        console.log("DEBUG: #address_state value:", addressStateSelect.value);
     }
 
     // Spouse
     container.querySelector('#spouse_name').value = spouse.name || '';
-    console.log("DEBUG: #spouse_name value:", container.querySelector('#spouse_name').value);
     container.querySelector('#spouse_birth_date').value = spouse.birth_date || '';
-    console.log("DEBUG: #spouse_birth_date value:", container.querySelector('#spouse_birth_date').value);
     container.querySelector('#spouse_retirement_date').value = spouse.retirement_date || '';
-    console.log("DEBUG: #spouse_retirement_date value:", container.querySelector('#spouse_retirement_date').value);
     container.querySelector('#spouse_current_age').value = spouse.current_age || '';
-    console.log("DEBUG: #spouse_current_age value:", container.querySelector('#spouse_current_age').value);
     container.querySelector('#spouse_retirement_age').value = spouse.retirement_age || '';
-    console.log("DEBUG: #spouse_retirement_age value:", container.querySelector('#spouse_retirement_age').value);
     container.querySelector('#spouse_life_expectancy').value = spouse.life_expectancy || 95;
-    console.log("DEBUG: #spouse_life_expectancy value:", container.querySelector('#spouse_life_expectancy').value);
     container.querySelector('#spouse_ss_benefit').value = spouse.social_security_benefit || 0;
-    console.log("DEBUG: #spouse_ss_benefit value:", container.querySelector('#spouse_ss_benefit').value);
     const spouseSSClaimingAgeSelect = container.querySelector('#spouse_ss_claiming_age');
     if (spouseSSClaimingAgeSelect) {
         const valueToSelect = spouse.ss_claiming_age ? spouse.ss_claiming_age.toString() : '67';
         spouseSSClaimingAgeSelect.value = valueToSelect;
-        console.log("DEBUG: #spouse_ss_claiming_age value:", spouseSSClaimingAgeSelect.value);
     }
     
     // Show/hide clear spouse button
     const clearSpouseBtn = container.querySelector('#clear-spouse-btn');
     if (clearSpouseBtn) {
         clearSpouseBtn.style.display = spouse.name ? 'inline-block' : 'none';
-        console.log("DEBUG: #clear-spouse-btn display:", clearSpouseBtn.style.display);
     }
 
     // Children
@@ -136,11 +107,8 @@ export async function renderProfileTab(container) {
         childrenListContainer.innerHTML = ''; // Clear initial "No children" message
         if (children.length === 0) {
             childrenListContainer.innerHTML = '<p style="color: var(--text-secondary); font-style: italic; font-size: 12px; margin: 10px 0;">No children added.</p>';
-            console.log("DEBUG: No children added message displayed.");
         } else {
-            console.log("DEBUG: Populating children...");
             children.forEach((child, index) => {
-                console.log(`DEBUG: Child ${index}:`, child);
                 addChildToForm(container, child, index);
             });
         }
