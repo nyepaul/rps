@@ -469,7 +469,7 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(data => {
             const badge = document.querySelector('.version-badge');
             if (badge) {
-                badge.textContent = `System Version: v${data.version}`;
+                badge.textContent = `v${data.version}`;
                 badge.title = `Release Date: ${data.release_date}\nNotes: ${data.release_notes}`;
             }
         })
