@@ -869,11 +869,15 @@ def advisor_chat():
         if not profile:
             return jsonify({"error": "Profile not found"}), 404
 
+        # Prepare context from profile
+        profile_data = profile.data_dict
+        financial = profile_data.get("financial", {})
+        assets = profile_data.get("assets", {})
+
         # Get API keys from user account (not profile)
         api_keys = current_user.api_keys_dict
-
         # Determine provider: priority = request > account preference > Gemini (if key exists)
-        provider = requested_provider or api_keys.get("preferred_ai_provider") or data_dict.get("preferred_ai_provider")
+        provider = requested_provider or api_keys.get("preferred_ai_provider") or profile_data.get("preferred_ai_provider")
 
         # If no preferred provider, find first available key
         if not provider:

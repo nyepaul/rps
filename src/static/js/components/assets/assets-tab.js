@@ -10,7 +10,7 @@ import { showAIImportModal } from '../ai/ai-import-modal.js';
 import { exportAssetsCSV, importAssetsCSV } from './asset-csv-handler.js';
 import { formatCurrency } from '../../utils/formatters.js';
 import { showSuccess, showError } from '../../utils/dom.js';
-import { calculateNetWorth, calculateTotal } from '../../utils/financial_calculations.js';
+import { calculateNetWorth, calculateTotal } from '../../utils/financial-calculations.js';
 
 /**
  * Extract account number digits from a string
@@ -322,19 +322,6 @@ function renderSummaryCards(assets, container, selectedFilter) {
             });
         }
     });
-}
-
-/**
- * Calculate total for an array of assets
- */
-function calculateTotal(items, field1 = 'value', field2 = null) {
-    if (!items || !Array.isArray(items)) {
-        return 0;
-    }
-    return items.reduce((sum, item) => {
-        const value = item[field1] || (field2 ? item[field2] : 0) || 0;
-        return sum + value;
-    }, 0);
 }
 
 /**

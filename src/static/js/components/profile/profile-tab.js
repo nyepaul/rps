@@ -33,7 +33,7 @@ export async function renderProfileTab(container) {
     }
 
     // Load template
-    const template = await loadTemplate('/static/profile-tab.html');
+    const template = await loadTemplate('/js/components/profile/profile-tab.html');
     container.innerHTML = template;
 
     // Populate form fields with profile data

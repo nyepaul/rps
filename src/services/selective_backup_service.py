@@ -39,7 +39,7 @@ class SelectiveBackupService:
                 p.id, p.name, p.user_id, p.birth_date, p.retirement_date,
                 p.updated_at, p.created_at,
                 u.username, u.email
-            FROM profile p
+            FROM profiles p
             JOIN users u ON p.user_id = u.id
             ORDER BY u.username, p.name
         """)
@@ -71,7 +71,7 @@ class SelectiveBackupService:
             SELECT
                 g.id, g.name, g.description,
                 (SELECT COUNT(DISTINCT ug.user_id) FROM user_groups ug WHERE ug.group_id = g.id) as member_count,
-                (SELECT COUNT(DISTINCT p.id) FROM profile p
+                (SELECT COUNT(DISTINCT p.id) FROM profiles p
                  JOIN user_groups ug ON p.user_id = ug.user_id
                  WHERE ug.group_id = g.id) as profile_count
             FROM groups g
@@ -107,7 +107,7 @@ class SelectiveBackupService:
                 group_profiles = connection.db.execute(
                     """
                     SELECT DISTINCT p.id
-                    FROM profile p
+                    FROM profiles p
                     JOIN user_groups ug ON p.user_id = ug.user_id
                     WHERE ug.group_id = ?
                 """,
@@ -143,7 +143,7 @@ class SelectiveBackupService:
         # Fetch profiles with all data
         for profile_id in all_profile_ids:
             profile = connection.db.execute_one(
-                "SELECT * FROM profile WHERE id = ?", (profile_id,)
+                "SELECT * FROM profiles WHERE id = ?", (profile_id,)
             )
             if profile:
                 p_dict = dict(profile)
@@ -336,7 +336,7 @@ class SelectiveBackupService:
 
                     # Check if profile exists
                     existing = cursor.execute(
-                        "SELECT id FROM profile WHERE id = ?", (profile_id,)
+                        "SELECT id FROM profiles WHERE id = ?", (profile_id,)
                     ).fetchone()
 
                     if existing:
@@ -359,7 +359,7 @@ class SelectiveBackupService:
                             # Update profile
                             cursor.execute(
                                 """
-                                UPDATE profile
+                                UPDATE profiles
                                 SET name = ?, birth_date = ?, retirement_date = ?,
                                     data = ?, data_iv = ?, updated_at = ?
                                 WHERE id = ?
@@ -380,7 +380,7 @@ class SelectiveBackupService:
                             # Update profile
                             cursor.execute(
                                 """
-                                UPDATE profile
+                                UPDATE profiles
                                 SET name = ?, birth_date = ?, retirement_date = ?,
                                     data = ?, data_iv = ?, updated_at = ?
                                 WHERE id = ?
@@ -400,7 +400,7 @@ class SelectiveBackupService:
                         # Insert new profile
                         cursor.execute(
                             """
-                            INSERT INTO profile (id, user_id, name, birth_date, retirement_date,
+                            INSERT INTO profiles (id, user_id, name, birth_date, retirement_date,
                                                 data, data_iv, created_at, updated_at)
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,

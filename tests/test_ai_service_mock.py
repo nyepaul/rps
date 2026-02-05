@@ -4,6 +4,24 @@ import json
 from src.models.profile import Profile
 from src.models.conversation import Conversation
 from src.auth.models import User
+from src.app import create_app # Import create_app
+import os # Import os
+
+@pytest.fixture
+def app(test_db):
+    """Create Flask app for testing."""
+    os.environ["RPS_TESTING"] = "True" # Disable audit logging during tests
+    app = create_app("testing")
+    app.config["TESTING"] = True
+    app.config["WTF_CSRF_ENABLED"] = False  # Disable CSRF for testing
+    app.config["RATELIMIT_ENABLED"] = False  # Disable Rate Limiting for testing
+    app.config["RATELIMIT_STORAGE_URI"] = "memory://"  # Use memory storage for testing
+    return app
+
+
+@pytest.fixture
+def client(app):
+    return app.test_client()
 
 
 @pytest.fixture
@@ -32,13 +50,9 @@ class TestAIServices:
         }
         mock_post.return_value = mock_response
 
-        # Use the extract-items endpoint which calls call_gemini_with_fallback
-        # Setup profile with API key
-        test_profile.data = {
-            "api_keys": {"gemini_api_key": "test_key"},
-            "assets": {"taxable_accounts": []},
-        }
-        test_profile.save()
+        # Setup user with API key
+        test_user.api_keys_dict = {"gemini_api_key": "sk-test-key-123"}
+        test_user.save()
 
         # Login
         client.post(
@@ -48,7 +62,7 @@ class TestAIServices:
         response = client.post(
             "/api/extract-items/assets",
             json={
-                "image": "SGVsbG8=",
+                "image": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGP6AgAA+gD3od9x5gAAAABJRU5ErkJggg==",
                 "llm_provider": "gemini",
                 "profile_name": test_profile.name,
             },
@@ -74,12 +88,9 @@ class TestAIServices:
         }
         mock_post.return_value = mock_response
 
-        # Setup profile
-        test_profile.data = {
-            "api_keys": {"gemini_api_key": "test_key"},
-            "assets": {"taxable_accounts": []},
-        }
-        test_profile.save()
+        # Setup user with API key
+        test_user.api_keys_dict = {"gemini_api_key": "sk-test-key-123"}
+        test_user.save()
 
         # Login
         client.post(
@@ -90,7 +101,7 @@ class TestAIServices:
         response = client.post(
             "/api/extract-items/assets",
             json={
-                "image": "SGVsbG8=",
+                "image": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGP6AgAA+gD3od9x5gAAAABJRU5ErkJggg==",
                 "llm_provider": "gemini",
                 "llm_model": "gemini-1.5-pro",
                 "profile_name": test_profile.name,
@@ -122,12 +133,9 @@ class TestAIServices:
 
         mock_post.side_effect = [fail_response, success_response]
 
-        # Setup profile
-        test_profile.data = {
-            "api_keys": {"gemini_api_key": "test_key"},
-            "assets": {"taxable_accounts": []},
-        }
-        test_profile.save()
+        # Setup user with API key
+        test_user.api_keys_dict = {"gemini_api_key": "sk-test-key-123"}
+        test_user.save()
 
         # Login
         client.post(
@@ -137,7 +145,7 @@ class TestAIServices:
         response = client.post(
             "/api/extract-items/assets",
             json={
-                "image": "SGVsbG8=",
+                "image": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGP6AgAA+gD3od9x5gAAAABJRU5ErkJggg==",
                 "llm_provider": "gemini",
                 "profile_name": test_profile.name,
             },
@@ -165,12 +173,9 @@ class TestAIServices:
         mock_response.text = "Here is some financial advice."
         mock_client_instance.models.generate_content.return_value = mock_response
 
-        # Setup profile with API key
-        test_profile.data = {
-            "api_keys": {"gemini_api_key": "test_key"},
-            "financial": {"annual_income": 100000},
-        }
-        test_profile.save()
+        # Setup user with API key
+        test_user.api_keys_dict = {"gemini_api_key": "sk-test-key-123"}
+        test_user.save()
 
         # Login
         client.post(

@@ -1,9 +1,10 @@
 """Enhanced audit logging service with comprehensive data collection."""
 
+import os  # Moved to top
 import json
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-from flask import request, has_request_context, session
+from flask import request, has_request_context, session, current_app
 from flask_login import current_user
 from src.database import connection
 import re
@@ -252,7 +253,6 @@ class EnhancedAuditLogger:
             return {"asn": "Local", "isp": "Local Network", "network": "Local"}
 
         try:
-            # Try using ip-api.com which provides ASN data for free
             import requests
 
             response = requests.get(
@@ -900,6 +900,8 @@ class EnhancedAuditLogger:
             status_code: HTTP status code of the response
             error_message: Error message if action failed
         """
+        if os.getenv("RPS_TESTING") == "True": # Check environment variable
+            return # Skip logging in test environment
         config = AuditConfig.get_config()
 
         # Check if logging is enabled

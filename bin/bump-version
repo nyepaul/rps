@@ -20,8 +20,20 @@ cat > src/static/version.json <<EOF
 }
 EOF
 
-# Update index.html cache-busting parameter (keep this build-time update)
+# Update index.html and login.html cache-busting parameter (keep this build-time update)
 sed -i "s|/js/main.js?v=.*\"|/js/main.js?v=$NEW_VERSION\"|g" src/static/index.html
+sed -i "s|/js/login.js?v=.*\"|/js/login.js?v=$NEW_VERSION\"|g" src/static/login.html
+
+# Update version in core documentation files
+echo "📖 Updating documentation files..."
+sed -i "s|Version: 3\.9\.[0-9]*|Version: $NEW_VERSION|g" GEMINI.md
+sed -i "s|\*\*Version\*\*: 3\.9\.[0-9]*|**Version**: $NEW_VERSION|g" README.md
+sed -i "s|(Current: 3\.9\.[0-9]*)|(Current: $NEW_VERSION)|g" CLAUDE.md
+sed -i "s|Version\*\*: 3\.9\.[0-9]*|Version**: $NEW_VERSION|g" GEMINI.md 2>/dev/null || true
+sed -i "s|RPS Version\*\*: 3\.9\.[0-9]*|RPS Version**: $NEW_VERSION|g" docs/ai-integration/GEMINI.md
+sed -i "s|Version:\*\* 3\.9\.[0-9]*|Version:** $NEW_VERSION|g" docs/security/SYSTEM_SECURITY_DOCUMENTATION.md
+sed -i "s|Version: 3\.9\.[0-9]*|Version: $NEW_VERSION|g" docs/security/AUDIT_LOGGING.md
+sed -i "s|v3\.9\.[0-9]* reorganized|v$NEW_VERSION reorganized|g" docs/architecture/PROJECT_STRUCTURE.md
 
 echo "✅ Version bumped to $NEW_VERSION"
 echo "📅 Release date: $RELEASE_DATE"

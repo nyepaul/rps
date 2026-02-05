@@ -33,6 +33,21 @@ let currentIPMap = null; // For the global IP locations map
 // Prefetched data storage
 let prefetchedLogsData = null;
 
+/**
+ * Simple debounce utility
+ */
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
 // Helper to update map theme
 function updateMapTheme(map) {
     if (!map) return;
@@ -92,6 +107,7 @@ export async function renderLogsViewer(container) {
                     <input
                         type="text"
                         id="filter-user-id"
+                        class="log-filter-input"
                         list="users-datalist"
                         placeholder="Type or select user..."
                         style="width: 100%; padding: 8px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);"
@@ -100,7 +116,7 @@ export async function renderLogsViewer(container) {
                 </div>
                 <div>
                     <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">Action</label>
-                    <select id="filter-action" style="width: 100%; padding: 8px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
+                    <select id="filter-action" class="log-filter-input" style="width: 100%; padding: 8px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
                         <option value="">All Actions</option>
                         <option value="CREATE">CREATE</option>
                         <option value="READ">READ</option>
@@ -114,25 +130,22 @@ export async function renderLogsViewer(container) {
                 </div>
                 <div>
                     <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">Table</label>
-                    <input type="text" id="filter-table" placeholder="Table name" style="width: 100%; padding: 8px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
+                    <input type="text" id="filter-table" class="log-filter-input" placeholder="Table name" style="width: 100%; padding: 8px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
                 </div>
                 <div>
                     <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">IP Address</label>
-                    <input type="text" id="filter-ip" placeholder="IP address" style="width: 100%; padding: 8px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
+                    <input type="text" id="filter-ip" class="log-filter-input" placeholder="IP address" style="width: 100%; padding: 8px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
                 </div>
                 <div>
                     <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">Start Date</label>
-                    <input type="date" id="filter-start-date" style="width: 100%; padding: 8px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
+                    <input type="date" id="filter-start-date" class="log-filter-input" style="width: 100%; padding: 8px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
                 </div>
                 <div>
                     <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">End Date</label>
-                    <input type="date" id="filter-end-date" style="width: 100%; padding: 8px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
+                    <input type="date" id="filter-end-date" class="log-filter-input" style="width: 100%; padding: 8px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
                 </div>
             </div>
             <div style="margin-top: 15px; display: flex; gap: 10px;">
-                <button id="apply-filters-btn" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                    Apply Filters
-                </button>
                 <button id="clear-filters-btn" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
                     Clear
                 </button>
@@ -171,16 +184,22 @@ export async function renderLogsViewer(container) {
  * Setup event handlers for logs viewer
  */
 function setupLogsViewerHandlers(container) {
-    const applyBtn = container.querySelector('#apply-filters-btn');
     const clearBtn = container.querySelector('#clear-filters-btn');
     const exportBtn = container.querySelector('#export-logs-btn');
 
     // Check if elements exist (view might have been switched)
-    if (!applyBtn || !clearBtn || !exportBtn) return;
+    if (!clearBtn || !exportBtn) return;
 
-    // Apply filters
-    applyBtn.addEventListener('click', async () => {
-        await loadLogs(container, 0); // Reset to page 0
+    // Auto-apply filters on change/input
+    const filterInputs = container.querySelectorAll('.log-filter-input');
+    const debouncedLoadLogs = debounce(() => loadLogs(container, 0), 300);
+
+    filterInputs.forEach(input => {
+        if (input.tagName === 'SELECT' || input.type === 'date') {
+            input.addEventListener('change', debouncedLoadLogs);
+        } else {
+            input.addEventListener('input', debouncedLoadLogs);
+        }
     });
 
     // Clear filters

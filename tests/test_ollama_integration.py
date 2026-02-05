@@ -11,6 +11,7 @@ from src.models.conversation import Conversation
 
 @pytest.fixture
 def mock_user_profile(monkeypatch, test_user, test_profile):
+    from flask_login import login_user
     profile = test_profile
     profile.name = "testprofile"
     profile.data_dict = {
@@ -25,6 +26,10 @@ def mock_user_profile(monkeypatch, test_user, test_profile):
     profile.save()
 
     monkeypatch.setattr("src.routes.ai_services.current_user", test_user)
+    login_user(test_user)
+    # Explicitly log in the test user for Flask-Login
+
+    login_user(test_user)
     monkeypatch.setattr(
         "src.models.profile.Profile.get_by_name", lambda name, user_id: profile
     )

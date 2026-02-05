@@ -14,21 +14,19 @@ def auth_client(client, app):
     with app.test_request_context():
         # Create a test user
         user = User(
-            id=1, username="testuser", email="test@example.com", password_hash="hash"
+            id=None, username="testuser", email="test@example.com", password_hash="hash"
         )
         user.save() # Ensure user is in test_db
+        user.api_keys_dict = { # Set API keys on user
+            "gemini_api_key": "sk-gemini-test-key-123",
+            "claude_api_key": "REDACTED_ANTH_test-key-123",
+            "openai_api_key": "sk-openai-test-key-123",
+            "ollama_url": "http://localhost:11434",
+            "ollama_model": "llama3.2-vision",
+        }
         
         # Create a test profile
-        profile = Profile(id=1, user_id=1, name="testprofile")
-        profile.data_dict = {
-            "api_keys": {
-                "gemini_api_key": "test-gemini-key",
-                "claude_api_key": "test-claude-key",
-                "openai_api_key": "test-openai-key",
-                "ollama_url": "http://localhost:11434",
-                "ollama_model": "llama3.2-vision",
-            }
-        }
+        profile = Profile(user_id=user.id, name="testprofile")
         profile.save() # Ensure profile is in test_db
 
         with patch("src.auth.models.User.get_by_id", return_value=user):
@@ -36,6 +34,8 @@ def auth_client(client, app):
                 with client.session_transaction() as sess:
                     sess["_user_id"] = 1
                     sess["_fresh"] = True
+                # Explicitly log in the user
+                login_user(user)
                 yield client
 
 

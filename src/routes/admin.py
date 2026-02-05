@@ -3071,7 +3071,7 @@ def get_users_backup_summary():
         if current_user.is_super_admin:
             sql = """
                 SELECT u.id, u.username, u.email,
-                       (SELECT COUNT(*) FROM profile WHERE user_id = u.id) as profile_count,
+                       (SELECT COUNT(*) FROM profiles WHERE user_id = u.id) as profile_count,
                        (SELECT COUNT(*) FROM user_backups WHERE user_id = u.id) as backup_count,
                        (SELECT MAX(created_at) FROM user_backups WHERE user_id = u.id) as last_backup
                 FROM users u
@@ -3082,7 +3082,7 @@ def get_users_backup_summary():
             # Local admin: only users in their managed groups
             sql = """
                 SELECT DISTINCT u.id, u.username, u.email,
-                       (SELECT COUNT(*) FROM profile WHERE user_id = u.id) as profile_count,
+                       (SELECT COUNT(*) FROM profiles WHERE user_id = u.id) as profile_count,
                        (SELECT COUNT(*) FROM user_backups WHERE user_id = u.id) as backup_count,
                        (SELECT MAX(created_at) FROM user_backups WHERE user_id = u.id) as last_backup
                 FROM users u

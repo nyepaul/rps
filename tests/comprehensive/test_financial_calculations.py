@@ -87,7 +87,7 @@ class TestFinancialCalculations:
         """Test that Monte Carlo starting portfolio matches asset totals."""
         from src.database.connection import db
 
-        rows = db.execute("SELECT id, user_id, name FROM profile LIMIT 5")
+        rows = db.execute("SELECT id, user_id, name FROM profiles LIMIT 5")
 
         for row in rows:
             profile = Profile.get_by_id(row["id"], row["user_id"])
@@ -197,7 +197,7 @@ class TestFinancialCalculations:
         """Test that timeline Year 0 includes contributions not just starting assets."""
         from src.database.connection import db
 
-        rows = db.execute("SELECT id, user_id, name FROM profile LIMIT 3")
+        rows = db.execute("SELECT id, user_id, name FROM profiles LIMIT 3")
 
         for row in rows:
             profile = Profile.get_by_id(row["id"], row["user_id"])
@@ -314,7 +314,7 @@ class TestFinancialCalculations:
         """Test that success rates are reasonable (not 0% or 100% for all cases)."""
         from src.database.connection import db
 
-        rows = db.execute("SELECT id, user_id, name FROM profile LIMIT 3")
+        rows = db.execute("SELECT id, user_id, name FROM profiles LIMIT 3")
 
         success_rates = []
 

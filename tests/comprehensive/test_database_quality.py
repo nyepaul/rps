@@ -21,7 +21,7 @@ class TestDatabaseSchema:
         rows = db.execute("""
             SELECT COUNT(*) as count FROM scenarios
             WHERE profile_id IS NOT NULL
-            AND profile_id NOT IN (SELECT id FROM profile)
+            AND profile_id NOT IN (SELECT id FROM profiles)
         """)
 
         assert rows[0]["count"] == 0, f"Found {rows[0]['count']} orphaned scenarios"
@@ -31,7 +31,7 @@ class TestDatabaseSchema:
         rows = db.execute("""
             SELECT COUNT(*) as count FROM action_items
             WHERE profile_id IS NOT NULL
-            AND profile_id NOT IN (SELECT id FROM profile)
+            AND profile_id NOT IN (SELECT id FROM profiles)
         """)
 
         assert rows[0]["count"] == 0, f"Found {rows[0]['count']} orphaned action items"
@@ -41,7 +41,7 @@ class TestDatabaseSchema:
         rows = db.execute("""
             SELECT COUNT(*) as count FROM conversations
             WHERE profile_id IS NOT NULL
-            AND profile_id NOT IN (SELECT id FROM profile)
+            AND profile_id NOT IN (SELECT id FROM profiles)
         """)
 
         assert rows[0]["count"] == 0, f"Found {rows[0]['count']} orphaned conversations"
@@ -49,7 +49,7 @@ class TestDatabaseSchema:
     def test_all_profiles_have_valid_users(self):
         """Test that all profiles reference existing users."""
         rows = db.execute("""
-            SELECT COUNT(*) as count FROM profile
+            SELECT COUNT(*) as count FROM profiles
             WHERE user_id NOT IN (SELECT id FROM users)
         """)
 
@@ -66,7 +66,7 @@ class TestDatabaseSchema:
         """Test that all expected tables exist in the database."""
         expected_tables = [
             "users",
-            "profile",
+            "profiles",
             "scenarios",
             "action_items",
             "conversations",
@@ -109,19 +109,19 @@ class TestDatabaseSchema:
 
     def test_profile_data_is_encrypted(self):
         """Test that profile data column contains encrypted data (has IV column)."""
-        rows = db.execute("PRAGMA table_info(profile)")
+        rows = db.execute("PRAGMA table_info(profiles)")
         columns = [row["name"] for row in rows]
 
-        assert "data" in columns, "Profile table missing 'data' column"
+        assert "data" in columns, "Profiles table missing 'data' column"
         assert (
             "data_iv" in columns
-        ), "Profile table missing 'data_iv' column for encryption"
+        ), "Profiles table missing 'data_iv' column for encryption"
 
     def test_no_duplicate_profile_names_per_user(self):
         """Test that users don't have duplicate profile names."""
         rows = db.execute("""
             SELECT user_id, name, COUNT(*) as count
-            FROM profile
+            FROM profiles
             GROUP BY user_id, name
             HAVING count > 1
         """)
@@ -131,8 +131,8 @@ class TestDatabaseSchema:
     def test_all_timestamps_are_valid(self):
         """Test that all timestamp columns contain valid dates."""
         tables_with_timestamps = [
-            ("profile", "created_at"),
-            ("profile", "updated_at"),
+            ("profiles", "created_at"),
+            ("profiles", "updated_at"),
             ("scenarios", "created_at"),
             ("action_items", "created_at"),
             ("action_items", "updated_at"),
@@ -193,7 +193,7 @@ class TestDatabaseIntegrity:
     def test_user_id_foreign_keys_are_consistent(self):
         """Test that all user_id foreign keys use consistent ON DELETE behavior."""
         tables_with_user_fk = [
-            "profile",
+            "profiles",
             "scenarios",
             "action_items",
             "conversations",

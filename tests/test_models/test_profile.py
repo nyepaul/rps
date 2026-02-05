@@ -56,7 +56,7 @@ def test_profile_data_encryption(test_db, test_user):
     # Check database directly - data should be encrypted
     with test_db.get_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT data, data_iv FROM profile WHERE id = ?", (profile.id,))
+        cursor.execute("SELECT data, data_iv FROM profiles WHERE id = ?", (profile.id,))
         row = cursor.fetchone()
 
         # Should have both encrypted data and IV

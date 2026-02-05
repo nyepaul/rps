@@ -133,7 +133,7 @@ class TestComprehensiveFinancial:
     ):
         """Test Demo Starman starting portfolio is correct."""
         profile_row = test_db.execute_one(
-            "SELECT id, user_id, data FROM profile WHERE name = 'Demo Starman'"
+            "SELECT id, user_id, data FROM profiles WHERE name = 'Demo Starman'"
         )
         assert profile_row is not None, "Demo Starman profile not found"
 
@@ -164,7 +164,7 @@ class TestComprehensiveFinancial:
     def test_demo_starman_income_calculation(self, app_context, test_db, demo_data):
         """Test Demo Starman income is correctly calculated from income_streams."""
         profile_row = test_db.execute_one(
-            "SELECT id, user_id, data FROM profile WHERE name = 'Demo Starman'"
+            "SELECT id, user_id, data FROM profiles WHERE name = 'Demo Starman'"
         )
         assert profile_row is not None, "Demo Starman profile not found"
 
@@ -192,7 +192,7 @@ class TestComprehensiveFinancial:
     ):
         """Test that budget.income is correctly populated from income_streams."""
         profile_row = test_db.execute_one(
-            "SELECT id, user_id, data FROM profile WHERE name = 'Demo Starman'"
+            "SELECT id, user_id, data FROM profiles WHERE name = 'Demo Starman'"
         )
         assert profile_row is not None, "Demo Starman profile not found"
 
@@ -228,7 +228,7 @@ class TestComprehensiveFinancial:
     def test_demo_starman_monte_carlo_growth(self, app_context, test_db, demo_data):
         """Test Demo Starman portfolio grows during working years (NOT depletes)."""
         profile_row = test_db.execute_one(
-            "SELECT id, user_id, data FROM profile WHERE name = 'Demo Starman'"
+            "SELECT id, user_id, data FROM profiles WHERE name = 'Demo Starman'"
         )
         assert profile_row is not None, "Demo Starman profile not found"
 
@@ -362,7 +362,7 @@ class TestComprehensiveFinancial:
     def test_demo_starman_no_early_depletion(self, app_context, test_db, demo_data):
         """Test Demo Starman portfolio does NOT deplete during working years."""
         profile_row = test_db.execute_one(
-            "SELECT id, user_id, data FROM profile WHERE name = 'Demo Starman'"
+            "SELECT id, user_id, data FROM profiles WHERE name = 'Demo Starman'"
         )
         assert profile_row is not None, "Demo Starman profile not found"
 
@@ -479,7 +479,7 @@ class TestComprehensiveFinancial:
         Note: This test checks data consistency, not the Monte Carlo fix.
         Some demo profiles may have intentional discrepancies for testing.
         """
-        rows = test_db.execute("SELECT id, user_id, name FROM profile LIMIT 5")
+        rows = test_db.execute("SELECT id, user_id, name FROM profiles LIMIT 5")
 
         profiles_checked = 0
         for row in rows:
@@ -557,7 +557,7 @@ class TestComprehensiveFinancial:
     def test_inflation_applied_correctly(self, app_context, test_db, demo_data):
         """Test that inflation is correctly applied to expenses over time."""
         profile_row = test_db.execute_one(
-            "SELECT id, user_id, data FROM profile WHERE name = 'Demo Starman'"
+            "SELECT id, user_id, data FROM profiles WHERE name = 'Demo Starman'"
         )
         assert profile_row is not None, "Demo Starman profile not found"
 

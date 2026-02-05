@@ -35,13 +35,13 @@ export async function renderHomeTab(container) {
     const homeAsset = profile.data?.home_asset || {};
 
     // Load template
-    const template = await loadTemplate('/static/js/components/home/home-tab.html');
+    const template = await loadTemplate('/js/components/home/home-tab.html');
     container.innerHTML = template;
 
     // Dynamically load CSS
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = '/static/css/home-tab.css';
+    link.href = '/css/home-tab.css';
     document.head.appendChild(link);
 
     // Populate form fields

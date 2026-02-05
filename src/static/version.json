@@ -1,5 +1,5 @@
 {
-    "version": "3.9.152",
+    "version": "3.9.191",
     "release_date": "2026-02-05",
-    "release_notes": "Bug fixes and improvements"
+    "release_notes": "Restore cashflow rendering and implement real-time log filtering"
 }

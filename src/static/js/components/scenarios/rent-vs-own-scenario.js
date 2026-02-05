@@ -57,13 +57,13 @@ export async function renderRentVsOwnScenario(container) {
     }
 
     // Load template
-    const template = await loadTemplate('/static/js/components/scenarios/rent-vs-own-scenario.html');
+    const template = await loadTemplate('/js/components/scenarios/rent-vs-own-scenario.html');
     container.innerHTML = template;
 
     // Dynamically load CSS
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = '/static/css/rent-vs-own-scenario.css';
+    link.href = '/css/rent-vs-own-scenario.css';
     document.head.appendChild(link);
 
     // Populate form fields with current home asset defaults

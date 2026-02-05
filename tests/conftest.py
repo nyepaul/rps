@@ -69,6 +69,8 @@ def test_db(test_db_dir, request):
         importlib.reload(sys.modules['src.services.user_backup_service'])
     if 'src.services.selective_backup_service' in sys.modules:
         importlib.reload(sys.modules['src.services.selective_backup_service'])
+    if 'src.services.enhanced_audit_logger' in sys.modules:
+        importlib.reload(sys.modules['src.services.enhanced_audit_logger'])
 
     # Create tables
     with test_db_instance.get_connection() as conn:
@@ -137,8 +139,9 @@ def test_db(test_db_dir, request):
                 results TEXT,
                 results_iv TEXT,
                 created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
                 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-                FOREIGN KEY (profile_id) REFERENCES profile (id) ON DELETE CASCADE
+                FOREIGN KEY (profile_id) REFERENCES profiles (id) ON DELETE CASCADE
             )
         """)
 
@@ -160,7 +163,7 @@ def test_db(test_db_dir, request):
                 created_at TEXT NOT NULL,
                 updated_at TEXT,
                 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-                FOREIGN KEY (profile_id) REFERENCES profile (id) ON DELETE CASCADE
+                FOREIGN KEY (profile_id) REFERENCES profiles (id) ON DELETE CASCADE
             )
         """)
 
@@ -174,8 +177,9 @@ def test_db(test_db_dir, request):
                 content TEXT NOT NULL,
                 content_iv TEXT,
                 created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
                 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-                FOREIGN KEY (profile_id) REFERENCES profile (id) ON DELETE CASCADE
+                FOREIGN KEY (profile_id) REFERENCES profiles (id) ON DELETE CASCADE
             )
         """)
 
@@ -399,6 +403,7 @@ def test_db(test_db_dir, request):
 @pytest.fixture(scope="function")
 def app(test_db):
     """Create Flask app for testing."""
+    os.environ["RPS_TESTING"] = "True" # Disable audit logging during tests
     app = create_app("testing")
     app.config["TESTING"] = True
     app.config["WTF_CSRF_ENABLED"] = False  # Disable CSRF for testing

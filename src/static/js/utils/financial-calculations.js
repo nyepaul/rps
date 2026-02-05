@@ -163,3 +163,20 @@ export function calculateDebtToAssetRatio(assets) {
     if (totalAssets === 0) return 0;
     return (totalDebts / totalAssets) * 100; // Return as percentage
 }
+
+/**
+ * Calculate total for an array of items
+ * @param {Array} items - Array of objects to sum
+ * @param {string} field1 - Primary field to sum
+ * @param {string} field2 - Fallback field if field1 is not present
+ * @returns {number} Total sum
+ */
+export function calculateTotal(items, field1 = 'value', field2 = null) {
+    if (!items || !Array.isArray(items)) {
+        return 0;
+    }
+    return items.reduce((sum, item) => {
+        const value = item[field1] || (field2 ? item[field2] : 0) || 0;
+        return sum + value;
+    }, 0);
+}

@@ -55,7 +55,7 @@ class UserBackupService:
         }
 
         # Fetch profiles
-        profiles = connection.db.execute("SELECT * FROM profile WHERE user_id = ?", (user_id,))
+        profiles = connection.db.execute("SELECT * FROM profiles WHERE user_id = ?", (user_id,))
         profile_map = {}  # Maps old ID to new ID during restore, not used here
         for p in profiles:
             p_dict = dict(p)
@@ -202,7 +202,7 @@ class UserBackupService:
             cursor = conn.cursor()
 
             # 1. Clear existing data
-            cursor.execute("DELETE FROM profile WHERE user_id = ?", (user_id,))
+            cursor.execute("DELETE FROM profiles WHERE user_id = ?", (user_id,))
             cursor.execute("DELETE FROM action_items WHERE user_id = ?", (user_id,))
             cursor.execute("DELETE FROM scenarios WHERE user_id = ?", (user_id,))
             cursor.execute("DELETE FROM conversations WHERE user_id = ?", (user_id,))
@@ -230,7 +230,7 @@ class UserBackupService:
                 fields = list(p_copy.keys())
                 placeholders = ", ".join(["?" for _ in fields])
                 query = (
-                    f"INSERT INTO profile ({', '.join(fields)}) VALUES ({placeholders})"
+                    f"INSERT INTO profiles ({', '.join(fields)}) VALUES ({placeholders})"
                 )
                 cursor.execute(query, tuple(p_copy.values()))
                 new_id = cursor.lastrowid

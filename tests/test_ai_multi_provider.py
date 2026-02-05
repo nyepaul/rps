@@ -8,7 +8,7 @@ from flask_login import login_user
 
 
 @pytest.fixture
-def app():
+def app(test_db):
     app = create_app()
     app.config.update(
         {"TESTING": True, "LOGIN_DISABLED": True, "WTF_CSRF_ENABLED": False}
@@ -22,10 +22,10 @@ def client(app):
 
 
 @pytest.fixture
-def mock_profile_data(monkeypatch):
+def mock_profile_data(monkeypatch, test_profile):
     profile = MagicMock()
-    profile.id = 1
-    profile.name = "test_profile"
+    profile.id = test_profile.id
+    profile.name = test_profile.name
     profile.birth_date = "1980-01-01"
     profile.retirement_date = "2045-01-01"
     profile.data_dict = {
@@ -71,9 +71,7 @@ def test_advisor_chat_multi_provider(mock_post, client, mock_profile_data, mock_
     mock_post.return_value = mock_response
 
     # Mock Conversation methods
-    with patch(
-        "src.models.conversation.Conversation.list_by_profile", return_value=[]
-    ), patch("src.models.conversation.Conversation.save", return_value=None):
+    with patch("src.models.conversation.Conversation.list_by_profile", return_value=[]):
 
         response = client.post(
             "/api/advisor/chat",

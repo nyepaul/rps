@@ -326,11 +326,11 @@ def create_app(config_name="development"):
         # NOTE: 'unsafe-inline' removed for scripts, external files required
         csp_directives = [
             "default-src 'self'",
-            "script-src 'self' https://cdn.jsdelivr.net https://unpkg.com",
+            "script-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://static.cloudflareinsights.com",
             "style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com https://cdn.jsdelivr.net",  # unsafe-inline kept for style attributes
             "img-src 'self' data: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com",
             "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net https://unpkg.com",
-            "connect-src 'self' https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://cdn.jsdelivr.net https://unpkg.com",
+            "connect-src 'self' https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://cdn.jsdelivr.net https://unpkg.com https://ipapi.co",
             "frame-ancestors 'self'",
             "base-uri 'self'",
             "form-action 'self'",

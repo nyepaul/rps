@@ -40,10 +40,10 @@ def test_user_backup_restore(test_db, test_user):
     Profile(user_id=test_user.id, name="New Profile").save()
     from src.database.connection import db
 
-    db.execute("DELETE FROM profile WHERE name = 'Old Profile'")
+    db.execute("DELETE FROM profiles WHERE name = 'Old Profile'")
 
     # Verify modification
-    profiles = db.execute("SELECT * FROM profile WHERE user_id = ?", (test_user.id,))
+    profiles = db.execute("SELECT * FROM profiles WHERE user_id = ?", (test_user.id,))
     assert any(p["name"] == "New Profile" for p in profiles)
     assert not any(p["name"] == "Old Profile" for p in profiles)
 
@@ -51,7 +51,7 @@ def test_user_backup_restore(test_db, test_user):
     UserBackupService.restore_backup(test_user.id, backup_id)
 
     # 4. Verify restoration
-    profiles = db.execute("SELECT * FROM profile WHERE user_id = ?", (test_user.id,))
+    profiles = db.execute("SELECT * FROM profiles WHERE user_id = ?", (test_user.id,))
     assert any(p["name"] == "Old Profile" for p in profiles)
     assert not any(p["name"] == "New Profile" for p in profiles)
 
