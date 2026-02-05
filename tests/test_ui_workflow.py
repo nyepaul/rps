@@ -8,10 +8,11 @@ def test_refresh_data_api(client, auth_headers, test_profile):
 
     # 1. Update data directly in DB to simulate backend change
     with db.get_connection() as conn:
-                    conn.execute(
-                        "UPDATE profiles SET birth_date = '1990-01-01' WHERE id = ?",
-                        (test_profile.id,),
-                    )        conn.commit()
+        conn.execute(
+            "UPDATE profiles SET birth_date = '1990-01-01' WHERE id = ?",
+            (test_profile.id,),
+        )
+        conn.commit()
 
     # 2. Call GET profile API (which the Refresh button uses)
     response = client.get(f"/api/profile/{test_profile.name}", headers=auth_headers)
