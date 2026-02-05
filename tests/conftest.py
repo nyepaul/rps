@@ -109,7 +109,7 @@ def test_db(test_db_dir, request):
 
         # Profile table
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS profile (
+            CREATE TABLE IF NOT EXISTS profiles (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
                 name TEXT NOT NULL,
