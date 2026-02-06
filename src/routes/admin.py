@@ -1424,6 +1424,66 @@ def get_system_info():
         return jsonify({"error": str(e)}), 500
 
 
+@admin_bp.route("/system/stats-detail", methods=["GET"])
+@login_required
+@admin_required
+def get_stats_detail():
+    """Get detailed breakdown for stat cards (users with profile/scenario counts)."""
+    try:
+        from src.database import connection
+
+        # Users with profile and scenario counts
+        users = connection.db.execute("""
+            SELECT u.id, u.username, u.email, u.is_active, u.is_admin,
+                   u.created_at, u.last_login,
+                   (SELECT COUNT(*) FROM profiles WHERE user_id = u.id) as profile_count,
+                   (SELECT COUNT(*) FROM scenarios WHERE user_id = u.id) as scenario_count
+            FROM users u ORDER BY u.username
+        """)
+
+        # Profiles with owner info
+        profiles = connection.db.execute("""
+            SELECT p.id, p.name, p.created_at, u.username
+            FROM profiles p
+            JOIN users u ON p.user_id = u.id
+            ORDER BY p.created_at DESC
+        """)
+
+        # Scenarios with owner info
+        scenarios = connection.db.execute("""
+            SELECT s.id, s.name, s.created_at, u.username
+            FROM scenarios s
+            JOIN users u ON s.user_id = u.id
+            ORDER BY s.created_at DESC
+        """)
+
+        # Recent audit log summary (last 50 + action breakdown)
+        recent_logs = connection.db.execute("""
+            SELECT e.id, e.action, e.table_name, e.created_at,
+                   COALESCE(u.username, '(system)') as username
+            FROM enhanced_audit_log e
+            LEFT JOIN users u ON e.user_id = u.id
+            ORDER BY e.created_at DESC LIMIT 50
+        """)
+
+        action_breakdown = connection.db.execute("""
+            SELECT action, COUNT(*) as count
+            FROM enhanced_audit_log
+            GROUP BY action ORDER BY count DESC LIMIT 15
+        """)
+
+        return jsonify({
+            "users": [dict(r) for r in users],
+            "profiles": [dict(r) for r in profiles],
+            "scenarios": [dict(r) for r in scenarios],
+            "recent_logs": [dict(r) for r in recent_logs],
+            "action_breakdown": [dict(r) for r in action_breakdown]
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @admin_bp.route("/database/schema", methods=["GET"])
 @login_required
 @admin_required

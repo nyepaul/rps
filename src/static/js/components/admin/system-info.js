@@ -22,24 +22,31 @@ export async function renderSystemInfo(container) {
         container.innerHTML = `
             <div style="max-width: 1000px;">
                 <!-- System Stats Cards -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px;">
-                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 25px; border-radius: 12px; color: white;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 0;">
+                    <div class="stat-card" data-stat="users" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 25px; border-radius: 12px; color: white; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; position: relative;">
                         <div style="font-size: 12px; opacity: 0.9; margin-bottom: 8px;">Total Users</div>
                         <div style="font-size: 36px; font-weight: 700;">${info.total_users.toLocaleString()}</div>
+                        <div style="position: absolute; bottom: 8px; right: 12px; font-size: 10px; opacity: 0.6;">click for details</div>
                     </div>
-                    <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 25px; border-radius: 12px; color: white;">
+                    <div class="stat-card" data-stat="profiles" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 25px; border-radius: 12px; color: white; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; position: relative;">
                         <div style="font-size: 12px; opacity: 0.9; margin-bottom: 8px;">Total Profiles</div>
                         <div style="font-size: 36px; font-weight: 700;">${info.total_profiles.toLocaleString()}</div>
+                        <div style="position: absolute; bottom: 8px; right: 12px; font-size: 10px; opacity: 0.6;">click for details</div>
                     </div>
-                    <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 25px; border-radius: 12px; color: white;">
+                    <div class="stat-card" data-stat="scenarios" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 25px; border-radius: 12px; color: white; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; position: relative;">
                         <div style="font-size: 12px; opacity: 0.9; margin-bottom: 8px;">Total Scenarios</div>
                         <div style="font-size: 36px; font-weight: 700;">${info.total_scenarios.toLocaleString()}</div>
+                        <div style="position: absolute; bottom: 8px; right: 12px; font-size: 10px; opacity: 0.6;">click for details</div>
                     </div>
-                    <div style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); padding: 25px; border-radius: 12px; color: white;">
+                    <div class="stat-card" data-stat="logs" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); padding: 25px; border-radius: 12px; color: white; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; position: relative;">
                         <div style="font-size: 12px; opacity: 0.9; margin-bottom: 8px;">Audit Logs</div>
                         <div style="font-size: 36px; font-weight: 700;">${info.total_audit_logs.toLocaleString()}</div>
+                        <div style="position: absolute; bottom: 8px; right: 12px; font-size: 10px; opacity: 0.6;">click for details</div>
                     </div>
                 </div>
+
+                <!-- Stats Detail Panel (inserted by click handlers) -->
+                <div id="stats-detail-panel" style="margin-bottom: 30px;"></div>
 
                 <!-- System Details -->
                 <div style="background: var(--bg-secondary); padding: 25px; border-radius: 12px; margin-bottom: 20px;">
@@ -137,6 +144,9 @@ export async function renderSystemInfo(container) {
         // Render database schema diagram
         await renderDatabaseSchema(container, schema);
 
+        // Setup stat card click handlers
+        setupStatCardClicks(container);
+
     } catch (error) {
         console.error('Failed to load system info:', error);
         showError(`Failed to load system info: ${error.message}`);
@@ -164,6 +174,213 @@ function renderSecurityFeature(name, value, description) {
             </div>
         </div>
     `;
+}
+
+/**
+ * Setup click handlers on stat cards to show detail panels
+ */
+function setupStatCardClicks(container) {
+    let activeCard = null;
+    let detailData = null;
+
+    const cards = container.querySelectorAll('.stat-card');
+    const panel = container.querySelector('#stats-detail-panel');
+
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', () => {
+            card.style.transform = 'translateY(-2px)';
+            card.style.boxShadow = '0 8px 25px rgba(0,0,0,0.2)';
+        });
+        card.addEventListener('mouseleave', () => {
+            card.style.transform = '';
+            card.style.boxShadow = '';
+        });
+
+        card.addEventListener('click', async () => {
+            const stat = card.dataset.stat;
+
+            // Toggle off if clicking same card
+            if (activeCard === stat) {
+                panel.innerHTML = '';
+                activeCard = null;
+                cards.forEach(c => c.style.outline = '');
+                return;
+            }
+
+            // Highlight active card
+            cards.forEach(c => c.style.outline = '');
+            card.style.outline = '3px solid rgba(255,255,255,0.8)';
+            activeCard = stat;
+
+            // Show loading
+            panel.innerHTML = `
+                <div style="background: var(--bg-secondary); border-radius: 0 0 12px 12px; padding: 20px; text-align: center; color: var(--text-secondary);">
+                    Loading...
+                </div>`;
+
+            // Fetch detail data (cache across clicks)
+            if (!detailData) {
+                try {
+                    detailData = await apiClient.get('/api/admin/system/stats-detail');
+                } catch (err) {
+                    panel.innerHTML = `<div style="background: var(--bg-secondary); border-radius: 0 0 12px 12px; padding: 20px; color: var(--danger-color);">Failed to load: ${err.message}</div>`;
+                    return;
+                }
+            }
+
+            renderDetailPanel(panel, stat, detailData);
+        });
+    });
+}
+
+/**
+ * Render detail panel content for a given stat type
+ */
+function renderDetailPanel(panel, stat, data) {
+    const closeBtn = `<span style="float: right; cursor: pointer; opacity: 0.5; font-size: 18px;" onclick="this.closest('#stats-detail-panel').innerHTML=''; document.querySelectorAll('.stat-card').forEach(c=>c.style.outline='');">&#x2715;</span>`;
+
+    if (stat === 'users') {
+        const rows = data.users.map(u => `
+            <tr>
+                <td style="padding: 8px 12px; border-bottom: 1px solid var(--border-color);">${u.username}</td>
+                <td style="padding: 8px 12px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary);">${u.email || '-'}</td>
+                <td style="padding: 8px 12px; border-bottom: 1px solid var(--border-color); text-align: center;">${u.profile_count}</td>
+                <td style="padding: 8px 12px; border-bottom: 1px solid var(--border-color); text-align: center;">${u.scenario_count}</td>
+                <td style="padding: 8px 12px; border-bottom: 1px solid var(--border-color); text-align: center;">
+                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${u.is_active ? '#43e97b' : '#f5576c'};"></span>
+                </td>
+                <td style="padding: 8px 12px; border-bottom: 1px solid var(--border-color); font-size: 12px; color: var(--text-secondary);">${u.last_login ? new Date(u.last_login).toLocaleDateString() : 'never'}</td>
+            </tr>
+        `).join('');
+
+        panel.innerHTML = `
+            <div style="background: var(--bg-secondary); border-radius: 0 0 12px 12px; padding: 20px; margin-top: -8px;">
+                ${closeBtn}
+                <h4 style="margin: 0 0 12px 0; font-size: 15px;">All Users (${data.users.length})</h4>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                        <thead>
+                            <tr style="background: var(--bg-primary);">
+                                <th style="padding: 8px 12px; text-align: left; font-weight: 600;">Username</th>
+                                <th style="padding: 8px 12px; text-align: left; font-weight: 600;">Email</th>
+                                <th style="padding: 8px 12px; text-align: center; font-weight: 600;">Profiles</th>
+                                <th style="padding: 8px 12px; text-align: center; font-weight: 600;">Scenarios</th>
+                                <th style="padding: 8px 12px; text-align: center; font-weight: 600;">Active</th>
+                                <th style="padding: 8px 12px; text-align: left; font-weight: 600;">Last Login</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            </div>`;
+    }
+
+    else if (stat === 'profiles') {
+        const rows = data.profiles.map(p => `
+            <tr>
+                <td style="padding: 8px 12px; border-bottom: 1px solid var(--border-color);">${p.name || '(unnamed)'}</td>
+                <td style="padding: 8px 12px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary);">${p.username}</td>
+                <td style="padding: 8px 12px; border-bottom: 1px solid var(--border-color); font-size: 12px; color: var(--text-secondary);">${new Date(p.created_at).toLocaleDateString()}</td>
+            </tr>
+        `).join('');
+
+        panel.innerHTML = `
+            <div style="background: var(--bg-secondary); border-radius: 0 0 12px 12px; padding: 20px; margin-top: -8px;">
+                ${closeBtn}
+                <h4 style="margin: 0 0 12px 0; font-size: 15px;">All Profiles (${data.profiles.length})</h4>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                        <thead>
+                            <tr style="background: var(--bg-primary);">
+                                <th style="padding: 8px 12px; text-align: left; font-weight: 600;">Profile Name</th>
+                                <th style="padding: 8px 12px; text-align: left; font-weight: 600;">Owner</th>
+                                <th style="padding: 8px 12px; text-align: left; font-weight: 600;">Created</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            </div>`;
+    }
+
+    else if (stat === 'scenarios') {
+        const rows = data.scenarios.map(s => `
+            <tr>
+                <td style="padding: 8px 12px; border-bottom: 1px solid var(--border-color);">${s.name || '(unnamed)'}</td>
+                <td style="padding: 8px 12px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary);">${s.username}</td>
+                <td style="padding: 8px 12px; border-bottom: 1px solid var(--border-color); font-size: 12px; color: var(--text-secondary);">${new Date(s.created_at).toLocaleDateString()}</td>
+            </tr>
+        `).join('');
+
+        panel.innerHTML = `
+            <div style="background: var(--bg-secondary); border-radius: 0 0 12px 12px; padding: 20px; margin-top: -8px;">
+                ${closeBtn}
+                <h4 style="margin: 0 0 12px 0; font-size: 15px;">All Scenarios (${data.scenarios.length})</h4>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                        <thead>
+                            <tr style="background: var(--bg-primary);">
+                                <th style="padding: 8px 12px; text-align: left; font-weight: 600;">Scenario Name</th>
+                                <th style="padding: 8px 12px; text-align: left; font-weight: 600;">Owner</th>
+                                <th style="padding: 8px 12px; text-align: left; font-weight: 600;">Created</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            </div>`;
+    }
+
+    else if (stat === 'logs') {
+        // Action breakdown bar chart
+        const maxCount = data.action_breakdown.length ? data.action_breakdown[0].count : 1;
+        const bars = data.action_breakdown.map(a => `
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                <div style="width: 160px; font-size: 12px; text-align: right; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${a.action}">${a.action}</div>
+                <div style="flex: 1; height: 18px; background: var(--bg-primary); border-radius: 4px; overflow: hidden;">
+                    <div style="width: ${(a.count / maxCount * 100).toFixed(1)}%; height: 100%; background: linear-gradient(90deg, #43e97b, #38f9d7); border-radius: 4px;"></div>
+                </div>
+                <div style="width: 60px; font-size: 12px; font-weight: 600;">${a.count.toLocaleString()}</div>
+            </div>
+        `).join('');
+
+        // Recent log entries
+        const logRows = data.recent_logs.map(l => `
+            <tr>
+                <td style="padding: 6px 10px; border-bottom: 1px solid var(--border-color); font-size: 12px; color: var(--text-secondary);">${new Date(l.created_at).toLocaleString()}</td>
+                <td style="padding: 6px 10px; border-bottom: 1px solid var(--border-color); font-size: 12px;">${l.username}</td>
+                <td style="padding: 6px 10px; border-bottom: 1px solid var(--border-color); font-size: 12px;"><code style="background: var(--bg-primary); padding: 2px 6px; border-radius: 3px;">${l.action}</code></td>
+                <td style="padding: 6px 10px; border-bottom: 1px solid var(--border-color); font-size: 12px; color: var(--text-secondary);">${l.table_name || '-'}</td>
+            </tr>
+        `).join('');
+
+        panel.innerHTML = `
+            <div style="background: var(--bg-secondary); border-radius: 0 0 12px 12px; padding: 20px; margin-top: -8px;">
+                ${closeBtn}
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <h4 style="margin: 0 0 12px 0; font-size: 15px;">Action Breakdown (Top 15)</h4>
+                        ${bars}
+                    </div>
+                    <div>
+                        <h4 style="margin: 0 0 12px 0; font-size: 15px;">Recent Entries (Last 50)</h4>
+                        <div style="max-height: 350px; overflow-y: auto;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: var(--bg-primary);">
+                                        <th style="padding: 6px 10px; text-align: left; font-weight: 600; font-size: 12px;">Time</th>
+                                        <th style="padding: 6px 10px; text-align: left; font-weight: 600; font-size: 12px;">User</th>
+                                        <th style="padding: 6px 10px; text-align: left; font-weight: 600; font-size: 12px;">Action</th>
+                                        <th style="padding: 6px 10px; text-align: left; font-weight: 600; font-size: 12px;">Table</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${logRows}</tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+    }
 }
 
 /**

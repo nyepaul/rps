@@ -1,5 +1,5 @@
 {
-    "version": "3.9.199",
+    "version": "3.9.200",
     "release_date": "2026-02-06",
-    "release_notes": "Fix 14 financial calculation and security issues: income stream frequency/end_date in Monte Carlo, cost basis tracking, home ownership double-count, RMD table/split/detailed projection, progressive tax brackets, SS taxation formula, standard deduction 65+, budget income double-count, dashboard expense frequency, rent-vs-own precedence, security key fallbacks"
+    "release_notes": "Add clickable stat cards to admin dashboard with detail panels"
 }
