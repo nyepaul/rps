@@ -1,5 +1,5 @@
 {
-    "version": "3.9.192",
+    "version": "3.9.193",
     "release_date": "2026-02-06",
-    "release_notes": "Add timeline limit selector and fix audit log ordering to fetch most recent entries"
+    "release_notes": "Revise color themes: separate success (teal) from accent (sage), fix WCAG contrast failures, update hardcoded colors"
 }

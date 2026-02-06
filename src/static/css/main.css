@@ -1,5 +1,6 @@
 :root {
             /* === SAGE & AMBER DESIGN SYSTEM === */
+            /* Accent = sage green, Success = teal, all greens visually distinct */
 
             /* Backgrounds - Warm, not sterile */
             --bg-primary: #faf9f7;
@@ -23,23 +24,23 @@
             --accent-secondary-hover: #c4956a;
             --text-on-accent: #ffffff;
 
-            /* Semantic Colors */
-            --success-color: #2d6a4f;
+            /* Semantic Colors - Success is teal, distinct from sage accent */
+            --success-color: #0f766e;
             --warning-color: #b45309;
             --danger-color: #b91c1c;
             --info-color: #1e40af;
             --text-on-success: #ffffff;
             --text-on-warning: #ffffff;
             --text-on-danger: #ffffff;
-            --badge-specified-bg: #10b981;
-            --badge-detected-bg: #3b82f6;
-            --badge-merged-bg: #8b5cf6;
+            --badge-specified-bg: #047857;
+            --badge-detected-bg: #2563eb;
+            --badge-merged-bg: #7c3aed;
             --text-on-badge: #ffffff;
 
             /* Semantic Text & Background Colors */
-            --success-text: #2d6a4f;
+            --success-text: #0f766e;
             --warning-text: #b45309;
-            --success-bg: #f0fdf4;
+            --success-bg: #f0fdfa;
             --warning-bg: #fffbeb;
             --danger-bg: #fef2f2;
             --info-bg: #eff6ff;
@@ -51,13 +52,13 @@
 
             /* Gradients */
             --gradient-primary-start: #2d6a4f;
-            --gradient-primary-end: #40916c;
+            --gradient-primary-end: #3d8b6a;
             --gradient-accent-start: #d4a373;
             --gradient-accent-end: #e9c46a;
 
             /* Card Gradients (used by existing code) */
             --card-gradient-1: #2d6a4f;
-            --card-gradient-2: #40916c;
+            --card-gradient-2: #3d8b6a;
 
             /* Chart text colors */
             --chart-text-primary: #1a1a1a;
@@ -90,46 +91,47 @@
 
         body.dark-mode {
             /* === SAGE & AMBER DARK THEME === */
+            /* Accent = lighter sage, Success = bright teal, all greens distinct */
 
             /* Backgrounds - Rich blacks */
             --bg-primary: #0f0f0f;
             --bg-secondary: #1a1a1a;
             --bg-tertiary: #262626;
 
-            /* Text - Warm whites */
+            /* Text - Warm whites, muted brightened for AA compliance */
             --text-primary: #f5f3f0;
             --text-secondary: #a3a3a3;
-            --text-muted: #737373;
-            --text-light: #737373;
+            --text-muted: #919191;
+            --text-light: #919191;
 
             /* Header */
             --header-bg: #1a1a1a;
             --header-text: #f5f3f0;
 
-            /* Brand Colors - Lighter for dark mode */
+            /* Brand Colors - Lighter sage for dark mode */
             --accent-color: #40916c;
             --accent-hover: #52b788;
             --accent-secondary: #e9c46a;
             --accent-secondary-hover: #f4d58d;
             --text-on-accent: #000000;
 
-            /* Semantic Colors */
-            --success-color: #52b788;
+            /* Semantic Colors - Success is teal, distinct from sage accent */
+            --success-color: #2dd4bf;
             --warning-color: #fbbf24;
             --danger-color: #f87171;
             --info-color: #60a5fa;
             --text-on-success: #000000;
             --text-on-warning: #000000;
             --text-on-danger: #000000;
-            --badge-specified-bg: #10b981;
+            --badge-specified-bg: #047857;
             --badge-detected-bg: #3b82f6;
             --badge-merged-bg: #8b5cf6;
             --text-on-badge: #000000;
 
             /* Semantic Text & Background Colors */
-            --success-text: #52b788;
+            --success-text: #2dd4bf;
             --warning-text: #fbbf24;
-            --success-bg: #1a2a1a;
+            --success-bg: #0f2a2a;
             --warning-bg: #2a2a1a;
             --danger-bg: #2a1a1a;
             --info-bg: #1a2a3a;
@@ -156,7 +158,7 @@
 
         body.high-contrast-mode {
             /* === HIGH CONTRAST THEME (WCAG AAA) === */
-            /* Maximum contrast for accessibility - bright greens on pure black */
+            /* Accent = bright green, Success = bright cyan, all colors distinct */
 
             /* Backgrounds - Pure black */
             --bg-primary: #000000;
@@ -173,30 +175,30 @@
             --header-bg: #000000;
             --header-text: #ffffff;
 
-            /* Brand Colors - Bright sage green for AAA compliance */
+            /* Brand Colors - Bright green for AAA compliance */
             --accent-color: #4ade80;
             --accent-hover: #86efac;
             --accent-secondary: #fbbf24;
             --accent-secondary-hover: #fcd34d;
             --text-on-accent: #000000;
 
-            /* Semantic Colors - Bright for visibility */
-            --success-color: #4ade80;
+            /* Semantic Colors - Success is cyan, distinct from green accent */
+            --success-color: #22d3ee;
             --warning-color: #fbbf24;
             --danger-color: #f87171;
             --info-color: #60a5fa;
             --text-on-success: #000000;
             --text-on-warning: #000000;
             --text-on-danger: #000000;
-            --badge-specified-bg: #4ade80;
+            --badge-specified-bg: #34d399;
             --badge-detected-bg: #60a5fa;
             --badge-merged-bg: #fbbf24;
             --text-on-badge: #000000;
 
             /* Semantic Text & Background Colors */
-            --success-text: #4ade80;
+            --success-text: #22d3ee;
             --warning-text: #fbbf24;
-            --success-bg: #0a1a0a;
+            --success-bg: #0a1a1a;
             --warning-bg: #1a1a0a;
             --danger-bg: #1a0a0a;
             --info-bg: #0a0a1a;

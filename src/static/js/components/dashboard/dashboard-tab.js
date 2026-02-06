@@ -1150,7 +1150,7 @@ function showNetWorthDetails(profile) {
     // Calculate debt-to-asset ratio
     const debtToAssetRatio = totalAssets > 0 ? (totalDebts / totalAssets * 100) : 0;
     const debtRatioStatus = debtToAssetRatio > 50 ? 'High Risk' : debtToAssetRatio > 30 ? 'Moderate' : debtToAssetRatio > 0 ? 'Low' : 'Debt-Free';
-    const debtRatioColor = debtToAssetRatio > 50 ? '#ef4444' : debtToAssetRatio > 30 ? '#f59e0b' : debtToAssetRatio > 0 ? '#22c55e' : '#10b981';
+    const debtRatioColor = debtToAssetRatio > 50 ? '#ef4444' : debtToAssetRatio > 30 ? '#f59e0b' : debtToAssetRatio > 0 ? '#22c55e' : '#0f766e';
     const debtRatioIcon = debtToAssetRatio > 50 ? '🔴' : debtToAssetRatio > 30 ? '🟡' : debtToAssetRatio > 0 ? '🟢' : '✅';
 
     // Calculate liquidity (liquid assets vs total assets)
@@ -1202,7 +1202,7 @@ function showNetWorthDetails(profile) {
                     <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 5px; text-transform: uppercase; font-weight: 600;">Net Worth</div>
                     <div style="font-size: 24px; font-weight: bold; color: var(--text-primary);">${formatCompact(netWorth)}</div>
                 </div>
-                <div style="background: linear-gradient(135deg, rgba(34,197,94,0.15), rgba(16,185,129,0.15)); border-radius: 8px; padding: 16px; border-left: 4px solid #10b981;">
+                <div style="background: linear-gradient(135deg, rgba(34,197,94,0.15), rgba(16,185,129,0.15)); border-radius: 8px; padding: 16px; border-left: 4px solid #0f766e;">
                     <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 5px; text-transform: uppercase; font-weight: 600;">Total Assets</div>
                     <div style="font-size: 24px; font-weight: bold; color: var(--text-primary);">${formatCompact(totalAssets)}</div>
                 </div>
@@ -1702,7 +1702,7 @@ function showExpensesDetails(profile) {
                 <div style="background: var(--bg-secondary); border-radius: 8px; padding: 16px; border-left: 3px solid #8b5cf6;">
                     <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600;">Data Sources</div>
                     <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.8;">
-                        ${bySource.specified > 0 ? `<div><span style="color: #10b981;">●</span> Manual: ${formatCurrency(bySource.specified, 0)}</div>` : ''}
+                        ${bySource.specified > 0 ? `<div><span style="color: #0f766e;">●</span> Manual: ${formatCurrency(bySource.specified, 0)}</div>` : ''}
                         ${bySource.detected > 0 ? `<div><span style="color: #3b82f6;">●</span> Detected: ${formatCurrency(bySource.detected, 0)}</div>` : ''}
                         ${bySource.merged > 0 ? `<div><span style="color: #8b5cf6;">●</span> Merged: ${formatCurrency(bySource.merged, 0)}</div>` : ''}
                     </div>
@@ -1858,7 +1858,7 @@ function showSavingsRateDetails(profile) {
         ratingColor = '#22c55e';
     } else {
         rating = 'Outstanding - Exceptional';
-        ratingColor = '#10b981';
+        ratingColor = '#0f766e';
     }
 
     const modal = document.createElement('div');
@@ -1925,7 +1925,7 @@ function showSavingsRateDetails(profile) {
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <div style="width: 60px; font-size: 13px; color: var(--text-secondary);">&gt; 50%</div>
-                    <div style="flex: 1; height: 24px; background: #10b98133; border-radius: 4px; display: flex; align-items: center; padding: 0 10px; font-size: 12px; color: var(--text-primary);">Outstanding - Exceptional</div>
+                    <div style="flex: 1; height: 24px; background: #0f766e33; border-radius: 4px; display: flex; align-items: center; padding: 0 10px; font-size: 12px; color: var(--text-primary);">Outstanding - Exceptional</div>
                 </div>
             </div>
 
