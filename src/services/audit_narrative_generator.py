@@ -94,14 +94,17 @@ class AuditNarrativeGenerator:
                     query += " AND created_at <= ?"
                     params.append(end_date)
 
-                query += " ORDER BY created_at ASC LIMIT ?"
+                query += " ORDER BY created_at DESC LIMIT ?"
                 params.append(limit)
 
                 cursor.execute(query, params)
                 columns = [desc[0] for desc in cursor.description]
                 rows = cursor.fetchall()
 
-                return [dict(zip(columns, row)) for row in rows]
+                logs = [dict(zip(columns, row)) for row in rows]
+                # Reverse to maintain chronological order for narrative generation
+                logs.reverse()
+                return logs
 
         except Exception as e:
             print(f"Error fetching user logs: {e}")

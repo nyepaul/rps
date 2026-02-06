@@ -1,5 +1,5 @@
 {
-    "version": "3.9.191",
-    "release_date": "2026-02-05",
-    "release_notes": "Restore cashflow rendering and implement real-time log filtering"
+    "version": "3.9.192",
+    "release_date": "2026-02-06",
+    "release_notes": "Add timeline limit selector and fix audit log ordering to fetch most recent entries"
 }

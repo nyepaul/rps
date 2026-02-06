@@ -36,7 +36,7 @@ export async function renderUserTimeline(container) {
             <!-- User Selection & Filters -->
             <div style="background: var(--bg-secondary); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
                 <h3 style="font-size: 16px; margin-bottom: 15px;">📋 Select User & Filters</h3>
-                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px; align-items: end;">
+                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 15px; align-items: end;">
                     <div style="position: relative;" id="user-select-container">
                         <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">User (click to select)</label>
                         <div style="position: relative;">
@@ -81,6 +81,16 @@ export async function renderUserTimeline(container) {
                             style="width: 100%; padding: 10px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);"
                         >
                     </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">Limit</label>
+                        <select id="timeline-limit" style="width: 100%; padding: 10px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
+                            <option value="500">Last 500</option>
+                            <option value="1000" selected>Last 1,000</option>
+                            <option value="2000">Last 2,000</option>
+                            <option value="5000">Last 5,000</option>
+                            <option value="10000">Last 10,000</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -104,6 +114,7 @@ function setupTimelineHandlers(container) {
     const dropdown = container.querySelector('#user-dropdown-list');
     const startDateInput = container.querySelector('#timeline-start-date');
     const endDateInput = container.querySelector('#timeline-end-date');
+    const limitSelect = container.querySelector('#timeline-limit');
 
     const renderDropdown = (filterText = '') => {
         const lowerFilter = filterText.toLowerCase();
@@ -167,7 +178,7 @@ function setupTimelineHandlers(container) {
         }
     });
 
-    // Date change handlers
+    // Filter change handlers
     const reloadIfUserSelected = () => {
         const username = userInput.value;
         const userId = userMapping[username.toLowerCase()];
@@ -178,6 +189,7 @@ function setupTimelineHandlers(container) {
 
     startDateInput.addEventListener('change', reloadIfUserSelected);
     endDateInput.addEventListener('change', reloadIfUserSelected);
+    limitSelect.addEventListener('change', reloadIfUserSelected);
 }
 
 /**
@@ -211,6 +223,7 @@ async function loadUserTimeline(container, userId) {
     const contentDiv = container.querySelector('#timeline-content');
     const startDate = container.querySelector('#timeline-start-date').value;
     const endDate = container.querySelector('#timeline-end-date').value;
+    const limit = container.querySelector('#timeline-limit').value || '1000';
 
     // Clear content
     contentDiv.style.display = 'none';
@@ -220,7 +233,7 @@ async function loadUserTimeline(container, userId) {
         const params = new URLSearchParams();
         if (startDate) params.append('start_date', startDate);
         if (endDate) params.append('end_date', endDate);
-        params.append('limit', '1000');
+        params.append('limit', limit);
 
         // Fetch timeline
         const timeline = await apiClient.get(`/api/admin/users/${userId}/timeline?${params}`);
