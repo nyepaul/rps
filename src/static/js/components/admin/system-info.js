@@ -237,7 +237,7 @@ function setupStatCardClicks(container) {
  * Render detail panel content for a given stat type
  */
 function renderDetailPanel(panel, stat, data) {
-    const closeBtn = `<span style="float: right; cursor: pointer; opacity: 0.5; font-size: 18px;" onclick="this.closest('#stats-detail-panel').innerHTML=''; document.querySelectorAll('.stat-card').forEach(c=>c.style.outline='');">&#x2715;</span>`;
+    const closeBtn = `<span class="stats-detail-close" style="float: right; cursor: pointer; opacity: 0.5; font-size: 18px;">&#x2715;</span>`;
 
     if (stat === 'users') {
         const rows = data.users.map(u => `
@@ -380,6 +380,15 @@ function renderDetailPanel(panel, stat, data) {
                     </div>
                 </div>
             </div>`;
+    }
+
+    // Attach close button handler (CSP blocks inline onclick)
+    const closeEl = panel.querySelector('.stats-detail-close');
+    if (closeEl) {
+        closeEl.addEventListener('click', () => {
+            panel.innerHTML = '';
+            document.querySelectorAll('.stat-card').forEach(c => c.style.outline = '');
+        });
     }
 }
 

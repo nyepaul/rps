@@ -1,5 +1,5 @@
 {
-    "version": "3.9.201",
+    "version": "3.9.202",
     "release_date": "2026-02-06",
-    "release_notes": "Fix admin cache-busting for all sub-modules, fix Mermaid CDN loading"
+    "release_notes": "Fix CSP-blocked inline event handlers on dashboard and admin stat cards"
 }

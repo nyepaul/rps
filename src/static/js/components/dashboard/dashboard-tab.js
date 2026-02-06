@@ -34,11 +34,13 @@ export async function renderDashboardTab(container) {
                 <p style="color: var(--text-secondary); margin-bottom: 20px;">
                     ${error.message || 'Could not load your profiles'}
                 </p>
-                <button onclick="window.location.reload()" style="padding: 10px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer;">
+                <button id="dash-retry-btn" style="padding: 10px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer;">
                     Retry
                 </button>
             </div>
         `;
+        const retryBtn = container.querySelector('#dash-retry-btn');
+        if (retryBtn) retryBtn.addEventListener('click', () => window.location.reload());
     }
 }
 
@@ -73,7 +75,7 @@ function renderProfileDashboard(container, profiles, currentProfile, currentUser
                 <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 13px; max-width: 400px; margin-left: auto; margin-right: auto;">
                     Create your first financial planning profile to start modeling your retirement.
                 </p>
-                <button onclick="window.app.showTab('welcome')" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                <button class="dash-nav-btn" data-target="welcome" style="padding: 10px 20px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
                     Get Started
                 </button>
             </div>
@@ -414,7 +416,7 @@ function renderFinancialSummary(profile) {
                             <span style="font-size: 11px; font-weight: 700; background: var(--accent-color); color: var(--text-on-accent); padding: 4px 10px; border-radius: 4px;">ACTIVE PROFILE</span>
                             <h2 style="font-size: 20px; margin: 0; font-weight: 700;">${profile.name}</h2>
                         </div>
-                        <button onclick="window.app.showTab('profile')" style="padding: 6px 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                        <button class="dash-nav-btn" data-target="profile" style="padding: 6px 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
                             Edit Profile
                         </button>
                     </div>
@@ -434,7 +436,7 @@ function renderFinancialSummary(profile) {
                             `).join('')}
                         </div>
                         <div style="flex: 0 0 auto;">
-                            <button onclick="window.app.showTab('actions')" style="padding: 8px 16px; background: var(--bg-tertiary); border: 1px solid var(--accent-color); color: var(--accent-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">
+                            <button class="dash-nav-btn" data-target="actions" style="padding: 8px 16px; background: var(--bg-tertiary); border: 1px solid var(--accent-color); color: var(--accent-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">
                                 View Action Plan →
                             </button>
                         </div>
@@ -442,28 +444,28 @@ function renderFinancialSummary(profile) {
         
                     <!-- Key Metrics Grid -->            <div class="metric-grid">
                 <!-- Net Worth -->
-                <div id="metric-networth" class="metric-card" style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 12px; border-radius: 6px; color: var(--text-on-success); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
+                <div id="metric-networth" class="metric-card" style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 12px; border-radius: 6px; color: var(--text-on-success); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
                     <div style="font-size: 10px; opacity: 0.9; margin-bottom: 4px;">💰 Net Worth</div>
                     <div style="font-size: 18px; font-weight: 700;">${formatCompact(netWorth)}</div>
                     <div style="font-size: 9px; opacity: 0.7; margin-top: 4px;">Click for details</div>
                 </div>
 
                 <!-- Annual Income -->
-                <div id="metric-income" class="metric-card" style="background: linear-gradient(135deg, #3498db, #2980b9); padding: 12px; border-radius: 6px; color: var(--text-on-accent); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
+                <div id="metric-income" class="metric-card" style="background: linear-gradient(135deg, #3498db, #2980b9); padding: 12px; border-radius: 6px; color: var(--text-on-accent); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
                     <div style="font-size: 10px; opacity: 0.9; margin-bottom: 4px;">📈 Annual Income</div>
                     <div style="font-size: 18px; font-weight: 700;">${totalAnnualIncome > 0 ? formatCompact(totalAnnualIncome) : 'Not set'}</div>
                     <div style="font-size: 9px; opacity: 0.7; margin-top: 4px;">Click for details</div>
                 </div>
 
                 <!-- Annual Expenses -->
-                <div id="metric-expenses" class="metric-card" style="background: linear-gradient(135deg, #e74c3c, #c0392b); padding: 12px; border-radius: 6px; color: var(--text-on-danger); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
+                <div id="metric-expenses" class="metric-card" style="background: linear-gradient(135deg, #e74c3c, #c0392b); padding: 12px; border-radius: 6px; color: var(--text-on-danger); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
                     <div style="font-size: 10px; opacity: 0.9; margin-bottom: 4px;">📉 Annual Expenses</div>
                     <div style="font-size: 18px; font-weight: 700;">${totalAnnualExpenses > 0 ? formatCompact(totalAnnualExpenses) : 'Not set'}</div>
                     <div style="font-size: 9px; opacity: 0.7; margin-top: 4px;">Click for details</div>
                 </div>
 
                 <!-- Savings Rate -->
-                <div id="metric-savings-rate" class="metric-card" style="background: linear-gradient(135deg, #9b59b6, #8e44ad); padding: 12px; border-radius: 6px; color: var(--text-on-accent); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
+                <div id="metric-savings-rate" class="metric-card" style="background: linear-gradient(135deg, #9b59b6, #8e44ad); padding: 12px; border-radius: 6px; color: var(--text-on-accent); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
                     <div style="font-size: 10px; opacity: 0.9; margin-bottom: 4px;">💵 Savings Rate</div>
                     <div style="font-size: 18px; font-weight: 700;">${totalAnnualIncome > 0 ? savingsRate.toFixed(1) + '%' : 'N/A'}</div>
                     <div style="font-size: 9px; opacity: 0.7; margin-top: 4px;">Click for details</div>
@@ -471,7 +473,7 @@ function renderFinancialSummary(profile) {
 
                 ${currentAge ? `
                 <!-- Current Age -->
-                <div id="metric-age" class="metric-card" style="background: linear-gradient(135deg, #1abc9c, #16a085); padding: 12px; border-radius: 6px; color: var(--text-on-success); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
+                <div id="metric-age" class="metric-card" style="background: linear-gradient(135deg, #1abc9c, #16a085); padding: 12px; border-radius: 6px; color: var(--text-on-success); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
                     <div style="font-size: 10px; opacity: 0.9; margin-bottom: 4px;">👤 Current Age</div>
                     <div style="font-size: 18px; font-weight: 700;">${currentAge}</div>
                     <div style="font-size: 9px; opacity: 0.7; margin-top: 4px;">Click for details</div>
@@ -480,7 +482,7 @@ function renderFinancialSummary(profile) {
 
                 ${retirementYears !== null ? `
                 <!-- Years to Retirement -->
-                <div id="metric-retirement" class="metric-card" style="background: linear-gradient(135deg, #f39c12, #e67e22); padding: 12px; border-radius: 6px; color: var(--text-on-warning); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
+                <div id="metric-retirement" class="metric-card" style="background: linear-gradient(135deg, #f39c12, #e67e22); padding: 12px; border-radius: 6px; color: var(--text-on-warning); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
                     <div style="font-size: 10px; opacity: 0.9; margin-bottom: 4px;">🏖️ To Retirement</div>
                     <div style="font-size: 18px; font-weight: 700;">${retirementYears}y ${retirementMonths}m</div>
                     <div style="font-size: 9px; opacity: 0.7; margin-top: 4px;">Click for details</div>
@@ -636,7 +638,7 @@ function renderProfileCard(profile, currentProfile) {
                 <button class="view-info-btn" data-profile-name="${profile.name}" style="padding: 4px 8px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: 600;">
                     Info
                 </button>
-                <button class="delete-profile-btn" data-profile-name="${profile.name}" style="padding: 4px 6px; background: transparent; color: var(--danger-color); border: 1px solid var(--danger-color); border-radius: 4px; cursor: pointer; font-size: 10px; opacity: 0.6;" onmouseover="this.style.opacity='1'; this.style.background='var(--danger-color)'; this.style.color='white'" onmouseout="this.style.opacity='0.6'; this.style.background='transparent'; this.style.color='var(--danger-color)'">
+                <button class="delete-profile-btn" data-profile-name="${profile.name}" style="padding: 4px 6px; background: transparent; color: var(--danger-color); border: 1px solid var(--danger-color); border-radius: 4px; cursor: pointer; font-size: 10px; opacity: 0.6;">
                     ✕
                 </button>
             </div>
@@ -648,6 +650,14 @@ function renderProfileCard(profile, currentProfile) {
  * Setup dashboard event handlers
  */
 function setupDashboardHandlers(container, profiles) {
+    // Navigation buttons (replaces inline onclick handlers blocked by CSP)
+    container.querySelectorAll('.dash-nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const target = btn.dataset.target;
+            if (target) window.app.showTab(target);
+        });
+    });
+
     // Create Profile Button
     const createBtn = container.querySelector('#create-profile-btn');
     if (createBtn) {
@@ -727,6 +737,32 @@ function setupDashboardHandlers(container, profiles) {
             activeProfileCard.style.boxShadow = '0 1px 4px rgba(0,0,0,0.1)';
         });
     }
+
+    // Metric card hover effects (replaces inline onmouseover/onmouseout blocked by CSP)
+    container.querySelectorAll('.metric-card').forEach(card => {
+        card.addEventListener('mouseenter', () => {
+            card.style.transform = 'translateY(-2px)';
+            card.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+        });
+        card.addEventListener('mouseleave', () => {
+            card.style.transform = '';
+            card.style.boxShadow = '';
+        });
+    });
+
+    // Delete button hover effects
+    container.querySelectorAll('.delete-profile-btn').forEach(btn => {
+        btn.addEventListener('mouseenter', () => {
+            btn.style.opacity = '1';
+            btn.style.background = 'var(--danger-color)';
+            btn.style.color = 'white';
+        });
+        btn.addEventListener('mouseleave', () => {
+            btn.style.opacity = '0.6';
+            btn.style.background = 'transparent';
+            btn.style.color = 'var(--danger-color)';
+        });
+    });
 
     // Metric Card Click Handlers - fetch fresh complete profile data from API
     const networthCard = container.querySelector('#metric-networth');
