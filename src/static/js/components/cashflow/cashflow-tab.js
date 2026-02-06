@@ -1533,6 +1533,27 @@ function calculatePeriodIncome(budget, period, currentDate) {
 /**
  * Calculate monthly cash flow data with portfolio growth projection
  */
+/**
+ * Calculate federal tax using 2024 progressive brackets.
+ */
+function calculateProgressiveTax(annualIncome, filingStatus) {
+    let brackets;
+    if (filingStatus === 'mfj' || filingStatus === 'mqw') {
+        brackets = [[23200, 0.10], [94300, 0.12], [201050, 0.22], [383900, 0.24], [487450, 0.32], [731200, 0.35], [Infinity, 0.37]];
+    } else if (filingStatus === 'hoh') {
+        brackets = [[16550, 0.10], [63100, 0.12], [100500, 0.22], [191950, 0.24], [243725, 0.32], [609350, 0.35], [Infinity, 0.37]];
+    } else {  // single / mfs
+        brackets = [[11600, 0.10], [47150, 0.12], [100525, 0.22], [191950, 0.24], [243725, 0.32], [365600, 0.35], [Infinity, 0.37]];
+    }
+    let tax = 0, prev = 0;
+    for (const [limit, rate] of brackets) {
+        if (annualIncome <= prev) break;
+        tax += (Math.min(annualIncome, limit) - prev) * rate;
+        prev = limit;
+    }
+    return tax;
+}
+
 function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') {
     const data = profile.data || {};
     const incomeStreams = data.income_streams || [];
@@ -1813,7 +1834,6 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
         let monthlyStateTax = 0;
         let monthlyFicaTax = 0;
 
-        const fedRate = financial.tax_bracket_federal || 0.12; // Use 12% as a more realistic baseline for retirees
         const stateRate = financial.tax_bracket_state || 0.05;
         const ficaRate = 0.0765;
 
@@ -1821,10 +1841,28 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
         monthlyFicaTax = workIncome * ficaRate;
 
         // Income stacking for Federal/State (All income: Work + Budget + Pension + SS taxable portion)
-        // SS taxation: rough rule of thumb (50% taxable for most)
+        // SS taxation: IRS provisional income formula
         // Include both Person 1 and Person 2 (spouse) SS and pension
-        const taxableSS = (p1SocialSecurity + p2SocialSecurity) * 0.5;
         const totalPension = p1Pension + p2Pension;
+        const totalSSMonthly = p1SocialSecurity + p2SocialSecurity;
+        const otherIncomeMonthly = totalWorkIncome + totalPension;
+        // Annualize for IRS thresholds
+        const totalSSAnnual = totalSSMonthly * 12;
+        const otherIncomeAnnual = otherIncomeMonthly * 12;
+        const provisionalIncome = otherIncomeAnnual + (totalSSAnnual * 0.5);
+        const filingStatusSS = financial.filing_status || 'mfj';
+        const [ssThreshold1, ssThreshold2] = (filingStatusSS === 'mfj' || filingStatusSS === 'mqw')
+            ? [32000, 44000] : [25000, 34000];
+        let taxableSSAnnual;
+        if (provisionalIncome <= ssThreshold1) {
+            taxableSSAnnual = 0;
+        } else if (provisionalIncome <= ssThreshold2) {
+            taxableSSAnnual = Math.min(totalSSAnnual * 0.5, (provisionalIncome - ssThreshold1) * 0.5);
+        } else {
+            taxableSSAnnual = Math.min(totalSSAnnual * 0.85,
+                (provisionalIncome - ssThreshold2) * 0.85 + Math.min(totalSSAnnual * 0.5, (ssThreshold2 - ssThreshold1) * 0.5));
+        }
+        const taxableSS = taxableSSAnnual / 12;  // Convert back to monthly
 
         // Investment income tax treatment: Split into basis return and capital gains
         // Assume 40% is return of basis (tax-free), 60% is long-term capital gains
@@ -1839,7 +1877,9 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
         const stdDeductionMonthly = (filingStatus === 'mfj' ? 29200 : 14600) / 12;
 
         const taxableAfterDeduction = Math.max(0, monthlyTaxableOrdinary - stdDeductionMonthly);
-        monthlyFederalTax = taxableAfterDeduction * fedRate;
+        // Use progressive brackets: annualize, calculate, then convert back to monthly
+        const annualTaxableOrdinary = taxableAfterDeduction * 12;
+        monthlyFederalTax = calculateProgressiveTax(annualTaxableOrdinary, filingStatus) / 12;
         monthlyStateTax = taxableAfterDeduction * stateRate;
 
         // Long-term capital gains tax (stacked on ordinary income)

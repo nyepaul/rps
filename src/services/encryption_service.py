@@ -29,6 +29,11 @@ class EncryptionService:
             key_material = os.environ.get(
                 "ENCRYPTION_KEY", "default-key-change-in-production"
             )
+            if key_material == "default-key-change-in-production":
+                import logging
+                logging.getLogger(__name__).warning(
+                    "SECURITY: Using default encryption key - set ENCRYPTION_KEY env var for production"
+                )
             key = self._derive_key(key_material)
 
         self.key = key
@@ -102,6 +107,11 @@ class EncryptionService:
         pepper = os.environ.get(
             "BACKUP_KEY_PEPPER", "default-pepper-change-in-production"
         )
+        if pepper == "default-pepper-change-in-production":
+            import logging
+            logging.getLogger(__name__).warning(
+                "SECURITY: Using default pepper - set BACKUP_KEY_PEPPER env var for production"
+            )
 
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),

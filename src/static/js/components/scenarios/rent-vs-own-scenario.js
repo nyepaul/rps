@@ -82,18 +82,26 @@ function populateScenarioForm(container, homeAsset) {
 
     // Owning Scenario Overrides
     container.querySelector('#own_purchase_price').value = homeAsset.purchase_price || homeAsset.current_value || '';
-    container.querySelector('#own_down_payment_pct').value = (homeAsset.down_payment / (homeAsset.purchase_price || homeAsset.current_value) * 100).toFixed(0) || 20;
+    const downPct = (homeAsset.down_payment != null && (homeAsset.purchase_price || homeAsset.current_value))
+        ? (homeAsset.down_payment / (homeAsset.purchase_price || homeAsset.current_value) * 100).toFixed(0)
+        : 20;
+    container.querySelector('#own_down_payment_pct').value = downPct;
     container.querySelector('#own_mortgage_term_years').value = homeAsset.loan_term_years || 30;
-    container.querySelector('#own_interest_rate_pct').value = (homeAsset.interest_rate * 100 || 4.5);
-    container.querySelector('#own_property_tax_rate_pct').value = (homeAsset.property_tax_rate * 100 || 1.5);
+    const interestRatePct = homeAsset.interest_rate != null ? homeAsset.interest_rate * 100 : 4.5;
+    container.querySelector('#own_interest_rate_pct').value = interestRatePct;
+    const propertyTaxRatePct = homeAsset.property_tax_rate != null ? homeAsset.property_tax_rate * 100 : 1.5;
+    container.querySelector('#own_property_tax_rate_pct').value = propertyTaxRatePct;
     container.querySelector('#own_home_insurance_annual').value = homeAsset.home_insurance_annual || 1500;
-    container.querySelector('#own_maintenance_annual_pct').value = (homeAsset.maintenance_annual_pct * 100 || 1);
-    container.querySelector('#own_appreciation_annual_pct').value = (homeAsset.appreciation_annual_pct * 100 || 3);
+    const maintenancePct = homeAsset.maintenance_annual_pct != null ? homeAsset.maintenance_annual_pct * 100 : 1;
+    container.querySelector('#own_maintenance_annual_pct').value = maintenancePct;
+    const appreciationPct = homeAsset.appreciation_annual_pct != null ? homeAsset.appreciation_annual_pct * 100 : 3;
+    container.querySelector('#own_appreciation_annual_pct').value = appreciationPct;
     container.querySelector('#own_closing_costs_pct').value = 3; // Default 3% closing costs
 
     // Renting Scenario Overrides
     container.querySelector('#rent_initial_monthly_rent').value = homeAsset.initial_rent_pm || 2000;
-    container.querySelector('#rent_annual_rent_increase_pct').value = (homeAsset.rent_increase_annual_pct * 100 || 3);
+    const rentIncreasePct = homeAsset.rent_increase_annual_pct != null ? homeAsset.rent_increase_annual_pct * 100 : 3;
+    container.querySelector('#rent_annual_rent_increase_pct').value = rentIncreasePct;
 
     // General Scenario Parameters
     container.querySelector('#time_horizon_years').value = 10;

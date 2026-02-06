@@ -4,6 +4,7 @@ import os
 import re
 import json
 import base64
+import logging
 from datetime import datetime, timedelta
 from flask import Blueprint, request, jsonify, session, make_response, current_app
 from flask_login import login_user, logout_user, current_user, login_required
@@ -1127,9 +1128,7 @@ def request_password_reset():
     # For local development/testing convenience when email is not configured
     if not email_sent:
         # Log token to server logs ONLY (do not expose in API)
-        print(
-            f"SECURITY WARNING: Email not sent. Reset token for {user.username}: {token}"
-        )
+        logging.warning(f"Email not configured. Password reset requested for user: {user.username}")
 
     # Return success message (without token in production)
     response_data = {

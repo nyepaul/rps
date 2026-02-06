@@ -66,7 +66,7 @@ class HomeOwnershipService:
 
         opportunity_gain = project_future_value(initial_owning_cash_outlay, opportunity_cost_return, time_horizon_years) - initial_owning_cash_outlay
         
-        net_worth_own = results_own["ending_home_value"] + results_own["ending_equity"] # simplified
+        net_worth_own = results_own["ending_equity"] # equity already includes home value minus mortgage
         net_worth_rent = initial_owning_cash_outlay + opportunity_gain # cash not spent, invested
 
         # Total costs
@@ -135,6 +135,7 @@ class HomeOwnershipService:
 
         return {
             "monthly_piti": monthly_piti,
+            "monthly_maintenance": annual_maintenance / 12,
             "total_mortgage_payments": total_mortgage_payments,
             "total_property_tax": total_property_tax,
             "total_insurance": total_insurance,

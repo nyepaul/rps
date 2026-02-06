@@ -111,15 +111,30 @@ class RetirementModel:
         age_now = (datetime.now() - person.birth_date).days / 365.25
         return int(target_age - age_now)
 
-    def get_standard_deduction(self, current_cpi: np.ndarray = 1.0) -> np.ndarray:
-        """Get inflation-adjusted standard deduction based on filing status."""
+    def get_standard_deduction(
+        self, current_cpi: np.ndarray = 1.0, p1_age: float = 0, p2_age: float = 0
+    ) -> np.ndarray:
+        """Get inflation-adjusted standard deduction based on filing status and age.
+
+        Includes additional deduction for taxpayers 65+:
+        - Single/HoH: $1,950 per person
+        - MFJ/MFS: $1,550 per person
+        """
         filing_status = getattr(self.profile, "filing_status", "mfj")
         if filing_status == "single":
             base = 14600
+            if p1_age >= 65:
+                base += 1950
         elif filing_status == "hoh":
             base = 21900
-        else:  # mfj
+            if p1_age >= 65:
+                base += 1950
+        else:  # mfj / mfs
             base = 29200
+            if p1_age >= 65:
+                base += 1550
+            if p2_age >= 65:
+                base += 1550
         return base * current_cpi
 
     # =========================================================================
@@ -712,10 +727,32 @@ class RetirementModel:
             for s in self.profile.income_streams:
                 try:
                     start_year = datetime.fromisoformat(s["start_date"]).year
+                    end_year = 9999
+                    if s.get("end_date"):
+                        try:
+                            end_year = datetime.fromisoformat(s["end_date"]).year
+                        except Exception:
+                            pass
+
+                    # Convert to annual amount based on frequency
+                    raw_amount = safe_float(s.get("amount", 0))
+                    freq = s.get("frequency", "monthly").lower()
+                    if freq == "monthly":
+                        annual_amt = raw_amount * 12
+                    elif freq == "weekly":
+                        annual_amt = raw_amount * 52
+                    elif freq == "biweekly":
+                        annual_amt = raw_amount * 26
+                    elif freq == "quarterly":
+                        annual_amt = raw_amount * 4
+                    else:
+                        annual_amt = raw_amount
+
                     income_streams_data.append(
                         {
-                            "amount": safe_float(s.get("amount", 0)),
+                            "amount": annual_amt,
                             "start_year": start_year,
+                            "end_year": end_year,
                             "inflation_adjusted": s.get("inflation_adjusted", True),
                             "type": s.get("type", "other"),
                         }
@@ -886,7 +923,7 @@ class RetirementModel:
                 current_cpi *= 1 + inflation_rates[:, year_idx]
 
             # Inflation-indexed tax thresholds (prevent bracket creep)
-            std_deduction = self.get_standard_deduction(current_cpi)
+            std_deduction = self.get_standard_deduction(current_cpi, p1_age, p2_age)
 
             # B. Calculate Income with Proper Tax Treatment
             # Track income components separately for accurate tax calculations
@@ -911,7 +948,7 @@ class RetirementModel:
             employment_income_from_streams = np.zeros(simulations)
             employment_types = ["salary", "hourly", "wages", "bonus"]
             for stream in income_streams_data:
-                if simulation_year >= stream["start_year"]:
+                if stream["start_year"] <= simulation_year <= stream["end_year"]:
                     amount = stream["amount"] * (
                         current_cpi if stream["inflation_adjusted"] else 1.0
                     )
@@ -1179,10 +1216,17 @@ class RetirementModel:
                             - capital_gains_tax
                         )
                         available_proceeds = net_proceeds - prop["replacement_cost"]
+                        proceeds_added = np.maximum(0, available_proceeds)
                         taxable_val = np.where(
                             active_mask,
-                            taxable_val + np.maximum(0, available_proceeds),
+                            taxable_val + proceeds_added,
                             taxable_val,
+                        )
+                        # Home sale proceeds are new money - increase basis
+                        taxable_basis = np.where(
+                            active_mask,
+                            taxable_basis + proceeds_added,
+                            taxable_basis,
                         )
                         prop["is_sold"] = np.where(active_mask, True, prop["is_sold"])
                         prop["values"] = np.where(active_mask, 0, prop["values"])
@@ -1191,30 +1235,36 @@ class RetirementModel:
             total_rmd = np.zeros(simulations)
             original_pretax = pretax_std.copy()
             rmd_factors = {
-                73: 26.5,
-                74: 25.5,
-                75: 24.6,
-                76: 23.7,
-                77: 22.9,
-                78: 22.0,
-                79: 21.1,
-                80: 20.2,
-                81: 19.4,
-                82: 18.5,
-                83: 17.7,
-                84: 16.8,
-                85: 16.0,
-                86: 15.2,
-                87: 14.4,
-                88: 13.7,
-                89: 12.9,
-                90: 12.2,
+                72: 27.4, 73: 26.5, 74: 25.5, 75: 24.6, 76: 23.7,
+                77: 22.9, 78: 22.0, 79: 21.1, 80: 20.2, 81: 19.4,
+                82: 18.5, 83: 17.7, 84: 16.8, 85: 16.0, 86: 15.2,
+                87: 14.4, 88: 13.7, 89: 12.9, 90: 12.2, 91: 11.5,
+                92: 10.8, 93: 10.1, 94: 9.5, 95: 8.9, 96: 8.4,
+                97: 7.8, 98: 7.3, 99: 6.8, 100: 6.4, 101: 6.0,
+                102: 5.6, 103: 5.2, 104: 4.9, 105: 4.6, 106: 4.3,
+                107: 4.1, 108: 3.9, 109: 3.7, 110: 3.5, 111: 3.4,
+                112: 3.3, 113: 3.1, 114: 3.0, 115: 2.9, 116: 2.8,
+                117: 2.7, 118: 2.5, 119: 2.3, 120: 2.0,
             }
-            for age in [p1_age, p2_age]:
-                if age >= 73:
-                    factor = rmd_factors.get(int(age), 12.2)
-                    curr_rmd = (original_pretax / 2.0) / factor
-                    total_rmd += curr_rmd
+            # Determine each person's share of pre-tax accounts
+            filing_status = getattr(self.profile, "filing_status", "mfj")
+            p1_rmd_eligible = p1_age >= 73
+            p2_rmd_eligible = p2_age >= 73
+            if filing_status == "single" or not p2_rmd_eligible:
+                # Single filer or only P1 is RMD-eligible: P1 owns all
+                if p1_rmd_eligible:
+                    factor = rmd_factors.get(int(p1_age), 2.0)
+                    total_rmd += original_pretax / factor
+            elif not p1_rmd_eligible:
+                # Only P2 is RMD-eligible: P2 owns all
+                factor = rmd_factors.get(int(p2_age), 2.0)
+                total_rmd += original_pretax / factor
+            else:
+                # Both eligible: split based on individual account ownership
+                # Use 50/50 split for MFJ (best available without per-person tracking)
+                for age in [p1_age, p2_age]:
+                    factor = rmd_factors.get(int(age), 2.0)
+                    total_rmd += (original_pretax / 2.0) / factor
 
             pretax_std -= total_rmd
 
@@ -1352,7 +1402,7 @@ class RetirementModel:
                 year_returns > 0, year_returns * (1 - TAX_DRAG_RATE), year_returns
             )
             taxable_val *= 1 + taxable_growth
-            taxable_basis *= 1 + taxable_growth
+            # Cost basis does NOT grow with market returns - only increases with new contributions
 
             pretax_std *= 1 + year_returns
             pretax_457 *= 1 + year_returns
@@ -1492,16 +1542,24 @@ class RetirementModel:
             for s in self.profile.income_streams:
                 try:
                     start_year = datetime.fromisoformat(s["start_date"]).year
+                    end_year = 9999
+                    if s.get("end_date"):
+                        try:
+                            end_year = datetime.fromisoformat(s["end_date"]).year
+                        except Exception:
+                            pass
 
                     # Convert to annual amount immediately during preparation
                     raw_amount = safe_float(s.get("amount", 0))
-                    freq = s.get("frequency", "annual").lower()
+                    freq = s.get("frequency", "monthly").lower()
                     if freq == "monthly":
                         annual_amt = raw_amount * 12
                     elif freq == "weekly":
                         annual_amt = raw_amount * 52
                     elif freq == "biweekly":
                         annual_amt = raw_amount * 26
+                    elif freq == "quarterly":
+                        annual_amt = raw_amount * 4
                     else:
                         annual_amt = raw_amount
 
@@ -1509,6 +1567,7 @@ class RetirementModel:
                         {
                             "amount_annual": annual_amt,
                             "start_year": start_year,
+                            "end_year": end_year,
                             "inflation_adjusted": s.get("inflation_adjusted", True),
                             "type": s.get("type"),
                         }
@@ -1587,7 +1646,7 @@ class RetirementModel:
             employment_streams_annual = 0
             employment_types = ["salary", "hourly", "wages", "bonus"]
             for stream in income_streams_data:
-                if simulation_year >= stream["start_year"]:
+                if stream["start_year"] <= simulation_year <= stream["end_year"]:
                     amt = stream["amount_annual"] * (
                         current_cpi if stream["inflation_adjusted"] else 1.0
                     )
@@ -1599,11 +1658,12 @@ class RetirementModel:
             employment_budget_annual = 0
             other_budget_annual = 0
             if self.profile.budget:
-                budget_total_mo, employment_mo = self.calculate_budget_income(
+                # calculate_budget_income returns annual values already
+                budget_total_annual, employment_annual = self.calculate_budget_income(
                     simulation_year, current_cpi, p1_retired, p2_retired
                 )
-                employment_budget_annual = employment_mo * 12
-                other_budget_annual = (budget_total_mo - employment_mo) * 12
+                employment_budget_annual = employment_annual
+                other_budget_annual = budget_total_annual - employment_annual
 
             total_employment_annual = (
                 employment_streams_annual + employment_budget_annual
@@ -1620,7 +1680,9 @@ class RetirementModel:
                 total_employment_annual + total_other_ord_annual + taxable_ss_annual
             )
 
-            std_deduction = self.get_standard_deduction(current_cpi)
+            std_deduction = self.get_standard_deduction(
+                current_cpi, p1_age_start, p2_age_start
+            )
             fed_tax_annual, _ = self._vectorized_federal_tax(
                 np.maximum(0, total_ord_taxable_annual - std_deduction)
             )
@@ -1641,6 +1703,51 @@ class RetirementModel:
 
             # Track cumulative ordinary income for stacking withdrawals (ANNUAL)
             cumulative_ordinary_gross = total_ord_taxable_annual.copy()
+
+            # --- RMD Logic (Age 73+) ---
+            rmd_annual = 0
+            rmd_factors_dp = {
+                72: 27.4, 73: 26.5, 74: 25.5, 75: 24.6, 76: 23.7,
+                77: 22.9, 78: 22.0, 79: 21.1, 80: 20.2, 81: 19.4,
+                82: 18.5, 83: 17.7, 84: 16.8, 85: 16.0, 86: 15.2,
+                87: 14.4, 88: 13.7, 89: 12.9, 90: 12.2, 91: 11.5,
+                92: 10.8, 93: 10.1, 94: 9.5, 95: 8.9, 96: 8.4,
+                97: 7.8, 98: 7.3, 99: 6.8, 100: 6.4, 101: 6.0,
+                102: 5.6, 103: 5.2, 104: 4.9, 105: 4.6, 106: 4.3,
+                107: 4.1, 108: 3.9, 109: 3.7, 110: 3.5, 111: 3.4,
+                112: 3.3, 113: 3.1, 114: 3.0, 115: 2.9, 116: 2.8,
+                117: 2.7, 118: 2.5, 119: 2.3, 120: 2.0,
+            }
+            filing_status_dp = getattr(self.profile, "filing_status", "mfj")
+            original_pretax_dp = pretax_std.copy()
+            if filing_status_dp == "single":
+                if p1_age_start >= 73:
+                    factor = rmd_factors_dp.get(int(p1_age_start), 2.0)
+                    rmd_annual = original_pretax_dp / factor
+            else:
+                if p1_age_start >= 73:
+                    factor = rmd_factors_dp.get(int(p1_age_start), 2.0)
+                    rmd_annual += (original_pretax_dp / 2.0) / factor
+                if p2_age_start >= 73:
+                    factor = rmd_factors_dp.get(int(p2_age_start), 2.0)
+                    rmd_annual += (original_pretax_dp / 2.0) / factor
+
+            if np.any(rmd_annual > 0):
+                pretax_std -= rmd_annual
+                # Tax on RMD (stacked on existing ordinary income)
+                taxable_with_rmd = np.maximum(
+                    0, cumulative_ordinary_gross + rmd_annual - std_deduction
+                )
+                taxable_without_rmd = np.maximum(
+                    0, cumulative_ordinary_gross - std_deduction
+                )
+                tax_with, _ = self._vectorized_federal_tax(taxable_with_rmd)
+                tax_without, _ = self._vectorized_federal_tax(taxable_without_rmd)
+                rmd_tax = (tax_with - tax_without) + rmd_annual * state_rate
+                net_rmd = rmd_annual - rmd_tax
+                cumulative_ordinary_gross += rmd_annual
+                # Excess RMD (after covering shortfall) goes to taxable account
+                taxable_val += np.maximum(0, net_rmd)
 
             # --- MONTHLY Recording Loop ---
             for month_idx in range(12):
@@ -1947,28 +2054,20 @@ class RetirementModel:
 
     def calculate_rmd(self, age: int, ira_balance: float):
         rmd_factors = {
-            73: 26.5,
-            74: 25.5,
-            75: 24.6,
-            76: 23.7,
-            77: 22.9,
-            78: 22.0,
-            79: 21.1,
-            80: 20.2,
-            81: 19.4,
-            82: 18.5,
-            83: 17.7,
-            84: 16.8,
-            85: 16.0,
-            86: 15.2,
-            87: 14.4,
-            88: 13.7,
-            89: 12.9,
-            90: 12.2,
+            72: 27.4, 73: 26.5, 74: 25.5, 75: 24.6, 76: 23.7,
+            77: 22.9, 78: 22.0, 79: 21.1, 80: 20.2, 81: 19.4,
+            82: 18.5, 83: 17.7, 84: 16.8, 85: 16.0, 86: 15.2,
+            87: 14.4, 88: 13.7, 89: 12.9, 90: 12.2, 91: 11.5,
+            92: 10.8, 93: 10.1, 94: 9.5, 95: 8.9, 96: 8.4,
+            97: 7.8, 98: 7.3, 99: 6.8, 100: 6.4, 101: 6.0,
+            102: 5.6, 103: 5.2, 104: 4.9, 105: 4.6, 106: 4.3,
+            107: 4.1, 108: 3.9, 109: 3.7, 110: 3.5, 111: 3.4,
+            112: 3.3, 113: 3.1, 114: 3.0, 115: 2.9, 116: 2.8,
+            117: 2.7, 118: 2.5, 119: 2.3, 120: 2.0,
         }
         if age < 73:
             return 0
-        factor = rmd_factors.get(age, 12.2)
+        factor = rmd_factors.get(age, 2.0)
         return ira_balance / factor
 
     def optimize_social_security(self, assumptions: MarketAssumptions = None):

@@ -123,7 +123,14 @@ function renderFinancialSummary(profile) {
 
     // Calculate total annual expenses
     const totalAnnualExpenses = Object.values(expensesCurrent).flat().reduce((sum, expense) => {
-        return sum + (parseFloat(expense.amount) || 0) * 12;
+        const freq = (expense.frequency || 'monthly').toLowerCase();
+        let multiplier = 12;
+        if (freq === 'annual' || freq === 'yearly') multiplier = 1;
+        else if (freq === 'quarterly') multiplier = 4;
+        else if (freq === 'semi-annual' || freq === 'semi_annual') multiplier = 2;
+        else if (freq === 'weekly') multiplier = 52;
+        else if (freq === 'biweekly' || freq === 'bi-weekly') multiplier = 26;
+        return sum + (parseFloat(expense.amount) || 0) * multiplier;
     }, 0);
 
     const annualSavings = totalAnnualIncome - totalAnnualExpenses;
@@ -141,13 +148,21 @@ function renderFinancialSummary(profile) {
     };
     const currentAge = profile.birth_date ? calcAge(profile.birth_date) : null;
 
-    // Calculate years to retirement
-    let yearsToRetirement = null;
+    // Calculate years/months to retirement (precise, from actual date)
+    let retirementYears = null;
+    let retirementMonths = null;
     if (profile.retirement_date) {
         const retDate = new Date(profile.retirement_date);
-        const diffTime = retDate - today;
-        const diffDays = diffTime / (1000 * 60 * 60 * 24);
-        yearsToRetirement = Math.max(0, Math.ceil(diffDays / 365));
+        if (retDate > today) {
+            retirementYears = retDate.getFullYear() - today.getFullYear();
+            retirementMonths = retDate.getMonth() - today.getMonth();
+            if (retDate.getDate() < today.getDate()) retirementMonths--;
+            if (retirementMonths < 0) { retirementYears--; retirementMonths += 12; }
+            retirementYears = Math.max(0, retirementYears);
+        } else {
+            retirementYears = 0;
+            retirementMonths = 0;
+        }
     }
 
     // Generate unique IDs for canvas elements
@@ -463,11 +478,11 @@ function renderFinancialSummary(profile) {
                 </div>
                 ` : ''}
 
-                ${yearsToRetirement !== null ? `
+                ${retirementYears !== null ? `
                 <!-- Years to Retirement -->
                 <div id="metric-retirement" class="metric-card" style="background: linear-gradient(135deg, #f39c12, #e67e22); padding: 12px; border-radius: 6px; color: var(--text-on-warning); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
                     <div style="font-size: 10px; opacity: 0.9; margin-bottom: 4px;">🏖️ To Retirement</div>
-                    <div style="font-size: 18px; font-weight: 700;">${yearsToRetirement} ${yearsToRetirement === 1 ? 'year' : 'years'}</div>
+                    <div style="font-size: 18px; font-weight: 700;">${retirementYears}y ${retirementMonths}m</div>
                     <div style="font-size: 9px; opacity: 0.7; margin-top: 4px;">Click for details</div>
                 </div>
                 ` : ''}

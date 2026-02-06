@@ -19,6 +19,26 @@ from src.utils.error_sanitizer import sanitize_pydantic_error
 analysis_bp = Blueprint("analysis", __name__, url_prefix="/api")
 
 
+def _calculate_progressive_tax(taxable_income, filing_status="mfj"):
+    """Calculate federal tax using progressive brackets (2024 rates)."""
+    if filing_status in ("mfj", "mqw"):
+        brackets = [(23200, 0.10), (94300, 0.12), (201050, 0.22), (383900, 0.24), (487450, 0.32), (731200, 0.35), (float('inf'), 0.37)]
+    elif filing_status == "hoh":
+        brackets = [(16550, 0.10), (63100, 0.12), (100500, 0.22), (191950, 0.24), (243725, 0.32), (609350, 0.35), (float('inf'), 0.37)]
+    else:  # single / mfs
+        brackets = [(11600, 0.10), (47150, 0.12), (100525, 0.22), (191950, 0.24), (243725, 0.32), (365600, 0.35), (float('inf'), 0.37)]
+
+    tax = 0
+    prev_limit = 0
+    for limit, rate in brackets:
+        if taxable_income <= prev_limit:
+            break
+        taxable_in_bracket = min(taxable_income, limit) - prev_limit
+        tax += taxable_in_bracket * rate
+        prev_limit = limit
+    return tax
+
+
 def transform_assets_to_investment_types(assets_data):
     """Transform frontend asset structure to investment_types format for the retirement model.
 
@@ -1215,8 +1235,18 @@ def get_calculation_report():
         logger.info(f"Income streams count: {len(income_streams)}")
 
         for stream in income_streams:
-            amount_monthly = stream.get("amount", 0)
-            amount_annual = amount_monthly * 12
+            raw_amount = stream.get("amount", 0)
+            freq = stream.get("frequency", "monthly").lower()
+            if freq == "monthly":
+                amount_annual = raw_amount * 12
+            elif freq == "weekly":
+                amount_annual = raw_amount * 52
+            elif freq == "biweekly":
+                amount_annual = raw_amount * 26
+            elif freq == "quarterly":
+                amount_annual = raw_amount * 4
+            else:
+                amount_annual = raw_amount
             work_income_annual += amount_annual
 
             owner = stream.get("owner", "primary")
@@ -1454,8 +1484,23 @@ def get_calculation_report():
         }
 
         # Calculate taxable income
-        # Ordinary income = work + pension + (50% of SS)
-        taxable_ss = (p1_ss_annual + p2_ss_annual) * 0.5
+        # Calculate taxable SS using IRS provisional income formula
+        total_ss = p1_ss_annual + p2_ss_annual
+        other_income = total_income_annual - total_ss  # income excluding SS
+        provisional_income = other_income + (total_ss * 0.5)
+        filing_status = financial_data.get("filing_status", "mfj")
+        if filing_status in ("mfj", "mqw"):
+            threshold1, threshold2 = 32000, 44000
+        else:
+            threshold1, threshold2 = 25000, 34000
+
+        if provisional_income <= threshold1:
+            taxable_ss = 0
+        elif provisional_income <= threshold2:
+            taxable_ss = min(total_ss * 0.5, (provisional_income - threshold1) * 0.5)
+        else:
+            taxable_ss = min(total_ss * 0.85,
+                             (provisional_income - threshold2) * 0.85 + min(total_ss * 0.5, (threshold2 - threshold1) * 0.5))
         ordinary_income = work_income_annual + pension_annual + taxable_ss
 
         # Apply 401k deductions
@@ -1464,9 +1509,24 @@ def get_calculation_report():
             if "Employee Contribution" in item["label"]
         )
 
-        # Standard deduction
+        # Standard deduction (with 65+ additional)
         filing_status = financial_data.get("filing_status", "mfj")
-        std_deduction = 29200 if filing_status == "mfj" else 14600
+        if filing_status == "mfj":
+            std_deduction = 29200
+            # Add 65+ additional ($1,550 per person for MFJ)
+            if current_age >= 65:
+                std_deduction += 1550
+            p2_age = financial_data.get("person2", {}).get("current_age", current_age)
+            if p2_age >= 65:
+                std_deduction += 1550
+        elif filing_status == "hoh":
+            std_deduction = 21900
+            if current_age >= 65:
+                std_deduction += 1950
+        else:  # single / mfs
+            std_deduction = 14600
+            if current_age >= 65:
+                std_deduction += 1950
         taxable_income = max(0, ordinary_income_after_401k - std_deduction)
 
         tax_section["items"].append({
@@ -1490,11 +1550,11 @@ def get_calculation_report():
             "amount": taxable_income
         })
 
-        # Federal Tax (simplified)
-        fed_rate = float(financial_data.get("tax_bracket_federal", 0.12) or 0.12)
-        federal_tax = taxable_income * fed_rate
+        # Federal Tax (progressive brackets)
+        federal_tax = _calculate_progressive_tax(taxable_income, filing_status)
+        effective_rate = (federal_tax / taxable_income * 100) if taxable_income > 0 else 0
         tax_section["items"].append({
-            "label": f"Federal Income Tax ({fed_rate*100:.0f}% rate)",
+            "label": f"Federal Income Tax ({effective_rate:.1f}% effective)",
             "value": f"${federal_tax:,.0f}",
             "amount": federal_tax
         })

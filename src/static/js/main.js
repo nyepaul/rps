@@ -15,6 +15,11 @@ import { showSpinner, hideSpinner } from './utils/dom.js';
 import { startOnboarding } from './components/onboarding/onboarding-wizard.js';
 import { setupAriaLabels } from './utils/a11y.js';
 
+// Cache-busting: extract version query from script URL (e.g. ?v=3.9.196)
+// and append to dynamic imports so browser fetches fresh modules on version bumps
+const _v = new URL(import.meta.url).search || '';
+function _import(path) { return import(path + _v); }
+
 /**
  * Initialize application
  */
@@ -255,7 +260,7 @@ async function loadDefaultProfileOnStartup() {
     if (!defaultProfileName) {
         // No default profile, check if user has ANY profiles
         try {
-            const { profilesAPI } = await import('./api/profiles.js');
+            const { profilesAPI } = await _import('./api/profiles.js');
             const result = await profilesAPI.list();
             if (result.profiles.length === 0) {
                 console.log('No profiles found - starting onboarding wizard');
@@ -268,7 +273,7 @@ async function loadDefaultProfileOnStartup() {
     }
 
     try {
-        const { profilesAPI } = await import('./api/profiles.js');
+        const { profilesAPI } = await _import('./api/profiles.js');
         const data = await profilesAPI.get(defaultProfileName);
         store.setState({ currentProfile: data.profile });
         console.log('✅ Default profile loaded:', defaultProfileName);
@@ -281,7 +286,7 @@ async function loadDefaultProfileOnStartup() {
         
         // Check if we should show onboarding (if this was the only profile)
         try {
-            const { profilesAPI } = await import('./api/profiles.js');
+            const { profilesAPI } = await _import('./api/profiles.js');
             const result = await profilesAPI.list();
             if (result.profiles.length === 0) {
                 startOnboarding();
@@ -425,92 +430,92 @@ async function loadTabComponent(tabName, container) {
     // Load the appropriate component
     switch (tabName) {
         case 'welcome': {
-            const { renderWelcomeTab } = await import('./components/welcome/welcome-tab.js');
+            const { renderWelcomeTab } = await _import('./components/welcome/welcome-tab.js');
             renderWelcomeTab(tabContent);
             break;
         }
         case 'dashboard': {
-            const { renderDashboardTab } = await import('./components/dashboard/dashboard-tab.js');
+            const { renderDashboardTab } = await _import('./components/dashboard/dashboard-tab.js');
             renderDashboardTab(tabContent);
             break;
         }
         case 'profile': {
-            const { renderProfileTab } = await import('./components/profile/profile-tab.js');
+            const { renderProfileTab } = await _import('./components/profile/profile-tab.js');
             renderProfileTab(tabContent);
             break;
         }
         case 'home': {
-            const { renderHomeTab } = await import('./components/home/home-tab.js');
+            const { renderHomeTab } = await _import('./components/home/home-tab.js');
             renderHomeTab(tabContent);
             break;
         }
         case 'income': {
-            const { renderIncomeTab } = await import('./components/income/income-tab.js');
+            const { renderIncomeTab } = await _import('./components/income/income-tab.js');
             renderIncomeTab(tabContent);
             break;
         }
         case 'expenses': {
-            const { renderBudgetTab } = await import('./components/budget/budget-tab.js');
+            const { renderBudgetTab } = await _import('./components/budget/budget-tab.js');
             renderBudgetTab(tabContent);
             break;
         }
         case 'assets': {
-            const { renderAssetsTab } = await import('./components/assets/assets-tab.js');
+            const { renderAssetsTab } = await _import('./components/assets/assets-tab.js');
             renderAssetsTab(tabContent);
             break;
         }
         case 'withdrawal': {
-            const { renderWithdrawalTab } = await import('./components/withdrawal/withdrawal-tab.js');
+            const { renderWithdrawalTab } = await _import('./components/withdrawal/withdrawal-tab.js');
             renderWithdrawalTab(tabContent);
             break;
         }
         case 'cashflow': {
-            const { renderCashFlowTab } = await import('./components/cashflow/cashflow-tab.js');
+            const { renderCashFlowTab } = await _import('./components/cashflow/cashflow-tab.js');
             renderCashFlowTab(tabContent);
             break;
         }
         case 'analysis': {
-            const { renderAnalysisTab } = await import('./components/analysis/analysis-tab.js');
+            const { renderAnalysisTab } = await _import('./components/analysis/analysis-tab.js');
             renderAnalysisTab(tabContent);
             break;
         }
         case 'actions': {
-            const { renderActionsTab } = await import('./components/actions/actions-tab.js');
+            const { renderActionsTab } = await _import('./components/actions/actions-tab.js');
             renderActionsTab(tabContent);
             break;
         }
         case 'advisor': {
-            const { renderAdvisorTab } = await import('./components/advisor/advisor-tab.js');
+            const { renderAdvisorTab } = await _import('./components/advisor/advisor-tab.js');
             renderAdvisorTab(tabContent);
             break;
         }
         case 'comparison': {
-            const { renderComparisonTab } = await import('./components/comparison/comparison-tab.js');
+            const { renderComparisonTab } = await _import('./components/comparison/comparison-tab.js');
             renderComparisonTab(tabContent);
             break;
         }
         case 'rent-vs-own': {
-            const { renderRentVsOwnScenario } = await import('./components/scenarios/rent-vs-own-scenario.js');
+            const { renderRentVsOwnScenario } = await _import('./components/scenarios/rent-vs-own-scenario.js');
             renderRentVsOwnScenario(tabContent);
             break;
         }
         case 'summary': {
-            const { renderSummaryTab } = await import('./components/summary/summary-tab.js');
+            const { renderSummaryTab } = await _import('./components/summary/summary-tab.js');
             renderSummaryTab(tabContent);
             break;
         }
         case 'learn': {
-            const { renderLearnTab } = await import('./components/learn/learn-tab.js');
+            const { renderLearnTab } = await _import('./components/learn/learn-tab.js');
             renderLearnTab(tabContent);
             break;
         }
         case 'tax': {
-            const { renderTaxTab } = await import('./components/tax/tax-tab.js');
+            const { renderTaxTab } = await _import('./components/tax/tax-tab.js');
             renderTaxTab(tabContent);
             break;
         }
         case 'admin': {
-            const { renderAdminTab } = await import('./components/admin/admin-tab.js');
+            const { renderAdminTab } = await _import('./components/admin/admin-tab.js');
             renderAdminTab(tabContent);
             break;
         }
@@ -837,7 +842,7 @@ async function openSettings(defaultTab = 'general', focusElementId = null) {
 
     // Load API Keys content
         const apiKeysContent = modal.querySelector('#settings-api-keys');
-        const { renderAPIKeysSettings } = await import('./components/settings/ai-settings.js');
+        const { renderAPIKeysSettings } = await _import('./components/settings/ai-settings.js');
         await renderAPIKeysSettings(apiKeysContent);
 
 
@@ -987,7 +992,7 @@ async function openSettings(defaultTab = 'general', focusElementId = null) {
             const profile = store.get('currentProfile');
             if (profile) {
                 const apiKeysContent = modal.querySelector('#settings-ai-keys');
-                const { saveAllSettings } = await import('./components/settings/ai-settings.js');
+                const { saveAllSettings } = await _import('./components/settings/ai-settings.js');
                 const success = await saveAllSettings(apiKeysContent, profile);
                 if (success) {
                     modal.remove();

@@ -103,6 +103,8 @@ class ProductionConfig(Config):
             raise ValueError(
                 "ENCRYPTION_KEY environment variable must be set in production"
             )
+        if app.config.get("SECRET_KEY") == "dev-secret-key-change-in-production":
+            raise ValueError("Production SECRET_KEY must be set via environment variable")
 
 
 class TestingConfig(Config):
