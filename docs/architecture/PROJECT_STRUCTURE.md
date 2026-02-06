@@ -2,7 +2,7 @@
 
 This document describes the organization of the Retirement Planning System (RPS) codebase.
 
-**Last Updated:** 2026-02-05 (v3.9.191 reorganized)
+**Last Updated:** 2026-02-05 (v3.9.193 reorganized)
 
 ## Directory Structure
 
