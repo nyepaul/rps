@@ -2092,18 +2092,41 @@ function showRetirementDetails(profile) {
         }
     }
 
-    // Calculate retirement age from retirement date
+    // Calculate retirement age from retirement date (accounting for month/day)
     let retirementAge = 65;
     if (retirementDate && birthDate) {
         retirementAge = retirementDate.getFullYear() - birthDate.getFullYear();
+        const monthDiffRet = retirementDate.getMonth() - birthDate.getMonth();
+        if (monthDiffRet < 0 || (monthDiffRet === 0 && retirementDate.getDate() < birthDate.getDate())) {
+            retirementAge--;
+        }
     }
 
-    const yearsToRetirement = Math.max(0, retirementAge - currentAge);
+    // Calculate precise countdown from today to retirement date
+    const today = new Date();
+    let yearsToRetirement = Math.max(0, retirementAge - currentAge);
+    let monthsToRetirement = 0;
+    let daysToRetirement = 0;
+    let workingDaysToRetirement = 0;
 
-    // Calculate more detailed countdown
-    const monthsToRetirement = yearsToRetirement * 12;
-    const daysToRetirement = yearsToRetirement * 365;
-    const workingDaysToRetirement = yearsToRetirement * 260; // ~260 working days/year
+    if (retirementDate && retirementDate > today) {
+        const msToRetirement = retirementDate.getTime() - today.getTime();
+        daysToRetirement = Math.ceil(msToRetirement / (1000 * 60 * 60 * 24));
+        yearsToRetirement = daysToRetirement / 365.25;
+
+        // Calculate months precisely
+        monthsToRetirement = (retirementDate.getFullYear() - today.getFullYear()) * 12
+            + (retirementDate.getMonth() - today.getMonth());
+        if (retirementDate.getDate() < today.getDate()) monthsToRetirement--;
+        monthsToRetirement = Math.max(0, monthsToRetirement);
+
+        // Estimate working days (5/7 of total days, minus ~10 holidays/year)
+        const years = daysToRetirement / 365.25;
+        workingDaysToRetirement = Math.round(daysToRetirement * (5 / 7) - (years * 10));
+        workingDaysToRetirement = Math.max(0, workingDaysToRetirement);
+    } else if (retirementDate && retirementDate <= today) {
+        yearsToRetirement = 0;
+    }
 
     // Get action items related to retirement
     const actionItems = data.action_items || [];

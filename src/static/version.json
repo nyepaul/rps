@@ -1,5 +1,5 @@
 {
-    "version": "3.9.195",
+    "version": "3.9.196",
     "release_date": "2026-02-06",
-    "release_notes": "Fix calculation report crash: handle list-of-dicts in budget expenses, fix asset value field name, harden numeric field reads"
+    "release_notes": "Fix retirement timeline: calculate precise countdown from actual retirement date"
 }
