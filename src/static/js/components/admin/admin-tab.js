@@ -5,19 +5,9 @@
 import { store } from '../../state/store.js';
 import { showError } from '../../utils/dom.js';
 import { apiClient } from '../../api/client.js';
-import { renderLogsViewer, prefetchLogs } from './logs-viewer.js';
-import { renderUserTimeline } from './user-timeline.js';
-import { renderConfigEditor } from './config-editor.js';
-import { renderUserManagement } from './user-management.js';
-import { renderSystemInfo } from './system-info.js';
-import { renderFeedbackViewer } from './feedback-viewer.js';
-import { renderRoadmapPanel } from './roadmap-panel.js';
-import { renderBackupManager } from './backup-manager.js';
-import { renderUsersByLocationReport } from './users-by-location-report.js';
-import { renderUserActivityReport } from './user-activity-report.js';
-import { renderPasswordRequests } from './password-requests.js';
-import { renderDemoManagement } from './demo-management.js';
-import { renderGroupManagement } from './group-management.js';
+
+// Cache-busting: propagate version from parent URL to dynamic sub-module imports
+const _v = new URL(import.meta.url).search || '';
 
 /**
  * Render admin tab with sub-tabs
@@ -151,7 +141,7 @@ export async function renderAdminTab(container) {
     await showSubTab(container, 'system');
 
     // Prefetch logs in background
-    prefetchLogs();
+    import('./logs-viewer.js' + _v).then(m => m.prefetchLogs()).catch(() => {});
 
     // Load notification counts
     loadNotificationCounts(container);
@@ -270,45 +260,48 @@ async function showSubTab(container, subtab) {
     contentContainer.innerHTML = '';
 
     try {
+        // Dynamic imports with cache-busting version string
+        const load = (file) => import(file + _v);
+
         switch (subtab) {
             case 'logs':
-                await renderLogsViewer(contentContainer);
+                await load('./logs-viewer.js').then(m => m.renderLogsViewer(contentContainer));
                 break;
             case 'timeline':
-                await renderUserTimeline(contentContainer);
+                await load('./user-timeline.js').then(m => m.renderUserTimeline(contentContainer));
                 break;
             case 'feedback':
-                await renderFeedbackViewer(contentContainer);
+                await load('./feedback-viewer.js').then(m => m.renderFeedbackViewer(contentContainer));
                 break;
             case 'password_requests':
-                await renderPasswordRequests(contentContainer);
+                await load('./password-requests.js').then(m => m.renderPasswordRequests(contentContainer));
                 break;
             case 'roadmap':
-                await renderRoadmapPanel(contentContainer);
+                await load('./roadmap-panel.js').then(m => m.renderRoadmapPanel(contentContainer));
                 break;
             case 'backups':
-                await renderBackupManager(contentContainer);
+                await load('./backup-manager.js').then(m => m.renderBackupManager(contentContainer));
                 break;
             case 'user_activity':
-                await renderUserActivityReport(contentContainer);
+                await load('./user-activity-report.js').then(m => m.renderUserActivityReport(contentContainer));
                 break;
             case 'users_by_location':
-                await renderUsersByLocationReport(contentContainer);
+                await load('./users-by-location-report.js').then(m => m.renderUsersByLocationReport(contentContainer));
                 break;
             case 'config':
-                await renderConfigEditor(contentContainer);
+                await load('./config-editor.js').then(m => m.renderConfigEditor(contentContainer));
                 break;
             case 'users':
-                await renderUserManagement(contentContainer);
+                await load('./user-management.js').then(m => m.renderUserManagement(contentContainer));
                 break;
             case 'groups':
-                await renderGroupManagement(contentContainer);
+                await load('./group-management.js').then(m => m.renderGroupManagement(contentContainer));
                 break;
             case 'demo_management':
-                await renderDemoManagement(contentContainer);
+                await load('./demo-management.js').then(m => m.renderDemoManagement(contentContainer));
                 break;
             case 'system':
-                await renderSystemInfo(contentContainer);
+                await load('./system-info.js').then(m => m.renderSystemInfo(contentContainer));
                 break;
             default:
                 contentContainer.innerHTML = `<div>Unknown subtab: ${subtab}</div>`;

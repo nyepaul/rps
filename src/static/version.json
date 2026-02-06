@@ -1,5 +1,5 @@
 {
-    "version": "3.9.200",
+    "version": "3.9.201",
     "release_date": "2026-02-06",
-    "release_notes": "Add clickable stat cards to admin dashboard with detail panels"
+    "release_notes": "Fix admin cache-busting for all sub-modules, fix Mermaid CDN loading"
 }

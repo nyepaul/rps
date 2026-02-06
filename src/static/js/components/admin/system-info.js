@@ -393,25 +393,28 @@ async function loadMermaid() {
     }
 
     return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error('Mermaid.js load timed out')), 15000);
+
         const script = document.createElement('script');
-        script.type = 'module';
-        script.innerHTML = `
-            import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-            mermaid.initialize({
-                startOnLoad: false,
-                theme: 'default',
-                er: {
-                    useMaxWidth: true
-                }
-            });
-            window.mermaid = mermaid;
-            window.dispatchEvent(new Event('mermaid-loaded'));
-        `;
-
-        script.onerror = () => reject(new Error('Failed to load Mermaid.js'));
+        script.src = 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js';
+        script.onload = () => {
+            clearTimeout(timeout);
+            try {
+                window.mermaid.initialize({
+                    startOnLoad: false,
+                    theme: 'default',
+                    er: { useMaxWidth: true }
+                });
+                resolve(window.mermaid);
+            } catch (e) {
+                reject(new Error('Mermaid init failed: ' + e.message));
+            }
+        };
+        script.onerror = () => {
+            clearTimeout(timeout);
+            reject(new Error('Failed to load Mermaid.js from CDN'));
+        };
         document.head.appendChild(script);
-
-        window.addEventListener('mermaid-loaded', () => resolve(window.mermaid), { once: true });
     });
 }
 
