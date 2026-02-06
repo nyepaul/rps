@@ -1,5 +1,5 @@
 {
-    "version": "3.9.194",
+    "version": "3.9.195",
     "release_date": "2026-02-06",
-    "release_notes": "Unify font to Source Sans 3 everywhere, remove Libre Baskerville"
+    "release_notes": "Fix calculation report crash: handle list-of-dicts in budget expenses, fix asset value field name, harden numeric field reads"
 }

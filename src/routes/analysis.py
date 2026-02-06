@@ -1295,8 +1295,8 @@ def get_calculation_report():
         }
 
         # 401k Contributions - Calculate from actual income streams
-        contrib_rate_p1 = financial_data.get("annual_401k_contribution_rate", 0)
-        match_rate_p1 = financial_data.get("employer_match_rate", 0)
+        contrib_rate_p1 = float(financial_data.get("annual_401k_contribution_rate", 0) or 0)
+        match_rate_p1 = float(financial_data.get("employer_match_rate", 0) or 0)
 
         if current_age < retirement_age:
             # Calculate primary person's salary from income streams
@@ -1330,8 +1330,8 @@ def get_calculation_report():
                 })
 
             # Spouse 401k
-            contrib_rate_p2 = spouse_data.get("annual_401k_contribution_rate", 0)
-            match_rate_p2 = spouse_data.get("employer_match_rate", 0)
+            contrib_rate_p2 = float(spouse_data.get("annual_401k_contribution_rate", 0) or 0)
+            match_rate_p2 = float(spouse_data.get("employer_match_rate", 0) or 0)
             if spouse_data.get("name") and spouse_salary > 0:
                 p2_401k = spouse_salary * contrib_rate_p2
                 p2_match = spouse_salary * match_rate_p2
@@ -1408,16 +1408,22 @@ def get_calculation_report():
             for key, label in expense_categories:
                 amount_monthly = current_expenses.get(key, 0)
 
-                # Handle case where expense value might be a list
+                # Handle case where expense value might be a list (of dicts or numbers)
                 if isinstance(amount_monthly, list):
-                    # If it's a list, sum the values or take first element
-                    amount_monthly = sum(amount_monthly) if amount_monthly else 0
+                    total = 0
+                    for item in amount_monthly:
+                        if isinstance(item, dict):
+                            total += float(item.get("amount", 0) or 0)
+                        elif isinstance(item, (int, float)):
+                            total += float(item)
+                    amount_monthly = total
+                elif isinstance(amount_monthly, dict):
+                    amount_monthly = float(amount_monthly.get("amount", 0) or 0)
 
                 # Ensure it's a number
                 try:
                     amount_monthly = float(amount_monthly) if amount_monthly else 0
                 except (ValueError, TypeError):
-                    logger.error(f"Invalid expense value for {key}: {amount_monthly}")
                     amount_monthly = 0
 
                 amount_annual = amount_monthly * 12
@@ -1485,7 +1491,7 @@ def get_calculation_report():
         })
 
         # Federal Tax (simplified)
-        fed_rate = financial_data.get("tax_bracket_federal", 0.12)
+        fed_rate = float(financial_data.get("tax_bracket_federal", 0.12) or 0.12)
         federal_tax = taxable_income * fed_rate
         tax_section["items"].append({
             "label": f"Federal Income Tax ({fed_rate*100:.0f}% rate)",
@@ -1494,7 +1500,7 @@ def get_calculation_report():
         })
 
         # State Tax
-        state_rate = financial_data.get("tax_bracket_state", 0.05)
+        state_rate = float(financial_data.get("tax_bracket_state", 0.05) or 0.05)
         state_tax = taxable_income * state_rate
         tax_section["items"].append({
             "label": f"State Income Tax ({state_rate*100:.0f}% rate)",
@@ -1617,7 +1623,8 @@ def get_calculation_report():
         # Retirement accounts
         retirement_total = 0
         for account in assets_data.get("retirement_accounts", []):
-            retirement_total += account.get("current_value", 0)
+            if isinstance(account, dict):
+                retirement_total += float(account.get("value", 0) or account.get("current_value", 0) or 0)
         if retirement_total > 0:
             portfolio_section["items"].append({
                 "label": "Retirement Accounts (401k, IRA)",
@@ -1628,7 +1635,8 @@ def get_calculation_report():
         # Taxable accounts
         taxable_total = 0
         for account in assets_data.get("taxable_accounts", []):
-            taxable_total += account.get("current_value", 0)
+            if isinstance(account, dict):
+                taxable_total += float(account.get("value", 0) or account.get("current_value", 0) or 0)
         if taxable_total > 0:
             portfolio_section["items"].append({
                 "label": "Taxable Brokerage Accounts",
@@ -1638,11 +1646,11 @@ def get_calculation_report():
 
         # Real estate (equity)
         real_estate_total = 0
-        for property in assets_data.get("real_estate", []):
-            value = property.get("current_value", 0)
-            mortgage = property.get("mortgage_balance", 0)
-            equity = value - mortgage
-            real_estate_total += equity
+        for prop in assets_data.get("real_estate", []):
+            if isinstance(prop, dict):
+                val = float(prop.get("value", 0) or prop.get("current_value", 0) or 0)
+                mortgage = float(prop.get("mortgage_balance", 0) or 0)
+                real_estate_total += val - mortgage
         if real_estate_total > 0:
             portfolio_section["items"].append({
                 "label": "Real Estate Equity",
@@ -1653,7 +1661,8 @@ def get_calculation_report():
         # Other assets
         other_total = 0
         for asset in assets_data.get("other_assets", []):
-            other_total += asset.get("current_value", 0)
+            if isinstance(asset, dict):
+                other_total += float(asset.get("value", 0) or asset.get("current_value", 0) or 0)
         if other_total > 0:
             portfolio_section["items"].append({
                 "label": "Other Assets",
