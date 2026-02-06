@@ -185,7 +185,7 @@ function renderRoadmapItemCard(item) {
             border-left: 4px solid ${priorityColors[item.priority] || '#868e96'};
             transition: all 0.2s;
             cursor: pointer;
-        " onmouseover="this.style.transform='translateX(4px)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='translateX(0)'; this.style.boxShadow='none'">
+        ">
             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: var(--space-2);">
                 <h4 style="font-size: var(--font-base); font-weight: 600; margin: 0; flex: 1;">
                     ${statusIcons[item.status] || '📋'} ${item.title}
@@ -234,8 +234,10 @@ function setupRoadmapEventHandlers(container) {
         }
     });
 
-    // Item click handlers
+    // Item hover and click handlers
     container.querySelectorAll('.roadmap-item-card').forEach(card => {
+        card.addEventListener('mouseenter', () => { card.style.transform = 'translateX(4px)'; card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'; });
+        card.addEventListener('mouseleave', () => { card.style.transform = 'translateX(0)'; card.style.boxShadow = 'none'; });
         card.addEventListener('click', () => {
             const itemId = card.getAttribute('data-id');
             showItemDetailsModal(container, itemId);

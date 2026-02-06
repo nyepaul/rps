@@ -20,11 +20,15 @@ export async function renderTaxTab(container) {
                 <p style="color: var(--text-secondary); margin-bottom: 20px;">
                     Please select a profile to view tax optimization analysis
                 </p>
-                <button onclick="window.app.showTab('dashboard')" style="padding: 10px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer;">
+                <button class="csp-nav" data-target="dashboard" style="padding: 10px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer;">
                     Go to Dashboard
                 </button>
             </div>
         `;
+        // Wire up CSP-safe navigation
+        container.querySelectorAll('.csp-nav').forEach(btn => {
+            btn.addEventListener('click', () => window.app.showTab(btn.dataset.target));
+        });
         return;
     }
 
@@ -45,11 +49,15 @@ export async function renderTaxTab(container) {
                 <p style="color: var(--text-secondary); margin-bottom: 20px;">
                     ${error.message || 'Could not load tax optimization data'}
                 </p>
-                <button onclick="window.app.showTab('tax'); window.app.showTab('tax');" style="padding: 10px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer;">
+                <button class="csp-nav" data-target="tax" style="padding: 10px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer;">
                     Retry
                 </button>
             </div>
         `;
+        // Wire up CSP-safe navigation for retry button
+        container.querySelectorAll('.csp-nav').forEach(btn => {
+            btn.addEventListener('click', () => window.app.showTab(btn.dataset.target));
+        });
     }
 }
 
@@ -70,7 +78,7 @@ function renderTaxAnalysis(container, analysis, profile) {
             <div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--border-color);">
                 <h2 style="font-size: 15px; margin: 0 0 10px 0; font-weight: 700; color: var(--accent-color); display: flex; align-items: center; gap: 8px;">
                     📊 Current Tax Snapshot
-                    <span id="tax-snapshot-info" style="cursor: pointer; font-size: 14px; opacity: 0.7; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'" title="Click for explanation">ℹ️</span>
+                    <span id="tax-snapshot-info" class="csp-hover-opacity" style="cursor: pointer; font-size: 14px; opacity: 0.7; transition: opacity 0.2s;" title="Click for explanation">ℹ️</span>
                 </h2>
 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 12px;">
@@ -131,7 +139,7 @@ function renderTaxAnalysis(container, analysis, profile) {
                 <h2 style="font-size: 15px; margin: 0 0 10px 0; font-weight: 700; color: var(--accent-color);">💡 Top Recommendations</h2>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 8px;">
                     ${recommendations.slice(0, 3).map((rec, idx) => `
-                        <div class="tax-recommendation" data-rec-index="${idx}" style="background: var(--bg-tertiary); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--accent-color)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border-color)'; this.style.transform='translateY(0)'">
+                        <div class="tax-recommendation csp-hover-card" data-rec-index="${idx}" style="background: var(--bg-tertiary); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s;">
                             <div style="font-size: 13px; font-weight: 700; margin-bottom: 2px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
                                 ${rec.title}
                                 <span style="font-size: 11px; opacity: 0.6;">ℹ️</span>
@@ -153,7 +161,7 @@ function renderTaxAnalysis(container, analysis, profile) {
                     <div style="background: #000; padding: 12px; border-radius: 8px; color: white; border: 1px solid #333;">
                         <h2 style="font-size: 15px; margin: 0 0 10px 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">
                             🔄 Roth Conversions
-                            <span id="roth-conversion-info" style="cursor: pointer; font-size: 14px; opacity: 0.7; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'" title="Click for explanation">ℹ️</span>
+                            <span id="roth-conversion-info" class="csp-hover-opacity" style="cursor: pointer; font-size: 14px; opacity: 0.7; transition: opacity 0.2s;" title="Click for explanation">ℹ️</span>
                         </h2>
 
                         ${roth_conversion.optimal_24pct ? `
@@ -239,7 +247,7 @@ function renderTaxAnalysis(container, analysis, profile) {
                     <div style="background: #000; padding: 12px; border-radius: 8px; color: white; border: 1px solid #333;">
                         <h2 style="font-size: 15px; margin: 0 0 10px 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">
                             📅 RMD Analysis
-                            <span id="rmd-analysis-info" style="cursor: pointer; font-size: 14px; opacity: 0.7; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'" title="Click for explanation">ℹ️</span>
+                            <span id="rmd-analysis-info" class="csp-hover-opacity" style="cursor: pointer; font-size: 14px; opacity: 0.7; transition: opacity 0.2s;" title="Click for explanation">ℹ️</span>
                         </h2>
                         <div style="font-size: 12px; margin-bottom: 8px;">
                             ${rmd_analysis.current.required
@@ -414,6 +422,24 @@ function renderTaxAnalysis(container, analysis, profile) {
             showRMDAnalysisExplanation();
         });
     }
+
+    // CSP-safe hover: opacity toggle for info icons
+    container.querySelectorAll('.csp-hover-opacity').forEach(el => {
+        el.addEventListener('mouseenter', () => { el.style.opacity = '1'; });
+        el.addEventListener('mouseleave', () => { el.style.opacity = '0.7'; });
+    });
+
+    // CSP-safe hover: card lift effect for recommendation cards
+    container.querySelectorAll('.csp-hover-card').forEach(el => {
+        el.addEventListener('mouseenter', () => {
+            el.style.borderColor = 'var(--accent-color)';
+            el.style.transform = 'translateY(-2px)';
+        });
+        el.addEventListener('mouseleave', () => {
+            el.style.borderColor = 'var(--border-color)';
+            el.style.transform = 'translateY(0)';
+        });
+    });
 }
 
 /**

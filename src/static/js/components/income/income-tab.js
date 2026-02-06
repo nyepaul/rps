@@ -263,6 +263,12 @@ function renderIncomeStreamsList(container, incomeStreams) {
         </div>
     `;
 
+    // Setup hover effects for income rows
+    listContainer.querySelectorAll('.income-row').forEach(el => {
+        el.addEventListener('mouseenter', () => { el.style.background = 'var(--bg-tertiary)'; el.style.borderColor = 'var(--accent-color)'; });
+        el.addEventListener('mouseleave', () => { el.style.background = 'var(--bg-primary)'; el.style.borderColor = 'var(--border-color)'; });
+    });
+
     // Setup row click handlers (inline edit on click)
     listContainer.querySelectorAll('.income-row').forEach(row => {
         row.addEventListener('click', (e) => {
@@ -372,7 +378,7 @@ function renderIncomeStreamRow(stream, index) {
     }
 
     return `
-        <div class="income-row" data-index="${index}" style="padding: 8px 12px; background: var(--bg-primary); border-radius: 4px; border: 1px solid var(--border-color); border-left: 3px solid ${badge.borderColor}; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; flex-wrap: wrap; gap: var(--space-2);" onmouseover="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--accent-color)'" onmouseout="this.style.background='var(--bg-primary)'; this.style.borderColor='var(--border-color)'">
+        <div class="income-row" data-index="${index}" style="padding: 8px 12px; background: var(--bg-primary); border-radius: 4px; border: 1px solid var(--border-color); border-left: 3px solid ${badge.borderColor}; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; flex-wrap: wrap; gap: var(--space-2);">
             <div style="display: flex; align-items: center; gap: var(--space-2); flex: 1; font-size: 13px; flex-wrap: wrap;">
                 <span style="font-weight: 700;">${stream.name}</span>
                 <span style="display: inline-block; padding: 2px 8px; background: ${badge.color}; color: var(--text-on-badge); border-radius: 12px; font-size: 10px; font-weight: 600;" ${tooltip ? `title="${tooltip}"` : ''}>${badge.text}</span>

@@ -77,7 +77,7 @@ function renderGroupCard(group, currentUser) {
             align-items: center;
             transition: all 0.2s;
             cursor: pointer;
-        " onmouseover="this.style.borderColor='var(--accent-color)'; this.style.transform='translateX(4px)'" onmouseout="this.style.borderColor='var(--border-color)'; this.style.transform='translateX(0)'">
+        ">
             <div style="display: flex; gap: 12px; align-items: center; flex: 1; min-width: 0;">
                 <span style="
                     display: inline-flex;
@@ -118,6 +118,12 @@ function setupGroupActionHandlers(container) {
     if (createBtn) {
         createBtn.addEventListener('click', () => showGroupModal(container, null));
     }
+
+    // Card hover effect
+    container.querySelectorAll('.group-card').forEach(card => {
+        card.addEventListener('mouseenter', () => { card.style.borderColor = 'var(--accent-color)'; card.style.transform = 'translateX(4px)'; });
+        card.addEventListener('mouseleave', () => { card.style.borderColor = 'var(--border-color)'; card.style.transform = 'translateX(0)'; });
+    });
 
     // Card click to edit (default action)
     container.querySelectorAll('.group-card').forEach(card => {

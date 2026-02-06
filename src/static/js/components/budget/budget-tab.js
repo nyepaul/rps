@@ -327,7 +327,7 @@ function renderCollegeExpensesSection(parentContainer) {
         }
 
         html += `
-            <div class="college-expense-row" data-index="${i}" style="padding: var(--space-2) var(--space-3); background: var(--bg-primary); border-radius: 4px; border: 1px solid ${expense.enabled ? 'var(--border-color)' : 'var(--text-secondary)'}; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; flex-wrap: wrap; gap: var(--space-2); ${expense.enabled ? '' : 'opacity: 0.6;'}" onmouseover="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--accent-color)'" onmouseout="this.style.background='var(--bg-primary)'; this.style.borderColor='${expense.enabled ? 'var(--border-color)' : 'var(--text-secondary)'}'">
+            <div class="college-expense-row" data-index="${i}" data-enabled="${expense.enabled}" style="padding: var(--space-2) var(--space-3); background: var(--bg-primary); border-radius: 4px; border: 1px solid ${expense.enabled ? 'var(--border-color)' : 'var(--text-secondary)'}; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; flex-wrap: wrap; gap: var(--space-2); ${expense.enabled ? '' : 'opacity: 0.6;'}"
                 <div style="display: flex; align-items: center; gap: var(--space-2); flex: 1; font-size: var(--font-sm); flex-wrap: wrap;">
                     <span style="font-size: var(--font-md);">🎓</span>
                     <span style="font-weight: 600;">${expense.child_name}</span>
@@ -350,6 +350,13 @@ function renderCollegeExpensesSection(parentContainer) {
     `;
 
     container.innerHTML = html;
+
+    // Setup hover effects for college expense rows
+    container.querySelectorAll('.college-expense-row').forEach(row => {
+        const isEnabled = row.dataset.enabled === 'true';
+        row.addEventListener('mouseenter', () => { row.style.background = 'var(--bg-tertiary)'; row.style.borderColor = 'var(--accent-color)'; });
+        row.addEventListener('mouseleave', () => { row.style.background = 'var(--bg-primary)'; row.style.borderColor = isEnabled ? 'var(--border-color)' : 'var(--text-secondary)'; });
+    });
 
     // Setup event listeners
     container.querySelectorAll('.college-expense-row').forEach(row => {
@@ -650,26 +657,30 @@ function renderBudgetSummary(container) {
 
     summaryContainer.innerHTML = `
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-            <div id="pre-retirement-card" style="background: var(--bg-secondary); padding: 8px 12px; border-radius: 6px; border-left: 4px solid #ef4444; border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='var(--bg-secondary)'">
+            <div id="pre-retirement-card" style="background: var(--bg-secondary); padding: 8px 12px; border-radius: 6px; border-left: 4px solid #ef4444; border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s;">
                 <div style="color: var(--text-secondary); font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 2px;">PRE-RETIREMENT</div>
                 <div style="font-size: 16px; font-weight: 700;">${formatCurrency(currentExpenses)}<span style="font-size: 11px; font-weight: normal; opacity: 0.7;">/yr</span></div>
             </div>
-            <div id="post-retirement-card" style="background: var(--bg-secondary); padding: 8px 12px; border-radius: 6px; border-left: 4px solid #f59e0b; border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='var(--bg-secondary)'">
+            <div id="post-retirement-card" style="background: var(--bg-secondary); padding: 8px 12px; border-radius: 6px; border-left: 4px solid #f59e0b; border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s;">
                 <div style="color: var(--text-secondary); font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 2px;">POST-RETIREMENT</div>
                 <div style="font-size: 16px; font-weight: 700;">${formatCurrency(futureExpenses)}<span style="font-size: 11px; font-weight: normal; opacity: 0.7;">/yr</span></div>
             </div>
         </div>
     `;
 
-    // Add click handlers
+    // Add click and hover handlers
     const preCard = summaryContainer.querySelector('#pre-retirement-card');
     const postCard = summaryContainer.querySelector('#post-retirement-card');
 
     if (preCard) {
         preCard.addEventListener('click', () => showExpenseBreakdownModal('current', 'Pre-Retirement', currentExpenses, '#ef4444'));
+        preCard.addEventListener('mouseenter', () => { preCard.style.background = 'var(--bg-tertiary)'; });
+        preCard.addEventListener('mouseleave', () => { preCard.style.background = 'var(--bg-secondary)'; });
     }
     if (postCard) {
         postCard.addEventListener('click', () => showExpenseBreakdownModal('future', 'Post-Retirement', futureExpenses, '#f59e0b', retirementDate));
+        postCard.addEventListener('mouseenter', () => { postCard.style.background = 'var(--bg-tertiary)'; });
+        postCard.addEventListener('mouseleave', () => { postCard.style.background = 'var(--bg-secondary)'; });
     }
 }
 
@@ -1644,7 +1655,7 @@ function renderExpenseSection(parentContainer) {
                 }
 
                 html += `
-                    <div class="expense-item-row" data-category="${cat.key}" data-index="${index}" style="padding: 4px 6px; background: var(--bg-secondary); border-radius: 3px; border: 1px solid var(--border-color); border-left: 2px solid ${badge.borderColor}; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--accent-color)'" onmouseout="this.style.borderColor='var(--border-color)'">
+                    <div class="expense-item-row" data-category="${cat.key}" data-index="${index}" style="padding: 4px 6px; background: var(--bg-secondary); border-radius: 3px; border: 1px solid var(--border-color); border-left: 2px solid ${badge.borderColor}; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;">
                         <div style="display: flex; align-items: center; gap: 4px; flex: 1; font-size: 11px; overflow: hidden;">
                             <span style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${expense.name || cat.label}</span>
                             ${source !== 'specified' ? `<span style="font-size: 9px;" ${tooltip ? `title="${tooltip}"` : ''}>${badge.text}</span>` : ''}
@@ -1975,6 +1986,12 @@ function setupExpenseEventListeners(container) {
             const index = parseInt(row.getAttribute('data-index'));
             editExpenseItem(container, category, index);
         });
+    });
+
+    // Hover effects for expense item rows
+    container.querySelectorAll('.expense-item-row').forEach(el => {
+        el.addEventListener('mouseenter', () => { el.style.borderColor = 'var(--accent-color)'; });
+        el.addEventListener('mouseleave', () => { el.style.borderColor = 'var(--border-color)'; });
     });
 }
 

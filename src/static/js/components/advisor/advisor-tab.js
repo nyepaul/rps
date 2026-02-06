@@ -369,11 +369,15 @@ async function sendMessage(profile, chatInput, chatContainer) {
         // Check if this is an API key error
         if (isApiKeyError) {
             const errorMsg = `Sorry, AI provider not configured. ${errorMessage}<br><br>
-                <button onclick="window.app.openSettings('api-keys', 'gemini-api-key')" style="padding: 8px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                <button class="csp-settings" data-section="api-keys" data-focus="gemini-api-key" style="padding: 8px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
                     🤖 Configure AI Settings
                 </button>`;
             addMessage(chatContainer, 'assistant', errorMsg, true);
-            
+            // Wire up CSP-safe settings button
+            chatContainer.querySelectorAll('.csp-settings').forEach(btn => {
+                btn.addEventListener('click', () => window.app.openSettings(btn.dataset.section, btn.dataset.focus));
+            });
+
             // Automatically open settings after a short delay
             setTimeout(() => {
                 if (window.app && window.app.openSettings) {
@@ -382,10 +386,16 @@ async function sendMessage(profile, chatInput, chatContainer) {
             }, 1500);
         } else {
             const errorMsg = `Sorry, I encountered an error: ${errorMessage}. <br><br>
-                <button onclick="import('./advisor-wizard.js').then(m => m.showAdvisorWizard())" style="padding: 5px 10px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 13px;">
+                <button class="csp-show-wizard" style="padding: 5px 10px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 13px;">
                     🔧 Run Fix Wizard
                 </button>`;
             addMessage(chatContainer, 'assistant', errorMsg, true);
+            // Wire up CSP-safe wizard button
+            chatContainer.querySelectorAll('.csp-show-wizard').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    import('./advisor-wizard.js').then(m => m.showAdvisorWizard());
+                });
+            });
         }
     }
 }

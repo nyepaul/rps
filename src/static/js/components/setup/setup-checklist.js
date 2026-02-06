@@ -75,7 +75,7 @@ export function renderSetupChecklist() {
                             cursor: ${item.completed ? 'default' : 'pointer'};
                             transition: all 0.2s;
                             ${!item.completed ? 'opacity: 0.9;' : ''}
-                        " ${!item.completed ? `onmouseover="this.style.borderColor='var(--accent-color)'; this.style.transform='translateX(4px)'"` : ''} ${!item.completed ? `onmouseout="this.style.borderColor='var(--border-color)'; this.style.transform='translateX(0)'"` : ''}>
+                        ">
                             <div style="display: flex; align-items: start; gap: 12px;">
                                 <div style="font-size: 24px; flex-shrink: 0;">
                                     ${item.completed ? '✅' : '⬜'}
@@ -99,7 +99,7 @@ export function renderSetupChecklist() {
                                                 font-size: 12px;
                                                 font-weight: 600;
                                                 transition: all 0.2s;
-                                            " onmouseover="this.style.background='var(--accent-hover)'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='var(--accent-color)'; this.style.transform='translateY(0)'">
+                                            ">
                                                 → Go to ${item.tab.charAt(0).toUpperCase() + item.tab.slice(1)}
                                             </button>
                                         </div>
@@ -140,7 +140,7 @@ export function renderSetupChecklist() {
                                 font-weight: 600;
                                 width: 100%;
                                 transition: all 0.2s;
-                            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(16, 152, 173, 0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                            ">
                                 Continue Setup →
                             </button>
                         </div>
@@ -209,7 +209,7 @@ function updateModalContent(modal) {
                         cursor: ${item.completed ? 'default' : 'pointer'};
                         transition: all 0.2s;
                         ${!item.completed ? 'opacity: 0.9;' : ''}
-                    " ${!item.completed ? `onmouseover="this.style.borderColor='var(--accent-color)'; this.style.transform='translateX(4px)'"` : ''} ${!item.completed ? `onmouseout="this.style.borderColor='var(--border-color)'; this.style.transform='translateX(0)'"` : ''}>
+                    ">
                         <div style="display: flex; align-items: start; gap: 12px;">
                             <div style="font-size: 24px; flex-shrink: 0;">
                                 ${item.completed ? '✅' : '⬜'}
@@ -233,7 +233,7 @@ function updateModalContent(modal) {
                                             font-size: 12px;
                                             font-weight: 600;
                                             transition: all 0.2s;
-                                        " onmouseover="this.style.background='var(--accent-hover)'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='var(--accent-color)'; this.style.transform='translateY(0)'">
+                                        ">
                                             → Go to ${item.tab.charAt(0).toUpperCase() + item.tab.slice(1)}
                                         </button>
                                     </div>
@@ -274,7 +274,7 @@ function updateModalContent(modal) {
                             font-weight: 600;
                             width: 100%;
                             transition: all 0.2s;
-                        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(16, 152, 173, 0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                        ">
                             Continue Setup →
                         </button>
                     </div>
@@ -307,10 +307,26 @@ function attachModalEventListeners(modal) {
         });
     }
 
-    // Add click handlers for "Go to" buttons
+    // Add hover effects for "Go to" buttons
     const goToButtons = modal.querySelectorAll('.go-to-tab-btn');
     if (goToButtons.length > 0) {
         goToButtons.forEach(btn => {
+            const defaultBg = btn.style.background || 'var(--accent-color)';
+            btn.addEventListener('mouseenter', () => {
+                btn.style.transform = 'translateY(-1px)';
+                if (defaultBg.includes('info')) {
+                    btn.style.boxShadow = '0 4px 12px rgba(16, 152, 173, 0.3)';
+                } else {
+                    btn.style.background = 'var(--accent-hover)';
+                }
+            });
+            btn.addEventListener('mouseleave', () => {
+                btn.style.transform = 'translateY(0)';
+                btn.style.boxShadow = 'none';
+                if (!defaultBg.includes('info')) {
+                    btn.style.background = defaultBg;
+                }
+            });
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -330,9 +346,23 @@ function attachModalEventListeners(modal) {
         });
     }
 
-    // Add click handlers for checklist items (clicking row also navigates)
+    // Add hover effects for incomplete checklist items
     const checklistItems = modal.querySelectorAll('.setup-checklist-item');
     checklistItems.forEach(item => {
+        // Only add hover effects for incomplete items (those without success border)
+        const isCompleted = item.style.borderColor && item.style.borderColor.includes('success');
+        const cursorStyle = item.style.cursor;
+        if (cursorStyle === 'pointer') {
+            item.addEventListener('mouseenter', () => {
+                item.style.borderColor = 'var(--accent-color)';
+                item.style.transform = 'translateX(4px)';
+            });
+            item.addEventListener('mouseleave', () => {
+                item.style.borderColor = 'var(--border-color)';
+                item.style.transform = 'translateX(0)';
+            });
+        }
+
         item.addEventListener('click', (e) => {
             // Don't trigger if clicking a button inside
             if (e.target.closest('.go-to-tab-btn')) return;

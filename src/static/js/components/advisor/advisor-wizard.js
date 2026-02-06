@@ -43,7 +43,7 @@ export function showAdvisorWizard() {
 
     document.body.appendChild(modal);
 
-    document.getElementById('close-wizard-btn').onclick = () => modal.remove();
+    document.getElementById('close-wizard-btn').addEventListener('click', () => modal.remove());
     
     runStep1(profile);
 }
@@ -104,17 +104,34 @@ function runStep2(profile) {
                 <ul style="padding-left: 20px;">
                     <li style="margin-bottom: 10px;">
                         <strong>API Key:</strong> Configure your Gemini API key
-                        <button onclick="window.app.openSettings('api-keys', 'gemini-api-key'); document.querySelector('.modal-overlay').remove();" style="margin-left: 10px; padding: 6px 12px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                        <button class="csp-settings-close" data-section="api-keys" data-focus="gemini-api-key" style="margin-left: 10px; padding: 6px 12px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
                             🔐 Configure API Keys
                         </button>
                     </li>
-                    <li style="margin-bottom: 10px;">Complete your <a href="#" onclick="window.app.showTab('profile'); return false;">Profile</a> and <a href="#" onclick="window.app.showTab('assets'); return false;">Assets</a> sections.</li>
+                    <li style="margin-bottom: 10px;">Complete your <a href="#" class="csp-nav" data-target="profile">Profile</a> and <a href="#" class="csp-nav" data-target="assets">Assets</a> sections.</li>
                     <li style="margin-bottom: 10px;">Try refreshing the page if the AI Advisor is still unresponsive.</li>
                 </ul>
             </div>
         </div>
     `;
     
+    // Wire up CSP-safe settings button (opens settings and closes modal)
+    stepsDiv.querySelectorAll('.csp-settings-close').forEach(btn => {
+        btn.addEventListener('click', () => {
+            window.app.openSettings(btn.dataset.section, btn.dataset.focus);
+            const overlay = document.querySelector('.modal-overlay');
+            if (overlay) overlay.remove();
+        });
+    });
+
+    // Wire up CSP-safe navigation links
+    stepsDiv.querySelectorAll('.csp-nav').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.app.showTab(link.dataset.target);
+        });
+    });
+
     nextBtn.textContent = 'Finish';
     nextBtn.onclick = () => {
         document.querySelector('.modal-overlay').remove();

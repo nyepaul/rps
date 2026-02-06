@@ -67,7 +67,7 @@ export async function showRoadmapViewer() {
                     padding: 4px 8px;
                     border-radius: 4px;
                     transition: all 0.2s;
-                " onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background='none'">×</button>
+                ">×</button>
             </div>
             <div id="roadmap-content" style="
                 padding: 24px;
@@ -93,7 +93,14 @@ export async function showRoadmapViewer() {
     });
 
     // Close button
-    modal.querySelector('#close-roadmap-modal').addEventListener('click', closeRoadmapViewer);
+    const closeBtn = modal.querySelector('#close-roadmap-modal');
+    closeBtn.addEventListener('click', closeRoadmapViewer);
+    closeBtn.addEventListener('mouseenter', () => {
+        closeBtn.style.background = 'var(--bg-secondary)';
+    });
+    closeBtn.addEventListener('mouseleave', () => {
+        closeBtn.style.background = 'none';
+    });
 
     // Close on Escape
     const escHandler = (e) => {

@@ -39,7 +39,7 @@ export async function showUserReport(userId, username) {
                         <h2 style="margin: 0 0 5px 0; font-size: 24px;">User Activity Report</h2>
                         <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">Comprehensive activity overview for ${username}</p>
                     </div>
-                    <button onclick="this.closest('.user-report-modal').remove()" style="background: transparent; border: none; font-size: 32px; cursor: pointer; color: var(--text-secondary); line-height: 1; padding: 0; width: 32px; height: 32px;">&times;</button>
+                    <button class="csp-modal-close" style="background: transparent; border: none; font-size: 32px; cursor: pointer; color: var(--text-secondary); line-height: 1; padding: 0; width: 32px; height: 32px;">&times;</button>
                 </div>
 
                 <div style="display: grid; gap: 20px;">
@@ -68,6 +68,12 @@ export async function showUserReport(userId, username) {
         `;
 
         modal.classList.add('user-report-modal');
+
+        // Close button listener
+        modal.querySelectorAll('.csp-modal-close').forEach(btn => {
+            btn.addEventListener('click', () => btn.closest('.user-report-modal').remove());
+        });
+
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
                 modal.remove();

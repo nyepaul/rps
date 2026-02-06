@@ -226,10 +226,10 @@ export function renderSummaryTab(container) {
                         Want to see your data in other formats?
                     </p>
                     <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
-                        <button onclick="window.app.showTab('analysis')" style="padding: 6px 12px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px;">
+                        <button class="csp-nav" data-target="analysis" style="padding: 6px 12px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px;">
                             View Interactive Analysis
                         </button>
-                        <button onclick="window.app.showTab('actions')" style="padding: 6px 12px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px;">
+                        <button class="csp-nav" data-target="actions" style="padding: 6px 12px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px;">
                             Manage Action Items
                         </button>
                     </div>
@@ -259,6 +259,11 @@ export function renderSummaryTab(container) {
             }
         </style>
     `;
+
+    // Wire up CSP-safe navigation handlers
+    container.querySelectorAll('.csp-nav').forEach(btn => {
+        btn.addEventListener('click', () => window.app.showTab(btn.dataset.target));
+    });
 
     // Attach event listeners for Analysis Report
     const analysisViewBtn = container.querySelector('#btn-analysis-view');

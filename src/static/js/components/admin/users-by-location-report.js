@@ -181,7 +181,7 @@ function renderSummary(container, summary) {
 
     container.innerHTML = cards.map((card, index) => `
         <div class="summary-card" data-index="${index}" style="background: var(--bg-primary); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); border-left: 4px solid ${card.color}; ${card.clickable ? 'cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;' : ''}"
-            ${card.clickable ? `onmouseenter="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseleave="this.style.transform='translateY(0)'; this.style.boxShadow='none'"` : ''}
+            ${card.clickable ? `data-clickable="true"` : ''}
         >
             <div style="display: flex; align-items: center; gap: 12px;">
                 <div style="font-size: 32px;">${card.icon}</div>
@@ -193,8 +193,12 @@ function renderSummary(container, summary) {
         </div>
     `).join('');
 
-    // Add click handlers
+    // Add hover and click handlers
     container.querySelectorAll('.summary-card').forEach(el => {
+        if (el.dataset.clickable === 'true') {
+            el.addEventListener('mouseenter', () => { el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'; });
+            el.addEventListener('mouseleave', () => { el.style.transform = 'translateY(0)'; el.style.boxShadow = 'none'; });
+        }
         const index = parseInt(el.dataset.index);
         if (cards[index].clickable) {
             el.addEventListener('click', () => {
@@ -241,6 +245,12 @@ function renderUserTable(container, users) {
             </table>
         </div>
     `;
+
+    // Setup row hover listeners
+    container.querySelectorAll('.user-row').forEach(row => {
+        row.addEventListener('mouseenter', () => row.style.background = 'var(--bg-tertiary)');
+        row.addEventListener('mouseleave', () => row.style.background = '');
+    });
 }
 
 /**
@@ -262,7 +272,7 @@ function renderUserRow(user) {
     }).join('');
 
     return `
-        <tr class="user-row" data-user='${userJson}' data-username="${user.username.toLowerCase()}" data-security-flags="${user.security_flags.length}" data-locations="${user.unique_locations}" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='transparent'">
+        <tr class="user-row" data-user='${userJson}' data-username="${user.username.toLowerCase()}" data-security-flags="${user.security_flags.length}" data-locations="${user.unique_locations}" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;">
             <td style="padding: 12px;">
                 <div style="font-weight: 600; color: var(--text-primary);">${user.username}</div>
                 <div style="font-size: 12px; color: var(--text-secondary);">${user.email}</div>
@@ -384,7 +394,7 @@ function showUserDetails(user) {
                     </thead>
                     <tbody id="user-location-table-body">
                         ${user.locations.map(location => `
-                            <tr class="location-drilldown-row" data-ip="${location.ip_address}" data-user-id="${user.user_id}" data-city="${location.city}" data-country="${location.country}" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='transparent'">
+                            <tr class="location-drilldown-row" data-ip="${location.ip_address}" data-user-id="${user.user_id}" data-city="${location.city}" data-country="${location.country}" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;">
                                 <td style="padding: 10px;">
                                     <div style="font-weight: 600;">${location.city}</div>
                                     <div style="font-size: 12px; color: var(--text-secondary);">${location.region}, ${location.country}</div>
@@ -420,8 +430,10 @@ function showUserDetails(user) {
         });
     });
 
-    // Handle row clicks for drilldown
+    // Handle row hover and clicks for drilldown
     modal.querySelectorAll('.location-drilldown-row').forEach(row => {
+        row.addEventListener('mouseenter', () => row.style.background = 'var(--bg-tertiary)');
+        row.addEventListener('mouseleave', () => row.style.background = '');
         row.addEventListener('click', (e) => {
             const ip = row.dataset.ip;
             const userId = row.dataset.userId;
@@ -676,7 +688,7 @@ async function showIPLogs(userId, ipAddress, city, country) {
                         }
 
                         return `
-                            <tr class="log-drilldown-row" data-id="${log.id}" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='transparent'">
+                            <tr class="log-drilldown-row" data-id="${log.id}" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;">
                                 <td style="padding: 10px; white-space: nowrap;">
                                     <div>${date.toLocaleDateString()}</div>
                                     <div style="font-size: 11px; color: var(--text-secondary);">${date.toLocaleTimeString()}</div>
@@ -700,8 +712,10 @@ async function showIPLogs(userId, ipAddress, city, country) {
             </table>
         `;
 
-        // Add click handlers for log rows
+        // Add hover and click handlers for log rows
         container.querySelectorAll('.log-drilldown-row').forEach(row => {
+            row.addEventListener('mouseenter', () => row.style.background = 'var(--bg-tertiary)');
+            row.addEventListener('mouseleave', () => row.style.background = '');
             row.addEventListener('click', () => {
                 showLogDetails(row.dataset.id);
             });

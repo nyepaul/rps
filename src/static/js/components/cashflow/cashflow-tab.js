@@ -927,32 +927,38 @@ function renderSummaryCards(container, chartData, totalMonths, profile) {
     };
 
     summaryContainer.innerHTML = `
-        <div class="metric-card" data-metric="work-income" data-detail="true" style="background: linear-gradient(135deg, #2ed573, #26d07c); padding: 10px; border-radius: 6px; color: var(--text-on-success); cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+        <div class="metric-card" data-metric="work-income" data-detail="true" style="background: linear-gradient(135deg, #2ed573, #26d07c); padding: 10px; border-radius: 6px; color: var(--text-on-success); cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">
             <div style="font-size: 10px; opacity: 0.9; margin-bottom: 2px;">Work Income</div>
             <div style="font-size: 16px; font-weight: 700; margin-bottom: 1px;">${formatCurrency(totalWorkIncome, 0)}</div>
             <div style="font-size: 9px; opacity: 0.8;">${formatCurrency(totalWorkIncome / totalMonths, 0)}/mo avg</div>
         </div>
-        <div class="metric-card" data-metric="retirement-benefits" data-detail="true" style="background: linear-gradient(135deg, #3498db, #5faee3); padding: 10px; border-radius: 6px; color: var(--text-on-accent); cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+        <div class="metric-card" data-metric="retirement-benefits" data-detail="true" style="background: linear-gradient(135deg, #3498db, #5faee3); padding: 10px; border-radius: 6px; color: var(--text-on-accent); cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">
             <div style="font-size: 10px; opacity: 0.9; margin-bottom: 2px;">Retirement Benefits</div>
             <div style="font-size: 16px; font-weight: 700; margin-bottom: 1px;">${formatCurrency(totalRetirementBenefits, 0)}</div>
             <div style="font-size: 9px; opacity: 0.8;">${formatCurrency(totalRetirementBenefits / totalMonths, 0)}/mo avg</div>
         </div>
-        <div class="metric-card" data-metric="investment-withdrawals" data-detail="true" style="background: linear-gradient(135deg, #9b59b6, #8e44ad); padding: 10px; border-radius: 6px; color: var(--text-on-accent); cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+        <div class="metric-card" data-metric="investment-withdrawals" data-detail="true" style="background: linear-gradient(135deg, #9b59b6, #8e44ad); padding: 10px; border-radius: 6px; color: var(--text-on-accent); cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">
             <div style="font-size: 10px; opacity: 0.9; margin-bottom: 2px;">Portfolio Withdrawals</div>
             <div style="font-size: 16px; font-weight: 700; margin-bottom: 1px;">${formatCurrency(totalInvestmentIncome, 0)}</div>
             <div style="font-size: 9px; opacity: 0.8;">${formatCurrency(totalInvestmentIncome / totalMonths, 0)}/mo avg</div>
         </div>
-        <div class="metric-card" data-metric="expenses" data-detail="true" style="background: linear-gradient(135deg, #ff6b6b, #ee5a6f); padding: 10px; border-radius: 6px; color: var(--text-on-danger); cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+        <div class="metric-card" data-metric="expenses" data-detail="true" style="background: linear-gradient(135deg, #ff6b6b, #ee5a6f); padding: 10px; border-radius: 6px; color: var(--text-on-danger); cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">
             <div style="font-size: 10px; opacity: 0.9; margin-bottom: 2px;">Expenses</div>
             <div style="font-size: 16px; font-weight: 700; margin-bottom: 1px;">${formatCurrency(totalExpenses, 0)}</div>
             <div style="font-size: 9px; opacity: 0.8;">${formatCurrency(avgMonthlyExpenses, 0)}/mo avg</div>
         </div>
-        <div class="metric-card" data-metric="net-cash-flow" data-detail="true" style="background: linear-gradient(135deg, ${totalNet >= 0 ? '#f1c40f, #f39c12' : '#e74c3c, #c0392b'}); padding: 10px; border-radius: 6px; color: ${totalNet >= 0 ? 'var(--text-on-warning)' : 'var(--text-on-danger)'}; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+        <div class="metric-card" data-metric="net-cash-flow" data-detail="true" style="background: linear-gradient(135deg, ${totalNet >= 0 ? '#f1c40f, #f39c12' : '#e74c3c, #c0392b'}); padding: 10px; border-radius: 6px; color: ${totalNet >= 0 ? 'var(--text-on-warning)' : 'var(--text-on-danger)'}; cursor: pointer; transition: all 0.2s; border: 3px solid transparent;">
             <div style="font-size: 10px; opacity: 0.9; margin-bottom: 2px;">Net Cash Flow</div>
             <div style="font-size: 16px; font-weight: 700; margin-bottom: 1px;">${totalNet >= 0 ? '+' : ''}${formatCurrency(totalNet, 0)}</div>
             <div style="font-size: 9px; opacity: 0.8;">${avgMonthlyNet >= 0 ? '+' : ''}${formatCurrency(avgMonthlyNet, 0)}/mo avg</div>
         </div>
     `;
+
+    // Setup hover effects for metric cards
+    summaryContainer.querySelectorAll('.metric-card').forEach(el => {
+        el.addEventListener('mouseenter', () => { el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'; });
+        el.addEventListener('mouseleave', () => { el.style.transform = 'translateY(0)'; el.style.boxShadow = 'none'; });
+    });
 
     // Setup click handlers for detail modals (shift+click for details, regular click toggles chart)
     setupCardDetailHandlers(container);
@@ -1273,7 +1279,7 @@ function showModal(title, content) {
     modal.innerHTML = `
         <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
             <h3 style="margin: 0; font-size: 16px;">${title}</h3>
-            <button class="modal-close-btn" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-secondary); padding: 4px 8px; border-radius: 4px;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='none'">&times;</button>
+            <button class="modal-close-btn" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-secondary); padding: 4px 8px; border-radius: 4px;">&times;</button>
         </div>
         <div style="padding: 20px; overflow-y: auto; flex: 1;">
             ${content}
@@ -1286,6 +1292,8 @@ function showModal(title, content) {
     // Close handlers
     const closeBtn = modal.querySelector('.modal-close-btn');
     closeBtn.addEventListener('click', () => overlay.remove());
+    closeBtn.addEventListener('mouseenter', () => { closeBtn.style.background = 'var(--bg-tertiary)'; });
+    closeBtn.addEventListener('mouseleave', () => { closeBtn.style.background = 'none'; });
     overlay.addEventListener('click', (e) => {
         if (e.target === overlay) overlay.remove();
     });

@@ -115,6 +115,19 @@ export function renderAssetList(assets, container, onSaveCallback) {
         });
     }
 
+    // Add hover effects for asset rows
+    container.querySelectorAll('.asset-row').forEach(row => {
+        const isDup = row.dataset.isDuplicate === 'true';
+        row.addEventListener('mouseenter', () => {
+            row.style.background = 'var(--bg-tertiary)';
+            row.style.borderColor = 'var(--accent-color)';
+        });
+        row.addEventListener('mouseleave', () => {
+            row.style.background = isDup ? 'rgba(240, 173, 78, 0.1)' : 'var(--bg-primary)';
+            row.style.borderColor = isDup ? 'var(--warning-color, #f0ad4e)' : 'var(--border-color)';
+        });
+    });
+
     // Add click-to-edit functionality - opens asset wizard modal
     container.querySelectorAll('.asset-row').forEach((row, idx) => {
         const asset = allAssets[idx];
@@ -242,7 +255,7 @@ function renderAssetRow(asset) {
         : '';
 
     return `
-        <div class="asset-row" data-category="${asset.categoryKey}" data-index="${asset.index}" data-id="${asset.id || ''}" style="padding: 8px 12px; ${duplicateStyle} border-radius: 6px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; gap: 12px;" onmouseover="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--accent-color)'" onmouseout="this.style.background='${isDuplicate ? 'rgba(240, 173, 78, 0.1)' : 'var(--bg-primary)'}'; this.style.borderColor='${isDuplicate ? 'var(--warning-color, #f0ad4e)' : 'var(--border-color)'}'">
+        <div class="asset-row" data-category="${asset.categoryKey}" data-index="${asset.index}" data-id="${asset.id || ''}" data-is-duplicate="${isDuplicate ? 'true' : 'false'}" style="padding: 8px 12px; ${duplicateStyle} border-radius: 6px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; gap: 12px;">
             <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0;">
                 <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; flex-wrap: wrap;">
                     <span style="font-size: 16px;">${asset.categoryIcon}</span>

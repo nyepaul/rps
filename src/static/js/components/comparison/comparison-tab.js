@@ -66,11 +66,16 @@ function renderEmptyState(container, profile) {
             <p style="color: var(--text-secondary); margin-bottom: var(--space-6);">
                 Run an analysis and save it as a scenario to compare different strategies.
             </p>
-            <button onclick="window.app.showTab('analysis')" style="padding: var(--space-3) var(--space-6); background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-md);">
+            <button class="csp-nav" data-target="analysis" style="padding: var(--space-3) var(--space-6); background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: var(--font-md);">
                 Run Analysis
             </button>
         </div>
     `;
+
+    // Wire up CSP-safe navigation handlers
+    container.querySelectorAll('.csp-nav').forEach(btn => {
+        btn.addEventListener('click', () => window.app.showTab(btn.dataset.target));
+    });
 }
 
 function renderComparisonView(container, profile, scenarios) {
@@ -83,7 +88,7 @@ function renderComparisonView(container, profile, scenarios) {
                         ${scenarios.length} saved scenario${scenarios.length !== 1 ? 's' : ''} for <strong>${profile.name}</strong>
                     </p>
                 </div>
-                <button onclick="window.app.showTab('analysis')" style="padding: 6px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; flex-shrink: 0;">
+                <button class="csp-nav" data-target="analysis" style="padding: 6px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; flex-shrink: 0;">
                     + New Analysis
                 </button>
             </div>
@@ -145,6 +150,11 @@ function renderComparisonView(container, profile, scenarios) {
             .success-info { background: rgba(23, 162, 184, 0.2); color: var(--info-color); }
         </style>
     `;
+
+    // Wire up CSP-safe navigation handlers
+    container.querySelectorAll('.csp-nav').forEach(btn => {
+        btn.addEventListener('click', () => window.app.showTab(btn.dataset.target));
+    });
 
     setupComparisonHandlers(container, scenarios);
 }

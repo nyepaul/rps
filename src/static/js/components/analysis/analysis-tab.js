@@ -1114,14 +1114,19 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
             <button id="save-scenario-btn" style="padding: 12px 24px; background: var(--success-color); color: var(--text-on-success); border: none; border-radius: 6px; cursor: pointer; margin-right: 10px; font-weight: 600;">
                 Save as Scenario
             </button>
-            <button onclick="window.app.showTab('comparison')" class="secondary-btn" style="padding: 12px 24px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-radius: 6px; cursor: pointer; margin-right: 10px;">
+            <button class="secondary-btn csp-nav" data-target="comparison" style="padding: 12px 24px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-radius: 6px; cursor: pointer; margin-right: 10px;">
                 Compare Scenarios
             </button>
-            <button onclick="window.app.showTab('actions')" class="primary-btn" style="padding: 12px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer;">
+            <button class="primary-btn csp-nav" data-target="actions" style="padding: 12px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer;">
                 View Action Items
             </button>
         </div>
     `;
+
+    // Wire up CSP-safe navigation handlers
+    container.querySelectorAll('.csp-nav').forEach(btn => {
+        btn.addEventListener('click', () => window.app.showTab(btn.dataset.target));
+    });
 
     // Add click handlers to stat items for explanations
     setupStatItemClickHandlers(container);
@@ -1350,15 +1355,20 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
                  <button id="save-multi-scenario-btn" style="padding: 12px 24px; background: var(--success-color); color: var(--text-on-success); border: none; border-radius: 6px; cursor: pointer; margin-right: 10px; font-weight: 600;">
                     Save as Scenario
                 </button>
-                <button onclick="window.app.showTab('comparison')" class="secondary-btn" style="padding: 12px 24px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-radius: 6px; cursor: pointer; margin-right: 10px;">
+                <button class="secondary-btn csp-nav" data-target="comparison" style="padding: 12px 24px; background: var(--bg-tertiary); color: var(--text-primary); border: none; border-radius: 6px; cursor: pointer; margin-right: 10px;">
                     Compare Scenarios
                 </button>
-                <button onclick="window.app.showTab('actions')" class="primary-btn" style="padding: 12px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer;">
+                <button class="primary-btn csp-nav" data-target="actions" style="padding: 12px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer;">
                     View Action Items
                 </button>
             </div>
         </div>
     `;
+
+    // Wire up CSP-safe navigation handlers
+    container.querySelectorAll('.csp-nav').forEach(btn => {
+        btn.addEventListener('click', () => window.app.showTab(btn.dataset.target));
+    });
 
     // Set up tab switching
     const tabs = container.querySelectorAll('.scenario-tab');

@@ -66,7 +66,7 @@ function renderTable(requests) {
                     padding: 10px 12px;
                     cursor: pointer;
                     transition: all 0.2s;
-                " onmouseover="this.style.borderColor='var(--accent-color)'; this.style.transform='translateX(4px)'" onmouseout="this.style.borderColor='var(--border-color)'; this.style.transform='translateX(0)'">
+                ">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                             <span style="
@@ -101,6 +101,8 @@ function renderTable(requests) {
     container.innerHTML = html;
 
     container.querySelectorAll('.password-request-item').forEach(item => {
+        item.addEventListener('mouseenter', () => { item.style.borderColor = 'var(--accent-color)'; item.style.transform = 'translateX(4px)'; });
+        item.addEventListener('mouseleave', () => { item.style.borderColor = 'var(--border-color)'; item.style.transform = 'translateX(0)'; });
         item.addEventListener('click', () => handleReset(item.dataset.id, item.dataset.username, item.dataset.token));
     });
 }
@@ -123,7 +125,7 @@ function handleReset(reqId, username, supportToken) {
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
                 <!-- Option A: Generate Link -->
-                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; cursor: pointer;" onclick="document.getElementById('opt-link').checked = true">
+                <div class="csp-radio-opt-link" style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; cursor: pointer;">
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
                         <input type="radio" name="reset-method" id="opt-link" value="link" checked>
                         <label for="opt-link" style="font-weight: 600; cursor: pointer;">Generate Link</label>
@@ -135,7 +137,7 @@ function handleReset(reqId, username, supportToken) {
                 </div>
 
                 <!-- Option B: Manual Reset -->
-                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; cursor: pointer;" onclick="document.getElementById('opt-manual').checked = true">
+                <div class="csp-radio-opt-manual" style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; cursor: pointer;">
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
                         <input type="radio" name="reset-method" id="opt-manual" value="manual">
                         <label for="opt-manual" style="font-weight: 600; cursor: pointer;">Manual Reset</label>
@@ -163,6 +165,22 @@ function handleReset(reqId, username, supportToken) {
     `;
 
     document.body.appendChild(modal);
+
+    // Radio option click handlers
+    const optLinkDiv = modal.querySelector('.csp-radio-opt-link');
+    if (optLinkDiv) {
+        optLinkDiv.addEventListener('click', () => {
+            modal.querySelector('#opt-link').checked = true;
+            modal.querySelector('#opt-link').dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    }
+    const optManualDiv = modal.querySelector('.csp-radio-opt-manual');
+    if (optManualDiv) {
+        optManualDiv.addEventListener('click', () => {
+            modal.querySelector('#opt-manual').checked = true;
+            modal.querySelector('#opt-manual').dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    }
 
     // Toggle manual password field
     const radios = modal.querySelectorAll('input[name="reset-method"]');

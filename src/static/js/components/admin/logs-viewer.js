@@ -293,8 +293,6 @@ async function loadStatistics(container) {
                     <div style="font-size: 28px; font-weight: 700; color: var(--text-primary);">${stats.total_logs.toLocaleString()}</div>
                 </div>
                 <div id="unique-ips-stat" style="background: var(--bg-secondary); padding: 20px; border-radius: 12px; border-left: 4px solid var(--success-color); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;"
-                     onmouseenter="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.2)'"
-                     onmouseleave="this.style.transform='translateY(0)'; this.style.boxShadow='none'"
                      title="Click to view list of unique IP addresses">
                     <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">Unique IPs 🌐</div>
                     <div style="font-size: 28px; font-weight: 700; color: var(--text-primary);">${stats.unique_ips.toLocaleString()}</div>
@@ -316,6 +314,8 @@ async function loadStatistics(container) {
             uniqueIpsStat.addEventListener('click', async () => {
                 await showIPListView();
             });
+            uniqueIpsStat.addEventListener('mouseenter', () => { uniqueIpsStat.style.transform = 'translateY(-2px)'; uniqueIpsStat.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)'; });
+            uniqueIpsStat.addEventListener('mouseleave', () => { uniqueIpsStat.style.transform = ''; uniqueIpsStat.style.boxShadow = ''; });
         }
 
     } catch (error) {
@@ -488,7 +488,7 @@ function renderSortableHeader(column, label, align = 'left') {
     const arrowOpacity = isActive ? '1' : '0.3';
 
     return `
-        <th class="sortable-header" data-column="${column}" style="text-align: ${align}; padding: 12px; font-size: 12px; font-weight: 600; cursor: pointer; user-select: none; transition: background 0.2s;" onmouseenter="this.style.background='var(--bg-primary)'" onmouseleave="this.style.background='transparent'">
+        <th class="sortable-header" data-column="${column}" style="text-align: ${align}; padding: 12px; font-size: 12px; font-weight: 600; cursor: pointer; user-select: none; transition: background 0.2s;">
             ${label} <span style="opacity: ${arrowOpacity}; font-size: 10px; margin-left: 4px;">${arrow}</span>
         </th>
     `;
@@ -499,6 +499,8 @@ function renderSortableHeader(column, label, align = 'left') {
  */
 function setupSortHandlers(container) {
     container.querySelectorAll('.sortable-header').forEach(header => {
+        header.addEventListener('mouseenter', () => header.style.background = 'var(--bg-primary)');
+        header.addEventListener('mouseleave', () => header.style.background = 'transparent');
         header.addEventListener('click', () => {
             const column = header.getAttribute('data-column');
 
@@ -1543,9 +1545,7 @@ export async function showIPListView(days = null) {
                     </thead>
                     <tbody>
                         ${ips.map((ipData) => `
-                            <tr class="ip-list-row" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;"
-                                onmouseenter="this.style.background='var(--bg-tertiary)'"
-                                onmouseleave="this.style.background='transparent'">
+                            <tr class="ip-list-row" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;">
                                 <td style="padding: 12px 20px;">
                                     <span style="font-family: monospace; font-weight: 600; color: var(--accent-color);">${ipData.ip}</span>
                                 </td>
@@ -1582,7 +1582,11 @@ export async function showIPListView(days = null) {
                 btn.addEventListener('mouseleave', () => btn.style.opacity = '1');
             });
 
-            // Make rows clickable too
+            // Hover effects and make rows clickable
+            listContainer.querySelectorAll('.ip-list-row').forEach(row => {
+                row.addEventListener('mouseenter', () => row.style.background = 'var(--bg-tertiary)');
+                row.addEventListener('mouseleave', () => row.style.background = 'transparent');
+            });
             listContainer.querySelectorAll('.ip-list-row').forEach(row => {
                 row.addEventListener('click', (e) => {
                     if (!e.target.classList.contains('view-ip-details-btn')) {
@@ -2633,7 +2637,7 @@ async function showIPAccessDetails(ipAddress, city, region, country) {
                         </thead>
                         <tbody>
                             ${logs.map((log, index) => `
-                                <tr class="access-log-row" data-log-id="${log.id}" data-log-index="${index}" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;" onmouseenter="this.style.background='var(--bg-tertiary)'" onmouseleave="this.style.background='transparent'">
+                                <tr class="access-log-row" data-log-id="${log.id}" data-log-index="${index}" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;">
                                     <td style="padding: 12px; font-size: 13px;">
                                         ${new Date(log.created_at).toLocaleString()}
                                     </td>
@@ -2690,6 +2694,12 @@ async function showIPAccessDetails(ipAddress, city, region, country) {
             }
         };
         document.addEventListener('keydown', escHandler);
+
+        // Hover effects (CSP-safe)
+        modal.querySelectorAll('.access-log-row').forEach(row => {
+            row.addEventListener('mouseenter', () => row.style.background = 'var(--bg-tertiary)');
+            row.addEventListener('mouseleave', () => row.style.background = 'transparent');
+        });
 
         // Setup row click handlers to show log details with navigation
         modal.querySelectorAll('.access-log-row').forEach(row => {

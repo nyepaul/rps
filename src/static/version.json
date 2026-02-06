@@ -1,5 +1,5 @@
 {
-    "version": "3.9.202",
+    "version": "3.9.203",
     "release_date": "2026-02-06",
-    "release_notes": "Fix CSP-blocked inline event handlers on dashboard and admin stat cards"
+    "release_notes": "Remove all inline event handlers for CSP compliance across 25 JS components"
 }

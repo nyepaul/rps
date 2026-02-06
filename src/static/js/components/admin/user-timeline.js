@@ -137,15 +137,17 @@ function setupTimelineHandlers(container) {
                 align-items: center;
                 gap: 10px;
                 transition: background 0.2s;
-            " onmouseenter="this.style.background='var(--bg-primary)'" onmouseleave="this.style.background='transparent'">
+            "
                 <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">${user.username}</div>
                 <div style="font-size: 12px; color: var(--text-secondary);">${user.email || ''}</div>
                 ${user.is_admin ? '<span style="font-size: 10px; background: #764ba222; color: #764ba2; padding: 2px 6px; border-radius: 4px;">ADMIN</span>' : ''}
             </div>
         `).join('');
 
-        // Add click handlers
+        // Add hover and click handlers
         dropdown.querySelectorAll('.user-select-row').forEach(row => {
+            row.addEventListener('mouseenter', () => row.style.background = 'var(--bg-primary)');
+            row.addEventListener('mouseleave', () => row.style.background = '');
             row.addEventListener('click', () => {
                 const userId = row.dataset.userId;
                 const username = row.dataset.username;
@@ -352,7 +354,7 @@ function renderActivityTable(events) {
         const arrowOpacity = isActive ? '1' : '0.3';
 
         return `
-            <th class="activity-sortable-header" data-column="${column}" style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600; cursor: pointer; user-select: none; transition: background 0.2s;" onmouseenter="this.style.background='var(--bg-primary)'" onmouseleave="this.style.background='transparent'">
+            <th class="activity-sortable-header" data-column="${column}" style="text-align: left; padding: 12px; font-size: 12px; font-weight: 600; cursor: pointer; user-select: none; transition: background 0.2s;">
                 ${label} <span style="opacity: ${arrowOpacity}; font-size: 10px; margin-left: 4px;">${arrow}</span>
             </th>
         `;
@@ -419,7 +421,7 @@ function renderActivityRow(event, index) {
     if (context.profile) contextItems.push(`👤 ${context.profile}`);
 
     return `
-        <tr class="activity-row" data-event-index="${index}" style="border-bottom: 1px solid var(--border-color); transition: background 0.2s; cursor: pointer;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='transparent'">
+        <tr class="activity-row" data-event-index="${index}" style="border-bottom: 1px solid var(--border-color); transition: background 0.2s; cursor: pointer;">
             <td style="padding: 12px; font-size: 13px; white-space: nowrap;">${dateStr}</td>
             <td style="padding: 12px; font-size: 13px; white-space: nowrap;">${timeStr}</td>
             <td style="padding: 12px;">
@@ -445,6 +447,8 @@ function setupActivityTableSort(container, events) {
     const headers = container.querySelectorAll('.activity-sortable-header');
 
     headers.forEach(header => {
+        header.addEventListener('mouseenter', () => header.style.background = 'var(--bg-primary)');
+        header.addEventListener('mouseleave', () => header.style.background = '');
         header.addEventListener('click', () => {
             const column = header.getAttribute('data-column');
 
@@ -470,9 +474,11 @@ function setupActivityTableSort(container, events) {
         });
     });
 
-    // Setup row click handlers
+    // Setup row hover and click handlers
     const rows = container.querySelectorAll('.activity-row');
     rows.forEach(row => {
+        row.addEventListener('mouseenter', () => row.style.background = 'var(--bg-tertiary)');
+        row.addEventListener('mouseleave', () => row.style.background = '');
         row.addEventListener('click', () => {
             const eventIndex = parseInt(row.getAttribute('data-event-index'));
             if (eventIndex >= 0 && eventIndex < currentEvents.length) {

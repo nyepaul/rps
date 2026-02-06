@@ -74,7 +74,7 @@ function renderUserRow(user, currentUser) {
     const lastLogin = user.last_login ? new Date(user.last_login).toLocaleString() : 'Never';
 
     return `
-        <tr class="user-row" data-user-id="${user.id}" data-username="${user.username}" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='transparent'">
+        <tr class="user-row" data-user-id="${user.id}" data-username="${user.username}" style="border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;">
             <td style="padding: 12px; font-size: 13px; font-family: monospace;">${user.id}</td>
             <td style="padding: 12px; font-weight: 600;">${user.username}</td>
             <td style="padding: 12px; font-size: 12px; color: var(--text-secondary);">
@@ -106,6 +106,12 @@ function renderUserRow(user, currentUser) {
  * Setup user action handlers
  */
 function setupUserActionHandlers(container) {
+    // Row hover effect
+    container.querySelectorAll('.user-row').forEach(row => {
+        row.addEventListener('mouseenter', () => row.style.background = 'var(--bg-tertiary)');
+        row.addEventListener('mouseleave', () => row.style.background = '');
+    });
+
     // Row click to manage user
     container.querySelectorAll('.user-row').forEach(row => {
         row.addEventListener('click', async () => {
@@ -464,7 +470,7 @@ async function viewUserProfiles(userId) {
             <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h3 style="margin: 0;">User Profiles (User ID: ${userId})</h3>
-                    <button onclick="this.closest('.modal').remove()" style="background: transparent; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">×</button>
+                    <button class="csp-modal-close" style="background: transparent; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">×</button>
                 </div>
                 ${profiles.length === 0 ? `
                     <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
@@ -487,6 +493,12 @@ async function viewUserProfiles(userId) {
         `;
 
         modal.classList.add('modal');
+
+        // Close button listener
+        modal.querySelectorAll('.csp-modal-close').forEach(btn => {
+            btn.addEventListener('click', () => btn.closest('.modal').remove());
+        });
+
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
                 modal.remove();

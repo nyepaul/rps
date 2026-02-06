@@ -304,8 +304,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (data.code === 'ALREADY_VERIFIED') {
                         const extra = document.createElement('div');
                         extra.style.marginTop = '15px';
-                        extra.innerHTML = '<button onclick="window.app.showLoginMode()" style="background: #3b82f6; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Go to Login</button>';
+                        extra.innerHTML = '<button id="goToLoginBtn" style="background: #3b82f6; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Go to Login</button>';
                         messageDiv.appendChild(extra);
+                        document.getElementById('goToLoginBtn').addEventListener('click', () => {
+                            window.app.showLoginMode();
+                        });
                     }
                 }
             } catch (error) {

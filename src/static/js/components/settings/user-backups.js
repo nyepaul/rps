@@ -142,7 +142,7 @@ async function loadUserBackups(container) {
         listContainer.innerHTML = `
             <div style="display: flex; flex-direction: column; gap: 12px;">
                 ${backups.map(backup => `
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: var(--bg-primary); border-radius: 10px; border: 1px solid var(--border-color); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
+                    <div class="backup-item" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: var(--bg-primary); border-radius: 10px; border: 1px solid var(--border-color); transition: transform 0.2s, box-shadow 0.2s;">
                         <div>
                             <div style="font-weight: 600; font-size: 15px;">${backup.label || 'Untitled Backup'}</div>
                             <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px; font-family: monospace;">
@@ -167,6 +167,16 @@ async function loadUserBackups(container) {
                 `).join('')}
             </div>
         `;
+
+        // Hover effects for backup items
+        listContainer.querySelectorAll('.backup-item').forEach(item => {
+            item.addEventListener('mouseenter', () => {
+                item.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+            });
+            item.addEventListener('mouseleave', () => {
+                item.style.boxShadow = 'none';
+            });
+        });
 
         // Setup handlers
         listContainer.querySelectorAll('.download-backup-btn').forEach(btn => {

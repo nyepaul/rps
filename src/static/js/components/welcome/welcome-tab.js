@@ -71,7 +71,7 @@ async function loadProfiles(container) {
                         </div>
                         <small style="color: var(--text-secondary); font-size: 11px;">Updated: ${new Date(profile.updated_at).toLocaleDateString()}</small>
                     </div>
-                    <div style="display: flex; gap: 6px;" onclick="event.stopPropagation()">
+                    <div class="profile-actions" style="display: flex; gap: 6px;">
                         <button class="set-default-btn" data-profile="${profile.name}" title="${isDefault ? 'Current default' : 'Set as default'}" style="padding: 5px 8px; background: ${isDefault ? 'var(--text-secondary)' : 'var(--bg-tertiary)'}; color: ${isDefault ? 'var(--text-on-accent)' : 'var(--text-primary)'}; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">
                             ${isDefault ? '★ Default' : '☆ Set Default'}
                         </button>
@@ -99,6 +99,11 @@ async function loadProfiles(container) {
 }
 
 function setupProfileHandlers(container, profiles) {
+    // Stop propagation on action button containers so clicks don't trigger profile load
+    container.querySelectorAll('.profile-actions').forEach(el => {
+        el.addEventListener('click', (e) => e.stopPropagation());
+    });
+
     // Click to load profile
     container.querySelectorAll('.profile-item').forEach(item => {
         item.addEventListener('click', async () => {

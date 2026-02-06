@@ -40,7 +40,7 @@ export function renderActionsTab(container) {
                     </p>
                 </div>
                 <div style="display: flex; gap: var(--space-2); flex-wrap: wrap; flex-shrink: 0;">
-                    <button id="generate-actions-btn" style="padding: 6px 12px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s ease;" onmouseover="this.style.background='var(--accent-hover)';" onmouseout="this.style.background='var(--accent-color)';">
+                    <button id="generate-actions-btn" style="padding: 6px 12px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s ease;">
                         💡 Generate
                     </button>
                     <button id="add-action-btn" style="padding: 6px 12px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
@@ -186,7 +186,7 @@ async function loadActionItems(container, profile) {
                     <p style="color: var(--text-secondary); margin-bottom: 20px;">
                         Create action items to track tasks and recommendations for your retirement plan.
                     </p>
-                    <button id="add-first-action-btn" style="padding: 12px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; transition: all 0.2s ease;" onmouseover="this.style.background='var(--accent-hover)'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(59, 130, 246, 0.3)';" onmouseout="this.style.background='var(--accent-color)'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                    <button id="add-first-action-btn" style="padding: 12px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; transition: all 0.2s ease;">
                         + Add First Action Item
                     </button>
                 </div>
@@ -194,6 +194,8 @@ async function loadActionItems(container, profile) {
 
             const addFirstBtn = listContainer.querySelector('#add-first-action-btn');
             if (addFirstBtn) {
+                addFirstBtn.addEventListener('mouseenter', () => { addFirstBtn.style.background = 'var(--accent-hover)'; addFirstBtn.style.transform = 'translateY(-1px)'; addFirstBtn.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.3)'; });
+                addFirstBtn.addEventListener('mouseleave', () => { addFirstBtn.style.background = 'var(--accent-color)'; addFirstBtn.style.transform = 'translateY(0)'; addFirstBtn.style.boxShadow = 'none'; });
                 addFirstBtn.addEventListener('click', () => {
                     showAddActionItemModal(container, profile);
                 });
@@ -316,6 +318,8 @@ function setupActionsHandlers(container, profile) {
     // Generate actions button
     const generateBtn = container.querySelector('#generate-actions-btn');
     if (generateBtn) {
+        generateBtn.addEventListener('mouseenter', () => { generateBtn.style.background = 'var(--accent-hover)'; });
+        generateBtn.addEventListener('mouseleave', () => { generateBtn.style.background = 'var(--accent-color)'; });
         generateBtn.addEventListener('click', async () => {
             showLoading(generateBtn, 'Generating...');
             generateBtn.disabled = true;

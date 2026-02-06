@@ -213,12 +213,18 @@ function setupFilterHandlers(container) {
                 align-items: center;
                 gap: 10px;
                 transition: background 0.2s;
-            " onmouseenter="this.style.background='var(--bg-primary)'" onmouseleave="this.style.background='transparent'">
+            ">
                 <div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">${escapeHtml(user.username)}</div>
                 <div style="font-size: 11px; color: var(--text-secondary);">${user.email ? escapeHtml(user.email) : ''}</div>
                 ${user.is_admin ? '<span style="font-size: 9px; background: #764ba222; color: #764ba2; padding: 1px 4px; border-radius: 3px;">ADMIN</span>' : ''}
             </div>
         `).join('');
+
+        // Hover effects (CSP-safe)
+        userDropdown.querySelectorAll('.user-select-row').forEach(row => {
+            row.addEventListener('mouseenter', () => row.style.background = 'var(--bg-primary)');
+            row.addEventListener('mouseleave', () => row.style.background = 'transparent');
+        });
 
         // Add click handlers
         userDropdown.querySelectorAll('.user-select-row').forEach(row => {
