@@ -1,5 +1,5 @@
 {
-    "version": "3.9.193",
+    "version": "3.9.194",
     "release_date": "2026-02-06",
-    "release_notes": "Revise color themes: separate success (teal) from accent (sage), fix WCAG contrast failures, update hardcoded colors"
+    "release_notes": "Unify font to Source Sans 3 everywhere, remove Libre Baskerville"
 }
