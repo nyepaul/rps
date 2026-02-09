@@ -10,6 +10,19 @@ import { formatCurrency, formatPercent, formatCompact } from '../../utils/format
 import { renderStandardTimelineChart } from '../../utils/charts.js';
 import { APP_CONFIG } from '../../config.js';
 
+/**
+ * Render the account breakdown rows for the investment portfolio detail panel.
+ */
+function renderAccountBreakdown(accounts) {
+    if (!accounts || accounts.length === 0) return '<div style="color: var(--text-secondary); font-size: 12px;">No account data available</div>';
+    return accounts.map(a => `
+        <div style="display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; border-bottom: 1px solid var(--border-color);">
+            <span style="color: var(--text-primary);">${a.name || a.account}</span>
+            <span style="color: var(--accent-color); font-weight: 600;">${formatCurrency(a.value, 0)}</span>
+        </div>
+    `).join('');
+}
+
 // Store last analysis result for saving as scenario
 let lastAnalysisResult = null;
 let lastSimulations = null;
@@ -982,12 +995,12 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
             ` : ''}
 
             ${totalAssets > 0 ? `
-                <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--accent-color);">
+                <div class="portfolio-card" style="background: var(--bg-primary); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--accent-color); cursor: pointer;">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
                         <div>
                             <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
                                 Investment Portfolio
-                                <span style="cursor: help; margin-left: 5px;" title="Retirement + Taxable accounts only. Real estate handled separately with costs and sale proceeds.">ℹ️</span>
+                                <span style="font-size: 11px; font-weight: 400; text-transform: none; letter-spacing: 0; margin-left: 6px; opacity: 0.7;">click for details</span>
                             </div>
                             <div style="font-size: 28px; font-weight: bold; color: var(--accent-color);">${formatCurrency(totalAssets, 0)}</div>
                             <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; font-style: italic;">
@@ -1000,6 +1013,9 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
                                 <div style="font-size: 28px; font-weight: bold; color: var(--text-primary);">${yearsProjected}</div>
                             </div>
                         ` : ''}
+                    </div>
+                    <div class="portfolio-detail" style="display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color);">
+                        ${renderAccountBreakdown(lastAnalysisResult?.account_breakdown || data.account_breakdown)}
                     </div>
                 </div>
             ` : ''}
@@ -1128,6 +1144,16 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
         btn.addEventListener('click', () => window.app.showTab(btn.dataset.target));
     });
 
+    // Portfolio card click to expand account breakdown
+    container.querySelectorAll('.portfolio-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const detail = card.querySelector('.portfolio-detail');
+            if (detail) {
+                detail.style.display = detail.style.display === 'none' ? 'block' : 'none';
+            }
+        });
+    });
+
     // Add click handlers to stat items for explanations
     setupStatItemClickHandlers(container);
 
@@ -1191,12 +1217,12 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
             ` : ''}
 
             <!-- Starting Balance Highlight -->
-            <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--accent-color);">
+            <div class="portfolio-card" style="background: var(--bg-primary); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--accent-color); cursor: pointer;">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
                     <div>
                         <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
                             Investment Portfolio
-                            <span style="cursor: help; margin-left: 5px;" title="Retirement + Taxable accounts only. Real estate handled separately with costs and sale proceeds.">ℹ️</span>
+                            <span style="font-size: 11px; font-weight: 400; text-transform: none; letter-spacing: 0; margin-left: 6px; opacity: 0.7;">click for details</span>
                         </div>
                         <div style="font-size: 28px; font-weight: bold; color: var(--accent-color);">${formatCurrency(data.total_assets || 0, 0)}</div>
                         <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; font-style: italic;">
@@ -1207,6 +1233,9 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
                         <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Years Projected</div>
                         <div style="font-size: 28px; font-weight: bold; color: var(--text-primary);">${data.years_projected}</div>
                     </div>
+                </div>
+                <div class="portfolio-detail" style="display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color);">
+                    ${renderAccountBreakdown(data.account_breakdown)}
                 </div>
             </div>
 
@@ -1466,6 +1495,16 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
         } else {
             console.warn(`No timeline data for scenario ${key}`);
         }
+    });
+
+    // Portfolio card click to expand account breakdown
+    container.querySelectorAll('.portfolio-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const detail = card.querySelector('.portfolio-detail');
+            if (detail) {
+                detail.style.display = detail.style.display === 'none' ? 'block' : 'none';
+            }
+        });
     });
 
     // Setup save handler for multi-scenario

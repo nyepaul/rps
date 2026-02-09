@@ -7,6 +7,7 @@ from typing import Optional, List
 from datetime import datetime, date
 from src.models.profile import Profile
 from src.services.retirement_model import (
+    CONTRIBUTION_LIMITS,
     Person,
     FinancialProfile,
     MarketAssumptions,
@@ -417,6 +418,7 @@ def run_analysis():
             home_properties=profile_data.get("home_properties", []),
             budget=budget_data if budget_data else None,
             annual_ira_contribution=financial_data.get("annual_ira_contribution", 0),
+            ira_roth_split=financial_data.get("ira_roth_split", 0.5),
             savings_allocation=profile_data.get("savings_allocation"),
             filing_status=filing_status,
             state=state,
@@ -516,6 +518,10 @@ def run_analysis():
             "timestamp": profile.updated_at,
             "scenarios": scenario_results,
             "total_assets": sum(inv.get("value", 0) for inv in investment_types),
+            "account_breakdown": [
+                {"account": inv.get("account", ""), "name": inv.get("name", ""), "value": inv.get("value", 0)}
+                for inv in investment_types if inv.get("value", 0) > 0
+            ],
             "years_projected": years,
         }
 
@@ -759,6 +765,7 @@ def get_cashflow_details():
             home_properties=profile_data.get("home_properties", []),
             budget=budget_data if budget_data else None,
             annual_ira_contribution=financial_data.get("annual_ira_contribution", 0),
+            ira_roth_split=financial_data.get("ira_roth_split", 0.5),
             savings_allocation=profile_data.get("savings_allocation"),
             filing_status=filing_status,
             state=state,
@@ -1341,13 +1348,26 @@ def get_calculation_report():
                 elif owner == "spouse":
                     spouse_salary += amount_annual
 
-            # Primary 401k
-            p1_401k = primary_salary * contrib_rate_p1
+            # Primary 401k - apply IRS limits
+            p1_401k_limit = CONTRIBUTION_LIMITS["401k_base"]
+            if current_age >= CONTRIBUTION_LIMITS["catchup_age"]:
+                p1_401k_limit += CONTRIBUTION_LIMITS["401k_catchup"]
+            p1_401k_raw = primary_salary * contrib_rate_p1
+            p1_401k = min(p1_401k_raw, p1_401k_limit)
+
             p1_match = primary_salary * match_rate_p1
+            # Cap total (employee + employer) at Section 415(c)
+            p1_415c_limit = CONTRIBUTION_LIMITS["section_415c"]
+            if current_age >= CONTRIBUTION_LIMITS["catchup_age"]:
+                p1_415c_limit = CONTRIBUTION_LIMITS["section_415c_catchup"]
+            p1_match = min(p1_match, max(0, p1_415c_limit - p1_401k))
 
             if p1_401k > 0:
+                label = "401k Employee Contribution (Primary)"
+                if p1_401k_raw > p1_401k:
+                    label += f" (capped from ${p1_401k_raw:,.0f})"
                 contributions_section["items"].append({
-                    "label": "401k Employee Contribution (Primary)",
+                    "label": label,
                     "value": f"${p1_401k:,.0f}",
                     "amount": p1_401k
                 })
@@ -1359,16 +1379,29 @@ def get_calculation_report():
                     "note": "Free money!"
                 })
 
-            # Spouse 401k
+            # Spouse 401k - apply IRS limits
             contrib_rate_p2 = float(spouse_data.get("annual_401k_contribution_rate", 0) or 0)
             match_rate_p2 = float(spouse_data.get("employer_match_rate", 0) or 0)
             if spouse_data.get("name") and spouse_salary > 0:
-                p2_401k = spouse_salary * contrib_rate_p2
+                p2_401k_limit = CONTRIBUTION_LIMITS["401k_base"]
+                if spouse_age >= CONTRIBUTION_LIMITS["catchup_age"]:
+                    p2_401k_limit += CONTRIBUTION_LIMITS["401k_catchup"]
+                p2_401k_raw = spouse_salary * contrib_rate_p2
+                p2_401k = min(p2_401k_raw, p2_401k_limit)
+
                 p2_match = spouse_salary * match_rate_p2
+                # Cap total at Section 415(c)
+                p2_415c_limit = CONTRIBUTION_LIMITS["section_415c"]
+                if spouse_age >= CONTRIBUTION_LIMITS["catchup_age"]:
+                    p2_415c_limit = CONTRIBUTION_LIMITS["section_415c_catchup"]
+                p2_match = min(p2_match, max(0, p2_415c_limit - p2_401k))
 
                 if p2_401k > 0:
+                    label = "401k Employee Contribution (Spouse)"
+                    if p2_401k_raw > p2_401k:
+                        label += f" (capped from ${p2_401k_raw:,.0f})"
                     contributions_section["items"].append({
-                        "label": "401k Employee Contribution (Spouse)",
+                        "label": label,
                         "value": f"${p2_401k:,.0f}",
                         "amount": p2_401k
                     })
@@ -1380,13 +1413,35 @@ def get_calculation_report():
                         "note": "Free money!"
                     })
 
-        # IRA Contributions
+        # IRA Contributions - apply IRS limits
         ira_annual = financial_data.get("annual_ira_contribution", 0) or 0
         if ira_annual > 0 and current_age < retirement_age:
+            ira_limit = CONTRIBUTION_LIMITS["ira_base"]
+            if max(current_age, spouse_age) >= CONTRIBUTION_LIMITS["catchup_age"]:
+                ira_limit += CONTRIBUTION_LIMITS["ira_catchup"]
+            # MFJ with both working gets double IRA limit (must match simulation logic)
+            filing_status_ira = financial_data.get("filing_status", "mfj")
+            spouse_is_working = False
+            if spouse_data.get("name") and spouse_data.get("retirement_date"):
+                try:
+                    sp_retire_dt = datetime.fromisoformat(str(spouse_data["retirement_date"]))
+                    sp_birth_dt = datetime.fromisoformat(str(spouse_data["birth_date"]))
+                    sp_retire_age = int((sp_retire_dt - sp_birth_dt).days // 365)
+                    spouse_is_working = spouse_age < sp_retire_age
+                except Exception:
+                    spouse_is_working = spouse_age < retirement_age
+            elif spouse_data.get("name"):
+                spouse_is_working = spouse_age < retirement_age
+            if spouse_is_working and filing_status_ira == "mfj":
+                ira_limit *= 2
+            ira_capped = min(ira_annual, ira_limit)
+            label = "IRA Contribution"
+            if ira_annual > ira_capped:
+                label += f" (capped from ${ira_annual:,.0f})"
             contributions_section["items"].append({
-                "label": "IRA Contribution",
-                "value": f"${ira_annual:,.0f}",
-                "amount": ira_annual,
+                "label": label,
+                "value": f"${ira_capped:,.0f}",
+                "amount": ira_capped,
                 "note": "Post-tax contribution"
             })
 

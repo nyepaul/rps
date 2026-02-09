@@ -1,5 +1,5 @@
 {
-    "version": "3.9.209",
+    "version": "3.9.210",
     "release_date": "2026-02-09",
-    "release_notes": "Remove local SQLite bullet from About security section"
+    "release_notes": "Add clickable Investment Portfolio card with account breakdown"
 }
