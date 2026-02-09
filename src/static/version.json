@@ -1,5 +1,5 @@
 {
-    "version": "3.9.211",
+    "version": "3.9.212",
     "release_date": "2026-02-09",
-    "release_notes": "Fix 6 financial calculation and tax issues found in audit"
+    "release_notes": "Add Financial Data calculation reference page to Resources"
 }

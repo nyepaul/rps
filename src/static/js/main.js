@@ -504,6 +504,11 @@ async function loadTabComponent(tabName, container) {
             renderSummaryTab(tabContent);
             break;
         }
+        case 'financial-data': {
+            const { renderFinancialDataTab } = await _import('./components/financial-data/financial-data-tab.js');
+            renderFinancialDataTab(tabContent);
+            break;
+        }
         case 'learn': {
             const { renderLearnTab } = await _import('./components/learn/learn-tab.js');
             renderLearnTab(tabContent);
