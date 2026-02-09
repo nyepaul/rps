@@ -1,5 +1,5 @@
 {
-    "version": "3.9.208",
+    "version": "3.9.209",
     "release_date": "2026-02-09",
-    "release_notes": "Remove trailing clause from About section purpose text"
+    "release_notes": "Remove local SQLite bullet from About security section"
 }

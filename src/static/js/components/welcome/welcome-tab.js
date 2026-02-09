@@ -70,7 +70,6 @@ export function renderWelcomeTab(container) {
                     <div>
                         <strong style="font-size: 13px;">Security</strong>
                         <ul style="margin: 4px 0 0; padding-left: 18px; color: var(--text-secondary);">
-                            <li>All data stored locally in SQLite -- nothing leaves your machine</li>
                             <li>Profile data encrypted at rest with AES-256-GCM</li>
                             <li>Bcrypt password hashing, session-based authentication</li>
                             <li>Rate limiting, audit logging, input validation on all endpoints</li>
