@@ -1,5 +1,5 @@
 {
-    "version": "3.9.203",
-    "release_date": "2026-02-06",
-    "release_notes": "Remove all inline event handlers for CSP compliance across 25 JS components"
+    "version": "3.9.207",
+    "release_date": "2026-02-09",
+    "release_notes": "Add colored headers to Getting Started and new About section on welcome tab"
 }

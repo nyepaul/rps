@@ -10,6 +10,75 @@ import { showError, showSuccess } from '../../utils/dom.js';
 export function renderWelcomeTab(container) {
     container.innerHTML = `
         <div style="max-width: 800px; margin: 0 auto; padding: var(--space-4);">
+            <!-- Getting Started Section -->
+            <div id="getting-started" style="background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: var(--space-4); overflow: hidden;">
+                <div id="getting-started-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; padding: 10px 16px; background: var(--accent-color); color: var(--text-on-accent);">
+                    <span style="font-size: 14px; font-weight: 600; font-family: var(--font-display);">Getting Started</span>
+                    <span id="getting-started-toggle" style="font-size: 12px; opacity: 0.85;">Show</span>
+                </div>
+                <div id="getting-started-body" style="display: none; padding: 12px 16px;">
+                    <div class="gs-step" data-tab="welcome" data-action="create" style="display: flex; align-items: baseline; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border-color);">
+                        <span style="font-size: 12px; font-weight: 700; color: var(--text-secondary); min-width: 18px;">1.</span>
+                        <a class="gs-link" href="#" style="font-size: 13px; font-weight: 600; color: var(--accent-color); text-decoration: none; min-width: 130px;">Create a profile</a>
+                        <span style="font-size: 12px; color: var(--text-secondary);">Name, birth date, retirement date</span>
+                    </div>
+                    <div class="gs-step" data-tab="profile" style="display: flex; align-items: baseline; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border-color);">
+                        <span style="font-size: 12px; font-weight: 700; color: var(--text-secondary); min-width: 18px;">2.</span>
+                        <a class="gs-link" href="#" style="font-size: 13px; font-weight: 600; color: var(--accent-color); text-decoration: none; min-width: 130px;">Enter financial data</a>
+                        <span style="font-size: 12px; color: var(--text-secondary);">Income, expenses, assets, accounts</span>
+                    </div>
+                    <div class="gs-step" data-tab="analysis" style="display: flex; align-items: baseline; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border-color);">
+                        <span style="font-size: 12px; font-weight: 700; color: var(--text-secondary); min-width: 18px;">3.</span>
+                        <a class="gs-link" href="#" style="font-size: 13px; font-weight: 600; color: var(--accent-color); text-decoration: none; min-width: 130px;">Run analysis</a>
+                        <span style="font-size: 12px; color: var(--text-secondary);">Monte Carlo simulation, calculation report</span>
+                    </div>
+                    <div class="gs-step" data-tab="scenarios" style="display: flex; align-items: baseline; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border-color);">
+                        <span style="font-size: 12px; font-weight: 700; color: var(--text-secondary); min-width: 18px;">4.</span>
+                        <a class="gs-link" href="#" style="font-size: 13px; font-weight: 600; color: var(--accent-color); text-decoration: none; min-width: 130px;">Compare scenarios</a>
+                        <span style="font-size: 12px; color: var(--text-secondary);">What-if variations on your plan</span>
+                    </div>
+                    <div class="gs-step" data-tab="action-items" style="display: flex; align-items: baseline; gap: 8px; padding: 6px 0;">
+                        <span style="font-size: 12px; font-weight: 700; color: var(--text-secondary); min-width: 18px;">5.</span>
+                        <a class="gs-link" href="#" style="font-size: 13px; font-weight: 600; color: var(--accent-color); text-decoration: none; min-width: 130px;">Review action items</a>
+                        <span style="font-size: 12px; color: var(--text-secondary);">Concrete next steps from your analysis</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- About Section -->
+            <div id="about-app" style="background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: var(--space-4); overflow: hidden;">
+                <div id="about-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; padding: 10px 16px; background: var(--info-color, #2563eb); color: #fff;">
+                    <span style="font-size: 14px; font-weight: 600; font-family: var(--font-display);">About This App</span>
+                    <span id="about-toggle" style="font-size: 12px; opacity: 0.85;">Show</span>
+                </div>
+                <div id="about-body" style="display: none; padding: 12px 16px; font-size: 13px; line-height: 1.5; color: var(--text-primary);">
+                    <div style="margin-bottom: 10px;">
+                        <strong style="font-size: 13px;">Purpose</strong>
+                        <p style="margin: 4px 0 0; color: var(--text-secondary);">Local-first retirement and wealth planning. Model your financial future with Monte Carlo simulations, tax-aware projections, and scenario comparison -- all running on your own machine.</p>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <strong style="font-size: 13px;">Functionality</strong>
+                        <ul style="margin: 4px 0 0; padding-left: 18px; color: var(--text-secondary);">
+                            <li>Multi-profile support for household planning</li>
+                            <li>Monte Carlo simulation with configurable market assumptions</li>
+                            <li>Tax bracket modeling (federal + state), Roth conversions, RMDs</li>
+                            <li>Scenario comparison for what-if analysis</li>
+                            <li>AI-powered financial advisor (optional, requires API key)</li>
+                            <li>Action items and strategic roadmap tracking</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong style="font-size: 13px;">Security</strong>
+                        <ul style="margin: 4px 0 0; padding-left: 18px; color: var(--text-secondary);">
+                            <li>All data stored locally in SQLite -- nothing leaves your machine</li>
+                            <li>Profile data encrypted at rest with AES-256-GCM</li>
+                            <li>Bcrypt password hashing, session-based authentication</li>
+                            <li>Rate limiting, audit logging, input validation on all endpoints</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <!-- Profiles Section -->
             <div style="background: var(--bg-secondary); border-radius: 12px; padding: var(--space-5); border: 1px solid var(--border-color); box-shadow: 0 4px 12px var(--shadow-color);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
@@ -40,6 +109,46 @@ export function renderWelcomeTab(container) {
     if (createBtn) {
         createBtn.addEventListener('click', () => showCreateProfileModal(container));
     }
+
+    // Set up Getting Started toggle
+    const gsHeader = container.querySelector('#getting-started-header');
+    const gsBody = container.querySelector('#getting-started-body');
+    const gsToggle = container.querySelector('#getting-started-toggle');
+    if (gsHeader) {
+        gsHeader.addEventListener('click', () => {
+            const isHidden = gsBody.style.display === 'none';
+            gsBody.style.display = isHidden ? 'block' : 'none';
+            gsToggle.textContent = isHidden ? 'Hide' : 'Show';
+        });
+    }
+
+    // Set up About toggle
+    const aboutHeader = container.querySelector('#about-header');
+    const aboutBody = container.querySelector('#about-body');
+    const aboutToggle = container.querySelector('#about-toggle');
+    if (aboutHeader) {
+        aboutHeader.addEventListener('click', () => {
+            const isHidden = aboutBody.style.display === 'none';
+            aboutBody.style.display = isHidden ? 'block' : 'none';
+            aboutToggle.textContent = isHidden ? 'Hide' : 'Show';
+        });
+    }
+
+    // Set up Getting Started step links
+    container.querySelectorAll('.gs-step').forEach(step => {
+        const link = step.querySelector('.gs-link');
+        if (link) {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const tab = step.dataset.tab;
+                if (step.dataset.action === 'create') {
+                    showCreateProfileModal(container);
+                } else {
+                    window.app.showTab(tab);
+                }
+            });
+        }
+    });
 }
 
 async function loadProfiles(container) {
