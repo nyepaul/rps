@@ -767,6 +767,8 @@ class RetirementModel:
                             "end_year": end_year,
                             "inflation_adjusted": s.get("inflation_adjusted", True),
                             "type": s.get("type") or s.get("source", "other"),
+                            "owner": s.get("owner", ""),
+                            "name": s.get("name", ""),
                         }
                     )
                 except Exception:
@@ -959,15 +961,26 @@ class RetirementModel:
             other_taxable_income = np.zeros(simulations)
             employment_income_from_streams = np.zeros(simulations)
             employment_types = ["salary", "hourly", "wages", "bonus", "employment"]
+            p2_first_name = (self.profile.person2.name or "").lower().split()[0] if self.profile.person2.name else ""
             for stream in income_streams_data:
                 if stream["start_year"] <= simulation_year <= stream["end_year"]:
                     amount = stream["amount"] * (
                         current_cpi if stream["inflation_adjusted"] else 1.0
                     )
                     if stream.get("type") in employment_types:
-                        # Employment income stops at retirement
-                        if not p1_retired:
-                            employment_income_from_streams += amount
+                        # Determine owner: explicit owner field, or match by name
+                        owner = stream.get("owner", "")
+                        if not owner and p2_first_name:
+                            stream_name = (stream.get("name") or "").lower()
+                            if p2_first_name in stream_name:
+                                owner = "spouse"
+                        # Employment income stops at the owner's retirement
+                        if owner == "spouse":
+                            if not p2_retired:
+                                employment_income_from_streams += amount
+                        else:
+                            if not p1_retired:
+                                employment_income_from_streams += amount
                     else:
                         other_taxable_income += amount
 
@@ -1224,22 +1237,14 @@ class RetirementModel:
                 0, net_cash_flow
             )  # Positive when income > expenses (can save)
 
-            # D4. Allocate remaining surplus to investment accounts
+            # D4. Allocate remaining surplus to taxable brokerage
+            # 401k/IRA contributions (with IRS limits) were already applied above.
+            # Any remaining surplus goes to taxable brokerage -- you cannot
+            # contribute additional pre-tax/Roth beyond IRS limits.
             if not p1_retired or not p2_retired:
-                # Handle remaining surplus - allocate to investment accounts
                 if np.any(surplus > 0):
-                    # Default allocation if not specified
-                    savings_alloc = self.profile.savings_allocation or {
-                        "pretax": 0.50,  # 50% to pre-tax (Traditional IRA/401k)
-                        "roth": 0.30,  # 30% to Roth
-                        "taxable": 0.20,  # 20% to taxable brokerage
-                    }
-
-                    pretax_std += surplus * savings_alloc.get("pretax", 0.50)
-                    roth += surplus * savings_alloc.get("roth", 0.30)
-                    taxable_val += surplus * savings_alloc.get("taxable", 0.20)
-                    # Note: For taxable, also increase basis since this is new money
-                    taxable_basis += surplus * savings_alloc.get("taxable", 0.20)
+                    taxable_val += surplus
+                    taxable_basis += surplus
 
             # E. Home Sales Logic
             for prop in home_props_state:
@@ -1621,6 +1626,8 @@ class RetirementModel:
                             "end_year": end_year,
                             "inflation_adjusted": s.get("inflation_adjusted", True),
                             "type": s.get("type") or s.get("source", "other"),
+                            "owner": s.get("owner", ""),
+                            "name": s.get("name", ""),
                         }
                     )
                 except Exception:
@@ -1696,15 +1703,26 @@ class RetirementModel:
             other_taxable_annual = 0
             employment_streams_annual = 0
             employment_types = ["salary", "hourly", "wages", "bonus", "employment"]
+            p2_first_name_dp = (self.profile.person2.name or "").lower().split()[0] if self.profile.person2.name else ""
             for stream in income_streams_data:
                 if stream["start_year"] <= simulation_year <= stream["end_year"]:
                     amt = stream["amount_annual"] * (
                         current_cpi if stream["inflation_adjusted"] else 1.0
                     )
                     if stream.get("type") in employment_types:
-                        # Employment income stops at retirement
-                        if not p1_retired:
-                            employment_streams_annual += amt
+                        # Determine owner: explicit owner field, or match by name
+                        owner = stream.get("owner", "")
+                        if not owner and p2_first_name_dp:
+                            stream_name = (stream.get("name") or "").lower()
+                            if p2_first_name_dp in stream_name:
+                                owner = "spouse"
+                        # Employment income stops at the owner's retirement
+                        if owner == "spouse":
+                            if not p2_retired:
+                                employment_streams_annual += amt
+                        else:
+                            if not p1_retired:
+                                employment_streams_annual += amt
                     else:
                         other_taxable_annual += amt
 
@@ -2313,12 +2331,13 @@ class RetirementModel:
         income_section = budget.get("income", {})
 
         # 1. Employment income - strictly tied to individual retirement status
+        # Inflation-adjusted: base amounts are in today's dollars
         employment_income = np.zeros_like(current_cpi)
         current_employment = income_section.get("current", {}).get("employment", {})
         if not p1_retired:
-            employment_income += current_employment.get("primary_person", 0)
+            employment_income += current_employment.get("primary_person", 0) * current_cpi
         if not p2_retired:
-            employment_income += current_employment.get("spouse", 0)
+            employment_income += current_employment.get("spouse", 0) * current_cpi
 
         # Initialize total result vector
         total_income = employment_income.copy()

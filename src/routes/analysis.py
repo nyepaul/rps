@@ -331,6 +331,55 @@ def run_analysis():
             employer_match_rate=spouse_data.get("employer_match_rate") or 0,
         )
 
+        # Estimate Social Security for spouse if not explicitly set
+        _has_spouse = bool(
+            spouse_data.get("birth_date") or spouse_data.get("name")
+            or spouse_data.get("social_security_benefit")
+        )
+        if _has_spouse and person2.social_security == 0:
+            income_streams = profile_data.get("income_streams", [])
+            spouse_name = (spouse_data.get("name") or "").lower().split()[0] if spouse_data.get("name") else ""
+            spouse_annual_employment = 0
+            for stream in income_streams:
+                if stream.get("source") in ("employment",) or stream.get("type") in (
+                    "salary", "hourly", "wages", "bonus",
+                ):
+                    # Assign to spouse if stream name contains spouse's first name
+                    # or if it doesn't contain primary's first name and we have a spouse name
+                    stream_name = (stream.get("name") or "").lower()
+                    is_spouse_stream = False
+                    if spouse_name and spouse_name in stream_name:
+                        is_spouse_stream = True
+                    elif stream.get("owner") == "spouse":
+                        is_spouse_stream = True
+                    if is_spouse_stream:
+                        amt = stream.get("amount", 0)
+                        freq = stream.get("frequency", "monthly")
+                        if freq == "monthly":
+                            spouse_annual_employment += amt * 12
+                        elif freq == "annual":
+                            spouse_annual_employment += amt
+                        else:
+                            spouse_annual_employment += amt * 12
+
+            if spouse_annual_employment > 0:
+                aime = spouse_annual_employment / 12
+                if aime <= 1174:
+                    pia = aime * 0.90
+                elif aime <= 7078:
+                    pia = 1174 * 0.90 + (aime - 1174) * 0.32
+                else:
+                    pia = 1174 * 0.90 + (7078 - 1174) * 0.32 + (aime - 7078) * 0.15
+
+                claiming_age = person2.ss_claiming_age or 67
+                if claiming_age < 67:
+                    pia *= 1 - (67 - claiming_age) * 0.0667
+                elif claiming_age > 67:
+                    delay_years = min(claiming_age - 67, 3)
+                    pia *= 1 + delay_years * 0.08
+
+                person2.social_security = round(pia, 2)
+
         # Get assets from profile and transform to investment_types format
         assets_data = profile_data.get("assets", {})
         investment_types = transform_assets_to_investment_types(assets_data)
@@ -388,48 +437,28 @@ def run_analysis():
             )
         )
 
-        # Fix: Ensure budget has income section populated from income_streams
-        # Many profiles have income_streams but no budget.income section
-        # This causes Monte Carlo to think employment income is $0, draining portfolio
+        # Build budget data and resolve income_streams vs budget.income overlap
+        # Income must flow through ONE path only to avoid double-counting:
+        #   - income_streams -> model's stream processing (with per-person retirement gating)
+        #   - budget.income -> model's budget income processing
+        # We prefer income_streams (more granular) and skip budget employment when both exist.
         budget_data = profile_data.get("budget", {})
+        mc_income_streams = profile_data.get("income_streams", [])
+
         if budget_data and not budget_data.get("income"):
-            # Calculate employment income from income_streams
-            income_streams = profile_data.get("income_streams", [])
-            primary_salary = 0
-            spouse_salary = 0
-
-            employment_types = ["salary", "hourly", "wages", "bonus"]
-            employment_sources = ["employment"]
-            for stream in income_streams:
-                if stream.get("type") in employment_types or stream.get("source") in employment_sources:
-                    amount = stream.get("amount", 0)
-                    freq = stream.get("frequency", "monthly")
-                    # Convert to annual
-                    if freq == "monthly":
-                        annual_amount = amount * 12
-                    elif freq == "annual":
-                        annual_amount = amount
-                    else:
-                        annual_amount = amount * 12  # Default to monthly
-
-                    # Assign to primary or spouse based on name/order
-                    # First salary goes to primary, second to spouse
-                    if primary_salary == 0:
-                        primary_salary = annual_amount
-                    else:
-                        spouse_salary = annual_amount
-
-            # Populate budget.income.current.employment
-            if primary_salary > 0 or spouse_salary > 0:
-                budget_data["income"] = {
-                    "current": {
-                        "employment": {
-                            "primary_person": primary_salary,
-                            "spouse": spouse_salary,
-                        }
-                    },
-                    "future": {},
-                }
+            # No budget.income section -- income will flow via income_streams only.
+            # Set an empty budget income so the model's budget path contributes $0 employment.
+            budget_data["income"] = {"current": {}, "future": {}}
+        elif budget_data and budget_data.get("income"):
+            # Budget has explicit income section -- use budget for employment, strip employment
+            # from income_streams to avoid double-counting.
+            employment_types = {"salary", "hourly", "wages", "bonus"}
+            employment_sources = {"employment"}
+            mc_income_streams = [
+                s for s in mc_income_streams
+                if s.get("type") not in employment_types
+                and s.get("source") not in employment_sources
+            ]
 
         # Get tax settings with proper address fallback
         address_data = profile_data.get("address", {})
@@ -461,7 +490,7 @@ def run_analysis():
             future_expenses=[],
             investment_types=investment_types,
             accounts=[],
-            income_streams=profile_data.get("income_streams", []),
+            income_streams=mc_income_streams,
             home_properties=profile_data.get("home_properties", []),
             budget=budget_data if budget_data else None,
             annual_ira_contribution=financial_data.get("annual_ira_contribution", 0),
@@ -742,6 +771,53 @@ def get_cashflow_details():
             employer_match_rate=spouse_data.get("employer_match_rate") or 0,
         )
 
+        # Estimate Social Security for spouse if not explicitly set
+        _has_spouse_cf = bool(
+            spouse_data.get("birth_date") or spouse_data.get("name")
+            or spouse_data.get("social_security_benefit")
+        )
+        if _has_spouse_cf and person2.social_security == 0:
+            income_streams = profile_data.get("income_streams", [])
+            spouse_name = (spouse_data.get("name") or "").lower().split()[0] if spouse_data.get("name") else ""
+            spouse_annual_employment = 0
+            for stream in income_streams:
+                if stream.get("source") in ("employment",) or stream.get("type") in (
+                    "salary", "hourly", "wages", "bonus",
+                ):
+                    stream_name = (stream.get("name") or "").lower()
+                    is_spouse_stream = False
+                    if spouse_name and spouse_name in stream_name:
+                        is_spouse_stream = True
+                    elif stream.get("owner") == "spouse":
+                        is_spouse_stream = True
+                    if is_spouse_stream:
+                        amt = stream.get("amount", 0)
+                        freq = stream.get("frequency", "monthly")
+                        if freq == "monthly":
+                            spouse_annual_employment += amt * 12
+                        elif freq == "annual":
+                            spouse_annual_employment += amt
+                        else:
+                            spouse_annual_employment += amt * 12
+
+            if spouse_annual_employment > 0:
+                aime = spouse_annual_employment / 12
+                if aime <= 1174:
+                    pia = aime * 0.90
+                elif aime <= 7078:
+                    pia = 1174 * 0.90 + (aime - 1174) * 0.32
+                else:
+                    pia = 1174 * 0.90 + (7078 - 1174) * 0.32 + (aime - 7078) * 0.15
+
+                claiming_age = person2.ss_claiming_age or 67
+                if claiming_age < 67:
+                    pia *= 1 - (67 - claiming_age) * 0.0667
+                elif claiming_age > 67:
+                    delay_years = min(claiming_age - 67, 3)
+                    pia *= 1 + delay_years * 0.08
+
+                person2.social_security = round(pia, 2)
+
         # Get assets
         assets_data = profile_data.get("assets", {})
         investment_types = transform_assets_to_investment_types(assets_data)
@@ -796,38 +872,20 @@ def get_cashflow_details():
             )
         )
 
-        # Ensure budget has income section
+        # Build budget data and resolve income_streams vs budget.income overlap
         budget_data = profile_data.get("budget", {})
+        mc_income_streams = profile_data.get("income_streams", [])
+
         if budget_data and not budget_data.get("income"):
-            income_streams = profile_data.get("income_streams", [])
-            primary_salary = 0
-            spouse_salary = 0
-            employment_types = ["salary", "hourly", "wages", "bonus"]
-            employment_sources = ["employment"]
-            for stream in income_streams:
-                if stream.get("type") in employment_types or stream.get("source") in employment_sources:
-                    amount = stream.get("amount", 0)
-                    freq = stream.get("frequency", "monthly")
-                    if freq == "monthly":
-                        annual_amount = amount * 12
-                    elif freq == "annual":
-                        annual_amount = amount
-                    else:
-                        annual_amount = amount * 12
-                    if primary_salary == 0:
-                        primary_salary = annual_amount
-                    else:
-                        spouse_salary = annual_amount
-            if primary_salary > 0 or spouse_salary > 0:
-                budget_data["income"] = {
-                    "current": {
-                        "employment": {
-                            "primary_person": primary_salary,
-                            "spouse": spouse_salary,
-                        }
-                    },
-                    "future": {},
-                }
+            budget_data["income"] = {"current": {}, "future": {}}
+        elif budget_data and budget_data.get("income"):
+            employment_types = {"salary", "hourly", "wages", "bonus"}
+            employment_sources = {"employment"}
+            mc_income_streams = [
+                s for s in mc_income_streams
+                if s.get("type") not in employment_types
+                and s.get("source") not in employment_sources
+            ]
 
         # Get tax settings with proper address fallback
         address_data = profile_data.get("address", {})
@@ -859,7 +917,7 @@ def get_cashflow_details():
             future_expenses=[],
             investment_types=investment_types,
             accounts=[],
-            income_streams=profile_data.get("income_streams", []),
+            income_streams=mc_income_streams,
             home_properties=profile_data.get("home_properties", []),
             budget=budget_data if budget_data else None,
             annual_ira_contribution=financial_data.get("annual_ira_contribution", 0),

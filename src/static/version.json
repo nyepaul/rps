@@ -1,5 +1,5 @@
 {
-    "version": "3.9.212",
+    "version": "3.9.213",
     "release_date": "2026-02-09",
-    "release_notes": "Add Financial Data calculation reference page to Resources"
+    "release_notes": "Fix 5 critical calculation bugs: income double-counting, missing spouse SS, per-person retirement gating, budget inflation, surplus IRS limits"
 }
