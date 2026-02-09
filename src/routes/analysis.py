@@ -260,6 +260,46 @@ def run_analysis():
             employer_match_rate=financial_data.get("employer_match_rate") or 0,
         )
 
+        # Estimate Social Security if not explicitly set
+        if person1.social_security == 0:
+            # Calculate employment income from income_streams for SS estimation
+            income_streams = profile_data.get("income_streams", [])
+            annual_employment = 0
+            for stream in income_streams:
+                if stream.get("source") in ("employment",) or stream.get("type") in (
+                    "salary", "hourly", "wages", "bonus",
+                ):
+                    amt = stream.get("amount", 0)
+                    freq = stream.get("frequency", "monthly")
+                    if freq == "monthly":
+                        annual_employment += amt * 12
+                    elif freq == "annual":
+                        annual_employment += amt
+                    else:
+                        annual_employment += amt * 12
+
+            if annual_employment > 0:
+                # Simplified PIA estimation using 2024 bend points
+                aime = annual_employment / 12
+                if aime <= 1174:
+                    pia = aime * 0.90
+                elif aime <= 7078:
+                    pia = 1174 * 0.90 + (aime - 1174) * 0.32
+                else:
+                    pia = 1174 * 0.90 + (7078 - 1174) * 0.32 + (aime - 7078) * 0.15
+
+                # Adjust for claiming age (67 = full PIA)
+                claiming_age = person1.ss_claiming_age or 67
+                if claiming_age < 67:
+                    # ~6.67% reduction per year before 67
+                    pia *= 1 - (67 - claiming_age) * 0.0667
+                elif claiming_age > 67:
+                    # ~8% increase per year after 67, up to 70
+                    delay_years = min(claiming_age - 67, 3)
+                    pia *= 1 + delay_years * 0.08
+
+                person1.social_security = round(pia, 2)
+
         # Create person2 (spouse) if spouse data exists
         spouse_birth = (
             spouse_data.get("birth_date")
@@ -359,8 +399,9 @@ def run_analysis():
             spouse_salary = 0
 
             employment_types = ["salary", "hourly", "wages", "bonus"]
+            employment_sources = ["employment"]
             for stream in income_streams:
-                if stream.get("type") in employment_types:
+                if stream.get("type") in employment_types or stream.get("source") in employment_sources:
                     amount = stream.get("amount", 0)
                     freq = stream.get("frequency", "monthly")
                     # Convert to annual
@@ -394,8 +435,14 @@ def run_analysis():
         address_data = profile_data.get("address", {})
         tax_settings = profile_data.get("tax_settings", {})
 
-        # Priority: explicit tax settings > address state > default NY
-        filing_status = tax_settings.get("filing_status") or "mfj"
+        # Priority: explicit tax settings > auto-detect from spouse > default
+        has_spouse_for_filing = bool(
+            spouse_data.get("birth_date")
+            or spouse_data.get("name")
+            or spouse_data.get("social_security_benefit")
+        )
+        default_filing = "mfj" if has_spouse_for_filing else "single"
+        filing_status = tax_settings.get("filing_status") or default_filing
         state = tax_settings.get("state") or address_data.get("state") or "NY"
 
         financial_profile = FinancialProfile(
@@ -427,11 +474,20 @@ def run_analysis():
         # Create retirement model
         model = RetirementModel(financial_profile)
 
-        # Calculate years for simulation
-        years = max(
-            model.calculate_life_expectancy_years(person1),
-            model.calculate_life_expectancy_years(person2),
+        # Calculate years for simulation using profile's life expectancy
+        person_data = profile_data.get("person", {})
+        p1_life_exp = person_data.get("life_expectancy", 90)
+        years = model.calculate_life_expectancy_years(person1, target_age=p1_life_exp)
+
+        # Only include spouse in years calc if actual spouse data exists
+        has_spouse = bool(
+            spouse_data.get("birth_date")
+            or spouse_data.get("name")
+            or spouse_data.get("social_security_benefit")
         )
+        if has_spouse:
+            p2_life_exp = spouse_data.get("life_expectancy", 90)
+            years = max(years, model.calculate_life_expectancy_years(person2, target_age=p2_life_exp))
 
         # Create base market assumptions from request or use defaults
         base_market_kwargs = {}
@@ -621,6 +677,41 @@ def get_cashflow_details():
             employer_match_rate=financial_data.get("employer_match_rate") or 0,
         )
 
+        # Estimate Social Security if not explicitly set
+        if person1.social_security == 0:
+            income_streams = profile_data.get("income_streams", [])
+            annual_employment = 0
+            for stream in income_streams:
+                if stream.get("source") in ("employment",) or stream.get("type") in (
+                    "salary", "hourly", "wages", "bonus",
+                ):
+                    amt = stream.get("amount", 0)
+                    freq = stream.get("frequency", "monthly")
+                    if freq == "monthly":
+                        annual_employment += amt * 12
+                    elif freq == "annual":
+                        annual_employment += amt
+                    else:
+                        annual_employment += amt * 12
+
+            if annual_employment > 0:
+                aime = annual_employment / 12
+                if aime <= 1174:
+                    pia = aime * 0.90
+                elif aime <= 7078:
+                    pia = 1174 * 0.90 + (aime - 1174) * 0.32
+                else:
+                    pia = 1174 * 0.90 + (7078 - 1174) * 0.32 + (aime - 7078) * 0.15
+
+                claiming_age = person1.ss_claiming_age or 67
+                if claiming_age < 67:
+                    pia *= 1 - (67 - claiming_age) * 0.0667
+                elif claiming_age > 67:
+                    delay_years = min(claiming_age - 67, 3)
+                    pia *= 1 + delay_years * 0.08
+
+                person1.social_security = round(pia, 2)
+
         # Create person2
         spouse_birth = (
             spouse_data.get("birth_date")
@@ -712,8 +803,9 @@ def get_cashflow_details():
             primary_salary = 0
             spouse_salary = 0
             employment_types = ["salary", "hourly", "wages", "bonus"]
+            employment_sources = ["employment"]
             for stream in income_streams:
-                if stream.get("type") in employment_types:
+                if stream.get("type") in employment_types or stream.get("source") in employment_sources:
                     amount = stream.get("amount", 0)
                     freq = stream.get("frequency", "monthly")
                     if freq == "monthly":
@@ -741,8 +833,14 @@ def get_cashflow_details():
         address_data = profile_data.get("address", {})
         tax_settings = profile_data.get("tax_settings", {})
 
-        # Priority: explicit tax settings > address state > default NY
-        filing_status = tax_settings.get("filing_status") or "mfj"
+        # Priority: explicit tax settings > auto-detect from spouse > default
+        has_spouse_for_filing = bool(
+            spouse_data.get("birth_date")
+            or spouse_data.get("name")
+            or spouse_data.get("social_security_benefit")
+        )
+        default_filing = "mfj" if has_spouse_for_filing else "single"
+        filing_status = tax_settings.get("filing_status") or default_filing
         state = tax_settings.get("state") or address_data.get("state") or "NY"
 
         financial_profile = FinancialProfile(

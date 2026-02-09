@@ -1,5 +1,5 @@
 {
-    "version": "3.9.210",
+    "version": "3.9.211",
     "release_date": "2026-02-09",
-    "release_notes": "Add clickable Investment Portfolio card with account breakdown"
+    "release_notes": "Fix 6 financial calculation and tax issues found in audit"
 }

@@ -17,6 +17,17 @@ from datetime import datetime
 from dataclasses import dataclass
 from typing import List, Dict
 
+# 2024 IRS contribution limits
+CONTRIBUTION_LIMITS = {
+    "401k_base": 23000,        # Employee elective deferral limit
+    "401k_catchup": 7500,      # Additional catch-up for age 50+
+    "ira_base": 7000,          # Traditional + Roth IRA combined limit
+    "ira_catchup": 1000,       # Additional catch-up for age 50+
+    "section_415c": 69000,     # Total annual additions (employee + employer)
+    "section_415c_catchup": 76500,  # 415(c) + catch-up for age 50+
+    "catchup_age": 50,         # Age threshold for catch-up contributions
+}
+
 
 def safe_float(value, default=0.0):
     """Safely convert a value to float, handling None and invalid values."""
@@ -63,6 +74,7 @@ class FinancialProfile:
     home_properties: List[Dict] = None
     budget: Dict = None
     annual_ira_contribution: float = 0.0  # Annual IRA contribution
+    ira_roth_split: float = 0.5  # Fraction of IRA going to Roth (0.0=all Traditional, 1.0=all Roth)
     savings_allocation: Dict[str, float] = (
         None  # How to allocate surplus: {'pretax': 0.7, 'roth': 0.2, 'taxable': 0.1}
     )
@@ -754,7 +766,7 @@ class RetirementModel:
                             "start_year": start_year,
                             "end_year": end_year,
                             "inflation_adjusted": s.get("inflation_adjusted", True),
-                            "type": s.get("type", "other"),
+                            "type": s.get("type") or s.get("source", "other"),
                         }
                     )
                 except Exception:
@@ -946,14 +958,16 @@ class RetirementModel:
             # B3. Other Income Streams (pensions, annuities, salary - taxable)
             other_taxable_income = np.zeros(simulations)
             employment_income_from_streams = np.zeros(simulations)
-            employment_types = ["salary", "hourly", "wages", "bonus"]
+            employment_types = ["salary", "hourly", "wages", "bonus", "employment"]
             for stream in income_streams_data:
                 if stream["start_year"] <= simulation_year <= stream["end_year"]:
                     amount = stream["amount"] * (
                         current_cpi if stream["inflation_adjusted"] else 1.0
                     )
                     if stream.get("type") in employment_types:
-                        employment_income_from_streams += amount
+                        # Employment income stops at retirement
+                        if not p1_retired:
+                            employment_income_from_streams += amount
                     else:
                         other_taxable_income += amount
 
@@ -1113,6 +1127,12 @@ class RetirementModel:
 
                     p1_401k = p1_salary * contribution_rate
 
+                    # Enforce IRS 401k employee deferral limit (with age 50+ catch-up)
+                    p1_401k_limit = CONTRIBUTION_LIMITS["401k_base"]
+                    if p1_age >= CONTRIBUTION_LIMITS["catchup_age"]:
+                        p1_401k_limit += CONTRIBUTION_LIMITS["401k_catchup"]
+                    p1_401k = np.minimum(p1_401k, p1_401k_limit)
+
                     if np.any(p1_401k > 0):
                         # Track total contributions to subtract from cash flow
                         total_401k_contributions += p1_401k
@@ -1121,6 +1141,12 @@ class RetirementModel:
                         employer_match = p1_salary * safe_float(
                             self.profile.person1.employer_match_rate, 0
                         )
+                        # Cap total (employee + employer) at Section 415(c) limit
+                        p1_415c_limit = CONTRIBUTION_LIMITS["section_415c"]
+                        if p1_age >= CONTRIBUTION_LIMITS["catchup_age"]:
+                            p1_415c_limit = CONTRIBUTION_LIMITS["section_415c_catchup"]
+                        employer_match = np.minimum(employer_match, p1_415c_limit - p1_401k)
+                        employer_match = np.maximum(employer_match, 0)
                         pretax_std += employer_match
 
                 # Person 2 contributions (if working)
@@ -1145,6 +1171,13 @@ class RetirementModel:
                         ) / np.maximum(p2_salary, 1)
 
                     p2_401k = p2_salary * p2_contribution_rate
+
+                    # Enforce IRS 401k employee deferral limit (with age 50+ catch-up)
+                    p2_401k_limit = CONTRIBUTION_LIMITS["401k_base"]
+                    if p2_age >= CONTRIBUTION_LIMITS["catchup_age"]:
+                        p2_401k_limit += CONTRIBUTION_LIMITS["401k_catchup"]
+                    p2_401k = np.minimum(p2_401k, p2_401k_limit)
+
                     total_401k_contributions += p2_401k
                     pretax_std += p2_401k  # Add 401k contribution to retirement account
 
@@ -1152,16 +1185,34 @@ class RetirementModel:
                     p2_employer_match = p2_salary * safe_float(
                         self.profile.person2.employer_match_rate, 0
                     )
+                    # Cap total (employee + employer) at Section 415(c) limit
+                    p2_415c_limit = CONTRIBUTION_LIMITS["section_415c"]
+                    if p2_age >= CONTRIBUTION_LIMITS["catchup_age"]:
+                        p2_415c_limit = CONTRIBUTION_LIMITS["section_415c_catchup"]
+                    p2_employer_match = np.minimum(p2_employer_match, p2_415c_limit - p2_401k)
+                    p2_employer_match = np.maximum(p2_employer_match, 0)
                     pretax_std += p2_employer_match
 
                 # IRA contributions (from profile level)
                 ira_contrib = safe_float(self.profile.annual_ira_contribution, 0)
                 if ira_contrib > 0:
+                    # Enforce IRS IRA limit (with age 50+ catch-up)
+                    # p1_age/p2_age are always plain ints in the simulation loop
+                    max_age = max(p1_age, p2_age)
+                    ira_limit = CONTRIBUTION_LIMITS["ira_base"]
+                    if max_age >= CONTRIBUTION_LIMITS["catchup_age"]:
+                        ira_limit += CONTRIBUTION_LIMITS["ira_catchup"]
+                    # For MFJ with both working, each spouse gets their own IRA limit
+                    both_working = not p1_retired and not p2_retired
+                    if both_working and self.profile.filing_status == "mfj":
+                        ira_limit *= 2
+                    ira_contrib = min(ira_contrib, ira_limit)
                     # IRA contributions are post-tax, so they reduce available cash
                     total_401k_contributions += ira_contrib
-                    # Split between pretax and Roth based on allocation or default 50/50
-                    pretax_std += ira_contrib * 0.5
-                    roth += ira_contrib * 0.5
+                    # Split between pretax and Roth based on configurable split
+                    roth_fraction = safe_float(self.profile.ira_roth_split, 0.5)
+                    pretax_std += ira_contrib * (1 - roth_fraction)
+                    roth += ira_contrib * roth_fraction
 
             # D3. Calculate final surplus/shortfall AFTER retirement contributions
             # Subtract 401k/IRA contributions from net cash flow (these are pre-tax/post-tax deductions)
@@ -1490,9 +1541,9 @@ class RetirementModel:
         taxable_basis = np.full(
             simulations, self.profile.liquid_assets * 0.90 * 0.80
         )  # Assume 20% gains
-        pretax_std = np.full(simulations, self.profile.traditional_ira)
+        pretax_std = np.full(simulations, float(self.profile.traditional_ira))
         pretax_457 = np.zeros(simulations)
-        roth = np.full(simulations, self.profile.roth_ira)
+        roth = np.full(simulations, float(self.profile.roth_ira))
 
         # Refine with investment_types details if available
         inv_types = self.profile.investment_types or []
@@ -1569,7 +1620,7 @@ class RetirementModel:
                             "start_year": start_year,
                             "end_year": end_year,
                             "inflation_adjusted": s.get("inflation_adjusted", True),
-                            "type": s.get("type"),
+                            "type": s.get("type") or s.get("source", "other"),
                         }
                     )
                 except Exception:
@@ -1644,14 +1695,16 @@ class RetirementModel:
 
             other_taxable_annual = 0
             employment_streams_annual = 0
-            employment_types = ["salary", "hourly", "wages", "bonus"]
+            employment_types = ["salary", "hourly", "wages", "bonus", "employment"]
             for stream in income_streams_data:
                 if stream["start_year"] <= simulation_year <= stream["end_year"]:
                     amt = stream["amount_annual"] * (
                         current_cpi if stream["inflation_adjusted"] else 1.0
                     )
                     if stream.get("type") in employment_types:
-                        employment_streams_annual += amt
+                        # Employment income stops at retirement
+                        if not p1_retired:
+                            employment_streams_annual += amt
                     else:
                         other_taxable_annual += amt
 
