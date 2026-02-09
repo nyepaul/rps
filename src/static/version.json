@@ -1,5 +1,5 @@
 {
-    "version": "3.9.213",
+    "version": "3.9.214",
     "release_date": "2026-02-09",
-    "release_notes": "Fix 5 critical calculation bugs: income double-counting, missing spouse SS, per-person retirement gating, budget inflation, surplus IRS limits"
+    "release_notes": "Fix cashflow chart: retirement gating, inflation adjustment, SS estimation for income streams"
 }

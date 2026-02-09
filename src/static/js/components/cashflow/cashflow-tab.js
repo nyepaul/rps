@@ -1562,6 +1562,31 @@ function calculateProgressiveTax(annualIncome, filingStatus) {
     return tax;
 }
 
+/**
+ * Estimate monthly Social Security benefit from annual employment income using SSA PIA bend points.
+ * Matches the backend estimation in analysis.py.
+ */
+function estimateMonthlySSBenefit(annualEmploymentIncome, claimingAge = 67) {
+    if (!annualEmploymentIncome || annualEmploymentIncome <= 0) return 0;
+    const aime = annualEmploymentIncome / 12;
+    let pia;
+    if (aime <= 1174) {
+        pia = aime * 0.90;
+    } else if (aime <= 7078) {
+        pia = 1174 * 0.90 + (aime - 1174) * 0.32;
+    } else {
+        pia = 1174 * 0.90 + (7078 - 1174) * 0.32 + (aime - 7078) * 0.15;
+    }
+    // Adjust for claiming age (FRA = 67)
+    if (claimingAge < 67) {
+        pia *= 1 - (67 - claimingAge) * 0.0667;
+    } else if (claimingAge > 67) {
+        const delayYears = Math.min(claimingAge - 67, 3);
+        pia *= 1 + delayYears * 0.08;
+    }
+    return pia;
+}
+
 function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') {
     const data = profile.data || {};
     const incomeStreams = data.income_streams || [];
@@ -1613,6 +1638,36 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
     const monthlyGrowthRate = annualGrowthRate / 12;
     const monthlyInflationRate = (marketProfile.inflation_mean || 0.03) / 12;
 
+    // Pre-compute per-person annual employment income for SS estimation
+    const spouseFirstNamePre = (data.spouse?.name || '').toLowerCase().split(/\s+/)[0];
+    const employmentTypesPre = new Set(['salary', 'hourly', 'wages', 'bonus', 'employment']);
+    let p1AnnualEmployment = 0;
+    let p2AnnualEmployment = 0;
+    incomeStreams.forEach(stream => {
+        const sType = (stream.type || stream.source || '').toLowerCase();
+        if (employmentTypesPre.has(sType)) {
+            const amt = stream.amount || 0;
+            const freq = (stream.frequency || 'monthly').toLowerCase();
+            let annual = amt * 12; // default monthly
+            if (freq === 'annual') annual = amt;
+            else if (freq === 'weekly') annual = amt * 52;
+            else if (freq === 'biweekly') annual = amt * 26;
+            else if (freq === 'quarterly') annual = amt * 4;
+
+            let owner = (stream.owner || '').toLowerCase();
+            if (!owner && spouseFirstNamePre && (stream.name || '').toLowerCase().includes(spouseFirstNamePre)) {
+                owner = 'spouse';
+            }
+            if (owner === 'spouse') p2AnnualEmployment += annual;
+            else p1AnnualEmployment += annual;
+        }
+    });
+    // Also check budget employment
+    if (budget.income?.current?.employment) {
+        p1AnnualEmployment += (budget.income.current.employment.primary_person || 0) * 12;
+        p2AnnualEmployment += (budget.income.current.employment.spouse || 0) * 12;
+    }
+
     const monthlyData = [];
     let cumulativeInflation = 1.0;  // Track cumulative inflation multiplier
 
@@ -1654,7 +1709,15 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
         });
 
         // Calculate work income for this month (from income_streams)
-        let workIncome = 0;
+        // Per-person retirement gating: employment streams stop at the owner's retirement
+        let workIncome = 0;           // Employment income only (subject to FICA)
+        let otherStreamIncome = 0;    // Non-employment stream income (rental, etc.)
+        const person1Retired = retirementDate && currentDate >= retirementDate;
+        const spouseRetDate = data.spouse?.retirement_date ? new Date(data.spouse.retirement_date) : null;
+        const person2Retired = spouseRetDate && currentDate >= spouseRetDate;
+        const spouseFirstName = (data.spouse?.name || '').toLowerCase().split(/\s+/)[0];
+        const employmentTypes = new Set(['salary', 'hourly', 'wages', 'bonus', 'employment']);
+
         incomeStreams.forEach(stream => {
             const streamStart = stream.start_date ? new Date(stream.start_date) : null;
             const streamEnd = stream.end_date ? new Date(stream.end_date) : null;
@@ -1664,7 +1727,33 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
                            (!streamEnd || currentDate <= streamEnd);
 
             if (isActive) {
-                workIncome += stream.amount || 0;
+                const streamType = (stream.type || stream.source || '').toLowerCase();
+                const isEmployment = employmentTypes.has(streamType);
+                let amount = stream.amount || 0;
+
+                // Apply inflation adjustment
+                if (stream.inflation_adjusted !== false) {
+                    amount *= cumulativeInflation;
+                }
+
+                if (isEmployment) {
+                    // Determine owner: explicit field or match by spouse name
+                    let owner = (stream.owner || '').toLowerCase();
+                    if (!owner && spouseFirstName) {
+                        const streamName = (stream.name || '').toLowerCase();
+                        if (streamName.includes(spouseFirstName)) {
+                            owner = 'spouse';
+                        }
+                    }
+                    // Gate employment on the owner's retirement
+                    if (owner === 'spouse') {
+                        if (!person2Retired) workIncome += amount;
+                    } else {
+                        if (!person1Retired) workIncome += amount;
+                    }
+                } else {
+                    otherStreamIncome += amount;
+                }
             }
         });
 
@@ -1672,12 +1761,7 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
         // (rental, consulting, business, other income)
         let budgetIncome = 0;
         if (budget.income && (budget.income.current || budget.income.future)) {
-            // Determine retirement status for both people
-            const person1Retired = retirementDate && currentDate >= retirementDate;
-            const spouseRetirementDate = data.spouse?.retirement_date ? new Date(data.spouse.retirement_date) : null;
-            const person2Retired = spouseRetirementDate && currentDate >= spouseRetirementDate;
-
-            // Calculate retirement weight
+            // Reuse retirement status computed above for income streams
             let retirementWeight = 0.0;
             if (person1Retired) retirementWeight += 0.5;
             if (person2Retired) retirementWeight += 0.5;
@@ -1721,6 +1805,10 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
 
         if (p1SSStarted) {
             p1SocialSecurity = financial.social_security_benefit || 0;
+            // Estimate SS from employment income if not explicitly set
+            if (!p1SocialSecurity && p1AnnualEmployment > 0) {
+                p1SocialSecurity = estimateMonthlySSBenefit(p1AnnualEmployment, p1ClaimingAge);
+            }
             retirementBenefits += p1SocialSecurity;
         }
 
@@ -1747,6 +1835,10 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
 
             if (p2SSStarted) {
                 p2SocialSecurity = data.spouse.social_security_benefit || 0;
+                // Estimate SS from spouse employment income if not explicitly set
+                if (!p2SocialSecurity && p2AnnualEmployment > 0) {
+                    p2SocialSecurity = estimateMonthlySSBenefit(p2AnnualEmployment, p2ClaimingAge);
+                }
                 retirementBenefits += p2SocialSecurity;
             }
 
@@ -1772,14 +1864,7 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
             expenses = financial.annual_expenses / 12;
         } else if (budget.expenses && (budget.expenses.current || budget.expenses.future)) {
             // Fallback to detailed budget categories only if annual_expenses not provided
-            // Determine retirement status for both people
-            const person1Retired = retirementDate && currentDate >= retirementDate;
-
-            // Check if there's a spouse and their retirement date
-            const spouseRetirementDate = data.spouse?.retirement_date ? new Date(data.spouse.retirement_date) : null;
-            const person2Retired = spouseRetirementDate && currentDate >= spouseRetirementDate;
-
-            // Calculate retirement weight
+            // Reuse retirement status computed above for income streams
             let retirementWeight = 0.0;
             if (person1Retired) retirementWeight += 0.5;
             if (person2Retired) retirementWeight += 0.5;
@@ -1803,7 +1888,7 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
         }
 
         // Combine work income and budget income (rental, consulting, business, other)
-        const totalWorkIncome = workIncome + budgetIncome;
+        const totalWorkIncome = workIncome + otherStreamIncome + budgetIncome;
 
         // Calculate investment income needed
         // After retirement (either person), we withdraw to cover shortfall between expenses and other income
