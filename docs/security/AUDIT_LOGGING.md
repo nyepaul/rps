@@ -4,7 +4,7 @@
 
 The RPS application features enterprise-grade audit logging with extensive data collection capabilities for security monitoring, compliance auditing, fraud detection, and user behavior analytics.
 
-Version: 3.9.213
+Version: 3.9.214
 Location: `src/services/enhanced_audit_logger.py`
 
 ## Key Features
