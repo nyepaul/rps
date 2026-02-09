@@ -54,7 +54,7 @@ export function renderWelcomeTab(container) {
                 <div id="about-body" style="display: none; padding: 12px 16px; font-size: 13px; line-height: 1.5; color: var(--text-primary);">
                     <div style="margin-bottom: 10px;">
                         <strong style="font-size: 13px;">Purpose</strong>
-                        <p style="margin: 4px 0 0; color: var(--text-secondary);">Local-first retirement and wealth planning. Model your financial future with Monte Carlo simulations, tax-aware projections, and scenario comparison -- all running on your own machine.</p>
+                        <p style="margin: 4px 0 0; color: var(--text-secondary);">Local-first retirement and wealth planning. Model your financial future with Monte Carlo simulations, tax-aware projections, and scenario comparison.</p>
                     </div>
                     <div style="margin-bottom: 10px;">
                         <strong style="font-size: 13px;">Functionality</strong>

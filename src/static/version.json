@@ -1,5 +1,5 @@
 {
-    "version": "3.9.207",
+    "version": "3.9.208",
     "release_date": "2026-02-09",
-    "release_notes": "Add colored headers to Getting Started and new About section on welcome tab"
+    "release_notes": "Remove trailing clause from About section purpose text"
 }
