@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BASE_URL="${1:-https://rps.pan2.app}"
+TMP_HTML="/tmp/rps_ui_links.html"
+TMP_LIST="/tmp/rps_ui_links.txt"
+
+pass=0
+fail=0
+
+pass_case() { printf '[PASS] %s\n' "$1"; pass=$((pass + 1)); }
+fail_case() { printf '[FAIL] %s\n' "$1"; fail=$((fail + 1)); }
+
+check_path() {
+  local path="$1"
+  local code
+  code=$(curl -sS -o /tmp/rps_link_resp -w '%{http_code}' -H "Referer: ${BASE_URL}/" -H "Origin: ${BASE_URL}" "${BASE_URL}${path}")
+  if [[ "$code" =~ ^2|3 ]]; then
+    pass_case "${path} (${code})"
+  else
+    fail_case "${path} (${code})"
+  fi
+}
+
+for page in / /login; do
+  code=$(curl -sS -o "$TMP_HTML" -w '%{http_code}' "${BASE_URL}${page}")
+  if [[ ! "$code" =~ ^2|3 ]]; then
+    fail_case "page ${page} (${code})"
+    continue
+  fi
+  pass_case "page ${page} (${code})"
+
+  # Extract local href/src paths only
+  grep -Eo '(href|src)="[^"]+"' "$TMP_HTML" \
+    | sed -E 's/^(href|src)="//; s/"$//' \
+    | grep -E '^/' \
+    | grep -Ev '^//|^/api/|^/logout|^/login\?' \
+    | sort -u > "$TMP_LIST" || true
+
+  while IFS= read -r p; do
+    [[ -z "$p" ]] && continue
+    check_path "$p"
+  done < "$TMP_LIST"
+
+done
+
+# Static tab/button wiring checks from source
+python3 - <<'PY'
+from pathlib import Path
+import re
+import sys
+
+index = Path('src/static/index.html').read_text(encoding='utf-8')
+main_js = Path('src/static/js/main.js').read_text(encoding='utf-8')
+
+tabs = sorted(set(re.findall(r'data-tab="([^"]+)"', index)))
+missing = [t for t in tabs if f"case '{t}':" not in main_js]
+
+if missing:
+    print('[FAIL] tab handlers missing in main.js:', ', '.join(missing))
+    sys.exit(2)
+print(f"[PASS] tab handlers present for {len(tabs)} tabs")
+PY
+
+printf 'SUMMARY base=%s pass=%s fail=%s\n' "$BASE_URL" "$pass" "$fail"
+[[ "$fail" -eq 0 ]]

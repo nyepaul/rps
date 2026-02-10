@@ -1,0 +1,160 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BASE_URL="${1:-https://rps.pan2.app}"
+USERNAME="${RPS_SMOKE_USER:-demo}"
+PASSWORD="${RPS_SMOKE_PASS:-Demo1234}"
+COOKIE_JAR="/tmp/rps_demo_cookie.txt"
+RESP_FILE="/tmp/rps_resp.json"
+
+pass=0
+fail=0
+csrf=""
+profile_name=""
+
+info() { printf '%s\n' "$*"; }
+pass_case() { info "[PASS] $1"; pass=$((pass + 1)); }
+fail_case() { info "[FAIL] $1"; fail=$((fail + 1)); }
+
+call_api() {
+  local name="$1" method="$2" path="$3" payload="${4:-}"
+  local code body
+  local -a headers=( -H "Referer: ${BASE_URL}/" -H "Origin: ${BASE_URL}" )
+
+  if [[ "$method" != "GET" && -n "$csrf" ]]; then
+    headers+=( -H "X-CSRF-Token: ${csrf}" )
+  fi
+
+  if [[ -n "$payload" ]]; then
+    code=$(curl -sS -o "$RESP_FILE" -w '%{http_code}' -c "$COOKIE_JAR" -b "$COOKIE_JAR" "${headers[@]}" -H 'Content-Type: application/json' -X "$method" "${BASE_URL}${path}" -d "$payload")
+  else
+    code=$(curl -sS -o "$RESP_FILE" -w '%{http_code}' -c "$COOKIE_JAR" -b "$COOKIE_JAR" "${headers[@]}" -X "$method" "${BASE_URL}${path}")
+  fi
+
+  body=$(cat "$RESP_FILE")
+  if [[ "$code" == "200" || "$code" == "201" || "$code" == "204" ]]; then
+    pass_case "${name} (${code})"
+    return 0
+  fi
+
+  fail_case "${name} (${code}) body=${body}"
+  return 1
+}
+
+rm -f "$COOKIE_JAR" "$RESP_FILE"
+
+call_api 'auth_login' POST '/api/auth/login' "{\"username\":\"${USERNAME}\",\"password\":\"${PASSWORD}\"}"
+call_api 'get_csrf' GET '/api/csrf'
+csrf=$(python3 - <<'PY'
+import json
+from pathlib import Path
+p=Path('/tmp/rps_resp.json')
+if p.exists():
+    d=json.loads(p.read_text())
+    print(d.get('csrf_token',''))
+else:
+    print('')
+PY
+)
+
+if [[ -z "$csrf" ]]; then
+  fail_case 'csrf token missing'
+  info "SUMMARY base=${BASE_URL} pass=${pass} fail=${fail}"
+  exit 2
+fi
+
+call_api 'auth_session' GET '/api/auth/session'
+call_api 'api_version' GET '/api/version'
+call_api 'profiles_list' GET '/api/profiles'
+
+profile_name=$(python3 - <<'PY'
+import json
+from pathlib import Path
+p=Path('/tmp/rps_resp.json')
+d=json.loads(p.read_text()) if p.exists() else {}
+profiles=d.get('profiles',[])
+name='Demo Thompson'
+if not any((x.get('name')==name) for x in profiles):
+    name=profiles[0]['name'] if profiles else ''
+print(name)
+PY
+)
+
+if [[ -z "$profile_name" ]]; then
+  fail_case 'no profiles available for smoke run'
+  info "SUMMARY base=${BASE_URL} pass=${pass} fail=${fail}"
+  exit 2
+fi
+
+profile_enc=$(python3 - <<'PY' "$profile_name"
+import urllib.parse,sys
+print(urllib.parse.quote(sys.argv[1], safe=''))
+PY
+)
+
+call_api 'profile_get' GET "/api/profile/${profile_enc}"
+
+call_api 'analysis_run' POST '/api/analysis' "{\"profile_name\":\"${profile_name}\",\"simulations\":1000,\"spending_model\":\"constant_real\"}"
+call_api 'analysis_cashflow' POST '/api/analysis/cashflow-details' "{\"profile_name\":\"${profile_name}\",\"simulations\":1000,\"spending_model\":\"constant_real\"}"
+call_api 'analysis_social_security' POST '/api/analysis/social-security' "{\"profile_name\":\"${profile_name}\"}"
+call_api 'analysis_roth_conversion' POST '/api/analysis/roth-conversion' "{\"profile_name\":\"${profile_name}\",\"conversion_amount\":50000}"
+call_api 'analysis_rebalance' POST '/api/analysis/rebalance' "{\"profile_name\":\"${profile_name}\",\"target_allocation\":{\"stocks\":0.6,\"bonds\":0.4,\"cash\":0.0}}"
+call_api 'analysis_calculation_report' POST '/api/analysis/calculation-report' "{\"profile_name\":\"${profile_name}\",\"simulations\":1000,\"spending_model\":\"constant_real\"}"
+
+call_api 'tax_analyze' POST '/api/tax-optimization/analyze' "{\"profile_name\":\"${profile_name}\"}"
+call_api 'tax_snapshot' POST '/api/tax-optimization/snapshot' "{\"profile_name\":\"${profile_name}\"}"
+call_api 'tax_state_comparison' POST '/api/tax-optimization/state-comparison' "{\"profile_name\":\"${profile_name}\"}"
+call_api 'tax_roth_conversion' POST '/api/tax-optimization/roth-conversion' "{\"profile_name\":\"${profile_name}\"}"
+call_api 'tax_social_security_timing' POST '/api/tax-optimization/social-security-timing' "{\"profile_name\":\"${profile_name}\"}"
+call_api 'tax_rmd_projection' POST '/api/tax-optimization/rmd-projection' "{\"profile_name\":\"${profile_name}\",\"growth_rate\":0.05,\"years\":20}"
+
+call_api 'scenarios_list' GET '/api/scenarios'
+call_api 'scenario_create' POST '/api/scenarios' "{\"name\":\"API Smoke Scenario\",\"profile_name\":\"${profile_name}\",\"parameters\":{\"simulations\":1000},\"results\":{\"smoke\":true}}"
+scenario_id=$(python3 - <<'PY'
+import json
+from pathlib import Path
+p=Path('/tmp/rps_resp.json')
+try:
+    d=json.loads(p.read_text())
+except Exception:
+    d={}
+print((d.get('scenario') or {}).get('id') or '')
+PY
+)
+if [[ -n "$scenario_id" ]]; then
+  call_api 'scenario_get' GET "/api/scenario/${scenario_id}"
+  call_api 'scenario_update' PUT "/api/scenario/${scenario_id}" '{"name":"API Smoke Scenario Updated"}'
+  call_api 'scenario_delete' DELETE "/api/scenario/${scenario_id}"
+else
+  fail_case 'scenario_create_no_id'
+fi
+
+call_api 'action_items_list' GET '/api/action-items'
+call_api 'action_items_generate' POST '/api/action-items/generate' "{\"profile_name\":\"${profile_name}\"}"
+call_api 'action_item_create' POST '/api/action-items' "{\"profile_name\":\"${profile_name}\",\"title\":\"Smoke test action item\",\"category\":\"test\",\"priority\":\"low\",\"status\":\"pending\"}"
+item_id=$(python3 - <<'PY'
+import json
+from pathlib import Path
+p=Path('/tmp/rps_resp.json')
+try:
+    d=json.loads(p.read_text())
+except Exception:
+    d={}
+print((d.get('action_item') or {}).get('id') or '')
+PY
+)
+if [[ -n "$item_id" ]]; then
+  call_api 'action_item_get' GET "/api/action-item/${item_id}"
+  call_api 'action_item_update' PUT "/api/action-item/${item_id}" '{"status":"completed"}'
+  call_api 'action_item_delete' DELETE "/api/action-item/${item_id}"
+else
+  fail_case 'action_item_create_no_id'
+fi
+
+call_api 'home_ownership_scenarios_list' GET '/api/home-ownership/scenarios'
+call_api 'skills_list' GET '/api/skills'
+call_api 'roadmap_public' GET '/api/roadmap/public'
+call_api 'auth_logout' POST '/api/auth/logout'
+
+info "SUMMARY base=${BASE_URL} profile=${profile_name} pass=${pass} fail=${fail}"
+[[ "$fail" -eq 0 ]]
