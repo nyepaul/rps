@@ -2,14 +2,14 @@
 Home Ownership (Rent vs. Own) Scenario API routes.
 """
 
-from flask import Blueprint, request, jsonify, g
+from flask import Blueprint, request, jsonify
+from flask_login import current_user
 from src.services.home_ownership_service import HomeOwnershipService
 from src.models.scenario import Scenario
 from src.models.profile import Profile
 from src.database.audit_logger import log_read, log_create, log_update, log_delete
 from src.utils.auth_utils import login_required
-from src.utils.validation import validate_json_content, validate_numeric_field, validate_dict_field
-import json # Used for scenario parameters
+from src.utils.validation import validate_json_content
 
 home_ownership_bp = Blueprint('home_ownership', __name__)
 
@@ -20,7 +20,7 @@ def create_home_ownership_scenario():
     Creates and runs a new Rent vs. Own scenario.
     Expects scenario parameters in the request body.
     """
-    user_id = g.user.id
+    user_id = current_user.id
     
     # Validate request body
     data = validate_json_content(request)
@@ -57,9 +57,8 @@ def create_home_ownership_scenario():
         user_id=user_id,
         profile_id=profile.id,
         name=scenario_name,
-        type='rent_vs_own',
-        parameters=scenario_params, # Store the input parameters
-        results=analysis_results
+        parameters=scenario_params,  # Store the input parameters
+        results=analysis_results,
     )
     scenario.save()
     log_create("scenario", scenario.id, user_id, f"Created Rent vs. Own scenario: {scenario_name}")
@@ -70,24 +69,32 @@ def create_home_ownership_scenario():
 @login_required
 def get_home_ownership_scenario(scenario_id):
     """Retrieves a specific Rent vs. Own scenario by ID."""
-    user_id = g.user.id
+    user_id = current_user.id
     scenario = Scenario.get_by_id(scenario_id, user_id)
 
-    if not scenario or scenario.type != 'rent_vs_own':
+    if not scenario:
+        return jsonify({"error": "Rent vs. Own Scenario not found."}), 404
+
+    scenario_data = scenario.to_dict()
+    if (scenario_data.get("parameters") or {}).get("type") != "rent_vs_own":
         return jsonify({"error": "Rent vs. Own Scenario not found."}), 404
     
     log_read("scenario", scenario_id, user_id, f"Viewed Rent vs. Own scenario: {scenario.name}")
-    return jsonify({"scenario": scenario.to_dict()}), 200
+    return jsonify({"scenario": scenario_data}), 200
 
 @home_ownership_bp.route('/api/home-ownership/scenarios', methods=['GET'])
 @login_required
 def list_home_ownership_scenarios():
     """Lists all Rent vs. Own scenarios for the current user."""
-    user_id = g.user.id
+    user_id = current_user.id
     
-    # List all scenarios, then filter by type on the client side or add type filter to model
+    # Filter by `parameters.type` marker since Scenario model has no dedicated type column.
     all_scenarios = Scenario.list_by_user(user_id)
-    rent_vs_own_scenarios = [s.to_dict() for s in all_scenarios if s.type == 'rent_vs_own']
+    rent_vs_own_scenarios = []
+    for scenario in all_scenarios:
+        scenario_data = scenario.to_dict()
+        if (scenario_data.get("parameters") or {}).get("type") == "rent_vs_own":
+            rent_vs_own_scenarios.append(scenario_data)
     
     log_read("scenarios", None, user_id, "Listed all Rent vs. Own scenarios.")
     return jsonify({"scenarios": rent_vs_own_scenarios}), 200
