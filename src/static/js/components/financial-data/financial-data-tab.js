@@ -545,8 +545,9 @@ const SECTIONS = [
                 capital_gain = sale_price - purchase_price<br>
                 exclusion = $500,000 (primary residence) or $0 (other)<br>
                 taxable_gain = max(0, capital_gain - exclusion)<br>
-                capital_gains_tax = LTCG_tax(taxable_gain, stacked on ordinary income)<br><br>
-                net_proceeds = sale_price - mortgage - transaction_costs - capital_gains_tax<br>
+                federal_ltcg_tax = LTCG_tax(taxable_gain, stacked on ordinary income)<br>
+                state_gain_tax = taxable_gain &times; state_rate<br><br>
+                net_proceeds = sale_price - mortgage - transaction_costs - federal_ltcg_tax - state_gain_tax<br>
                 available_cash = net_proceeds - replacement_cost
             </div>
 
@@ -555,6 +556,44 @@ const SECTIONS = [
                 total = property_tax + insurance + maintenance + HOA
             </div>
             <p>All property costs are inflation-adjusted via the CPI multiplier.</p>
+        `
+    },
+    {
+        id: 'cashflow-ledger',
+        title: 'Cashflow & Portfolio Ledger',
+        content: `
+            <h4>Monthly Cashflow Identity</h4>
+            <div class="formula">
+                net_cash_before_expenses = ordinary_income + non_taxable_income - taxes<br>
+                shortfall = expenses - net_cash_before_expenses<br>
+                shortfall_covered_by_withdrawals = withdrawals_after_tax + net_rmd + liquidation_proceeds
+            </div>
+            <p>Positive shortfall triggers tax-aware withdrawals in waterfall order. Excess cash is invested.</p>
+
+            <h4>Portfolio Balance Update</h4>
+            <div class="formula">
+                ending_portfolio = cash + taxable + pretax + 457b + roth<br>
+                taxable_next = (taxable - withdrawals - basis_reduction + inflows) &times; (1 + return &times; 0.85)<br>
+                pretax_next = (pretax - withdrawals - rmd + contributions) &times; (1 + return)<br>
+                roth_next = (roth - withdrawals + contributions) &times; (1 + return)
+            </div>
+            <p>Taxable growth applies a 15% drag only when returns are positive.</p>
+
+            <h4>Detailed Cashflow Output Fields</h4>
+            <table>
+                <thead><tr><th>Field</th><th>Meaning</th></tr></thead>
+                <tbody>
+                    <tr><td>income</td><td>Ordinary taxable income + non-taxable SS portion + withdrawals</td></tr>
+                    <tr><td>expenses_excluding_tax</td><td>Living and housing expenses only (taxes excluded)</td></tr>
+                    <tr><td>federal_tax</td><td>Federal ordinary-income tax from bracket stacking</td></tr>
+                    <tr><td>state_tax</td><td>State ordinary tax + state tax on realized gains and home-sale gain</td></tr>
+                    <tr><td>fica_tax</td><td>Payroll taxes on employment income only</td></tr>
+                    <tr><td>ltcg_tax</td><td>Federal long-term capital gains tax on realized gains</td></tr>
+                    <tr><td>withdrawals</td><td>Gross account withdrawals used to cover shortfall</td></tr>
+                    <tr><td>liquidation_proceeds</td><td>Net proceeds from asset sales (for example, home sales)</td></tr>
+                    <tr><td>portfolio_balance</td><td>Total end-of-month balance across all modeled accounts</td></tr>
+                </tbody>
+            </table>
         `
     },
     {

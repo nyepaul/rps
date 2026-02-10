@@ -1,5 +1,5 @@
 {
-    "version": "3.9.224",
+    "version": "3.9.225",
     "release_date": "2026-02-10",
-    "release_notes": "Financial audit: align detailed home-sale tax logic with Monte Carlo and add projection invariants"
+    "release_notes": "Document full calculation formulas in Resources > Financial Data"
 }
