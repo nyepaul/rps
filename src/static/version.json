@@ -1,5 +1,5 @@
 {
-    "version": "3.9.225",
+    "version": "3.9.226",
     "release_date": "2026-02-10",
-    "release_notes": "Document full calculation formulas in Resources > Financial Data"
+    "release_notes": "Fix Monte Carlo request validation for malformed simulation counts"
 }

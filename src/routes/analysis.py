@@ -5,6 +5,7 @@ from flask_login import login_required, current_user
 from pydantic import BaseModel, field_validator, ValidationError
 from typing import Optional, List
 from datetime import datetime, date
+import math
 from src.models.profile import Profile
 from src.services.retirement_model import (
     Person,
@@ -156,6 +157,23 @@ class AnalysisRequestSchema(BaseModel):
     market_profile: Optional[MarketProfileSchema] = None
     market_periods: Optional[MarketPeriodsSchema] = None  # Use specific schema
     spending_model: Optional[str] = "constant_real"
+
+    @field_validator("simulations", mode="before")
+    def parse_simulations(cls, v):
+        """Normalize simulation count from UI/localStorage values."""
+        if v is None:
+            return 10000
+        if isinstance(v, float) and math.isnan(v):
+            return 10000
+        if isinstance(v, str):
+            cleaned = v.replace(",", "").strip()
+            if not cleaned:
+                return 10000
+            v = cleaned
+        try:
+            return int(v)
+        except (TypeError, ValueError):
+            return 10000
 
     @field_validator("simulations")
     def validate_simulations(cls, v):

@@ -28,6 +28,14 @@ let lastAnalysisResult = null;
 let lastSimulations = null;
 let timelineChartInstances = {}; // Changed to object to store multiple chart instances
 
+function parseSimulationCount(rawValue) {
+    const fallback = APP_CONFIG.DEFAULT_SIMULATIONS;
+    const normalized = String(rawValue ?? '').replace(/,/g, '').trim();
+    const parsed = Number.parseInt(normalized, 10);
+    if (!Number.isFinite(parsed)) return fallback;
+    return parsed;
+}
+
 export function renderAnalysisTab(container) {
     // Clean up previous keyboard handler if exists
     if (container._analysisKeyboardHandler) {
@@ -812,7 +820,9 @@ function setupAnalysisHandlers(container, profile) {
 
     runBtn.addEventListener('click', async () => {
         // Get values from selectors
-        const simulations = parseInt(simulationsSelect?.value || localStorage.getItem('rps_simulations') || APP_CONFIG.DEFAULT_SIMULATIONS, 10);
+        const simulations = parseSimulationCount(
+            simulationsSelect?.value || localStorage.getItem('rps_simulations') || APP_CONFIG.DEFAULT_SIMULATIONS
+        );
         const savedMarketProfile = marketProfileSelect?.value || localStorage.getItem('rps_market_profile') || 'historical';
 
         if (simulations < APP_CONFIG.MIN_SIMULATIONS || simulations > APP_CONFIG.MAX_SIMULATIONS) {

@@ -35,6 +35,22 @@ class TestAnalysisRequestSchema:
                 profile_name="test", simulations=100000  # Above maximum of 50,000
             )
 
+    def test_simulations_defaults_when_missing_or_invalid(self):
+        """Invalid simulation inputs should normalize to default."""
+        request_none = AnalysisRequestSchema(profile_name="test", simulations=None)
+        assert request_none.simulations == 10000
+
+        request_empty = AnalysisRequestSchema(profile_name="test", simulations="")
+        assert request_empty.simulations == 10000
+
+        request_bad = AnalysisRequestSchema(profile_name="test", simulations="not-a-number")
+        assert request_bad.simulations == 10000
+
+    def test_simulations_parses_comma_string(self):
+        """Simulation string with separators should parse correctly."""
+        request = AnalysisRequestSchema(profile_name="test", simulations="10,000")
+        assert request.simulations == 10000
+
     def test_market_profile_accepted(self):
         """Market profile should be accepted and stored."""
         data = {
