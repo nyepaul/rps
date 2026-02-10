@@ -16,111 +16,8 @@ from typing import Dict, List, Optional, Tuple
 from datetime import datetime, date
 import math
 
-# 2024 Federal Tax Brackets (Married Filing Jointly)
-FEDERAL_BRACKETS_MFJ_2024 = [
-    (0, 23200, 0.10),
-    (23200, 94300, 0.12),
-    (94300, 201050, 0.22),
-    (201050, 383900, 0.24),
-    (383900, 487450, 0.32),
-    (487450, 731200, 0.35),
-    (731200, float("inf"), 0.37),
-]
-
-# 2024 Federal Tax Brackets (Single)
-FEDERAL_BRACKETS_SINGLE_2024 = [
-    (0, 11600, 0.10),
-    (11600, 47150, 0.12),
-    (47150, 100525, 0.22),
-    (100525, 191950, 0.24),
-    (191950, 243725, 0.32),
-    (243725, 609350, 0.35),
-    (609350, float("inf"), 0.37),
-]
-
-# 2024 Federal Tax Brackets (Married Filing Separately)
-FEDERAL_BRACKETS_MFS_2024 = [
-    (0, 11600, 0.10),
-    (11600, 47150, 0.12),
-    (47150, 100525, 0.22),
-    (100525, 191950, 0.24),
-    (191950, 243725, 0.32),
-    (243725, 365600, 0.35),
-    (365600, float("inf"), 0.37),
-]
-
-# 2024 Federal Tax Brackets (Head of Household)
-FEDERAL_BRACKETS_HOH_2024 = [
-    (0, 16550, 0.10),
-    (16550, 63100, 0.12),
-    (63100, 100500, 0.22),
-    (100500, 191950, 0.24),
-    (191950, 243700, 0.32),
-    (243700, 609350, 0.35),
-    (609350, float("inf"), 0.37),
-]
-
-# Standard Deductions 2024
-STANDARD_DEDUCTIONS_2024 = {
-    "single": 14600,
-    "mfj": 29200,
-    "mfs": 14600,
-    "hoh": 21900,
-}
-
-# Additional deduction for age 65+
-ADDITIONAL_DEDUCTION_65_PLUS = {
-    "single": 1950,
-    "mfj": 1550,  # Per person
-    "mfs": 1550,
-    "hoh": 1950,
-}
-
-# Long-term Capital Gains Brackets 2024 (MFJ)
-LTCG_BRACKETS_MFJ_2024 = [
-    (0, 94050, 0.0),
-    (94050, 583750, 0.15),
-    (583750, float("inf"), 0.20),
-]
-
-# Long-term Capital Gains Brackets 2024 (Single)
-LTCG_BRACKETS_SINGLE_2024 = [
-    (0, 47025, 0.0),
-    (47025, 518900, 0.15),
-    (518900, float("inf"), 0.20),
-]
-
-# IRMAA Thresholds 2024 (based on 2022 income)
-IRMAA_THRESHOLDS_MFJ_2024 = [
-    (0, 206000, 0),  # No surcharge
-    (206000, 258000, 839.40),  # Tier 1: $69.90/month * 12
-    (258000, 322000, 2097.60),  # Tier 2: $174.80/month * 12
-    (322000, 386000, 3355.20),  # Tier 3: $279.60/month * 12
-    (386000, 750000, 4612.80),  # Tier 4: $384.40/month * 12
-    (750000, float("inf"), 5030.40),  # Tier 5: $419.20/month * 12
-]
-
-IRMAA_THRESHOLDS_SINGLE_2024 = [
-    (0, 103000, 0),
-    (103000, 129000, 839.40),
-    (129000, 161000, 2097.60),
-    (161000, 193000, 3355.20),
-    (193000, 500000, 4612.80),
-    (500000, float("inf"), 5030.40),
-]
-
-# Social Security Taxation Thresholds (Combined Income = AGI + 50% SS + Tax-exempt interest)
-SS_TAXATION_THRESHOLDS_MFJ = [
-    (0, 32000, 0.0),  # 0% of SS taxable
-    (32000, 44000, 0.50),  # Up to 50% taxable
-    (44000, float("inf"), 0.85),  # Up to 85% taxable
-]
-
-SS_TAXATION_THRESHOLDS_SINGLE = [
-    (0, 25000, 0.0),
-    (25000, 34000, 0.50),
-    (34000, float("inf"), 0.85),
-]
+from src.services.tax_policy import get_tax_policy
+from src.services.tax_engine_refactor import TaxEngine
 
 # State income tax rates (simplified - top marginal rate)
 STATE_TAX_RATES = {
@@ -180,58 +77,6 @@ STATE_TAX_RATES = {
 # States with no income tax
 NO_INCOME_TAX_STATES = ["AK", "FL", "NV", "NH", "SD", "TN", "TX", "WA", "WY"]
 
-# RMD Life Expectancy Table (Uniform Lifetime Table - age -> divisor)
-RMD_UNIFORM_TABLE = {
-    72: 27.4,
-    73: 26.5,
-    74: 25.5,
-    75: 24.6,
-    76: 23.7,
-    77: 22.9,
-    78: 22.0,
-    79: 21.1,
-    80: 20.2,
-    81: 19.4,
-    82: 18.5,
-    83: 17.7,
-    84: 16.8,
-    85: 16.0,
-    86: 15.2,
-    87: 14.4,
-    88: 13.7,
-    89: 12.9,
-    90: 12.2,
-    91: 11.5,
-    92: 10.8,
-    93: 10.1,
-    94: 9.5,
-    95: 8.9,
-    96: 8.4,
-    97: 7.8,
-    98: 7.3,
-    99: 6.8,
-    100: 6.4,
-    101: 6.0,
-    102: 5.6,
-    103: 5.2,
-    104: 4.9,
-    105: 4.6,
-    106: 4.3,
-    107: 4.1,
-    108: 3.9,
-    109: 3.7,
-    110: 3.5,
-    111: 3.4,
-    112: 3.3,
-    113: 3.1,
-    114: 3.0,
-    115: 2.9,
-    116: 2.8,
-    117: 2.7,
-    118: 2.5,
-    119: 2.3,
-    120: 2.0,
-}
 
 
 @dataclass
@@ -262,38 +107,23 @@ class TaxSnapshot:
 class TaxCalculator:
     """Calculates federal and state taxes."""
 
-    def __init__(self, filing_status: str = "mfj", state: str = "CA"):
+    def __init__(self, filing_status: str = "mfj", state: str = "CA", tax_year: Optional[int] = None):
         self.filing_status = filing_status.lower()
         self.state = state.upper()
+        self.tax_year = tax_year or datetime.now().year
+        self.policy = get_tax_policy(self.tax_year)
 
     def get_brackets(self) -> List[Tuple[float, float, float]]:
         """Get federal tax brackets based on filing status."""
-        if self.filing_status == "single":
-            return FEDERAL_BRACKETS_SINGLE_2024
-        elif self.filing_status == "mfs":
-            return FEDERAL_BRACKETS_MFS_2024
-        elif self.filing_status == "hoh":
-            return FEDERAL_BRACKETS_HOH_2024
-        else:  # mfj
-            return FEDERAL_BRACKETS_MFJ_2024
+        return self.policy.federal_brackets.get(
+            self.filing_status, self.policy.federal_brackets["mfj"]
+        )
 
     def get_standard_deduction(self, age: int = 65, spouse_age: int = 65) -> float:
         """Calculate standard deduction including age-based additions."""
-        base = STANDARD_DEDUCTIONS_2024.get(self.filing_status, 29200)
-        additional = 0
-
-        # Add additional deduction for 65+
-        additional_per_person = ADDITIONAL_DEDUCTION_65_PLUS.get(
-            self.filing_status, 1550
+        return TaxEngine.calculate_standard_deduction(
+            self.tax_year, self.filing_status, p1_age=age, p2_age=spouse_age
         )
-
-        if age >= 65:
-            additional += additional_per_person
-
-        if self.filing_status in ["mfj", "mfs"] and spouse_age >= 65:
-            additional += additional_per_person
-
-        return base + additional
 
     def calculate_federal_tax(
         self, taxable_income: float
@@ -345,10 +175,9 @@ class TaxCalculator:
 
     def calculate_ltcg_tax(self, capital_gains: float, ordinary_income: float) -> float:
         """Calculate long-term capital gains tax."""
-        if self.filing_status == "single":
-            brackets = LTCG_BRACKETS_SINGLE_2024
-        else:
-            brackets = LTCG_BRACKETS_MFJ_2024
+        brackets = self.policy.ltcg_brackets.get(
+            self.filing_status, self.policy.ltcg_brackets["mfj"]
+        )
 
         # LTCG is stacked on top of ordinary income
         total_income = ordinary_income + capital_gains
@@ -372,8 +201,10 @@ class TaxCalculator:
 class SocialSecurityAnalyzer:
     """Analyzes Social Security taxation and claiming strategies."""
 
-    def __init__(self, filing_status: str = "mfj"):
+    def __init__(self, filing_status: str = "mfj", tax_year: Optional[int] = None):
         self.filing_status = filing_status.lower()
+        self.tax_year = tax_year or datetime.now().year
+        self.policy = get_tax_policy(self.tax_year)
 
     def calculate_taxable_ss(
         self, agi: float, ss_benefit: float, tax_exempt_interest: float = 0
@@ -387,12 +218,10 @@ class SocialSecurityAnalyzer:
         # Provisional income = AGI + 50% of SS + tax-exempt interest
         provisional_income = agi + (ss_benefit * 0.5) + tax_exempt_interest
 
-        if self.filing_status == "single" or self.filing_status == "hoh":
-            threshold_1 = 25000  # Below: 0% taxable
-            threshold_2 = 34000  # Above: up to 85% taxable
-        else:
-            threshold_1 = 32000  # MFJ
-            threshold_2 = 44000  # MFJ
+        thresholds = self.policy.ss_taxability.get(
+            self.filing_status, self.policy.ss_taxability["mfj"]
+        )
+        threshold_1, threshold_2 = thresholds
 
         # Implement correct IRS formula
         taxable_amount = 0.0
@@ -491,15 +320,16 @@ class SocialSecurityAnalyzer:
 class IRMAACalculator:
     """Calculates IRMAA (Income-Related Monthly Adjustment Amount) surcharges."""
 
-    def __init__(self, filing_status: str = "mfj"):
+    def __init__(self, filing_status: str = "mfj", tax_year: Optional[int] = None):
         self.filing_status = filing_status.lower()
+        self.tax_year = tax_year or datetime.now().year
+        self.policy = get_tax_policy(self.tax_year)
 
     def get_thresholds(self) -> List[Tuple[float, float, float]]:
         """Get IRMAA thresholds based on filing status."""
-        if self.filing_status == "single" or self.filing_status == "hoh":
-            return IRMAA_THRESHOLDS_SINGLE_2024
-        else:
-            return IRMAA_THRESHOLDS_MFJ_2024
+        return self.policy.irmaa.get(
+            self.filing_status, self.policy.irmaa["mfj"]
+        )
 
     def calculate_surcharge(self, magi: float) -> Tuple[float, int, Dict]:
         """
@@ -671,7 +501,7 @@ class RMDCalculator:
     """Calculates Required Minimum Distributions."""
 
     @staticmethod
-    def calculate_rmd(age: int, account_balance: float) -> Dict:
+    def calculate_rmd(age: int, account_balance: float, tax_year: Optional[int] = None) -> Dict:
         """
         Calculate RMD for a given age and account balance.
 
@@ -682,16 +512,20 @@ class RMDCalculator:
         Returns:
             RMD calculation details
         """
-        if age < 73:
+        policy = get_tax_policy(tax_year or datetime.now().year)
+        rmd_age = policy.rmd_age
+        rmd_factors = policy.rmd_factors
+
+        if age < rmd_age:
             return {
                 "required": False,
                 "age": age,
                 "rmd_amount": 0,
                 "divisor": None,
-                "message": f"RMDs begin at age 73. You have {73 - age} years before RMDs start.",
+                "message": f"RMDs begin at age {rmd_age}. You have {rmd_age - age} years before RMDs start.",
             }
 
-        divisor = RMD_UNIFORM_TABLE.get(age, 2.0)  # Default to 2.0 for ages > 120
+        divisor = rmd_factors.get(age, 2.0)  # Default to 2.0 for ages > 120
         rmd_amount = account_balance / divisor
 
         return {
@@ -713,6 +547,7 @@ class RMDCalculator:
         current_balance: float,
         growth_rate: float = 0.05,
         years: int = 20,
+        tax_year: Optional[int] = None,
     ) -> List[Dict]:
         """
         Project RMDs over multiple years.
@@ -726,6 +561,10 @@ class RMDCalculator:
         Returns:
             List of yearly RMD projections
         """
+        policy = get_tax_policy(tax_year or datetime.now().year)
+        rmd_age = policy.rmd_age
+        rmd_factors = policy.rmd_factors
+
         projections = []
         balance = current_balance
 
@@ -733,8 +572,8 @@ class RMDCalculator:
             age = current_age + year
 
             # Calculate RMD if applicable
-            if age >= 73:
-                divisor = RMD_UNIFORM_TABLE.get(age, 2.0)
+            if age >= rmd_age:
+                divisor = rmd_factors.get(age, 2.0)
                 rmd = balance / divisor
             else:
                 rmd = 0
@@ -747,7 +586,7 @@ class RMDCalculator:
                     "start_balance": round(balance, 2),
                     "rmd_amount": round(rmd, 2),
                     "divisor": divisor,
-                    "rmd_required": age >= 73,
+                    "rmd_required": age >= rmd_age,
                 }
             )
 
@@ -766,16 +605,18 @@ class TaxOptimizationService:
         state: str = "CA",
         age: int = 65,
         spouse_age: int = 65,
+        tax_year: Optional[int] = None,
     ):
+        self.tax_year = tax_year or datetime.now().year
         self.settings = TaxSettings(
             filing_status=filing_status.lower(),
             state=state.upper(),
             age=age,
             spouse_age=spouse_age,
         )
-        self.calculator = TaxCalculator(filing_status, state)
-        self.ss_analyzer = SocialSecurityAnalyzer(filing_status)
-        self.irmaa_calc = IRMAACalculator(filing_status)
+        self.calculator = TaxCalculator(filing_status, state, self.tax_year)
+        self.ss_analyzer = SocialSecurityAnalyzer(filing_status, self.tax_year)
+        self.irmaa_calc = IRMAACalculator(filing_status, self.tax_year)
         self.roth_optimizer = RothConversionOptimizer(self.calculator, self.irmaa_calc)
 
     def calculate_tax_snapshot(
@@ -962,13 +803,22 @@ class TaxOptimizationService:
         }
 
     def analyze_rmd(
-        self, age: int, traditional_balance: float, growth_rate: float = 0.05
+        self,
+        age: int,
+        traditional_balance: float,
+        growth_rate: float = 0.05,
+        years: int = 20,
     ) -> Dict:
         """
         Analyze RMD situation and projections.
         """
-        current_rmd = RMDCalculator.calculate_rmd(age, traditional_balance)
-        projections = RMDCalculator.project_rmds(age, traditional_balance, growth_rate)
+        policy = get_tax_policy(self.tax_year)
+        current_rmd = RMDCalculator.calculate_rmd(
+            age, traditional_balance, tax_year=self.tax_year
+        )
+        projections = RMDCalculator.project_rmds(
+            age, traditional_balance, growth_rate, years=years, tax_year=self.tax_year
+        )
 
         # Calculate total RMDs over projection period
         total_rmds = sum(p["rmd_amount"] for p in projections)
@@ -978,11 +828,11 @@ class TaxOptimizationService:
             "projections": projections,
             "summary": {
                 "total_projected_rmds": round(total_rmds, 2),
-                "years_until_rmd": max(0, 73 - age),
+                "years_until_rmd": max(0, policy.rmd_age - age),
                 "current_balance": traditional_balance,
             },
-            "qcd_eligible": age >= 70.5,
-            "qcd_annual_limit": 105000,  # 2024 limit
+            "qcd_eligible": age >= policy.qcd_age,
+            "qcd_annual_limit": policy.qcd_annual_limit,
             "recommendation": self._get_rmd_recommendation(current_rmd, age),
         }
 
@@ -1132,12 +982,16 @@ class TaxOptimizationService:
     def _get_rmd_recommendation(self, rmd: Dict, age: int) -> str:
         """Generate RMD recommendation."""
         if not rmd["required"]:
-            years_until = 73 - age
+            years_until = get_tax_policy(self.tax_year).rmd_age - age
             return f"Consider Roth conversions during the next {years_until} years before RMDs begin to reduce future required distributions."
 
         amount = rmd["rmd_amount"]
-        if age >= 70.5:
-            return f"Your RMD is ${amount:,.0f}. Consider using QCDs (up to $105,000) to satisfy RMDs while reducing taxable income."
+        policy = get_tax_policy(self.tax_year)
+        if age >= policy.qcd_age:
+            return (
+                f"Your RMD is ${amount:,.0f}. Consider using QCDs (up to "
+                f"${policy.qcd_annual_limit:,.0f}) to satisfy RMDs while reducing taxable income."
+            )
 
         return f"Your required RMD is ${amount:,.0f}. Ensure this is withdrawn by December 31st."
 

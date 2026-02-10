@@ -29,6 +29,7 @@ class User(UserMixin):
         reset_token=None,
         reset_token_expires=None,
         is_super_admin=False,
+        is_demo_account=False,
         recovery_encrypted_dek=None,
         recovery_iv=None,
         recovery_salt=None,
@@ -52,6 +53,9 @@ class User(UserMixin):
         self._is_admin = bool(is_admin) if is_admin is not None else False
         self._is_super_admin = (
             bool(is_super_admin) if is_super_admin is not None else False
+        )
+        self._is_demo_account = (
+            bool(is_demo_account) if is_demo_account is not None else False
         )
         self.created_at = created_at or datetime.now().isoformat()
         self.updated_at = updated_at or datetime.now().isoformat()
@@ -123,6 +127,11 @@ class User(UserMixin):
     def is_admin(self):
         """Admin status property."""
         return self._is_admin
+
+    @property
+    def is_demo_account(self):
+        """Demo account flag."""
+        return self._is_demo_account
 
     @property
     def is_super_admin(self):
@@ -225,11 +234,11 @@ class User(UserMixin):
                 # Insert new user
                 cursor.execute(
                     """
-                    INSERT INTO users (username, email, password_hash, is_active, is_admin, is_super_admin, created_at, updated_at, 
+                    INSERT INTO users (username, email, password_hash, is_active, is_admin, is_super_admin, is_demo_account, created_at, updated_at, 
                                      encrypted_dek, dek_iv, recovery_encrypted_dek, recovery_iv, recovery_salt,
                                      email_encrypted_dek, email_iv, email_salt, preferences, email_verified,
                                      temp_recovery_code, recovery_code_shown, api_keys, api_keys_iv)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                     (
                         self.username,
@@ -238,6 +247,7 @@ class User(UserMixin):
                         1 if self._is_active else 0,
                         1 if self._is_admin else 0,
                         1 if self._is_super_admin else 0,
+                        1 if self._is_demo_account else 0,
                         self.created_at,
                         self.updated_at,
                         self.encrypted_dek,
@@ -263,7 +273,7 @@ class User(UserMixin):
                     """
                     UPDATE users
                     SET username = ?, email = ?, password_hash = ?, is_active = ?,
-                        is_admin = ?, is_super_admin = ?, last_login = ?, encrypted_dek = ?, dek_iv = ?,
+                        is_admin = ?, is_super_admin = ?, is_demo_account = ?, last_login = ?, encrypted_dek = ?, dek_iv = ?,
                         recovery_encrypted_dek = ?, recovery_iv = ?, recovery_salt = ?,
                         email_encrypted_dek = ?, email_iv = ?, email_salt = ?, preferences = ?,
                         email_verified = ?, temp_recovery_code = ?, recovery_code_shown = ?,
@@ -277,6 +287,7 @@ class User(UserMixin):
                         1 if self._is_active else 0,
                         1 if self._is_admin else 0,
                         1 if self._is_super_admin else 0,
+                        1 if self._is_demo_account else 0,
                         self.last_login,
                         self.encrypted_dek,
                         self.dek_iv,

@@ -9,6 +9,11 @@ import tempfile
 import shutil
 from pathlib import Path
 
+# Use 2024 tax policy for tests unless explicitly overridden
+os.environ.setdefault("RPS_TAX_POLICY_FALLBACK_YEAR", "2024")
+os.environ.setdefault("ENCRYPTION_KEY", "test-encryption-key")
+os.environ.setdefault("BACKUP_KEY_PEPPER", "test-backup-pepper")
+
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -86,6 +91,7 @@ def test_db(test_db_dir, request):
                 is_active BOOLEAN DEFAULT 1,
                 is_admin BOOLEAN DEFAULT 0,
                 is_super_admin BOOLEAN DEFAULT 0,
+                is_demo_account BOOLEAN DEFAULT 0,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
                 last_login TEXT,

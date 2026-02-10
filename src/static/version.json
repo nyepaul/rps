@@ -1,5 +1,5 @@
 {
-    "version": "3.9.215",
+    "version": "3.10.0",
     "release_date": "2026-02-10",
-    "release_notes": "Fix 11 calculation bugs: person1 financial data mapping, 401k salary lookup, SS income filtering, expense categories, FICA tax, mortgage key, income stream owner attribution, Person constructor, cashflow spouse check, filing status detection, spouse age deduction"
+    "release_notes": "Migration chain fixes, centralized tax policy, demo encryption hardening, backup import/restore sanitization, and tax optimization corrections"
 }

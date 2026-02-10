@@ -22,7 +22,7 @@ def upgrade() -> None:
     """Upgrade schema - add encryption IV columns."""
 
     # Add IV column for profile.data encryption
-    op.execute('ALTER TABLE profile ADD COLUMN data_iv TEXT')
+    op.execute('ALTER TABLE profiles ADD COLUMN data_iv TEXT')
 
     # Add IV columns for scenarios encryption
     op.execute('ALTER TABLE scenarios ADD COLUMN parameters_iv TEXT')
@@ -43,7 +43,7 @@ def downgrade() -> None:
 
     # Remove IV from profile
     op.execute('''
-        CREATE TABLE profile_new (
+        CREATE TABLE profiles_new (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
             name TEXT NOT NULL,
@@ -58,13 +58,13 @@ def downgrade() -> None:
     ''')
 
     op.execute('''
-        INSERT INTO profile_new SELECT id, user_id, name, birth_date, retirement_date, data, updated_at, created_at
-        FROM profile
+        INSERT INTO profiles_new SELECT id, user_id, name, birth_date, retirement_date, data, updated_at, created_at
+        FROM profiles
     ''')
 
-    op.execute('DROP TABLE profile')
-    op.execute('ALTER TABLE profile_new RENAME TO profile')
-    op.execute('CREATE INDEX idx_profile_user_id ON profile(user_id)')
+    op.execute('DROP TABLE profiles')
+    op.execute('ALTER TABLE profiles_new RENAME TO profiles')
+    op.execute('CREATE INDEX idx_profiles_user_id ON profiles(user_id)')
 
     # Remove IVs from scenarios
     op.execute('''

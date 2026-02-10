@@ -17,16 +17,8 @@ from datetime import datetime
 from dataclasses import dataclass
 from typing import List, Dict
 
-# 2024 IRS contribution limits
-CONTRIBUTION_LIMITS = {
-    "401k_base": 23000,        # Employee elective deferral limit
-    "401k_catchup": 7500,      # Additional catch-up for age 50+
-    "ira_base": 7000,          # Traditional + Roth IRA combined limit
-    "ira_catchup": 1000,       # Additional catch-up for age 50+
-    "section_415c": 69000,     # Total annual additions (employee + employer)
-    "section_415c_catchup": 76500,  # 415(c) + catch-up for age 50+
-    "catchup_age": 50,         # Age threshold for catch-up contributions
-}
+from src.services.tax_engine_refactor import TaxEngine
+from src.services.tax_policy import get_tax_policy
 
 
 def safe_float(value, default=0.0):
@@ -80,6 +72,7 @@ class FinancialProfile:
     )
     filing_status: str = "mfj"  # 'mfj', 'single', 'hoh'
     state: str = "NY"  # State for tax calculations
+    tax_year: int = None  # Tax year for policy lookup
 
 
 @dataclass
@@ -118,6 +111,11 @@ class RetirementModel:
     def __init__(self, profile: FinancialProfile):
         self.profile = profile
         self.current_year = datetime.now().year
+        self.tax_year = profile.tax_year or self.current_year
+        self.tax_policy = get_tax_policy(self.tax_year)
+        self.contribution_limits = TaxEngine.get_contribution_limits(self.tax_year)
+        self.rmd_age = self.tax_policy.rmd_age
+        self.rmd_factors = self.tax_policy.rmd_factors
 
     def calculate_life_expectancy_years(self, person: Person, target_age: int = 90):
         age_now = (datetime.now() - person.birth_date).days / 365.25
@@ -133,20 +131,9 @@ class RetirementModel:
         - MFJ/MFS: $1,550 per person
         """
         filing_status = getattr(self.profile, "filing_status", "mfj")
-        if filing_status == "single":
-            base = 14600
-            if p1_age >= 65:
-                base += 1950
-        elif filing_status == "hoh":
-            base = 21900
-            if p1_age >= 65:
-                base += 1950
-        else:  # mfj / mfs
-            base = 29200
-            if p1_age >= 65:
-                base += 1550
-            if p2_age >= 65:
-                base += 1550
+        base = TaxEngine.calculate_standard_deduction(
+            self.tax_year, filing_status, p1_age=p1_age, p2_age=p2_age
+        )
         return base * current_cpi
 
     # =========================================================================
@@ -167,50 +154,9 @@ class RetirementModel:
         """
         if filing_status is None:
             filing_status = getattr(self.profile, "filing_status", "mfj")
-
-        # 2024 MFJ brackets (default) - can be extended for other statuses
-        if filing_status == "single":
-            brackets = [
-                (0, 11600, 0.10),
-                (11600, 47150, 0.12),
-                (47150, 100525, 0.22),
-                (100525, 191950, 0.24),
-                (191950, 243725, 0.32),
-                (243725, 609350, 0.35),
-                (609350, float("inf"), 0.37),
-            ]
-        elif filing_status == "hoh":
-            brackets = [
-                (0, 16550, 0.10),
-                (16550, 63100, 0.12),
-                (63100, 100500, 0.22),
-                (100500, 191950, 0.24),
-                (191950, 243700, 0.32),
-                (243700, 609350, 0.35),
-                (609350, float("inf"), 0.37),
-            ]
-        else:  # MFJ (default for retired couples)
-            brackets = [
-                (0, 23200, 0.10),
-                (23200, 94300, 0.12),
-                (94300, 201050, 0.22),
-                (201050, 383900, 0.24),
-                (383900, 487450, 0.32),
-                (487450, 731200, 0.35),
-                (731200, float("inf"), 0.37),
-            ]
-
-        total_tax = np.zeros_like(taxable_income, dtype=float)
-        marginal_rate = np.zeros_like(taxable_income, dtype=float)
-
-        for lower, upper, rate in brackets:
-            # Income in this bracket
-            in_bracket = np.clip(taxable_income - lower, 0, upper - lower)
-            total_tax += in_bracket * rate
-            # Update marginal rate for incomes above this bracket's lower bound
-            marginal_rate = np.where(taxable_income > lower, rate, marginal_rate)
-
-        return total_tax, marginal_rate
+        return TaxEngine.calculate_federal_tax_vectorized(
+            taxable_income, self.tax_year, filing_status=filing_status
+        )
 
     def _vectorized_taxable_ss(
         self,
@@ -233,41 +179,9 @@ class RetirementModel:
         """
         if filing_status is None:
             filing_status = getattr(self.profile, "filing_status", "mfj")
-
-        # Calculate provisional income
-        provisional = other_income + (ss_benefit * 0.5)
-
-        # Thresholds depend on filing status
-        if filing_status == "mfj":
-            threshold_1 = 32000  # Below: 0% taxable
-            threshold_2 = 44000  # Above: up to 85% taxable
-        else:  # single/hoh
-            threshold_1 = 25000
-            threshold_2 = 34000
-
-        # Calculate taxable portion (complex IRS formula simplified)
-        taxable_ss = np.zeros_like(ss_benefit)
-
-        # Between threshold_1 and threshold_2: up to 50% taxable
-        in_middle = (provisional > threshold_1) & (provisional <= threshold_2)
-        excess_1 = np.maximum(0, provisional - threshold_1)
-        taxable_ss = np.where(
-            in_middle, np.minimum(ss_benefit * 0.5, excess_1 * 0.5), taxable_ss
+        return TaxEngine.calculate_taxable_ss_vectorized(
+            other_income, ss_benefit, self.tax_year, filing_status=filing_status
         )
-
-        # Above threshold_2: up to 85% taxable
-        above_threshold_2 = provisional > threshold_2
-        excess_2 = np.maximum(0, provisional - threshold_2)
-        # Start with 50% of amount between thresholds
-        base_taxable = (threshold_2 - threshold_1) * 0.5
-        # Add 85% of excess above threshold_2
-        additional = excess_2 * 0.85
-        max_85 = ss_benefit * 0.85
-        taxable_ss = np.where(
-            above_threshold_2, np.minimum(max_85, base_taxable + additional), taxable_ss
-        )
-
-        return taxable_ss
 
     def _vectorized_ltcg_tax(
         self, gains: np.ndarray, ordinary_income: np.ndarray, filing_status: str = None
@@ -286,39 +200,9 @@ class RetirementModel:
         """
         if filing_status is None:
             filing_status = getattr(self.profile, "filing_status", "mfj")
-
-        # 2024 LTCG brackets (thresholds for total taxable income including gains)
-        if filing_status == "mfj":
-            threshold_0 = 94050  # 0% up to here
-            threshold_15 = 583750  # 15% up to here, 20% above
-        else:  # single/hoh
-            threshold_0 = 47025
-            threshold_15 = 518900
-
-        total_income = ordinary_income + gains
-        ltcg_tax = np.zeros_like(gains)
-
-        # Calculate how much of gains falls in each bracket
-        # Gains "stack" on top of ordinary income
-
-        # Room in 0% bracket
-        room_0 = np.maximum(0, threshold_0 - ordinary_income)
-        gains_at_0 = np.minimum(gains, room_0)
-        remaining_gains = gains - gains_at_0
-
-        # Room in 15% bracket (after 0% bracket filled)
-        income_after_0 = np.maximum(ordinary_income, threshold_0)
-        room_15 = np.maximum(0, threshold_15 - income_after_0)
-        gains_at_15 = np.minimum(remaining_gains, room_15)
-        remaining_gains = remaining_gains - gains_at_15
-
-        # Remainder at 20%
-        gains_at_20 = remaining_gains
-
-        # Calculate total LTCG tax
-        ltcg_tax = (gains_at_0 * 0.0) + (gains_at_15 * 0.15) + (gains_at_20 * 0.20)
-
-        return ltcg_tax
+        return TaxEngine.calculate_ltcg_tax_vectorized(
+            gains, ordinary_income, self.tax_year, filing_status=filing_status
+        )
 
     def _vectorized_irmaa(
         self, magi: np.ndarray, filing_status: str = None, both_on_medicare: bool = True
@@ -338,42 +222,12 @@ class RetirementModel:
         """
         if filing_status is None:
             filing_status = getattr(self.profile, "filing_status", "mfj")
-
-        # 2024 IRMAA thresholds and annual surcharges (Part B + Part D combined)
-        if filing_status == "mfj":
-            thresholds = [
-                (0, 206000, 0),  # No surcharge
-                (206000, 258000, 839.40),  # Tier 1
-                (258000, 322000, 2097.60),  # Tier 2
-                (322000, 386000, 3355.20),  # Tier 3
-                (386000, 750000, 4612.80),  # Tier 4
-                (750000, float("inf"), 5030.40),  # Tier 5
-            ]
-        else:  # single/hoh
-            thresholds = [
-                (0, 103000, 0),
-                (103000, 129000, 839.40),
-                (129000, 161000, 2097.60),
-                (161000, 193000, 3355.20),
-                (193000, 500000, 4612.80),
-                (500000, float("inf"), 5030.40),
-            ]
-
-        irmaa = np.zeros_like(magi)
-        for lower, upper, surcharge in thresholds:
-            in_tier = (magi > lower) & (magi <= upper)
-            irmaa = np.where(in_tier, surcharge, irmaa)
-
-        # Handle top tier (above highest threshold)
-        top_threshold = thresholds[-1][0]
-        top_surcharge = thresholds[-1][2]
-        irmaa = np.where(magi > top_threshold, top_surcharge, irmaa)
-
-        # Double if both spouses on Medicare
-        if both_on_medicare and filing_status == "mfj":
-            irmaa = irmaa * 2
-
-        return irmaa
+        return TaxEngine.calculate_irmaa_vectorized(
+            magi,
+            self.tax_year,
+            filing_status=filing_status,
+            both_on_medicare=both_on_medicare,
+        )
 
     def _calculate_employment_tax(
         self,
@@ -396,15 +250,8 @@ class RetirementModel:
         Returns:
             Array of estimated total employment taxes
         """
-        # 2024 Social Security wage base
-        SS_WAGE_BASE = 168600
-        SS_RATE = 0.062
-        MEDICARE_RATE = 0.0145
-
         # FICA taxes
-        ss_tax = np.minimum(gross_income, SS_WAGE_BASE) * SS_RATE
-        medicare_tax = gross_income * MEDICARE_RATE
-        fica = ss_tax + medicare_tax
+        fica = TaxEngine.calculate_fica_tax_vectorized(gross_income, self.tax_year)
 
         # Estimate federal tax (using progressive brackets on AGI estimate)
         std_deduction = self.get_standard_deduction(current_cpi)
@@ -821,7 +668,6 @@ class RetirementModel:
         # Constants
         EARLY_PENALTY = 0.10
         CASH_INTEREST = 0.015
-        STANDARD_DEDUCTION_BASE = 29200  # 2024 MFJ standard deduction
 
         # Result Storage
         all_paths = np.zeros((simulations, years))
@@ -1013,10 +859,9 @@ class RetirementModel:
 
             # FICA only on employment income
             if np.any(employment_income_gross > 0):
-                SS_WAGE_BASE = 168600
-                ss_tax = np.minimum(employment_income_gross, SS_WAGE_BASE) * 0.062
-                med_tax = employment_income_gross * 0.0145
-                fica_tax = ss_tax + med_tax
+                fica_tax = TaxEngine.calculate_fica_tax_vectorized(
+                    employment_income_gross, self.tax_year
+                )
 
             # State tax on ALL taxable ordinary income (Simplified flat rate)
             state_rate = 0.05  # Default
@@ -1141,9 +986,9 @@ class RetirementModel:
                     p1_401k = p1_salary * contribution_rate
 
                     # Enforce IRS 401k employee deferral limit (with age 50+ catch-up)
-                    p1_401k_limit = CONTRIBUTION_LIMITS["401k_base"]
-                    if p1_age >= CONTRIBUTION_LIMITS["catchup_age"]:
-                        p1_401k_limit += CONTRIBUTION_LIMITS["401k_catchup"]
+                    p1_401k_limit = self.contribution_limits["401k_base"]
+                    if p1_age >= self.contribution_limits["catchup_age"]:
+                        p1_401k_limit += self.contribution_limits["401k_catchup"]
                     p1_401k = np.minimum(p1_401k, p1_401k_limit)
 
                     if np.any(p1_401k > 0):
@@ -1155,9 +1000,9 @@ class RetirementModel:
                             self.profile.person1.employer_match_rate, 0
                         )
                         # Cap total (employee + employer) at Section 415(c) limit
-                        p1_415c_limit = CONTRIBUTION_LIMITS["section_415c"]
-                        if p1_age >= CONTRIBUTION_LIMITS["catchup_age"]:
-                            p1_415c_limit = CONTRIBUTION_LIMITS["section_415c_catchup"]
+                        p1_415c_limit = self.contribution_limits["section_415c"]
+                        if p1_age >= self.contribution_limits["catchup_age"]:
+                            p1_415c_limit = self.contribution_limits["section_415c_catchup"]
                         employer_match = np.minimum(employer_match, p1_415c_limit - p1_401k)
                         employer_match = np.maximum(employer_match, 0)
                         pretax_std += employer_match
@@ -1186,9 +1031,9 @@ class RetirementModel:
                     p2_401k = p2_salary * p2_contribution_rate
 
                     # Enforce IRS 401k employee deferral limit (with age 50+ catch-up)
-                    p2_401k_limit = CONTRIBUTION_LIMITS["401k_base"]
-                    if p2_age >= CONTRIBUTION_LIMITS["catchup_age"]:
-                        p2_401k_limit += CONTRIBUTION_LIMITS["401k_catchup"]
+                    p2_401k_limit = self.contribution_limits["401k_base"]
+                    if p2_age >= self.contribution_limits["catchup_age"]:
+                        p2_401k_limit += self.contribution_limits["401k_catchup"]
                     p2_401k = np.minimum(p2_401k, p2_401k_limit)
 
                     total_401k_contributions += p2_401k
@@ -1199,9 +1044,9 @@ class RetirementModel:
                         self.profile.person2.employer_match_rate, 0
                     )
                     # Cap total (employee + employer) at Section 415(c) limit
-                    p2_415c_limit = CONTRIBUTION_LIMITS["section_415c"]
-                    if p2_age >= CONTRIBUTION_LIMITS["catchup_age"]:
-                        p2_415c_limit = CONTRIBUTION_LIMITS["section_415c_catchup"]
+                    p2_415c_limit = self.contribution_limits["section_415c"]
+                    if p2_age >= self.contribution_limits["catchup_age"]:
+                        p2_415c_limit = self.contribution_limits["section_415c_catchup"]
                     p2_employer_match = np.minimum(p2_employer_match, p2_415c_limit - p2_401k)
                     p2_employer_match = np.maximum(p2_employer_match, 0)
                     pretax_std += p2_employer_match
@@ -1212,9 +1057,9 @@ class RetirementModel:
                     # Enforce IRS IRA limit (with age 50+ catch-up)
                     # p1_age/p2_age are always plain ints in the simulation loop
                     max_age = max(p1_age, p2_age)
-                    ira_limit = CONTRIBUTION_LIMITS["ira_base"]
-                    if max_age >= CONTRIBUTION_LIMITS["catchup_age"]:
-                        ira_limit += CONTRIBUTION_LIMITS["ira_catchup"]
+                    ira_limit = self.contribution_limits["ira_base"]
+                    if max_age >= self.contribution_limits["catchup_age"]:
+                        ira_limit += self.contribution_limits["ira_catchup"]
                     # For MFJ with both working, each spouse gets their own IRA limit
                     both_working = not p1_retired and not p2_retired
                     if both_working and self.profile.filing_status == "mfj":
@@ -1287,25 +1132,14 @@ class RetirementModel:
                         prop["is_sold"] = np.where(active_mask, True, prop["is_sold"])
                         prop["values"] = np.where(active_mask, 0, prop["values"])
 
-            # F. RMD Logic (Age 73+ for either spouse)
+            # F. RMD Logic (Age threshold from policy)
             total_rmd = np.zeros(simulations)
             original_pretax = pretax_std.copy()
-            rmd_factors = {
-                72: 27.4, 73: 26.5, 74: 25.5, 75: 24.6, 76: 23.7,
-                77: 22.9, 78: 22.0, 79: 21.1, 80: 20.2, 81: 19.4,
-                82: 18.5, 83: 17.7, 84: 16.8, 85: 16.0, 86: 15.2,
-                87: 14.4, 88: 13.7, 89: 12.9, 90: 12.2, 91: 11.5,
-                92: 10.8, 93: 10.1, 94: 9.5, 95: 8.9, 96: 8.4,
-                97: 7.8, 98: 7.3, 99: 6.8, 100: 6.4, 101: 6.0,
-                102: 5.6, 103: 5.2, 104: 4.9, 105: 4.6, 106: 4.3,
-                107: 4.1, 108: 3.9, 109: 3.7, 110: 3.5, 111: 3.4,
-                112: 3.3, 113: 3.1, 114: 3.0, 115: 2.9, 116: 2.8,
-                117: 2.7, 118: 2.5, 119: 2.3, 120: 2.0,
-            }
+            rmd_factors = self.rmd_factors
             # Determine each person's share of pre-tax accounts
             filing_status = getattr(self.profile, "filing_status", "mfj")
-            p1_rmd_eligible = p1_age >= 73
-            p2_rmd_eligible = p2_age >= 73
+            p1_rmd_eligible = p1_age >= self.rmd_age
+            p2_rmd_eligible = p2_age >= self.rmd_age
             if filing_status == "single" or not p2_rmd_eligible:
                 # Single filer or only P1 is RMD-eligible: P1 owns all
                 if p1_rmd_eligible:
@@ -1767,39 +1601,27 @@ class RetirementModel:
 
             fica_tax_annual = 0
             if np.any(total_employment_annual > 0):
-                SS_WAGE_BASE = 168600
-                fica_tax_annual = (
-                    np.minimum(total_employment_annual, SS_WAGE_BASE) * 0.062
-                ) + (total_employment_annual * 0.0145)
+                fica_tax_annual = TaxEngine.calculate_fica_tax_vectorized(
+                    total_employment_annual, self.tax_year
+                )
 
             # Track cumulative ordinary income for stacking withdrawals (ANNUAL)
             cumulative_ordinary_gross = total_ord_taxable_annual.copy()
 
-            # --- RMD Logic (Age 73+) ---
+            # --- RMD Logic (Age threshold from policy) ---
             rmd_annual = 0
-            rmd_factors_dp = {
-                72: 27.4, 73: 26.5, 74: 25.5, 75: 24.6, 76: 23.7,
-                77: 22.9, 78: 22.0, 79: 21.1, 80: 20.2, 81: 19.4,
-                82: 18.5, 83: 17.7, 84: 16.8, 85: 16.0, 86: 15.2,
-                87: 14.4, 88: 13.7, 89: 12.9, 90: 12.2, 91: 11.5,
-                92: 10.8, 93: 10.1, 94: 9.5, 95: 8.9, 96: 8.4,
-                97: 7.8, 98: 7.3, 99: 6.8, 100: 6.4, 101: 6.0,
-                102: 5.6, 103: 5.2, 104: 4.9, 105: 4.6, 106: 4.3,
-                107: 4.1, 108: 3.9, 109: 3.7, 110: 3.5, 111: 3.4,
-                112: 3.3, 113: 3.1, 114: 3.0, 115: 2.9, 116: 2.8,
-                117: 2.7, 118: 2.5, 119: 2.3, 120: 2.0,
-            }
+            rmd_factors_dp = self.rmd_factors
             filing_status_dp = getattr(self.profile, "filing_status", "mfj")
             original_pretax_dp = pretax_std.copy()
             if filing_status_dp == "single":
-                if p1_age_start >= 73:
+                if p1_age_start >= self.rmd_age:
                     factor = rmd_factors_dp.get(int(p1_age_start), 2.0)
                     rmd_annual = original_pretax_dp / factor
             else:
-                if p1_age_start >= 73:
+                if p1_age_start >= self.rmd_age:
                     factor = rmd_factors_dp.get(int(p1_age_start), 2.0)
                     rmd_annual += (original_pretax_dp / 2.0) / factor
-                if p2_age_start >= 73:
+                if p2_age_start >= self.rmd_age:
                     factor = rmd_factors_dp.get(int(p2_age_start), 2.0)
                     rmd_annual += (original_pretax_dp / 2.0) / factor
 
@@ -2124,19 +1946,8 @@ class RetirementModel:
         return detailed_ledger
 
     def calculate_rmd(self, age: int, ira_balance: float):
-        rmd_factors = {
-            72: 27.4, 73: 26.5, 74: 25.5, 75: 24.6, 76: 23.7,
-            77: 22.9, 78: 22.0, 79: 21.1, 80: 20.2, 81: 19.4,
-            82: 18.5, 83: 17.7, 84: 16.8, 85: 16.0, 86: 15.2,
-            87: 14.4, 88: 13.7, 89: 12.9, 90: 12.2, 91: 11.5,
-            92: 10.8, 93: 10.1, 94: 9.5, 95: 8.9, 96: 8.4,
-            97: 7.8, 98: 7.3, 99: 6.8, 100: 6.4, 101: 6.0,
-            102: 5.6, 103: 5.2, 104: 4.9, 105: 4.6, 106: 4.3,
-            107: 4.1, 108: 3.9, 109: 3.7, 110: 3.5, 111: 3.4,
-            112: 3.3, 113: 3.1, 114: 3.0, 115: 2.9, 116: 2.8,
-            117: 2.7, 118: 2.5, 119: 2.3, 120: 2.0,
-        }
-        if age < 73:
+        rmd_factors = self.rmd_factors
+        if age < self.rmd_age:
             return 0
         factor = rmd_factors.get(age, 2.0)
         return ira_balance / factor
@@ -2181,7 +1992,7 @@ class RetirementModel:
         return sorted(strategies, key=lambda x: x["lifetime_benefit_npv"], reverse=True)
 
     def calculate_roth_conversion_opportunity(self):
-        years_until_rmd = 73 - (
+        years_until_rmd = self.rmd_age - (
             (datetime.now() - self.profile.person1.birth_date).days / 365.25
         )
         if years_until_rmd <= 0:
@@ -2192,7 +2003,7 @@ class RetirementModel:
         pension_annual = self.profile.pension_annual
         # Include dynamic income streams starting before or at RMD age (73)
         p1_birth_year = self.profile.person1.birth_date.year
-        rmd_year = p1_birth_year + 73
+        rmd_year = p1_birth_year + self.rmd_age
         if self.profile.income_streams:
             for s in self.profile.income_streams:
                 try:
@@ -2211,9 +2022,17 @@ class RetirementModel:
         ).days / 365.25
         if years_to_retirement > 0:
             conversion_years = int(years_until_rmd - years_to_retirement)
-            standard_deduction = 29200 + 3100
-            top_of_12_bracket = 94300
-            top_of_22_bracket = 201050
+            filing_status = getattr(self.profile, "filing_status", "mfj")
+            p1_age_now = (datetime.now() - self.profile.person1.birth_date).days / 365.25
+            p2_age_now = (datetime.now() - self.profile.person2.birth_date).days / 365.25
+            standard_deduction = TaxEngine.calculate_standard_deduction(
+                self.tax_year, filing_status, p1_age=p1_age_now, p2_age=p2_age_now
+            )
+            brackets = self.tax_policy.federal_brackets.get(
+                filing_status, self.tax_policy.federal_brackets["mfj"]
+            )
+            top_of_12_bracket = next((b[1] for b in brackets if b[2] == 0.12), 0)
+            top_of_22_bracket = next((b[1] for b in brackets if b[2] == 0.22), 0)
             available_12_bracket = (
                 top_of_12_bracket - standard_deduction - retirement_income
             )

@@ -20,20 +20,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    op.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            is_active INTEGER DEFAULT 1,
-            is_admin INTEGER DEFAULT 0,
-            created_at TEXT,
-            updated_at TEXT,
-            last_login TEXT
-        )
-    ''')
-
+    # NOTE: Users table is created in ab8f12a95a89_add_users_table.
+    # This migration is a no-op to preserve historical revisions without
+    # re-creating the users table.
     op.execute('CREATE INDEX IF NOT EXISTS idx_users_username ON users (username)')
     op.execute('CREATE INDEX IF NOT EXISTS idx_users_email ON users (email)')
 

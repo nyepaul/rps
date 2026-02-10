@@ -18,6 +18,66 @@ class UserBackupService:
     """Service for handling per-user data backups and restores."""
 
     @staticmethod
+    def _get_table_columns(table_name: str) -> set:
+        """Return the column names for a given table."""
+        query = f"PRAGMA table_info({table_name})"
+        rows = connection.db.execute(query)
+        return {row["name"] for row in rows}
+
+    @staticmethod
+    def _sanitize_backup_data(user_id: int, backup_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate and sanitize backup data to prevent schema abuse and injection."""
+        if not isinstance(backup_data, dict):
+            raise ValueError("Invalid backup file structure")
+
+        required_keys = {"metadata", "profiles", "scenarios", "action_items", "conversations"}
+        if not required_keys.issubset(backup_data.keys()):
+            raise ValueError("Invalid backup file structure")
+
+        def ensure_list(value, key_name):
+            if value is None:
+                return []
+            if not isinstance(value, list):
+                raise ValueError(f"Invalid backup file structure: {key_name} must be a list")
+            return value
+
+        profiles = ensure_list(backup_data.get("profiles"), "profiles")
+        scenarios = ensure_list(backup_data.get("scenarios"), "scenarios")
+        action_items = ensure_list(backup_data.get("action_items"), "action_items")
+        conversations = ensure_list(backup_data.get("conversations"), "conversations")
+
+        # Allowlisted columns based on actual DB schema
+        allowed_profiles = UserBackupService._get_table_columns("profiles")
+        allowed_scenarios = UserBackupService._get_table_columns("scenarios")
+        allowed_action_items = UserBackupService._get_table_columns("action_items")
+        allowed_conversations = UserBackupService._get_table_columns("conversations")
+
+        def sanitize_rows(rows, allowed_cols):
+            sanitized = []
+            for row in rows:
+                if not isinstance(row, dict):
+                    raise ValueError("Invalid backup file structure: row must be an object")
+                clean = {k: v for k, v in row.items() if k in allowed_cols}
+                sanitized.append(clean)
+            return sanitized
+
+        sanitized_data = {
+            "metadata": backup_data.get("metadata", {}),
+            "preferences": backup_data.get("preferences"),
+            "api_keys": backup_data.get("api_keys"),
+            "api_keys_iv": backup_data.get("api_keys_iv"),
+            "profiles": sanitize_rows(profiles, allowed_profiles),
+            "scenarios": sanitize_rows(scenarios, allowed_scenarios),
+            "action_items": sanitize_rows(action_items, allowed_action_items),
+            "conversations": sanitize_rows(conversations, allowed_conversations),
+        }
+
+        # Ensure correct user_id is enforced during restore
+        sanitized_data["metadata"]["user_id"] = user_id
+
+        return sanitized_data
+
+    @staticmethod
     def get_backup_dir() -> Path:
         """Get the directory where user backups are stored."""
         project_root = Path(__file__).parent.parent.parent
@@ -197,6 +257,8 @@ class UserBackupService:
         with open(backup_path, "r") as f:
             backup_data = json.load(f)
 
+        backup_data = UserBackupService._sanitize_backup_data(user_id, backup_data)
+
         # Start transaction
         with connection.db.get_connection() as conn:
             cursor = conn.cursor()
@@ -229,8 +291,9 @@ class UserBackupService:
 
                 fields = list(p_copy.keys())
                 placeholders = ", ".join(["?" for _ in fields])
-                query = (
-                    f"INSERT INTO profiles ({', '.join(fields)}) VALUES ({placeholders})"
+                columns = ", ".join(fields)
+                query = "INSERT INTO profiles ({}) VALUES ({})".format(
+                    columns, placeholders
                 )
                 cursor.execute(query, tuple(p_copy.values()))
                 new_id = cursor.lastrowid
@@ -248,7 +311,10 @@ class UserBackupService:
 
                 fields = list(s_copy.keys())
                 placeholders = ", ".join(["?" for _ in fields])
-                query = f"INSERT INTO scenarios ({', '.join(fields)}) VALUES ({placeholders})"
+                columns = ", ".join(fields)
+                query = "INSERT INTO scenarios ({}) VALUES ({})".format(
+                    columns, placeholders
+                )
                 cursor.execute(query, tuple(s_copy.values()))
 
             # 5. Restore action items
@@ -262,7 +328,10 @@ class UserBackupService:
 
                 fields = list(ai_copy.keys())
                 placeholders = ", ".join(["?" for _ in fields])
-                query = f"INSERT INTO action_items ({', '.join(fields)}) VALUES ({placeholders})"
+                columns = ", ".join(fields)
+                query = "INSERT INTO action_items ({}) VALUES ({})".format(
+                    columns, placeholders
+                )
                 cursor.execute(query, tuple(ai_copy.values()))
 
             # 6. Restore conversations
@@ -276,7 +345,10 @@ class UserBackupService:
 
                 fields = list(c_copy.keys())
                 placeholders = ", ".join(["?" for _ in fields])
-                query = f"INSERT INTO conversations ({', '.join(fields)}) VALUES ({placeholders})"
+                columns = ", ".join(fields)
+                query = "INSERT INTO conversations ({}) VALUES ({})".format(
+                    columns, placeholders
+                )
                 cursor.execute(query, tuple(c_copy.values()))
 
             conn.commit()

@@ -155,51 +155,45 @@ def register():
         password_hash=User.hash_password(data.password),
     )
 
-    # Demo account: no encryption, no recovery needed
-    is_demo = data.username.lower() == "demo"
-    recovery_code = None
+    # Tag demo accounts but do not bypass encryption
+    user._is_demo_account = data.username.lower() == "demo"
 
-    if is_demo:
-        # Demo account stores data unencrypted - no DEK needed
-        user.encrypted_dek = None
-        user.dek_iv = None
-    else:
-        # Generate user-specific encryption key (DEK)
-        dek = EncryptionService.generate_dek()
-        # Use deterministic salt based on identity
-        kek = EncryptionService.get_kek_from_password(
-            data.password, user.get_kek_salt()
-        )
+    # Generate user-specific encryption key (DEK)
+    dek = EncryptionService.generate_dek()
+    # Use deterministic salt based on identity
+    kek = EncryptionService.get_kek_from_password(
+        data.password, user.get_kek_salt()
+    )
 
-        # Encrypt DEK with KEK derived from password
-        temp_service = EncryptionService(key=kek)
-        encrypted_dek, dek_iv = temp_service.encrypt(
-            base64.b64encode(dek).decode("utf-8")
-        )
+    # Encrypt DEK with KEK derived from password
+    temp_service = EncryptionService(key=kek)
+    encrypted_dek, dek_iv = temp_service.encrypt(
+        base64.b64encode(dek).decode("utf-8")
+    )
 
-        # Update user with encryption details
-        user.encrypted_dek = encrypted_dek
-        user.dek_iv = dek_iv
+    # Update user with encryption details
+    user.encrypted_dek = encrypted_dek
+    user.dek_iv = dek_iv
 
-        # Generate recovery code so user can recover data if they forget password
-        recovery_code = EncryptionService.generate_recovery_code()
-        recovery_salt = os.urandom(16)
-        recovery_kek = EncryptionService.get_recovery_kek(recovery_code, recovery_salt)
-        recovery_service = EncryptionService(key=recovery_kek)
-        dek_b64 = base64.b64encode(dek).decode("utf-8")
-        rec_enc_dek, rec_iv = recovery_service.encrypt(dek_b64)
+    # Generate recovery code so user can recover data if they forget password
+    recovery_code = EncryptionService.generate_recovery_code()
+    recovery_salt = os.urandom(16)
+    recovery_kek = EncryptionService.get_recovery_kek(recovery_code, recovery_salt)
+    recovery_service = EncryptionService(key=recovery_kek)
+    dek_b64 = base64.b64encode(dek).decode("utf-8")
+    rec_enc_dek, rec_iv = recovery_service.encrypt(dek_b64)
 
-        user.recovery_encrypted_dek = rec_enc_dek
-        user.recovery_iv = rec_iv
-        user.recovery_salt = base64.b64encode(recovery_salt).decode("utf-8")
+    user.recovery_encrypted_dek = rec_enc_dek
+    user.recovery_iv = rec_iv
+    user.recovery_salt = base64.b64encode(recovery_salt).decode("utf-8")
 
-        # Store recovery code temporarily (encrypted with server key) to show on first login
-        server_service = EncryptionService() # Explicitly uses ENCRYPTION_KEY
-        enc_code, code_iv = server_service.encrypt(recovery_code)
-        user.temp_recovery_code = json.dumps({"code": enc_code, "iv": code_iv})
+    # Store recovery code temporarily (encrypted with server key) to show on first login
+    server_service = EncryptionService() # Explicitly uses ENCRYPTION_KEY
+    enc_code, code_iv = server_service.encrypt(recovery_code)
+    user.temp_recovery_code = json.dumps({"code": enc_code, "iv": code_iv})
 
-        # Also set up email-based recovery backup
-        user.update_email_recovery_backup(dek)
+    # Also set up email-based recovery backup
+    user.update_email_recovery_backup(dek)
 
     user.save()
 
@@ -238,7 +232,7 @@ def register():
         "user": {"username": user.username, "email": user.email},
     }
 
-    # Include recovery code for non-demo accounts
+    # Include recovery code for new accounts
     if recovery_code:
         response_data["recovery_code"] = recovery_code
         response_data["recovery_warning"] = (
@@ -536,8 +530,7 @@ def login():
             print(f"Failed to decrypt temp recovery code: {e}")
             
     # CASE 2: User doesn't have a recovery code set up OR it was never shown (Existing users)
-    # AND it's not a demo account
-    elif user.username.lower() != "demo" and (not user.recovery_encrypted_dek or not user.recovery_code_shown):
+    elif not user.recovery_encrypted_dek or not user.recovery_code_shown:
         try:
             # We have the raw_dek in memory from the login process above
             if 'raw_dek' in locals() and raw_dek:

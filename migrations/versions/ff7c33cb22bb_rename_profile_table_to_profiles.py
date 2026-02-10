@@ -20,9 +20,25 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    op.rename_table('profile', 'profiles')
+    conn = op.get_bind()
+    has_profile = conn.execute(
+        sa.text("SELECT name FROM sqlite_master WHERE type='table' AND name='profile'")
+    ).fetchone()
+    has_profiles = conn.execute(
+        sa.text("SELECT name FROM sqlite_master WHERE type='table' AND name='profiles'")
+    ).fetchone()
+    if has_profile and not has_profiles:
+        op.rename_table('profile', 'profiles')
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.rename_table('profiles', 'profile')
+    conn = op.get_bind()
+    has_profiles = conn.execute(
+        sa.text("SELECT name FROM sqlite_master WHERE type='table' AND name='profiles'")
+    ).fetchone()
+    has_profile = conn.execute(
+        sa.text("SELECT name FROM sqlite_master WHERE type='table' AND name='profile'")
+    ).fetchone()
+    if has_profiles and not has_profile:
+        op.rename_table('profiles', 'profile')

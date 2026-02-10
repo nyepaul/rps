@@ -25,15 +25,13 @@ class EncryptionService:
             key: 32-byte encryption key. If None, derives from ENCRYPTION_KEY env var.
         """
         if key is None:
-            # Get key from environment or use default (change in production!)
-            key_material = os.environ.get(
-                "ENCRYPTION_KEY", "default-key-change-in-production"
-            )
-            if key_material == "default-key-change-in-production":
-                import logging
-                logging.getLogger(__name__).warning(
-                    "SECURITY: Using default encryption key - set ENCRYPTION_KEY env var for production"
-                )
+            # Require explicit key unless explicitly allowed for tests/dev
+            key_material = os.environ.get("ENCRYPTION_KEY")
+            if not key_material:
+                if os.environ.get("RPS_ALLOW_DEFAULT_KEYS", "").lower() == "true":
+                    key_material = "default-key-change-in-production"
+                else:
+                    raise ValueError("ENCRYPTION_KEY must be set for encryption operations")
             key = self._derive_key(key_material)
 
         self.key = key
@@ -104,14 +102,12 @@ class EncryptionService:
 
         Uses a server-side pepper to prevent offline brute-force attacks if the DB is leaked.
         """
-        pepper = os.environ.get(
-            "BACKUP_KEY_PEPPER", "default-pepper-change-in-production"
-        )
-        if pepper == "default-pepper-change-in-production":
-            import logging
-            logging.getLogger(__name__).warning(
-                "SECURITY: Using default pepper - set BACKUP_KEY_PEPPER env var for production"
-            )
+        pepper = os.environ.get("BACKUP_KEY_PEPPER")
+        if not pepper:
+            if os.environ.get("RPS_ALLOW_DEFAULT_KEYS", "").lower() == "true":
+                pepper = "default-pepper-change-in-production"
+            else:
+                raise ValueError("BACKUP_KEY_PEPPER must be set for encryption operations")
 
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),

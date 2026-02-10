@@ -42,11 +42,11 @@ def upgrade() -> None:
     op.execute('''
         INSERT INTO profiles_new (id, user_id, name, birth_date, retirement_date, data, updated_at, created_at)
         SELECT id, 1, name, birth_date, retirement_date, data, updated_at, CURRENT_TIMESTAMP
-        FROM profiles
+        FROM profile
         WHERE EXISTS (SELECT 1 FROM users WHERE id = 1)
     ''')
 
-    op.execute('DROP TABLE profiles')
+    op.execute('DROP TABLE profile')
     op.execute('ALTER TABLE profiles_new RENAME TO profiles')
     op.execute('CREATE INDEX idx_profiles_user_id ON profiles(user_id)')
 

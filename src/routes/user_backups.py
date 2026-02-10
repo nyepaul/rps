@@ -108,9 +108,13 @@ def import_backup():
             except json.JSONDecodeError:
                 return jsonify({"error": "Invalid backup file (not valid JSON)"}), 400
 
-            # Basic validation of backup structure
-            if "metadata" not in backup_data or "profiles" not in backup_data:
-                return jsonify({"error": "Invalid backup file structure"}), 400
+            # Validate and sanitize backup structure
+            try:
+                backup_data = UserBackupService._sanitize_backup_data(
+                    current_user.id, backup_data
+                )
+            except ValueError as e:
+                return jsonify({"error": str(e)}), 400
 
             # Create a safety backup of current state first
             UserBackupService.create_backup(current_user.id, "Pre-import Automatic Backup")

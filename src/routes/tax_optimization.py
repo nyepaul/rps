@@ -7,6 +7,7 @@ from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from pydantic import BaseModel, validator, ValidationError
 from typing import Optional, List
+from datetime import datetime
 from src.models.profile import Profile
 from src.services.tax_optimization_service import TaxOptimizationService
 from src.utils.error_sanitizer import sanitize_pydantic_error
@@ -68,6 +69,7 @@ def analyze_taxes():
         tax_settings = profile_data.get("tax_settings", {})
         address = profile_data.get("address", {})
         filing_status = data.filing_status or tax_settings.get("filing_status", "mfj")
+        tax_year = int(tax_settings.get("tax_year") or datetime.now().year)
 
         # Resolve state with explicit None checks (empty string is valid and should not fallback)
         state = data.state
@@ -82,8 +84,6 @@ def analyze_taxes():
         age = 65
         spouse_age = 65
         if hasattr(profile, "birth_date") and profile.birth_date:
-            from datetime import datetime
-
             try:
                 birth = datetime.fromisoformat(profile.birth_date)
                 age = (datetime.now() - birth).days // 365
@@ -95,8 +95,6 @@ def analyze_taxes():
             profile_data.get("spouse") or {}
         )  # Handle None spouse for single profiles
         if spouse_data.get("birth_date"):
-            from datetime import datetime
-
             try:
                 spouse_birth = datetime.fromisoformat(spouse_data["birth_date"])
                 spouse_age = (datetime.now() - spouse_birth).days // 365
@@ -105,7 +103,7 @@ def analyze_taxes():
 
         # Create service and run analysis
         service = TaxOptimizationService(
-            filing_status=filing_status, state=state, age=age, spouse_age=spouse_age
+            filing_status=filing_status, state=state, age=age, spouse_age=spouse_age, tax_year=tax_year
         )
 
         result = service.get_comprehensive_analysis(profile_data)
@@ -156,6 +154,7 @@ def analyze_roth_conversion():
         financial = profile_data.get("financial", {})
         assets = profile_data.get("assets", {})
         tax_settings = profile_data.get("tax_settings", {})
+        tax_year = int(tax_settings.get("tax_year") or datetime.now().year)
         address = profile_data.get("address", {})
 
         # Calculate current taxable income
@@ -175,7 +174,7 @@ def analyze_roth_conversion():
             state = "CA"
 
         # Create service
-        service = TaxOptimizationService(filing_status=filing_status, state=state)
+        service = TaxOptimizationService(filing_status=filing_status, state=state, tax_year=tax_year)
 
         # Get tax snapshot to find taxable income
         snapshot = service.calculate_tax_snapshot(
@@ -202,6 +201,8 @@ def analyze_roth_conversion():
         return jsonify(result), 200
 
     except Exception as e:
+        from flask import current_app
+        current_app.logger.error("Roth conversion analysis failed", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
@@ -234,18 +235,18 @@ def analyze_social_security_timing():
         # Calculate current age
         current_age = 65
         if hasattr(profile, "birth_date") and profile.birth_date:
-            from datetime import datetime
-
             try:
                 birth = datetime.fromisoformat(profile.birth_date)
                 current_age = (datetime.now() - birth).days // 365
             except Exception:
                 pass
 
-        filing_status = data.filing_status or "mfj"
+        tax_settings = profile_data.get("tax_settings", {})
+        filing_status = data.filing_status or tax_settings.get("filing_status", "mfj")
+        tax_year = int(tax_settings.get("tax_year") or datetime.now().year)
 
         # Create service
-        service = TaxOptimizationService(filing_status=filing_status)
+        service = TaxOptimizationService(filing_status=filing_status, tax_year=tax_year)
 
         # Analyze Social Security claiming strategies
         result = service.analyze_social_security(
@@ -291,6 +292,7 @@ def get_tax_snapshot():
         ss_benefit = (financial.get("social_security_benefit", 0) or 0) * 12
 
         filing_status = tax_settings.get("filing_status", "mfj")
+        tax_year = int(tax_settings.get("tax_year") or datetime.now().year)
 
         # Resolve state with explicit None checks
         state = address.get("state")
@@ -300,7 +302,7 @@ def get_tax_snapshot():
             state = "CA"
 
         # Create service
-        service = TaxOptimizationService(filing_status=filing_status, state=state)
+        service = TaxOptimizationService(filing_status=filing_status, state=state, tax_year=tax_year)
 
         # Get snapshot
         result = service.calculate_tax_snapshot(
@@ -344,6 +346,7 @@ def compare_states():
             current_state = tax_settings.get("state")
         if not current_state:
             current_state = "CA"
+        tax_year = int(tax_settings.get("tax_year") or datetime.now().year)
 
         # Get taxable income
         financial = profile_data.get("financial", {})
@@ -353,7 +356,7 @@ def compare_states():
 
         # Create service
         service = TaxOptimizationService(
-            filing_status=filing_status, state=current_state
+            filing_status=filing_status, state=current_state, tax_year=tax_year
         )
 
         # Get snapshot to calculate taxable income
@@ -403,11 +406,12 @@ def project_rmds():
         if not profile_data:
             return jsonify({"error": "Profile data is empty"}), 400
 
+        tax_settings = profile_data.get("tax_settings", {})
+        tax_year = int(tax_settings.get("tax_year") or datetime.now().year)
+
         # Calculate age
         age = 65
         if hasattr(profile, "birth_date") and profile.birth_date:
-            from datetime import datetime
-
             try:
                 birth = datetime.fromisoformat(profile.birth_date)
                 age = (datetime.now() - birth).days // 365
@@ -424,8 +428,10 @@ def project_rmds():
         )
 
         # Create service and run analysis
-        service = TaxOptimizationService()
-        result = service.analyze_rmd(age, traditional_balance, growth_rate)
+        service = TaxOptimizationService(tax_year=tax_year)
+        result = service.analyze_rmd(
+            age, traditional_balance, growth_rate=growth_rate, years=years
+        )
         result["profile_name"] = profile_name
 
         return jsonify(result), 200

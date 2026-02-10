@@ -8,13 +8,15 @@ import numpy as np
 import pytest
 from datetime import datetime
 from src.services.retirement_model import (
-    CONTRIBUTION_LIMITS,
     Person,
     FinancialProfile,
     MarketAssumptions,
     RetirementModel,
     safe_float,
 )
+from src.services.tax_engine_refactor import TaxEngine
+
+LIMITS = TaxEngine.get_contribution_limits(2024)
 
 
 def _make_person(name="Test Person", age=40, retirement_age=65,
@@ -75,36 +77,40 @@ def _make_profile(person1, person2=None, salary_p1=100000, salary_p2=0,
         annual_ira_contribution=ira_contribution,
         ira_roth_split=ira_roth_split,
         filing_status=filing_status,
+        tax_year=2024,
     )
 
 
 class TestContributionLimitsConstants:
-    """Test the CONTRIBUTION_LIMITS constant values."""
+    """Test the LIMITS constant values."""
 
     def test_constants_exist(self):
-        assert "401k_base" in CONTRIBUTION_LIMITS
-        assert "401k_catchup" in CONTRIBUTION_LIMITS
-        assert "ira_base" in CONTRIBUTION_LIMITS
-        assert "ira_catchup" in CONTRIBUTION_LIMITS
-        assert "section_415c" in CONTRIBUTION_LIMITS
-        assert "section_415c_catchup" in CONTRIBUTION_LIMITS
-        assert "catchup_age" in CONTRIBUTION_LIMITS
+        limits = TaxEngine.get_contribution_limits(2024)
+        assert "401k_base" in limits
+        assert "401k_catchup" in limits
+        assert "ira_base" in limits
+        assert "ira_catchup" in limits
+        assert "section_415c" in limits
+        assert "section_415c_catchup" in limits
+        assert "catchup_age" in limits
 
     def test_2024_irs_values(self):
-        assert CONTRIBUTION_LIMITS["401k_base"] == 23000
-        assert CONTRIBUTION_LIMITS["401k_catchup"] == 7500
-        assert CONTRIBUTION_LIMITS["ira_base"] == 7000
-        assert CONTRIBUTION_LIMITS["ira_catchup"] == 1000
-        assert CONTRIBUTION_LIMITS["section_415c"] == 69000
-        assert CONTRIBUTION_LIMITS["section_415c_catchup"] == 76500
-        assert CONTRIBUTION_LIMITS["catchup_age"] == 50
+        limits = TaxEngine.get_contribution_limits(2024)
+        assert limits["401k_base"] == 23000
+        assert limits["401k_catchup"] == 7500
+        assert limits["ira_base"] == 7000
+        assert limits["ira_catchup"] == 1000
+        assert limits["section_415c"] == 69000
+        assert limits["section_415c_catchup"] == 76500
+        assert limits["catchup_age"] == 50
 
     def test_catchup_totals(self):
         """Verify catchup totals are correct sums."""
-        assert (CONTRIBUTION_LIMITS["401k_base"] +
-                CONTRIBUTION_LIMITS["401k_catchup"]) == 30500
-        assert (CONTRIBUTION_LIMITS["ira_base"] +
-                CONTRIBUTION_LIMITS["ira_catchup"]) == 8000
+        limits = TaxEngine.get_contribution_limits(2024)
+        assert (limits["401k_base"] +
+                limits["401k_catchup"]) == 30500
+        assert (limits["ira_base"] +
+                limits["ira_catchup"]) == 8000
 
 
 class TestFinancialProfileIraRothSplit:
@@ -140,7 +146,7 @@ class TestCappingLogicUnit:
         salary = 300000
         rate = 0.15
         raw = salary * rate  # $45,000
-        limit = CONTRIBUTION_LIMITS["401k_base"]  # $23,000
+        limit = LIMITS["401k_base"]  # $23,000
         capped = np.minimum(raw, limit)
         assert capped == 23000
 
@@ -149,7 +155,7 @@ class TestCappingLogicUnit:
         salary = 300000
         rate = 0.15
         raw = salary * rate  # $45,000
-        limit = CONTRIBUTION_LIMITS["401k_base"] + CONTRIBUTION_LIMITS["401k_catchup"]
+        limit = LIMITS["401k_base"] + LIMITS["401k_catchup"]
         capped = np.minimum(raw, limit)
         assert capped == 30500
 
@@ -158,7 +164,7 @@ class TestCappingLogicUnit:
         salary = 100000
         rate = 0.10
         raw = salary * rate  # $10,000
-        limit = CONTRIBUTION_LIMITS["401k_base"]  # $23,000
+        limit = LIMITS["401k_base"]  # $23,000
         capped = np.minimum(raw, limit)
         assert capped == 10000
 
@@ -166,7 +172,7 @@ class TestCappingLogicUnit:
         """Employer match + employee must not exceed 415(c)."""
         employee = 23000
         employer_raw = 300000 * 0.50  # $150K match
-        limit_415c = CONTRIBUTION_LIMITS["section_415c"]  # $69K
+        limit_415c = LIMITS["section_415c"]  # $69K
         employer_capped = np.minimum(employer_raw, limit_415c - employee)
         employer_capped = np.maximum(employer_capped, 0)
         assert employer_capped == 46000  # $69K - $23K
@@ -176,7 +182,7 @@ class TestCappingLogicUnit:
         """Even if employee exceeds 415c (shouldn't happen), match floors at 0."""
         employee = 70000  # Hypothetical edge case
         employer_raw = 5000
-        limit_415c = CONTRIBUTION_LIMITS["section_415c"]
+        limit_415c = LIMITS["section_415c"]
         employer_capped = np.minimum(employer_raw, limit_415c - employee)
         employer_capped = np.maximum(employer_capped, 0)
         assert employer_capped == 0
@@ -184,21 +190,21 @@ class TestCappingLogicUnit:
     def test_ira_cap_single(self):
         """Single/one-worker IRA capped at $7K."""
         ira_contrib = 20000
-        limit = CONTRIBUTION_LIMITS["ira_base"]
+        limit = LIMITS["ira_base"]
         capped = min(ira_contrib, limit)
         assert capped == 7000
 
     def test_ira_cap_mfj_both_working(self):
         """MFJ both working doubles IRA limit."""
         ira_contrib = 20000
-        limit = CONTRIBUTION_LIMITS["ira_base"] * 2
+        limit = LIMITS["ira_base"] * 2
         capped = min(ira_contrib, limit)
         assert capped == 14000
 
     def test_ira_catchup(self):
         """Age 50+ gets $8K IRA limit."""
         ira_contrib = 20000
-        limit = CONTRIBUTION_LIMITS["ira_base"] + CONTRIBUTION_LIMITS["ira_catchup"]
+        limit = LIMITS["ira_base"] + LIMITS["ira_catchup"]
         capped = min(ira_contrib, limit)
         assert capped == 8000
 
@@ -234,7 +240,7 @@ class TestCappingLogicUnit:
         salaries = np.array([300000, 300000, 300000, 300000, 300000])
         rate = 0.15
         raw = salaries * rate  # All $45K
-        limit = CONTRIBUTION_LIMITS["401k_base"]
+        limit = LIMITS["401k_base"]
         capped = np.minimum(raw, limit)
         assert np.all(capped == 23000)
 
@@ -243,7 +249,7 @@ class TestCappingLogicUnit:
         n = 5
         employee = np.full(n, 23000)
         employer_raw = np.full(n, 150000)
-        limit_415c = CONTRIBUTION_LIMITS["section_415c"]
+        limit_415c = LIMITS["section_415c"]
         employer_capped = np.minimum(employer_raw, limit_415c - employee)
         employer_capped = np.maximum(employer_capped, 0)
         assert np.all(employer_capped == 46000)
@@ -411,7 +417,7 @@ class TestEdgeCases:
         rate = 0.10
         raw = salary * rate
         assert raw == 23000
-        capped = np.minimum(raw, CONTRIBUTION_LIMITS["401k_base"])
+        capped = np.minimum(raw, LIMITS["401k_base"])
         assert capped == 23000  # Should not be reduced
 
     def test_contribution_one_dollar_over(self):
@@ -419,17 +425,17 @@ class TestEdgeCases:
         salary = 230010
         rate = 0.10
         raw = salary * rate
-        capped = np.minimum(raw, CONTRIBUTION_LIMITS["401k_base"])
+        capped = np.minimum(raw, LIMITS["401k_base"])
         assert capped == 23000
 
     def test_ira_exactly_at_limit(self):
         """IRA contribution of exactly $7000 stays at $7000."""
-        capped = min(7000, CONTRIBUTION_LIMITS["ira_base"])
+        capped = min(7000, LIMITS["ira_base"])
         assert capped == 7000
 
     def test_ira_below_limit(self):
         """IRA contribution under limit is not changed."""
-        capped = min(3000, CONTRIBUTION_LIMITS["ira_base"])
+        capped = min(3000, LIMITS["ira_base"])
         assert capped == 3000
 
     def test_safe_float_with_ira_roth_split(self):
@@ -443,7 +449,7 @@ class TestEdgeCases:
         """Employee $23K + employer $46K = exactly $69K."""
         employee = 23000
         employer_raw = 46000
-        limit = CONTRIBUTION_LIMITS["section_415c"]
+        limit = LIMITS["section_415c"]
         employer_capped = np.minimum(employer_raw, limit - employee)
         employer_capped = np.maximum(employer_capped, 0)
         assert employer_capped == 46000
@@ -453,7 +459,7 @@ class TestEdgeCases:
         """Age 50+ 415(c) limit is $76,500."""
         employee = 30500  # Max with catch-up
         employer_raw = 50000
-        limit = CONTRIBUTION_LIMITS["section_415c_catchup"]
+        limit = LIMITS["section_415c_catchup"]
         employer_capped = np.minimum(employer_raw, limit - employee)
         employer_capped = np.maximum(employer_capped, 0)
         assert employer_capped == 46000  # $76,500 - $30,500
@@ -462,7 +468,7 @@ class TestEdgeCases:
     def test_single_filer_ira_not_doubled(self):
         """Single filer with named spouse should NOT get double IRA limit."""
         # filing_status="single" means IRA limit stays at 1x even if spouse exists
-        ira_limit = CONTRIBUTION_LIMITS["ira_base"]
+        ira_limit = LIMITS["ira_base"]
         filing_status = "single"
         # Even though both are working, single filer doesn't double
         if filing_status != "mfj":
@@ -473,7 +479,7 @@ class TestEdgeCases:
 
     def test_mfj_filer_ira_doubled(self):
         """MFJ filer with both working gets double IRA limit."""
-        ira_limit = CONTRIBUTION_LIMITS["ira_base"]
+        ira_limit = LIMITS["ira_base"]
         filing_status = "mfj"
         both_working = True
         if both_working and filing_status == "mfj":

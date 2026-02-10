@@ -40,6 +40,7 @@ def mock_profile():
         budget={},
         filing_status="mfj",
         state="NY",
+        tax_year=2024,
     )
 
 

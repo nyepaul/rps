@@ -238,44 +238,38 @@ def create_app(config_name="development"):
     app.register_blueprint(budget_bp)
     app.register_blueprint(home_ownership_bp)
 
-    # Exempt API blueprints from CSRF
-    from src.extensions import csrf
+    # CSRF is enforced for API routes; only explicitly exempt auth endpoints in extensions.py
 
-    csrf.exempt(profiles_bp)
-    csrf.exempt(analysis_bp)
-    csrf.exempt(scenarios_bp)
-    csrf.exempt(action_items_bp)
-    csrf.exempt(ai_services_bp)
-    csrf.exempt(reports_bp)
-    csrf.exempt(admin_bp)
-    csrf.exempt(feedback_bp)
-    csrf.exempt(roadmap_bp)
-    csrf.exempt(tax_optimization_bp)
-    csrf.exempt(fingerprint_bp)
-    csrf.exempt(events_bp)
-    csrf.exempt(user_backups_bp)
-    csrf.exempt(budget_bp)
-    csrf.exempt(home_ownership_bp)
+    # Configure logging (skip file logging in tests)
+    if not app.config.get("TESTING"):
+        try:
+            if not os.path.exists(os.path.dirname(app.config["LOG_FILE"])):
+                os.makedirs(os.path.dirname(app.config["LOG_FILE"]))
 
-    # Configure logging
-    if True:  # Always log to file
-        if not os.path.exists(os.path.dirname(app.config["LOG_FILE"])):
-            os.makedirs(os.path.dirname(app.config["LOG_FILE"]))
-
-        file_handler = RotatingFileHandler(
-            app.config["LOG_FILE"],
-            maxBytes=app.config["LOG_MAX_BYTES"],
-            backupCount=app.config["LOG_BACKUP_COUNT"],
-        )
-        file_handler.setFormatter(
-            logging.Formatter(
-                "%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]"
+            file_handler = RotatingFileHandler(
+                app.config["LOG_FILE"],
+                maxBytes=app.config["LOG_MAX_BYTES"],
+                backupCount=app.config["LOG_BACKUP_COUNT"],
             )
-        )
-        file_handler.setLevel(logging.DEBUG)
-        app.logger.addHandler(file_handler)
-        app.logger.setLevel(logging.DEBUG)
-        app.logger.info("Retirement Planning System startup")
+            file_handler.setFormatter(
+                logging.Formatter(
+                    "%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]"
+                )
+            )
+            file_handler.setLevel(logging.DEBUG)
+            app.logger.addHandler(file_handler)
+            app.logger.setLevel(logging.DEBUG)
+            app.logger.info("Retirement Planning System startup")
+        except PermissionError:
+            # Fall back to stderr if file logging is not possible (e.g., test env)
+            stream_handler = logging.StreamHandler()
+            stream_handler.setFormatter(
+                logging.Formatter(
+                    "%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]"
+                )
+            )
+            app.logger.addHandler(stream_handler)
+            app.logger.setLevel(logging.DEBUG)
 
     # Security headers - prevent caching of sensitive data
     @app.after_request

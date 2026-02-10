@@ -7,37 +7,17 @@ from typing import Optional, List
 from datetime import datetime, date
 from src.models.profile import Profile
 from src.services.retirement_model import (
-    CONTRIBUTION_LIMITS,
     Person,
     FinancialProfile,
     MarketAssumptions,
     RetirementModel,
 )
+from src.services.tax_engine_refactor import TaxEngine
 from src.services.rebalancing_service import RebalancingService
 from src.services.enhanced_audit_logger import enhanced_audit_logger
 from src.utils.error_sanitizer import sanitize_pydantic_error
 
 analysis_bp = Blueprint("analysis", __name__, url_prefix="/api")
-
-
-def _calculate_progressive_tax(taxable_income, filing_status="mfj"):
-    """Calculate federal tax using progressive brackets (2024 rates)."""
-    if filing_status in ("mfj", "mqw"):
-        brackets = [(23200, 0.10), (94300, 0.12), (201050, 0.22), (383900, 0.24), (487450, 0.32), (731200, 0.35), (float('inf'), 0.37)]
-    elif filing_status == "hoh":
-        brackets = [(16550, 0.10), (63100, 0.12), (100500, 0.22), (191950, 0.24), (243725, 0.32), (609350, 0.35), (float('inf'), 0.37)]
-    else:  # single / mfs
-        brackets = [(11600, 0.10), (47150, 0.12), (100525, 0.22), (191950, 0.24), (243725, 0.32), (365600, 0.35), (float('inf'), 0.37)]
-
-    tax = 0
-    prev_limit = 0
-    for limit, rate in brackets:
-        if taxable_income <= prev_limit:
-            break
-        taxable_in_bracket = min(taxable_income, limit) - prev_limit
-        tax += taxable_in_bracket * rate
-        prev_limit = limit
-    return tax
 
 
 def transform_assets_to_investment_types(assets_data):
@@ -520,6 +500,8 @@ def run_analysis():
         default_filing = "mfj" if has_spouse_for_filing else "single"
         filing_status = tax_settings.get("filing_status") or default_filing
         state = tax_settings.get("state") or address_data.get("state") or "NY"
+        tax_year = int(tax_settings.get("tax_year") or datetime.now().year)
+        tax_year = int(tax_settings.get("tax_year") or datetime.now().year)
 
         financial_profile = FinancialProfile(
             person1=person1,
@@ -545,6 +527,7 @@ def run_analysis():
             savings_allocation=profile_data.get("savings_allocation"),
             filing_status=filing_status,
             state=state,
+            tax_year=tax_year,
         )
 
         # Create retirement model
@@ -1017,6 +1000,7 @@ def get_cashflow_details():
             savings_allocation=profile_data.get("savings_allocation"),
             filing_status=filing_status,
             state=state,
+            tax_year=tax_year,
         )
 
         model = RetirementModel(financial_profile)
@@ -1275,6 +1259,7 @@ def analyze_roth_conversion():
             asset_allocation={"stocks": 0.6, "bonds": 0.4},
             future_expenses=[],
             income_streams=profile_data.get("income_streams", []),
+            tax_year=int(profile_data.get("tax_settings", {}).get("tax_year") or datetime.now().year),
         )
 
         # Calculate Roth conversion tax impact
@@ -1283,10 +1268,11 @@ def analyze_roth_conversion():
         current_income = sum(s.get("amount", 0) * 12 for s in income_streams)
         tax_settings = profile_data.get("tax_settings", {})
         filing_status = tax_settings.get("filing_status", "mfj")
+        tax_year = int(tax_settings.get("tax_year") or datetime.now().year)
 
         # Estimate tax on conversion
-        tax_before = _calculate_progressive_tax(current_income, filing_status)
-        tax_after = _calculate_progressive_tax(current_income + conversion_amount, filing_status)
+        tax_before = TaxEngine.calculate_federal_tax(current_income, tax_year, filing_status)
+        tax_after = TaxEngine.calculate_federal_tax(current_income + conversion_amount, tax_year, filing_status)
         conversion_tax = tax_after - tax_before
 
         results = {
@@ -1392,10 +1378,13 @@ def get_calculation_report():
 
     # Quick version check - return immediately if version check requested
     if json_data.get("version_check"):
-        return jsonify({"version": "3.9.165", "status": "ok"}), 200
+        return jsonify({"version": "3.10.0", "status": "ok"}), 200
 
-    # TEMPORARY: Return minimal hardcoded response to test endpoint
+    # TEMPORARY: Return minimal hardcoded response to test endpoint (testing only)
     if json_data.get("minimal_test"):
+        from flask import current_app
+        if not (current_app.config.get("TESTING") or current_app.config.get("DEBUG")):
+            return jsonify({"error": "minimal_test is only available in testing"}), 400
         return jsonify({
             "profile_name": "Test",
             "generated_at": datetime.now().isoformat(),
@@ -1447,6 +1436,8 @@ def get_calculation_report():
             tax_settings = profile_data.get("tax_settings", {})
             has_spouse_for_filing = bool(spouse_data.get("birth_date") or spouse_data.get("name") or spouse_data.get("social_security_benefit"))
             default_filing = "mfj" if has_spouse_for_filing else "single"
+            tax_year = int(tax_settings.get("tax_year") or datetime.now().year)
+            contrib_limits = TaxEngine.get_contribution_limits(tax_year)
 
             logger.info(f"Income streams type: {type(income_streams)}, count: {len(income_streams) if isinstance(income_streams, list) else 'NOT A LIST'}")
             logger.info(f"Assets data type: {type(assets_data)}")
@@ -1692,17 +1683,17 @@ def get_calculation_report():
                     spouse_salary += amount_annual
 
             # Primary 401k - apply IRS limits
-            p1_401k_limit = CONTRIBUTION_LIMITS["401k_base"]
-            if current_age >= CONTRIBUTION_LIMITS["catchup_age"]:
-                p1_401k_limit += CONTRIBUTION_LIMITS["401k_catchup"]
+            p1_401k_limit = contrib_limits["401k_base"]
+            if current_age >= contrib_limits["catchup_age"]:
+                p1_401k_limit += contrib_limits["401k_catchup"]
             p1_401k_raw = primary_salary * contrib_rate_p1
             p1_401k = min(p1_401k_raw, p1_401k_limit)
 
             p1_match = primary_salary * match_rate_p1
             # Cap total (employee + employer) at Section 415(c)
-            p1_415c_limit = CONTRIBUTION_LIMITS["section_415c"]
-            if current_age >= CONTRIBUTION_LIMITS["catchup_age"]:
-                p1_415c_limit = CONTRIBUTION_LIMITS["section_415c_catchup"]
+            p1_415c_limit = contrib_limits["section_415c"]
+            if current_age >= contrib_limits["catchup_age"]:
+                p1_415c_limit = contrib_limits["section_415c_catchup"]
             p1_match = min(p1_match, max(0, p1_415c_limit - p1_401k))
 
             if p1_401k > 0:
@@ -1726,17 +1717,17 @@ def get_calculation_report():
             contrib_rate_p2 = float(spouse_data.get("annual_401k_contribution_rate", 0) or 0)
             match_rate_p2 = float(spouse_data.get("employer_match_rate", 0) or 0)
             if spouse_data.get("name") and spouse_salary > 0:
-                p2_401k_limit = CONTRIBUTION_LIMITS["401k_base"]
-                if spouse_age >= CONTRIBUTION_LIMITS["catchup_age"]:
-                    p2_401k_limit += CONTRIBUTION_LIMITS["401k_catchup"]
+                p2_401k_limit = contrib_limits["401k_base"]
+                if spouse_age >= contrib_limits["catchup_age"]:
+                    p2_401k_limit += contrib_limits["401k_catchup"]
                 p2_401k_raw = spouse_salary * contrib_rate_p2
                 p2_401k = min(p2_401k_raw, p2_401k_limit)
 
                 p2_match = spouse_salary * match_rate_p2
                 # Cap total at Section 415(c)
-                p2_415c_limit = CONTRIBUTION_LIMITS["section_415c"]
-                if spouse_age >= CONTRIBUTION_LIMITS["catchup_age"]:
-                    p2_415c_limit = CONTRIBUTION_LIMITS["section_415c_catchup"]
+                p2_415c_limit = contrib_limits["section_415c"]
+                if spouse_age >= contrib_limits["catchup_age"]:
+                    p2_415c_limit = contrib_limits["section_415c_catchup"]
                 p2_match = min(p2_match, max(0, p2_415c_limit - p2_401k))
 
                 if p2_401k > 0:
@@ -1759,9 +1750,9 @@ def get_calculation_report():
         # IRA Contributions - apply IRS limits
         ira_annual = financial_data.get("annual_ira_contribution", 0) or 0
         if ira_annual > 0 and current_age < retirement_age:
-            ira_limit = CONTRIBUTION_LIMITS["ira_base"]
-            if max(current_age, spouse_age) >= CONTRIBUTION_LIMITS["catchup_age"]:
-                ira_limit += CONTRIBUTION_LIMITS["ira_catchup"]
+            ira_limit = contrib_limits["ira_base"]
+            if max(current_age, spouse_age) >= contrib_limits["catchup_age"]:
+                ira_limit += contrib_limits["ira_catchup"]
             # MFJ with both working gets double IRA limit (must match simulation logic)
             filing_status_ira = tax_settings.get("filing_status") or financial_data.get("filing_status") or default_filing
             spouse_is_working = False
@@ -1966,7 +1957,7 @@ def get_calculation_report():
         })
 
         # Federal Tax (progressive brackets)
-        federal_tax = _calculate_progressive_tax(taxable_income, filing_status)
+        federal_tax = TaxEngine.calculate_federal_tax(taxable_income, tax_year, filing_status)
         effective_rate = (federal_tax / taxable_income * 100) if taxable_income > 0 else 0
         tax_section["items"].append({
             "label": f"Federal Income Tax ({effective_rate:.1f}% effective)",

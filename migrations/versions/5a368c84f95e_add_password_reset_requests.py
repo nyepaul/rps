@@ -1,7 +1,7 @@
 """add password reset requests
 
 Revision ID: 5a368c84f95e
-Revises: 08692d3a0001
+Revises: b2c3d4e5f6a7
 Create Date: 2026-01-21 13:55:35.769576
 
 """
@@ -14,11 +14,7 @@ from datetime import datetime
 
 # revision identifiers, used by Alembic.
 revision: str = '5a368c84f95e'
-down_revision: Union[str, Sequence[str], None] = 'b2c3d4e5f6a7' # I am correcting this based on the file list I saw earlier, assuming the generated one picked up something else or I should verify. 
-# WAIT. I should NOT trust my manual "correction" if the tool generated it. The tool generated 'b2c3d4e5f6a7'.
-# I must check what 'b2c3d4e5f6a7' is.
-# If I blindly change it, I might break the chain.
-# I will list migrations/versions again to see all files.
+down_revision: Union[str, Sequence[str], None] = 'b2c3d4e5f6a7'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
