@@ -1,5 +1,5 @@
 {
-    "version": "3.9.226",
+    "version": "3.9.227",
     "release_date": "2026-02-10",
-    "release_notes": "Fix Monte Carlo request validation for malformed simulation counts"
+    "release_notes": "Fix demo POST workflows: cashflow tax_year, SS zero-benefit handling, and scenario DB compatibility"
 }

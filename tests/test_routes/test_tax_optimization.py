@@ -84,6 +84,30 @@ def test_analyze_social_security(client, test_user, test_profile):
     assert "profile_name" in data
 
 
+def test_analyze_social_security_zero_pia(client, test_user, test_profile):
+    """Zero SS benefit should not fail analysis with division by zero."""
+    client.post(
+        "/api/auth/login", json={"username": "testuser", "password": "TestPass123"}
+    )
+
+    profile_data = test_profile.data_dict or {}
+    financial = profile_data.get("financial", {})
+    financial["social_security_benefit"] = 0
+    profile_data["financial"] = financial
+    test_profile.data_dict = profile_data
+    test_profile.save()
+
+    response = client.post(
+        "/api/tax-optimization/social-security-timing",
+        json={"profile_name": "Test Profile", "life_expectancy": 90},
+    )
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert "analyses" in data
+    assert data["profile_name"] == "Test Profile"
+
+
 def test_state_comparison(client, test_user, test_profile):
     """Test state tax comparison."""
     # Login

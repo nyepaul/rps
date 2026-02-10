@@ -294,7 +294,11 @@ class SocialSecurityAnalyzer:
                     "annual_benefit": round(monthly_benefit * 12, 2),
                     "lifetime_benefit": round(lifetime_benefit, 2),
                     "years_receiving": years_receiving,
-                    "vs_fra_pct": round((monthly_benefit / pia_at_fra - 1) * 100, 1),
+                    "vs_fra_pct": (
+                        round((monthly_benefit / pia_at_fra - 1) * 100, 1)
+                        if pia_at_fra > 0
+                        else 0.0
+                    ),
                 }
             )
 

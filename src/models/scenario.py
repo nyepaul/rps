@@ -2,6 +2,7 @@
 
 from datetime import datetime
 import json
+import sqlite3
 from src.database import connection
 from src.services.encryption_service import encrypt_dict, decrypt_dict
 
@@ -15,6 +16,7 @@ class Scenario:
         user_id=None,
         profile_id=None,
         name=None,
+        description=None,
         parameters=None,
         parameters_iv=None,
         results=None,
@@ -26,6 +28,7 @@ class Scenario:
         self.user_id = user_id
         self.profile_id = profile_id
         self.name = name
+        self.description = description
         self.parameters = parameters  # Encrypted ciphertext
         self.parameters_iv = parameters_iv  # IV for parameters
         self.results = results  # Encrypted ciphertext
@@ -75,42 +78,87 @@ class Scenario:
                 self.results, self.results_iv = encrypt_dict(self.results)
 
             if self.id is None:
-                cursor.execute(
-                    """
-                    INSERT INTO scenarios (user_id, profile_id, name, parameters, parameters_iv, results, results_iv, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                    (
-                        self.user_id,
-                        self.profile_id,
-                        self.name,
-                        self.parameters,
-                        self.parameters_iv,
-                        self.results,
-                        self.results_iv,
-                        self.created_at,
-                        self.updated_at,
-                    ),
-                )
+                try:
+                    cursor.execute(
+                        """
+                        INSERT INTO scenarios (user_id, profile_id, name, parameters, parameters_iv, results, results_iv, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                        (
+                            self.user_id,
+                            self.profile_id,
+                            self.name,
+                            self.parameters,
+                            self.parameters_iv,
+                            self.results,
+                            self.results_iv,
+                            self.created_at,
+                            self.updated_at,
+                        ),
+                    )
+                except sqlite3.OperationalError as e:
+                    # Backward compatibility: older DB schema may not have updated_at.
+                    if "updated_at" not in str(e).lower():
+                        raise
+                    cursor.execute(
+                        """
+                        INSERT INTO scenarios (user_id, profile_id, name, description, parameters, parameters_iv, results, results_iv, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                        (
+                            self.user_id,
+                            self.profile_id,
+                            self.name,
+                            self.description,
+                            self.parameters,
+                            self.parameters_iv,
+                            self.results,
+                            self.results_iv,
+                            self.created_at,
+                        ),
+                    )
                 self.id = cursor.lastrowid
             else:
                 self.updated_at = datetime.now().isoformat()
-                cursor.execute(
-                    """
-                    UPDATE scenarios
-                    SET name = ?, parameters = ?, parameters_iv = ?, results = ?, results_iv = ?, updated_at = ?
-                    WHERE id = ? AND user_id = ?
-                """,
-                    (
-                        self.name,
-                        self.parameters,
-                        self.parameters_iv,
-                        self.results,
-                        self.results_iv,
-                        self.id,
-                        self.user_id,
-                    ),
-                )
+                try:
+                    cursor.execute(
+                        """
+                        UPDATE scenarios
+                        SET name = ?, description = ?, parameters = ?, parameters_iv = ?, results = ?, results_iv = ?, updated_at = ?
+                        WHERE id = ? AND user_id = ?
+                    """,
+                        (
+                            self.name,
+                            self.description,
+                            self.parameters,
+                            self.parameters_iv,
+                            self.results,
+                            self.results_iv,
+                            self.updated_at,
+                            self.id,
+                            self.user_id,
+                        ),
+                    )
+                except sqlite3.OperationalError as e:
+                    if "updated_at" not in str(e).lower():
+                        raise
+                    cursor.execute(
+                        """
+                        UPDATE scenarios
+                        SET name = ?, description = ?, parameters = ?, parameters_iv = ?, results = ?, results_iv = ?
+                        WHERE id = ? AND user_id = ?
+                    """,
+                        (
+                            self.name,
+                            self.description,
+                            self.parameters,
+                            self.parameters_iv,
+                            self.results,
+                            self.results_iv,
+                            self.id,
+                            self.user_id,
+                        ),
+                    )
         return self
 
     def delete(self):
@@ -169,6 +217,7 @@ class Scenario:
             "user_id": self.user_id,
             "profile_id": self.profile_id,
             "name": self.name,
+            "description": self.description,
             "parameters": parameters_decrypted,
             "results": results_decrypted,
             "created_at": self.created_at,
