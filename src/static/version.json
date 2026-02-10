@@ -1,5 +1,5 @@
 {
-    "version": "3.9.231",
+    "version": "3.9.232",
     "release_date": "2026-02-10",
-    "release_notes": "Fix CSRF token resolution for SPA requests and refresh static asset cache-busters"
+    "release_notes": "Harden CSRF handling by auto-refreshing stale tokens and retrying once on invalid-request responses"
 }

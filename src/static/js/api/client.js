@@ -20,16 +20,17 @@ function getCSRFToken() {
     return localStorage.getItem('csrf_token');
 }
 
-async function ensureCSRFToken() {
-    let token = getCSRFToken();
-    if (token) {
+async function ensureCSRFToken(forceRefresh = false) {
+    const token = getCSRFToken();
+    if (token && !forceRefresh) {
         return token;
     }
 
+    const previousToken = token;
     try {
         const response = await fetch('/api/csrf', { credentials: 'include' });
         if (!response.ok) {
-            return null;
+            return previousToken || null;
         }
         const data = await response.json();
         if (data && data.csrf_token) {
@@ -41,10 +42,10 @@ async function ensureCSRFToken() {
             return data.csrf_token;
         }
     } catch (err) {
-        return null;
+        return previousToken || null;
     }
 
-    return null;
+    return previousToken || null;
 }
 
 /**
@@ -74,13 +75,16 @@ class APIClient {
         // Option to disable automatic redirect on 401 (critical for login page)
         const autoRedirect = options.autoRedirect !== false;
 
-        // Add CSRF token for non-GET requests
-        if (options.method && options.method !== 'GET') {
-            const csrfToken = await ensureCSRFToken();
+        const isMutatingRequest = options.method && options.method !== 'GET';
+        const applyCSRFHeader = async (forceRefresh = false) => {
+            if (!isMutatingRequest) return;
+            const csrfToken = await ensureCSRFToken(forceRefresh);
             if (csrfToken) {
                 config.headers['X-CSRF-Token'] = csrfToken;
             }
-        }
+        };
+
+        await applyCSRFHeader(false);
 
         // Setup 750ms loading spinner delay
         let spinnerTimer = setTimeout(() => {
@@ -88,13 +92,30 @@ class APIClient {
         }, 750);
 
         try {
-            const response = await fetch(`${this.baseURL}${url}`, config);
+            let response = await fetch(`${this.baseURL}${url}`, config);
 
             // Handle authentication errors
             if (response.status === 401 && autoRedirect) {
                 // Redirect to login
                 window.location.href = '/login';
                 throw new Error('Unauthorized');
+            }
+
+            // Retry once with a fresh CSRF token when server rejects request data.
+            if (isMutatingRequest && response.status === 400) {
+                let firstError = {};
+                try {
+                    firstError = await response.clone().json();
+                } catch (_err) {
+                    firstError = {};
+                }
+
+                const errorText = (firstError.error || '').toLowerCase();
+                const csrfLikely = errorText.includes('csrf') || errorText.includes('invalid request data');
+                if (csrfLikely) {
+                    await applyCSRFHeader(true);
+                    response = await fetch(`${this.baseURL}${url}`, config);
+                }
             }
 
             // Parse JSON response
