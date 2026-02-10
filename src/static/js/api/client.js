@@ -11,7 +11,11 @@ import { showSpinner, hideSpinner } from '../utils/dom.js';
 function getCSRFToken() {
     const meta = document.querySelector('meta[name="csrf-token"]');
     if (meta) {
-        return meta.getAttribute('content');
+        const metaToken = (meta.getAttribute('content') || '').trim();
+        // index.html is static; ignore unresolved template placeholders like "{{ csrf_token() }}"
+        if (metaToken && !metaToken.includes('{{') && metaToken.toLowerCase() !== 'csrf_token') {
+            return metaToken;
+        }
     }
     return localStorage.getItem('csrf_token');
 }
@@ -30,6 +34,10 @@ async function ensureCSRFToken() {
         const data = await response.json();
         if (data && data.csrf_token) {
             localStorage.setItem('csrf_token', data.csrf_token);
+            const meta = document.querySelector('meta[name="csrf-token"]');
+            if (meta) {
+                meta.setAttribute('content', data.csrf_token);
+            }
             return data.csrf_token;
         }
     } catch (err) {
