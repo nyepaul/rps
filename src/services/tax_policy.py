@@ -51,12 +51,22 @@ def get_tax_policy(year: int) -> TaxPolicy:
 
     raw = json.loads(path.read_text())
     years = raw.get("years", {})
+    requested_year = year
     if str(year) not in years:
         fallback_year = os.environ.get("RPS_TAX_POLICY_FALLBACK_YEAR")
         if fallback_year and str(fallback_year) in years:
             year = int(fallback_year)
         else:
-            raise ValueError(f"Tax policy for year {year} is missing.")
+            available_years = sorted(
+                int(y) for y in years.keys() if str(y).isdigit()
+            )
+            if not available_years:
+                raise ValueError("No tax policy years are available.")
+
+            # For future years, use the newest available policy.
+            # For older years not in data, use the closest earlier year when possible.
+            eligible = [y for y in available_years if y <= requested_year]
+            year = max(eligible) if eligible else min(available_years)
 
     data = years[str(year)]
     policy = TaxPolicy(
@@ -77,5 +87,6 @@ def get_tax_policy(year: int) -> TaxPolicy:
         qcd_age=float(data["qcd"]["age"]),
         qcd_annual_limit=float(data["qcd"]["annual_limit"]),
     )
+    _POLICY_CACHE[requested_year] = policy
     _POLICY_CACHE[year] = policy
     return policy

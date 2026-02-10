@@ -1237,7 +1237,12 @@ class RetirementModel:
                 state_gain_tax = gains_realized * state_rate
                 net_withdrawal = withdrawal - (ltcg_tax + state_gain_tax)
 
-                basis_ratio = np.where(taxable_val > 0, taxable_basis / taxable_val, 0)
+                basis_ratio = np.divide(
+                    taxable_basis,
+                    taxable_val,
+                    out=np.zeros_like(taxable_basis),
+                    where=taxable_val > 0,
+                )
                 basis_reduction = withdrawal * basis_ratio
 
                 taxable_val -= withdrawal
@@ -1809,8 +1814,11 @@ class RetirementModel:
                         m_state_tax += w_state_tax
 
                         net_w = w - (ltcg + w_state_tax)
-                        basis_ratio = np.where(
-                            taxable_val > 0, taxable_basis / taxable_val, 0
+                        basis_ratio = np.divide(
+                            taxable_basis,
+                            taxable_val,
+                            out=np.zeros_like(taxable_basis),
+                            where=taxable_val > 0,
                         )
                         taxable_val -= w
                         taxable_basis -= w * basis_ratio

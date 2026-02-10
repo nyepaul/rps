@@ -1,5 +1,5 @@
 {
-    "version": "3.9.217",
+    "version": "3.9.218",
     "release_date": "2026-02-10",
-    "release_notes": "Pydantic v2 validator migration and timezone-aware UTC datetime fixes"
+    "release_notes": "Tax policy fallback for missing years and CSRF bootstrap improvements"
 }

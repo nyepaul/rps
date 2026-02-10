@@ -35,3 +35,4 @@ Date: 2026-02-10
   - Cleaned `migrations/versions/5a368c84f95e_add_password_reset_requests.py` down_revision/commentary.
   - Fixed migration ordering issues around profile/profiles tables.
   - Verified `alembic upgrade head` succeeds on a clean DB (2026-02-10).
+- In Progress: Fixing CSRF for SPA analysis requests (add `/api/csrf`, client token fetch).

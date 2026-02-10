@@ -13,6 +13,29 @@ function getCSRFToken() {
     if (meta) {
         return meta.getAttribute('content');
     }
+    return localStorage.getItem('csrf_token');
+}
+
+async function ensureCSRFToken() {
+    let token = getCSRFToken();
+    if (token) {
+        return token;
+    }
+
+    try {
+        const response = await fetch('/api/csrf', { credentials: 'include' });
+        if (!response.ok) {
+            return null;
+        }
+        const data = await response.json();
+        if (data && data.csrf_token) {
+            localStorage.setItem('csrf_token', data.csrf_token);
+            return data.csrf_token;
+        }
+    } catch (err) {
+        return null;
+    }
+
     return null;
 }
 
@@ -45,7 +68,7 @@ class APIClient {
 
         // Add CSRF token for non-GET requests
         if (options.method && options.method !== 'GET') {
-            const csrfToken = getCSRFToken();
+            const csrfToken = await ensureCSRFToken();
             if (csrfToken) {
                 config.headers['X-CSRF-Token'] = csrfToken;
             }
@@ -151,7 +174,7 @@ class APIClient {
             credentials: 'include',
         };
 
-        const csrfToken = getCSRFToken();
+        const csrfToken = await ensureCSRFToken();
         if (csrfToken) {
             config.headers['X-CSRF-Token'] = csrfToken;
         }
