@@ -6,6 +6,34 @@ import { store } from '../../state/store.js';
 import { API_ENDPOINTS } from '../../config.js';
 import { showError, showSuccess } from '../../utils/dom.js';
 
+async function getFreshCSRFToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    const metaToken = (meta?.getAttribute('content') || '').trim();
+    const localToken = (localStorage.getItem('csrf_token') || '').trim();
+
+    const existing = [metaToken, localToken].find(
+        (t) => t && !t.includes('{{') && t.toLowerCase() !== 'csrf_token'
+    );
+
+    if (existing) {
+        return existing;
+    }
+
+    try {
+        const response = await fetch('/api/csrf', { credentials: 'include' });
+        if (!response.ok) return null;
+        const data = await response.json();
+        const token = data?.csrf_token || null;
+        if (token) {
+            localStorage.setItem('csrf_token', token);
+            if (meta) meta.setAttribute('content', token);
+        }
+        return token;
+    } catch (_err) {
+        return null;
+    }
+}
+
 // Generate PDF report for download
 async function generatePdf(container, reportType, profileName, buttonSelector) {
     const button = container.querySelector(buttonSelector);
@@ -25,10 +53,12 @@ async function generatePdf(container, reportType, profileName, buttonSelector) {
             throw new Error('Unknown report type');
         }
 
+        const csrfToken = await getFreshCSRFToken();
         const response = await fetch(endpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
             },
             credentials: 'include',
             body: JSON.stringify({ profile_name: profileName })
@@ -85,10 +115,12 @@ async function viewPdf(container, reportType, profileName, buttonSelector) {
         // Add view=true parameter to endpoint
         const viewEndpoint = endpoint + '?view=true';
 
+        const csrfToken = await getFreshCSRFToken();
         const response = await fetch(viewEndpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
             },
             credentials: 'include',
             body: JSON.stringify({ profile_name: profileName })

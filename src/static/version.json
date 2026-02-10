@@ -1,5 +1,5 @@
 {
-    "version": "3.9.232",
+    "version": "3.9.233",
     "release_date": "2026-02-10",
-    "release_notes": "Harden CSRF handling by auto-refreshing stale tokens and retrying once on invalid-request responses"
+    "release_notes": "Fix Summary tab PDF button CSRF handling and continue CSRF hardening for stale tokens"
 }
