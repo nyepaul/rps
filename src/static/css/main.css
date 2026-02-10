@@ -254,6 +254,12 @@
         body.dark-mode {
             background-image: none;
         }
+
+        /* Ensure true black background in high contrast mode */
+        body.high-contrast-mode {
+            background-color: #000000;
+            background-image: none;
+        }
         
         .container {
             max-width: 1400px;

@@ -1,5 +1,5 @@
 {
-    "version": "3.9.218",
+    "version": "3.9.219",
     "release_date": "2026-02-10",
-    "release_notes": "Tax policy fallback for missing years and CSRF bootstrap improvements"
+    "release_notes": "High-contrast theme: force pure black background"
 }
