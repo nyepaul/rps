@@ -1,5 +1,5 @@
 {
-    "version": "3.10.0",
+    "version": "3.9.216",
     "release_date": "2026-02-10",
     "release_notes": "Migration chain fixes, centralized tax policy, demo encryption hardening, backup import/restore sanitization, and tax optimization corrections"
 }

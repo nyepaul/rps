@@ -1378,7 +1378,7 @@ def get_calculation_report():
 
     # Quick version check - return immediately if version check requested
     if json_data.get("version_check"):
-        return jsonify({"version": "3.10.0", "status": "ok"}), 200
+        return jsonify({"version": "3.9.216", "status": "ok"}), 200
 
     # TEMPORARY: Return minimal hardcoded response to test endpoint (testing only)
     if json_data.get("minimal_test"):
