@@ -1,5 +1,5 @@
 {
-    "version": "3.9.214",
-    "release_date": "2026-02-09",
-    "release_notes": "Fix cashflow chart: retirement gating, inflation adjustment, SS estimation for income streams"
+    "version": "3.9.215",
+    "release_date": "2026-02-10",
+    "release_notes": "Fix 11 calculation bugs: person1 financial data mapping, 401k salary lookup, SS income filtering, expense categories, FICA tax, mortgage key, income stream owner attribution, Person constructor, cashflow spouse check, filing status detection, spouse age deduction"
 }

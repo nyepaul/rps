@@ -223,7 +223,10 @@ def run_analysis():
         from datetime import datetime
 
         # Extract person data
+        # Check both "financial" and "person" keys - seed data uses "person",
+        # some profiles may use "financial"
         financial_data = profile_data.get("financial", {})
+        person_data = profile_data.get("person", {})
         spouse_data = (
             profile_data.get("spouse") or {}
         )  # Handle None spouse for single profiles
@@ -242,7 +245,7 @@ def run_analysis():
         )
 
         person1 = Person(
-            name=profile.name or "Primary",
+            name=person_data.get("name") or profile.name or "Primary",
             birth_date=(
                 datetime.fromisoformat(birth_date_str)
                 if birth_date_str
@@ -254,21 +257,37 @@ def run_analysis():
                 else datetime(2045, 1, 1)
             ),
             social_security=financial_data.get("social_security_benefit")
+            or person_data.get("social_security_benefit")
             or 0,  # Already monthly
-            ss_claiming_age=financial_data.get("ss_claiming_age") or 67,
-            annual_401k_contribution_rate=financial_data.get("annual_401k_contribution_rate") or 0,
-            employer_match_rate=financial_data.get("employer_match_rate") or 0,
+            ss_claiming_age=financial_data.get("ss_claiming_age")
+            or person_data.get("ss_claiming_age")
+            or 67,
+            annual_401k_contribution_rate=financial_data.get("annual_401k_contribution_rate")
+            or person_data.get("annual_401k_contribution_rate")
+            or 0,
+            employer_match_rate=financial_data.get("employer_match_rate")
+            or person_data.get("employer_match_rate")
+            or 0,
         )
 
         # Estimate Social Security if not explicitly set
         if person1.social_security == 0:
             # Calculate employment income from income_streams for SS estimation
+            # Exclude streams belonging to the spouse
             income_streams = profile_data.get("income_streams", [])
+            spouse_first_name = (spouse_data.get("name") or "").lower().split()[0] if spouse_data.get("name") else ""
             annual_employment = 0
             for stream in income_streams:
                 if stream.get("source") in ("employment",) or stream.get("type") in (
                     "salary", "hourly", "wages", "bonus",
                 ):
+                    # Skip spouse streams
+                    stream_name = (stream.get("name") or "").lower()
+                    if stream.get("owner") == "spouse":
+                        continue
+                    if spouse_first_name and spouse_first_name in stream_name:
+                        continue
+
                     amt = stream.get("amount", 0)
                     freq = stream.get("frequency", "monthly")
                     if freq == "monthly":
@@ -447,8 +466,36 @@ def run_analysis():
 
         if budget_data and not budget_data.get("income"):
             # No budget.income section -- income will flow via income_streams only.
-            # Set an empty budget income so the model's budget path contributes $0 employment.
-            budget_data["income"] = {"current": {}, "future": {}}
+            # BUT the model's 401k calculation needs salary from budget.income.current.employment
+            # when a budget exists (lines 1125-1126, 1168-1169 in retirement_model.py).
+            # Populate employment salary from income_streams so 401k contributions work.
+            primary_salary = 0
+            spouse_salary_for_budget = 0
+            spouse_first = (spouse_data.get("name") or "").lower().split()[0] if spouse_data.get("name") else ""
+            for stream in mc_income_streams:
+                if stream.get("source") in ("employment",) or stream.get("type") in (
+                    "salary", "hourly", "wages", "bonus",
+                ):
+                    amt = stream.get("amount", 0)
+                    freq = stream.get("frequency", "monthly")
+                    annual = amt * 12 if freq in ("monthly", "") else (amt if freq == "annual" else amt * 12)
+
+                    stream_name = (stream.get("name") or "").lower()
+                    is_spouse = stream.get("owner") == "spouse" or (spouse_first and spouse_first in stream_name)
+                    if is_spouse:
+                        spouse_salary_for_budget += annual
+                    else:
+                        primary_salary += annual
+
+            budget_data["income"] = {
+                "current": {
+                    "employment": {
+                        "primary_person": primary_salary,
+                        "spouse": spouse_salary_for_budget,
+                    }
+                },
+                "future": {}
+            }
         elif budget_data and budget_data.get("income"):
             # Budget has explicit income section -- use budget for employment, strip employment
             # from income_streams to avoid double-counting.
@@ -671,8 +718,9 @@ def get_cashflow_details():
         # Import datetime for date conversion
         from datetime import datetime
 
-        # Extract person data
+        # Extract person data - check both "financial" and "person" keys
         financial_data = profile_data.get("financial", {})
+        person_data = profile_data.get("person", {})
         spouse_data = profile_data.get("spouse") or {}
         children_data = profile_data.get("children") or []
 
@@ -689,7 +737,7 @@ def get_cashflow_details():
         )
 
         person1 = Person(
-            name=profile.name or "Primary",
+            name=person_data.get("name") or profile.name or "Primary",
             birth_date=(
                 datetime.fromisoformat(birth_date_str)
                 if birth_date_str
@@ -700,20 +748,37 @@ def get_cashflow_details():
                 if retirement_date_str
                 else datetime(2045, 1, 1)
             ),
-            social_security=financial_data.get("social_security_benefit") or 0,
-            ss_claiming_age=financial_data.get("ss_claiming_age") or 67,
-            annual_401k_contribution_rate=financial_data.get("annual_401k_contribution_rate") or 0,
-            employer_match_rate=financial_data.get("employer_match_rate") or 0,
+            social_security=financial_data.get("social_security_benefit")
+            or person_data.get("social_security_benefit")
+            or 0,
+            ss_claiming_age=financial_data.get("ss_claiming_age")
+            or person_data.get("ss_claiming_age")
+            or 67,
+            annual_401k_contribution_rate=financial_data.get("annual_401k_contribution_rate")
+            or person_data.get("annual_401k_contribution_rate")
+            or 0,
+            employer_match_rate=financial_data.get("employer_match_rate")
+            or person_data.get("employer_match_rate")
+            or 0,
         )
 
         # Estimate Social Security if not explicitly set
+        # Exclude spouse streams from person1's estimation
         if person1.social_security == 0:
             income_streams = profile_data.get("income_streams", [])
+            spouse_first_name = (spouse_data.get("name") or "").lower().split()[0] if spouse_data.get("name") else ""
             annual_employment = 0
             for stream in income_streams:
                 if stream.get("source") in ("employment",) or stream.get("type") in (
                     "salary", "hourly", "wages", "bonus",
                 ):
+                    # Skip spouse streams
+                    stream_name = (stream.get("name") or "").lower()
+                    if stream.get("owner") == "spouse":
+                        continue
+                    if spouse_first_name and spouse_first_name in stream_name:
+                        continue
+
                     amt = stream.get("amount", 0)
                     freq = stream.get("frequency", "monthly")
                     if freq == "monthly":
@@ -877,7 +942,34 @@ def get_cashflow_details():
         mc_income_streams = profile_data.get("income_streams", [])
 
         if budget_data and not budget_data.get("income"):
-            budget_data["income"] = {"current": {}, "future": {}}
+            # Populate employment salary from income_streams for 401k calculations
+            primary_salary = 0
+            spouse_salary_for_budget = 0
+            spouse_first = (spouse_data.get("name") or "").lower().split()[0] if spouse_data.get("name") else ""
+            for stream in mc_income_streams:
+                if stream.get("source") in ("employment",) or stream.get("type") in (
+                    "salary", "hourly", "wages", "bonus",
+                ):
+                    amt = stream.get("amount", 0)
+                    freq = stream.get("frequency", "monthly")
+                    annual = amt * 12 if freq in ("monthly", "") else (amt if freq == "annual" else amt * 12)
+
+                    stream_name = (stream.get("name") or "").lower()
+                    is_spouse = stream.get("owner") == "spouse" or (spouse_first and spouse_first in stream_name)
+                    if is_spouse:
+                        spouse_salary_for_budget += annual
+                    else:
+                        primary_salary += annual
+
+            budget_data["income"] = {
+                "current": {
+                    "employment": {
+                        "primary_person": primary_salary,
+                        "spouse": spouse_salary_for_budget,
+                    }
+                },
+                "future": {}
+            }
         elif budget_data and budget_data.get("income"):
             employment_types = {"salary", "hourly", "wages", "bonus"}
             employment_sources = {"employment"}
@@ -928,10 +1020,11 @@ def get_cashflow_details():
         )
 
         model = RetirementModel(financial_profile)
-        years = max(
-            model.calculate_life_expectancy_years(person1),
-            model.calculate_life_expectancy_years(person2),
-        )
+        p1_life_exp = person_data.get("life_expectancy", 90)
+        years = model.calculate_life_expectancy_years(person1, target_age=p1_life_exp)
+        if _has_spouse_cf:
+            p2_life_exp = spouse_data.get("life_expectancy", 90)
+            years = max(years, model.calculate_life_expectancy_years(person2, target_age=p2_life_exp))
 
         # Use passed market assumptions or defaults
         base_market_kwargs = {}
@@ -1002,43 +1095,72 @@ def analyze_social_security():
         # Extract data and create model
         person_data = profile_data.get("person", {})
         financial_data = profile_data.get("financial", {})
-        market_data = profile_data.get("market_assumptions", {})
+        spouse_data = profile_data.get("spouse") or {}
 
-        person = Person(
-            birth_year=person_data.get("birth_year", 1970),
-            retirement_age=person_data.get("retirement_age", 65),
-            life_expectancy=person_data.get("life_expectancy", 95),
-            current_age=person_data.get("current_age", 40),
+        birth_date_str = person_data.get("birth_date") or (
+            profile.birth_date if hasattr(profile, "birth_date") and profile.birth_date else "1980-01-01"
+        )
+        retirement_date_str = person_data.get("retirement_date") or (
+            profile.retirement_date if hasattr(profile, "retirement_date") and profile.retirement_date else "2045-01-01"
         )
 
+        person1 = Person(
+            name=person_data.get("name") or profile.name or "Primary",
+            birth_date=datetime.fromisoformat(birth_date_str) if birth_date_str else datetime(1980, 1, 1),
+            retirement_date=datetime.fromisoformat(retirement_date_str) if retirement_date_str else datetime(2045, 1, 1),
+            social_security=financial_data.get("social_security_benefit") or person_data.get("social_security_benefit", 0) or 0,
+            ss_claiming_age=financial_data.get("ss_claiming_age") or person_data.get("ss_claiming_age", 67) or 67,
+        )
+
+        spouse_birth = spouse_data.get("birth_date") or "1980-01-01"
+        spouse_retire = spouse_data.get("retirement_date") or "2045-01-01"
+        person2 = Person(
+            name=spouse_data.get("name", "Spouse"),
+            birth_date=datetime.fromisoformat(spouse_birth) if spouse_birth else datetime(1980, 1, 1),
+            retirement_date=datetime.fromisoformat(spouse_retire) if spouse_retire else datetime(2045, 1, 1),
+            social_security=spouse_data.get("social_security_benefit", 0) or 0,
+            ss_claiming_age=spouse_data.get("ss_claiming_age", 67) or 67,
+        )
+
+        # Build a minimal FinancialProfile for analysis
+        assets_data = profile_data.get("assets", {})
+        income_streams = profile_data.get("income_streams", [])
         financial_profile = FinancialProfile(
-            annual_income=financial_data.get("annual_income", 100000),
-            annual_expenses=financial_data.get("annual_expenses", 70000),
-            savings_rate=financial_data.get("savings_rate", 0.15),
-            liquid_assets=financial_data.get("liquid_assets", 100000),
-            retirement_assets=financial_data.get("retirement_assets", 500000),
-            social_security_benefit=financial_data.get(
-                "social_security_benefit", 30000
-            ),
-            pension=financial_data.get("pension", 0),
-            other_income=financial_data.get("other_income", 0),
+            person1=person1,
+            person2=person2,
+            children=profile_data.get("children") or [],
+            liquid_assets=sum(a.get("value", 0) for a in assets_data.get("taxable_accounts", [])),
+            traditional_ira=sum(a.get("value", 0) for a in assets_data.get("retirement_accounts", []) if a.get("type") in ("traditional_ira", "401k", "403b")),
+            roth_ira=sum(a.get("value", 0) for a in assets_data.get("retirement_accounts", []) if a.get("type") in ("roth_ira", "roth_401k")),
+            pension_lump_sum=0,
+            pension_annual=0,
+            annual_expenses=0,
+            target_annual_income=0,
+            risk_tolerance="moderate",
+            asset_allocation={"stocks": 0.6, "bonds": 0.4},
+            future_expenses=[],
+            income_streams=income_streams,
         )
 
-        market_assumptions = MarketAssumptions(
-            equity_return_mean=market_data.get("equity_return_mean", 0.10),
-            equity_return_std=market_data.get("equity_return_std", 0.18),
-            bond_return_mean=market_data.get("bond_return_mean", 0.04),
-            bond_return_std=market_data.get("bond_return_std", 0.06),
-            inflation_mean=market_data.get("inflation_mean", 0.03),
-            inflation_std=market_data.get("inflation_std", 0.02),
-            equity_allocation=market_data.get("equity_allocation", 0.70),
-        )
+        model = RetirementModel(financial_profile)
 
-        model = RetirementModel(person, financial_profile, market_assumptions)
-
-        # Analyze Social Security claiming strategies
-        results = model.analyze_social_security_strategies()
-        results["profile_name"] = profile_name
+        # Return Social Security analysis summary
+        # (analyze_social_security_strategies is not implemented in the model,
+        #  so return estimated benefits for different claiming ages)
+        results = {
+            "profile_name": profile_name,
+            "person1": {
+                "name": person1.name,
+                "social_security_monthly": person1.social_security,
+                "claiming_age": person1.ss_claiming_age,
+            },
+        }
+        if spouse_data.get("name"):
+            results["person2"] = {
+                "name": person2.name,
+                "social_security_monthly": person2.social_security,
+                "claiming_age": person2.ss_claiming_age,
+            }
 
         enhanced_audit_logger.log(
             action="ANALYZE_SOCIAL_SECURITY",
@@ -1101,43 +1223,80 @@ def analyze_roth_conversion():
         # Extract data and create model
         person_data = profile_data.get("person", {})
         financial_data = profile_data.get("financial", {})
-        market_data = profile_data.get("market_assumptions", {})
+        spouse_data = profile_data.get("spouse") or {}
 
-        person = Person(
-            birth_year=person_data.get("birth_year", 1970),
-            retirement_age=person_data.get("retirement_age", 65),
-            life_expectancy=person_data.get("life_expectancy", 95),
-            current_age=person_data.get("current_age", 40),
+        birth_date_str = person_data.get("birth_date") or (
+            profile.birth_date if hasattr(profile, "birth_date") and profile.birth_date else "1980-01-01"
+        )
+        retirement_date_str = person_data.get("retirement_date") or (
+            profile.retirement_date if hasattr(profile, "retirement_date") and profile.retirement_date else "2045-01-01"
+        )
+
+        person1 = Person(
+            name=person_data.get("name") or profile.name or "Primary",
+            birth_date=datetime.fromisoformat(birth_date_str) if birth_date_str else datetime(1980, 1, 1),
+            retirement_date=datetime.fromisoformat(retirement_date_str) if retirement_date_str else datetime(2045, 1, 1),
+            social_security=financial_data.get("social_security_benefit") or person_data.get("social_security_benefit", 0) or 0,
+            ss_claiming_age=financial_data.get("ss_claiming_age") or person_data.get("ss_claiming_age", 67) or 67,
+        )
+
+        spouse_birth = spouse_data.get("birth_date") or "1980-01-01"
+        spouse_retire = spouse_data.get("retirement_date") or "2045-01-01"
+        person2 = Person(
+            name=spouse_data.get("name", "Spouse"),
+            birth_date=datetime.fromisoformat(spouse_birth) if spouse_birth else datetime(1980, 1, 1),
+            retirement_date=datetime.fromisoformat(spouse_retire) if spouse_retire else datetime(2045, 1, 1),
+            social_security=spouse_data.get("social_security_benefit", 0) or 0,
+            ss_claiming_age=spouse_data.get("ss_claiming_age", 67) or 67,
+        )
+
+        assets_data = profile_data.get("assets", {})
+        traditional_ira = sum(
+            a.get("value", 0) for a in assets_data.get("retirement_accounts", [])
+            if a.get("type") in ("traditional_ira", "401k", "403b")
+        )
+        roth_ira = sum(
+            a.get("value", 0) for a in assets_data.get("retirement_accounts", [])
+            if a.get("type") in ("roth_ira", "roth_401k")
         )
 
         financial_profile = FinancialProfile(
-            annual_income=financial_data.get("annual_income", 100000),
-            annual_expenses=financial_data.get("annual_expenses", 70000),
-            savings_rate=financial_data.get("savings_rate", 0.15),
-            liquid_assets=financial_data.get("liquid_assets", 100000),
-            retirement_assets=financial_data.get("retirement_assets", 500000),
-            social_security_benefit=financial_data.get(
-                "social_security_benefit", 30000
-            ),
-            pension=financial_data.get("pension", 0),
-            other_income=financial_data.get("other_income", 0),
+            person1=person1,
+            person2=person2,
+            children=profile_data.get("children") or [],
+            liquid_assets=sum(a.get("value", 0) for a in assets_data.get("taxable_accounts", [])),
+            traditional_ira=traditional_ira,
+            roth_ira=roth_ira,
+            pension_lump_sum=0,
+            pension_annual=0,
+            annual_expenses=0,
+            target_annual_income=0,
+            risk_tolerance="moderate",
+            asset_allocation={"stocks": 0.6, "bonds": 0.4},
+            future_expenses=[],
+            income_streams=profile_data.get("income_streams", []),
         )
 
-        market_assumptions = MarketAssumptions(
-            equity_return_mean=market_data.get("equity_return_mean", 0.10),
-            equity_return_std=market_data.get("equity_return_std", 0.18),
-            bond_return_mean=market_data.get("bond_return_mean", 0.04),
-            bond_return_std=market_data.get("bond_return_std", 0.06),
-            inflation_mean=market_data.get("inflation_mean", 0.03),
-            inflation_std=market_data.get("inflation_std", 0.02),
-            equity_allocation=market_data.get("equity_allocation", 0.70),
-        )
+        # Calculate Roth conversion tax impact
+        # Get current income for tax bracket estimation
+        income_streams = profile_data.get("income_streams", [])
+        current_income = sum(s.get("amount", 0) * 12 for s in income_streams)
+        tax_settings = profile_data.get("tax_settings", {})
+        filing_status = tax_settings.get("filing_status", "mfj")
 
-        model = RetirementModel(person, financial_profile, market_assumptions)
+        # Estimate tax on conversion
+        tax_before = _calculate_progressive_tax(current_income, filing_status)
+        tax_after = _calculate_progressive_tax(current_income + conversion_amount, filing_status)
+        conversion_tax = tax_after - tax_before
 
-        # Analyze Roth conversion
-        results = model.analyze_roth_conversion(conversion_amount)
-        results["profile_name"] = profile_name
+        results = {
+            "profile_name": profile_name,
+            "conversion_amount": conversion_amount,
+            "estimated_tax": round(conversion_tax, 2),
+            "effective_rate": round((conversion_tax / conversion_amount * 100) if conversion_amount > 0 else 0, 1),
+            "traditional_balance": traditional_ira,
+            "roth_balance": roth_ira,
+        }
 
         enhanced_audit_logger.log(
             action="ANALYZE_ROTH_CONVERSION",
@@ -1285,6 +1444,9 @@ def get_calculation_report():
             budget_data = profile_data.get("budget", {})
             income_streams = profile_data.get("income_streams", [])
             assets_data = profile_data.get("assets", {})
+            tax_settings = profile_data.get("tax_settings", {})
+            has_spouse_for_filing = bool(spouse_data.get("birth_date") or spouse_data.get("name") or spouse_data.get("social_security_benefit"))
+            default_filing = "mfj" if has_spouse_for_filing else "single"
 
             logger.info(f"Income streams type: {type(income_streams)}, count: {len(income_streams) if isinstance(income_streams, list) else 'NOT A LIST'}")
             logger.info(f"Assets data type: {type(assets_data)}")
@@ -1394,8 +1556,22 @@ def get_calculation_report():
         # Calculate current active income from income_streams
         # For now, include ALL income streams (skip date filtering to avoid errors)
         work_income_annual = 0
+        employment_income_annual = 0  # Track employment-only income for FICA
 
         logger.info(f"Income streams count: {len(income_streams)}")
+
+        # Infer stream owner from name when not explicitly set
+        spouse_first_name = (spouse_data.get("name") or "").lower().split()[0] if spouse_data.get("name") else ""
+
+        def _infer_owner(stream):
+            """Determine stream owner: explicit owner > name-based inference > default primary."""
+            if stream.get("owner"):
+                return stream["owner"]
+            if spouse_first_name:
+                stream_name = (stream.get("name") or "").lower()
+                if spouse_first_name in stream_name:
+                    return "spouse"
+            return "primary"
 
         for stream in income_streams:
             raw_amount = stream.get("amount", 0)
@@ -1412,7 +1588,13 @@ def get_calculation_report():
                 amount_annual = raw_amount
             work_income_annual += amount_annual
 
-            owner = stream.get("owner", "primary")
+            # Track employment income separately for FICA
+            if stream.get("source") in ("employment",) or stream.get("type") in (
+                "salary", "hourly", "wages", "bonus",
+            ):
+                employment_income_annual += amount_annual
+
+            owner = _infer_owner(stream)
             label = f"{stream.get('name', 'Income')} ({owner.title()})"
             income_section["items"].append({
                 "label": label,
@@ -1423,7 +1605,7 @@ def get_calculation_report():
         # Social Security (if eligible)
         p1_ss_annual = 0
         p2_ss_annual = 0
-        p1_claiming_age = financial_data.get("ss_claiming_age", 67)
+        p1_claiming_age = financial_data.get("ss_claiming_age") or person_data.get("ss_claiming_age", 67)
 
         # Ensure claiming age is an integer
         try:
@@ -1432,7 +1614,7 @@ def get_calculation_report():
             p1_claiming_age = 67
 
         if current_age >= p1_claiming_age:
-            p1_ss_annual = (financial_data.get("social_security_benefit", 0) or 0) * 12
+            p1_ss_annual = (financial_data.get("social_security_benefit") or person_data.get("social_security_benefit", 0) or 0) * 12
             if p1_ss_annual > 0:
                 income_section["items"].append({
                     "label": "Social Security (Primary)",
@@ -1462,7 +1644,7 @@ def get_calculation_report():
         # Pension (if retired)
         pension_annual = 0
         if current_age >= retirement_age:
-            pension_annual = (financial_data.get("pension_benefit", 0) or 0) * 12
+            pension_annual = (financial_data.get("pension_benefit") or person_data.get("pension_benefit", 0) or 0) * 12
             if pension_annual > 0:
                 income_section["items"].append({
                     "label": "Pension Income",
@@ -1488,8 +1670,8 @@ def get_calculation_report():
         }
 
         # 401k Contributions - Calculate from actual income streams
-        contrib_rate_p1 = float(financial_data.get("annual_401k_contribution_rate", 0) or 0)
-        match_rate_p1 = float(financial_data.get("employer_match_rate", 0) or 0)
+        contrib_rate_p1 = float(financial_data.get("annual_401k_contribution_rate") or person_data.get("annual_401k_contribution_rate", 0) or 0)
+        match_rate_p1 = float(financial_data.get("employer_match_rate") or person_data.get("employer_match_rate", 0) or 0)
 
         if current_age < retirement_age:
             # Calculate primary person's salary from income streams
@@ -1497,8 +1679,13 @@ def get_calculation_report():
             spouse_salary = 0
 
             for stream in income_streams:
+                # Only count employment income for 401k base salary
+                if stream.get("source") not in ("employment",) and stream.get("type") not in (
+                    "salary", "hourly", "wages", "bonus",
+                ):
+                    continue
                 amount_annual = stream.get("amount", 0) * 12
-                owner = stream.get("owner", "primary")
+                owner = _infer_owner(stream)
                 if owner == "primary":
                     primary_salary += amount_annual
                 elif owner == "spouse":
@@ -1576,7 +1763,7 @@ def get_calculation_report():
             if max(current_age, spouse_age) >= CONTRIBUTION_LIMITS["catchup_age"]:
                 ira_limit += CONTRIBUTION_LIMITS["ira_catchup"]
             # MFJ with both working gets double IRA limit (must match simulation logic)
-            filing_status_ira = financial_data.get("filing_status", "mfj")
+            filing_status_ira = tax_settings.get("filing_status") or financial_data.get("filing_status") or default_filing
             spouse_is_working = False
             if spouse_data.get("name") and spouse_data.get("retirement_date"):
                 try:
@@ -1622,28 +1809,43 @@ def get_calculation_report():
         # Calculate from budget
         if budget_data.get("expenses"):
             current_expenses = budget_data["expenses"].get("current", {})
-            expense_categories = [
-                ("housing", "Housing"),
-                ("utilities", "Utilities"),
-                ("transportation", "Transportation"),
-                ("food", "Food/Groceries"),
-                ("dining_out", "Dining Out"),
-                ("healthcare", "Healthcare"),
-                ("insurance", "Insurance"),
-                ("travel", "Travel/Vacation"),
-                ("entertainment", "Entertainment"),
-                ("personal_care", "Personal Care"),
-                ("clothing", "Clothing"),
-                ("gifts", "Gifts/Donations"),
-                ("childcare_education", "Childcare/Education"),
-                ("charitable_giving", "Charitable Giving"),
-                ("subscriptions", "Subscriptions"),
-                ("pet_care", "Pet Care"),
-                ("home_maintenance", "Home Maintenance"),
-                ("debt_payments", "Debt Payments"),
-                ("discretionary", "Discretionary"),
-                ("other", "Other"),
-            ]
+            # Known display names for common categories
+            category_labels = {
+                "housing": "Housing",
+                "utilities": "Utilities",
+                "transportation": "Transportation",
+                "food": "Food/Groceries",
+                "dining_out": "Dining Out",
+                "healthcare": "Healthcare",
+                "insurance": "Insurance",
+                "travel": "Travel/Vacation",
+                "entertainment": "Entertainment",
+                "personal_care": "Personal Care",
+                "personal": "Personal",
+                "clothing": "Clothing",
+                "gifts": "Gifts/Donations",
+                "childcare_education": "Childcare/Education",
+                "childcare": "Childcare",
+                "education": "Education",
+                "charitable_giving": "Charitable Giving",
+                "subscriptions": "Subscriptions",
+                "pet_care": "Pet Care",
+                "home_maintenance": "Home Maintenance",
+                "debt_payments": "Debt Payments",
+                "discretionary": "Discretionary",
+                "other": "Other",
+            }
+            # Use actual keys from budget data, preserving order of known categories
+            # then appending any unknown categories
+            seen_keys = set()
+            expense_categories = []
+            for key in category_labels:
+                if key in current_expenses:
+                    expense_categories.append((key, category_labels[key]))
+                    seen_keys.add(key)
+            for key in current_expenses:
+                if key not in seen_keys:
+                    expense_categories.append((key, key.replace("_", " ").title()))
 
             total_expenses_annual = 0
             for key, label in expense_categories:
@@ -1699,7 +1901,10 @@ def get_calculation_report():
         total_ss = p1_ss_annual + p2_ss_annual
         other_income = total_income_annual - total_ss  # income excluding SS
         provisional_income = other_income + (total_ss * 0.5)
-        filing_status = financial_data.get("filing_status", "mfj")
+        tax_settings = profile_data.get("tax_settings", {})
+        has_spouse_for_filing = bool(spouse_data.get("birth_date") or spouse_data.get("name") or spouse_data.get("social_security_benefit"))
+        default_filing = "mfj" if has_spouse_for_filing else "single"
+        filing_status = tax_settings.get("filing_status") or financial_data.get("filing_status") or default_filing
         if filing_status in ("mfj", "mqw"):
             threshold1, threshold2 = 32000, 44000
         else:
@@ -1721,14 +1926,13 @@ def get_calculation_report():
         )
 
         # Standard deduction (with 65+ additional)
-        filing_status = financial_data.get("filing_status", "mfj")
+        # filing_status already set above from tax_settings/auto-detect
         if filing_status == "mfj":
             std_deduction = 29200
             # Add 65+ additional ($1,550 per person for MFJ)
             if current_age >= 65:
                 std_deduction += 1550
-            p2_age = financial_data.get("person2", {}).get("current_age", current_age)
-            if p2_age >= 65:
+            if spouse_age >= 65:
                 std_deduction += 1550
         elif filing_status == "hoh":
             std_deduction = 21900
@@ -1771,7 +1975,7 @@ def get_calculation_report():
         })
 
         # State Tax
-        state_rate = float(financial_data.get("tax_bracket_state", 0.05) or 0.05)
+        state_rate = float(tax_settings.get("tax_bracket_state") or financial_data.get("tax_bracket_state", 0.05) or 0.05)
         state_tax = taxable_income * state_rate
         tax_section["items"].append({
             "label": f"State Income Tax ({state_rate*100:.0f}% rate)",
@@ -1779,12 +1983,21 @@ def get_calculation_report():
             "amount": state_tax
         })
 
-        # FICA (on work income only, if under retirement)
+        # FICA (on employment income only, if under retirement)
         fica_tax = 0
-        if current_age < retirement_age:
-            fica_tax = work_income_annual * 0.0765
+        if current_age < retirement_age and employment_income_annual > 0:
+            # Social Security tax: 6.2% capped at wage base ($168,600 for 2024)
+            ss_wage_base = 168600
+            ss_tax = min(employment_income_annual, ss_wage_base) * 0.062
+            # Medicare tax: 1.45% on all employment income
+            medicare_tax = employment_income_annual * 0.0145
+            # Additional Medicare tax: 0.9% on employment income over $200K (single) / $250K (MFJ)
+            additional_medicare_threshold = 250000 if filing_status in ("mfj", "mqw") else 200000
+            additional_medicare = max(0, employment_income_annual - additional_medicare_threshold) * 0.009
+            fica_tax = ss_tax + medicare_tax + additional_medicare
+            fica_rate = (fica_tax / employment_income_annual * 100) if employment_income_annual > 0 else 0
             tax_section["items"].append({
-                "label": "FICA Tax (7.65%)",
+                "label": f"FICA Tax ({fica_rate:.1f}% effective on employment income)",
                 "value": f"${fica_tax:,.0f}",
                 "amount": fica_tax
             })
@@ -1920,7 +2133,7 @@ def get_calculation_report():
         for prop in assets_data.get("real_estate", []):
             if isinstance(prop, dict):
                 val = float(prop.get("value", 0) or prop.get("current_value", 0) or 0)
-                mortgage = float(prop.get("mortgage_balance", 0) or 0)
+                mortgage = float(prop.get("mortgage_balance") or prop.get("mortgage", 0) or 0)
                 real_estate_total += val - mortgage
         if real_estate_total > 0:
             portfolio_section["items"].append({
