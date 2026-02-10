@@ -5,7 +5,7 @@ import re
 import json
 import base64
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from flask import Blueprint, request, jsonify, session, make_response, current_app
 from flask_login import login_user, logout_user, current_user, login_required
 from src.auth.models import User, PasswordResetRequest
@@ -14,7 +14,7 @@ from src.services.encryption_service import EncryptionService
 from src.services.enhanced_audit_logger import EnhancedAuditLogger
 from src.utils.error_sanitizer import sanitize_pydantic_error
 from typing import Any, Optional, Dict
-from pydantic import BaseModel, EmailStr, validator, ValidationError
+from pydantic import BaseModel, EmailStr, field_validator, ValidationError
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
@@ -33,7 +33,7 @@ def check_account_lockout(username: str) -> tuple[bool, int]:
     try:
         # Check failed login attempts in the last LOCKOUT_DURATION_MINUTES
         cutoff_time = (
-            datetime.utcnow() - timedelta(minutes=LOCKOUT_DURATION_MINUTES)
+            datetime.now(timezone.utc) - timedelta(minutes=LOCKOUT_DURATION_MINUTES)
         ).isoformat()
 
         # Query audit log for failed login attempts
@@ -55,10 +55,12 @@ def check_account_lockout(username: str) -> tuple[bool, int]:
             # Account is locked
             if row["last_attempt"]:
                 last_attempt = datetime.fromisoformat(
-                    row["last_attempt"].replace("Z", "+00:00").replace("+00:00", "")
+                    row["last_attempt"].replace("Z", "+00:00")
                 )
+                if last_attempt.tzinfo is None:
+                    last_attempt = last_attempt.replace(tzinfo=timezone.utc)
                 unlock_time = last_attempt + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
-                remaining = (unlock_time - datetime.utcnow()).total_seconds() / 60
+                remaining = (unlock_time - datetime.now(timezone.utc)).total_seconds() / 60
                 return True, max(1, int(remaining))
             return True, LOCKOUT_DURATION_MINUTES
 
@@ -76,7 +78,7 @@ class ResetWithRecoverySchema(BaseModel):
     recovery_code: str
     new_password: str
 
-    @validator("new_password")
+    @field_validator("new_password")
     def validate_password(cls, v):
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters")
@@ -96,7 +98,7 @@ class RegisterSchema(BaseModel):
     email: EmailStr
     password: str
 
-    @validator("username")
+    @field_validator("username")
     def validate_username(cls, v):
         if len(v) < 3 or len(v) > 50:
             raise ValueError("Username must be between 3 and 50 characters")
@@ -106,7 +108,7 @@ class RegisterSchema(BaseModel):
             )
         return v
 
-    @validator("password")
+    @field_validator("password")
     def validate_password(cls, v):
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters")
@@ -492,7 +494,7 @@ def login():
     # For now, we'll keep it True to support the PERMANENT_SESSION_LIFETIME (30m)
     # but we ensure it's cleared properly on logout.
     session.permanent = True
-    session["last_activity"] = datetime.utcnow().isoformat()
+    session["last_activity"] = datetime.now(timezone.utc).isoformat()
 
     # Update successful login audit log
     EnhancedAuditLogger.log(
@@ -724,7 +726,7 @@ class APIKeySchema(BaseModel):
     ollama_model: Optional[str] = None
     preferred_ai_provider: Optional[str] = None
 
-    @validator(
+    @field_validator(
         "claude_api_key",
         "gemini_api_key",
         "openai_api_key",
@@ -736,7 +738,7 @@ class APIKeySchema(BaseModel):
         "huggingface_api_key",
         "zhipu_api_key",
     )
-    def validate_api_key(cls, v, values, **kwargs):
+    def validate_api_key(cls, v):
         if v is not None:
             v = v.strip()
 
@@ -804,7 +806,7 @@ class APIKeySchema(BaseModel):
 
         return v
 
-    @validator("lmstudio_url", "localai_url", "ollama_url")
+    @field_validator("lmstudio_url", "localai_url", "ollama_url")
     def validate_local_urls(cls, v):
         if v is not None:
             v = v.strip()
@@ -1044,7 +1046,7 @@ class PasswordResetSchema(BaseModel):
     token: str
     password: str
 
-    @validator("password")
+    @field_validator("password")
     def validate_password(cls, v):
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters")
@@ -1301,7 +1303,7 @@ class OfflinePasswordChangeSchema(BaseModel):
     old_password: str
     new_password: str
 
-    @validator("new_password")
+    @field_validator("new_password")
     def validate_password(cls, v):
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters")
@@ -1320,7 +1322,7 @@ class PasswordChangeSchema(BaseModel):
     old_password: str
     new_password: str
 
-    @validator("new_password")
+    @field_validator("new_password")
     def validate_password(cls, v):
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters")

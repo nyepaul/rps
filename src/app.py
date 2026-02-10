@@ -4,9 +4,10 @@ Authored by: pan
 """
 
 from flask import Flask, send_from_directory, jsonify, request, g, session
+from flask_wtf.csrf import generate_csrf
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_login import current_user, logout_user
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from src.config import config
 from src.extensions import init_extensions
 import time
@@ -132,12 +133,16 @@ def create_app(config_name="development"):
 
         if current_user.is_authenticated:
             last_activity = session.get("last_activity")
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
 
             if last_activity:
                 # Parse the stored timestamp
                 try:
                     last_activity_time = datetime.fromisoformat(last_activity)
+                    if last_activity_time.tzinfo is None:
+                        last_activity_time = last_activity_time.replace(
+                            tzinfo=timezone.utc
+                        )
                     inactive_duration = now - last_activity_time
 
                     # Check if inactive for more than 30 minutes
@@ -407,6 +412,11 @@ def create_app(config_name="development"):
             ),
             200,
         )
+
+    @app.route("/api/csrf")
+    def csrf_token():
+        """Return a CSRF token for SPA clients."""
+        return jsonify({"csrf_token": generate_csrf()}), 200
 
     return app
 

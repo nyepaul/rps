@@ -2,9 +2,9 @@
 
 from flask import Blueprint, request, jsonify, Response
 from flask_login import login_required, current_user
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from src.models.profile import Profile
 from src.services.asset_service import (
     assets_to_csv,
@@ -27,7 +27,7 @@ class ProfileCreateSchema(BaseModel):
     retirement_date: Optional[str] = None
     data: Optional[dict] = None
 
-    @validator("name")
+    @field_validator("name")
     def validate_name(cls, v):
         import re
 
@@ -43,7 +43,7 @@ class ProfileCreateSchema(BaseModel):
             raise ValueError("Profile name contains invalid characters")
         return v.strip()
 
-    @validator("birth_date", "retirement_date")
+    @field_validator("birth_date", "retirement_date")
     def validate_date(cls, v):
         if v:
             try:
@@ -61,7 +61,7 @@ class ProfileUpdateSchema(BaseModel):
     retirement_date: Optional[str] = None
     data: Optional[dict] = None
 
-    @validator("name")
+    @field_validator("name")
     def validate_name(cls, v):
         import re
 
@@ -81,7 +81,7 @@ class ProfileUpdateSchema(BaseModel):
             return v.strip()
         return v
 
-    @validator("birth_date", "retirement_date")
+    @field_validator("birth_date", "retirement_date")
     def validate_date(cls, v):
         if v:
             try:
@@ -476,7 +476,7 @@ def export_assets_csv(name: str):
         csv_content = assets_to_csv(assets)
 
         # Create response with CSV content
-        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         filename = f"{name.replace(' ', '_')}_assets_{timestamp}.csv"
 
         enhanced_audit_logger.log(

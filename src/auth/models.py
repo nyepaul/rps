@@ -5,7 +5,7 @@ import sqlite3
 import secrets
 import string
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from flask_login import UserMixin
 from src.database import connection
 
@@ -181,8 +181,8 @@ class User(UserMixin):
         payload = {
             "user_id": self.id,
             "email": self.email,
-            "exp": datetime.utcnow() + timedelta(hours=expiry_hours),
-            "iat": datetime.utcnow(),
+            "exp": datetime.now(timezone.utc) + timedelta(hours=expiry_hours),
+            "iat": datetime.now(timezone.utc),
             "purpose": "email_verification",
         }
 
@@ -527,8 +527,8 @@ class User(UserMixin):
 
         payload = {
             "user_id": self.id,
-            "exp": datetime.utcnow() + timedelta(hours=expiry_hours),
-            "iat": datetime.utcnow(),
+            "exp": datetime.now(timezone.utc) + timedelta(hours=expiry_hours),
+            "iat": datetime.now(timezone.utc),
             "jti": jti,
             "purpose": "password_reset",
         }

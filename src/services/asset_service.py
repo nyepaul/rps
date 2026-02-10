@@ -3,7 +3,7 @@
 import csv
 import io
 from typing import Dict, List, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 def sync_legacy_arrays(data: dict) -> dict:
@@ -248,7 +248,7 @@ def csv_to_assets(csv_content: str) -> dict:
     if not required_columns.issubset(reader.fieldnames or []):
         raise ValueError(f"CSV must contain columns: {', '.join(required_columns)}")
 
-    timestamp = datetime.utcnow().isoformat()
+    timestamp = datetime.now(timezone.utc).isoformat()
 
     for row_num, row in enumerate(reader, start=2):
         category = row.get("category", "").strip().lower()

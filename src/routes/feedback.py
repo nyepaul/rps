@@ -2,7 +2,7 @@
 
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 from typing import Optional
 from src.auth.admin_required import admin_required
 from src.auth.super_admin_required import super_admin_required
@@ -25,13 +25,13 @@ class FeedbackSchema(BaseModel):
     browser_info: Optional[dict] = None
     system_info: Optional[dict] = None
 
-    @validator("type")
+    @field_validator("type")
     def validate_type(cls, v):
         if v not in ["comment", "feature", "bug"]:
             raise ValueError("Type must be one of: comment, feature, bug")
         return v
 
-    @validator("content")
+    @field_validator("content")
     def validate_content(cls, v):
         if not v or len(v.strip()) == 0:
             raise ValueError("Content cannot be empty")

@@ -5,7 +5,7 @@ Authored by: pan
 
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
-from pydantic import BaseModel, validator, ValidationError
+from pydantic import BaseModel, ValidationError
 from typing import Optional, List
 from datetime import datetime
 from src.models.profile import Profile

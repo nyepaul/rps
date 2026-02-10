@@ -2,7 +2,7 @@
 
 from flask import Blueprint, request, jsonify, current_app
 from flask_login import login_required, current_user
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 from typing import Optional, Dict, Any
 from src.auth.admin_required import admin_required
 from src.auth.super_admin_required import super_admin_required
@@ -30,7 +30,7 @@ class AuditConfigSchema(BaseModel):
     retention_days: Optional[int] = None
     log_read_operations: Optional[bool] = None
 
-    @validator("retention_days")
+    @field_validator("retention_days")
     def validate_retention_days(cls, v):
         if v is not None and (v < 1 or v > 3650):  # 1 day to 10 years
             raise ValueError("Retention days must be between 1 and 3650")
@@ -49,7 +49,7 @@ class PasswordResetSchema(BaseModel):
 
     new_password: str
 
-    @validator("new_password")
+    @field_validator("new_password")
     def validate_password(cls, v):
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters")
@@ -81,7 +81,7 @@ class SmtpConfigSchema(BaseModel):
     mail_use_ssl: bool = False
     mail_default_sender: str
 
-    @validator("mail_port")
+    @field_validator("mail_port")
     def validate_port(cls, v):
         if v < 1 or v > 65535:
             raise ValueError("Port must be between 1 and 65535")

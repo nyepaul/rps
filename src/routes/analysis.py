@@ -2,7 +2,7 @@
 
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
-from pydantic import BaseModel, validator, ValidationError
+from pydantic import BaseModel, field_validator, ValidationError
 from typing import Optional, List
 from datetime import datetime, date
 from src.models.profile import Profile
@@ -157,7 +157,7 @@ class AnalysisRequestSchema(BaseModel):
     market_periods: Optional[MarketPeriodsSchema] = None  # Use specific schema
     spending_model: Optional[str] = "constant_real"
 
-    @validator("simulations")
+    @field_validator("simulations")
     def validate_simulations(cls, v):
         if v < 100 or v > 50000:
             raise ValueError("Simulations must be between 100 and 50,000")

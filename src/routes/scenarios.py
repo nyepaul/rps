@@ -2,7 +2,7 @@
 
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 from typing import Optional
 from src.models.scenario import Scenario
 from src.models.profile import Profile
@@ -19,7 +19,7 @@ class ScenarioCreateSchema(BaseModel):
     parameters: Optional[dict] = None
     results: Optional[dict] = None
 
-    @validator("name")
+    @field_validator("name")
     def validate_name(cls, v):
         if not v or not v.strip():
             raise ValueError("Scenario name is required")
@@ -35,7 +35,7 @@ class ScenarioUpdateSchema(BaseModel):
     parameters: Optional[dict] = None
     results: Optional[dict] = None
 
-    @validator("name")
+    @field_validator("name")
     def validate_name(cls, v):
         if v is not None:
             if not v.strip():

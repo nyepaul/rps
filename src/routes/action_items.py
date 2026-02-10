@@ -2,7 +2,7 @@
 
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
-from pydantic import BaseModel, validator, root_validator
+from pydantic import BaseModel, field_validator, model_validator
 from typing import Optional
 from src.models.action_item import ActionItem
 from src.models.profile import Profile
@@ -24,8 +24,10 @@ class ActionItemCreateSchema(BaseModel):
     action_data: Optional[dict] = None
     subtasks: Optional[list] = None
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     def check_title_or_description(cls, values):
+        if not isinstance(values, dict):
+            return values
         title = values.get("title")
         description = values.get("description")
 
@@ -37,19 +39,19 @@ class ActionItemCreateSchema(BaseModel):
 
         return values
 
-    @validator("description")
+    @field_validator("description")
     def validate_description(cls, v):
         if v and len(v) > 500:
             raise ValueError("Description must be less than 500 characters")
         return v.strip() if v else v
 
-    @validator("priority")
+    @field_validator("priority")
     def validate_priority(cls, v):
         if v not in ["high", "medium", "low"]:
             raise ValueError("Priority must be one of: high, medium, low")
         return v
 
-    @validator("status")
+    @field_validator("status")
     def validate_status(cls, v):
         if v not in ["pending", "in_progress", "completed"]:
             raise ValueError("Status must be one of: pending, in_progress, completed")
@@ -67,7 +69,7 @@ class ActionItemUpdateSchema(BaseModel):
     action_data: Optional[dict] = None
     subtasks: Optional[list] = None
 
-    @validator("description")
+    @field_validator("description")
     def validate_description(cls, v):
         if v is not None:
             if not v.strip():
@@ -77,13 +79,13 @@ class ActionItemUpdateSchema(BaseModel):
             return v.strip()
         return v
 
-    @validator("priority")
+    @field_validator("priority")
     def validate_priority(cls, v):
         if v is not None and v not in ["high", "medium", "low"]:
             raise ValueError("Priority must be one of: high, medium, low")
         return v
 
-    @validator("status")
+    @field_validator("status")
     def validate_status(cls, v):
         if v is not None and v not in ["pending", "in_progress", "completed"]:
             raise ValueError("Status must be one of: pending, in_progress, completed")

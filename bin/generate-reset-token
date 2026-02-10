@@ -7,7 +7,7 @@ Invalidates any existing tokens for that user.
 import sys
 import os
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 # Add project root to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -24,7 +24,7 @@ def generate_token(username):
 
     # 2. Generate new secure token
     token = secrets.token_urlsafe(32)
-    expires = (datetime.utcnow() + timedelta(hours=2)).isoformat()
+    expires = (datetime.now(timezone.utc) + timedelta(hours=2)).isoformat()
 
     # 3. Update user in database (this replaces/invalidates previous token)
     try:
