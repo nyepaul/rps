@@ -3,7 +3,7 @@
         <div>
             <h1 style="font-size: var(--font-2xl); margin: 0;">🏠 Home & Mortgage</h1>
             <p style="color: var(--text-secondary); margin: 0; font-size: 13px;">
-                Manage details for your primary residence and mortgage.
+                Manage multiple homes and mortgage details.
             </p>
         </div>
         <div style="display: flex; gap: var(--space-2);">
@@ -17,6 +17,21 @@
     </div>
 
     <form id="home-form">
+        <div class="form-section" style="margin-bottom: var(--space-3);">
+            <div style="display: flex; gap: var(--space-2); align-items: end; flex-wrap: wrap;">
+                <div class="form-group" style="margin: 0; min-width: 280px;">
+                    <label for="home_selector">Selected Home</label>
+                    <select id="home_selector" name="home_selector"></select>
+                </div>
+                <button type="button" id="add-home-btn" style="padding: 6px 12px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                    + Add Home
+                </button>
+                <button type="button" id="delete-home-btn" style="padding: 6px 12px; background: var(--danger-color); color: var(--text-on-danger); border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                    Delete Home
+                </button>
+            </div>
+        </div>
+
         <div class="form-grid-2-col">
             <!-- Column 1: Home Details -->
             <div class="form-section">
@@ -24,6 +39,12 @@
                 <div class="form-group">
                     <label for="home_name">Home Name</label>
                     <input type="text" id="home_name" name="home_name" placeholder="e.g., Primary Residence">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="is_primary_residence" name="is_primary_residence">
+                        Mark as Primary Residence
+                    </label>
                 </div>
                 <div class="form-group">
                     <label for="current_value">Current Market Value ($)</label>

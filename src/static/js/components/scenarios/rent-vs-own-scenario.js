@@ -34,7 +34,9 @@ export async function renderRentVsOwnScenario(container) {
         return;
     }
 
-    const homeAsset = profile.data?.home_asset;
+    const homeAssets = Array.isArray(profile.data?.home_assets) ? profile.data.home_assets : [];
+    const primaryHomeFromList = homeAssets.find((home) => home?.is_primary_residence) || homeAssets[0];
+    const homeAsset = profile.data?.home_asset || primaryHomeFromList;
 
     if (!homeAsset) {
         container.innerHTML = `
@@ -330,4 +332,3 @@ function displayResults(container, results) {
 
 // Re-import formatCurrency from utils to use here
 import { formatCurrency } from '../../utils/formatters.js';
-

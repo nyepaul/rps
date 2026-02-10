@@ -41,8 +41,10 @@ def create_home_ownership_scenario():
     if not profile:
         return jsonify({"error": "Profile not found."}), 404
     
-    # Ensure profile has home_asset data if 'base_home_asset_id' is used
-    if scenario_params.get("base_home_asset_id") and not profile.data_dict.get("home_asset"):
+    # Ensure profile has home data if 'base_home_asset_id' is used
+    has_home_asset = bool(profile.data_dict.get("home_asset"))
+    has_home_assets = bool(profile.data_dict.get("home_assets"))
+    if scenario_params.get("base_home_asset_id") and not (has_home_asset or has_home_assets):
         return jsonify({"error": "Base home asset not found in profile."}), 400
 
     # Run the analysis

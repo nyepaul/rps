@@ -1,5 +1,5 @@
 /**
- * Home & Mortgage tab component for managing primary residence details.
+ * Home & Mortgage tab component for managing one or more homes.
  */
 
 import { profilesAPI } from '../../api/profiles.js';
@@ -7,7 +7,119 @@ import { store } from '../../state/store.js';
 import { showSuccess, showError, showSpinner, hideSpinner } from '../../utils/dom.js';
 import { loadTemplate } from '../../utils/template-loader.js';
 import { setupContextualHelp } from '../../utils/contextual-help.js';
-import { validatePositiveNumber, setFieldError, clearFieldError } from '../../utils/validation.js';
+import { validatePositiveNumber, clearFieldError } from '../../utils/validation.js';
+
+function buildDefaultHomeAsset(index = 1) {
+    return {
+        id: crypto.randomUUID(),
+        name: index === 1 ? 'Primary Residence' : `Home ${index}`,
+        current_value: 0,
+        appreciation_annual_pct: 0.03,
+        property_tax_rate: 0.015,
+        home_insurance_annual: 0,
+        maintenance_annual_pct: 0.01,
+        has_mortgage: true,
+        purchase_price: 0,
+        down_payment: 0,
+        loan_amount: 0,
+        interest_rate: 0,
+        loan_term_years: 30,
+        remaining_loan_balance: 0,
+        initial_rent_pm: 0,
+        rent_increase_annual_pct: 0.03,
+        is_primary_residence: index === 1,
+    };
+}
+
+function normalizeHomeAsset(asset, index) {
+    const fallback = buildDefaultHomeAsset(index + 1);
+    return {
+        ...fallback,
+        ...(asset || {}),
+        id: asset?.id || fallback.id,
+        name: asset?.name || fallback.name,
+        is_primary_residence: Boolean(asset?.is_primary_residence),
+    };
+}
+
+function extractHomeAssets(profileData) {
+    const assets = Array.isArray(profileData?.home_assets) ? profileData.home_assets : [];
+
+    if (assets.length > 0) {
+        const normalized = assets.map((asset, idx) => normalizeHomeAsset(asset, idx));
+        if (!normalized.some((h) => h.is_primary_residence)) {
+            normalized[0].is_primary_residence = true;
+        }
+        return normalized;
+    }
+
+    if (profileData?.home_asset) {
+        const migrated = normalizeHomeAsset(profileData.home_asset, 0);
+        migrated.is_primary_residence = true;
+        return [migrated];
+    }
+
+    return [buildDefaultHomeAsset(1)];
+}
+
+function getSelectedHomeIndex(container) {
+    const selector = container.querySelector('#home_selector');
+    const selected = Number(selector?.value ?? 0);
+    return Number.isInteger(selected) && selected >= 0 ? selected : 0;
+}
+
+function readHomeForm(container, existingHome = {}) {
+    const formData = new FormData(container.querySelector('#home-form'));
+    const hasMortgage = formData.get('has_mortgage') === 'yes';
+
+    const home = {
+        ...existingHome,
+        id: existingHome.id || crypto.randomUUID(),
+        name: formData.get('home_name') || 'Primary Residence',
+        is_primary_residence: formData.get('is_primary_residence') === 'on',
+        current_value: parseFloat(formData.get('current_value')) || 0,
+        appreciation_annual_pct: (parseFloat(formData.get('appreciation_annual_pct')) / 100) || 0,
+        property_tax_rate: (parseFloat(formData.get('property_tax_rate')) / 100) || 0,
+        home_insurance_annual: parseFloat(formData.get('home_insurance_annual')) || 0,
+        maintenance_annual_pct: (parseFloat(formData.get('maintenance_annual_pct')) / 100) || 0,
+        has_mortgage: hasMortgage,
+        initial_rent_pm: parseFloat(formData.get('initial_rent_pm')) || 0,
+        rent_increase_annual_pct: (parseFloat(formData.get('rent_increase_annual_pct')) / 100) || 0,
+    };
+
+    if (hasMortgage) {
+        home.purchase_price = parseFloat(formData.get('purchase_price')) || 0;
+        home.down_payment = parseFloat(formData.get('down_payment')) || 0;
+        home.loan_amount = parseFloat(formData.get('loan_amount')) || 0;
+        home.interest_rate = (parseFloat(formData.get('interest_rate')) / 100) || 0;
+        home.loan_term_years = parseInt(formData.get('loan_term_years')) || 0;
+        home.remaining_loan_balance = parseFloat(formData.get('remaining_loan_balance')) || 0;
+    } else {
+        home.purchase_price = 0;
+        home.down_payment = 0;
+        home.loan_amount = 0;
+        home.interest_rate = 0;
+        home.loan_term_years = 0;
+        home.remaining_loan_balance = 0;
+    }
+
+    return home;
+}
+
+function populateHomeSelector(container, homeAssets, selectedIndex) {
+    const selector = container.querySelector('#home_selector');
+    if (!selector) return;
+
+    selector.innerHTML = '';
+    homeAssets.forEach((home, idx) => {
+        const option = document.createElement('option');
+        option.value = String(idx);
+        option.textContent = `${home.name || `Home ${idx + 1}`}${home.is_primary_residence ? ' (Primary)' : ''}`;
+        selector.appendChild(option);
+    });
+
+    selector.value = String(Math.min(Math.max(selectedIndex, 0), homeAssets.length - 1));
+}
 
 export async function renderHomeTab(container) {
     const profile = store.get('currentProfile');
@@ -32,43 +144,30 @@ export async function renderHomeTab(container) {
         return;
     }
 
-    const homeAsset = profile.data?.home_asset || {};
-
-    // Load template
     const template = await loadTemplate('/js/components/home/home-tab.html');
     container.innerHTML = template;
 
-    // Dynamically load CSS
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = '/css/home-tab.css';
     document.head.appendChild(link);
 
-    // Populate form fields
-    populateHomeForm(container, homeAsset);
-
-    // Initialize contextual help
     setupContextualHelp(container);
-
-    // Setup event handlers
     setupHomeFormHandlers(container, profile);
 }
 
 function populateHomeForm(container, homeAsset) {
-    // General Home Details
     container.querySelector('#home_name').value = homeAsset.name || 'Primary Residence';
+    container.querySelector('#is_primary_residence').checked = Boolean(homeAsset.is_primary_residence);
     container.querySelector('#current_value').value = homeAsset.current_value || '';
     container.querySelector('#appreciation_annual_pct').value = (homeAsset.appreciation_annual_pct * 100 || 3);
     container.querySelector('#property_tax_rate').value = (homeAsset.property_tax_rate * 100 || 1.5);
     container.querySelector('#home_insurance_annual').value = homeAsset.home_insurance_annual || '';
     container.querySelector('#maintenance_annual_pct').value = (homeAsset.maintenance_annual_pct * 100 || 1);
 
-    // Mortgage Details
-    const hasMortgage = homeAsset.has_mortgage ?? true; // Default to true
+    const hasMortgage = homeAsset.has_mortgage ?? true;
     container.querySelector('#has_mortgage_yes').checked = hasMortgage;
     container.querySelector('#has_mortgage_no').checked = !hasMortgage;
-    
-    // Toggle mortgage details visibility
     toggleMortgageDetails(container, hasMortgage);
 
     container.querySelector('#purchase_price').value = homeAsset.purchase_price || '';
@@ -78,7 +177,6 @@ function populateHomeForm(container, homeAsset) {
     container.querySelector('#loan_term_years').value = homeAsset.loan_term_years || '';
     container.querySelector('#remaining_loan_balance').value = homeAsset.remaining_loan_balance || '';
 
-    // Renting Details (for comparison)
     container.querySelector('#initial_rent_pm').value = homeAsset.initial_rent_pm || '';
     container.querySelector('#rent_increase_annual_pct').value = (homeAsset.rent_increase_annual_pct * 100 || 3);
 }
@@ -87,21 +185,37 @@ function setupHomeFormHandlers(container, profile) {
     const form = container.querySelector('#home-form');
     const cancelBtn = container.querySelector('#cancel-btn');
     const hasMortgageRadios = container.querySelectorAll('input[name="has_mortgage"]');
-    const mortgageDetailsSection = container.querySelector('#mortgage-details-section');
+    const addHomeBtn = container.querySelector('#add-home-btn');
+    const deleteHomeBtn = container.querySelector('#delete-home-btn');
+    const selector = container.querySelector('#home_selector');
 
-    if (!form || !cancelBtn) {
+    if (!form || !cancelBtn || !selector || !addHomeBtn || !deleteHomeBtn) {
         console.error('Home form elements not found');
         return;
     }
 
-    // Toggle mortgage details based on radio button
-    hasMortgageRadios.forEach(radio => {
+    let homeAssets = extractHomeAssets(profile.data);
+    let selectedIndex = 0;
+
+    const refreshView = () => {
+        populateHomeSelector(container, homeAssets, selectedIndex);
+        populateHomeForm(container, homeAssets[selectedIndex]);
+        deleteHomeBtn.disabled = homeAssets.length <= 1;
+    };
+
+    const syncCurrentFormToModel = () => {
+        const current = homeAssets[selectedIndex] || buildDefaultHomeAsset(selectedIndex + 1);
+        homeAssets[selectedIndex] = readHomeForm(container, current);
+    };
+
+    refreshView();
+
+    hasMortgageRadios.forEach((radio) => {
         radio.addEventListener('change', (e) => {
             toggleMortgageDetails(container, e.target.value === 'yes');
         });
     });
 
-    // Auto-calculate loan_amount if purchase_price and down_payment are available
     const purchasePriceInput = container.querySelector('#purchase_price');
     const downPaymentInput = container.querySelector('#down_payment');
     const loanAmountInput = container.querySelector('#loan_amount');
@@ -116,29 +230,59 @@ function setupHomeFormHandlers(container, profile) {
     if (purchasePriceInput) purchasePriceInput.addEventListener('blur', updateLoanAmount);
     if (downPaymentInput) downPaymentInput.addEventListener('blur', updateLoanAmount);
 
-    // Cancel button
+    selector.addEventListener('change', () => {
+        syncCurrentFormToModel();
+        selectedIndex = getSelectedHomeIndex(container);
+        refreshView();
+    });
+
+    addHomeBtn.addEventListener('click', () => {
+        syncCurrentFormToModel();
+        const newHome = buildDefaultHomeAsset(homeAssets.length + 1);
+        homeAssets.push(newHome);
+        selectedIndex = homeAssets.length - 1;
+        refreshView();
+    });
+
+    deleteHomeBtn.addEventListener('click', () => {
+        if (homeAssets.length <= 1) {
+            showError('At least one home is required.');
+            return;
+        }
+
+        const toDelete = homeAssets[selectedIndex];
+        if (!confirm(`Delete "${toDelete?.name || 'this home'}"?`)) {
+            return;
+        }
+
+        homeAssets.splice(selectedIndex, 1);
+        selectedIndex = Math.max(0, selectedIndex - 1);
+        if (!homeAssets.some((h) => h.is_primary_residence)) {
+            homeAssets[0].is_primary_residence = true;
+        }
+        refreshView();
+    });
+
     cancelBtn.addEventListener('click', () => {
         if (confirm('Discard unsaved changes?')) {
-            window.app.showTab('dashboard'); // Or back to assets tab
+            window.app.showTab('dashboard');
         }
     });
 
-    // Form submission
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        // Basic validation
         const fieldsToValidate = [
-            'current_value', 'appreciation_annual_pct', 'property_tax_rate', 
-            'home_insurance_annual', 'maintenance_annual_pct', 'initial_rent_pm', 
-            'rent_increase_annual_pct', 'purchase_price', 'down_payment', 
-            'loan_amount', 'interest_rate', 'loan_term_years', 'remaining_loan_balance'
+            'current_value', 'appreciation_annual_pct', 'property_tax_rate',
+            'home_insurance_annual', 'maintenance_annual_pct', 'initial_rent_pm',
+            'rent_increase_annual_pct', 'purchase_price', 'down_payment',
+            'loan_amount', 'interest_rate', 'loan_term_years', 'remaining_loan_balance',
         ];
+
         let isValid = true;
-        fieldsToValidate.forEach(fieldId => {
+        fieldsToValidate.forEach((fieldId) => {
             const input = container.querySelector(`#${fieldId}`);
-            if (input && input.offsetParent !== null) { // Check if element is visible
-                // For percentage fields, allow values between 0 and 100 (will be divided by 100 for model)
+            if (input && input.offsetParent !== null) {
                 const isPercentage = ['appreciation_annual_pct', 'property_tax_rate', 'maintenance_annual_pct', 'rent_increase_annual_pct', 'interest_rate'].includes(fieldId);
                 const maxVal = isPercentage ? 100 : Infinity;
 
@@ -161,59 +305,39 @@ function setupHomeFormHandlers(container, profile) {
 
         showSpinner('Saving home details...');
         try {
-            const formData = new FormData(form);
-            const newHomeAsset = {};
+            syncCurrentFormToModel();
 
-            // General Home Details
-            newHomeAsset.id = profile.data?.home_asset?.id || crypto.randomUUID();
-            newHomeAsset.name = formData.get('home_name') || 'Primary Residence';
-            newHomeAsset.current_value = parseFloat(formData.get('current_value')) || 0;
-            newHomeAsset.appreciation_annual_pct = (parseFloat(formData.get('appreciation_annual_pct')) / 100) || 0;
-            newHomeAsset.property_tax_rate = (parseFloat(formData.get('property_tax_rate')) / 100) || 0;
-            newHomeAsset.home_insurance_annual = parseFloat(formData.get('home_insurance_annual')) || 0;
-            newHomeAsset.maintenance_annual_pct = (parseFloat(formData.get('maintenance_annual_pct')) / 100) || 0;
-            newHomeAsset.is_primary_residence = true; // Always true for this component
-
-            // Mortgage Details
-            newHomeAsset.has_mortgage = formData.get('has_mortgage') === 'yes';
-            if (newHomeAsset.has_mortgage) {
-                newHomeAsset.purchase_price = parseFloat(formData.get('purchase_price')) || 0;
-                newHomeAsset.down_payment = parseFloat(formData.get('down_payment')) || 0;
-                newHomeAsset.loan_amount = parseFloat(formData.get('loan_amount')) || 0;
-                newHomeAsset.interest_rate = (parseFloat(formData.get('interest_rate')) / 100) || 0;
-                newHomeAsset.loan_term_years = parseInt(formData.get('loan_term_years')) || 0;
-                newHomeAsset.remaining_loan_balance = parseFloat(formData.get('remaining_loan_balance')) || 0;
-            } else {
-                // Clear mortgage related fields if no mortgage
-                newHomeAsset.purchase_price = 0;
-                newHomeAsset.down_payment = 0;
-                newHomeAsset.loan_amount = 0;
-                newHomeAsset.interest_rate = 0;
-                newHomeAsset.loan_term_years = 0;
-                newHomeAsset.remaining_loan_balance = 0;
+            // Enforce a single primary residence only when selected home is marked primary.
+            const selectedHome = homeAssets[selectedIndex];
+            if (selectedHome?.is_primary_residence) {
+                const selectedHomeId = selectedHome.id;
+                homeAssets = homeAssets.map((home) => ({
+                    ...home,
+                    is_primary_residence: home.id === selectedHomeId,
+                }));
             }
 
-            // Renting Details (for comparison)
-            newHomeAsset.initial_rent_pm = parseFloat(formData.get('initial_rent_pm')) || 0;
-            newHomeAsset.rent_increase_annual_pct = (parseFloat(formData.get('rent_increase_annual_pct')) / 100) || 0;
+            // Guarantee there is always at least one primary residence.
+            if (!homeAssets.some((home) => home.is_primary_residence) && homeAssets.length > 0) {
+                homeAssets[0].is_primary_residence = true;
+            }
 
-            // Build updated profile data
+            const primaryHome = homeAssets.find((home) => home.is_primary_residence) || homeAssets[0];
+
             const updatedProfileData = {
                 ...profile.data,
-                home_asset: newHomeAsset
+                home_assets: homeAssets,
+                home_asset: { ...primaryHome },
             };
 
-            // Save to API
             const result = await profilesAPI.update(profile.name, {
-                data: updatedProfileData
+                data: updatedProfileData,
             });
 
-            // Update store
             store.setState({ currentProfile: result.profile });
-
-            showSuccess('Home details saved successfully!');
+            showSuccess(`Saved ${homeAssets.length} home${homeAssets.length === 1 ? '' : 's'} successfully!`);
             hideSpinner();
-            window.app.showTab('dashboard'); // Navigate back
+            window.app.showTab('dashboard');
         } catch (error) {
             console.error('Error saving home details:', error);
             hideSpinner();
@@ -228,8 +352,7 @@ function toggleMortgageDetails(container, hasMortgage) {
     const mortgageDetailsSection = container.querySelector('#mortgage-details-section');
     if (mortgageDetailsSection) {
         mortgageDetailsSection.style.display = hasMortgage ? 'block' : 'none';
-        // Disable/enable inputs for validation and data collection
-        mortgageDetailsSection.querySelectorAll('input, select').forEach(input => {
+        mortgageDetailsSection.querySelectorAll('input, select').forEach((input) => {
             input.disabled = !hasMortgage;
         });
     }
