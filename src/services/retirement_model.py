@@ -1700,6 +1700,10 @@ class RetirementModel:
                 m_available_cash = (m_ord_taxable + (m_gross_ss - m_taxable_ss)) - (
                     m_fed_tax + m_state_tax + m_fica_tax
                 )
+
+                # Track taxes from home-sale liquidation in this month.
+                home_sale_ltcg_tax = 0
+                home_sale_state_tax = 0
                 
                 # Check for Home Sales this year (only once per year, usually first month)
                 m_liquidation_proceeds = 0
@@ -1718,18 +1722,24 @@ class RetirementModel:
                                     else 0
                                 )
                                 taxable_gain = np.maximum(0, gain - exclusion)
-                                # Simplified LTCG for detailed (single run)
-                                capital_gains_tax = taxable_gain * 0.15
+                                # Use the same stacked LTCG logic as Monte Carlo for consistency.
+                                capital_gains_tax = self._vectorized_ltcg_tax(
+                                    taxable_gain, cumulative_ordinary_gross
+                                )
+                                state_gain_tax = taxable_gain * state_rate
                                 net_proceeds = (
                                     gross_proceeds
                                     - mortgage_payoff
                                     - transaction_costs
                                     - capital_gains_tax
+                                    - state_gain_tax
                                 )
                                 available_proceeds = net_proceeds - prop["replacement_cost"]
                                 
                                 proceeds_val = np.maximum(0, available_proceeds).item()
                                 m_liquidation_proceeds += proceeds_val
+                                home_sale_ltcg_tax += capital_gains_tax.item()
+                                home_sale_state_tax += state_gain_tax.item()
                                 
                                 # Liquidate
                                 prop["is_sold"] = np.where(active_mask, True, prop["is_sold"])
@@ -1744,7 +1754,8 @@ class RetirementModel:
 
                 # --- Handle Withdrawals (Robust Waterfall) ---
                 m_withdrawals = 0
-                m_ltcg_tax = 0
+                m_ltcg_tax = home_sale_ltcg_tax
+                m_state_tax += home_sale_state_tax
 
                 if np.any(m_shortfall > 0):
                     # 1. Cash (Already taxed)

@@ -1,5 +1,5 @@
 {
-    "version": "3.9.223",
+    "version": "3.9.224",
     "release_date": "2026-02-10",
-    "release_notes": "Add multi-home support in Home & Mortgage tab"
+    "release_notes": "Financial audit: align detailed home-sale tax logic with Monte Carlo and add projection invariants"
 }

@@ -278,3 +278,93 @@ class TestFinancialIntegrity:
         assert median_b < median_a, f"Volatility drag missing: {median_b} >= {median_a}"
         # With 20% vol, median should be roughly exp(mu - 0.5*sigma^2)*t
         # This is just a sanity check that it is lower
+
+    def test_cashflow_spenddown_identity_no_income_no_returns(self):
+        """
+        Deterministic cashflow identity:
+        With no income, no taxes, and no returns, ending balance must equal
+        starting balance minus total expenses.
+        """
+        p1 = Person("Cashflow Audit", datetime(1985, 1, 1), datetime(2050, 1, 1), 0)
+        profile = FinancialProfile(
+            person1=p1,
+            person2=Person("Spouse", datetime(1985, 1, 1), datetime(2050, 1, 1), 0),
+            children=[],
+            liquid_assets=120000.0,
+            traditional_ira=0.0,
+            roth_ira=0.0,
+            pension_lump_sum=0.0,
+            pension_annual=0.0,
+            annual_expenses=60000.0,
+            target_annual_income=60000.0,
+            risk_tolerance="low",
+            asset_allocation={"stocks": 0.0, "bonds": 0.0},
+            future_expenses=[],
+            investment_types=[{"account": "Checking", "value": 120000.0, "cost_basis": 120000.0}],
+            income_streams=[],
+            filing_status="single",
+            state="TX",
+        )
+        model = RetirementModel(profile)
+        assumptions = MarketAssumptions(
+            stock_return_mean=0.0,
+            bond_return_mean=0.0,
+            cash_return_mean=0.0,
+            inflation_mean=0.0,
+        )
+
+        ledger = model.run_detailed_projection(years=1, assumptions=assumptions)
+        ending_balance = ledger[-1]["portfolio_balance"]
+        total_expenses = sum(row["expenses_excluding_tax"] for row in ledger)
+        total_taxes = sum(
+            row["federal_tax"] + row["state_tax"] + row["fica_tax"] + row["ltcg_tax"]
+            for row in ledger
+        )
+
+        assert abs(total_taxes) < 1e-6, f"Expected zero taxes, got {total_taxes}"
+        assert abs(total_expenses - 60000.0) < 1.0
+        assert abs(ending_balance - (120000.0 - total_expenses)) < 1.0
+
+    def test_monte_carlo_zero_return_no_cashflow_keeps_portfolio_constant(self):
+        """
+        Portfolio projection invariant:
+        If returns, inflation, expenses, and income are all zero, every path should
+        remain equal to starting portfolio.
+        """
+        p1 = Person("Invariant User", datetime(1990, 1, 1), datetime(2060, 1, 1), 0)
+        profile = FinancialProfile(
+            person1=p1,
+            person2=Person("None", datetime(1990, 1, 1), datetime(2060, 1, 1), 0),
+            children=[],
+            liquid_assets=500000.0,
+            traditional_ira=0.0,
+            roth_ira=0.0,
+            pension_lump_sum=0.0,
+            pension_annual=0.0,
+            annual_expenses=0.0,
+            target_annual_income=0.0,
+            risk_tolerance="low",
+            asset_allocation={"stocks": 0.0, "bonds": 0.0},
+            future_expenses=[],
+            investment_types=[{"account": "Taxable Brokerage", "value": 500000.0, "cost_basis": 500000.0}],
+            income_streams=[],
+            filing_status="single",
+            state="TX",
+        )
+        model = RetirementModel(profile)
+        assumptions = MarketAssumptions(
+            stock_return_mean=0.0,
+            stock_return_std=0.0,
+            bond_return_mean=0.0,
+            bond_return_std=0.0,
+            cash_return_mean=0.0,
+            cash_return_std=0.0,
+            inflation_mean=0.0,
+            inflation_std=0.0,
+        )
+
+        results = model.monte_carlo_simulation(years=15, simulations=200, assumptions=assumptions)
+        assert abs(results["starting_portfolio"] - 500000.0) < 1e-6
+        assert abs(results["median_final_balance"] - 500000.0) < 1.0
+        assert abs(results["percentile_10"] - 500000.0) < 1.0
+        assert abs(results["percentile_90"] - 500000.0) < 1.0
