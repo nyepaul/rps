@@ -1,5 +1,5 @@
 {
-    "version": "3.9.229",
+    "version": "3.9.230",
     "release_date": "2026-02-10",
-    "release_notes": "Fix calculation report CSRF failure and add portfolio projection attribution details"
+    "release_notes": "Fix stale frontend cache-busters so calculation report CSRF fix is loaded"
 }
