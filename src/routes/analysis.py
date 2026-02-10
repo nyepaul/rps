@@ -17,6 +17,7 @@ from src.services.tax_engine_refactor import TaxEngine
 from src.services.rebalancing_service import RebalancingService
 from src.services.enhanced_audit_logger import enhanced_audit_logger
 from src.utils.error_sanitizer import sanitize_pydantic_error
+from src.__version__ import __version__
 
 analysis_bp = Blueprint("analysis", __name__, url_prefix="/api")
 
@@ -1395,10 +1396,12 @@ def get_calculation_report():
     """Generate detailed calculation report showing all income, expenses, taxes, and portfolio calculations."""
     json_data = request.get_json(silent=True) or {}
     profile_name = None
+    import logging
+    logger = logging.getLogger(__name__)
 
     # Quick version check - return immediately if version check requested
     if json_data.get("version_check"):
-        return jsonify({"version": "3.9.216", "status": "ok"}), 200
+        return jsonify({"version": __version__, "status": "ok"}), 200
 
     # TEMPORARY: Return minimal hardcoded response to test endpoint (testing only)
     if json_data.get("minimal_test"):
@@ -1434,8 +1437,6 @@ def get_calculation_report():
             profile_data = profile.data_dict
 
             # Debug: log the structure we're receiving
-            import logging
-            logger = logging.getLogger(__name__)
             logger.info(f"Profile data type: {type(profile_data)}")
             logger.info(f"Profile data keys: {list(profile_data.keys()) if isinstance(profile_data, dict) else 'NOT A DICT'}")
 
@@ -1453,7 +1454,9 @@ def get_calculation_report():
             budget_data = profile_data.get("budget", {})
             income_streams = profile_data.get("income_streams", [])
             assets_data = profile_data.get("assets", {})
+            children_data = profile_data.get("children") or []
             tax_settings = profile_data.get("tax_settings", {})
+            address_data = profile_data.get("address", {})
             has_spouse_for_filing = bool(spouse_data.get("birth_date") or spouse_data.get("name") or spouse_data.get("social_security_benefit"))
             default_filing = "mfj" if has_spouse_for_filing else "single"
             tax_year = int(tax_settings.get("tax_year") or datetime.now().year)
@@ -2175,6 +2178,231 @@ def get_calculation_report():
 
         if len(portfolio_section["items"]) > 0:
             report["sections"].append(portfolio_section)
+
+        # 8. PORTFOLIO PROJECTION ATTRIBUTION (Deterministic)
+        try:
+            investment_types = transform_assets_to_investment_types(assets_data)
+
+            liquid_assets = sum(
+                float(a.get("value", 0) or 0)
+                for a in assets_data.get("taxable_accounts", [])
+                if isinstance(a, dict)
+            )
+            traditional_ira = sum(
+                float(a.get("value", 0) or 0)
+                for a in assets_data.get("retirement_accounts", [])
+                if isinstance(a, dict)
+                and (
+                    "traditional" in a.get("type", "").lower()
+                    or "401" in a.get("type", "").lower()
+                    or "403" in a.get("type", "").lower()
+                    or "457" in a.get("type", "").lower()
+                )
+            )
+            roth_ira = sum(
+                float(a.get("value", 0) or 0)
+                for a in assets_data.get("retirement_accounts", [])
+                if isinstance(a, dict) and "roth" in a.get("type", "").lower()
+            )
+
+            birth_date_str = person_data.get("birth_date") or (
+                profile.birth_date if hasattr(profile, "birth_date") and profile.birth_date else "1980-01-01"
+            )
+            retirement_date_str = person_data.get("retirement_date") or (
+                profile.retirement_date if hasattr(profile, "retirement_date") and profile.retirement_date else "2045-01-01"
+            )
+
+            p1 = Person(
+                name=person_data.get("name") or profile.name or "Primary",
+                birth_date=datetime.fromisoformat(str(birth_date_str)) if birth_date_str else datetime(1980, 1, 1),
+                retirement_date=datetime.fromisoformat(str(retirement_date_str)) if retirement_date_str else datetime(2045, 1, 1),
+                social_security=financial_data.get("social_security_benefit") or person_data.get("social_security_benefit", 0) or 0,
+                ss_claiming_age=financial_data.get("ss_claiming_age") or person_data.get("ss_claiming_age", 67) or 67,
+                annual_401k_contribution_rate=financial_data.get("annual_401k_contribution_rate") or person_data.get("annual_401k_contribution_rate") or 0,
+                employer_match_rate=financial_data.get("employer_match_rate") or person_data.get("employer_match_rate") or 0,
+            )
+
+            spouse_birth = spouse_data.get("birth_date") or "1980-01-01"
+            spouse_retire = spouse_data.get("retirement_date") or (
+                profile.retirement_date if hasattr(profile, "retirement_date") and profile.retirement_date else "2045-01-01"
+            )
+            p2 = Person(
+                name=spouse_data.get("name", "Spouse"),
+                birth_date=datetime.fromisoformat(str(spouse_birth)) if spouse_birth else datetime(1980, 1, 1),
+                retirement_date=datetime.fromisoformat(str(spouse_retire)) if spouse_retire else datetime(2045, 1, 1),
+                social_security=spouse_data.get("social_security_benefit") or 0,
+                ss_claiming_age=spouse_data.get("ss_claiming_age") or 67,
+                annual_401k_contribution_rate=spouse_data.get("annual_401k_contribution_rate") or 0,
+                employer_match_rate=spouse_data.get("employer_match_rate") or 0,
+            )
+
+            projection_budget_data = budget_data.copy() if isinstance(budget_data, dict) else {}
+            mc_income_streams = income_streams[:] if isinstance(income_streams, list) else []
+            spouse_first = (spouse_data.get("name") or "").lower().split()[0] if spouse_data.get("name") else ""
+            if projection_budget_data and not projection_budget_data.get("income"):
+                primary_salary = 0
+                spouse_salary = 0
+                for stream in mc_income_streams:
+                    if stream.get("source") in ("employment",) or stream.get("type") in ("salary", "hourly", "wages", "bonus"):
+                        amt = float(stream.get("amount", 0) or 0)
+                        freq = (stream.get("frequency") or "monthly").lower()
+                        annual_amt = amt * 12 if freq in ("monthly", "") else (amt if freq == "annual" else amt * 12)
+                        stream_name = (stream.get("name") or "").lower()
+                        if stream.get("owner") == "spouse" or (spouse_first and spouse_first in stream_name):
+                            spouse_salary += annual_amt
+                        else:
+                            primary_salary += annual_amt
+
+                projection_budget_data["income"] = {
+                    "current": {"employment": {"primary_person": primary_salary, "spouse": spouse_salary}},
+                    "future": {},
+                }
+            elif projection_budget_data and projection_budget_data.get("income"):
+                employment_types = {"salary", "hourly", "wages", "bonus"}
+                employment_sources = {"employment"}
+                mc_income_streams = [
+                    s for s in mc_income_streams
+                    if s.get("type") not in employment_types and s.get("source") not in employment_sources
+                ]
+
+            has_spouse_for_projection = bool(
+                spouse_data.get("birth_date")
+                or spouse_data.get("name")
+                or spouse_data.get("social_security_benefit")
+            )
+            filing_status_projection = tax_settings.get("filing_status") or ("mfj" if has_spouse_for_projection else "single")
+            state_projection = tax_settings.get("state") or address_data.get("state") or "NY"
+
+            annual_expenses_for_projection = float(financial_data.get("annual_expenses") or expenses_section.get("total", 0) or 0)
+            annual_income_for_projection = float(financial_data.get("annual_income") or total_income_annual or 0)
+            pension_benefit_monthly = float(financial_data.get("pension_benefit") or person_data.get("pension_benefit", 0) or 0)
+
+            financial_profile = FinancialProfile(
+                person1=p1,
+                person2=p2,
+                children=children_data,
+                liquid_assets=float(liquid_assets or financial_data.get("liquid_assets") or 0),
+                traditional_ira=float(traditional_ira or financial_data.get("retirement_assets") or 0),
+                roth_ira=float(roth_ira or 0),
+                pension_lump_sum=0,
+                pension_annual=pension_benefit_monthly * 12,
+                annual_expenses=annual_expenses_for_projection,
+                target_annual_income=annual_income_for_projection,
+                risk_tolerance="moderate",
+                asset_allocation={"stocks": 0.6, "bonds": 0.4},
+                future_expenses=[],
+                investment_types=investment_types,
+                accounts=[],
+                income_streams=mc_income_streams,
+                home_properties=profile_data.get("home_properties", []),
+                budget=projection_budget_data if projection_budget_data else None,
+                annual_ira_contribution=float(financial_data.get("annual_ira_contribution", 0) or 0),
+                ira_roth_split=float(financial_data.get("ira_roth_split", 0.5) or 0.5),
+                savings_allocation=profile_data.get("savings_allocation"),
+                filing_status=filing_status_projection,
+                state=state_projection,
+                tax_year=tax_year,
+            )
+
+            projection_model = RetirementModel(financial_profile)
+            p1_life_exp = int(person_data.get("life_expectancy", 90) or 90)
+            years = projection_model.calculate_life_expectancy_years(p1, target_age=p1_life_exp)
+            if has_spouse_for_projection:
+                p2_life_exp = int(spouse_data.get("life_expectancy", 90) or 90)
+                years = max(years, projection_model.calculate_life_expectancy_years(p2, target_age=p2_life_exp))
+            years = max(1, int(years))
+
+            detailed_ledger = projection_model.run_detailed_projection(
+                years=years,
+                assumptions=MarketAssumptions(stock_allocation=0.60),
+                spending_model="constant_real",
+            )
+
+            yearly_rollup = {}
+            for row in detailed_ledger:
+                year = int(row.get("year", datetime.now().year))
+                if year not in yearly_rollup:
+                    yearly_rollup[year] = {
+                        "year": year,
+                        "income": 0.0,
+                        "expenses": 0.0,
+                        "taxes": 0.0,
+                        "withdrawals": 0.0,
+                        "end_balance": 0.0,
+                    }
+                yearly_rollup[year]["income"] += float(row.get("gross_income", 0) or 0)
+                yearly_rollup[year]["expenses"] += float(row.get("expenses_excluding_tax", 0) or 0)
+                yearly_rollup[year]["taxes"] += (
+                    float(row.get("federal_tax", 0) or 0)
+                    + float(row.get("state_tax", 0) or 0)
+                    + float(row.get("fica_tax", 0) or 0)
+                    + float(row.get("ltcg_tax", 0) or 0)
+                )
+                yearly_rollup[year]["withdrawals"] += float(row.get("withdrawals", 0) or 0)
+                yearly_rollup[year]["end_balance"] = float(row.get("portfolio_balance", 0) or 0)
+
+            yearly_rows = [yearly_rollup[y] for y in sorted(yearly_rollup.keys())]
+            starting_investable_portfolio = sum(float(i.get("value", 0) or 0) for i in investment_types)
+            previous_end = starting_investable_portfolio
+            for row in yearly_rows:
+                row["start_balance"] = previous_end
+                row["net_external_flow"] = row["income"] - row["withdrawals"] - row["expenses"] - row["taxes"]
+                row["portfolio_delta"] = row["end_balance"] - row["start_balance"]
+                row["implied_growth"] = row["portfolio_delta"] - row["net_external_flow"]
+                previous_end = row["end_balance"]
+
+            projection_section = {
+                "title": "Portfolio Projection Attribution",
+                "note": (
+                    "Deterministic projection using current profile assumptions. "
+                    "Formula by year: End = Start + Net External Flow + Implied Growth."
+                ),
+                "items": [],
+            }
+            if yearly_rows:
+                ending_balance = yearly_rows[-1]["end_balance"]
+                total_years = max(1, len(yearly_rows))
+                cagr = ((ending_balance / starting_investable_portfolio) ** (1 / total_years) - 1) if starting_investable_portfolio > 0 else 0.0
+
+                projection_section["items"].extend([
+                    {"label": "Starting Investable Portfolio", "value": f"${starting_investable_portfolio:,.0f}", "amount": starting_investable_portfolio},
+                    {"label": f"Ending Portfolio ({yearly_rows[-1]['year']})", "value": f"${ending_balance:,.0f}", "amount": ending_balance, "is_total": True},
+                    {"label": "Implied CAGR", "value": f"{cagr * 100:.2f}%", "amount": cagr * 100},
+                ])
+
+                year_2094 = next((row for row in yearly_rows if row["year"] == 2094), None)
+                if year_2094:
+                    projection_section["items"].append({
+                        "label": "Projected Portfolio in 2094",
+                        "value": f"${year_2094['end_balance']:,.0f}",
+                        "amount": year_2094["end_balance"],
+                        "is_total": True,
+                    })
+
+                checkpoint_years = set()
+                for idx, row in enumerate(yearly_rows):
+                    if idx < 5 or idx == len(yearly_rows) - 1 or row["year"] == 2094 or row["year"] % 10 == 0:
+                        checkpoint_years.add(row["year"])
+
+                for row in yearly_rows:
+                    if row["year"] in checkpoint_years:
+                        projection_section["items"].append({
+                            "label": (
+                                f"{row['year']}: ${row['start_balance']:,.0f} + "
+                                f"${row['net_external_flow']:,.0f} + ${row['implied_growth']:,.0f}"
+                            ),
+                            "value": f"${row['end_balance']:,.0f}",
+                            "amount": row["end_balance"],
+                        })
+
+                report["projection_yearly"] = yearly_rows
+                report["sections"].append(projection_section)
+        except Exception as projection_error:
+            logger.error(f"Error building Portfolio Projection Attribution section: {projection_error}", exc_info=True)
+            report["sections"].append({
+                "title": "⚠️ Portfolio Projection Attribution (Error)",
+                "items": [{"label": "Error", "value": str(projection_error)}],
+            })
 
         enhanced_audit_logger.log(
             action="GENERATE_CALCULATION_REPORT",

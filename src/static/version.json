@@ -1,5 +1,5 @@
 {
-    "version": "3.9.228",
+    "version": "3.9.229",
     "release_date": "2026-02-10",
-    "release_notes": "Fix remaining demo API failures: cashflow tax_year and legacy scenarios schema handling"
+    "release_notes": "Fix calculation report CSRF failure and add portfolio projection attribution details"
 }

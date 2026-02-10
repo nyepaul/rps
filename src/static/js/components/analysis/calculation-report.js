@@ -4,6 +4,7 @@
 
 import { store } from '../../state/store.js';
 import { showError, showSpinner, hideSpinner } from '../../utils/dom.js';
+import { apiClient } from '../../api/client.js';
 
 /**
  * Show calculation report modal
@@ -20,22 +21,9 @@ export async function showCalculationReport() {
 
     try {
         // Fetch calculation report from backend
-        const response = await fetch('/api/analysis/calculation-report', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                profile_name: profile.name
-            })
+        const report = await apiClient.post('/api/analysis/calculation-report', {
+            profile_name: profile.name
         });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to generate report');
-        }
-
-        const report = await response.json();
         hideSpinner();
 
         // Render the report in a modal

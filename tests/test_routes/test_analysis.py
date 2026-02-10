@@ -150,3 +150,25 @@ class TestAnalysisRequestSchema:
 # Integration tests would go here if we had Flask test client setup
 # These would test the full /api/analysis endpoint with market periods
 # For now, schema validation tests above ensure the API contract is correct
+
+
+def test_calculation_report_includes_projection_attribution(client, test_user, test_profile):
+    """Calculation report should include deterministic portfolio attribution details."""
+    login_res = client.post(
+        "/api/auth/login", json={"username": "testuser", "password": "TestPass123"}
+    )
+    assert login_res.status_code == 200
+
+    response = client.post(
+        "/api/analysis/calculation-report",
+        json={"profile_name": "Test Profile"},
+    )
+    assert response.status_code == 200
+
+    payload = response.get_json()
+    assert payload["profile_name"] == "Test Profile"
+    assert isinstance(payload.get("sections"), list)
+    assert isinstance(payload.get("projection_yearly"), list)
+
+    titles = [s.get("title") for s in payload["sections"]]
+    assert "Portfolio Projection Attribution" in titles
