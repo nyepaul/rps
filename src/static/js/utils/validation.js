@@ -105,3 +105,38 @@ export function validateAge(inputElement, age, options = { min: 18, max: 100, la
         return true;
     }
 }
+
+/**
+ * Validate a positive numeric input field and apply inline error styling.
+ * @param {HTMLInputElement} inputElement - Numeric input element
+ * @param {number} maxValue - Optional upper bound (default Infinity)
+ * @returns {boolean} True when valid, false when invalid
+ */
+export function validatePositiveNumber(inputElement, maxValue = Infinity) {
+    if (!inputElement) return false;
+
+    const rawValue = `${inputElement.value ?? ''}`.trim();
+    if (rawValue === '') {
+        setFieldError(inputElement, 'Required field');
+        return false;
+    }
+
+    const value = Number(rawValue);
+    if (!Number.isFinite(value)) {
+        setFieldError(inputElement, 'Must be a valid number');
+        return false;
+    }
+
+    if (value < 0) {
+        setFieldError(inputElement, 'Must be 0 or greater');
+        return false;
+    }
+
+    if (value > maxValue) {
+        setFieldError(inputElement, `Must be at most ${maxValue}`);
+        return false;
+    }
+
+    clearFieldError(inputElement);
+    return true;
+}

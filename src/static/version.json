@@ -1,5 +1,5 @@
 {
-    "version": "3.9.221",
+    "version": "3.9.222",
     "release_date": "2026-02-10",
-    "release_notes": "Set login page background to black"
+    "release_notes": "Restore validatePositiveNumber export for Home & Mortgage forms"
 }
