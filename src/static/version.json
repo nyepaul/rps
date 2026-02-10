@@ -1,5 +1,5 @@
 {
-    "version": "3.9.227",
+    "version": "3.9.228",
     "release_date": "2026-02-10",
-    "release_notes": "Fix demo POST workflows: cashflow tax_year, SS zero-benefit handling, and scenario DB compatibility"
+    "release_notes": "Fix remaining demo API failures: cashflow tax_year and legacy scenarios schema handling"
 }

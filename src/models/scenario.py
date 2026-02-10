@@ -2,7 +2,6 @@
 
 from datetime import datetime
 import json
-import sqlite3
 from src.database import connection
 from src.services.encryption_service import encrypt_dict, decrypt_dict
 
@@ -62,6 +61,11 @@ class Scenario:
         """Save or update scenario (encrypts data)."""
         with connection.db.get_connection() as conn:
             cursor = conn.cursor()
+            scenario_columns = {
+                row[1] for row in cursor.execute("PRAGMA table_info(scenarios)").fetchall()
+            }
+            has_updated_at = "updated_at" in scenario_columns
+            has_description = "description" in scenario_columns
 
             # Encrypt parameters if needed
             if self._decrypted_parameters is not None:
@@ -78,87 +82,69 @@ class Scenario:
                 self.results, self.results_iv = encrypt_dict(self.results)
 
             if self.id is None:
-                try:
-                    cursor.execute(
-                        """
-                        INSERT INTO scenarios (user_id, profile_id, name, parameters, parameters_iv, results, results_iv, created_at, updated_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                        (
-                            self.user_id,
-                            self.profile_id,
-                            self.name,
-                            self.parameters,
-                            self.parameters_iv,
-                            self.results,
-                            self.results_iv,
-                            self.created_at,
-                            self.updated_at,
-                        ),
-                    )
-                except sqlite3.OperationalError as e:
-                    # Backward compatibility: older DB schema may not have updated_at.
-                    if "updated_at" not in str(e).lower():
-                        raise
-                    cursor.execute(
-                        """
-                        INSERT INTO scenarios (user_id, profile_id, name, description, parameters, parameters_iv, results, results_iv, created_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                        (
-                            self.user_id,
-                            self.profile_id,
-                            self.name,
-                            self.description,
-                            self.parameters,
-                            self.parameters_iv,
-                            self.results,
-                            self.results_iv,
-                            self.created_at,
-                        ),
-                    )
+                insert_cols = [
+                    "user_id",
+                    "profile_id",
+                    "name",
+                    "parameters",
+                    "parameters_iv",
+                    "results",
+                    "results_iv",
+                    "created_at",
+                ]
+                insert_vals = [
+                    self.user_id,
+                    self.profile_id,
+                    self.name,
+                    self.parameters,
+                    self.parameters_iv,
+                    self.results,
+                    self.results_iv,
+                    self.created_at,
+                ]
+                if has_description:
+                    insert_cols.append("description")
+                    insert_vals.append(self.description)
+                if has_updated_at:
+                    insert_cols.append("updated_at")
+                    insert_vals.append(self.updated_at)
+
+                placeholders = ", ".join(["?"] * len(insert_cols))
+                columns_sql = ", ".join(insert_cols)
+                cursor.execute(
+                    f"INSERT INTO scenarios ({columns_sql}) VALUES ({placeholders})",
+                    tuple(insert_vals),
+                )
                 self.id = cursor.lastrowid
             else:
                 self.updated_at = datetime.now().isoformat()
-                try:
-                    cursor.execute(
-                        """
-                        UPDATE scenarios
-                        SET name = ?, description = ?, parameters = ?, parameters_iv = ?, results = ?, results_iv = ?, updated_at = ?
-                        WHERE id = ? AND user_id = ?
-                    """,
-                        (
-                            self.name,
-                            self.description,
-                            self.parameters,
-                            self.parameters_iv,
-                            self.results,
-                            self.results_iv,
-                            self.updated_at,
-                            self.id,
-                            self.user_id,
-                        ),
-                    )
-                except sqlite3.OperationalError as e:
-                    if "updated_at" not in str(e).lower():
-                        raise
-                    cursor.execute(
-                        """
-                        UPDATE scenarios
-                        SET name = ?, description = ?, parameters = ?, parameters_iv = ?, results = ?, results_iv = ?
-                        WHERE id = ? AND user_id = ?
-                    """,
-                        (
-                            self.name,
-                            self.description,
-                            self.parameters,
-                            self.parameters_iv,
-                            self.results,
-                            self.results_iv,
-                            self.id,
-                            self.user_id,
-                        ),
-                    )
+                assignments = [
+                    "name = ?",
+                    "parameters = ?",
+                    "parameters_iv = ?",
+                    "results = ?",
+                    "results_iv = ?",
+                ]
+                update_vals = [
+                    self.name,
+                    self.parameters,
+                    self.parameters_iv,
+                    self.results,
+                    self.results_iv,
+                ]
+                if has_description:
+                    assignments.append("description = ?")
+                    update_vals.append(self.description)
+                if has_updated_at:
+                    assignments.append("updated_at = ?")
+                    update_vals.append(self.updated_at)
+
+                assignments_sql = ", ".join(assignments)
+                update_vals.extend([self.id, self.user_id])
+                cursor.execute(
+                    f"UPDATE scenarios SET {assignments_sql} WHERE id = ? AND user_id = ?",
+                    tuple(update_vals),
+                )
         return self
 
     def delete(self):

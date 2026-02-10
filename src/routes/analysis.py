@@ -994,6 +994,7 @@ def get_cashflow_details():
         default_filing = "mfj" if has_spouse_for_filing else "single"
         filing_status = tax_settings.get("filing_status") or default_filing
         state = tax_settings.get("state") or address_data.get("state") or "NY"
+        tax_year = int(tax_settings.get("tax_year") or datetime.now().year)
 
         financial_profile = FinancialProfile(
             person1=person1,
