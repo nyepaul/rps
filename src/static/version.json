@@ -1,5 +1,5 @@
 {
-    "version": "3.9.233",
+    "version": "3.9.234",
     "release_date": "2026-02-10",
-    "release_notes": "Fix Summary tab PDF button CSRF handling and continue CSRF hardening for stale tokens"
+    "release_notes": "Add favicon.ico fallback and complete browser-sweep remediation for report actions"
 }
