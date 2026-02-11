@@ -39,6 +39,7 @@ def test_analyze_comprehensive(client, test_user, test_profile):
     assert response.status_code == 200
     data = response.get_json()
     assert "snapshot" in data
+    assert "social_security_analysis" in data
     assert "roth_conversion" in data
     assert "rmd_analysis" in data
     assert "state_comparison" in data

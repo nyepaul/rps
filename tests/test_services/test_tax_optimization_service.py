@@ -31,3 +31,21 @@ def test_infer_annual_charitable_giving_from_budget_dict():
     inferred = TaxOptimizationService.infer_annual_charitable_giving(profile_data)
     assert inferred == 6000
 
+
+def test_comprehensive_analysis_includes_social_security_block():
+    service = TaxOptimizationService(filing_status="mfj", state="CA", age=64, spouse_age=62, tax_year=2026)
+    profile_data = {
+        "person": {"life_expectancy": 90, "social_security_benefit": 3200},
+        "spouse": {"life_expectancy": 90, "social_security_benefit": 2200},
+        "financial": {
+            "annual_income": 120000,
+            "social_security_benefit": 3200,
+        },
+        "assets": {
+            "retirement_accounts": [{"type": "traditional_ira", "value": 750000}],
+        },
+    }
+    result = service.get_comprehensive_analysis(profile_data)
+    assert "social_security_analysis" in result
+    assert result["social_security_analysis"]["available"] is True
+    assert result["social_security_analysis"]["household"]["survivor_monthly_estimate_at_70_strategy"] > 0

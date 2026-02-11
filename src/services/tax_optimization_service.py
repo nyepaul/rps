@@ -1031,6 +1031,15 @@ class TaxOptimizationService:
             traditional_balance=traditional_balance,
         )
 
+        # Get Social Security strategy analysis
+        ss_analysis = self._build_social_security_analysis(
+            person=person,
+            spouse=spouse,
+            financial=financial,
+            current_age=age,
+            spouse_age=spouse_age,
+        )
+
         # Get RMD analysis
         annual_charitable_giving = self.infer_annual_charitable_giving(profile_data)
         rmd_analysis = self.analyze_rmd(
@@ -1047,10 +1056,134 @@ class TaxOptimizationService:
 
         return {
             "snapshot": snapshot,
+            "social_security_analysis": ss_analysis,
             "roth_conversion": roth_analysis,
             "rmd_analysis": rmd_analysis,
             "state_comparison": state_comparison[:10],  # Top 10 states
             "recommendations": recommendations,
+        }
+
+    def _build_social_security_analysis(
+        self,
+        *,
+        person: Dict,
+        spouse: Dict,
+        financial: Dict,
+        current_age: int,
+        spouse_age: int,
+    ) -> Dict:
+        """Build household Social Security claiming analysis."""
+        primary_monthly = (
+            financial.get("social_security_benefit")
+            or person.get("social_security_benefit")
+            or 0
+        )
+        spouse_monthly = spouse.get("social_security_benefit") or 0
+        primary_life_expectancy = int(person.get("life_expectancy") or 90)
+        spouse_life_expectancy = int(spouse.get("life_expectancy") or 90)
+
+        if primary_monthly <= 0 and spouse_monthly <= 0:
+            return {
+                "available": False,
+                "message": "Add estimated Social Security benefits to unlock claiming optimization.",
+            }
+
+        primary_analysis = (
+            self.analyze_social_security(
+                pia_at_fra=float(primary_monthly),
+                current_age=int(current_age),
+                life_expectancy=primary_life_expectancy,
+            )
+            if primary_monthly > 0
+            else None
+        )
+        spouse_analysis = (
+            self.analyze_social_security(
+                pia_at_fra=float(spouse_monthly),
+                current_age=int(spouse_age),
+                life_expectancy=spouse_life_expectancy,
+            )
+            if spouse_monthly > 0
+            else None
+        )
+
+        household = []
+        if primary_analysis or spouse_analysis:
+            for age in range(62, 71):
+                p = (
+                    next(
+                        (
+                            item
+                            for item in (primary_analysis.get("analyses") or [])
+                            if item["claiming_age"] == age
+                        ),
+                        None,
+                    )
+                    if primary_analysis
+                    else None
+                )
+                s = (
+                    next(
+                        (
+                            item
+                            for item in (spouse_analysis.get("analyses") or [])
+                            if item["claiming_age"] == age
+                        ),
+                        None,
+                    )
+                    if spouse_analysis
+                    else None
+                )
+                if p or s:
+                    household.append(
+                        {
+                            "claiming_age": age,
+                            "combined_monthly_benefit": round(
+                                (p.get("monthly_benefit", 0) if p else 0)
+                                + (s.get("monthly_benefit", 0) if s else 0),
+                                2,
+                            ),
+                        }
+                    )
+
+        primary_70 = (
+            next(
+                (
+                    item
+                    for item in (primary_analysis.get("analyses") or [])
+                    if item["claiming_age"] == 70
+                ),
+                None,
+            )
+            if primary_analysis
+            else None
+        )
+        spouse_70 = (
+            next(
+                (
+                    item
+                    for item in (spouse_analysis.get("analyses") or [])
+                    if item["claiming_age"] == 70
+                ),
+                None,
+            )
+            if spouse_analysis
+            else None
+        )
+        survivor_estimate = max(
+            primary_70.get("monthly_benefit", 0) if primary_70 else 0,
+            spouse_70.get("monthly_benefit", 0) if spouse_70 else 0,
+        )
+
+        return {
+            "available": True,
+            "primary": primary_analysis,
+            "spouse": spouse_analysis,
+            "household": {
+                "combined_by_claiming_age": household,
+                "survivor_monthly_estimate_at_70_strategy": round(survivor_estimate, 2),
+                "recommendation": "Delaying the higher earner to age 70 generally improves survivor income protection.",
+            },
         }
 
     def _get_roth_recommendation(self, optimal: Dict, bracket_space: List[Dict]) -> str:

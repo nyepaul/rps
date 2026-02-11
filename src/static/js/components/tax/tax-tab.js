@@ -66,7 +66,7 @@ export async function renderTaxTab(container) {
 }
 
 function renderTaxAnalysis(container, analysis, profile, healthcarePlanning = null, healthcareInputs = null) {
-    const { snapshot, roth_conversion, rmd_analysis, state_comparison, recommendations } = analysis;
+    const { snapshot, social_security_analysis, roth_conversion, rmd_analysis, state_comparison, recommendations } = analysis;
 
     container.innerHTML = `
         <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-2) var(--space-3);">
@@ -162,6 +162,55 @@ function renderTaxAnalysis(container, analysis, profile, healthcarePlanning = nu
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 12px;">
                 <!-- Left Column: Roth and RMD -->
                 <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <!-- Social Security Analysis -->
+                    ${social_security_analysis?.available ? `
+                    <div style="background: #000; padding: 12px; border-radius: 8px; color: white; border: 1px solid #333;">
+                        <h2 style="font-size: 15px; margin: 0 0 10px 0; font-weight: 700;">👥 Social Security Strategy</h2>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; margin-bottom: 8px;">
+                            ${social_security_analysis.primary?.optimal ? `
+                                <div style="background: rgba(255,255,255,0.08); border-radius: 6px; padding: 8px;">
+                                    <div style="font-size: 10px; opacity: 0.7;">Primary Optimal Age</div>
+                                    <div style="font-size: 16px; font-weight: 700;">${social_security_analysis.primary.optimal.claiming_age}</div>
+                                    <div style="font-size: 11px; opacity: 0.85;">${formatCurrency(social_security_analysis.primary.optimal.monthly_benefit, 0)}/mo</div>
+                                </div>
+                            ` : ''}
+                            ${social_security_analysis.spouse?.optimal ? `
+                                <div style="background: rgba(255,255,255,0.08); border-radius: 6px; padding: 8px;">
+                                    <div style="font-size: 10px; opacity: 0.7;">Spouse Optimal Age</div>
+                                    <div style="font-size: 16px; font-weight: 700;">${social_security_analysis.spouse.optimal.claiming_age}</div>
+                                    <div style="font-size: 11px; opacity: 0.85;">${formatCurrency(social_security_analysis.spouse.optimal.monthly_benefit, 0)}/mo</div>
+                                </div>
+                            ` : ''}
+                            <div style="background: rgba(34,197,94,0.14); border: 1px solid rgba(34,197,94,0.35); border-radius: 6px; padding: 8px;">
+                                <div style="font-size: 10px; opacity: 0.7;">Survivor Income (70 Strategy)</div>
+                                <div style="font-size: 16px; font-weight: 700;">${formatCurrency(social_security_analysis.household.survivor_monthly_estimate_at_70_strategy, 0)}/mo</div>
+                            </div>
+                        </div>
+                        <details style="cursor: pointer;">
+                            <summary style="font-size: 12px; font-weight: 600; padding: 4px 0; user-select: none;">📊 Combined Benefit by Claiming Age</summary>
+                            <div style="padding: 8px; background: rgba(255,255,255,0.1); border-radius: 6px; margin-top: 6px;">
+                                <table style="width: 100%; font-size: 10px; border-collapse: collapse;">
+                                    <thead>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.25);">
+                                            <th style="padding: 4px 2px; text-align: left;">Claim Age</th>
+                                            <th style="padding: 4px 2px; text-align: right;">Combined Monthly</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${social_security_analysis.household.combined_by_claiming_age.map((row) => `
+                                            <tr>
+                                                <td style="padding: 3px 2px;">${row.claiming_age}</td>
+                                                <td style="padding: 3px 2px; text-align: right; font-weight: 700;">${formatCurrency(row.combined_monthly_benefit, 0)}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                                <div style="margin-top: 6px; font-size: 10px; opacity: 0.85;">${social_security_analysis.household.recommendation}</div>
+                            </div>
+                        </details>
+                    </div>
+                    ` : ''}
+
                     <!-- Roth Conversion Analysis -->
                     ${roth_conversion ? `
                     <div style="background: #000; padding: 12px; border-radius: 8px; color: white; border: 1px solid #333;">
