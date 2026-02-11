@@ -4,6 +4,12 @@
 
 import { API_ENDPOINTS } from '../../config.js';
 import { apiClient } from '../../api/client.js';
+import {
+    bindFeatureIndexActions,
+    createFeatureIndex,
+    filterFeatureIndex,
+    renderFeatureIndexRows
+} from '../../utils/feature-index.js';
 
 // Article definitions mapping to skill files
 const ARTICLES = {
@@ -524,6 +530,23 @@ export function renderLearnTab(container) {
                 </p>
             </div>
 
+            <div class="learn-section" style="margin-bottom: var(--space-3);">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: var(--space-2);">
+                    <h2 style="font-size: 16px; margin: 0; color: var(--accent-color);">🧭 Feature Index & Roadmap Locator</h2>
+                    <input
+                        id="feature-index-filter"
+                        type="text"
+                        placeholder="Search features, modules, phases, tabs, or keywords..."
+                        style="min-width: 260px; max-width: 460px; width: 100%; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 10px; font-size: 12px;"
+                    />
+                </div>
+                <p style="margin: 0 0 10px 0; color: var(--text-secondary); font-size: 12px;">
+                    Direct shortcuts to app functionality and roadmap solutions.
+                    Legacy wealth/family planning is under <strong>Analysis -> Additional Planning Modules -> Family Legacy & Gifting Goals</strong>.
+                </p>
+                <div id="feature-index-list"></div>
+            </div>
+
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: var(--space-3);">
                 ${Object.entries(ARTICLES).map(([key, category]) => `
                     <div class="learn-section">
@@ -623,6 +646,13 @@ export function renderLearnTab(container) {
             }
             .glossary-row:first-child {
                 border-top: 1px solid var(--border-color);
+            }
+            #feature-index-list .feature-index-row:first-child {
+                border-top: 1px solid var(--border-color);
+            }
+            .feature-index-link:hover {
+                border-color: var(--accent-color) !important;
+                background: var(--bg-tertiary) !important;
             }
             .glossary-term-wrap {
                 display: flex;
@@ -843,6 +873,46 @@ export function renderLearnTab(container) {
             }
         });
     });
+
+    // Feature index
+    const featureIndexInput = container.querySelector('#feature-index-filter');
+    const featureIndexList = container.querySelector('#feature-index-list');
+    let featureIndexItems = createFeatureIndex();
+
+    const renderFeatureIndex = () => {
+        if (!featureIndexList) return;
+        const query = featureIndexInput ? featureIndexInput.value : '';
+        const filtered = filterFeatureIndex(featureIndexItems, query);
+        featureIndexList.innerHTML = renderFeatureIndexRows(filtered);
+    };
+
+    renderFeatureIndex();
+
+    if (featureIndexInput) {
+        featureIndexInput.addEventListener('input', () => renderFeatureIndex());
+    }
+
+    bindFeatureIndexActions(container, {
+        onRoadmapOpen: () => {
+            const roadmapLink = document.getElementById('view-roadmap-link');
+            if (roadmapLink) {
+                roadmapLink.click();
+                return;
+            }
+            window.app?.showTab?.('welcome');
+        }
+    });
+
+    // Hydrate index with roadmap items when available
+    apiClient.get('/api/roadmap/public')
+        .then((response) => {
+            const roadmapItems = response?.items || [];
+            featureIndexItems = createFeatureIndex({ roadmapItems });
+            renderFeatureIndex();
+        })
+        .catch(() => {
+            // Keep base index functional even if roadmap fetch fails.
+        });
 
     // Acronym glossary filter
     const glossaryInput = container.querySelector('#acronym-glossary-filter');
