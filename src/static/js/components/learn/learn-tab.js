@@ -552,28 +552,7 @@ export function renderLearnTab(container) {
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: var(--space-3);">
-                ${Object.entries(ARTICLES).map(([key, category]) => `
-                    <div class="learn-section">
-                        <h2 style="font-size: 16px; margin-bottom: var(--space-3); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-2); color: var(--accent-color);">
-                            ${category.icon} ${category.section}
-                        </h2>
-                        <div class="article-grid">
-                            ${category.articles.map(article => `
-                                <div class="article-card" data-article-id="${article.id}">
-                                    <h3 style="font-size: 14px; margin-bottom: 4px;">${article.title}</h3>
-                                    <p style="font-size: 12px; margin-bottom: 8px;">${article.description}</p>
-                                    <button class="learn-btn" data-article='${JSON.stringify(article).replace(/'/g, "&#39;")}' style="padding: 4px 10px; font-size: 11px;">
-                                        Read More
-                                    </button>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-
-            <div class="learn-section" style="margin-top: var(--space-3);">
+            <div class="learn-section" style="margin-bottom: var(--space-3);">
                 <button class="learn-collapse-btn" data-target="acronym-glossary-body" aria-expanded="true">
                     <span style="font-size: 16px; color: var(--accent-color); font-weight: 700;">🧾 Acronym Glossary</span>
                     <span class="learn-collapse-chevron" aria-hidden="true">▾</span>
@@ -595,6 +574,28 @@ export function renderLearnTab(container) {
                     </div>
                 </div>
             </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: var(--space-3);">
+                ${Object.entries(ARTICLES).map(([key, category]) => `
+                    <div class="learn-section">
+                        <h2 style="font-size: 16px; margin-bottom: var(--space-3); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-2); color: var(--accent-color);">
+                            ${category.icon} ${category.section}
+                        </h2>
+                        <div class="article-grid">
+                            ${category.articles.map(article => `
+                                <div class="article-card" data-article-id="${article.id}">
+                                    <h3 style="font-size: 14px; margin-bottom: 4px;">${article.title}</h3>
+                                    <p style="font-size: 12px; margin-bottom: 8px;">${article.description}</p>
+                                    <button class="learn-btn" data-article='${JSON.stringify(article).replace(/'/g, "&#39;")}' style="padding: 4px 10px; font-size: 11px;">
+                                        Read More
+                                    </button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+
         </div>
 
         <style>
