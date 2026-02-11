@@ -124,13 +124,13 @@ function getAllowedTabNames() {
 
 function resolveInitialTab() {
     const hashTab = sanitizeTabName(window.location.hash.replace('#', ''));
-    if (hashTab) return hashTab;
+    if (hashTab && hashTab !== 'index') return hashTab;
 
     const historyTab = sanitizeTabName(window.history.state?.tab);
-    if (historyTab) return historyTab;
+    if (historyTab && historyTab !== 'index') return historyTab;
 
     const lastTab = sanitizeTabName(localStorage.getItem(STORAGE_KEYS.LAST_TAB));
-    if (lastTab) return lastTab;
+    if (lastTab && lastTab !== 'index') return lastTab;
 
     return 'welcome';
 }
@@ -270,7 +270,7 @@ function updateTabVisibility() {
     
     allTabButtons.forEach(btn => {
         const tabName = btn.getAttribute('data-tab');
-        const isVisible = visibleTabs.has(tabName);
+        const isVisible = tabName === 'index' || visibleTabs.has(tabName);
         
         if (isVisible) {
             if (btn.classList.contains('admin-only-tab')) {
@@ -391,6 +391,10 @@ function setupTabNavigation() {
     tabButtons.forEach(button => {
         button.addEventListener('click', () => {
             const tabName = button.getAttribute('data-tab');
+            if (tabName === 'index') {
+                openFeatureIndexModal();
+                return;
+            }
             showTab(tabName, { updateHistory: true });
         });
     });
@@ -402,6 +406,10 @@ function setupTabNavigation() {
 async function showTab(tabName, options = {}) {
     const { updateHistory = true } = options;
     tabName = sanitizeTabName(tabName) || 'welcome';
+    if (tabName === 'index') {
+        openFeatureIndexModal();
+        return;
+    }
 
     // 1. Force close any open dropdowns
     const dropdowns = document.querySelectorAll('.nav-dropdown');
