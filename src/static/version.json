@@ -1,5 +1,5 @@
 {
-    "version": "3.9.234",
+    "version": "3.9.235",
     "release_date": "2026-02-10",
-    "release_notes": "Add favicon.ico fallback and complete browser-sweep remediation for report actions"
+    "release_notes": "Fix Scenario Comparison legacy metrics/timeline compatibility for saved scenarios"
 }

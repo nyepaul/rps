@@ -10,6 +10,101 @@ import { renderStandardTimelineChart, getChartThemeColors, registerChartForTheme
 
 let comparisonChartInstances = {};
 
+function normalizeRate(value) {
+    const rate = Number(value) || 0;
+    return rate > 1 ? rate / 100 : rate;
+}
+
+function getScenarioResultBlock(results) {
+    const isMultiScenario = results.scenarios && Object.keys(results.scenarios).length > 0;
+    if (isMultiScenario) {
+        return results.scenarios.moderate || Object.values(results.scenarios)[0] || {};
+    }
+    return results;
+}
+
+function getScenarioMetrics(scenario) {
+    const results = scenario.results || {};
+    const block = getScenarioResultBlock(results);
+    const simulations = results.simulations || block.simulations || scenario.parameters?.simulations || 10000;
+
+    return {
+        isMultiScenario: !!(results.scenarios && Object.keys(results.scenarios).length > 0),
+        simulations,
+        successRate: normalizeRate(block.success_rate ?? results.success_rate ?? 0),
+        medianEnding: Number(
+            block.median_final_balance
+            ?? block.median_ending_balance
+            ?? results.median_final_balance
+            ?? results.median_ending_balance
+            ?? 0
+        ),
+        p5: Number(
+            block.percentile_5
+            ?? block.percentile_10
+            ?? results.percentile_5
+            ?? results.percentile_10
+            ?? 0
+        ),
+        p95: Number(
+            block.percentile_95
+            ?? block.percentile_90
+            ?? results.percentile_95
+            ?? results.percentile_90
+            ?? 0
+        ),
+        startingPortfolio: Number(block.starting_portfolio ?? results.starting_portfolio ?? 0),
+        yearsProjected: Number(block.years_projected ?? results.years_projected ?? 0),
+        timeline: block.timeline || results.timeline || null,
+    };
+}
+
+function buildEstimatedTimeline(startingValue, endingValue, yearsProjected) {
+    const years = Math.max(2, yearsProjected || 30);
+    const currentYear = new Date().getFullYear();
+    const labels = Array.from({ length: years }, (_, i) => currentYear + i);
+    const data = [];
+
+    if (startingValue > 0 && endingValue > 0) {
+        const growth = Math.pow(endingValue / startingValue, 1 / (years - 1));
+        for (let i = 0; i < years; i++) {
+            data.push(startingValue * Math.pow(growth, i));
+        }
+    } else {
+        for (let i = 0; i < years; i++) {
+            const t = i / (years - 1);
+            data.push(startingValue + ((endingValue - startingValue) * t));
+        }
+    }
+
+    return { labels, data, estimated: true };
+}
+
+function extractTimelineSeries(metrics) {
+    const timeline = metrics.timeline;
+    if (timeline && timeline.years && timeline.median && Array.isArray(timeline.years) && Array.isArray(timeline.median)) {
+        return { labels: timeline.years, data: timeline.median, estimated: false };
+    }
+
+    if (Array.isArray(timeline) && timeline.length > 0) {
+        const labels = [];
+        const data = [];
+        timeline.forEach((row, index) => {
+            const year = row.year ?? row.x ?? (new Date().getFullYear() + index);
+            const median = row.median ?? row.p50 ?? row.value ?? null;
+            if (median !== null) {
+                labels.push(year);
+                data.push(Number(median));
+            }
+        });
+        if (labels.length > 1 && data.length > 1) {
+            return { labels, data, estimated: false };
+        }
+    }
+
+    return buildEstimatedTimeline(metrics.startingPortfolio, metrics.medianEnding, metrics.yearsProjected);
+}
+
 export async function renderComparisonTab(container) {
     // Clean up previous keyboard handler if exists
     if (container._comparisonKeyboardHandler) {
@@ -122,6 +217,7 @@ function renderComparisonView(container, profile, scenarios) {
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <div>
                         <h3 style="font-size: 16px; margin: 0;">Portfolio Comparison</h3>
+                        <p id="comparison-chart-note" style="display: none; margin: 4px 0 0 0; font-size: 11px; color: var(--text-secondary);"></p>
                     </div>
                     <button id="reset-comparison-zoom" style="padding: 4px 10px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px;">
                         Reset Zoom
@@ -160,26 +256,8 @@ function renderComparisonView(container, profile, scenarios) {
 }
 
 function renderScenarioRow(scenario) {
-    const results = scenario.results || {};
-    const isMultiScenario = results.scenarios && Object.keys(results.scenarios).length > 0;
-
-    let successRate, medianEnding, p5, p95, simulations;
-
-    if (isMultiScenario) {
-        // For multi-scenarios, show stats for the 'moderate' case as the representative baseline
-        const moderateScenario = results.scenarios.moderate || Object.values(results.scenarios)[0];
-        successRate = moderateScenario.success_rate || 0;
-        medianEnding = moderateScenario.median_final_balance || 0;
-        p5 = moderateScenario.percentile_10 || moderateScenario.percentile_5 || 0;
-        p95 = moderateScenario.percentile_90 || moderateScenario.percentile_95 || 0;
-        simulations = results.simulations || scenario.parameters?.simulations || 10000;
-    } else {
-        successRate = results.success_rate || 0;
-        medianEnding = results.median_final_balance || 0;
-        p5 = results.percentile_10 || results.percentile_5 || 0;
-        p95 = results.percentile_90 || results.percentile_95 || 0;
-        simulations = results.simulations || scenario.parameters?.simulations || 10000;
-    }
+    const metrics = getScenarioMetrics(scenario);
+    const { isMultiScenario, successRate, medianEnding, p5, p95, simulations } = metrics;
 
     // Determine status class and label based on success rate
     let successClass = 'success-poor';
@@ -332,6 +410,7 @@ function renderComparisonChart(container, selectedIds, allScenarios) {
     const canvasId = 'comparison-chart';
     const ctx = container.querySelector('#' + canvasId);
     if (!ctx) return;
+    const noteEl = container.querySelector('#comparison-chart-note');
 
     // Destroy existing chart
     if (comparisonChartInstances[canvasId]) {
@@ -345,35 +424,32 @@ function renderComparisonChart(container, selectedIds, allScenarios) {
     // Build datasets from scenarios
     const datasets = [];
     let labels = [];
+    let usedEstimatedSeries = false;
     let colorIndex = 0;
     const milestones = [0, 5, 10, 15, 20, 30, 40];
 
     selectedScenarios.forEach((scenario) => {
-        const results = scenario.results || {};
-        const isMultiScenario = results.scenarios && Object.keys(results.scenarios).length > 0;
-        
-        let timeline = null;
-        if (isMultiScenario) {
-            const subScenario = results.scenarios.moderate || Object.values(results.scenarios)[0];
-            timeline = subScenario.timeline;
-        } else {
-            timeline = results.timeline;
-        }
-        
-        if (timeline && timeline.median) {
-            if (timeline.years && timeline.years.length > labels.length) {
-                labels = timeline.years;
+        const metrics = getScenarioMetrics(scenario);
+        const timelineSeries = extractTimelineSeries(metrics);
+
+        if (timelineSeries && Array.isArray(timelineSeries.data) && timelineSeries.data.length > 1) {
+            if (timelineSeries.estimated) {
+                usedEstimatedSeries = true;
             }
-            
+
+            if (timelineSeries.labels && timelineSeries.labels.length > labels.length) {
+                labels = timelineSeries.labels;
+            }
+
             const color = colors[colorIndex % colors.length];
             datasets.push({
                 label: scenario.name,
-                data: timeline.median.map(d => d),
+                data: timelineSeries.data.map(d => d),
                 borderColor: color,
                 backgroundColor: 'transparent',
                 tension: 0.3,
                 borderWidth: 3,
-                pointRadius: (timeline.years || []).map((_, idx) => milestones.includes(indexToYearOffset(idx, timeline)) ? 5 : 0),
+                pointRadius: (timelineSeries.labels || []).map((_, idx) => milestones.includes(indexToYearOffset(idx, timelineSeries)) ? 5 : 0),
                 pointHoverRadius: 6,
                 pointBackgroundColor: color,
                 pointBorderColor: '#fff',
@@ -383,18 +459,32 @@ function renderComparisonChart(container, selectedIds, allScenarios) {
         }
     });
 
-    function indexToYearOffset(idx, timeline) {
+    function indexToYearOffset(idx, timelineSeries) {
         // Simplified for standard milestone check
         return idx;
     }
 
     if (datasets.length === 0) {
+        if (noteEl) {
+            noteEl.style.display = 'none';
+            noteEl.textContent = '';
+        }
         ctx.parentElement.innerHTML = `
             <div style="text-align: center; padding: 60px; color: var(--text-secondary);">
                 <p>Timeline data not available for selected scenarios.</p>
             </div>
         `;
         return;
+    }
+
+    if (noteEl) {
+        if (usedEstimatedSeries) {
+            noteEl.style.display = 'block';
+            noteEl.textContent = 'Some selected scenarios are legacy saves without timeline data. Estimated trajectories are shown for comparison.';
+        } else {
+            noteEl.style.display = 'none';
+            noteEl.textContent = '';
+        }
     }
 
     const themeColors = getChartThemeColors();
