@@ -7,7 +7,8 @@ import { apiClient } from '../../api/client.js';
 import {
     bindFeatureIndexActions,
     createFeatureIndex,
-    filterFeatureIndex
+    filterFeatureIndex,
+    renderFeatureIndexRows
 } from '../../utils/feature-index.js';
 
 // Article definitions mapping to skill files
@@ -227,41 +228,6 @@ function renderGlossaryRows(items) {
             </a>
         `)
         .join('');
-}
-
-function escapeHtml(value) {
-    return String(value || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
-
-function renderFeatureIndexCards(items) {
-    if (!items.length) {
-        return '<div style="padding: 10px 0; color: var(--text-secondary); font-size: 12px;">No feature index matches found.</div>';
-    }
-
-    return `
-        <div class="feature-index-grid">
-            ${items.map((item) => `
-                <div
-                    class="feature-index-card feature-index-row"
-                    data-action="${escapeHtml(item.action?.type || '')}"
-                    data-target="${escapeHtml(item.action?.target || '')}"
-                    role="button"
-                    tabindex="0"
-                    aria-label="${escapeHtml(item.action?.label || item.title || 'Open')}"
-                >
-                    <h3 style="font-size: 14px; margin-bottom: 4px;">${escapeHtml(item.title)}</h3>
-                    <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 6px;">${escapeHtml(item.area)} • ${escapeHtml(item.location)}</div>
-                    <p style="font-size: 12px; margin: 0 0 8px 0; color: var(--text-secondary); line-height: 1.4;">${escapeHtml(item.summary)}</p>
-                    <div style="font-size: 11px; color: var(--accent-color); font-weight: 600;">Read More</div>
-                </div>
-            `).join('')}
-        </div>
-    `;
 }
 
 function getGlossaryReferenceUrl(item) {
@@ -565,20 +531,25 @@ export function renderLearnTab(container) {
             </div>
 
             <div class="learn-section" style="margin-bottom: var(--space-3);">
-                <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: var(--space-2);">
-                    <h2 style="font-size: 16px; margin: 0; color: var(--accent-color);">🧭 Feature Index & Roadmap Locator</h2>
-                    <input
-                        id="feature-index-filter"
-                        type="text"
-                        placeholder="Search features, modules, phases, tabs, or keywords..."
-                        style="min-width: 260px; max-width: 460px; width: 100%; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 10px; font-size: 12px;"
-                    />
+                <button class="learn-collapse-btn" data-target="feature-index-body" aria-expanded="true">
+                    <span style="font-size: 16px; color: var(--accent-color); font-weight: 700;">🧭 Feature Index & Roadmap Locator</span>
+                    <span class="learn-collapse-chevron" aria-hidden="true">▾</span>
+                </button>
+                <div id="feature-index-body" class="learn-collapsible-body">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: var(--space-2); margin-top: var(--space-2);">
+                        <input
+                            id="feature-index-filter"
+                            type="text"
+                            placeholder="Search features, modules, phases, tabs, or keywords..."
+                            style="min-width: 260px; max-width: 460px; width: 100%; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 10px; font-size: 12px;"
+                        />
+                    </div>
+                    <p style="margin: 0 0 10px 0; color: var(--text-secondary); font-size: 12px;">
+                        Direct shortcuts to app functionality and roadmap solutions.
+                        Legacy wealth/family planning is under <strong>Analysis -> Additional Planning Modules -> Family Legacy & Gifting Goals</strong>.
+                    </p>
+                    <div id="feature-index-list"></div>
                 </div>
-                <p style="margin: 0 0 10px 0; color: var(--text-secondary); font-size: 12px;">
-                    Direct shortcuts to app functionality and roadmap solutions.
-                    Legacy wealth/family planning is under <strong>Analysis -> Additional Planning Modules -> Family Legacy & Gifting Goals</strong>.
-                </p>
-                <div id="feature-index-list"></div>
             </div>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: var(--space-3);">
@@ -603,20 +574,25 @@ export function renderLearnTab(container) {
             </div>
 
             <div class="learn-section" style="margin-top: var(--space-3);">
-                <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: var(--space-2);">
-                    <h2 style="font-size: 16px; margin: 0; color: var(--accent-color);">🧾 Acronym Glossary</h2>
-                    <input
-                        id="acronym-glossary-filter"
-                        type="text"
-                        placeholder="Filter acronym or definition (e.g., RMD, CSRF, tax)..."
-                        style="min-width: 260px; max-width: 460px; width: 100%; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 10px; font-size: 12px;"
-                    />
-                </div>
-                <p style="margin: 0 0 10px 0; color: var(--text-secondary); font-size: 12px;">
-                    Common acronyms used across planning, tax, security, and app settings.
-                </p>
-                <div id="acronym-glossary-list">
-                    ${renderGlossaryRows(ACRONYM_GLOSSARY)}
+                <button class="learn-collapse-btn" data-target="acronym-glossary-body" aria-expanded="true">
+                    <span style="font-size: 16px; color: var(--accent-color); font-weight: 700;">🧾 Acronym Glossary</span>
+                    <span class="learn-collapse-chevron" aria-hidden="true">▾</span>
+                </button>
+                <div id="acronym-glossary-body" class="learn-collapsible-body">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: var(--space-2); margin-top: var(--space-2);">
+                        <input
+                            id="acronym-glossary-filter"
+                            type="text"
+                            placeholder="Filter acronym or definition (e.g., RMD, CSRF, tax)..."
+                            style="min-width: 260px; max-width: 460px; width: 100%; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 10px; font-size: 12px;"
+                        />
+                    </div>
+                    <p style="margin: 0 0 10px 0; color: var(--text-secondary); font-size: 12px;">
+                        Common acronyms used across planning, tax, security, and app settings.
+                    </p>
+                    <div id="acronym-glossary-list">
+                        ${renderGlossaryRows(ACRONYM_GLOSSARY)}
+                    </div>
                 </div>
             </div>
         </div>
@@ -627,6 +603,30 @@ export function renderLearnTab(container) {
                 padding: var(--space-3);
                 border-radius: 8px;
                 border: 1px solid var(--border-color);
+            }
+            .learn-collapse-btn {
+                width: 100%;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 10px;
+                background: none;
+                border: none;
+                padding: 0;
+                margin: 0;
+                cursor: pointer;
+                text-align: left;
+            }
+            .learn-collapse-chevron {
+                color: var(--text-secondary);
+                font-size: 14px;
+                transition: transform 0.15s ease;
+            }
+            .learn-collapse-btn[aria-expanded="false"] .learn-collapse-chevron {
+                transform: rotate(-90deg);
+            }
+            .learn-collapsible-body.collapsed {
+                display: none;
             }
             .article-grid {
                 display: grid;
@@ -681,25 +681,14 @@ export function renderLearnTab(container) {
             .glossary-row:first-child {
                 border-top: 1px solid var(--border-color);
             }
-            .feature-index-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-                gap: var(--space-2);
+            #feature-index-list .feature-index-row:first-child {
+                border-top: 1px solid var(--border-color);
             }
-            .feature-index-card {
+            .feature-index-row:hover {
                 background: var(--bg-primary);
-                padding: var(--space-2);
-                border-radius: 6px;
-                border: 1px solid var(--border-color);
-                cursor: pointer;
-                transition: all 0.2s;
+                transform: translateX(2px);
             }
-            .feature-index-card:hover {
-                border-color: var(--accent-color);
-                transform: translateX(4px);
-                background: var(--bg-tertiary);
-            }
-            .feature-index-card:focus-visible {
+            .feature-index-row:focus-visible {
                 outline: 2px solid var(--accent-color);
                 outline-offset: 2px;
             }
@@ -932,7 +921,7 @@ export function renderLearnTab(container) {
         if (!featureIndexList) return;
         const query = featureIndexInput ? featureIndexInput.value : '';
         const filtered = filterFeatureIndex(featureIndexItems, query);
-        featureIndexList.innerHTML = renderFeatureIndexCards(filtered);
+        featureIndexList.innerHTML = renderFeatureIndexRows(filtered);
     };
 
     renderFeatureIndex();
@@ -940,6 +929,18 @@ export function renderLearnTab(container) {
     if (featureIndexInput) {
         featureIndexInput.addEventListener('input', () => renderFeatureIndex());
     }
+
+    container.querySelectorAll('.learn-collapse-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const targetId = btn.getAttribute('data-target');
+            if (!targetId) return;
+            const body = container.querySelector(`#${targetId}`);
+            if (!body) return;
+            const expanded = btn.getAttribute('aria-expanded') !== 'false';
+            btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+            body.classList.toggle('collapsed', expanded);
+        });
+    });
 
     bindFeatureIndexActions(container, {
         onRoadmapOpen: () => {
