@@ -2668,18 +2668,12 @@ async function saveBudget(profile, container) {
             budget: budgetData
         };
 
-        console.log('Saving budget data:', JSON.parse(JSON.stringify(budgetData)));
-        console.log('Profile name for save:', profile?.name, 'Profile object:', profile);
-
         if (!profile?.name) {
             throw new Error('Profile name is missing - cannot save');
         }
 
         // Save to backend
         const result = await profilesAPI.update(profile.name, { data: updatedData });
-
-        console.log('Received from server:', result.profile.data.budget);
-        console.log('Future part_time_consulting after save:', result.profile.data.budget.income.future.part_time_consulting);
 
         // Update store
         store.setState({ currentProfile: result.profile });

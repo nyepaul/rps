@@ -210,7 +210,7 @@ function renderGlossaryRows(items) {
                 href="${getGlossaryReferenceUrl(item)}"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Read full definition for ${item.term}"
+                aria-label="Open reference for ${item.term}"
             >
                 <div class="glossary-term-wrap">
                     <div class="glossary-term">${item.term}</div>

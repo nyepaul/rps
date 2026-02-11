@@ -24,18 +24,6 @@ function _import(path) { return import(path + _v); }
  * Initialize application
  */
 async function init() {
-    console.log('🚀 Retirement Planning System - Initializing...');
-
-    // Log version for debugging
-    try {
-        const versionData = await apiClient.get('/api/version');
-        console.log(`📦 RPS Version: ${versionData.version}`);
-        console.log(`📅 Release: ${versionData.release_date}`);
-        console.log(`📝 Notes: ${versionData.release_notes}`);
-    } catch (error) {
-        console.warn('Could not fetch version info');
-    }
-
     // Subscribe to state changes to update header display
     store.subscribe((state) => {
         updateHeaderDisplay();
@@ -87,7 +75,6 @@ async function init() {
     // Note: We always show Welcome on page load, regardless of previous session
     showTab('welcome');
 
-    console.log('✅ Application initialized');
 }
 
 /**

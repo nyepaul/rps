@@ -331,8 +331,6 @@ function setupEventHandlers(container, profile, monthsToLifeExpectancy, lifeExpe
  */
 async function fetchDetailedCashflow(profile, marketScenario = 'balanced') {
     try {
-        console.log(`Fetching Detailed Cashflow projection for tax visualization (${marketScenario})...`);
-        
         // Use scenario key directly if it exists in MARKET_PROFILES, else fallback to balanced
         const marketProfile = APP_CONFIG.MARKET_PROFILES[marketScenario] || APP_CONFIG.MARKET_PROFILES['balanced'];
 
@@ -354,10 +352,7 @@ async function fetchDetailedCashflow(profile, marketScenario = 'balanced') {
 
         const data = await response.json();
         
-        if (data && data.ledger) {
-            console.log('✓ Detailed ledger data received:', data.ledger);
-            return data.ledger;
-        }
+        if (data && data.ledger) return data.ledger;
 
         console.warn('No ledger data in response');
         return null;
@@ -386,9 +381,7 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
     // Fetch Detailed Ledger for tax transparency
     let detailedLedger = null;
     try {
-        console.log('Fetching detailed cashflow data...');
         detailedLedger = await fetchDetailedCashflow(profile, marketScenario);
-        console.log('✓ Detailed ledger data received');
     } catch (error) {
         console.warn('⚠ Tax projection fetch failed, using simplified view:', error.message);
         detailedLedger = null;
@@ -399,8 +392,6 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
 
     // Merge Detailed Ledger Data into Chart Data
     if (detailedLedger) {
-        console.log('Merging detailed tax data into chart...');
-        
         // Map ledger data for fast lookup
         // We'll use a string key "year-month" for precise matching
         const ledgerMap = {};

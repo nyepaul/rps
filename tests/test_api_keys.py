@@ -43,7 +43,7 @@ def test_encryption_service():
         print(f"  Ciphertext (first 50 chars): {ciphertext[:50]}...")
     except Exception as e:
         print(f"\n✗ Encryption failed: {e}")
-        return False
+        raise AssertionError(f"Encryption failed: {e}") from e
 
     # Test decryption
     try:
@@ -52,7 +52,7 @@ def test_encryption_service():
         print(f"  Decrypted data: {decrypted_data}")
     except Exception as e:
         print(f"\n✗ Decryption failed: {e}")
-        return False
+        raise AssertionError(f"Decryption failed: {e}") from e
 
     # Verify data integrity
     if decrypted_data == test_data:
@@ -61,7 +61,7 @@ def test_encryption_service():
         print(f"\n✗ Data integrity check failed")
         print(f"  Expected: {test_data}")
         print(f"  Got: {decrypted_data}")
-        return False
+        raise AssertionError("Data integrity check failed")
 
     # Test API key masking
     claude_key = test_data["api_keys"]["claude_api_key"]
@@ -70,7 +70,8 @@ def test_encryption_service():
     print(f"  Original: {claude_key}")
     print(f"  Masked:   {masked_key}")
 
-    return True
+    assert ciphertext
+    assert iv
 
 
 def test_api_key_validation():
@@ -88,20 +89,20 @@ def test_api_key_validation():
     try:
         valid_data = APIKeySchema(
             claude_api_key="REDACTED_ANTH_api03-test1234567890",
-            gemini_api_key="REDACTED_GAPI_Test1234567890",
+            gemini_api_key="REDACTED_GAPI_123456789012345678901234567890123",
         )
         print(f"\n✓ Valid API keys accepted")
         print(f"  Claude key: {valid_data.claude_api_key[:15]}...")
         print(f"  Gemini key: {valid_data.gemini_api_key[:15]}...")
     except ValidationError as e:
         print(f"\n✗ Validation failed for valid keys: {e}")
-        return False
+        raise AssertionError(f"Validation failed for valid keys: {e}") from e
 
     # Test too short key
     try:
         invalid_data = APIKeySchema(claude_api_key="short")
         print(f"\n✗ Validation should have rejected short key")
-        return False
+        raise AssertionError("Validation should have rejected short key")
     except ValidationError:
         print(f"\n✓ Short API key correctly rejected")
 
@@ -111,9 +112,7 @@ def test_api_key_validation():
         print(f"✓ Optional keys work correctly (only Claude key provided)")
     except ValidationError as e:
         print(f"\n✗ Optional key validation failed: {e}")
-        return False
-
-    return True
+        raise AssertionError(f"Optional key validation failed: {e}") from e
 
 
 def test_profile_integration():
@@ -141,7 +140,7 @@ def test_profile_integration():
     print(f"✓ Entire data dict encrypted as single unit")
     print(f"✓ Encryption/decryption handled automatically by Profile model")
 
-    return True
+    assert "api_keys" in example_profile_data
 
 
 def main():
@@ -160,7 +159,7 @@ def main():
     for name, test_func in tests:
         try:
             result = test_func()
-            results.append((name, result))
+            results.append((name, result is not False))
         except Exception as e:
             print(f"\n✗ Test '{name}' crashed with exception: {e}")
             import traceback

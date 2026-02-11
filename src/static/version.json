@@ -1,5 +1,5 @@
 {
-    "version": "3.9.240",
-    "release_date": "2026-02-10",
-    "release_notes": "Remove Read full definition label from glossary rows"
+    "version": "3.9.241",
+    "release_date": "2026-02-11",
+    "release_notes": "Review cleanup: stronger tests, quieter logs, glossary a11y wording, metadata consistency"
 }
