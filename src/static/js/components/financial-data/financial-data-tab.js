@@ -2,6 +2,57 @@
  * Financial Data tab - Complete calculation reference documentation
  */
 
+const FINANCIAL_GLOSSARY = {
+    agi: { title: 'AGI', definition: 'Adjusted Gross Income used as a baseline for many tax calculations.' },
+    magi: { title: 'MAGI', definition: 'Modified Adjusted Gross Income, often used for Medicare IRMAA brackets and eligibility thresholds.' },
+    fica: { title: 'FICA', definition: 'Federal payroll taxes for Social Security and Medicare.' },
+    medicare: { title: 'Medicare', definition: 'Federal health insurance program primarily for age 65+ and certain younger disabled individuals.' },
+    irmaa: { title: 'IRMAA', definition: 'Income-Related Monthly Adjustment Amount; extra Medicare Part B/D premium charges at higher income levels.' },
+    effective_rate: { title: 'Effective Tax Rate', definition: 'Average rate paid across all taxable income, not just the top marginal bracket.' },
+    marginal_rate: { title: 'Marginal Tax Rate', definition: 'Tax rate applied to the next dollar of taxable income.' },
+    ltcg: { title: 'LTCG', definition: 'Long-Term Capital Gains, typically taxed at preferential rates based on stacked taxable income.' },
+    rmd: { title: 'RMD', definition: 'Required Minimum Distribution from certain retirement accounts, generally starting at age 73.' },
+    pia: { title: 'PIA', definition: 'Primary Insurance Amount, baseline monthly Social Security benefit at full retirement age.' },
+    aime: { title: 'AIME', definition: 'Average Indexed Monthly Earnings used in Social Security benefit formulas.' },
+    fra: { title: 'FRA', definition: 'Full Retirement Age for Social Security benefit calculations.' }
+};
+
+function glossaryTerm(label, key) {
+    return `<button type="button" class="fd-glossary-term" data-glossary-term="${key}" title="Click for definition">${label}</button>`;
+}
+
+function wireGlossaryTermClicks(root) {
+    if (!root) return;
+    root.querySelectorAll('.fd-glossary-term').forEach((el) => {
+        el.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            showGlossaryDefinition(el.dataset.glossaryTerm);
+        });
+    });
+}
+
+function showGlossaryDefinition(key) {
+    const item = FINANCIAL_GLOSSARY[key];
+    if (!item) return;
+
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+        <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10001; padding: 20px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; max-width: 540px; width: 100%; border: 2px solid var(--accent-color);">
+                <h3 style="margin: 0 0 10px 0; color: var(--accent-color);">${item.title}</h3>
+                <p style="margin: 0; line-height: 1.6; color: var(--text-primary);">${item.definition}</p>
+                <div style="margin-top: 16px; text-align: right;">
+                    <button id="close-fd-glossary-definition" style="padding: 8px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Close</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    modal.querySelector('#close-fd-glossary-definition').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+}
+
 const SECTIONS = [
     {
         id: 'monte-carlo',
@@ -195,8 +246,8 @@ const SECTIONS = [
         content: `
             <div class="formula">
                 Social Security Tax = min(employment_income, $168,600) &times; 6.2%<br>
-                Medicare Tax = employment_income &times; 1.45%<br>
-                Total FICA = SS Tax + Medicare Tax
+                ${glossaryTerm('Medicare', 'medicare')} Tax = employment_income &times; 1.45%<br>
+                Total ${glossaryTerm('FICA', 'fica')} = SS Tax + Medicare Tax
             </div>
             <p>Social Security wage base for 2024: <strong>$168,600</strong>. Only employment income is subject to FICA.</p>
         `
@@ -231,7 +282,7 @@ const SECTIONS = [
         content: `
             <h4>Provisional Income</h4>
             <div class="formula">
-                provisional = AGI (excluding SS) + 50% &times; SS Benefits + tax-exempt interest
+                provisional = ${glossaryTerm('AGI', 'agi')} (excluding SS) + 50% &times; SS Benefits + tax-exempt interest
             </div>
 
             <h4>Taxation Thresholds</h4>
@@ -261,7 +312,7 @@ const SECTIONS = [
         id: 'ltcg',
         title: 'Long-Term Capital Gains Tax',
         content: `
-            <p>LTCG rates are <strong>stacked on top of ordinary income</strong> to determine the applicable rate.</p>
+            <p>${glossaryTerm('LTCG', 'ltcg')} rates are <strong>stacked on top of ordinary income</strong> to determine the applicable rate.</p>
 
             <h4>2024 LTCG Thresholds</h4>
             <table>
@@ -288,7 +339,7 @@ const SECTIONS = [
         id: 'irmaa',
         title: 'Medicare IRMAA Surcharges',
         content: `
-            <p>Income-Related Monthly Adjustment Amount. Uses a <strong>2-year MAGI lookback</strong>.</p>
+            <p>${glossaryTerm('IRMAA', 'irmaa')} uses a <strong>2-year ${glossaryTerm('MAGI', 'magi')} lookback</strong>.</p>
 
             <h4>2024 Annual Surcharges -- Married Filing Jointly</h4>
             <table>
@@ -405,7 +456,7 @@ const SECTIONS = [
         title: 'Required Minimum Distributions',
         content: `
             <div class="formula">
-                RMD = pre-tax_balance / IRS_Uniform_Lifetime_Factor(age)
+                ${glossaryTerm('RMD', 'rmd')} = pre-tax_balance / IRS_Uniform_Lifetime_Factor(age)
             </div>
             <p>Starting age: <strong>73</strong> (SECURE Act 2.0). RMDs are taxed as ordinary income.</p>
 
@@ -433,9 +484,9 @@ const SECTIONS = [
         id: 'social-security',
         title: 'Social Security Estimation',
         content: `
-            <h4>PIA (Primary Insurance Amount) -- Bend Point Formula</h4>
+            <h4>${glossaryTerm('PIA', 'pia')} (Primary Insurance Amount) -- Bend Point Formula</h4>
             <div class="formula">
-                AIME = annual_employment_income / 12<br><br>
+                ${glossaryTerm('AIME', 'aime')} = annual_employment_income / 12<br><br>
                 If AIME &le; $1,174:<br>
                 &nbsp;&nbsp;PIA = AIME &times; 90%<br><br>
                 If $1,174 &lt; AIME &le; $7,078:<br>
@@ -447,7 +498,7 @@ const SECTIONS = [
 
             <h4>Claiming Age Adjustment</h4>
             <div class="formula">
-                Early claiming (before FRA 67):<br>
+                Early claiming (before ${glossaryTerm('FRA', 'fra')} 67):<br>
                 &nbsp;&nbsp;months_early = (67 - claim_age) &times; 12<br>
                 &nbsp;&nbsp;if months &le; 36: reduction = months &times; 5/9 &times; 1%<br>
                 &nbsp;&nbsp;if months &gt; 36: reduction += (months - 36) &times; 5/12 &times; 1%<br><br>
@@ -490,7 +541,7 @@ const SECTIONS = [
 
             <h4>Effective Rate</h4>
             <div class="formula">
-                effective_rate = (conversion_tax + IRMAA_increase) / conversion_amount
+                ${glossaryTerm('Effective Rate', 'effective_rate')} = (conversion_tax + IRMAA_increase) / conversion_amount
             </div>
             <p>Optimal conversion fills the lowest brackets each year between retirement and RMD start (age 73).</p>
         `
@@ -726,6 +777,17 @@ export function renderFinancialDataTab(container) {
             color: var(--text-primary);
             overflow-x: auto;
         }
+        .fd-glossary-term {
+            background: none;
+            border: none;
+            color: inherit;
+            font: inherit;
+            font-weight: inherit;
+            cursor: pointer;
+            text-decoration: underline dotted;
+            text-underline-offset: 2px;
+            padding: 0;
+        }
         .fd-expand-all {
             display: inline-block;
             padding: 6px 14px;
@@ -785,4 +847,7 @@ export function renderFinancialDataTab(container) {
 
         sectionsContainer.appendChild(el);
     });
+
+    // Wire glossary handlers after all section HTML has been mounted.
+    wireGlossaryTermClicks(container);
 }
