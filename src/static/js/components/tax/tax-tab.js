@@ -498,6 +498,13 @@ function renderTaxAnalysis(
                                         `).join('')}
                                     </div>
                                 ` : ''}
+                                ${roth_conversion.front_load_recommendation ? `
+                                    <div style="margin-top: 10px; padding: 6px; border-radius: 4px; background: ${roth_conversion.front_load_recommendation.should_front_load ? 'rgba(251,191,36,0.15)' : 'rgba(34,197,94,0.12)'}; border: 1px solid ${roth_conversion.front_load_recommendation.should_front_load ? 'rgba(251,191,36,0.35)' : 'rgba(34,197,94,0.35)'};">
+                                        <div style="font-weight: 600; margin-bottom: 4px;">⏱️ Front-Load Signal</div>
+                                        <div style="font-size: 10px;">${roth_conversion.front_load_recommendation.message}</div>
+                                        ${roth_conversion.front_load_recommendation.should_front_load ? `<div style="font-size: 10px; margin-top: 4px;">Budget before crossover: ${formatCurrency(roth_conversion.front_load_recommendation.safe_budget_before_crossover, 0)}</div>` : ''}
+                                    </div>
+                                ` : ''}
                             </div>
                         </details>
                         ${roth_conversion.conversion_ladder_5y?.rows?.length ? `

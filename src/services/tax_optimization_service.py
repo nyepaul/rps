@@ -763,6 +763,9 @@ class TaxOptimizationService:
             bracket_headroom_projection=bracket_headroom_projection,
             safety_buffer=500.0,
         )
+        front_load_recommendation = self.build_front_load_recommendation(
+            annual_safe_conversion_budget=annual_safe_conversion_budget,
+        )
 
         # Analyze each conversion amount
         scenarios = []
@@ -802,6 +805,7 @@ class TaxOptimizationService:
             "precision_recommendations": precision_recommendations,
             "bracket_headroom_projection": bracket_headroom_projection,
             "annual_safe_conversion_budget": annual_safe_conversion_budget,
+            "front_load_recommendation": front_load_recommendation,
             "scenarios": scenarios,
             "optimal_24pct": optimal,
             "conversion_ladder_5y": ladder_5y,
@@ -1082,6 +1086,30 @@ class TaxOptimizationService:
             "target_rate_label": bracket_headroom_projection.get("target_rate_label"),
             "rows": rows,
             "total_safe_conversion_budget": round(total_budget, 2),
+        }
+
+    @staticmethod
+    def build_front_load_recommendation(annual_safe_conversion_budget: Dict) -> Dict:
+        """Detect ceiling crossover and quantify pre-crossover safe conversion budget."""
+        rows = annual_safe_conversion_budget.get("rows", [])
+        first_crossover_year = None
+        cumulative_before_crossover = 0.0
+        for row in rows:
+            if row.get("at_or_above_target"):
+                first_crossover_year = row.get("year")
+                break
+            cumulative_before_crossover += float(row.get("safe_conversion_budget", 0.0))
+
+        should_front_load = first_crossover_year is not None
+        return {
+            "should_front_load": should_front_load,
+            "first_crossover_year": first_crossover_year,
+            "safe_budget_before_crossover": round(cumulative_before_crossover, 2),
+            "message": (
+                f"Projected to hit target bracket in year {first_crossover_year}. Consider front-loading conversions before then."
+                if should_front_load
+                else "No projected crossover within modeled years under current assumptions."
+            ),
         }
 
     def analyze_social_security(

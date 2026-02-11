@@ -86,6 +86,7 @@ def test_roth_conversion_includes_ladder_projection():
     assert "precision_recommendations" in result
     assert "bracket_headroom_projection" in result
     assert "annual_safe_conversion_budget" in result
+    assert "front_load_recommendation" in result
     ladder = result["conversion_ladder_5y"]
     assert "rows" in ladder
     assert len(ladder["rows"]) >= 1
@@ -153,3 +154,17 @@ def test_roth_bracket_headroom_projection_matches_years():
     assert headroom[0]["taxable_income_assumption"] <= headroom[-1]["taxable_income_assumption"]
     safe_budget = result["annual_safe_conversion_budget"]["rows"]
     assert len(safe_budget) == 4
+
+
+def test_roth_front_load_recommendation_payload():
+    service = TaxOptimizationService(filing_status="mfj", state="CA", tax_year=2026)
+    result = service.analyze_roth_conversion(
+        current_taxable_income=250000,
+        traditional_balance=200000,
+        ladder_years=4,
+        ladder_income_growth_rate=0.05,
+        ladder_max_rate=0.24,
+    )
+    rec = result["front_load_recommendation"]
+    assert "should_front_load" in rec
+    assert "message" in rec

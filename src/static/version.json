@@ -1,5 +1,5 @@
 {
-    "version": "3.9.253",
+    "version": "3.9.254",
     "release_date": "2026-02-11",
-    "release_notes": "Detailed tax bracket optimization: add annual safe conversion budget from headroom"
+    "release_notes": "Detailed tax bracket optimization: add front-load conversion crossover signal"
 }
