@@ -15,6 +15,7 @@ from src.services.retirement_model import (
 )
 from src.services.tax_engine_refactor import TaxEngine
 from src.services.rebalancing_service import RebalancingService
+from src.services.healthcare_planning_service import HealthcarePlanningService
 from src.services.enhanced_audit_logger import enhanced_audit_logger
 from src.utils.error_sanitizer import sanitize_pydantic_error
 from src.__version__ import __version__
@@ -181,6 +182,48 @@ class AnalysisRequestSchema(BaseModel):
         if v < 100 or v > 50000:
             raise ValueError("Simulations must be between 100 and 50,000")
         return v
+
+
+class HealthcarePlanningRequestSchema(BaseModel):
+    """Schema for healthcare planning request."""
+
+    profile_name: str
+    years: Optional[int] = 20
+    filing_status: Optional[str] = None
+    estimated_magi: Optional[float] = None
+    annual_out_of_pocket: Optional[float] = None
+    medical_inflation: Optional[float] = 0.055
+    income_growth: Optional[float] = 0.02
+
+    @field_validator("years")
+    def validate_years(cls, v):
+        if v is None:
+            return 20
+        if v < 1 or v > 40:
+            raise ValueError("years must be between 1 and 40")
+        return v
+
+    @field_validator("medical_inflation", "income_growth")
+    def validate_rates(cls, v):
+        if v is None:
+            return v
+        if v < -0.1 or v > 0.25:
+            raise ValueError("rate must be between -10% and 25%")
+        return v
+
+
+def _safe_age_from_birth_date(birth_date_str: Optional[str]) -> Optional[int]:
+    """Return integer age from ISO date string, or None if parsing fails."""
+    if not birth_date_str:
+        return None
+    try:
+        birth_date = datetime.fromisoformat(birth_date_str).date()
+        today = date.today()
+        return today.year - birth_date.year - (
+            (today.month, today.day) < (birth_date.month, birth_date.day)
+        )
+    except Exception:
+        return None
 
 
 @analysis_bp.route("/analysis", methods=["POST"])
@@ -1060,6 +1103,81 @@ def get_cashflow_details():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@analysis_bp.route("/analysis/healthcare-planning", methods=["POST"])
+@login_required
+def analyze_healthcare_planning():
+    """Generate deterministic healthcare and Medicare cost projections."""
+    json_data = request.get_json(silent=True) or {}
+    try:
+        data = HealthcarePlanningRequestSchema(**json_data)
+    except ValidationError as e:
+        return jsonify({"error": sanitize_pydantic_error(e)}), 400
+
+    profile = Profile.get_by_name(data.profile_name, current_user.id)
+    if not profile:
+        return jsonify({"error": "Profile not found"}), 404
+
+    profile_data = profile.data_dict or {}
+    person_data = profile_data.get("person") or {}
+    spouse_data = profile_data.get("spouse") or {}
+    tax_settings = profile_data.get("tax_settings") or {}
+
+    # Prefer explicit dates, then fallback to profile columns and age fields.
+    primary_age = _safe_age_from_birth_date(
+        person_data.get("birth_date") or getattr(profile, "birth_date", None)
+    )
+    if primary_age is None:
+        primary_age = int(person_data.get("current_age") or 45)
+
+    spouse_age = _safe_age_from_birth_date(spouse_data.get("birth_date"))
+    if spouse_age is None and spouse_data.get("current_age") is not None:
+        spouse_age = int(spouse_data.get("current_age"))
+    if spouse_age is not None and spouse_age <= 0:
+        spouse_age = None
+
+    filing_status = (
+        data.filing_status
+        or tax_settings.get("filing_status")
+        or ("mfj" if spouse_age is not None else "single")
+    )
+
+    service = HealthcarePlanningService(filing_status=filing_status)
+    base_magi = (
+        float(data.estimated_magi)
+        if data.estimated_magi is not None
+        else service.infer_base_magi(profile_data)
+    )
+    base_out_of_pocket = (
+        float(data.annual_out_of_pocket)
+        if data.annual_out_of_pocket is not None
+        else service.infer_base_out_of_pocket(profile_data)
+    )
+
+    projection = service.project(
+        current_age=primary_age,
+        spouse_age=spouse_age,
+        years=data.years or 20,
+        inflation_medical=float(data.medical_inflation or 0.055),
+        income_growth=float(data.income_growth or 0.02),
+        base_magi=base_magi,
+        base_out_of_pocket=base_out_of_pocket,
+    )
+
+    enhanced_audit_logger.log(
+        action="RUN_HEALTHCARE_PLANNING",
+        table_name="profile",
+        record_id=profile.id,
+        details={
+            "profile_name": data.profile_name,
+            "years": data.years,
+            "filing_status": filing_status,
+        },
+        status_code=200,
+    )
+
+    return jsonify({"profile_name": data.profile_name, **projection}), 200
 
 
 @analysis_bp.route("/analysis/social-security", methods=["POST"])

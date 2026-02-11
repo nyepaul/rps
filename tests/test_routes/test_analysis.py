@@ -3,7 +3,7 @@
 import pytest
 import json
 from datetime import datetime
-from src.routes.analysis import AnalysisRequestSchema
+from src.routes.analysis import AnalysisRequestSchema, HealthcarePlanningRequestSchema
 
 
 class TestAnalysisRequestSchema:
@@ -147,6 +147,28 @@ class TestAnalysisRequestSchema:
         assert len(request.market_periods.pattern) == 2
 
 
+class TestHealthcarePlanningRequestSchema:
+    """Validation tests for healthcare planning endpoint contract."""
+
+    def test_default_values(self):
+        request = HealthcarePlanningRequestSchema(profile_name="test_profile")
+        assert request.years == 20
+        assert request.medical_inflation == 0.055
+        assert request.income_growth == 0.02
+
+    def test_years_range(self):
+        with pytest.raises(ValueError):
+            HealthcarePlanningRequestSchema(profile_name="test_profile", years=0)
+        with pytest.raises(ValueError):
+            HealthcarePlanningRequestSchema(profile_name="test_profile", years=41)
+
+    def test_rate_range(self):
+        with pytest.raises(ValueError):
+            HealthcarePlanningRequestSchema(
+                profile_name="test_profile", medical_inflation=0.30
+            )
+
+
 # Integration tests would go here if we had Flask test client setup
 # These would test the full /api/analysis endpoint with market periods
 # For now, schema validation tests above ensure the API contract is correct
@@ -172,3 +194,25 @@ def test_calculation_report_includes_projection_attribution(client, test_user, t
 
     titles = [s.get("title") for s in payload["sections"]]
     assert "Portfolio Projection Attribution" in titles
+
+
+def test_healthcare_planning_projection_endpoint(client, test_user, test_profile):
+    """Healthcare planning endpoint returns deterministic projection payload."""
+    login_res = client.post(
+        "/api/auth/login", json={"username": "testuser", "password": "TestPass123"}
+    )
+    assert login_res.status_code == 200
+
+    response = client.post(
+        "/api/analysis/healthcare-planning",
+        json={"profile_name": "Test Profile", "years": 5},
+    )
+    assert response.status_code == 200
+
+    payload = response.get_json()
+    assert payload["profile_name"] == "Test Profile"
+    assert "assumptions" in payload
+    assert payload["assumptions"]["projection_years"] == 5
+    assert isinstance(payload.get("projection"), list)
+    assert len(payload["projection"]) == 5
+    assert "total_healthcare_cost" in payload["projection"][0]
