@@ -260,6 +260,14 @@ function renderTaxAnalysis(container, analysis, profile, healthcarePlanning = nu
                                 ? `Current RMD: <strong>${formatCurrency(rmd_analysis.current.rmd_amount, 0)}</strong>`
                                 : `RMDs begin in <strong>${rmd_analysis.summary.years_until_rmd} years</strong> (age 73)`}
                         </div>
+                        ${rmd_analysis.qcd_planning ? `
+                            <div style="background: rgba(34,197,94,0.16); border: 1px solid rgba(34,197,94,0.35); border-radius: 6px; padding: 8px; margin-bottom: 8px; font-size: 11px; line-height: 1.4;">
+                                <div style="font-weight: 700; margin-bottom: 4px;">QCD Planning</div>
+                                <div>Annual Giving Assumption: <strong>${formatCurrency(rmd_analysis.qcd_planning.annual_charitable_giving_assumption || 0, 0)}</strong></div>
+                                <div>Suggested QCD This Year: <strong>${formatCurrency(rmd_analysis.qcd_planning.current_year_suggested_qcd || 0, 0)}</strong></div>
+                                <div>Taxable RMD After QCD: <strong>${formatCurrency(rmd_analysis.qcd_planning.current_year_taxable_rmd_after_qcd || 0, 0)}</strong></div>
+                            </div>
+                        ` : ''}
                         <details style="cursor: pointer;">
                             <summary style="font-size: 12px; font-weight: 600; padding: 4px 0; user-select: none;">📊 10-Year Projection</summary>
                             <div style="padding: 8px; background: rgba(255,255,255,0.1); border-radius: 6px; margin-top: 6px;">
@@ -275,6 +283,8 @@ function renderTaxAnalysis(container, analysis, profile, healthcarePlanning = nu
                                             <th style="padding: 4px 2px; text-align: left; font-weight: 600;">Year</th>
                                             <th style="padding: 4px 2px; text-align: right; font-weight: 600;">Balance</th>
                                             <th style="padding: 4px 2px; text-align: right; font-weight: 600;">RMD</th>
+                                            <th style="padding: 4px 2px; text-align: right; font-weight: 600;">QCD</th>
+                                            <th style="padding: 4px 2px; text-align: right; font-weight: 600;">Taxable RMD</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -283,11 +293,15 @@ function renderTaxAnalysis(container, analysis, profile, healthcarePlanning = nu
                                         const yearsUntilRMD = rmd_analysis.summary.years_until_rmd;
                                         const startYear = Math.max(0, yearsUntilRMD - 2);
                                         const endYear = Math.min(rmd_analysis.projections.length, startYear + 5);
+                                        const qcdByYear = {};
+                                        (rmd_analysis.qcd_projection || []).forEach((q) => { qcdByYear[q.year] = q; });
                                         return rmd_analysis.projections.slice(startYear, endYear).map(proj => `
                                             <tr style="${proj.rmd_amount > 0 ? 'background: rgba(251,191,36,0.1);' : ''}">
                                                 <td style="padding: 3px 2px;">${proj.year}</td>
                                                 <td style="padding: 3px 2px; text-align: right;">${formatCompact(proj.start_balance)}</td>
                                                 <td style="padding: 3px 2px; text-align: right; font-weight: 700; ${proj.rmd_amount > 0 ? 'color: #fbbf24;' : ''}">${proj.rmd_amount > 0 ? formatCompact(proj.rmd_amount) : '--'}</td>
+                                                <td style="padding: 3px 2px; text-align: right;">${qcdByYear[proj.year]?.suggested_qcd > 0 ? formatCompact(qcdByYear[proj.year].suggested_qcd) : '--'}</td>
+                                                <td style="padding: 3px 2px; text-align: right;">${qcdByYear[proj.year]?.taxable_rmd_after_qcd > 0 ? formatCompact(qcdByYear[proj.year].taxable_rmd_after_qcd) : (proj.rmd_amount > 0 ? formatCompact(proj.rmd_amount) : '--')}</td>
                                             </tr>
                                         `).join('');
                                     })()}
@@ -296,6 +310,11 @@ function renderTaxAnalysis(container, analysis, profile, healthcarePlanning = nu
                                 ${rmd_analysis.summary.first_year_rmd && rmd_analysis.summary.first_year_rmd > 0 ? `
                                     <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.2); font-size: 10px; opacity: 0.9;">
                                         <strong>First RMD:</strong> ${formatCurrency(rmd_analysis.summary.first_year_rmd, 0)} in year ${rmd_analysis.summary.years_until_rmd}
+                                    </div>
+                                ` : ''}
+                                ${rmd_analysis.summary.total_projected_qcd ? `
+                                    <div style="margin-top: 6px; font-size: 10px; opacity: 0.9;">
+                                        <strong>Projected 10+ Year QCD:</strong> ${formatCurrency(rmd_analysis.summary.total_projected_qcd, 0)} (${(rmd_analysis.summary.projected_qcd_reduction_pct || 0).toFixed(1)}% of projected RMDs)
                                     </div>
                                 ` : ''}
                             </div>

@@ -71,12 +71,16 @@ export const taxOptimizationAPI = {
     /**
      * Project Required Minimum Distributions
      */
-    async projectRMD(profileName, growthRate = 0.05, years = 20) {
-        return apiClient.post('/api/tax-optimization/rmd-projection', {
+    async projectRMD(profileName, growthRate = 0.05, years = 20, annualCharitableGiving = null) {
+        const payload = {
             profile_name: profileName,
             growth_rate: growthRate,
             years: years
-        });
+        };
+        if (annualCharitableGiving !== null && annualCharitableGiving !== undefined) {
+            payload.annual_charitable_giving = annualCharitableGiving;
+        }
+        return apiClient.post('/api/tax-optimization/rmd-projection', payload);
     },
 
     /**

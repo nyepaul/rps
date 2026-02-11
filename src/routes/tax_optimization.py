@@ -393,6 +393,7 @@ def project_rmds():
         profile_name = json_data.get("profile_name")
         growth_rate = json_data.get("growth_rate", 0.05)
         years = json_data.get("years", 20)
+        annual_charitable_giving = json_data.get("annual_charitable_giving")
 
         if not profile_name:
             return jsonify({"error": "profile_name is required"}), 400
@@ -429,8 +430,14 @@ def project_rmds():
 
         # Create service and run analysis
         service = TaxOptimizationService(tax_year=tax_year)
+        if annual_charitable_giving is None:
+            annual_charitable_giving = service.infer_annual_charitable_giving(profile_data)
         result = service.analyze_rmd(
-            age, traditional_balance, growth_rate=growth_rate, years=years
+            age,
+            traditional_balance,
+            growth_rate=growth_rate,
+            years=years,
+            annual_charitable_giving=float(annual_charitable_giving or 0.0),
         )
         result["profile_name"] = profile_name
 

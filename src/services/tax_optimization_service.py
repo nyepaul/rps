@@ -812,6 +812,7 @@ class TaxOptimizationService:
         traditional_balance: float,
         growth_rate: float = 0.05,
         years: int = 20,
+        annual_charitable_giving: float = 0.0,
     ) -> Dict:
         """
         Analyze RMD situation and projections.
@@ -824,21 +825,112 @@ class TaxOptimizationService:
             age, traditional_balance, growth_rate, years=years, tax_year=self.tax_year
         )
 
-        # Calculate total RMDs over projection period
-        total_rmds = sum(p["rmd_amount"] for p in projections)
+        # Build QCD-aware projection details.
+        qcd_projection = []
+        total_rmds = 0.0
+        total_qcd = 0.0
+        total_taxable_rmd = 0.0
+        annual_charitable_giving = max(0.0, annual_charitable_giving or 0.0)
+
+        for proj in projections:
+            rmd_amount = proj["rmd_amount"]
+            total_rmds += rmd_amount
+            qcd_allowed = bool(proj["rmd_required"] and proj["age"] >= policy.qcd_age)
+            suggested_qcd = (
+                min(rmd_amount, policy.qcd_annual_limit, annual_charitable_giving)
+                if qcd_allowed
+                else 0.0
+            )
+            max_qcd = (
+                min(rmd_amount, policy.qcd_annual_limit) if qcd_allowed else 0.0
+            )
+            taxable_rmd_after_qcd = max(0.0, rmd_amount - suggested_qcd)
+
+            total_qcd += suggested_qcd
+            total_taxable_rmd += taxable_rmd_after_qcd
+
+            qcd_projection.append(
+                {
+                    "year": proj["year"],
+                    "age": proj["age"],
+                    "rmd_amount": round(rmd_amount, 2),
+                    "qcd_allowed": qcd_allowed,
+                    "qcd_max_allowed": round(max_qcd, 2),
+                    "suggested_qcd": round(suggested_qcd, 2),
+                    "taxable_rmd_after_qcd": round(taxable_rmd_after_qcd, 2),
+                }
+            )
+
+        qcd_reduction_pct = (
+            (total_qcd / total_rmds) * 100 if total_rmds > 0 else 0.0
+        )
+        marginal_rate = self.calculator.get_brackets()[-1][2]
+        for lower, upper, rate in self.calculator.get_brackets():
+            if lower <= max(0.0, traditional_balance / max(1, years)) < upper:
+                marginal_rate = rate
+                break
+        estimated_tax_reduction = total_qcd * marginal_rate
+
+        current_qcd_allowed = bool(
+            current_rmd["required"] and age >= policy.qcd_age
+        )
+        current_suggested_qcd = (
+            min(current_rmd["rmd_amount"], policy.qcd_annual_limit, annual_charitable_giving)
+            if current_qcd_allowed
+            else 0.0
+        )
+        current_taxable_rmd = max(0.0, current_rmd["rmd_amount"] - current_suggested_qcd)
 
         return {
             "current": current_rmd,
             "projections": projections,
             "summary": {
                 "total_projected_rmds": round(total_rmds, 2),
+                "total_projected_qcd": round(total_qcd, 2),
+                "total_projected_taxable_rmd": round(total_taxable_rmd, 2),
+                "projected_qcd_reduction_pct": round(qcd_reduction_pct, 2),
                 "years_until_rmd": max(0, policy.rmd_age - age),
                 "current_balance": traditional_balance,
             },
             "qcd_eligible": age >= policy.qcd_age,
             "qcd_annual_limit": policy.qcd_annual_limit,
+            "qcd_planning": {
+                "annual_charitable_giving_assumption": round(annual_charitable_giving, 2),
+                "current_year_qcd_allowed": current_qcd_allowed,
+                "current_year_suggested_qcd": round(current_suggested_qcd, 2),
+                "current_year_taxable_rmd_after_qcd": round(current_taxable_rmd, 2),
+                "estimated_tax_reduction_on_suggested_qcd": round(estimated_tax_reduction, 2),
+            },
+            "qcd_projection": qcd_projection,
             "recommendation": self._get_rmd_recommendation(current_rmd, age),
         }
+
+    @staticmethod
+    def infer_annual_charitable_giving(profile_data: Dict) -> float:
+        """Infer annual charitable giving from financial and budget fields."""
+        financial = profile_data.get("financial") or {}
+        budget = profile_data.get("budget") or {}
+        expenses = budget.get("expenses") or {}
+
+        direct = financial.get("annual_charitable_giving")
+        if direct is not None:
+            return float(direct)
+
+        budget_value = expenses.get("charitable_giving")
+        if isinstance(budget_value, (int, float)):
+            return float(budget_value) * 12.0
+        if isinstance(budget_value, dict):
+            amount = float(budget_value.get("amount") or 0.0)
+            frequency = (budget_value.get("frequency") or "monthly").lower()
+            if frequency == "annual":
+                return amount
+            if frequency == "weekly":
+                return amount * 52.0
+            if frequency == "biweekly":
+                return amount * 26.0
+            return amount * 12.0
+
+        return 0.0
 
     def compare_states(self, taxable_income: float) -> List[Dict]:
         """
@@ -940,7 +1032,10 @@ class TaxOptimizationService:
         )
 
         # Get RMD analysis
-        rmd_analysis = self.analyze_rmd(age, traditional_balance)
+        annual_charitable_giving = self.infer_annual_charitable_giving(profile_data)
+        rmd_analysis = self.analyze_rmd(
+            age, traditional_balance, annual_charitable_giving=annual_charitable_giving
+        )
 
         # Get state comparison
         state_comparison = self.compare_states(snapshot["summary"]["taxable_income"])

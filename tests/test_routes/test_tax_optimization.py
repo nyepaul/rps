@@ -144,6 +144,8 @@ def test_rmd_projection(client, test_user, test_profile):
     assert "current" in data
     assert "projections" in data
     assert "summary" in data
+    assert "qcd_planning" in data
+    assert "qcd_projection" in data
     assert "profile_name" in data
 
 
