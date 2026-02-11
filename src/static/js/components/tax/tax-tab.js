@@ -37,9 +37,13 @@ export async function renderTaxTab(container) {
 
     try {
         // Fetch comprehensive tax analysis
-        const analysis = await taxOptimizationAPI.analyzeComprehensive(currentProfile.name);
+        const analysisPromise = taxOptimizationAPI.analyzeComprehensive(currentProfile.name);
+        const healthcarePromise = taxOptimizationAPI
+            .analyzeHealthcarePlanning(currentProfile.name, 20)
+            .catch(() => null);
 
-        renderTaxAnalysis(container, analysis, currentProfile);
+        const [analysis, healthcarePlanning] = await Promise.all([analysisPromise, healthcarePromise]);
+        renderTaxAnalysis(container, analysis, currentProfile, healthcarePlanning);
     } catch (error) {
         console.error('Error loading tax analysis:', error);
         container.innerHTML = `
@@ -61,7 +65,7 @@ export async function renderTaxTab(container) {
     }
 }
 
-function renderTaxAnalysis(container, analysis, profile) {
+function renderTaxAnalysis(container, analysis, profile, healthcarePlanning = null) {
     const { snapshot, roth_conversion, rmd_analysis, state_comparison, recommendations } = analysis;
 
     container.innerHTML = `
@@ -132,6 +136,8 @@ function renderTaxAnalysis(container, analysis, profile) {
                     </div>
                 </details>
             </div>
+
+            ${renderHealthcarePlanningCard(healthcarePlanning)}
 
             <!-- Recommendations -->
             ${recommendations && recommendations.length > 0 ? `
@@ -440,6 +446,76 @@ function renderTaxAnalysis(container, analysis, profile) {
             el.style.transform = 'translateY(0)';
         });
     });
+}
+
+function renderHealthcarePlanningCard(healthcarePlanning) {
+    if (!healthcarePlanning || !Array.isArray(healthcarePlanning.projection) || healthcarePlanning.projection.length === 0) {
+        return '';
+    }
+
+    const rows = healthcarePlanning.projection;
+    const firstYear = rows[0];
+    const fiveYear = rows[Math.min(4, rows.length - 1)];
+    const tenYear = rows[Math.min(9, rows.length - 1)];
+
+    return `
+        <div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--border-color);">
+            <h2 style="font-size: 15px; margin: 0 0 10px 0; font-weight: 700; color: var(--accent-color);">
+                🏥 Healthcare & Medicare Projection
+            </h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 10px;">
+                <div style="background: var(--bg-primary); padding: 10px; border-radius: 6px;">
+                    <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 2px;">Year ${firstYear.year}</div>
+                    <div style="font-size: 16px; font-weight: 700;">${formatCurrency(firstYear.total_healthcare_cost, 0)}</div>
+                </div>
+                <div style="background: var(--bg-primary); padding: 10px; border-radius: 6px;">
+                    <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 2px;">Year ${fiveYear.year}</div>
+                    <div style="font-size: 16px; font-weight: 700;">${formatCurrency(fiveYear.total_healthcare_cost, 0)}</div>
+                </div>
+                <div style="background: var(--bg-primary); padding: 10px; border-radius: 6px;">
+                    <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 2px;">Year ${tenYear.year}</div>
+                    <div style="font-size: 16px; font-weight: 700;">${formatCurrency(tenYear.total_healthcare_cost, 0)}</div>
+                </div>
+                <div style="background: var(--bg-primary); padding: 10px; border-radius: 6px;">
+                    <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 2px;">Medical Inflation Assumption</div>
+                    <div style="font-size: 16px; font-weight: 700;">${formatPercent(healthcarePlanning.assumptions.medical_inflation, 1)}</div>
+                </div>
+            </div>
+            <details style="cursor: pointer;">
+                <summary style="font-size: 12px; font-weight: 600; padding: 4px 0; user-select: none;">
+                    Medicare/IRMAA Cost Breakdown (First 5 Years)
+                </summary>
+                <div style="padding: 10px; background: var(--bg-primary); border-radius: 6px; margin-top: 6px; overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                        <thead>
+                            <tr style="text-align: left; border-bottom: 1px solid var(--border-color);">
+                                <th style="padding: 4px;">Year</th>
+                                <th style="padding: 4px;">Eligible</th>
+                                <th style="padding: 4px;">Part B</th>
+                                <th style="padding: 4px;">Part D</th>
+                                <th style="padding: 4px;">IRMAA</th>
+                                <th style="padding: 4px;">Out-of-Pocket</th>
+                                <th style="padding: 4px;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows.slice(0, 5).map((row) => `
+                                <tr style="border-bottom: 1px solid var(--border-color);">
+                                    <td style="padding: 4px;">${row.year}</td>
+                                    <td style="padding: 4px;">${row.medicare_eligible_people}</td>
+                                    <td style="padding: 4px;">${formatCurrency(row.medicare_part_b, 0)}</td>
+                                    <td style="padding: 4px;">${formatCurrency(row.medicare_part_d, 0)}</td>
+                                    <td style="padding: 4px;">${formatCurrency(row.irmaa_surcharge, 0)}</td>
+                                    <td style="padding: 4px;">${formatCurrency(row.out_of_pocket, 0)}</td>
+                                    <td style="padding: 4px; font-weight: 700;">${formatCurrency(row.total_healthcare_cost, 0)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+        </div>
+    `;
 }
 
 /**

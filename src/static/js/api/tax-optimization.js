@@ -77,5 +77,17 @@ export const taxOptimizationAPI = {
             growth_rate: growthRate,
             years: years
         });
+    },
+
+    /**
+     * Project healthcare and Medicare costs.
+     * @param {string} profileName - Profile to analyze
+     * @param {number} years - Projection years
+     */
+    async analyzeHealthcarePlanning(profileName, years = 20) {
+        return apiClient.post('/api/analysis/healthcare-planning', {
+            profile_name: profileName,
+            years
+        });
     }
 };
