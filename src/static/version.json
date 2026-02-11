@@ -1,5 +1,5 @@
 {
-    "version": "3.9.239",
+    "version": "3.9.240",
     "release_date": "2026-02-10",
-    "release_notes": "Make glossary rows fully clickable for consistent list interaction"
+    "release_notes": "Remove Read full definition label from glossary rows"
 }

@@ -218,7 +218,6 @@ function renderGlossaryRows(items) {
                 </div>
                 <div class="glossary-definition">
                     <div>${item.definition}</div>
-                    <span class="glossary-link">Read full definition</span>
                 </div>
             </a>
         `)
@@ -643,17 +642,6 @@ export function renderLearnTab(container) {
                 color: var(--text-primary);
                 font-size: 12px;
                 line-height: 1.45;
-            }
-            .glossary-link {
-                display: inline-block;
-                margin-top: 6px;
-                font-size: 11px;
-                color: var(--accent-color);
-                text-decoration: none;
-                font-weight: 600;
-            }
-            .glossary-link:hover {
-                text-decoration: underline;
             }
             .learn-btn {
                 background: var(--accent-color);
