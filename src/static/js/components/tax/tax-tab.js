@@ -216,7 +216,23 @@ function renderTaxAnalysis(container, analysis, profile, healthcarePlanning = nu
                                         <div style="display: grid; grid-template-columns: 24px 1fr auto; gap: 8px; padding: 4px 0; font-size: 10px; align-items: center;">
                                             <span style="opacity: 0.8;">#${idx + 1}</span>
                                             <span>${row.label}</span>
-                                            <span style="font-weight: 700;">${formatCurrency(row.combined_lifetime_benefit, 0)} lifetime</span>
+                                            <span style="font-weight: 700;">${formatCurrency(row.combined_lifetime_benefit_with_spousal_floor, 0)} lifetime</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </details>
+                        ` : ''}
+                        ${social_security_analysis.household.strategy_matrix?.length ? `
+                            <details style="cursor: pointer; margin-top: 6px;">
+                                <summary style="font-size: 12px; font-weight: 600; padding: 4px 0; user-select: none;">⚖️ Spousal Floor vs Independent Comparison</summary>
+                                <div style="padding: 8px; background: rgba(255,255,255,0.1); border-radius: 6px; margin-top: 6px; font-size: 10px;">
+                                    <div style="margin-bottom: 6px; opacity: 0.85;">${social_security_analysis.household.spousal_floor_model?.description || ''}</div>
+                                    ${social_security_analysis.household.strategy_matrix.slice(0, 5).map((row) => `
+                                        <div style="padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.08);">
+                                            <strong>${row.label}</strong>:
+                                            independent ${formatCurrency(row.combined_monthly_benefit_independent, 0)}/mo,
+                                            with floor ${formatCurrency(row.combined_monthly_benefit_with_spousal_floor, 0)}/mo
+                                            ${row.spousal_floor_uplift_monthly > 0 ? `(uplift ${formatCurrency(row.spousal_floor_uplift_monthly, 0)}/mo)` : ''}
                                         </div>
                                     `).join('')}
                                 </div>

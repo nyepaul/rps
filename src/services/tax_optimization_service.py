@@ -1158,10 +1158,65 @@ class TaxOptimizationService:
         } if spouse_analysis else {}
 
         strategy_matrix = []
+        full_retirement_age = 67
+
+        def _claim_factor(claim_age: Optional[int], fra: int = 67) -> float:
+            """Approximate claiming adjustment factor used for spousal-floor modeling."""
+            if claim_age is None:
+                return 1.0
+            if claim_age < fra:
+                months_early = (fra - claim_age) * 12
+                if months_early <= 36:
+                    reduction = months_early * (5 / 9) * 0.01
+                else:
+                    reduction = 36 * (5 / 9) * 0.01 + (months_early - 36) * (5 / 12) * 0.01
+                return max(0.0, 1 - reduction)
+            if claim_age > fra:
+                years_delayed = claim_age - fra
+                return 1 + 0.08 * years_delayed
+            return 1.0
+
+        def _spousal_floor_monthly(higher_pia: float, lower_claim_age: Optional[int]) -> float:
+            """Approximate spouse benefit floor based on 50% of higher earner PIA at FRA, adjusted for claim age."""
+            if lower_claim_age is None:
+                return 0.0
+            base_floor = higher_pia * 0.5
+            floor_factor = _claim_factor(lower_claim_age, full_retirement_age)
+            # Spousal benefits do not receive delayed retirement credits; cap at FRA level.
+            if lower_claim_age > full_retirement_age:
+                floor_factor = 1.0
+            return max(0.0, base_floor * floor_factor)
         for p_age in (key_ages if p_by_age else [None]):
             for s_age in (key_ages if s_by_age else [None]):
                 p = p_by_age.get(p_age) if p_age is not None else None
                 s = s_by_age.get(s_age) if s_age is not None else None
+
+                independent_monthly = (
+                    (p.get("monthly_benefit", 0) if p else 0)
+                    + (s.get("monthly_benefit", 0) if s else 0)
+                )
+                independent_lifetime = (
+                    (p.get("lifetime_benefit", 0) if p else 0)
+                    + (s.get("lifetime_benefit", 0) if s else 0)
+                )
+
+                higher_pia = max(float(primary_monthly or 0), float(spouse_monthly or 0))
+                if p and s:
+                    lower_claim_age = s_age if primary_monthly >= spouse_monthly else p_age
+                    modeled_floor = _spousal_floor_monthly(higher_pia, lower_claim_age)
+                    lower_current = min(p.get("monthly_benefit", 0), s.get("monthly_benefit", 0))
+                    floor_uplift = max(0.0, modeled_floor - lower_current)
+                else:
+                    floor_uplift = 0.0
+
+                adjusted_monthly = independent_monthly + floor_uplift
+                household_life_expectancy = max(primary_life_expectancy, spouse_life_expectancy)
+                years_receiving = max(
+                    0,
+                    household_life_expectancy - max(p_age or 62, s_age or 62),
+                )
+                adjusted_lifetime = independent_lifetime + (floor_uplift * 12 * years_receiving)
+
                 strategy_matrix.append(
                     {
                         "primary_claim_age": p_age,
@@ -1170,22 +1225,17 @@ class TaxOptimizationService:
                             f"P{p_age}/S{s_age}" if p_age is not None and s_age is not None
                             else f"P{p_age}" if p_age is not None else f"S{s_age}"
                         ),
-                        "combined_monthly_benefit": round(
-                            (p.get("monthly_benefit", 0) if p else 0)
-                            + (s.get("monthly_benefit", 0) if s else 0),
-                            2,
-                        ),
-                        "combined_lifetime_benefit": round(
-                            (p.get("lifetime_benefit", 0) if p else 0)
-                            + (s.get("lifetime_benefit", 0) if s else 0),
-                            2,
-                        ),
+                        "combined_monthly_benefit_independent": round(independent_monthly, 2),
+                        "combined_monthly_benefit_with_spousal_floor": round(adjusted_monthly, 2),
+                        "spousal_floor_uplift_monthly": round(floor_uplift, 2),
+                        "combined_lifetime_benefit_independent": round(independent_lifetime, 2),
+                        "combined_lifetime_benefit_with_spousal_floor": round(adjusted_lifetime, 2),
                     }
                 )
 
         strategy_matrix = sorted(
             strategy_matrix,
-            key=lambda row: row["combined_lifetime_benefit"],
+            key=lambda row: row["combined_lifetime_benefit_with_spousal_floor"],
             reverse=True,
         )
 
@@ -1250,6 +1300,10 @@ class TaxOptimizationService:
                 "strategy_matrix": strategy_matrix,
                 "top_strategies": strategy_matrix[:3],
                 "breakeven_crossovers": breakeven_crossovers,
+                "spousal_floor_model": {
+                    "enabled": bool(primary_analysis and spouse_analysis),
+                    "description": "Modeled with a spouse-benefit floor near 50% of the higher earner PIA at FRA, adjusted for early claiming.",
+                },
                 "survivor_monthly_estimate_at_70_strategy": round(survivor_estimate, 2),
                 "recommendation": "Delaying the higher earner to age 70 generally improves survivor income protection.",
             },

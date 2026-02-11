@@ -42,6 +42,9 @@ def test_analyze_comprehensive(client, test_user, test_profile):
     assert "social_security_analysis" in data
     assert "household" in data["social_security_analysis"]
     assert "top_strategies" in data["social_security_analysis"]["household"]
+    if data["social_security_analysis"]["household"]["top_strategies"]:
+        top = data["social_security_analysis"]["household"]["top_strategies"][0]
+        assert "combined_lifetime_benefit_with_spousal_floor" in top
     assert "roth_conversion" in data
     assert "rmd_analysis" in data
     assert "state_comparison" in data

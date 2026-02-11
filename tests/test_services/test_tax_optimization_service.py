@@ -52,3 +52,7 @@ def test_comprehensive_analysis_includes_social_security_block():
     assert len(result["social_security_analysis"]["household"]["strategy_matrix"]) > 0
     assert len(result["social_security_analysis"]["household"]["top_strategies"]) > 0
     assert len(result["social_security_analysis"]["household"]["breakeven_crossovers"]) > 0
+    top = result["social_security_analysis"]["household"]["top_strategies"][0]
+    assert "combined_monthly_benefit_independent" in top
+    assert "combined_monthly_benefit_with_spousal_floor" in top
+    assert "spousal_floor_uplift_monthly" in top
