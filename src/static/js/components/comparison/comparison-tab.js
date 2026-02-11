@@ -10,6 +10,25 @@ import { renderStandardTimelineChart, getChartThemeColors, registerChartForTheme
 
 let comparisonChartInstances = {};
 
+const COMPARISON_GLOSSARY = {
+    success_rate: {
+        title: 'Success Rate',
+        definition: 'Percentage of simulations where the portfolio does not run out before the end of the projection horizon.'
+    },
+    median: {
+        title: 'Median Final Balance',
+        definition: 'Middle outcome across simulations: half of outcomes are above this value and half are below.'
+    },
+    percentile_5: {
+        title: '5th Percentile',
+        definition: 'Downside scenario where only 5% of outcomes are worse.'
+    },
+    percentile_95: {
+        title: '95th Percentile',
+        definition: 'Upside scenario where only 5% of outcomes are better.'
+    }
+};
+
 function normalizeRate(value) {
     const rate = Number(value) || 0;
     return rate > 1 ? rate / 100 : rate;
@@ -105,6 +124,31 @@ function extractTimelineSeries(metrics) {
     return buildEstimatedTimeline(metrics.startingPortfolio, metrics.medianEnding, metrics.yearsProjected);
 }
 
+function glossaryHeader(label, key) {
+    return `${label} <button type="button" class="comparison-glossary-help" data-glossary="${key}" title="Click for definition" style="background:none;border:none;color:var(--accent-color);font:inherit;cursor:pointer;padding:0;">ⓘ</button>`;
+}
+
+function showComparisonGlossaryDefinition(key) {
+    const item = COMPARISON_GLOSSARY[key];
+    if (!item) return;
+
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+        <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10001; padding: 20px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; max-width: 540px; width: 100%; border: 2px solid var(--accent-color);">
+                <h3 style="margin: 0 0 10px 0; color: var(--accent-color);">${item.title}</h3>
+                <p style="margin: 0; line-height: 1.6; color: var(--text-primary);">${item.definition}</p>
+                <div style="margin-top: 16px; text-align: right;">
+                    <button id="close-comparison-glossary" style="padding: 8px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Close</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    modal.querySelector('#close-comparison-glossary').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+}
+
 export async function renderComparisonTab(container) {
     // Clean up previous keyboard handler if exists
     if (container._comparisonKeyboardHandler) {
@@ -198,10 +242,10 @@ function renderComparisonView(container, profile, scenarios) {
                                     <input type="checkbox" id="select-all-scenarios" title="Select all">
                                 </th>
                                 <th style="padding: 10px; text-align: left; font-weight: 700; font-size: 11px; color: var(--text-secondary);">SCENARIO</th>
-                                <th style="padding: 10px; text-align: center; font-weight: 700; font-size: 11px; color: var(--text-secondary);">SUCCESS ⓘ</th>
-                                <th style="padding: 10px; text-align: right; font-weight: 700; font-size: 11px; color: var(--text-secondary);">MEDIAN</th>
-                                <th style="padding: 10px; text-align: right; font-weight: 700; font-size: 11px; color: var(--text-secondary);">5TH %</th>
-                                <th style="padding: 10px; text-align: right; font-weight: 700; font-size: 11px; color: var(--text-secondary);">95TH %</th>
+                                <th style="padding: 10px; text-align: center; font-weight: 700; font-size: 11px; color: var(--text-secondary);">${glossaryHeader('SUCCESS', 'success_rate')}</th>
+                                <th style="padding: 10px; text-align: right; font-weight: 700; font-size: 11px; color: var(--text-secondary);">${glossaryHeader('MEDIAN', 'median')}</th>
+                                <th style="padding: 10px; text-align: right; font-weight: 700; font-size: 11px; color: var(--text-secondary);">${glossaryHeader('5TH %', 'percentile_5')}</th>
+                                <th style="padding: 10px; text-align: right; font-weight: 700; font-size: 11px; color: var(--text-secondary);">${glossaryHeader('95TH %', 'percentile_95')}</th>
                                 <th style="padding: 10px; text-align: center; font-weight: 700; font-size: 11px; color: var(--text-secondary);">ACTIONS</th>
                             </tr>
                         </thead>
@@ -311,6 +355,14 @@ function setupComparisonHandlers(container, scenarios) {
     const selectAllCheckbox = container.querySelector('#select-all-scenarios');
     const chartSection = container.querySelector('#comparison-chart-section');
     const resetZoomBtn = container.querySelector('#reset-comparison-zoom');
+
+    container.querySelectorAll('.comparison-glossary-help').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            showComparisonGlossaryDefinition(btn.dataset.glossary);
+        });
+    });
 
     // Handle select all
     if (selectAllCheckbox) {
