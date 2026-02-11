@@ -1,5 +1,5 @@
 {
-    "version": "3.9.259",
+    "version": "3.9.260",
     "release_date": "2026-02-11",
-    "release_notes": "Detailed tax bracket optimization: configurable Roth safety buffer across precision and budget planning"
+    "release_notes": "Global feature index quick-launch and roadmap locator"
 }
