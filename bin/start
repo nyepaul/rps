@@ -22,7 +22,7 @@ fi
 
 echo "Installing dependencies..."
 ./src/venv/bin/pip install --upgrade pip
-./src/venv/bin/pip install -r src/requirements.txt
+./src/venv/bin/pip install -r config/requirements.txt
 
 mkdir -p data logs
 
