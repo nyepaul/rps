@@ -84,10 +84,23 @@ export const taxOptimizationAPI = {
      * @param {string} profileName - Profile to analyze
      * @param {number} years - Projection years
      */
-    async analyzeHealthcarePlanning(profileName, years = 20) {
-        return apiClient.post('/api/analysis/healthcare-planning', {
+    async analyzeHealthcarePlanning(profileName, years = 20, options = {}) {
+        const payload = {
             profile_name: profileName,
-            years
-        });
+            years,
+        };
+        if (options.medicalInflation !== undefined && options.medicalInflation !== null) {
+            payload.medical_inflation = options.medicalInflation;
+        }
+        if (options.incomeGrowth !== undefined && options.incomeGrowth !== null) {
+            payload.income_growth = options.incomeGrowth;
+        }
+        if (options.estimatedMagi !== undefined && options.estimatedMagi !== null && options.estimatedMagi !== '') {
+            payload.estimated_magi = options.estimatedMagi;
+        }
+        if (options.annualOutOfPocket !== undefined && options.annualOutOfPocket !== null && options.annualOutOfPocket !== '') {
+            payload.annual_out_of_pocket = options.annualOutOfPocket;
+        }
+        return apiClient.post('/api/analysis/healthcare-planning', payload);
     }
 };

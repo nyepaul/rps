@@ -65,7 +65,7 @@ export async function renderTaxTab(container) {
     }
 }
 
-function renderTaxAnalysis(container, analysis, profile, healthcarePlanning = null) {
+function renderTaxAnalysis(container, analysis, profile, healthcarePlanning = null, healthcareInputs = null) {
     const { snapshot, roth_conversion, rmd_analysis, state_comparison, recommendations } = analysis;
 
     container.innerHTML = `
@@ -137,7 +137,7 @@ function renderTaxAnalysis(container, analysis, profile, healthcarePlanning = nu
                 </details>
             </div>
 
-            ${renderHealthcarePlanningCard(healthcarePlanning)}
+            ${renderHealthcarePlanningCard(healthcarePlanning, healthcareInputs)}
 
             <!-- Recommendations -->
             ${recommendations && recommendations.length > 0 ? `
@@ -446,9 +446,47 @@ function renderTaxAnalysis(container, analysis, profile, healthcarePlanning = nu
             el.style.transform = 'translateY(0)';
         });
     });
+
+    // Healthcare projection controls
+    const recalcHealthcareBtn = container.querySelector('#recalc-healthcare-projection');
+    if (recalcHealthcareBtn) {
+        recalcHealthcareBtn.addEventListener('click', async () => {
+            const years = Number(container.querySelector('#healthcare-years')?.value || 20);
+            const medicalInflationPct = Number(container.querySelector('#healthcare-medical-inflation')?.value || 5.5);
+            const incomeGrowthPct = Number(container.querySelector('#healthcare-income-growth')?.value || 2.0);
+            const estimatedMagiRaw = container.querySelector('#healthcare-estimated-magi')?.value ?? '';
+            const annualOutOfPocketRaw = container.querySelector('#healthcare-annual-oop')?.value ?? '';
+
+            recalcHealthcareBtn.disabled = true;
+            recalcHealthcareBtn.textContent = 'Recalculating...';
+            try {
+                const updatedHealthcare = await taxOptimizationAPI.analyzeHealthcarePlanning(
+                    profile.name,
+                    years,
+                    {
+                        medicalInflation: medicalInflationPct / 100,
+                        incomeGrowth: incomeGrowthPct / 100,
+                        estimatedMagi: estimatedMagiRaw.trim() === '' ? null : Number(estimatedMagiRaw),
+                        annualOutOfPocket: annualOutOfPocketRaw.trim() === '' ? null : Number(annualOutOfPocketRaw),
+                    }
+                );
+                renderTaxAnalysis(container, analysis, profile, updatedHealthcare, {
+                    years,
+                    medicalInflationPct,
+                    incomeGrowthPct,
+                    estimatedMagi: estimatedMagiRaw,
+                    annualOutOfPocket: annualOutOfPocketRaw,
+                });
+            } catch (error) {
+                showError(`Healthcare projection update failed: ${error.message}`);
+                recalcHealthcareBtn.disabled = false;
+                recalcHealthcareBtn.textContent = 'Recalculate';
+            }
+        });
+    }
 }
 
-function renderHealthcarePlanningCard(healthcarePlanning) {
+function renderHealthcarePlanningCard(healthcarePlanning, healthcareInputs = null) {
     if (!healthcarePlanning || !Array.isArray(healthcarePlanning.projection) || healthcarePlanning.projection.length === 0) {
         return '';
     }
@@ -458,11 +496,46 @@ function renderHealthcarePlanningCard(healthcarePlanning) {
     const fiveYear = rows[Math.min(4, rows.length - 1)];
     const tenYear = rows[Math.min(9, rows.length - 1)];
 
+    const defaults = healthcareInputs || {
+        years: healthcarePlanning.assumptions?.projection_years || 20,
+        medicalInflationPct: Number((healthcarePlanning.assumptions?.medical_inflation || 0.055) * 100).toFixed(1),
+        incomeGrowthPct: Number((healthcarePlanning.assumptions?.income_growth || 0.02) * 100).toFixed(1),
+        estimatedMagi: '',
+        annualOutOfPocket: '',
+    };
+
     return `
         <div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--border-color);">
             <h2 style="font-size: 15px; margin: 0 0 10px 0; font-weight: 700; color: var(--accent-color);">
                 🏥 Healthcare & Medicare Projection
             </h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin-bottom: 10px;">
+                <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px;">
+                    Years
+                    <input id="healthcare-years" type="number" min="1" max="40" value="${defaults.years}" style="padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" />
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px;">
+                    Medical Inflation (%)
+                    <input id="healthcare-medical-inflation" type="number" step="0.1" min="-10" max="25" value="${defaults.medicalInflationPct}" style="padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" />
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px;">
+                    Income Growth (%)
+                    <input id="healthcare-income-growth" type="number" step="0.1" min="-10" max="25" value="${defaults.incomeGrowthPct}" style="padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" />
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px;">
+                    MAGI Override ($)
+                    <input id="healthcare-estimated-magi" type="number" min="0" step="1000" value="${defaults.estimatedMagi}" placeholder="Auto from profile" style="padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" />
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px;">
+                    Out-of-Pocket Override ($)
+                    <input id="healthcare-annual-oop" type="number" min="0" step="500" value="${defaults.annualOutOfPocket}" placeholder="Auto from profile" style="padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" />
+                </label>
+            </div>
+            <div style="margin-bottom: 12px;">
+                <button id="recalc-healthcare-projection" style="padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--accent-color); color: var(--text-on-accent); cursor: pointer; font-weight: 600;">
+                    Recalculate
+                </button>
+            </div>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 10px;">
                 <div style="background: var(--bg-primary); padding: 10px; border-radius: 6px;">
                     <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 2px;">Year ${firstYear.year}</div>
