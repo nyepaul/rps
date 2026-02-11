@@ -1,5 +1,5 @@
 {
-    "version": "3.9.254",
+    "version": "3.9.255",
     "release_date": "2026-02-11",
-    "release_notes": "Detailed tax bracket optimization: add front-load conversion crossover signal"
+    "release_notes": "Detailed tax bracket optimization: add conversion window urgency summary"
 }

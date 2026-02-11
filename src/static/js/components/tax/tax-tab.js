@@ -505,6 +505,16 @@ function renderTaxAnalysis(
                                         ${roth_conversion.front_load_recommendation.should_front_load ? `<div style="font-size: 10px; margin-top: 4px;">Budget before crossover: ${formatCurrency(roth_conversion.front_load_recommendation.safe_budget_before_crossover, 0)}</div>` : ''}
                                     </div>
                                 ` : ''}
+                                ${roth_conversion.conversion_window_summary ? `
+                                    <div style="margin-top: 10px; padding: 6px; border-radius: 4px; background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.35);">
+                                        <div style="font-weight: 600; margin-bottom: 4px;">🪟 Conversion Window Summary</div>
+                                        <div style="font-size: 10px;">${roth_conversion.conversion_window_summary.summary}</div>
+                                        <div style="font-size: 10px; margin-top: 4px;">
+                                            Urgency: <strong>${roth_conversion.conversion_window_summary.urgency}</strong>,
+                                            Near-term budget: ${formatCurrency(roth_conversion.conversion_window_summary.near_term_safe_budget, 0)}
+                                        </div>
+                                    </div>
+                                ` : ''}
                             </div>
                         </details>
                         ${roth_conversion.conversion_ladder_5y?.rows?.length ? `

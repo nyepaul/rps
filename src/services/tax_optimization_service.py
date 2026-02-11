@@ -766,6 +766,10 @@ class TaxOptimizationService:
         front_load_recommendation = self.build_front_load_recommendation(
             annual_safe_conversion_budget=annual_safe_conversion_budget,
         )
+        conversion_window_summary = self.build_conversion_window_summary(
+            annual_safe_conversion_budget=annual_safe_conversion_budget,
+            front_load_recommendation=front_load_recommendation,
+        )
 
         # Analyze each conversion amount
         scenarios = []
@@ -806,6 +810,7 @@ class TaxOptimizationService:
             "bracket_headroom_projection": bracket_headroom_projection,
             "annual_safe_conversion_budget": annual_safe_conversion_budget,
             "front_load_recommendation": front_load_recommendation,
+            "conversion_window_summary": conversion_window_summary,
             "scenarios": scenarios,
             "optimal_24pct": optimal,
             "conversion_ladder_5y": ladder_5y,
@@ -1109,6 +1114,38 @@ class TaxOptimizationService:
                 f"Projected to hit target bracket in year {first_crossover_year}. Consider front-loading conversions before then."
                 if should_front_load
                 else "No projected crossover within modeled years under current assumptions."
+            ),
+        }
+
+    @staticmethod
+    def build_conversion_window_summary(
+        annual_safe_conversion_budget: Dict,
+        front_load_recommendation: Dict,
+    ) -> Dict:
+        """Summarize how long the conversion window remains open and urgency level."""
+        rows = annual_safe_conversion_budget.get("rows", [])
+        open_years = [r for r in rows if float(r.get("safe_conversion_budget", 0.0)) > 0]
+        open_year_count = len(open_years)
+        total_years = len(rows)
+        near_term_budget = sum(float(r.get("safe_conversion_budget", 0.0)) for r in open_years[:2])
+        total_budget = float(annual_safe_conversion_budget.get("total_safe_conversion_budget", 0.0))
+
+        if front_load_recommendation.get("should_front_load"):
+            urgency = "high"
+        elif open_year_count <= max(1, total_years // 2):
+            urgency = "medium"
+        else:
+            urgency = "low"
+
+        return {
+            "open_year_count": open_year_count,
+            "total_modeled_years": total_years,
+            "near_term_safe_budget": round(near_term_budget, 2),
+            "total_safe_budget": round(total_budget, 2),
+            "urgency": urgency,
+            "summary": (
+                f"{open_year_count} of {total_years} years have safe conversion capacity; "
+                f"near-term budget is ${near_term_budget:,.0f}."
             ),
         }
 
