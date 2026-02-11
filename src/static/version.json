@@ -1,5 +1,5 @@
 {
-    "version": "3.9.236",
+    "version": "3.9.237",
     "release_date": "2026-02-10",
-    "release_notes": "Fix event tracking CSRF 400s and demo reseed profile table compatibility"
+    "release_notes": "Fix refresh session handling, withdrawal strategy modal behavior, and expanded acronym glossary"
 }

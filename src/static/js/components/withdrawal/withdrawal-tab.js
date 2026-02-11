@@ -176,19 +176,63 @@ function setupWithdrawalStrategyToggles(container) {
         card.addEventListener('click', (e) => {
             const targetId = card.dataset.target;
             const targetList = container.querySelector(`#${targetId}`);
-            const icon = card.querySelector('.toggle-icon');
-            
-            if (targetList.style.display === 'none') {
-                targetList.style.display = 'block';
-                icon.textContent = '▼';
-                icon.style.transform = 'rotate(0deg)';
-                card.style.transform = 'scale(1.01)';
-            } else {
-                targetList.style.display = 'none';
-                icon.textContent = '▶';
-                card.style.transform = 'scale(1)';
-            }
+            if (!targetList) return;
+
+            const title = (card.querySelector('h3')?.textContent || 'Strategy Breakdown').trim();
+            showStrategyBreakdownModal(title, targetList.innerHTML);
         });
+    });
+}
+
+function showStrategyBreakdownModal(title, detailsHtml) {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.cssText = `
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.65);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        padding: 20px;
+    `;
+
+    modal.innerHTML = `
+        <div style="
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            width: min(760px, 96vw);
+            max-height: 85vh;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+            display: flex;
+            flex-direction: column;
+        ">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--border-color);">
+                <h2 style="margin: 0; font-size: 16px;">${title}</h2>
+                <button id="close-withdrawal-strategy-modal" aria-label="Close" style="
+                    background: transparent;
+                    border: none;
+                    color: var(--text-secondary);
+                    font-size: 24px;
+                    cursor: pointer;
+                    line-height: 1;
+                ">×</button>
+            </div>
+            <div style="padding: 14px 16px; overflow: auto;">
+                ${detailsHtml}
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const closeModal = () => modal.remove();
+    modal.querySelector('#close-withdrawal-strategy-modal')?.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
     });
 }
 

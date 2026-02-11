@@ -302,7 +302,15 @@ async function loadDefaultProfileOnStartup() {
  */
 async function checkAuth() {
     try {
-        const data = await apiClient.get(API_ENDPOINTS.AUTH_SESSION);
+        // Use explicit no-auto-redirect handling so refresh/network hiccups
+        // don't immediately kick users to /login.
+        let data = await apiClient.get(API_ENDPOINTS.AUTH_SESSION, { autoRedirect: false });
+
+        // Defensive second check with cache-busting before forcing logout.
+        if (!data.authenticated) {
+            data = await apiClient.get(`${API_ENDPOINTS.AUTH_SESSION}?_=${Date.now()}`, { autoRedirect: false });
+        }
+
         if (data.authenticated) {
             store.setState({ currentUser: data.user });
             console.log('✅ User authenticated:', data.user.username);
@@ -317,19 +325,15 @@ async function checkAuth() {
             // Force hide sidebar and tabs before redirecting
             const sidebar = document.getElementById('tabs-container');
             if (sidebar) sidebar.style.display = 'none';
-            
+
             // Redirect to login if not authenticated
             window.location.href = '/login';
         }
     } catch (error) {
         console.error('❌ Auth check failed:', error);
-        
-        // Force hide sidebar on error too
-        const sidebar = document.getElementById('tabs-container');
-        if (sidebar) sidebar.style.display = 'none';
-        
-        // Redirect to login on error
-        window.location.href = '/login';
+
+        // Do not force logout on transient network/server errors during refresh.
+        // Keep the current page and let subsequent API calls/session checks recover.
     }
 }
 
