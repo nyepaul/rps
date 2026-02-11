@@ -23,6 +23,8 @@ sudo ./bin/deploy
 ```
 
 This will:
+- Run `bin/check-env-consistency` preflight (aborts on dev/prod drift)
+- Run `bin/check-glossary-coverage` preflight (aborts on glossary/help coverage regression)
 - Copy the application to `/var/www/rps.pan2.app/`
 - Install Python dependencies in a virtual environment
 - Configure Apache2 with proxy settings
@@ -39,6 +41,8 @@ Set the following:
 - `SECRET_KEY` - Random secret for Flask sessions (generate a long random string)
 - `ENCRYPTION_KEY` - From step 1 (REQUIRED for data encryption at rest)
 - `CORS_ORIGINS` - Set to `https://rps.pan2.app` for production
+
+The generated `rps.service` loads both `/var/www/rps.pan2.app/.env` and `/var/www/rps.pan2.app/.env.production` automatically.
 
 **Note**: API keys for AI services (Gemini/Claude) are NOT configured here. Each user provides their own API keys through the Settings page in the application. The keys are encrypted using AES-256-GCM and stored per-user in the Profile database record.
 
@@ -97,6 +101,7 @@ tail -f /var/log/apache2/rps-access.log
 After making changes to the code:
 ```bash
 cd ~/src/rps
+./bin/check-quality-gates
 sudo ./bin/deploy
 ```
 
@@ -179,7 +184,7 @@ ingress:
 ## Updating
 
 1. Pull latest changes in development directory
-2. Run tests: `cd ~/src/rps && pytest`
+2. Run quality gates: `cd ~/src/rps && ./bin/check-quality-gates`
 3. Deploy: `sudo ./bin/deploy`
 
 The deployment script automatically:
