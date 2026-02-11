@@ -205,24 +205,22 @@ function renderGlossaryRows(items) {
         .slice()
         .sort((a, b) => a.term.localeCompare(b.term))
         .map((item) => `
-            <div class="glossary-row">
+            <a
+                class="glossary-row glossary-row-link"
+                href="${getGlossaryReferenceUrl(item)}"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Read full definition for ${item.term}"
+            >
                 <div class="glossary-term-wrap">
                     <div class="glossary-term">${item.term}</div>
                     <div class="glossary-category">${item.category}</div>
                 </div>
                 <div class="glossary-definition">
                     <div>${item.definition}</div>
-                    <a
-                        class="glossary-link"
-                        href="${getGlossaryReferenceUrl(item)}"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label="Read full definition for ${item.term}"
-                    >
-                        Read full definition
-                    </a>
+                    <span class="glossary-link">Read full definition</span>
                 </div>
-            </div>
+            </a>
         `)
         .join('');
 }
@@ -606,6 +604,23 @@ export function renderLearnTab(container) {
                 gap: 12px;
                 padding: 10px 0;
                 border-top: 1px solid var(--border-color);
+            }
+            .glossary-row-link {
+                text-decoration: none;
+                color: inherit;
+                cursor: pointer;
+                border-radius: 6px;
+                padding: 10px 8px;
+                margin: 0 -8px;
+                transition: background 0.15s ease, transform 0.15s ease;
+            }
+            .glossary-row-link:hover {
+                background: var(--bg-primary);
+                transform: translateX(2px);
+            }
+            .glossary-row-link:focus-visible {
+                outline: 2px solid var(--accent-color);
+                outline-offset: 2px;
             }
             .glossary-row:first-child {
                 border-top: 1px solid var(--border-color);
