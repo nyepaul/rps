@@ -530,6 +530,147 @@ export const APP_CONFIG = {
                     ]
                 };
             }
+        },
+        'inflation-shock': {
+            name: 'Inflation Shock',
+            description: 'Early stagflation followed by normalization and gradual recovery',
+            icon: '',
+            type: 'timeline',
+            buildPeriods: (currentYear, retirementYear, yearsProjected) => {
+                return {
+                    type: 'timeline',
+                    periods: [
+                        {
+                            start_year: retirementYear,
+                            end_year: retirementYear + 3,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['stagflation']
+                        },
+                        {
+                            start_year: retirementYear + 4,
+                            end_year: retirementYear + 8,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['conservative']
+                        },
+                        {
+                            start_year: retirementYear + 9,
+                            end_year: retirementYear + yearsProjected,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['historical']
+                        }
+                    ]
+                };
+            }
+        },
+        'late-retirement-crash': {
+            name: 'Late Retirement Crash',
+            description: 'Strong first half, severe drawdown in later retirement years',
+            icon: '',
+            type: 'timeline',
+            buildPeriods: (currentYear, retirementYear, yearsProjected) => {
+                const crashStart = retirementYear + Math.max(12, Math.floor(yearsProjected * 0.6));
+                return {
+                    type: 'timeline',
+                    periods: [
+                        {
+                            start_year: retirementYear,
+                            end_year: crashStart - 1,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['balanced']
+                        },
+                        {
+                            start_year: crashStart,
+                            end_year: crashStart + 2,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['crisis-2008']
+                        },
+                        {
+                            start_year: crashStart + 3,
+                            end_year: retirementYear + yearsProjected,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['post-covid']
+                        }
+                    ]
+                };
+            }
+        },
+        'lost-decade': {
+            name: 'Lost Decade',
+            description: 'Weak first decade with two major drawdowns, then normalization',
+            icon: '',
+            type: 'timeline',
+            buildPeriods: (currentYear, retirementYear, yearsProjected) => {
+                return {
+                    type: 'timeline',
+                    periods: [
+                        {
+                            start_year: retirementYear,
+                            end_year: retirementYear + 4,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['dotcom-bust']
+                        },
+                        {
+                            start_year: retirementYear + 5,
+                            end_year: retirementYear + 9,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['great-recession']
+                        },
+                        {
+                            start_year: retirementYear + 10,
+                            end_year: retirementYear + yearsProjected,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['historical']
+                        }
+                    ]
+                };
+            }
+        },
+        'defensive-income-cycle': {
+            name: 'Defensive Income Cycle',
+            description: 'Repeating lower-volatility cycle emphasizing income and defense',
+            icon: '',
+            type: 'cycle',
+            buildPeriods: (currentYear, retirementYear, yearsProjected) => {
+                return {
+                    type: 'cycle',
+                    repeat: true,
+                    pattern: [
+                        {
+                            duration: 4,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['dividend']
+                        },
+                        {
+                            duration: 3,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['bonds-heavy']
+                        },
+                        {
+                            duration: 2,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['conservative']
+                        }
+                    ]
+                };
+            }
+        },
+        'global-rotation': {
+            name: 'Global Rotation',
+            description: 'Alternates US, international, and emerging-led regimes',
+            icon: '',
+            type: 'cycle',
+            buildPeriods: (currentYear, retirementYear, yearsProjected) => {
+                return {
+                    type: 'cycle',
+                    repeat: true,
+                    pattern: [
+                        {
+                            duration: 4,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['historical']
+                        },
+                        {
+                            duration: 3,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['international']
+                        },
+                        {
+                            duration: 2,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['emerging']
+                        },
+                        {
+                            duration: 2,
+                            assumptions: APP_CONFIG.MARKET_PROFILES['conservative']
+                        }
+                    ]
+                };
+            }
         }
     },
 };

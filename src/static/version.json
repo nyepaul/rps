@@ -1,5 +1,5 @@
 {
-    "version": "3.9.268",
+    "version": "3.9.269",
     "release_date": "2026-02-11",
-    "release_notes": "Fix cash flow tooltip to preserve negative net cash flow sign"
+    "release_notes": "Add additional market condition presets in Analysis preset mode"
 }
