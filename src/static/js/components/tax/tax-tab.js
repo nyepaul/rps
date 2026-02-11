@@ -80,6 +80,7 @@ function getRothConversionInputs(container) {
         ladderYears: Number(container.querySelector('#roth-ladder-years')?.value || 5),
         ladderGrowthRate: Number(container.querySelector('#roth-ladder-growth')?.value || 5.0) / 100,
         ladderMaxRate: Number(container.querySelector('#roth-ladder-max-rate')?.value || 24.0) / 100,
+        ladderIncomeGrowthRate: Number(container.querySelector('#roth-ladder-income-growth')?.value || 2.0) / 100,
     };
 }
 
@@ -116,6 +117,7 @@ function renderTaxAnalysis(
         ladderYears: roth_conversion?.conversion_ladder_5y?.years_modeled || 5,
         ladderGrowthRate: roth_conversion?.conversion_ladder_5y?.annual_growth_assumption || 0.05,
         ladderMaxRate: roth_conversion?.conversion_ladder_5y?.max_marginal_rate_target || 0.24,
+        ladderIncomeGrowthRate: roth_conversion?.conversion_ladder_5y?.income_growth_assumption || 0.02,
     };
 
     container.innerHTML = `
@@ -363,6 +365,10 @@ function renderTaxAnalysis(
                                 Max Marginal Rate (%)
                                 <input id="roth-ladder-max-rate" type="number" step="1" min="10" max="50" value="${(effectiveRothInputs.ladderMaxRate * 100).toFixed(0)}" style="padding: 6px; border-radius: 4px; border: 1px solid #444; background: rgba(255,255,255,0.06); color: #fff;" />
                             </label>
+                            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 10px;">
+                                Income Growth (%)
+                                <input id="roth-ladder-income-growth" type="number" step="0.1" min="-10" max="10" value="${(effectiveRothInputs.ladderIncomeGrowthRate * 100).toFixed(1)}" style="padding: 6px; border-radius: 4px; border: 1px solid #444; background: rgba(255,255,255,0.06); color: #fff;" />
+                            </label>
                         </div>
                         <div style="margin-bottom: 8px;">
                             <button id="recalc-roth-conversion" style="padding: 8px 14px; border-radius: 6px; border: 1px solid #444; background: #1f2937; color: #fff; cursor: pointer; font-weight: 600;">Recalculate Roth Plan</button>
@@ -453,8 +459,9 @@ function renderTaxAnalysis(
                                         Ending Balance ${formatCurrency(roth_conversion.conversion_ladder_5y.ending_balance, 0)}
                                     </div>
                                     ${roth_conversion.conversion_ladder_5y.rows.map((row) => `
-                                        <div style="display: grid; grid-template-columns: 50px 1fr 1fr 1fr; gap: 6px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.08);">
+                                        <div style="display: grid; grid-template-columns: 36px 1fr 1fr 1fr 1fr; gap: 6px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.08);">
                                             <span>Y${row.year}</span>
+                                            <span>Inc ${formatCurrency(row.taxable_income_assumption, 0)}</span>
                                             <span>Convert ${formatCurrency(row.conversion_amount, 0)}</span>
                                             <span>Tax ${formatCurrency(row.conversion_tax, 0)}</span>
                                             <span>End ${formatCurrency(row.end_balance, 0)}</span>

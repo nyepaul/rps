@@ -87,6 +87,7 @@ def test_analyze_roth_conversion_with_ladder_options(client, test_user, test_pro
             "ladder_years": 3,
             "ladder_growth_rate": 0.02,
             "ladder_max_rate": 0.22,
+            "ladder_income_growth_rate": 0.03,
         },
     )
 
@@ -95,6 +96,7 @@ def test_analyze_roth_conversion_with_ladder_options(client, test_user, test_pro
     assert data["conversion_ladder_5y"]["years_modeled"] == 3
     assert data["conversion_ladder_5y"]["annual_growth_assumption"] == 0.02
     assert data["conversion_ladder_5y"]["max_marginal_rate_target"] == 0.22
+    assert data["conversion_ladder_5y"]["income_growth_assumption"] == 0.03
 
 
 def test_analyze_social_security(client, test_user, test_profile):

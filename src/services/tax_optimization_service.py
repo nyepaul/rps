@@ -732,6 +732,7 @@ class TaxOptimizationService:
         ladder_years: int = 5,
         ladder_growth_rate: float = 0.05,
         ladder_max_rate: float = 0.24,
+        ladder_income_growth_rate: float = 0.02,
     ) -> Dict:
         """
         Analyze Roth conversion scenarios.
@@ -764,6 +765,7 @@ class TaxOptimizationService:
             years=max(1, int(ladder_years)),
             annual_growth=max(-0.5, float(ladder_growth_rate)),
             max_rate=max(0.1, min(0.5, float(ladder_max_rate))),
+            annual_income_growth=max(-0.2, min(0.2, float(ladder_income_growth_rate))),
         )
         ladder_variants = self.build_roth_ladder_variants(
             current_taxable_income=current_taxable_income,
@@ -771,6 +773,7 @@ class TaxOptimizationService:
             years=max(1, int(ladder_years)),
             annual_growth=max(-0.5, float(ladder_growth_rate)),
             base_max_rate=max(0.1, min(0.5, float(ladder_max_rate))),
+            annual_income_growth=max(-0.2, min(0.2, float(ladder_income_growth_rate))),
         )
 
         return {
@@ -791,10 +794,12 @@ class TaxOptimizationService:
         years: int = 5,
         annual_growth: float = 0.05,
         max_rate: float = 0.24,
+        annual_income_growth: float = 0.02,
     ) -> Dict:
         """Construct a multi-year conversion ladder using the target marginal-rate cap."""
         rows = []
         balance = max(0.0, float(traditional_balance))
+        taxable_income_base = max(0.0, float(current_taxable_income))
         total_converted = 0.0
         total_conversion_tax = 0.0
         total_irmaa = 0.0
@@ -802,22 +807,24 @@ class TaxOptimizationService:
         for year in range(1, years + 1):
             if balance <= 0:
                 break
+            year_taxable_income = taxable_income_base * ((1 + annual_income_growth) ** (year - 1))
 
             optimal = self.roth_optimizer.find_optimal_conversion(
-                current_taxable_income, balance, max_rate=max_rate
+                year_taxable_income, balance, max_rate=max_rate
             )
             amount = max(0.0, min(balance, float(optimal.get("conversion_amount", 0.0))))
             if amount <= 0:
                 break
 
             analysis = self.roth_optimizer.analyze_conversion_amount(
-                current_taxable_income, balance, amount
+                year_taxable_income, balance, amount
             )
             end_balance = max(0.0, (balance - amount) * (1 + annual_growth))
 
             rows.append(
                 {
                     "year": year,
+                    "taxable_income_assumption": round(year_taxable_income, 2),
                     "start_balance": round(balance, 2),
                     "conversion_amount": round(amount, 2),
                     "conversion_tax": round(float(analysis["conversion_tax"]), 2),
@@ -836,6 +843,7 @@ class TaxOptimizationService:
         return {
             "years_modeled": years,
             "annual_growth_assumption": annual_growth,
+            "income_growth_assumption": annual_income_growth,
             "max_marginal_rate_target": max_rate,
             "rows": rows,
             "total_converted": round(total_converted, 2),
@@ -857,6 +865,7 @@ class TaxOptimizationService:
         years: int,
         annual_growth: float,
         base_max_rate: float,
+        annual_income_growth: float,
     ) -> Dict:
         """Build conservative/balanced/aggressive ladder variants and choose a recommendation."""
         variants = {
@@ -873,6 +882,7 @@ class TaxOptimizationService:
                 years=years,
                 annual_growth=annual_growth,
                 max_rate=max_rate,
+                annual_income_growth=annual_income_growth,
             )
             ladders[name] = ladder
             converted = float(ladder["total_converted"])

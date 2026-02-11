@@ -1,5 +1,5 @@
 {
-    "version": "3.9.247",
+    "version": "3.9.248",
     "release_date": "2026-02-10",
-    "release_notes": "Roth optimizer strategy variants with recommended conservative/balanced/aggressive plan"
+    "release_notes": "Roth ladder now models annual taxable-income growth with configurable UI/API control"
 }

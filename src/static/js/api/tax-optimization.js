@@ -50,6 +50,9 @@ export const taxOptimizationAPI = {
         if (options.ladderMaxRate !== undefined && options.ladderMaxRate !== null) {
             payload.ladder_max_rate = options.ladderMaxRate;
         }
+        if (options.ladderIncomeGrowthRate !== undefined && options.ladderIncomeGrowthRate !== null) {
+            payload.ladder_income_growth_rate = options.ladderIncomeGrowthRate;
+        }
         return apiClient.post('/api/tax-optimization/roth-conversion', payload);
     },
 
