@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Run the same lightweight quality gates enforced in CI.
+
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
+
+echo "==> Environment consistency"
+./bin/check-env-consistency
+
+echo "==> Glossary coverage"
+./bin/check-glossary-coverage
+
+echo "==> Targeted regression tests"
+PYTEST_BIN="pytest"
+if [[ -x "./venv/bin/pytest" ]]; then
+  PYTEST_BIN="./venv/bin/pytest"
+fi
+
+"$PYTEST_BIN" -q \
+  tests/comprehensive/test_javascript_quality.py::TestJavaScriptCriticalIssues::test_main_tab_restore_logic_present \
+  tests/comprehensive/test_javascript_quality.py::TestJavaScriptCriticalIssues::test_glossary_utility_used_in_key_tabs \
+  tests/test_routes/test_roadmap.py
+
+echo "All quality gates passed."
