@@ -1,0 +1,59 @@
+#!/bin/bash
+set -euo pipefail
+
+PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ERRORS=0
+
+check_file() {
+    local file="$1"
+    if [ ! -f "$PROJECT_ROOT/$file" ]; then
+        echo "FAIL: missing required file '$file'"
+        ERRORS=$((ERRORS + 1))
+    fi
+}
+
+check_contains() {
+    local file="$1"
+    local pattern="$2"
+    local message="$3"
+    if grep -Eq "$pattern" "$PROJECT_ROOT/$file"; then
+        echo "OK: $message"
+    else
+        echo "FAIL: $message"
+        ERRORS=$((ERRORS + 1))
+    fi
+}
+
+check_file "config/requirements.txt"
+check_file "src/requirements.txt"
+check_file "bin/start"
+check_file "docker/Dockerfile"
+
+if [ -f "$PROJECT_ROOT/src/requirements.txt" ]; then
+    NON_COMMENT_LINES="$(
+        awk '
+            /^[[:space:]]*#/ {next}
+            /^[[:space:]]*$/ {next}
+            {print}
+        ' "$PROJECT_ROOT/src/requirements.txt"
+    )"
+    if [ "$NON_COMMENT_LINES" = "-r ../config/requirements.txt" ]; then
+        echo "OK: src/requirements.txt delegates to config/requirements.txt"
+    else
+        echo "FAIL: src/requirements.txt must only contain '-r ../config/requirements.txt' (plus comments)"
+        ERRORS=$((ERRORS + 1))
+    fi
+fi
+
+check_contains "bin/start" "pip install -r config/requirements\\.txt" "dev startup installs config/requirements.txt"
+check_contains "docker/Dockerfile" "COPY config/requirements\\.txt /app/config/requirements\\.txt" "docker copies config/requirements.txt"
+check_contains "docker/Dockerfile" "pip install --no-cache-dir -r /app/config/requirements\\.txt" "docker installs config/requirements.txt"
+
+if [ "$ERRORS" -gt 0 ]; then
+    echo ""
+    echo "Environment consistency check failed with $ERRORS issue(s)."
+    exit 1
+fi
+
+echo ""
+echo "Environment consistency check passed."

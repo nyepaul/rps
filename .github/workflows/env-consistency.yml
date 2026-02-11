@@ -1,0 +1,38 @@
+name: Environment Consistency
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  quality-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r config/requirements.txt
+          pip install pytest
+
+      - name: Verify dev/prod dependency wiring
+        run: ./bin/check-env-consistency
+
+      - name: Verify glossary coverage
+        run: ./bin/check-glossary-coverage
+
+      - name: Run targeted regression tests
+        run: |
+          pytest -q \
+            tests/comprehensive/test_javascript_quality.py::TestJavaScriptCriticalIssues::test_main_tab_restore_logic_present \
+            tests/comprehensive/test_javascript_quality.py::TestJavaScriptCriticalIssues::test_glossary_utility_used_in_key_tabs \
+            tests/test_routes/test_roadmap.py
