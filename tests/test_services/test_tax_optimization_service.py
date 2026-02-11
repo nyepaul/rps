@@ -49,6 +49,7 @@ def test_comprehensive_analysis_includes_social_security_block():
     assert "social_security_analysis" in result
     assert result["social_security_analysis"]["available"] is True
     assert result["social_security_analysis"]["household"]["survivor_monthly_estimate_at_70_strategy"] > 0
+    assert "tax_torpedo" in result["social_security_analysis"]
     assert len(result["social_security_analysis"]["household"]["strategy_matrix"]) > 0
     assert len(result["social_security_analysis"]["household"]["top_strategies"]) > 0
     assert len(result["social_security_analysis"]["household"]["breakeven_crossovers"]) > 0
@@ -56,3 +57,19 @@ def test_comprehensive_analysis_includes_social_security_block():
     assert "combined_monthly_benefit_independent" in top
     assert "combined_monthly_benefit_with_spousal_floor" in top
     assert "spousal_floor_uplift_monthly" in top
+
+
+def test_wep_adjustment_reduces_pia():
+    result = TaxOptimizationService.apply_wep_adjustment(
+        pia_at_fra=3000, noncovered_pension_annual=24000
+    )
+    assert result["applied"] is True
+    assert result["pia_after_wep"] < result["pia_before_wep"]
+
+
+def test_tax_torpedo_analysis_has_threshold_context():
+    service = TaxOptimizationService(filing_status="mfj", state="CA", tax_year=2026)
+    torpedo = service.analyze_tax_torpedo(non_ss_income=50000, ss_benefit=60000)
+    assert "thresholds" in torpedo
+    assert "band" in torpedo
+    assert "taxable_ss_pct" in torpedo

@@ -1,5 +1,5 @@
 {
-    "version": "3.9.242",
-    "release_date": "2026-02-11",
-    "release_notes": "Release rollup after consistency review fixes"
+    "version": "3.9.243",
+    "release_date": "2026-02-10",
+    "release_notes": "Social Security timing enhancements: WEP/GPO/earnings-test adjustments and tax-torpedo context"
 }

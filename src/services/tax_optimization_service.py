@@ -806,6 +806,103 @@ class TaxOptimizationService:
             ),
         }
 
+    @staticmethod
+    def apply_wep_adjustment(
+        pia_at_fra: float, noncovered_pension_annual: float
+    ) -> Dict:
+        """Approximate WEP reduction on PIA at FRA."""
+        monthly_noncovered = max(0.0, noncovered_pension_annual / 12.0)
+        reduction = min(600.0, monthly_noncovered * 0.5, pia_at_fra * 0.5)
+        adjusted = max(0.0, pia_at_fra - reduction)
+        return {
+            "applied": reduction > 0,
+            "wep_reduction_monthly": round(reduction, 2),
+            "pia_before_wep": round(pia_at_fra, 2),
+            "pia_after_wep": round(adjusted, 2),
+        }
+
+    @staticmethod
+    def apply_earnings_test_penalty(
+        analysis: Dict,
+        annual_earned_income: float,
+        annual_limit: float = 22320.0,
+    ) -> Dict:
+        """Apply pre-FRA earnings test approximation to SS analysis rows."""
+        if not analysis:
+            return analysis
+
+        fra = int(analysis.get("full_retirement_age", 67))
+        rows = []
+        for row in analysis.get("analyses", []):
+            claim_age = int(row["claiming_age"])
+            annual_benefit = float(row["annual_benefit"])
+            years_before_fra = max(0, fra - claim_age)
+            annual_penalty = 0.0
+            if claim_age < fra and annual_earned_income > annual_limit:
+                annual_penalty = min((annual_earned_income - annual_limit) / 2.0, annual_benefit)
+
+            adjusted_annual = max(0.0, annual_benefit - annual_penalty)
+            adjusted_lifetime = max(
+                0.0,
+                float(row["lifetime_benefit"]) - (annual_penalty * years_before_fra),
+            )
+            row = {
+                **row,
+                "earnings_penalty_annual": round(annual_penalty, 2),
+                "annual_benefit_after_earnings_test": round(adjusted_annual, 2),
+                "lifetime_benefit_after_earnings_test": round(adjusted_lifetime, 2),
+            }
+            rows.append(row)
+
+        # recompute optimal under earnings-test-adjusted lifetime
+        optimal = max(rows, key=lambda x: x["lifetime_benefit_after_earnings_test"]) if rows else None
+        return {
+            **analysis,
+            "analyses": rows,
+            "optimal_after_earnings_test": optimal,
+            "earnings_test": {
+                "annual_earned_income": round(annual_earned_income, 2),
+                "annual_limit": round(annual_limit, 2),
+                "applies": annual_earned_income > annual_limit,
+            },
+        }
+
+    def analyze_tax_torpedo(
+        self,
+        non_ss_income: float,
+        ss_benefit: float,
+        tax_exempt_interest: float = 0.0,
+    ) -> Dict:
+        """Expose Social Security taxability threshold context."""
+        provisional_income = non_ss_income + (ss_benefit * 0.5) + tax_exempt_interest
+        thresholds = self.ss_analyzer.policy.ss_taxability.get(
+            self.settings.filing_status,
+            self.ss_analyzer.policy.ss_taxability["mfj"],
+        )
+        t1, t2 = thresholds
+        taxable_ss, taxable_pct = self.ss_analyzer.calculate_taxable_ss(
+            non_ss_income, ss_benefit, tax_exempt_interest
+        )
+
+        if provisional_income <= t1:
+            band = "below_first_threshold"
+            room_to_next = t1 - provisional_income
+        elif provisional_income <= t2:
+            band = "between_thresholds"
+            room_to_next = t2 - provisional_income
+        else:
+            band = "above_second_threshold"
+            room_to_next = 0.0
+
+        return {
+            "provisional_income": round(provisional_income, 2),
+            "thresholds": {"first": t1, "second": t2},
+            "band": band,
+            "room_to_next_threshold": round(max(0.0, room_to_next), 2),
+            "taxable_ss_amount": round(taxable_ss, 2),
+            "taxable_ss_pct": round(taxable_pct * 100, 2),
+        }
+
     def analyze_rmd(
         self,
         age: int,
@@ -1039,6 +1136,11 @@ class TaxOptimizationService:
             current_age=age,
             spouse_age=spouse_age,
         )
+        if ss_analysis.get("available"):
+            ss_analysis["tax_torpedo"] = self.analyze_tax_torpedo(
+                non_ss_income=float(total_income),
+                ss_benefit=float(ss_benefit),
+            )
 
         # Get RMD analysis
         annual_charitable_giving = self.infer_annual_charitable_giving(profile_data)
@@ -1071,6 +1173,7 @@ class TaxOptimizationService:
         financial: Dict,
         current_age: int,
         spouse_age: int,
+        gpo_offset_monthly: float = 0.0,
     ) -> Dict:
         """Build household Social Security claiming analysis."""
         primary_monthly = (
@@ -1185,7 +1288,7 @@ class TaxOptimizationService:
             # Spousal benefits do not receive delayed retirement credits; cap at FRA level.
             if lower_claim_age > full_retirement_age:
                 floor_factor = 1.0
-            return max(0.0, base_floor * floor_factor)
+            return max(0.0, (base_floor * floor_factor) - max(0.0, gpo_offset_monthly))
         for p_age in (key_ages if p_by_age else [None]):
             for s_age in (key_ages if s_by_age else [None]):
                 p = p_by_age.get(p_age) if p_age is not None else None

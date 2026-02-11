@@ -40,6 +40,10 @@ class SocialSecurityRequest(BaseModel):
     profile_name: str
     life_expectancy: Optional[int] = 90
     filing_status: Optional[str] = None  # None = use profile default
+    annual_earned_income: Optional[float] = 0.0
+    apply_wep: Optional[bool] = False
+    apply_gpo: Optional[bool] = False
+    noncovered_pension_annual: Optional[float] = 0.0
 
 
 @tax_optimization_bp.route("/analyze", methods=["POST"])
@@ -268,16 +272,32 @@ def analyze_social_security_timing():
         service = TaxOptimizationService(filing_status=filing_status, tax_year=tax_year)
 
         # Analyze primary and spouse strategies separately.
+        wep = service.apply_wep_adjustment(
+            pia_at_fra=float(primary_ss if primary_ss > 0 else 0.0),
+            noncovered_pension_annual=float(data.noncovered_pension_annual or 0.0),
+        )
+        primary_pia = wep["pia_after_wep"] if data.apply_wep else float(primary_ss)
+        gpo_offset_monthly = (
+            ((data.noncovered_pension_annual or 0.0) / 12.0) * (2.0 / 3.0)
+            if data.apply_gpo
+            else 0.0
+        )
+
         primary_analysis = (
             service.analyze_social_security(
-                pia_at_fra=float(primary_ss),
+                pia_at_fra=primary_pia,
                 current_age=current_age,
                 full_retirement_age=67,
                 life_expectancy=data.life_expectancy,
             )
-            if primary_ss > 0
+            if primary_pia > 0
             else None
         )
+        if primary_analysis:
+            primary_analysis = service.apply_earnings_test_penalty(
+                primary_analysis,
+                annual_earned_income=float(data.annual_earned_income or 0.0),
+            )
         spouse_analysis = (
             service.analyze_social_security(
                 pia_at_fra=float(spouse_ss),
@@ -288,6 +308,11 @@ def analyze_social_security_timing():
             if spouse_ss > 0
             else None
         )
+        if spouse_analysis:
+            spouse_analysis = service.apply_earnings_test_penalty(
+                spouse_analysis,
+                annual_earned_income=float(data.annual_earned_income or 0.0),
+            )
 
         household_analysis = service.analyze_household_social_security(
             person={**person, "life_expectancy": data.life_expectancy},
@@ -295,6 +320,11 @@ def analyze_social_security_timing():
             financial=financial,
             current_age=current_age,
             spouse_age=spouse_age,
+            gpo_offset_monthly=gpo_offset_monthly,
+        )
+        tax_torpedo = service.analyze_tax_torpedo(
+            non_ss_income=float((financial.get("annual_income") or 0.0) + ((financial.get("pension_benefit") or 0.0) * 12.0)),
+            ss_benefit=float((primary_ss or 0.0) + (spouse_ss or 0.0)),
         )
 
         # Backward-compatible top-level response mirrors primary analysis if present.
@@ -311,6 +341,12 @@ def analyze_social_security_timing():
                         "primary_analysis": None,
                         "spouse_analysis": None,
                         "household_analysis": household_analysis.get("household"),
+                        "adjustments": {
+                            "wep": wep,
+                            "gpo_offset_monthly": round(gpo_offset_monthly, 2),
+                            "annual_earned_income": round(float(data.annual_earned_income or 0.0), 2),
+                        },
+                        "tax_torpedo": tax_torpedo,
                     }
                 ),
                 200,
@@ -322,6 +358,12 @@ def analyze_social_security_timing():
             "primary_analysis": primary_analysis,
             "spouse_analysis": spouse_analysis,
             "household_analysis": household_analysis.get("household"),
+            "adjustments": {
+                "wep": wep,
+                "gpo_offset_monthly": round(gpo_offset_monthly, 2),
+                "annual_earned_income": round(float(data.annual_earned_income or 0.0), 2),
+            },
+            "tax_torpedo": tax_torpedo,
         }
         return jsonify(result), 200
 

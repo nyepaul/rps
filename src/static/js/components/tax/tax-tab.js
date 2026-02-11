@@ -251,6 +251,17 @@ function renderTaxAnalysis(container, analysis, profile, healthcarePlanning = nu
                                 </div>
                             </details>
                         ` : ''}
+                        ${social_security_analysis.tax_torpedo ? `
+                            <details style="cursor: pointer; margin-top: 6px;">
+                                <summary style="font-size: 12px; font-weight: 600; padding: 4px 0; user-select: none;">🌊 Tax Torpedo Thresholds</summary>
+                                <div style="padding: 8px; background: rgba(255,255,255,0.1); border-radius: 6px; margin-top: 6px; font-size: 10px;">
+                                    <div>Provisional Income: <strong>${formatCurrency(social_security_analysis.tax_torpedo.provisional_income, 0)}</strong></div>
+                                    <div>Thresholds: ${formatCurrency(social_security_analysis.tax_torpedo.thresholds.first, 0)} / ${formatCurrency(social_security_analysis.tax_torpedo.thresholds.second, 0)}</div>
+                                    <div>Band: <strong>${social_security_analysis.tax_torpedo.band.replaceAll('_', ' ')}</strong></div>
+                                    <div>Taxable SS: <strong>${social_security_analysis.tax_torpedo.taxable_ss_pct.toFixed(1)}%</strong></div>
+                                </div>
+                            </details>
+                        ` : ''}
                     </div>
                     ` : ''}
 

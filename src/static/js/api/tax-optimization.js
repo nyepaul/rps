@@ -50,12 +50,24 @@ export const taxOptimizationAPI = {
      * @param {number} lifeExpectancy - Expected lifespan
      * @param {string|null} filingStatus - Filing status (null = use profile default)
      */
-    async analyzeSocialSecurity(profileName, lifeExpectancy = 90, filingStatus = null) {
+    async analyzeSocialSecurity(profileName, lifeExpectancy = 90, filingStatus = null, options = {}) {
         const payload = {
             profile_name: profileName,
             life_expectancy: lifeExpectancy
         };
         if (filingStatus) payload.filing_status = filingStatus;
+        if (options.annualEarnedIncome !== undefined && options.annualEarnedIncome !== null) {
+            payload.annual_earned_income = options.annualEarnedIncome;
+        }
+        if (options.applyWep !== undefined) {
+            payload.apply_wep = Boolean(options.applyWep);
+        }
+        if (options.applyGpo !== undefined) {
+            payload.apply_gpo = Boolean(options.applyGpo);
+        }
+        if (options.noncoveredPensionAnnual !== undefined && options.noncoveredPensionAnnual !== null) {
+            payload.noncovered_pension_annual = options.noncoveredPensionAnnual;
+        }
         return apiClient.post('/api/tax-optimization/social-security-timing', payload);
     },
 

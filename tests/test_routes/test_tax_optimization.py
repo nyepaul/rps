@@ -89,6 +89,8 @@ def test_analyze_social_security(client, test_user, test_profile):
     assert "comparison" in data
     assert "primary_analysis" in data
     assert "household_analysis" in data
+    assert "adjustments" in data
+    assert "tax_torpedo" in data
     assert "profile_name" in data
 
 
@@ -142,6 +144,32 @@ def test_analyze_social_security_includes_spouse_strategy(client, test_user, tes
     assert data["spouse_analysis"] is not None
     assert "strategy_matrix" in data["household_analysis"]
     assert len(data["household_analysis"]["strategy_matrix"]) > 0
+
+
+def test_analyze_social_security_with_wep_gpo_and_earnings_options(client, test_user, test_profile):
+    """Timing endpoint should accept WEP/GPO/earnings options and return adjustment metadata."""
+    client.post(
+        "/api/auth/login", json={"username": "testuser", "password": "TestPass123"}
+    )
+
+    response = client.post(
+        "/api/tax-optimization/social-security-timing",
+        json={
+            "profile_name": "Test Profile",
+            "life_expectancy": 90,
+            "annual_earned_income": 50000,
+            "apply_wep": True,
+            "apply_gpo": True,
+            "noncovered_pension_annual": 24000,
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert "adjustments" in data
+    assert data["adjustments"]["wep"]["pia_after_wep"] <= data["adjustments"]["wep"]["pia_before_wep"]
+    assert data["adjustments"]["gpo_offset_monthly"] > 0
+    assert "tax_torpedo" in data
 
 
 def test_state_comparison(client, test_user, test_profile):
