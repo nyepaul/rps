@@ -699,7 +699,7 @@ function openFeatureIndexModal() {
     });
 
     modal.addEventListener('click', (event) => {
-        const shortcut = event.target.closest('.feature-index-link');
+        const shortcut = event.target.closest('.feature-index-row');
         if (shortcut && (shortcut.dataset.action === 'tab' || shortcut.dataset.action === 'roadmap')) {
             setTimeout(close, 0);
         }

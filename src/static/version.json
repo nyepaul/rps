@@ -1,5 +1,5 @@
 {
-    "version": "3.9.270",
+    "version": "3.9.271",
     "release_date": "2026-02-11",
-    "release_notes": "Remove standalone Index tab and keep feature index in Learning Hub only"
+    "release_notes": "Make Feature Index rows fully clickable and remove per-row open buttons"
 }

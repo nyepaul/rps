@@ -248,20 +248,20 @@ export function renderFeatureIndexRows(items) {
     }
 
     return items.map((item) => `
-        <div class="feature-index-row" style="display: grid; grid-template-columns: minmax(210px, 300px) 1fr auto; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border-color); align-items: center;">
+        <div
+            class="feature-index-row"
+            data-action="${escapeHtml(item.action?.type || '')}"
+            data-target="${escapeHtml(item.action?.target || '')}"
+            role="button"
+            tabindex="0"
+            aria-label="${escapeHtml(item.action?.label || item.title || 'Open')}"
+            style="display: grid; grid-template-columns: minmax(210px, 300px) 1fr; gap: 12px; padding: 10px 8px; border-top: 1px solid var(--border-color); align-items: center; cursor: pointer; border-radius: 6px; transition: background 0.15s ease, transform 0.15s ease;"
+        >
             <div>
                 <div style="font-size: 13px; font-weight: 700; color: var(--text-primary);">${escapeHtml(item.title)}</div>
                 <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${escapeHtml(item.area)} • ${escapeHtml(item.location)}</div>
             </div>
             <div style="font-size: 12px; color: var(--text-primary); line-height: 1.45;">${escapeHtml(item.summary)}</div>
-            <button
-                class="feature-index-link"
-                data-action="${escapeHtml(item.action?.type || '')}"
-                data-target="${escapeHtml(item.action?.target || '')}"
-                style="padding: 6px 10px; background: var(--bg-primary); color: var(--accent-color); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; white-space: nowrap;"
-            >
-                ${escapeHtml(item.action?.label || 'Open')}
-            </button>
         </div>
     `).join('');
 }
@@ -271,12 +271,10 @@ export function bindFeatureIndexActions(root, options = {}) {
 
     const openRoadmap = options.onRoadmapOpen || (() => {});
 
-    root.addEventListener('click', (event) => {
-        const btn = event.target.closest('.feature-index-link');
-        if (!btn) return;
-
-        const action = btn.dataset.action;
-        const target = btn.dataset.target;
+    const runAction = (row) => {
+        if (!row) return;
+        const action = row.dataset.action;
+        const target = row.dataset.target;
 
         if (action === 'tab' && target) {
             window.app?.showTab?.(target);
@@ -286,5 +284,19 @@ export function bindFeatureIndexActions(root, options = {}) {
         if (action === 'roadmap') {
             openRoadmap(target);
         }
+    };
+
+    root.addEventListener('click', (event) => {
+        const row = event.target.closest('.feature-index-row');
+        if (!row) return;
+        runAction(row);
+    });
+
+    root.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        const row = event.target.closest('.feature-index-row');
+        if (!row) return;
+        event.preventDefault();
+        runAction(row);
     });
 }

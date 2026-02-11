@@ -650,9 +650,13 @@ export function renderLearnTab(container) {
             #feature-index-list .feature-index-row:first-child {
                 border-top: 1px solid var(--border-color);
             }
-            .feature-index-link:hover {
-                border-color: var(--accent-color) !important;
-                background: var(--bg-tertiary) !important;
+            .feature-index-row:hover {
+                background: var(--bg-primary);
+                transform: translateX(2px);
+            }
+            .feature-index-row:focus-visible {
+                outline: 2px solid var(--accent-color);
+                outline-offset: 2px;
             }
             .glossary-term-wrap {
                 display: flex;
