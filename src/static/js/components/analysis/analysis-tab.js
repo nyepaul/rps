@@ -36,6 +36,10 @@ function parseSimulationCount(rawValue) {
     return parsed;
 }
 
+function statHelpButton(helpType, title) {
+    return `<button type="button" class="analysis-term-help" data-help="${helpType}" title="${title}" style="color: var(--accent-color); text-decoration: none; font-weight: bold; margin-left: 5px; background: none; border: none; cursor: pointer; padding: 0;">?</button>`;
+}
+
 export function renderAnalysisTab(container) {
     // Clean up previous keyboard handler if exists
     if (container._analysisKeyboardHandler) {
@@ -1597,7 +1601,7 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
                 <div class="stat-item" title="% of trials that didn't run out of cash">
                     <div class="stat-label">
                         Success Rate 
-                        <a href="https://www.investopedia.com/terms/m/montecarlosimulation.asp" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold; margin-left: 5px;" title="Learn more about Monte Carlo Success Rates">?</a>
+                        ${statHelpButton('success_rate', 'Learn more about Success Rate')}
                     </div>
                     <div class="stat-value ${successClass}">
                         ${formatPercent(successRate, 1)}
@@ -1610,7 +1614,7 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
                 <div class="stat-item" title="Half of trials ended with more than this, half with less">
                     <div class="stat-label">
                         Median Final Balance
-                        <a href="https://www.investopedia.com/terms/m/median.asp" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold; margin-left: 5px;" title="Learn more about Median">?</a>
+                        ${statHelpButton('median', 'Learn more about Median Final Balance')}
                     </div>
                     <div class="stat-value stat-info">
                         ${formatCurrency(data.median_final_balance || 0, 0)}
@@ -1620,7 +1624,7 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
                 <div class="stat-item" title="Worst 10% of outcomes. Only 10% of trials performed worse than this (conservative)">
                     <div class="stat-label">
                         10th Percentile
-                        <a href="https://www.investopedia.com/terms/p/percentile.asp" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold; margin-left: 5px;" title="Learn more about Percentiles">?</a>
+                        ${statHelpButton('percentile_10', 'Learn more about 10th Percentile')}
                     </div>
                     <div class="stat-value">
                         ${formatCurrency(data.percentile_10 || 0, 0)}
@@ -1630,7 +1634,7 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
                 <div class="stat-item" title="Best 10% of outcomes. Only 10% of trials performed better than this (optimistic)">
                     <div class="stat-label">
                         90th Percentile
-                        <a href="https://www.investopedia.com/terms/p/percentile.asp" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold; margin-left: 5px;" title="Learn more about Percentiles">?</a>
+                        ${statHelpButton('percentile_90', 'Learn more about 90th Percentile')}
                     </div>
                     <div class="stat-value stat-success">
                         ${formatCurrency(data.percentile_90 || 0, 0)}
@@ -1640,7 +1644,7 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
                 <div class="stat-item" title="The average of all trial outcomes">
                     <div class="stat-label">
                         Expected Value
-                        <a href="https://www.investopedia.com/terms/e/expected-value.asp" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold; margin-left: 5px;" title="Learn more about Expected Value">?</a>
+                        ${statHelpButton('expected_value', 'Learn more about Expected Value')}
                     </div>
                     <div class="stat-value">
                         ${formatCurrency(data.expected_value || 0, 0)}
@@ -1650,7 +1654,7 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
                 <div class="stat-item" title="Measure of uncertainty; higher means more spread between outcomes">
                     <div class="stat-label">
                         Std Deviation
-                        <a href="https://www.investopedia.com/terms/s/standarddeviation.asp" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold; margin-left: 5px;" title="Learn more about Standard Deviation">?</a>
+                        ${statHelpButton('std_deviation', 'Learn more about Standard Deviation')}
                     </div>
                     <div class="stat-value">
                         ${formatCurrency(data.std_deviation || 0, 0)}
@@ -1853,7 +1857,7 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
                             <div class="stat-item" title="% of trials that didn't run out of cash">
                                 <div class="stat-label">
                                     Success Rate
-                                    <a href="https://www.investopedia.com/terms/m/montecarlosimulation.asp" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold; margin-left: 5px;" title="Learn more about Monte Carlo Success Rates">?</a>
+                                    ${statHelpButton('success_rate', 'Learn more about Success Rate')}
                                 </div>
                                 <div class="stat-value ${successClass}">
                                     ${formatPercent(successRate, 1)}
@@ -1866,7 +1870,7 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
                             <div class="stat-item" title="Half of trials ended with more than this, half with less">
                                 <div class="stat-label">
                                     Median Final Balance
-                                    <a href="https://www.investopedia.com/terms/m/median.asp" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold; margin-left: 5px;" title="Learn more about Median">?</a>
+                                    ${statHelpButton('median', 'Learn more about Median Final Balance')}
                                 </div>
                                 <div class="stat-value stat-info">
                                     ${formatCurrency(scenario.median_final_balance || 0, 0)}
@@ -1876,7 +1880,7 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
                             <div class="stat-item" title="Worst 10% of outcomes. Only 10% of trials performed worse than this (conservative)">
                                 <div class="stat-label">
                                     10th Percentile
-                                    <a href="https://www.investopedia.com/terms/p/percentile.asp" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold; margin-left: 5px;" title="Learn more about Percentiles">?</a>
+                                    ${statHelpButton('percentile_10', 'Learn more about 10th Percentile')}
                                 </div>
                                 <div class="stat-value">
                                     ${formatCurrency(scenario.percentile_10 || 0, 0)}
@@ -1886,7 +1890,7 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
                             <div class="stat-item" title="Best 10% of outcomes. Only 10% of trials performed better than this (optimistic)">
                                 <div class="stat-label">
                                     90th Percentile
-                                    <a href="https://www.investopedia.com/terms/p/percentile.asp" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold; margin-left: 5px;" title="Learn more about Percentiles">?</a>
+                                    ${statHelpButton('percentile_90', 'Learn more about 90th Percentile')}
                                 </div>
                                 <div class="stat-value stat-success">
                                     ${formatCurrency(scenario.percentile_90 || 0, 0)}
@@ -1896,7 +1900,7 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
                             <div class="stat-item" title="The average of all trial outcomes">
                                 <div class="stat-label">
                                     Expected Value
-                                    <a href="https://www.investopedia.com/terms/e/expected-value.asp" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold; margin-left: 5px;" title="Learn more about Expected Value">?</a>
+                                    ${statHelpButton('expected_value', 'Learn more about Expected Value')}
                                 </div>
                                 <div class="stat-value">
                                     ${formatCurrency(scenario.expected_value || 0, 0)}
@@ -1906,7 +1910,7 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
                             <div class="stat-item" title="Measure of uncertainty; higher means more spread between outcomes">
                                 <div class="stat-label">
                                     Std Deviation
-                                    <a href="https://www.investopedia.com/terms/s/standarddeviation.asp" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold; margin-left: 5px;" title="Learn more about Standard Deviation">?</a>
+                                    ${statHelpButton('std_deviation', 'Learn more about Standard Deviation')}
                                 </div>
                                 <div class="stat-value">
                                     ${formatCurrency(scenario.std_deviation || 0, 0)}
@@ -2295,6 +2299,21 @@ function setupStatItemClickHandlers(container) {
             item.addEventListener('click', showStdDeviationModal);
             item.style.cursor = 'pointer';
         }
+    });
+
+    // Direct help buttons for term definitions inside labels.
+    container.querySelectorAll('.analysis-term-help').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const helpType = btn.getAttribute('data-help');
+            if (helpType === 'success_rate') showSuccessRateModal();
+            else if (helpType === 'median') showMedianBalanceModal();
+            else if (helpType === 'percentile_10') showPercentileModal(10);
+            else if (helpType === 'percentile_90') showPercentileModal(90);
+            else if (helpType === 'expected_value') showExpectedValueModal();
+            else if (helpType === 'std_deviation') showStdDeviationModal();
+        });
     });
 }
 
