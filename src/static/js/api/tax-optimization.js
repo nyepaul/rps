@@ -36,11 +36,20 @@ export const taxOptimizationAPI = {
      * @param {string|null} filingStatus - Filing status (null = use profile default)
      * @param {string|null} state - State (null = use profile's address/tax_settings)
      */
-    async analyzeRothConversion(profileName, conversionAmounts = null, filingStatus = null, state = null) {
+    async analyzeRothConversion(profileName, conversionAmounts = null, filingStatus = null, state = null, options = {}) {
         const payload = { profile_name: profileName };
         if (conversionAmounts) payload.conversion_amounts = conversionAmounts;
         if (filingStatus) payload.filing_status = filingStatus;
         if (state) payload.state = state;
+        if (options.ladderYears !== undefined && options.ladderYears !== null) {
+            payload.ladder_years = options.ladderYears;
+        }
+        if (options.ladderGrowthRate !== undefined && options.ladderGrowthRate !== null) {
+            payload.ladder_growth_rate = options.ladderGrowthRate;
+        }
+        if (options.ladderMaxRate !== undefined && options.ladderMaxRate !== null) {
+            payload.ladder_max_rate = options.ladderMaxRate;
+        }
         return apiClient.post('/api/tax-optimization/roth-conversion', payload);
     },
 

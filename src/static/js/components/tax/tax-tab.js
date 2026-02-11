@@ -75,6 +75,14 @@ function getSocialSecurityInputs(container) {
     };
 }
 
+function getRothConversionInputs(container) {
+    return {
+        ladderYears: Number(container.querySelector('#roth-ladder-years')?.value || 5),
+        ladderGrowthRate: Number(container.querySelector('#roth-ladder-growth')?.value || 5.0) / 100,
+        ladderMaxRate: Number(container.querySelector('#roth-ladder-max-rate')?.value || 24.0) / 100,
+    };
+}
+
 function normalizeSocialSecurityTimingResponse(response) {
     const household = response.household_analysis || { combined_by_claiming_age: [] };
     return {
@@ -93,7 +101,8 @@ function renderTaxAnalysis(
     profile,
     healthcarePlanning = null,
     healthcareInputs = null,
-    socialSecurityInputs = null
+    socialSecurityInputs = null,
+    rothInputs = null
 ) {
     const { snapshot, social_security_analysis, roth_conversion, rmd_analysis, state_comparison, recommendations } = analysis;
     const effectiveSocialInputs = socialSecurityInputs || {
@@ -102,6 +111,11 @@ function renderTaxAnalysis(
         noncoveredPensionAnnual: 0,
         applyWep: false,
         applyGpo: false,
+    };
+    const effectiveRothInputs = rothInputs || {
+        ladderYears: roth_conversion?.conversion_ladder_5y?.years_modeled || 5,
+        ladderGrowthRate: roth_conversion?.conversion_ladder_5y?.annual_growth_assumption || 0.05,
+        ladderMaxRate: roth_conversion?.conversion_ladder_5y?.max_marginal_rate_target || 0.24,
     };
 
     container.innerHTML = `
@@ -336,6 +350,23 @@ function renderTaxAnalysis(
                             🔄 Roth Conversions
                             <span id="roth-conversion-info" class="csp-hover-opacity" style="cursor: pointer; font-size: 14px; opacity: 0.7; transition: opacity 0.2s;" title="Click for explanation">ℹ️</span>
                         </h2>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 8px;">
+                            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 10px;">
+                                Ladder Years
+                                <input id="roth-ladder-years" type="number" min="1" max="20" value="${effectiveRothInputs.ladderYears}" style="padding: 6px; border-radius: 4px; border: 1px solid #444; background: rgba(255,255,255,0.06); color: #fff;" />
+                            </label>
+                            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 10px;">
+                                Growth Rate (%)
+                                <input id="roth-ladder-growth" type="number" step="0.1" min="-20" max="30" value="${(effectiveRothInputs.ladderGrowthRate * 100).toFixed(1)}" style="padding: 6px; border-radius: 4px; border: 1px solid #444; background: rgba(255,255,255,0.06); color: #fff;" />
+                            </label>
+                            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 10px;">
+                                Max Marginal Rate (%)
+                                <input id="roth-ladder-max-rate" type="number" step="1" min="10" max="50" value="${(effectiveRothInputs.ladderMaxRate * 100).toFixed(0)}" style="padding: 6px; border-radius: 4px; border: 1px solid #444; background: rgba(255,255,255,0.06); color: #fff;" />
+                            </label>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <button id="recalc-roth-conversion" style="padding: 8px 14px; border-radius: 6px; border: 1px solid #444; background: #1f2937; color: #fff; cursor: pointer; font-weight: 600;">Recalculate Roth Plan</button>
+                        </div>
 
                         ${roth_conversion.optimal_24pct ? `
                             ${roth_conversion.optimal_24pct.conversion_amount > 0 ? `
@@ -658,6 +689,7 @@ function renderTaxAnalysis(
     if (recalcSocialSecurityBtn) {
         recalcSocialSecurityBtn.addEventListener('click', async () => {
             const currentSocialInputs = getSocialSecurityInputs(container);
+            const rothInputsSnapshot = getRothConversionInputs(container);
             recalcSocialSecurityBtn.disabled = true;
             recalcSocialSecurityBtn.textContent = 'Recalculating...';
             try {
@@ -674,7 +706,8 @@ function renderTaxAnalysis(
                     profile,
                     healthcarePlanning,
                     healthcareInputs,
-                    currentSocialInputs
+                    currentSocialInputs,
+                    rothInputsSnapshot
                 );
             } catch (error) {
                 showError(`Social Security update failed: ${error.message}`);
@@ -684,11 +717,46 @@ function renderTaxAnalysis(
         });
     }
 
+    // Roth conversion controls
+    const recalcRothBtn = container.querySelector('#recalc-roth-conversion');
+    if (recalcRothBtn) {
+        recalcRothBtn.addEventListener('click', async () => {
+            const currentRothInputs = getRothConversionInputs(container);
+            const socialInputsSnapshot = getSocialSecurityInputs(container);
+            recalcRothBtn.disabled = true;
+            recalcRothBtn.textContent = 'Recalculating...';
+            try {
+                const rothResult = await taxOptimizationAPI.analyzeRothConversion(
+                    profile.name,
+                    null,
+                    null,
+                    null,
+                    currentRothInputs
+                );
+                analysis.roth_conversion = rothResult;
+                renderTaxAnalysis(
+                    container,
+                    analysis,
+                    profile,
+                    healthcarePlanning,
+                    healthcareInputs,
+                    socialInputsSnapshot,
+                    currentRothInputs
+                );
+            } catch (error) {
+                showError(`Roth conversion update failed: ${error.message}`);
+                recalcRothBtn.disabled = false;
+                recalcRothBtn.textContent = 'Recalculate Roth Plan';
+            }
+        });
+    }
+
     // Healthcare projection controls
     const recalcHealthcareBtn = container.querySelector('#recalc-healthcare-projection');
     if (recalcHealthcareBtn) {
         recalcHealthcareBtn.addEventListener('click', async () => {
             const socialInputsSnapshot = getSocialSecurityInputs(container);
+            const rothInputsSnapshot = getRothConversionInputs(container);
             const years = Number(container.querySelector('#healthcare-years')?.value || 20);
             const medicalInflationPct = Number(container.querySelector('#healthcare-medical-inflation')?.value || 5.5);
             const incomeGrowthPct = Number(container.querySelector('#healthcare-income-growth')?.value || 2.0);
@@ -723,7 +791,7 @@ function renderTaxAnalysis(
                     initialHsaBalance: initialHsaBalanceRaw,
                     annualHsaContribution: annualHsaContributionRaw,
                     hsaGrowthPct,
-                }, socialInputsSnapshot);
+                }, socialInputsSnapshot, rothInputsSnapshot);
             } catch (error) {
                 showError(`Healthcare projection update failed: ${error.message}`);
                 recalcHealthcareBtn.disabled = false;

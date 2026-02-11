@@ -86,3 +86,18 @@ def test_roth_conversion_includes_ladder_projection():
     assert "rows" in ladder
     assert len(ladder["rows"]) >= 1
     assert ladder["total_converted"] > 0
+
+
+def test_roth_conversion_ladder_respects_custom_inputs():
+    service = TaxOptimizationService(filing_status="mfj", state="CA", tax_year=2026)
+    result = service.analyze_roth_conversion(
+        current_taxable_income=120000,
+        traditional_balance=400000,
+        ladder_years=3,
+        ladder_growth_rate=0.02,
+        ladder_max_rate=0.22,
+    )
+    ladder = result["conversion_ladder_5y"]
+    assert ladder["years_modeled"] == 3
+    assert ladder["annual_growth_assumption"] == 0.02
+    assert ladder["max_marginal_rate_target"] == 0.22

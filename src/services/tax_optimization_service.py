@@ -729,6 +729,9 @@ class TaxOptimizationService:
         current_taxable_income: float,
         traditional_balance: float,
         conversion_amounts: List[float] = None,
+        ladder_years: int = 5,
+        ladder_growth_rate: float = 0.05,
+        ladder_max_rate: float = 0.24,
     ) -> Dict:
         """
         Analyze Roth conversion scenarios.
@@ -758,7 +761,9 @@ class TaxOptimizationService:
         ladder_5y = self.build_roth_conversion_ladder(
             current_taxable_income=current_taxable_income,
             traditional_balance=traditional_balance,
-            years=5,
+            years=max(1, int(ladder_years)),
+            annual_growth=max(-0.5, float(ladder_growth_rate)),
+            max_rate=max(0.1, min(0.5, float(ladder_max_rate))),
         )
 
         return {

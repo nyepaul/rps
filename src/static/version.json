@@ -1,5 +1,5 @@
 {
-    "version": "3.9.245",
+    "version": "3.9.246",
     "release_date": "2026-02-10",
-    "release_notes": "Roth optimizer: add 5-year conversion ladder projection and Tax tab display"
+    "release_notes": "Roth optimizer controls: configurable ladder years, growth, and max marginal rate with live recalc"
 }

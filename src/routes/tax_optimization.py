@@ -32,6 +32,9 @@ class RothConversionRequest(BaseModel):
     conversion_amounts: Optional[List[float]] = None
     filing_status: Optional[str] = None  # None = use profile default
     state: Optional[str] = None  # None = use profile's address/tax_settings
+    ladder_years: Optional[int] = 5
+    ladder_growth_rate: Optional[float] = 0.05
+    ladder_max_rate: Optional[float] = 0.24
 
 
 class SocialSecurityRequest(BaseModel):
@@ -199,6 +202,9 @@ def analyze_roth_conversion():
             current_taxable_income=current_taxable,
             traditional_balance=traditional_balance,
             conversion_amounts=data.conversion_amounts,
+            ladder_years=int(data.ladder_years or 5),
+            ladder_growth_rate=float(data.ladder_growth_rate or 0.05),
+            ladder_max_rate=float(data.ladder_max_rate or 0.24),
         )
         result["profile_name"] = data.profile_name
 
