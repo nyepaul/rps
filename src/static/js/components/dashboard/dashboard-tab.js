@@ -48,6 +48,26 @@ const DASHBOARD_GLOSSARY = {
     tax_planning: {
         title: 'Tax Planning for Distributions',
         definition: 'Coordinating withdrawal timing and account types to manage taxable income and lifetime taxes.'
+    },
+    net_worth: {
+        title: 'Net Worth',
+        definition: 'Total assets minus total debts. It is a high-level measure of overall financial position.'
+    },
+    retirement_accounts: {
+        title: 'Retirement Accounts',
+        definition: 'Tax-advantaged accounts such as 401(k), traditional IRA, and Roth IRA used for retirement savings.'
+    },
+    taxable_accounts: {
+        title: 'Taxable Accounts',
+        definition: 'Investment or cash accounts without retirement tax shelter, where interest/dividends/gains may be taxable.'
+    },
+    debt_to_asset_ratio: {
+        title: 'Debt-to-Asset Ratio',
+        definition: 'Total debt divided by total assets. Lower ratios generally indicate stronger balance sheet resilience.'
+    },
+    liquidity: {
+        title: 'Liquidity',
+        definition: 'How much of your assets can be accessed quickly with low risk of loss in value.'
     }
 };
 
@@ -1212,11 +1232,11 @@ function showProfileInfoModal(profile) {
                     <div style="display: grid; gap: 12px;">
                         <!-- Assets -->
                         <div style="display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
-                            <span style="font-size: 14px; color: var(--text-secondary);">Retirement Accounts</span>
+                            <span style="font-size: 14px; color: var(--text-secondary);">${dashboardGlossaryTerm('Retirement Accounts', 'retirement_accounts')}</span>
                             <span style="font-size: 16px; font-weight: 600;">${formatCurrency(retirementTotal, 0)}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
-                            <span style="font-size: 14px; color: var(--text-secondary);">Taxable Accounts</span>
+                            <span style="font-size: 14px; color: var(--text-secondary);">${dashboardGlossaryTerm('Taxable Accounts', 'taxable_accounts')}</span>
                             <span style="font-size: 16px; font-weight: 600;">${formatCurrency(taxableTotal, 0)}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
@@ -1250,7 +1270,7 @@ function showProfileInfoModal(profile) {
                         </div>
                         ` : ''}
                         <div style="display: flex; justify-content: space-between; padding-top: 12px;">
-                            <span style="font-size: 17px; font-weight: 700;">Net Worth</span>
+                            <span style="font-size: 17px; font-weight: 700;">${dashboardGlossaryTerm('Net Worth', 'net_worth')}</span>
                             <span style="font-size: 20px; font-weight: 700; color: var(--success-color);">${formatCurrency(netWorth, 0)}</span>
                         </div>
                     </div>
@@ -1260,6 +1280,7 @@ function showProfileInfoModal(profile) {
     `;
 
     document.body.appendChild(modal);
+    wireDashboardGlossaryClicks(modal);
 
     // Close button
     modal.querySelector('#close-modal-btn').addEventListener('click', () => modal.remove());
@@ -1327,7 +1348,7 @@ function showNetWorthDetails(profile) {
             <!-- Summary Cards Grid -->
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 25px;">
                 <div style="background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(16,185,129,0.2)); border-radius: 8px; padding: 16px; border-left: 4px solid #22c55e;">
-                    <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 5px; text-transform: uppercase; font-weight: 600;">Net Worth</div>
+                    <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 5px; text-transform: uppercase; font-weight: 600;">${dashboardGlossaryTerm('Net Worth', 'net_worth')}</div>
                     <div style="font-size: 24px; font-weight: bold; color: var(--text-primary);">${formatCompact(netWorth)}</div>
                 </div>
                 <div style="background: linear-gradient(135deg, rgba(34,197,94,0.15), rgba(16,185,129,0.15)); border-radius: 8px; padding: 16px; border-left: 4px solid #0f766e;">
@@ -1350,7 +1371,7 @@ function showNetWorthDetails(profile) {
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
                             <div style="flex: 1;">
                                 <div style="font-weight: 600; color: var(--text-primary); font-size: 14px; margin-bottom: 4px;">
-                                    🏦 Retirement Accounts
+                                    🏦 ${dashboardGlossaryTerm('Retirement Accounts', 'retirement_accounts')}
                                 </div>
                                 <div style="font-size: 11px; color: var(--text-secondary);">
                                     401(k), IRA, Roth IRA
@@ -1371,7 +1392,7 @@ function showNetWorthDetails(profile) {
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
                             <div style="flex: 1;">
                                 <div style="font-weight: 600; color: var(--text-primary); font-size: 14px; margin-bottom: 4px;">
-                                    📈 Taxable Accounts
+                                    📈 ${dashboardGlossaryTerm('Taxable Accounts', 'taxable_accounts')}
                                 </div>
                                 <div style="font-size: 11px; color: var(--text-secondary);">
                                     Brokerage, cash, savings
@@ -1437,7 +1458,7 @@ function showNetWorthDetails(profile) {
             </h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 25px;">
                 <div style="background: var(--bg-secondary); border-radius: 8px; padding: 16px; border-left: 3px solid ${debtRatioColor};">
-                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600;">Debt-to-Asset Ratio</div>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600;">${dashboardGlossaryTerm('Debt-to-Asset Ratio', 'debt_to_asset_ratio')}</div>
                     <div style="font-size: 20px; font-weight: bold; color: var(--text-primary); margin-bottom: 4px;">
                         ${debtRatioIcon} ${debtRatioStatus}
                     </div>
@@ -1446,7 +1467,7 @@ function showNetWorthDetails(profile) {
                     </div>
                 </div>
                 <div style="background: var(--bg-secondary); border-radius: 8px; padding: 16px; border-left: 3px solid ${liquidityColor};">
-                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600;">Liquidity</div>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600;">${dashboardGlossaryTerm('Liquidity', 'liquidity')}</div>
                     <div style="font-size: 20px; font-weight: bold; color: var(--text-primary); margin-bottom: 4px;">
                         ${liquidityStatus}
                     </div>
@@ -1491,11 +1512,11 @@ function showNetWorthDetails(profile) {
                 <h4 style="margin: 0 0 12px 0; font-size: 14px; color: var(--text-primary); font-weight: 600;">💡 Wealth Building Tips</h4>
                 <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.7;">
                     <ul style="margin: 8px 0 0 0; padding-left: 20px;">
-                        <li style="margin-bottom: 6px;">Net worth = Assets - Debts. Focus on increasing both sides of this equation</li>
+                        <li style="margin-bottom: 6px;">${dashboardGlossaryTerm('Net worth', 'net_worth')} = Assets - Debts. Focus on increasing both sides of this equation</li>
                         ${debtToAssetRatio > 30 ? `<li style="margin-bottom: 6px; color: #f59e0b;"><strong>Priority:</strong> Your debt-to-asset ratio is ${debtToAssetRatio.toFixed(0)}% - focus on debt reduction</li>` : ''}
                         ${liquidityRatio < 20 ? `<li style="margin-bottom: 6px; color: #f59e0b;"><strong>Tip:</strong> Build emergency fund - aim for 3-6 months expenses in liquid assets</li>` : ''}
                         ${retirementPct < 30 ? `<li style="margin-bottom: 6px;">Retirement accounts are only ${retirementPct.toFixed(0)}% - consider increasing tax-advantaged savings</li>` : ''}
-                        <li style="margin-bottom: 6px;">Track net worth monthly to measure progress toward financial goals</li>
+                        <li style="margin-bottom: 6px;">Track ${dashboardGlossaryTerm('net worth', 'net_worth')} monthly to measure progress toward financial goals</li>
                         <li>Diversification across asset types reduces risk and improves long-term returns</li>
                     </ul>
                 </div>
@@ -1504,6 +1525,7 @@ function showNetWorthDetails(profile) {
     `;
 
     document.body.appendChild(modal);
+    wireDashboardGlossaryClicks(modal);
     modal.querySelector('#close-networth-modal').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 }

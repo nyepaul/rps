@@ -33,6 +33,10 @@ const WITHDRAWAL_GLOSSARY = {
     withdrawal_rate: {
         title: 'Withdrawal Rate',
         definition: 'The annual percentage of your portfolio withdrawn for spending. It affects sustainability and depletion risk.'
+    },
+    tax_efficient_sequence: {
+        title: 'Tax-Efficient Withdrawal Sequence',
+        definition: 'A common strategy that uses taxable assets first, tax-deferred accounts second, and Roth accounts last to improve tax flexibility over time.'
     }
 };
 
@@ -212,8 +216,8 @@ function renderCurrentWithdrawalState(data) {
         </div>
         <div style="text-align: center;">
             <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: var(--space-2);">Strategy</div>
-            <div style="font-size: var(--font-base); font-weight: 600; color: var(--text-primary);">Tax-Efficient</div>
-            <div style="font-size: var(--font-xs); color: var(--text-light); margin-top: var(--space-1);">Taxable → Deferred → Roth</div>
+            <div style="font-size: var(--font-base); font-weight: 600; color: var(--text-primary);">${glossaryTerm('Tax-Efficient', 'tax_efficient_sequence')}</div>
+            <div style="font-size: var(--font-xs); color: var(--text-light); margin-top: var(--space-1);">${glossaryTerm('Taxable', 'taxable')} → ${glossaryTerm('Deferred', 'tax_deferred')} → ${glossaryTerm('Roth', 'roth')}</div>
         </div>
     `;
 }
