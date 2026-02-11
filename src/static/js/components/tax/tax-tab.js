@@ -471,6 +471,18 @@ function renderTaxAnalysis(
                                         `).join('')}
                                     </div>
                                 ` : ''}
+                                ${roth_conversion.bracket_headroom_projection?.rows?.length ? `
+                                    <div style="margin-top: 10px;">
+                                        <div style="font-weight: 600; margin-bottom: 6px;">📈 Bracket Headroom Forecast (${roth_conversion.bracket_headroom_projection.target_rate_label} ceiling)</div>
+                                        ${roth_conversion.bracket_headroom_projection.rows.map((row) => `
+                                            <div style="display: grid; grid-template-columns: 50px 1fr 1fr; gap: 6px; padding: 4px 6px; border-radius: 3px; background: rgba(255,255,255,0.03); margin: 2px 0;">
+                                                <span>Y${row.year}</span>
+                                                <span>Income ${formatCurrency(row.taxable_income_assumption, 0)}</span>
+                                                <span>Headroom ${formatCurrency(row.headroom_to_target_ceiling, 0)}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                ` : ''}
                             </div>
                         </details>
                         ${roth_conversion.conversion_ladder_5y?.rows?.length ? `

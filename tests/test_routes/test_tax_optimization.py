@@ -68,6 +68,7 @@ def test_analyze_roth_conversion(client, test_user, test_profile):
     assert "bracket_space" in data
     assert "bracket_targets" in data
     assert "precision_recommendations" in data
+    assert "bracket_headroom_projection" in data
     assert "scenarios" in data
     assert "conversion_ladder_5y" in data
     assert "rows" in data["conversion_ladder_5y"]

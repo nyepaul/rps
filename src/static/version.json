@@ -1,5 +1,5 @@
 {
-    "version": "3.9.251",
+    "version": "3.9.252",
     "release_date": "2026-02-11",
-    "release_notes": "Detailed tax bracket optimization: add buffered precision conversion recommendations"
+    "release_notes": "Detailed tax bracket optimization: add yearly bracket headroom forecast"
 }

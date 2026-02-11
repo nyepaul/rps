@@ -753,6 +753,12 @@ class TaxOptimizationService:
             bracket_targets=bracket_targets,
             safety_buffer=500.0,
         )
+        bracket_headroom_projection = self.build_bracket_headroom_projection(
+            current_taxable_income=current_taxable_income,
+            years=max(1, int(ladder_years)),
+            annual_income_growth=max(-0.2, min(0.2, float(ladder_income_growth_rate))),
+            max_rate=max(0.1, min(0.5, float(ladder_max_rate))),
+        )
 
         # Analyze each conversion amount
         scenarios = []
@@ -790,6 +796,7 @@ class TaxOptimizationService:
             "bracket_space": bracket_space,
             "bracket_targets": bracket_targets,
             "precision_recommendations": precision_recommendations,
+            "bracket_headroom_projection": bracket_headroom_projection,
             "scenarios": scenarios,
             "optimal_24pct": optimal,
             "conversion_ladder_5y": ladder_5y,
@@ -1001,6 +1008,48 @@ class TaxOptimizationService:
                 }
             )
         return recs
+
+    def build_bracket_headroom_projection(
+        self,
+        current_taxable_income: float,
+        years: int,
+        annual_income_growth: float,
+        max_rate: float,
+    ) -> Dict:
+        """Project annual taxable-income headroom to the target marginal-rate ceiling."""
+        brackets = self.calculator.get_brackets()
+        target_ceiling = 0.0
+        target_rate = 0.0
+        for _lower, upper, rate in brackets:
+            if upper == float("inf"):
+                continue
+            if rate <= max_rate:
+                target_ceiling = float(upper)
+                target_rate = float(rate)
+            else:
+                break
+
+        rows = []
+        base_income = max(0.0, float(current_taxable_income))
+        for year in range(1, years + 1):
+            income = base_income * ((1 + annual_income_growth) ** (year - 1))
+            headroom = max(0.0, target_ceiling - income)
+            rows.append(
+                {
+                    "year": year,
+                    "taxable_income_assumption": round(income, 2),
+                    "target_ceiling": round(target_ceiling, 2),
+                    "headroom_to_target_ceiling": round(headroom, 2),
+                    "at_or_above_target": income >= target_ceiling,
+                }
+            )
+
+        return {
+            "target_rate": round(target_rate, 4),
+            "target_rate_label": f"{int(target_rate * 100)}%",
+            "target_ceiling": round(target_ceiling, 2),
+            "rows": rows,
+        }
 
     def analyze_social_security(
         self,

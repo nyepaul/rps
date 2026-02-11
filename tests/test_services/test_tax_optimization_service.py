@@ -84,6 +84,7 @@ def test_roth_conversion_includes_ladder_projection():
     assert "conversion_ladder_5y" in result
     assert "bracket_targets" in result
     assert "precision_recommendations" in result
+    assert "bracket_headroom_projection" in result
     ladder = result["conversion_ladder_5y"]
     assert "rows" in ladder
     assert len(ladder["rows"]) >= 1
@@ -136,3 +137,16 @@ def test_roth_conversion_ladder_keeps_modeled_years_when_no_space():
     rows = result["conversion_ladder_5y"]["rows"]
     assert len(rows) == 4
     assert any(row.get("no_conversion_reason") for row in rows)
+
+
+def test_roth_bracket_headroom_projection_matches_years():
+    service = TaxOptimizationService(filing_status="mfj", state="CA", tax_year=2026)
+    result = service.analyze_roth_conversion(
+        current_taxable_income=120000,
+        traditional_balance=200000,
+        ladder_years=4,
+        ladder_income_growth_rate=0.03,
+    )
+    headroom = result["bracket_headroom_projection"]["rows"]
+    assert len(headroom) == 4
+    assert headroom[0]["taxable_income_assumption"] <= headroom[-1]["taxable_income_assumption"]
