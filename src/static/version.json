@@ -1,5 +1,5 @@
 {
-    "version": "3.9.264",
+    "version": "3.9.265",
     "release_date": "2026-02-11",
-    "release_notes": "Standardize contextual help markers to inline Label ? style across forms"
+    "release_notes": "Collapse expense categories by default with click-to-expand accordion behavior"
 }

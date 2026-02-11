@@ -16,6 +16,7 @@ import { renderImportPreviewModal } from "../shared/import-preview-modal.js";
 let currentPeriod = "current";
 let budgetData = null;
 const DEFAULT_ADVISOR_FEE_RATE = 0.01;
+const expandedExpenseCategoryByPeriod = { current: null, future: null };
 
 /**
  * Render Expense Tab
@@ -1791,6 +1792,7 @@ function renderExpenseSection(parentContainer) {
 
     for (const cat of allCategories) {
         const catData = expenses[cat.key];
+        const isExpanded = expandedExpenseCategoryByPeriod[currentPeriod] === cat.key;
 
         // Convert legacy single object to array format
         let expenseItems = [];
@@ -1806,20 +1808,23 @@ function renderExpenseSection(parentContainer) {
         }, 0);
 
         html += `
-            <div style="background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color); padding: 8px; height: 100%;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${expenseItems.length > 0 ? '6px' : '0'};">
+            <div style="background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color); padding: 8px; height: fit-content;">
+                <div class="expense-category-header" data-category="${cat.key}" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
                     <div style="display: flex; align-items: center; gap: 6px; overflow: hidden;">
                         <span style="font-size: 14px;">${cat.icon}</span>
                         <span style="font-weight: 700; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${cat.label}</span>
                         ${categoryTotal > 0 ? `<span style="color: var(--accent-color); font-weight: 700; font-size: 11px;">${formatCurrency(categoryTotal, 0)}/yr</span>` : ''}
                     </div>
-                    <button class="add-expense-btn" data-category="${cat.key}" style="padding: 2px 6px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 3px; cursor: pointer; font-size: 10px; flex-shrink: 0;">
-                        +
-                    </button>
+                    <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                        <button class="add-expense-btn" data-category="${cat.key}" style="padding: 2px 6px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 3px; cursor: pointer; font-size: 10px;">
+                            +
+                        </button>
+                        <span style="font-size: 11px; color: var(--text-secondary);">${isExpanded ? '▾' : '▸'}</span>
+                    </div>
                 </div>
         `;
 
-        if (expenseItems.length > 0) {
+        if (isExpanded && expenseItems.length > 0) {
             html += `<div style="display: flex; flex-direction: column; gap: 4px;">`;
             expenseItems.forEach((expense, index) => {
                 const annual = annualAmount(expense.amount || 0, expense.frequency || 'monthly');
@@ -2124,11 +2129,23 @@ function setupExpenseEventListeners(container) {
         });
     }
 
+    // Category accordion behavior
+    container.querySelectorAll('.expense-category-header').forEach((header) => {
+        header.addEventListener('click', () => {
+            const category = header.dataset.category;
+            if (!category) return;
+            expandedExpenseCategoryByPeriod[currentPeriod] =
+                expandedExpenseCategoryByPeriod[currentPeriod] === category ? null : category;
+            renderExpenseSection(container);
+        });
+    });
+
     // Add expense button handlers
     container.querySelectorAll('.add-expense-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
             const category = btn.getAttribute('data-category');
+            expandedExpenseCategoryByPeriod[currentPeriod] = category;
             addExpenseItem(container, category);
         });
     });
