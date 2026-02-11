@@ -65,8 +65,44 @@ export async function renderTaxTab(container) {
     }
 }
 
-function renderTaxAnalysis(container, analysis, profile, healthcarePlanning = null, healthcareInputs = null) {
+function getSocialSecurityInputs(container) {
+    return {
+        lifeExpectancy: Number(container.querySelector('#ss-life-expectancy')?.value || 90),
+        annualEarnedIncome: Number(container.querySelector('#ss-annual-earned-income')?.value || 0),
+        noncoveredPensionAnnual: Number(container.querySelector('#ss-noncovered-pension-annual')?.value || 0),
+        applyWep: Boolean(container.querySelector('#ss-apply-wep')?.checked),
+        applyGpo: Boolean(container.querySelector('#ss-apply-gpo')?.checked),
+    };
+}
+
+function normalizeSocialSecurityTimingResponse(response) {
+    const household = response.household_analysis || { combined_by_claiming_age: [] };
+    return {
+        available: Boolean(response.primary_analysis || response.spouse_analysis || response.household_analysis),
+        primary: response.primary_analysis || null,
+        spouse: response.spouse_analysis || null,
+        household,
+        tax_torpedo: response.tax_torpedo || null,
+        adjustments: response.adjustments || null,
+    };
+}
+
+function renderTaxAnalysis(
+    container,
+    analysis,
+    profile,
+    healthcarePlanning = null,
+    healthcareInputs = null,
+    socialSecurityInputs = null
+) {
     const { snapshot, social_security_analysis, roth_conversion, rmd_analysis, state_comparison, recommendations } = analysis;
+    const effectiveSocialInputs = socialSecurityInputs || {
+        lifeExpectancy: 90,
+        annualEarnedIncome: social_security_analysis?.adjustments?.annual_earned_income || 0,
+        noncoveredPensionAnnual: 0,
+        applyWep: false,
+        applyGpo: false,
+    };
 
     container.innerHTML = `
         <div style="max-width: 1400px; margin: 0 auto; padding: var(--space-2) var(--space-3);">
@@ -166,6 +202,34 @@ function renderTaxAnalysis(container, analysis, profile, healthcarePlanning = nu
                     ${social_security_analysis?.available ? `
                     <div style="background: #000; padding: 12px; border-radius: 8px; color: white; border: 1px solid #333;">
                         <h2 style="font-size: 15px; margin: 0 0 10px 0; font-weight: 700;">👥 Social Security Strategy</h2>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-bottom: 8px;">
+                            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 10px;">
+                                Life Expectancy
+                                <input id="ss-life-expectancy" type="number" min="70" max="110" value="${effectiveSocialInputs.lifeExpectancy}" style="padding: 6px; border-radius: 4px; border: 1px solid #444; background: rgba(255,255,255,0.06); color: #fff;" />
+                            </label>
+                            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 10px;">
+                                Annual Earned Income ($)
+                                <input id="ss-annual-earned-income" type="number" min="0" step="1000" value="${effectiveSocialInputs.annualEarnedIncome}" style="padding: 6px; border-radius: 4px; border: 1px solid #444; background: rgba(255,255,255,0.06); color: #fff;" />
+                            </label>
+                            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 10px;">
+                                Noncovered Pension ($/yr)
+                                <input id="ss-noncovered-pension-annual" type="number" min="0" step="1000" value="${effectiveSocialInputs.noncoveredPensionAnnual}" style="padding: 6px; border-radius: 4px; border: 1px solid #444; background: rgba(255,255,255,0.06); color: #fff;" />
+                            </label>
+                            <div style="display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; font-size: 10px;">
+                                <label style="display: flex; align-items: center; gap: 6px;"><input id="ss-apply-wep" type="checkbox" ${effectiveSocialInputs.applyWep ? 'checked' : ''} /> Apply WEP</label>
+                                <label style="display: flex; align-items: center; gap: 6px;"><input id="ss-apply-gpo" type="checkbox" ${effectiveSocialInputs.applyGpo ? 'checked' : ''} /> Apply GPO</label>
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <button id="recalc-social-security-projection" style="padding: 8px 14px; border-radius: 6px; border: 1px solid #444; background: #1f2937; color: #fff; cursor: pointer; font-weight: 600;">Recalculate Social Security</button>
+                        </div>
+                        ${social_security_analysis.adjustments ? `
+                            <div style="background: rgba(255,255,255,0.08); border-radius: 6px; padding: 8px; margin-bottom: 8px; font-size: 10px;">
+                                <div>WEP PIA: ${formatCurrency(social_security_analysis.adjustments.wep?.pia_before_wep || 0, 0)} → ${formatCurrency(social_security_analysis.adjustments.wep?.pia_after_wep || 0, 0)}</div>
+                                <div>GPO Offset (Monthly): ${formatCurrency(social_security_analysis.adjustments.gpo_offset_monthly || 0, 0)}</div>
+                                <div>Annual Earned Income: ${formatCurrency(social_security_analysis.adjustments.annual_earned_income || 0, 0)}</div>
+                            </div>
+                        ` : ''}
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; margin-bottom: 8px;">
                             ${social_security_analysis.primary?.optimal ? `
                                 <div style="background: rgba(255,255,255,0.08); border-radius: 6px; padding: 8px;">
@@ -569,10 +633,42 @@ function renderTaxAnalysis(container, analysis, profile, healthcarePlanning = nu
         });
     });
 
+    // Social Security controls
+    const recalcSocialSecurityBtn = container.querySelector('#recalc-social-security-projection');
+    if (recalcSocialSecurityBtn) {
+        recalcSocialSecurityBtn.addEventListener('click', async () => {
+            const currentSocialInputs = getSocialSecurityInputs(container);
+            recalcSocialSecurityBtn.disabled = true;
+            recalcSocialSecurityBtn.textContent = 'Recalculating...';
+            try {
+                const timing = await taxOptimizationAPI.analyzeSocialSecurity(
+                    profile.name,
+                    currentSocialInputs.lifeExpectancy,
+                    null,
+                    currentSocialInputs
+                );
+                analysis.social_security_analysis = normalizeSocialSecurityTimingResponse(timing);
+                renderTaxAnalysis(
+                    container,
+                    analysis,
+                    profile,
+                    healthcarePlanning,
+                    healthcareInputs,
+                    currentSocialInputs
+                );
+            } catch (error) {
+                showError(`Social Security update failed: ${error.message}`);
+                recalcSocialSecurityBtn.disabled = false;
+                recalcSocialSecurityBtn.textContent = 'Recalculate Social Security';
+            }
+        });
+    }
+
     // Healthcare projection controls
     const recalcHealthcareBtn = container.querySelector('#recalc-healthcare-projection');
     if (recalcHealthcareBtn) {
         recalcHealthcareBtn.addEventListener('click', async () => {
+            const socialInputsSnapshot = getSocialSecurityInputs(container);
             const years = Number(container.querySelector('#healthcare-years')?.value || 20);
             const medicalInflationPct = Number(container.querySelector('#healthcare-medical-inflation')?.value || 5.5);
             const incomeGrowthPct = Number(container.querySelector('#healthcare-income-growth')?.value || 2.0);
@@ -607,7 +703,7 @@ function renderTaxAnalysis(container, analysis, profile, healthcarePlanning = nu
                     initialHsaBalance: initialHsaBalanceRaw,
                     annualHsaContribution: annualHsaContributionRaw,
                     hsaGrowthPct,
-                });
+                }, socialInputsSnapshot);
             } catch (error) {
                 showError(`Healthcare projection update failed: ${error.message}`);
                 recalcHealthcareBtn.disabled = false;

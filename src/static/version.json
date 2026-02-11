@@ -1,5 +1,5 @@
 {
-    "version": "3.9.243",
+    "version": "3.9.244",
     "release_date": "2026-02-10",
-    "release_notes": "Social Security timing enhancements: WEP/GPO/earnings-test adjustments and tax-torpedo context"
+    "release_notes": "Tax tab Social Security controls for WEP/GPO/earnings inputs with live recalculation"
 }
