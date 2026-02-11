@@ -1050,3 +1050,248 @@ def build_risk_analysis_dashboard(profile_data: Dict, scenario_results: Dict) ->
         },
         "summary": "Composite risk score blends market durability, debt load, liquidity, and downside resilience.",
     }
+
+
+def build_plan_health_monitoring_drift_alerts(profile_data: Dict, scenario_results: Dict) -> Dict:
+    financial = profile_data.get("financial", {}) or {}
+    budget = profile_data.get("budget", {}) or {}
+    annual_income = _safe_float(financial.get("annual_income"), 0.0)
+    annual_expenses = _safe_float(financial.get("annual_expenses"), 0.0)
+    planned_inflation = _safe_float(financial.get("inflation_rate"), 0.03)
+    planned_return = _safe_float(financial.get("expected_return"), 0.06)
+
+    actual_spend = _safe_float((budget.get("actuals", {}) or {}).get("annual_spending"), annual_expenses)
+    actual_return = _safe_float((profile_data.get("performance", {}) or {}).get("actual_return_last_12m"), planned_return)
+    inflation_observed = _safe_float((profile_data.get("performance", {}) or {}).get("inflation_observed"), planned_inflation)
+
+    spend_drift_pct = ((actual_spend - annual_expenses) / annual_expenses) if annual_expenses > 0 else 0.0
+    return_drift_pct = actual_return - planned_return
+    inflation_drift_pct = inflation_observed - planned_inflation
+
+    drift_score = min(
+        100.0,
+        (abs(spend_drift_pct) * 120.0) + (abs(return_drift_pct) * 300.0) + (abs(inflation_drift_pct) * 250.0),
+    )
+    alert_count = 0
+    if abs(spend_drift_pct) >= 0.07:
+        alert_count += 1
+    if return_drift_pct <= -0.03:
+        alert_count += 1
+    if inflation_drift_pct >= 0.01:
+        alert_count += 1
+
+    next_review = "Quarterly" if alert_count > 0 else "Semi-Annual"
+    return {
+        "available": True,
+        "drift_score": round(drift_score, 1),
+        "alert_count": int(alert_count),
+        "next_review_cadence": next_review,
+        "drift_components": {
+            "spending_drift_pct": round(spend_drift_pct, 4),
+            "return_drift_pct": round(return_drift_pct, 4),
+            "inflation_drift_pct": round(inflation_drift_pct, 4),
+        },
+        "summary": (
+            "Material plan drift detected; schedule a targeted review."
+            if alert_count > 0
+            else "Plan drift appears contained; maintain routine review cadence."
+        ),
+    }
+
+
+def build_tax_law_update_engine(profile_data: Dict) -> Dict:
+    tax_settings = profile_data.get("tax_settings", {}) or {}
+    configured_year = _safe_int(tax_settings.get("tax_year"), date.today().year)
+    current_year = date.today().year
+    years_stale = max(0, current_year - configured_year)
+    freshness = max(0.0, 100.0 - (years_stale * 40.0))
+    return {
+        "available": True,
+        "configured_tax_year": configured_year,
+        "current_tax_year": current_year,
+        "policy_freshness_score": round(freshness, 1),
+        "update_required": years_stale > 0,
+        "summary": (
+            "Tax policy assumptions are stale; refresh current-year brackets and thresholds."
+            if years_stale > 0
+            else "Tax policy assumptions are current-year aligned."
+        ),
+    }
+
+
+def build_pre65_healthcare_bridge_planner(profile_data: Dict) -> Dict:
+    person = profile_data.get("person", {}) or {}
+    current_age = _safe_int(person.get("current_age"), 0)
+    retirement_age = _safe_int(person.get("retirement_age"), current_age or 65)
+    bridge_years = max(0, 65 - max(current_age, retirement_age))
+    annual_bridge_cost = _safe_float((profile_data.get("financial", {}) or {}).get("annual_healthcare_expenses"), 12000.0)
+    annual_bridge_cost = max(annual_bridge_cost, 9000.0)
+    total_bridge_cost = annual_bridge_cost * bridge_years
+    subsidy_estimate = total_bridge_cost * 0.18 if bridge_years > 0 else 0.0
+    return {
+        "available": True,
+        "bridge_years": int(bridge_years),
+        "annual_bridge_cost": round(annual_bridge_cost, 2),
+        "total_bridge_cost": round(total_bridge_cost, 2),
+        "estimated_subsidy_opportunity": round(subsidy_estimate, 2),
+        "summary": (
+            f"Pre-65 healthcare bridge modeled for {bridge_years} years before Medicare."
+            if bridge_years > 0
+            else "No pre-65 bridge period detected based on current retirement timing."
+        ),
+    }
+
+
+def build_guaranteed_income_floor_optimizer(profile_data: Dict, scenario_results: Dict) -> Dict:
+    financial = profile_data.get("financial", {}) or {}
+    annual_expenses = _safe_float(financial.get("annual_expenses"), 0.0)
+    essential_spending = annual_expenses * 0.65
+    ss_annual = _safe_float(financial.get("social_security_benefit"), 0.0) * 12.0
+    pension_annual = _safe_float(financial.get("pension_benefit"), 0.0) * 12.0
+    guaranteed_income = ss_annual + pension_annual
+    floor_coverage_ratio = (guaranteed_income / essential_spending) if essential_spending > 0 else 0.0
+    shortfall = max(0.0, essential_spending - guaranteed_income)
+    moderate = (scenario_results or {}).get("moderate", {}) or {}
+    durability = _safe_float(moderate.get("success_rate"), 0.0)
+    return {
+        "available": True,
+        "essential_spending": round(essential_spending, 2),
+        "guaranteed_income": round(guaranteed_income, 2),
+        "floor_coverage_ratio": round(floor_coverage_ratio, 4),
+        "annual_floor_shortfall": round(shortfall, 2),
+        "durability_signal": round(durability, 4),
+        "summary": (
+            "Guaranteed income covers essential spending floor."
+            if shortfall <= 0
+            else "Guaranteed income floor is underfunded; consider timing or annuity layering."
+        ),
+    }
+
+
+def build_social_security_statement_reconciliation(profile_data: Dict) -> Dict:
+    financial = profile_data.get("financial", {}) or {}
+    modeled_monthly = _safe_float(financial.get("social_security_benefit"), 0.0)
+    statement_monthly = _safe_float((profile_data.get("social_security_statement", {}) or {}).get("monthly_benefit_estimate"), modeled_monthly)
+    delta = statement_monthly - modeled_monthly
+    delta_pct = (delta / modeled_monthly) if modeled_monthly > 0 else 0.0
+    return {
+        "available": True,
+        "modeled_monthly_benefit": round(modeled_monthly, 2),
+        "statement_monthly_benefit": round(statement_monthly, 2),
+        "monthly_delta": round(delta, 2),
+        "delta_pct": round(delta_pct, 4),
+        "summary": (
+            "Social Security assumptions align closely with statement estimates."
+            if abs(delta_pct) < 0.05
+            else "Social Security estimate drift detected; reconcile statement inputs."
+        ),
+    }
+
+
+def build_data_aggregation_reconciliation_hub(profile_data: Dict) -> Dict:
+    imports = profile_data.get("imports", {}) or {}
+    linked_accounts = _safe_int(imports.get("linked_accounts"), 0)
+    csv_sources = _safe_int(imports.get("csv_sources"), 0)
+    manual_entries = _safe_int(imports.get("manual_entries"), 0)
+    deduped = _safe_int(imports.get("deduplicated_items"), 0)
+    total_sources = linked_accounts + csv_sources + (1 if manual_entries > 0 else 0)
+    confidence = min(100.0, 55.0 + (linked_accounts * 8.0) + (csv_sources * 5.0) - (manual_entries > 100) * 10.0)
+    return {
+        "available": True,
+        "linked_accounts": linked_accounts,
+        "csv_sources": csv_sources,
+        "manual_entries": manual_entries,
+        "deduplicated_items": deduped,
+        "source_count": total_sources,
+        "data_confidence_score": round(confidence, 1),
+        "summary": "Consolidate linked, imported, and manual data with reconciliation confidence controls.",
+    }
+
+
+def build_longevity_care_path_modeling(profile_data: Dict) -> Dict:
+    person = profile_data.get("person", {}) or {}
+    current_age = _safe_int(person.get("current_age"), 60)
+    life_expectancy = _safe_int(person.get("life_expectancy"), 90)
+    years_modeled = max(1, life_expectancy - current_age)
+
+    annual_home_care = 35_000.0
+    annual_assisted = 68_000.0
+    annual_skilled = 120_000.0
+    weighted_annual = (annual_home_care * 0.45) + (annual_assisted * 0.35) + (annual_skilled * 0.20)
+    projected_lifetime_care = weighted_annual * min(6, max(2, years_modeled // 5))
+
+    return {
+        "available": True,
+        "years_modeled": years_modeled,
+        "weighted_annual_care_cost": round(weighted_annual, 2),
+        "projected_lifetime_care_cost": round(projected_lifetime_care, 2),
+        "care_path_mix": {
+            "home_care_weight": 0.45,
+            "assisted_living_weight": 0.35,
+            "skilled_nursing_weight": 0.20,
+        },
+        "summary": "Modeled staged care-path costs for independent, assisted, and skilled-care transitions.",
+    }
+
+
+def build_charitable_strategy_optimizer(profile_data: Dict) -> Dict:
+    financial = profile_data.get("financial", {}) or {}
+    annual_giving = _safe_float(financial.get("annual_charitable_giving"), 0.0)
+    if annual_giving <= 0:
+        annual_giving = 6000.0
+    recommended_daf_bunch = annual_giving * 3
+    qcd_candidate = min(annual_giving, 108000.0)
+    tax_alpha = annual_giving * 0.24
+    return {
+        "available": True,
+        "annual_giving_target": round(annual_giving, 2),
+        "recommended_daf_bunch_amount": round(recommended_daf_bunch, 2),
+        "qcd_candidate_amount": round(qcd_candidate, 2),
+        "estimated_tax_benefit": round(tax_alpha, 2),
+        "summary": "Coordinate DAF/QCD and appreciated-asset gifting to improve after-tax giving efficiency.",
+    }
+
+
+def build_household_collaboration_workflow(profile_data: Dict) -> Dict:
+    collaborators = profile_data.get("collaborators", []) or []
+    review_items = profile_data.get("plan_reviews", []) or []
+    open_reviews = sum(1 for item in review_items if str(item.get("status", "")).lower() != "approved")
+    approval_ratio = 0.0
+    if review_items:
+        approval_ratio = sum(1 for item in review_items if str(item.get("status", "")).lower() == "approved") / len(review_items)
+    return {
+        "available": True,
+        "collaborator_count": len(collaborators),
+        "review_item_count": len(review_items),
+        "open_review_count": open_reviews,
+        "approval_ratio": round(approval_ratio, 4),
+        "summary": (
+            "Household/advisor collaboration workflow is active with tracked approvals."
+            if collaborators or review_items
+            else "Add spouse/advisor reviewers and formal approval checkpoints for plan governance."
+        ),
+    }
+
+
+def build_retirement_paycheck_builder(profile_data: Dict) -> Dict:
+    financial = profile_data.get("financial", {}) or {}
+    monthly_expenses = _safe_float(financial.get("annual_expenses"), 0.0) / 12.0
+    ss_monthly = _safe_float(financial.get("social_security_benefit"), 0.0)
+    pension_monthly = _safe_float(financial.get("pension_benefit"), 0.0)
+    guaranteed_monthly = ss_monthly + pension_monthly
+    portfolio_draw_monthly = max(0.0, monthly_expenses - guaranteed_monthly)
+    emergency_buffer_months = 6
+    monthly_sources = [
+        {"source": "Social Security", "amount": round(ss_monthly, 2)},
+        {"source": "Pension/Annuity", "amount": round(pension_monthly, 2)},
+        {"source": "Portfolio Withdrawal", "amount": round(portfolio_draw_monthly, 2)},
+    ]
+    return {
+        "available": True,
+        "target_monthly_paycheck": round(monthly_expenses, 2),
+        "guaranteed_monthly_income": round(guaranteed_monthly, 2),
+        "portfolio_draw_monthly": round(portfolio_draw_monthly, 2),
+        "emergency_buffer_months": emergency_buffer_months,
+        "monthly_sources": monthly_sources,
+        "summary": "Build a monthly retirement paycheck sequence across guaranteed and portfolio sources.",
+    }

@@ -37,12 +37,22 @@ from src.services.phase2_planning_service import (
     build_investment_fee_impact_analyzer,
     build_life_event_scenario_modeling,
     build_long_term_care_analysis,
+    build_longevity_care_path_modeling,
+    build_household_collaboration_workflow,
+    build_plan_health_monitoring_drift_alerts,
+    build_pre65_healthcare_bridge_planner,
     build_part_time_retirement_model,
     build_pension_lump_sum_analysis,
+    build_retirement_paycheck_builder,
     build_real_estate_enhancements,
     build_retirement_lifestyle_planning,
     build_risk_analysis_dashboard,
+    build_social_security_statement_reconciliation,
     build_secure_act_beneficiary_ira,
+    build_tax_law_update_engine,
+    build_guaranteed_income_floor_optimizer,
+    build_data_aggregation_reconciliation_hub,
+    build_charitable_strategy_optimizer,
 )
 from src.services.enhanced_audit_logger import enhanced_audit_logger
 from src.utils.error_sanitizer import sanitize_pydantic_error
@@ -804,6 +814,22 @@ def run_analysis():
         advanced_investment_factor_analysis = build_advanced_investment_factor_analysis(profile_data)
         family_legacy_gifting_goals = build_family_legacy_gifting_goals(profile_data)
         risk_analysis_dashboard = build_risk_analysis_dashboard(profile_data, scenario_results)
+        plan_health_monitoring_drift_alerts = build_plan_health_monitoring_drift_alerts(
+            profile_data, scenario_results
+        )
+        tax_law_update_engine = build_tax_law_update_engine(profile_data)
+        pre65_healthcare_bridge_planner = build_pre65_healthcare_bridge_planner(profile_data)
+        guaranteed_income_floor_optimizer = build_guaranteed_income_floor_optimizer(
+            profile_data, scenario_results
+        )
+        social_security_statement_reconciliation = build_social_security_statement_reconciliation(
+            profile_data
+        )
+        data_aggregation_reconciliation_hub = build_data_aggregation_reconciliation_hub(profile_data)
+        longevity_care_path_modeling = build_longevity_care_path_modeling(profile_data)
+        charitable_strategy_optimizer = build_charitable_strategy_optimizer(profile_data)
+        household_collaboration_workflow = build_household_collaboration_workflow(profile_data)
+        retirement_paycheck_builder = build_retirement_paycheck_builder(profile_data)
 
         # Prepare response with all scenarios
         response = {
@@ -839,6 +865,16 @@ def run_analysis():
             "advanced_investment_factor_analysis": advanced_investment_factor_analysis,
             "family_legacy_gifting_goals": family_legacy_gifting_goals,
             "risk_analysis_dashboard": risk_analysis_dashboard,
+            "plan_health_monitoring_drift_alerts": plan_health_monitoring_drift_alerts,
+            "tax_law_update_engine": tax_law_update_engine,
+            "pre65_healthcare_bridge_planner": pre65_healthcare_bridge_planner,
+            "guaranteed_income_floor_optimizer": guaranteed_income_floor_optimizer,
+            "social_security_statement_reconciliation": social_security_statement_reconciliation,
+            "data_aggregation_reconciliation_hub": data_aggregation_reconciliation_hub,
+            "longevity_care_path_modeling": longevity_care_path_modeling,
+            "charitable_strategy_optimizer": charitable_strategy_optimizer,
+            "household_collaboration_workflow": household_collaboration_workflow,
+            "retirement_paycheck_builder": retirement_paycheck_builder,
             "sequence_risk_visualization": {
                 "simulations": sequence_stress_simulations,
                 "baseline": {

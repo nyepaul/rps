@@ -197,6 +197,116 @@ const ANALYSIS_CARD_HELP = {
             'Crash Window: years where stress event is applied.'
         ],
         how_to_use: 'If early-crash deltas are severe, reduce withdrawal pressure, raise liquidity, or adjust retirement timing.'
+    },
+    plan_health_monitoring_drift_alerts: {
+        title: 'Plan Health Monitoring & Drift Alerts',
+        context: 'Tracks real-world drift in spending, returns, and inflation versus your plan assumptions.',
+        metrics: [
+            'Drift Score: combined measure of plan-vs-actual deviation.',
+            'Alert Count: number of flagged drift dimensions.',
+            'Next Review Cadence: recommended check-in frequency.',
+            'Drift Components: spending, return, and inflation deltas.'
+        ],
+        how_to_use: 'If alert count is non-zero, run a focused re-plan and update assumptions before making tactical portfolio changes.'
+    },
+    tax_law_update_engine: {
+        title: 'Tax Law Update Engine',
+        context: 'Checks whether modeled tax assumptions are aligned with the current tax year.',
+        metrics: [
+            'Configured Tax Year: tax-year assumptions currently in your plan.',
+            'Current Tax Year: calendar tax year reference.',
+            'Policy Freshness Score: directional confidence in tax assumption currency.',
+            'Update Required: whether tax settings should be refreshed now.'
+        ],
+        how_to_use: 'Refresh brackets and thresholds when stale to avoid distorted Roth, withdrawal, and cashflow decisions.'
+    },
+    pre65_healthcare_bridge_planner: {
+        title: 'Pre-65 Healthcare Bridge Planner',
+        context: 'Estimates healthcare funding needs from retirement until Medicare eligibility.',
+        metrics: [
+            'Bridge Years: years between retirement and age 65.',
+            'Annual Bridge Cost: estimated annual pre-65 coverage cost.',
+            'Total Bridge Cost: aggregate cost across bridge years.',
+            'Estimated Subsidy Opportunity: modeled subsidy offset potential.'
+        ],
+        how_to_use: 'Use bridge cost to set dedicated reserves and evaluate retirement timing tradeoffs before Medicare starts.'
+    },
+    guaranteed_income_floor_optimizer: {
+        title: 'Guaranteed Income Floor Optimizer',
+        context: 'Compares essential spending against guaranteed income sources like Social Security and pensions.',
+        metrics: [
+            'Essential Spending: modeled non-negotiable annual spending floor.',
+            'Guaranteed Income: annual Social Security plus pension income.',
+            'Floor Coverage Ratio: guaranteed income coverage of essential spending.',
+            'Annual Floor Shortfall: remaining annual gap to close.'
+        ],
+        how_to_use: 'If shortfall exists, test claiming-age changes, annuity layering, or spending reductions on essentials.'
+    },
+    social_security_statement_reconciliation: {
+        title: 'Social Security Statement Reconciliation',
+        context: 'Reconciles your modeled Social Security benefit with statement-based estimates.',
+        metrics: [
+            'Modeled Monthly Benefit: value currently used in plan modeling.',
+            'Statement Monthly Benefit: latest statement estimate.',
+            'Monthly Delta: dollar difference between modeled and statement values.',
+            'Delta %: percentage variance requiring review if material.'
+        ],
+        how_to_use: 'When delta is large, update earnings record assumptions and claiming strategy before finalizing drawdown.'
+    },
+    data_aggregation_reconciliation_hub: {
+        title: 'Data Aggregation & Reconciliation Hub',
+        context: 'Summarizes connected, imported, and manual data sources with reconciliation confidence.',
+        metrics: [
+            'Linked Accounts: connected account feeds.',
+            'CSV Sources: imported file-based sources.',
+            'Manual Entries: hand-entered records requiring validation.',
+            'Data Confidence Score: directional quality signal for decision-grade planning.'
+        ],
+        how_to_use: 'Increase linked coverage and reduce manual mismatches before relying on scenario comparisons.'
+    },
+    longevity_care_path_modeling: {
+        title: 'Longevity & Care Path Modeling',
+        context: 'Models staged care needs across home care, assisted living, and skilled nursing paths.',
+        metrics: [
+            'Years Modeled: planning horizon used for care-path assumptions.',
+            'Weighted Annual Care Cost: blended annual care estimate.',
+            'Projected Lifetime Care Cost: total modeled care burden.',
+            'Care Path Mix: home/assisted/skilled weighting assumptions.'
+        ],
+        how_to_use: 'Use this to decide between self-funding, insurance, and earmarked reserves for later-life care.'
+    },
+    charitable_strategy_optimizer: {
+        title: 'Charitable Strategy Optimizer (DAF + QCD)',
+        context: 'Optimizes charitable flows using donor-advised fund bunching, QCD, and tax-aware giving.',
+        metrics: [
+            'Annual Giving Target: current charitable cadence.',
+            'Recommended DAF Bunch Amount: multi-year contribution strategy.',
+            'QCD Candidate Amount: potential qualified charitable distribution amount.',
+            'Estimated Tax Benefit: modeled tax efficiency from strategy.'
+        ],
+        how_to_use: 'Coordinate giving method and timing with bracket management and RMD strategy.'
+    },
+    household_collaboration_workflow: {
+        title: 'Household Collaboration & Approval Workflow',
+        context: 'Tracks spouse/advisor reviewers, open reviews, and approval progress for governance.',
+        metrics: [
+            'Collaborator Count: number of active reviewers.',
+            'Review Item Count: total decisions under review.',
+            'Open Review Count: unresolved plan items.',
+            'Approval Ratio: percentage of items approved.'
+        ],
+        how_to_use: 'Use this as a governance checkpoint before implementing major allocation, tax, or spending changes.'
+    },
+    retirement_paycheck_builder: {
+        title: 'Retirement Paycheck Builder',
+        context: 'Builds a monthly paycheck sequence across guaranteed and portfolio income sources.',
+        metrics: [
+            'Target Monthly Paycheck: monthly spending target.',
+            'Guaranteed Monthly Income: SS/pension monthly baseline.',
+            'Portfolio Draw Monthly: monthly withdrawal needed from assets.',
+            'Emergency Buffer Months: reserve buffer expectation.'
+        ],
+        how_to_use: 'Use paycheck sequencing to stabilize cashflow and reduce ad hoc withdrawals during market stress.'
     }
 };
 
@@ -1209,6 +1319,16 @@ function renderLifeInsuranceAndSequencePanels(planningData) {
     const investmentFactors = planningData?.advanced_investment_factor_analysis;
     const legacyGoals = planningData?.family_legacy_gifting_goals;
     const riskDashboard = planningData?.risk_analysis_dashboard;
+    const planDrift = planningData?.plan_health_monitoring_drift_alerts;
+    const taxLaw = planningData?.tax_law_update_engine;
+    const pre65Bridge = planningData?.pre65_healthcare_bridge_planner;
+    const guaranteedFloor = planningData?.guaranteed_income_floor_optimizer;
+    const ssReconcile = planningData?.social_security_statement_reconciliation;
+    const dataHub = planningData?.data_aggregation_reconciliation_hub;
+    const longevityCare = planningData?.longevity_care_path_modeling;
+    const charitableOptimizer = planningData?.charitable_strategy_optimizer;
+    const householdWorkflow = planningData?.household_collaboration_workflow;
+    const paycheckBuilder = planningData?.retirement_paycheck_builder;
     const sequence = planningData?.sequence_risk_visualization;
 
     const lifePanel = life ? `
@@ -1693,6 +1813,76 @@ function renderLifeInsuranceAndSequencePanels(planningData) {
             data: riskDashboard,
             accent: '#dc2626',
             metric: riskDashboard?.scores?.overall_risk_score !== undefined ? `Overall risk score: ${riskDashboard.scores.overall_risk_score}` : ''
+        },
+        {
+            title: 'Plan Health Monitoring & Drift Alerts',
+            helpKey: 'plan_health_monitoring_drift_alerts',
+            data: planDrift,
+            accent: '#0f766e',
+            metric: planDrift?.drift_score !== undefined ? `Drift score: ${planDrift.drift_score}` : ''
+        },
+        {
+            title: 'Tax Law Update Engine',
+            helpKey: 'tax_law_update_engine',
+            data: taxLaw,
+            accent: '#166534',
+            metric: taxLaw?.configured_tax_year ? `Configured tax year: ${taxLaw.configured_tax_year}` : ''
+        },
+        {
+            title: 'Pre-65 Healthcare Bridge Planner',
+            helpKey: 'pre65_healthcare_bridge_planner',
+            data: pre65Bridge,
+            accent: '#0e7490',
+            metric: pre65Bridge?.bridge_years !== undefined ? `Bridge years: ${pre65Bridge.bridge_years}` : ''
+        },
+        {
+            title: 'Guaranteed Income Floor Optimizer',
+            helpKey: 'guaranteed_income_floor_optimizer',
+            data: guaranteedFloor,
+            accent: '#1d4ed8',
+            metric: guaranteedFloor?.annual_floor_shortfall !== undefined ? `Annual floor shortfall: ${formatCurrency(guaranteedFloor.annual_floor_shortfall, 0)}` : ''
+        },
+        {
+            title: 'Social Security Statement Reconciliation',
+            helpKey: 'social_security_statement_reconciliation',
+            data: ssReconcile,
+            accent: '#7c2d12',
+            metric: ssReconcile?.monthly_delta !== undefined ? `Monthly delta: ${formatCurrency(ssReconcile.monthly_delta, 0)}` : ''
+        },
+        {
+            title: 'Data Aggregation & Reconciliation Hub',
+            helpKey: 'data_aggregation_reconciliation_hub',
+            data: dataHub,
+            accent: '#0369a1',
+            metric: dataHub?.data_confidence_score !== undefined ? `Data confidence: ${dataHub.data_confidence_score}` : ''
+        },
+        {
+            title: 'Longevity & Care Path Modeling',
+            helpKey: 'longevity_care_path_modeling',
+            data: longevityCare,
+            accent: '#9a3412',
+            metric: longevityCare?.projected_lifetime_care_cost !== undefined ? `Projected lifetime care: ${formatCurrency(longevityCare.projected_lifetime_care_cost, 0)}` : ''
+        },
+        {
+            title: 'Charitable Strategy Optimizer (DAF + QCD)',
+            helpKey: 'charitable_strategy_optimizer',
+            data: charitableOptimizer,
+            accent: '#7e22ce',
+            metric: charitableOptimizer?.estimated_tax_benefit !== undefined ? `Est. tax benefit: ${formatCurrency(charitableOptimizer.estimated_tax_benefit, 0)}` : ''
+        },
+        {
+            title: 'Household Collaboration & Approval Workflow',
+            helpKey: 'household_collaboration_workflow',
+            data: householdWorkflow,
+            accent: '#475569',
+            metric: householdWorkflow?.open_review_count !== undefined ? `Open reviews: ${householdWorkflow.open_review_count}` : ''
+        },
+        {
+            title: 'Retirement Paycheck Builder',
+            helpKey: 'retirement_paycheck_builder',
+            data: paycheckBuilder,
+            accent: '#1f2937',
+            metric: paycheckBuilder?.target_monthly_paycheck !== undefined ? `Target paycheck: ${formatCurrency(paycheckBuilder.target_monthly_paycheck, 0)}/mo` : ''
         }
     ].filter(card => card.data?.available);
 

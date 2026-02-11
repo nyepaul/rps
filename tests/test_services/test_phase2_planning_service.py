@@ -15,12 +15,22 @@ from src.services.phase2_planning_service import (
     build_investment_fee_impact_analyzer,
     build_life_event_scenario_modeling,
     build_long_term_care_analysis,
+    build_longevity_care_path_modeling,
     build_part_time_retirement_model,
     build_pension_lump_sum_analysis,
+    build_plan_health_monitoring_drift_alerts,
+    build_pre65_healthcare_bridge_planner,
     build_real_estate_enhancements,
     build_retirement_lifestyle_planning,
+    build_retirement_paycheck_builder,
     build_risk_analysis_dashboard,
+    build_social_security_statement_reconciliation,
     build_secure_act_beneficiary_ira,
+    build_tax_law_update_engine,
+    build_guaranteed_income_floor_optimizer,
+    build_data_aggregation_reconciliation_hub,
+    build_charitable_strategy_optimizer,
+    build_household_collaboration_workflow,
 )
 
 
@@ -223,3 +233,68 @@ def test_additional_planning_modules_return_available_payloads():
     assert build_advanced_investment_factor_analysis(profile_data)["available"] is True
     assert build_family_legacy_gifting_goals(profile_data)["available"] is True
     assert build_risk_analysis_dashboard(profile_data, scenarios)["available"] is True
+
+
+def test_phase2_new_backlog_modules_return_expected_fields():
+    profile_data = {
+        "person": {"current_age": 58, "retirement_age": 62, "life_expectancy": 91},
+        "financial": {
+            "annual_income": 175000,
+            "annual_expenses": 96000,
+            "social_security_benefit": 2800,
+            "pension_benefit": 900,
+            "inflation_rate": 0.03,
+            "expected_return": 0.06,
+            "annual_healthcare_expenses": 14500,
+            "annual_charitable_giving": 9000,
+        },
+        "budget": {"actuals": {"annual_spending": 104000}},
+        "performance": {"actual_return_last_12m": 0.035, "inflation_observed": 0.038},
+        "tax_settings": {"tax_year": 2024},
+        "social_security_statement": {"monthly_benefit_estimate": 2950},
+        "imports": {"linked_accounts": 4, "csv_sources": 2, "manual_entries": 18, "deduplicated_items": 9},
+        "collaborators": [{"name": "Spouse"}, {"name": "Advisor"}],
+        "plan_reviews": [{"status": "approved"}, {"status": "open"}, {"status": "approved"}],
+    }
+    scenarios = {"moderate": {"success_rate": 0.86, "median_final_balance": 980000, "percentile_10": 180000}}
+
+    plan_drift = build_plan_health_monitoring_drift_alerts(profile_data, scenarios)
+    assert plan_drift["available"] is True
+    assert "drift_score" in plan_drift
+    assert "alert_count" in plan_drift
+
+    tax_engine = build_tax_law_update_engine(profile_data)
+    assert tax_engine["available"] is True
+    assert "policy_freshness_score" in tax_engine
+
+    bridge = build_pre65_healthcare_bridge_planner(profile_data)
+    assert bridge["available"] is True
+    assert bridge["bridge_years"] >= 0
+
+    floor = build_guaranteed_income_floor_optimizer(profile_data, scenarios)
+    assert floor["available"] is True
+    assert "annual_floor_shortfall" in floor
+
+    ss_reconcile = build_social_security_statement_reconciliation(profile_data)
+    assert ss_reconcile["available"] is True
+    assert "monthly_delta" in ss_reconcile
+
+    data_hub = build_data_aggregation_reconciliation_hub(profile_data)
+    assert data_hub["available"] is True
+    assert "data_confidence_score" in data_hub
+
+    longevity = build_longevity_care_path_modeling(profile_data)
+    assert longevity["available"] is True
+    assert "projected_lifetime_care_cost" in longevity
+
+    charity = build_charitable_strategy_optimizer(profile_data)
+    assert charity["available"] is True
+    assert "recommended_daf_bunch_amount" in charity
+
+    household = build_household_collaboration_workflow(profile_data)
+    assert household["available"] is True
+    assert household["collaborator_count"] == 2
+
+    paycheck = build_retirement_paycheck_builder(profile_data)
+    assert paycheck["available"] is True
+    assert "target_monthly_paycheck" in paycheck
