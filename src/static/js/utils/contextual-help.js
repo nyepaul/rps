@@ -7,8 +7,39 @@ export function setupContextualHelp(container) {
     const helpIcons = container.querySelectorAll('.help-icon');
 
     helpIcons.forEach(icon => {
+        // Normalize icon content so templates remain visually consistent.
+        if (!icon.textContent || !icon.textContent.trim()) {
+            icon.textContent = '?';
+        }
+        if (!icon.getAttribute('aria-label')) {
+            icon.setAttribute('aria-label', 'Show help');
+        }
+        if (!icon.getAttribute('type') && icon.tagName === 'BUTTON') {
+            icon.setAttribute('type', 'button');
+        }
+
+        // Match the lightweight inline "Label ?" pattern used by analysis stat help.
+        Object.assign(icon.style, {
+            display: 'inline',
+            width: 'auto',
+            height: 'auto',
+            borderRadius: '0',
+            background: 'none',
+            border: 'none',
+            color: 'var(--accent-color)',
+            fontWeight: 'bold',
+            fontSize: 'inherit',
+            lineHeight: '1',
+            cursor: 'pointer',
+            padding: '0',
+            marginLeft: '5px',
+            verticalAlign: 'baseline'
+        });
+
         icon.addEventListener('mouseenter', showTooltip);
         icon.addEventListener('mouseleave', hideTooltip);
+        icon.addEventListener('focus', showTooltip);
+        icon.addEventListener('blur', hideTooltip);
         icon.addEventListener('click', (e) => {
             e.preventDefault();
             // Toggle on click for mobile
@@ -16,6 +47,16 @@ export function setupContextualHelp(container) {
                 hideTooltip.call(icon);
             } else {
                 showTooltip.call(icon);
+            }
+        });
+        icon.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                if (icon._tooltipVisible) {
+                    hideTooltip.call(icon);
+                } else {
+                    showTooltip.call(icon);
+                }
             }
         });
     });

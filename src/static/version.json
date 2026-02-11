@@ -1,5 +1,5 @@
 {
-    "version": "3.9.263",
+    "version": "3.9.264",
     "release_date": "2026-02-11",
-    "release_notes": "Move Index into top tab navigation (right of Resources) and wire modal behavior"
+    "release_notes": "Standardize contextual help markers to inline Label ? style across forms"
 }
