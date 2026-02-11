@@ -85,6 +85,7 @@ def test_roth_conversion_includes_ladder_projection():
     assert "bracket_targets" in result
     assert "precision_recommendations" in result
     assert "bracket_headroom_projection" in result
+    assert "annual_safe_conversion_budget" in result
     ladder = result["conversion_ladder_5y"]
     assert "rows" in ladder
     assert len(ladder["rows"]) >= 1
@@ -150,3 +151,5 @@ def test_roth_bracket_headroom_projection_matches_years():
     headroom = result["bracket_headroom_projection"]["rows"]
     assert len(headroom) == 4
     assert headroom[0]["taxable_income_assumption"] <= headroom[-1]["taxable_income_assumption"]
+    safe_budget = result["annual_safe_conversion_budget"]["rows"]
+    assert len(safe_budget) == 4

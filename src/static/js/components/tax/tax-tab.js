@@ -483,6 +483,21 @@ function renderTaxAnalysis(
                                         `).join('')}
                                     </div>
                                 ` : ''}
+                                ${roth_conversion.annual_safe_conversion_budget?.rows?.length ? `
+                                    <div style="margin-top: 10px;">
+                                        <div style="font-weight: 600; margin-bottom: 6px;">🗓️ Annual Safe Conversion Budget</div>
+                                        <div style="margin-bottom: 4px; opacity: 0.85;">
+                                            Total safe budget: ${formatCurrency(roth_conversion.annual_safe_conversion_budget.total_safe_conversion_budget, 0)}
+                                        </div>
+                                        ${roth_conversion.annual_safe_conversion_budget.rows.map((row) => `
+                                            <div style="display: grid; grid-template-columns: 50px 1fr 1fr; gap: 6px; padding: 4px 6px; border-radius: 3px; background: rgba(255,255,255,0.03); margin: 2px 0;">
+                                                <span>Y${row.year}</span>
+                                                <span>Headroom ${formatCurrency(row.headroom_to_target_ceiling, 0)}</span>
+                                                <span>Safe ${formatCurrency(row.safe_conversion_budget, 0)}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                ` : ''}
                             </div>
                         </details>
                         ${roth_conversion.conversion_ladder_5y?.rows?.length ? `

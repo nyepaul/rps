@@ -1,5 +1,5 @@
 {
-    "version": "3.9.252",
+    "version": "3.9.253",
     "release_date": "2026-02-11",
-    "release_notes": "Detailed tax bracket optimization: add yearly bracket headroom forecast"
+    "release_notes": "Detailed tax bracket optimization: add annual safe conversion budget from headroom"
 }

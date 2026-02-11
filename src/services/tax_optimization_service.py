@@ -759,6 +759,10 @@ class TaxOptimizationService:
             annual_income_growth=max(-0.2, min(0.2, float(ladder_income_growth_rate))),
             max_rate=max(0.1, min(0.5, float(ladder_max_rate))),
         )
+        annual_safe_conversion_budget = self.build_annual_safe_conversion_budget(
+            bracket_headroom_projection=bracket_headroom_projection,
+            safety_buffer=500.0,
+        )
 
         # Analyze each conversion amount
         scenarios = []
@@ -797,6 +801,7 @@ class TaxOptimizationService:
             "bracket_targets": bracket_targets,
             "precision_recommendations": precision_recommendations,
             "bracket_headroom_projection": bracket_headroom_projection,
+            "annual_safe_conversion_budget": annual_safe_conversion_budget,
             "scenarios": scenarios,
             "optimal_24pct": optimal,
             "conversion_ladder_5y": ladder_5y,
@@ -1049,6 +1054,34 @@ class TaxOptimizationService:
             "target_rate_label": f"{int(target_rate * 100)}%",
             "target_ceiling": round(target_ceiling, 2),
             "rows": rows,
+        }
+
+    @staticmethod
+    def build_annual_safe_conversion_budget(
+        bracket_headroom_projection: Dict,
+        safety_buffer: float = 500.0,
+    ) -> Dict:
+        """Derive practical annual conversion budgets from headroom rows."""
+        rows = []
+        total_budget = 0.0
+        for row in bracket_headroom_projection.get("rows", []):
+            headroom = max(0.0, float(row.get("headroom_to_target_ceiling", 0.0)))
+            budget = max(0.0, headroom - safety_buffer)
+            rows.append(
+                {
+                    "year": row.get("year"),
+                    "headroom_to_target_ceiling": round(headroom, 2),
+                    "safety_buffer": round(safety_buffer, 2),
+                    "safe_conversion_budget": round(budget, 2),
+                    "at_or_above_target": bool(row.get("at_or_above_target")),
+                }
+            )
+            total_budget += budget
+
+        return {
+            "target_rate_label": bracket_headroom_projection.get("target_rate_label"),
+            "rows": rows,
+            "total_safe_conversion_budget": round(total_budget, 2),
         }
 
     def analyze_social_security(
