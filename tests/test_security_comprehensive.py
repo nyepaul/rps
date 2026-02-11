@@ -68,8 +68,8 @@ class TestSecurityComprehensive:
         # Set a real API key in the database
         test_profile.data = {
             'api_keys': {
-                'gemini_api_key': 'REDACTED_GAPI_RealSecretKey12345',
-                'claude_api_key': 'REDACTED_ANTH_RealSecretKey54321'
+                'gemini_api_key': 'GEMINI_TEST_KEY_PLACEHOLDER_12345',
+                'claude_api_key': 'CLAUDE_TEST_KEY_PLACEHOLDER_54321'
             }
         }
         test_profile.save()

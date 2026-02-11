@@ -31,6 +31,9 @@ A local-first financial planning application for Monte Carlo retirement simulati
 | Command | Description |
 |---------|-------------|
 | `./bin/start` | Start application (creates venv, installs deps) |
+| `./bin/check-env-consistency` | Verify dev/prod dependency config is aligned |
+| `./bin/check-no-secrets` | Scan tracked files for secret-like tokens |
+| `./bin/setup-git-hooks` | Enable local pre-push hook checks (`.githooks`) |
 | `./bin/manage stop` | Stop the application |
 | `./bin/manage status` | Check system health |
 | `./bin/manage backup` | Backup SQLite database |

@@ -26,8 +26,8 @@ def test_encryption_service():
     # Test data simulating API keys
     test_data = {
         "api_keys": {
-            "claude_api_key": "REDACTED_ANTH_test-key-1234567890",
-            "gemini_api_key": "REDACTED_GAPI_Test1234567890",
+            "claude_api_key": "CLAUDE_TEST_KEY_EXAMPLE_1234567890",
+            "gemini_api_key": "GEMINI_TEST_KEY_EXAMPLE_1234567890",
         },
         "other_data": {"name": "Test Profile", "created_at": "2025-01-15"},
     }
@@ -88,8 +88,8 @@ def test_api_key_validation():
     # Test valid keys
     try:
         valid_data = APIKeySchema(
-            claude_api_key="REDACTED_ANTH_api03-test1234567890",
-            gemini_api_key="REDACTED_GAPI_123456789012345678901234567890123",
+            claude_api_key="CLAUDE_TEST_KEY_EXAMPLE_1234567890",
+            gemini_api_key="GEMINI_TEST_KEY_EXAMPLE_1234567890",
         )
         print(f"\n✓ Valid API keys accepted")
         print(f"  Claude key: {valid_data.claude_api_key[:15]}...")
@@ -108,7 +108,7 @@ def test_api_key_validation():
 
     # Test optional keys
     try:
-        partial_data = APIKeySchema(claude_api_key="REDACTED_ANTH_api03-test1234567890")
+        partial_data = APIKeySchema(claude_api_key="CLAUDE_TEST_KEY_EXAMPLE_1234567890")
         print(f"✓ Optional keys work correctly (only Claude key provided)")
     except ValidationError as e:
         print(f"\n✗ Optional key validation failed: {e}")
@@ -127,8 +127,8 @@ def test_profile_integration():
         "personal": {"name": "John Doe", "age": 45},
         "assets": {"retirement_accounts": [], "taxable_accounts": []},
         "api_keys": {
-            "claude_api_key": "REDACTED_ANTH_api03-...",
-            "gemini_api_key": "REDACTED_GAPI_...",
+            "claude_api_key": "CLAUDE_TEST_KEY_EXAMPLE_...",
+            "gemini_api_key": "GEMINI_TEST_KEY_EXAMPLE_...",
         },
     }
 
