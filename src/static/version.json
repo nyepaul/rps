@@ -1,5 +1,5 @@
 {
-    "version": "3.9.269",
+    "version": "3.9.270",
     "release_date": "2026-02-11",
-    "release_notes": "Add additional market condition presets in Analysis preset mode"
+    "release_notes": "Remove standalone Index tab and keep feature index in Learning Hub only"
 }
