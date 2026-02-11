@@ -69,6 +69,16 @@ sudo -u paul git pull 2>&1 | grep -E "Already up to date|Updating|Fast-forward" 
     echo -e "${RED}  ⚠ Warning: git pull had issues (may have local changes)${NC}"
 }
 
+# Preflight: block deployment if dev/prod dependency wiring drifted.
+echo -e "${YELLOW}→ Running environment consistency preflight...${NC}"
+"$SOURCE_DIR/bin/check-env-consistency"
+echo -e "  ✓ Environment consistency verified"
+
+# Preflight: block deployment if glossary coverage regresses in key planning views.
+echo -e "${YELLOW}→ Running glossary coverage preflight...${NC}"
+"$SOURCE_DIR/bin/check-glossary-coverage"
+echo -e "  ✓ Glossary coverage verified"
+
 # Capture git info after pull
 CURRENT_COMMIT_FULL=$(git rev-parse HEAD)
 GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
