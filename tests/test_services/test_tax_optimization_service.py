@@ -83,6 +83,7 @@ def test_roth_conversion_includes_ladder_projection():
     )
     assert "conversion_ladder_5y" in result
     assert "bracket_targets" in result
+    assert "precision_recommendations" in result
     ladder = result["conversion_ladder_5y"]
     assert "rows" in ladder
     assert len(ladder["rows"]) >= 1

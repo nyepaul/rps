@@ -459,6 +459,18 @@ function renderTaxAnalysis(
                                         `).join('')}
                                     </div>
                                 ` : ''}
+                                ${roth_conversion.precision_recommendations?.length ? `
+                                    <div style="margin-top: 10px;">
+                                        <div style="font-weight: 600; margin-bottom: 6px;">🧮 Precision Recommendations</div>
+                                        ${roth_conversion.precision_recommendations.map((rec) => `
+                                            <div style="display: grid; grid-template-columns: 90px 1fr 1fr; gap: 6px; padding: 4px 6px; border-radius: 3px; background: rgba(255,255,255,0.03); margin: 2px 0;">
+                                                <span>${rec.target_bracket_label} buffer</span>
+                                                <span>Convert ${formatCurrency(rec.max_conversion_with_buffer, 0)}</span>
+                                                <span>Buffer ${formatCurrency(rec.safe_buffer, 0)}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                ` : ''}
                             </div>
                         </details>
                         ${roth_conversion.conversion_ladder_5y?.rows?.length ? `

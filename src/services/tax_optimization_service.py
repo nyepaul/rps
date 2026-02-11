@@ -749,6 +749,10 @@ class TaxOptimizationService:
             current_taxable_income=current_taxable_income,
             traditional_balance=traditional_balance,
         )
+        precision_recommendations = self.build_precision_recommendations(
+            bracket_targets=bracket_targets,
+            safety_buffer=500.0,
+        )
 
         # Analyze each conversion amount
         scenarios = []
@@ -785,6 +789,7 @@ class TaxOptimizationService:
             "traditional_balance": traditional_balance,
             "bracket_space": bracket_space,
             "bracket_targets": bracket_targets,
+            "precision_recommendations": precision_recommendations,
             "scenarios": scenarios,
             "optimal_24pct": optimal,
             "conversion_ladder_5y": ladder_5y,
@@ -978,6 +983,24 @@ class TaxOptimizationService:
                 }
             )
         return targets
+
+    @staticmethod
+    def build_precision_recommendations(
+        bracket_targets: List[Dict], safety_buffer: float = 500.0
+    ) -> List[Dict]:
+        """Create practical bracket-fill recommendations with a safety buffer."""
+        recs = []
+        for target in bracket_targets[:4]:
+            suggested = max(0.0, float(target["suggested_conversion"]) - safety_buffer)
+            recs.append(
+                {
+                    "target_bracket_label": target["target_bracket_label"],
+                    "safe_buffer": round(safety_buffer, 2),
+                    "max_conversion_with_buffer": round(suggested, 2),
+                    "room_to_ceiling": target["room_to_ceiling"],
+                }
+            )
+        return recs
 
     def analyze_social_security(
         self,
