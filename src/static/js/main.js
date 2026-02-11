@@ -14,6 +14,12 @@ import { renderUserBackups } from './components/settings/user-backups.js';
 import { showSpinner, hideSpinner } from './utils/dom.js';
 import { startOnboarding } from './components/onboarding/onboarding-wizard.js';
 import { setupAriaLabels } from './utils/a11y.js';
+import {
+    bindFeatureIndexActions,
+    createFeatureIndex,
+    filterFeatureIndex,
+    renderFeatureIndexRows
+} from './utils/feature-index.js';
 
 // Cache-busting: extract version query from script URL (e.g. ?v=3.9.196)
 // and append to dynamic imports so browser fetches fresh modules on version bumps
@@ -48,6 +54,9 @@ async function init() {
 
     // Set up feedback button
     setupFeedback();
+
+    // Set up quick-launch feature index
+    setupFeatureIndexQuickLaunch();
 
     // Set up roadmap link
     setupRoadmapLink();
@@ -622,6 +631,101 @@ function setupFeedback() {
             showFeedbackModal();
         });
     }
+}
+
+function setupFeatureIndexQuickLaunch() {
+    const btn = document.getElementById('feature-index-btn');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+        openFeatureIndexModal();
+    });
+}
+
+function openFeatureIndexModal() {
+    const existing = document.getElementById('feature-index-modal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'feature-index-modal';
+    modal.style.cssText = `
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10001;
+    `;
+
+    modal.innerHTML = `
+        <div style="background: var(--bg-secondary); width: min(980px, 92vw); max-height: 86vh; border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.3); display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--border-color);">
+                <div>
+                    <h2 style="font-size: 18px; margin: 0;">Feature Index</h2>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin: 2px 0 0 0;">Search tabs, roadmap solutions, and feature locations.</p>
+                </div>
+                <button id="close-feature-index-modal" style="padding: 6px 10px; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">Close</button>
+            </div>
+            <div style="padding: 12px 16px; border-bottom: 1px solid var(--border-color);">
+                <input
+                    id="feature-index-modal-filter"
+                    type="text"
+                    placeholder="Search: legacy wealth, family planning, roth, phase 2, dashboard..."
+                    style="width: 100%; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 9px 10px; font-size: 13px;"
+                />
+            </div>
+            <div id="feature-index-modal-list" style="overflow: auto; padding: 0 16px 12px 16px;"></div>
+        </div>
+    `;
+
+    const close = () => modal.remove();
+    const closeBtn = modal.querySelector('#close-feature-index-modal');
+    const filterInput = modal.querySelector('#feature-index-modal-filter');
+    const list = modal.querySelector('#feature-index-modal-list');
+    let items = createFeatureIndex();
+
+    const render = () => {
+        if (!list) return;
+        const q = filterInput ? filterInput.value : '';
+        const filtered = filterFeatureIndex(items, q);
+        list.innerHTML = renderFeatureIndexRows(filtered);
+    };
+
+    bindFeatureIndexActions(modal, {
+        onRoadmapOpen: () => {
+            close();
+            showRoadmapViewer();
+        }
+    });
+
+    modal.addEventListener('click', (event) => {
+        const shortcut = event.target.closest('.feature-index-link');
+        if (shortcut && (shortcut.dataset.action === 'tab' || shortcut.dataset.action === 'roadmap')) {
+            setTimeout(close, 0);
+        }
+    });
+
+    modal.addEventListener('click', (event) => {
+        if (event.target === modal) close();
+    });
+    closeBtn?.addEventListener('click', close);
+    filterInput?.addEventListener('input', render);
+    filterInput?.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') close();
+    });
+
+    document.body.appendChild(modal);
+    render();
+    filterInput?.focus();
+
+    apiClient.get('/api/roadmap/public')
+        .then((response) => {
+            items = createFeatureIndex({ roadmapItems: response?.items || [] });
+            render();
+        })
+        .catch(() => {
+            // Keep base index even if roadmap API is unavailable.
+        });
 }
 
 /**
