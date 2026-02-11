@@ -7,6 +7,10 @@ import { scenariosAPI } from '../../api/scenarios.js';
 import { formatCurrency, formatPercent, formatDate, formatCompact } from '../../utils/formatters.js';
 import { showLoading, showError, showSuccess } from '../../utils/dom.js';
 import { renderStandardTimelineChart, getChartThemeColors, registerChartForThemeUpdates } from '../../utils/charts.js';
+import {
+    glossaryTerm as renderGlossaryTerm,
+    wireGlossaryTermClicks as wireGlossaryTerms,
+} from '../../utils/glossary.js';
 
 let comparisonChartInstances = {};
 
@@ -125,28 +129,12 @@ function extractTimelineSeries(metrics) {
 }
 
 function glossaryHeader(label, key) {
-    return `${label} <button type="button" class="comparison-glossary-help" data-glossary="${key}" title="Click for definition" style="background:none;border:none;color:var(--accent-color);font:inherit;cursor:pointer;padding:0;">ⓘ</button>`;
-}
-
-function showComparisonGlossaryDefinition(key) {
-    const item = COMPARISON_GLOSSARY[key];
-    if (!item) return;
-
-    const modal = document.createElement('div');
-    modal.innerHTML = `
-        <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10001; padding: 20px;">
-            <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; max-width: 540px; width: 100%; border: 2px solid var(--accent-color);">
-                <h3 style="margin: 0 0 10px 0; color: var(--accent-color);">${item.title}</h3>
-                <p style="margin: 0; line-height: 1.6; color: var(--text-primary);">${item.definition}</p>
-                <div style="margin-top: 16px; text-align: right;">
-                    <button id="close-comparison-glossary" style="padding: 8px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Close</button>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    modal.querySelector('#close-comparison-glossary').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+    const help = renderGlossaryTerm('ⓘ', key, {
+        className: 'comparison-glossary-help',
+        attrName: 'glossary',
+        style: 'background:none;border:none;color:var(--accent-color);font:inherit;cursor:pointer;padding:0;',
+    });
+    return `${label} ${help}`;
 }
 
 export async function renderComparisonTab(container) {
@@ -356,13 +344,7 @@ function setupComparisonHandlers(container, scenarios) {
     const chartSection = container.querySelector('#comparison-chart-section');
     const resetZoomBtn = container.querySelector('#reset-comparison-zoom');
 
-    container.querySelectorAll('.comparison-glossary-help').forEach((btn) => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            showComparisonGlossaryDefinition(btn.dataset.glossary);
-        });
-    });
+    wireGlossaryTerms(container, COMPARISON_GLOSSARY, { className: 'comparison-glossary-help', attrName: 'glossary' });
 
     // Handle select all
     if (selectAllCheckbox) {
