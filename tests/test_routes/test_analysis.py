@@ -219,3 +219,71 @@ def test_healthcare_planning_projection_endpoint(client, test_user, test_profile
     assert "medicare_part_a" in payload["projection"][0]
     assert "hsa_applied" in payload["projection"][0]
     assert "net_healthcare_cost" in payload["projection"][0]
+
+
+def test_analysis_includes_phase1_planning_fields(client, test_user, test_profile):
+    """Analysis endpoint should include life insurance and sequence risk sections."""
+    login_res = client.post(
+        "/api/auth/login", json={"username": "testuser", "password": "TestPass123"}
+    )
+    assert login_res.status_code == 200
+
+    response = client.post(
+        "/api/analysis",
+        json={
+            "profile_name": "Test Profile",
+            "simulations": 100,
+            "spending_model": "constant_real",
+        },
+    )
+    assert response.status_code == 200
+
+    payload = response.get_json()
+    assert "life_insurance_estimate" in payload
+    assert payload["life_insurance_estimate"]["available"] is True
+    assert "debt_management_plan" in payload
+    assert "available" in payload["debt_management_plan"]
+    assert "college_529_plan" in payload
+    assert "available" in payload["college_529_plan"]
+    assert "pension_lump_sum_analysis" in payload
+    assert "available" in payload["pension_lump_sum_analysis"]
+    assert "estate_tax_gifting_strategy" in payload
+    assert "available" in payload["estate_tax_gifting_strategy"]
+    assert "investment_fee_impact" in payload
+    assert "available" in payload["investment_fee_impact"]
+    assert "part_time_retirement_model" in payload
+    assert "available" in payload["part_time_retirement_model"]
+    assert "real_estate_enhancements" in payload
+    assert "available" in payload["real_estate_enhancements"]
+    assert "advanced_scenario_analysis" in payload
+    assert "available" in payload["advanced_scenario_analysis"]
+    assert "dynamic_withdrawal_strategies" in payload
+    assert "available" in payload["dynamic_withdrawal_strategies"]
+    assert "life_event_scenario_modeling" in payload
+    assert "available" in payload["life_event_scenario_modeling"]
+    assert "disability_income_protection" in payload
+    assert "available" in payload["disability_income_protection"]
+    assert "long_term_care_analysis" in payload
+    assert "available" in payload["long_term_care_analysis"]
+    assert "business_owner_retirement_planning" in payload
+    assert "available" in payload["business_owner_retirement_planning"]
+    assert "secure_act_beneficiary_ira" in payload
+    assert "available" in payload["secure_act_beneficiary_ira"]
+    assert "annuity_comparison_tool" in payload
+    assert "available" in payload["annuity_comparison_tool"]
+    assert "cashflow_budget_enhancements" in payload
+    assert "available" in payload["cashflow_budget_enhancements"]
+    assert "retirement_lifestyle_planning" in payload
+    assert "available" in payload["retirement_lifestyle_planning"]
+    assert "document_vault_beneficiary_tracking" in payload
+    assert "available" in payload["document_vault_beneficiary_tracking"]
+    assert "advanced_investment_factor_analysis" in payload
+    assert "available" in payload["advanced_investment_factor_analysis"]
+    assert "family_legacy_gifting_goals" in payload
+    assert "available" in payload["family_legacy_gifting_goals"]
+    assert "risk_analysis_dashboard" in payload
+    assert "available" in payload["risk_analysis_dashboard"]
+    assert "sequence_risk_visualization" in payload
+    assert "baseline" in payload["sequence_risk_visualization"]
+    assert "cases" in payload["sequence_risk_visualization"]
+    assert isinstance(payload["sequence_risk_visualization"]["cases"], list)

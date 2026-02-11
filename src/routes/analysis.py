@@ -16,6 +16,34 @@ from src.services.retirement_model import (
 from src.services.tax_engine_refactor import TaxEngine
 from src.services.rebalancing_service import RebalancingService
 from src.services.healthcare_planning_service import HealthcarePlanningService
+from src.services.phase1_planning_service import (
+    build_debt_payoff_strategy,
+    estimate_life_insurance_needs,
+    generate_sequence_offsets,
+    summarize_sequence_impact,
+)
+from src.services.phase2_planning_service import (
+    build_advanced_scenario_analysis,
+    build_advanced_investment_factor_analysis,
+    build_annuity_comparison_tool,
+    build_529_college_savings_plan,
+    build_business_owner_retirement_planning,
+    build_cashflow_budget_enhancements,
+    build_disability_income_protection,
+    build_document_vault_beneficiary_tracking,
+    build_dynamic_withdrawal_strategies,
+    build_estate_tax_gifting_strategy,
+    build_family_legacy_gifting_goals,
+    build_investment_fee_impact_analyzer,
+    build_life_event_scenario_modeling,
+    build_long_term_care_analysis,
+    build_part_time_retirement_model,
+    build_pension_lump_sum_analysis,
+    build_real_estate_enhancements,
+    build_retirement_lifestyle_planning,
+    build_risk_analysis_dashboard,
+    build_secure_act_beneficiary_ira,
+)
 from src.services.enhanced_audit_logger import enhanced_audit_logger
 from src.utils.error_sanitizer import sanitize_pydantic_error
 from src.__version__ import __version__
@@ -227,6 +255,42 @@ def _safe_age_from_birth_date(birth_date_str: Optional[str]) -> Optional[int]:
         )
     except Exception:
         return None
+
+
+def _build_scenario_assumptions(
+    base_market_kwargs: dict, target_stock_allocation: float
+) -> MarketAssumptions:
+    """Build scenario assumptions by preserving proportional non-stock allocations."""
+    remaining = 1.0 - target_stock_allocation
+    final_assumptions = {**base_market_kwargs}
+    final_assumptions["stock_allocation"] = target_stock_allocation
+
+    if remaining > 0:
+        current_b = base_market_kwargs.get("bond_allocation", 0.4)
+        current_c = base_market_kwargs.get("cash_allocation", 0.1)
+        other_sum = (
+            current_b
+            + current_c
+            + base_market_kwargs.get("reit_allocation", 0)
+            + base_market_kwargs.get("gold_allocation", 0)
+            + base_market_kwargs.get("crypto_allocation", 0)
+        )
+
+        if other_sum > 0:
+            scale = remaining / other_sum
+            final_assumptions["bond_allocation"] = current_b * scale
+            final_assumptions["cash_allocation"] = current_c * scale
+            if "reit_allocation" in final_assumptions:
+                final_assumptions["reit_allocation"] *= scale
+            if "gold_allocation" in final_assumptions:
+                final_assumptions["gold_allocation"] *= scale
+            if "crypto_allocation" in final_assumptions:
+                final_assumptions["crypto_allocation"] *= scale
+    else:
+        final_assumptions["bond_allocation"] = 0
+        final_assumptions["cash_allocation"] = 0
+
+    return MarketAssumptions(**final_assumptions)
 
 
 @analysis_bp.route("/analysis", methods=["POST"])
@@ -641,45 +705,8 @@ def run_analysis():
         # Run simulation for each scenario
         scenario_results = {}
         for scenario_key, scenario_config in scenarios.items():
-            # FOR COMPARISON: Always use the scenario's stock allocation
             target_stock = scenario_config["stock_allocation"]
-
-            # Proportional adjustment for bonds/cash based on new stock target
-            # (If stocks move from 60% to 30%, we need to scale up other assets)
-            remaining = 1.0 - target_stock
-
-            # Start with base assumptions
-            final_assumptions = {**base_market_kwargs}
-            final_assumptions["stock_allocation"] = target_stock
-
-            # Simple balancing of bonds/cash if they exist in base
-            if remaining > 0:
-                current_b = base_market_kwargs.get("bond_allocation", 0.4)
-                current_c = base_market_kwargs.get("cash_allocation", 0.1)
-                other_sum = (
-                    current_b
-                    + current_c
-                    + base_market_kwargs.get("reit_allocation", 0)
-                    + base_market_kwargs.get("gold_allocation", 0)
-                    + base_market_kwargs.get("crypto_allocation", 0)
-                )
-
-                if other_sum > 0:
-                    scale = remaining / other_sum
-                    final_assumptions["bond_allocation"] = current_b * scale
-                    final_assumptions["cash_allocation"] = current_c * scale
-                    # Scale others too if they were part of the profile
-                    if "reit_allocation" in final_assumptions:
-                        final_assumptions["reit_allocation"] *= scale
-                    if "gold_allocation" in final_assumptions:
-                        final_assumptions["gold_allocation"] *= scale
-                    if "crypto_allocation" in final_assumptions:
-                        final_assumptions["crypto_allocation"] *= scale
-            else:
-                final_assumptions["bond_allocation"] = 0
-                final_assumptions["cash_allocation"] = 0
-
-            market_assumptions = MarketAssumptions(**final_assumptions)
+            market_assumptions = _build_scenario_assumptions(base_market_kwargs, target_stock)
             scenario_result = model.monte_carlo_simulation(
                 years=years,
                 simulations=data.simulations,
@@ -691,6 +718,92 @@ def run_analysis():
             scenario_result["description"] = scenario_config["description"]
             scenario_result["stock_allocation"] = target_stock
             scenario_results[scenario_key] = scenario_result
+
+        # Phase 1 planning add-ons
+        life_insurance_estimate = estimate_life_insurance_needs(profile_data)
+        debt_management_plan = build_debt_payoff_strategy(profile_data)
+        college_529_plan = build_529_college_savings_plan(profile_data)
+        pension_lump_sum_analysis = build_pension_lump_sum_analysis(profile_data)
+        estate_tax_gifting_strategy = build_estate_tax_gifting_strategy(profile_data)
+        investment_fee_impact = build_investment_fee_impact_analyzer(profile_data)
+        part_time_retirement_model = build_part_time_retirement_model(profile_data)
+        real_estate_enhancements = build_real_estate_enhancements(profile_data)
+
+        current_year = datetime.now().year
+        retirement_offset = max(0, person1.retirement_date.year - current_year)
+        stress_offsets = generate_sequence_offsets(years, retirement_offset)
+        sequence_stress_simulations = max(100, min(int(data.simulations), 2000))
+        sequence_baseline = scenario_results.get("moderate", {})
+        sequence_case_results = []
+
+        stress_assumptions = _build_scenario_assumptions(base_market_kwargs, 0.60)
+        for case in stress_offsets:
+            start_year = current_year + case["offset"]
+            end_year = min(current_year + years - 1, start_year + 1)
+            crash_market_periods = {
+                "type": "timeline",
+                "periods": [
+                    {
+                        "start_year": start_year,
+                        "end_year": end_year,
+                        "assumptions": {
+                            "stock_return_mean": -0.24,
+                            "stock_return_std": 0.28,
+                            "bond_return_mean": 0.015,
+                            "bond_return_std": 0.10,
+                            "inflation_mean": 0.05,
+                            "inflation_std": 0.02,
+                        },
+                    }
+                ],
+            }
+            stressed = model.monte_carlo_simulation(
+                years=years,
+                simulations=sequence_stress_simulations,
+                assumptions=stress_assumptions,
+                spending_model=data.spending_model,
+                market_periods=crash_market_periods,
+            )
+            baseline_success = float(sequence_baseline.get("success_rate", 0.0))
+            baseline_median = float(sequence_baseline.get("median_final_balance", 0.0))
+            case_success = float(stressed.get("success_rate", 0.0))
+            case_median = float(stressed.get("median_final_balance", 0.0))
+
+            sequence_case_results.append(
+                {
+                    "label": case["label"],
+                    "offset_years": case["offset"],
+                    "crash_window_years": [start_year, end_year],
+                    "success_rate": round(case_success, 4),
+                    "success_rate_delta": round(case_success - baseline_success, 4),
+                    "median_final_balance": round(case_median, 2),
+                    "median_final_balance_delta": round(case_median - baseline_median, 2),
+                }
+            )
+
+        sequence_summary = summarize_sequence_impact(
+            float(sequence_baseline.get("success_rate", 0.0)),
+            float(sequence_baseline.get("median_final_balance", 0.0)),
+            sequence_case_results,
+        )
+        advanced_scenario_analysis = build_advanced_scenario_analysis(scenario_results, years)
+        dynamic_withdrawal_strategies = build_dynamic_withdrawal_strategies(
+            profile_data, scenario_results
+        )
+        life_event_scenario_modeling = build_life_event_scenario_modeling(
+            profile_data, scenario_results
+        )
+        disability_income_protection = build_disability_income_protection(profile_data)
+        long_term_care_analysis = build_long_term_care_analysis(profile_data)
+        business_owner_retirement_planning = build_business_owner_retirement_planning(profile_data)
+        secure_act_beneficiary_ira = build_secure_act_beneficiary_ira(profile_data)
+        annuity_comparison_tool = build_annuity_comparison_tool(profile_data)
+        cashflow_budget_enhancements = build_cashflow_budget_enhancements(profile_data)
+        retirement_lifestyle_planning = build_retirement_lifestyle_planning(profile_data)
+        document_vault_beneficiary_tracking = build_document_vault_beneficiary_tracking(profile_data)
+        advanced_investment_factor_analysis = build_advanced_investment_factor_analysis(profile_data)
+        family_legacy_gifting_goals = build_family_legacy_gifting_goals(profile_data)
+        risk_analysis_dashboard = build_risk_analysis_dashboard(profile_data, scenario_results)
 
         # Prepare response with all scenarios
         response = {
@@ -704,6 +817,40 @@ def run_analysis():
                 for inv in investment_types if inv.get("value", 0) > 0
             ],
             "years_projected": years,
+            "life_insurance_estimate": life_insurance_estimate,
+            "debt_management_plan": debt_management_plan,
+            "college_529_plan": college_529_plan,
+            "pension_lump_sum_analysis": pension_lump_sum_analysis,
+            "estate_tax_gifting_strategy": estate_tax_gifting_strategy,
+            "investment_fee_impact": investment_fee_impact,
+            "part_time_retirement_model": part_time_retirement_model,
+            "real_estate_enhancements": real_estate_enhancements,
+            "advanced_scenario_analysis": advanced_scenario_analysis,
+            "dynamic_withdrawal_strategies": dynamic_withdrawal_strategies,
+            "life_event_scenario_modeling": life_event_scenario_modeling,
+            "disability_income_protection": disability_income_protection,
+            "long_term_care_analysis": long_term_care_analysis,
+            "business_owner_retirement_planning": business_owner_retirement_planning,
+            "secure_act_beneficiary_ira": secure_act_beneficiary_ira,
+            "annuity_comparison_tool": annuity_comparison_tool,
+            "cashflow_budget_enhancements": cashflow_budget_enhancements,
+            "retirement_lifestyle_planning": retirement_lifestyle_planning,
+            "document_vault_beneficiary_tracking": document_vault_beneficiary_tracking,
+            "advanced_investment_factor_analysis": advanced_investment_factor_analysis,
+            "family_legacy_gifting_goals": family_legacy_gifting_goals,
+            "risk_analysis_dashboard": risk_analysis_dashboard,
+            "sequence_risk_visualization": {
+                "simulations": sequence_stress_simulations,
+                "baseline": {
+                    "scenario": "Moderate",
+                    "success_rate": round(float(sequence_baseline.get("success_rate", 0.0)), 4),
+                    "median_final_balance": round(
+                        float(sequence_baseline.get("median_final_balance", 0.0)), 2
+                    ),
+                },
+                "cases": sequence_case_results,
+                "summary": sequence_summary,
+            },
         }
 
         enhanced_audit_logger.log(

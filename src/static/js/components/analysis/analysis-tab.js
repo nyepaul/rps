@@ -979,6 +979,566 @@ function displayResults(container, result, profile, simulations) {
     }
 }
 
+function renderLifeInsuranceAndSequencePanels(planningData) {
+    const life = planningData?.life_insurance_estimate;
+    const debt = planningData?.debt_management_plan;
+    const college = planningData?.college_529_plan;
+    const pension = planningData?.pension_lump_sum_analysis;
+    const estate = planningData?.estate_tax_gifting_strategy;
+    const feeImpact = planningData?.investment_fee_impact;
+    const partTime = planningData?.part_time_retirement_model;
+    const realEstate = planningData?.real_estate_enhancements;
+    const advancedScenarios = planningData?.advanced_scenario_analysis;
+    const dynamicWithdrawal = planningData?.dynamic_withdrawal_strategies;
+    const lifeEvents = planningData?.life_event_scenario_modeling;
+    const disability = planningData?.disability_income_protection;
+    const ltc = planningData?.long_term_care_analysis;
+    const businessOwner = planningData?.business_owner_retirement_planning;
+    const secureAct = planningData?.secure_act_beneficiary_ira;
+    const annuity = planningData?.annuity_comparison_tool;
+    const cashflowEnhancements = planningData?.cashflow_budget_enhancements;
+    const lifestyle = planningData?.retirement_lifestyle_planning;
+    const documentVault = planningData?.document_vault_beneficiary_tracking;
+    const investmentFactors = planningData?.advanced_investment_factor_analysis;
+    const legacyGoals = planningData?.family_legacy_gifting_goals;
+    const riskDashboard = planningData?.risk_analysis_dashboard;
+    const sequence = planningData?.sequence_risk_visualization;
+
+    const lifePanel = life ? `
+        <div class="result-card" style="border-left: 4px solid var(--info-color);">
+            <h3 style="margin: 0 0 10px 0;">Life Insurance Estimate</h3>
+            <p style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 13px;">
+                Directional planning estimate using income, expenses, debt, and dependents.
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Coverage Need</div>
+                    <div style="font-size: 20px; font-weight: 700;">${formatCurrency(life.needs?.total_coverage_need || 0, 0)}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Existing Coverage</div>
+                    <div style="font-size: 20px; font-weight: 700;">${formatCurrency(life.coverage?.existing_coverage || 0, 0)}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Coverage Gap</div>
+                    <div style="font-size: 20px; font-weight: 700; color: ${(life.coverage?.coverage_gap || 0) > 0 ? 'var(--warning-color)' : 'var(--success-color)'};">
+                        ${formatCurrency(life.coverage?.coverage_gap || 0, 0)}
+                    </div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Suggested 20Y Term</div>
+                    <div style="font-size: 20px; font-weight: 700;">${formatCurrency(life.recommendations?.term_20y_coverage || 0, 0)}</div>
+                </div>
+            </div>
+            <p style="margin: 12px 0 0 0; color: var(--text-secondary); font-size: 13px;">
+                ${life.recommendations?.summary || 'No life insurance summary available.'}
+            </p>
+        </div>
+    ` : '';
+
+    const debtRows = (debt?.avalanche_order || []).slice(0, 5).map((item, idx) => `
+        <div style="display: grid; grid-template-columns: 30px 1.4fr 1fr 1fr; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border-color);">
+            <div style="font-size: 12px; color: var(--text-secondary);">${idx + 1}</div>
+            <div style="font-size: 13px; font-weight: 600;">${item.name}</div>
+            <div style="font-size: 13px;">${formatCurrency(item.balance || 0, 0)}</div>
+            <div style="font-size: 13px; color: var(--warning-color);">${formatPercent(item.interest_rate || 0, 2)}</div>
+        </div>
+    `).join('');
+
+    const debtPanel = debt?.available ? `
+        <div class="result-card" style="border-left: 4px solid var(--danger-color);">
+            <h3 style="margin: 0 0 10px 0;">Debt Payoff Strategy</h3>
+            <p style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 13px;">
+                ${debt.summary || 'Debt summary unavailable.'}
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 12px;">
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Total Debt</div>
+                    <div style="font-size: 20px; font-weight: 700;">${formatCurrency(debt.total_debt || 0, 0)}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Blended Interest</div>
+                    <div style="font-size: 20px; font-weight: 700;">${formatPercent(debt.weighted_avg_interest_rate || 0, 2)}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Monthly Payments</div>
+                    <div style="font-size: 20px; font-weight: 700;">${formatCurrency(debt.monthly_debt_payment || 0, 0)}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Estimated Payoff</div>
+                    <div style="font-size: 20px; font-weight: 700;">
+                        ${Number.isFinite(debt.estimated_payoff_months_at_current_payment)
+                            ? `${debt.estimated_payoff_months_at_current_payment} mo`
+                            : 'N/A'}
+                    </div>
+                </div>
+            </div>
+            <div style="font-size: 13px; margin-bottom: 8px;">
+                <strong>Recommended:</strong> ${String(debt.recommended_strategy || '').toUpperCase()}.
+                <span style="color: var(--text-secondary);">${debt.strategy_reason || ''}</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 30px 1.4fr 1fr 1fr; gap: 10px; padding: 6px 0; border-bottom: 2px solid var(--border-color); font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">
+                <div>#</div>
+                <div>Avalanche Order</div>
+                <div>Balance</div>
+                <div>Rate</div>
+            </div>
+            ${debtRows || '<div style="padding: 10px 0; color: var(--text-secondary);">No debts available.</div>'}
+        </div>
+    ` : '';
+
+    const collegeRows = (college?.children || []).map((child, idx) => `
+        <div style="display: grid; grid-template-columns: 1.4fr 0.8fr 1fr 1fr 1fr; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+            <div style="font-size: 13px; font-weight: 600;">${child.name || `Child ${idx + 1}`}</div>
+            <div style="font-size: 13px;">${Number.isFinite(child.years_to_college) ? child.years_to_college : '-'}</div>
+            <div style="font-size: 13px;">${formatCurrency(child.target_funding || 0, 0)}</div>
+            <div style="font-size: 13px;">${formatCurrency(child.existing_529_allocation || 0, 0)}</div>
+            <div style="font-size: 13px; font-weight: 700; color: var(--info-color);">${formatCurrency(child.monthly_savings_needed || 0, 0)}</div>
+        </div>
+    `).join('');
+
+    const collegePanel = college?.available ? `
+        <div class="result-card" style="border-left: 4px solid var(--success-color);">
+            <h3 style="margin: 0 0 10px 0;">529 College Savings Planner</h3>
+            <p style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 13px;">
+                ${college.summary || '529 summary unavailable.'}
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 12px;">
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Current 529 Balance</div>
+                    <div style="font-size: 20px; font-weight: 700;">${formatCurrency(college.household_totals?.existing_529_balance || 0, 0)}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Target Funding</div>
+                    <div style="font-size: 20px; font-weight: 700;">${formatCurrency(college.household_totals?.target_funding_total || 0, 0)}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Monthly Savings Needed</div>
+                    <div style="font-size: 20px; font-weight: 700; color: var(--success-color);">${formatCurrency(college.household_totals?.monthly_savings_needed_total || 0, 0)}</div>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1.4fr 0.8fr 1fr 1fr 1fr; gap: 10px; padding: 6px 0; border-bottom: 2px solid var(--border-color); font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">
+                <div>Child</div>
+                <div>Years</div>
+                <div>Target</div>
+                <div>Current 529</div>
+                <div>Monthly Need</div>
+            </div>
+            ${collegeRows || '<div style="padding: 10px 0; color: var(--text-secondary);">No child rows available.</div>'}
+        </div>
+    ` : '';
+
+    const pensionSensitivityRows = (pension?.sensitivity || []).map(row => `
+        <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border-color); font-size: 13px;">
+            <span>${formatPercent(row.discount_rate || 0, 1)} discount rate</span>
+            <span>${formatCurrency(row.pension_present_value || 0, 0)}</span>
+        </div>
+    `).join('');
+
+    const pensionPanel = pension?.available ? `
+        <div class="result-card" style="border-left: 4px solid var(--accent-color);">
+            <h3 style="margin: 0 0 10px 0;">Pension vs Lump Sum Analyzer</h3>
+            <p style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 13px;">${pension.summary || ''}</p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 12px;">
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Annual Pension</div>
+                    <div style="font-size: 20px; font-weight: 700;">${formatCurrency(pension.annual_pension_income || 0, 0)}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Lump Sum</div>
+                    <div style="font-size: 20px; font-weight: 700;">${formatCurrency(pension.lump_sum_offer || 0, 0)}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Pension PV</div>
+                    <div style="font-size: 20px; font-weight: 700;">${formatCurrency(pension.present_value_of_pension || 0, 0)}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Breakeven</div>
+                    <div style="font-size: 20px; font-weight: 700;">${Number.isFinite(pension.breakeven_years) ? `${pension.breakeven_years} yrs` : 'N/A'}</div>
+                </div>
+            </div>
+            <div style="margin-bottom: 10px; font-size: 13px;">
+                <strong>Recommendation:</strong> ${pension.recommendation === 'lump_sum' ? 'LUMP SUM' : 'PENSION STREAM'}
+            </div>
+            <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px;">Sensitivity</div>
+            ${pensionSensitivityRows || '<div style="color: var(--text-secondary);">No sensitivity data.</div>'}
+        </div>
+    ` : '';
+
+    const estateRecs = (estate?.recommendations || []).map(rec => `
+        <li style="margin-bottom: 6px; color: var(--text-secondary); font-size: 13px;">${rec}</li>
+    `).join('');
+
+    const estatePanel = estate?.available ? `
+        <div class="result-card" style="border-left: 4px solid #7c3aed;">
+            <h3 style="margin: 0 0 10px 0;">Estate Tax & Gifting Strategy</h3>
+            <p style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 13px;">${estate.summary || ''}</p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-bottom: 12px;">
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Net Estate</div>
+                    <div style="font-size: 20px; font-weight: 700;">${formatCurrency(estate.estate?.net_estate || 0, 0)}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Taxable Today</div>
+                    <div style="font-size: 20px; font-weight: 700; color: ${(estate.estate?.taxable_estate_today || 0) > 0 ? 'var(--danger-color)' : 'var(--success-color)'};">
+                        ${formatCurrency(estate.estate?.taxable_estate_today || 0, 0)}
+                    </div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Projected Taxable</div>
+                    <div style="font-size: 20px; font-weight: 700; color: ${(estate.estate?.projected_taxable_estate || 0) > 0 ? 'var(--danger-color)' : 'var(--success-color)'};">
+                        ${formatCurrency(estate.estate?.projected_taxable_estate || 0, 0)}
+                    </div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Annual Gift Capacity</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #7c3aed;">${formatCurrency(estate.gifting?.annual_gifting_capacity || 0, 0)}</div>
+                </div>
+            </div>
+            <ul style="margin: 0; padding-left: 18px;">${estateRecs}</ul>
+        </div>
+    ` : '';
+
+    const feeRows = (feeImpact?.high_fee_accounts || []).map(account => `
+        <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border-color); font-size: 13px;">
+            <div style="font-weight: 600;">${account.name}</div>
+            <div>${formatCurrency(account.value || 0, 0)}</div>
+            <div style="color: var(--warning-color);">${formatPercent(account.fee_rate || 0, 2)}</div>
+        </div>
+    `).join('');
+
+    const feePanel = feeImpact?.available ? `
+        <div class="result-card" style="border-left: 4px solid #0ea5e9;">
+            <h3 style="margin: 0 0 10px 0;">Investment Fee Impact Analyzer</h3>
+            <p style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 13px;">${feeImpact.summary || ''}</p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 12px;">
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Investable Assets</div>
+                    <div style="font-size: 20px; font-weight: 700;">${formatCurrency(feeImpact.total_investable_assets || 0, 0)}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Weighted Fee</div>
+                    <div style="font-size: 20px; font-weight: 700;">${formatPercent(feeImpact.weighted_fee_rate || 0, 2)}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Annual Fee Cost</div>
+                    <div style="font-size: 20px; font-weight: 700;">${formatCurrency(feeImpact.annual_fee_dollars || 0, 0)}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Long-Term Impact</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #0ea5e9;">${formatCurrency(feeImpact.lifetime_fee_impact || 0, 0)}</div>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 10px; padding: 6px 0; border-bottom: 2px solid var(--border-color); font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">
+                <div>Account</div><div>Value</div><div>Fee</div>
+            </div>
+            ${feeRows || '<div style="padding: 8px 0; color: var(--text-secondary);">No account-level fee rows available.</div>'}
+        </div>
+    ` : '';
+
+    const partTimeRows = (partTime?.scenarios || []).map(s => `
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border-color); font-size: 13px;">
+            <div>${formatCurrency(s.part_time_gross_income || 0, 0)}</div>
+            <div>${formatCurrency(s.part_time_net_income || 0, 0)}</div>
+            <div>${formatCurrency(s.remaining_withdrawal_need || 0, 0)}</div>
+        </div>
+    `).join('');
+
+    const partTimePanel = partTime?.available ? `
+        <div class="result-card" style="border-left: 4px solid #f59e0b;">
+            <h3 style="margin: 0 0 10px 0;">Part-Time Work in Retirement Modeling</h3>
+            <p style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 13px;">${partTime.summary || ''}</p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 12px;">
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Annual Expenses</div>
+                    <div style="font-size: 20px; font-weight: 700;">${formatCurrency(partTime.inputs?.annual_expenses || 0, 0)}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Guaranteed Income</div>
+                    <div style="font-size: 20px; font-weight: 700;">${formatCurrency(partTime.inputs?.guaranteed_income || 0, 0)}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Base Withdrawal Need</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${formatCurrency(partTime.inputs?.base_withdrawal_need || 0, 0)}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Recommended PT Income</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${formatCurrency(partTime.recommended_part_time_income?.part_time_gross_income || 0, 0)}</div>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; padding: 6px 0; border-bottom: 2px solid var(--border-color); font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">
+                <div>Gross PT Income</div><div>Net PT Income</div><div>Remaining Withdrawal Need</div>
+            </div>
+            ${partTimeRows}
+        </div>
+    ` : '';
+
+    const realEstateRows = (realEstate?.properties || []).slice(0, 6).map(prop => `
+        <div style="display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border-color); font-size: 13px;">
+            <div style="font-weight: 600;">${prop.name}</div>
+            <div>${formatCurrency(prop.equity || 0, 0)}</div>
+            <div>${formatPercent(prop.cap_rate || 0, 2)}</div>
+            <div>${formatCurrency(prop.projected_equity_10y || 0, 0)}</div>
+        </div>
+    `).join('');
+
+    const realEstatePanel = realEstate?.available ? `
+        <div class="result-card" style="border-left: 4px solid #22c55e;">
+            <h3 style="margin: 0 0 10px 0;">Real Estate Enhancements</h3>
+            <p style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 13px;">${realEstate.summary || ''}</p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 12px;">
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Properties</div>
+                    <div style="font-size: 20px; font-weight: 700;">${realEstate.totals?.property_count || 0}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Current Equity</div>
+                    <div style="font-size: 20px; font-weight: 700;">${formatCurrency(realEstate.totals?.total_equity || 0, 0)}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Projected Equity (10Y)</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #22c55e;">${formatCurrency(realEstate.totals?.projected_total_equity_10y || 0, 0)}</div>
+                </div>
+            </div>
+            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">${realEstate.sale_planning_note || ''}</div>
+            <div style="display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 10px; padding: 6px 0; border-bottom: 2px solid var(--border-color); font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">
+                <div>Property</div><div>Equity</div><div>Cap Rate</div><div>10Y Equity</div>
+            </div>
+            ${realEstateRows || '<div style="padding: 8px 0; color: var(--text-secondary);">No property rows available.</div>'}
+        </div>
+    ` : '';
+
+    const advancedRows = (advancedScenarios?.scenario_table || []).map(row => `
+        <div style="display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border-color); font-size: 13px;">
+            <div style="font-weight: 600;">${row.name}</div>
+            <div>${formatPercent(row.success_rate || 0, 1)}</div>
+            <div>${formatCurrency(row.p10 || 0, 0)}</div>
+            <div style="color: #06b6d4; font-weight: 700;">${row.resilience_score?.toFixed ? row.resilience_score.toFixed(1) : row.resilience_score}</div>
+        </div>
+    `).join('');
+
+    const advancedScenarioPanel = advancedScenarios?.available ? `
+        <div class="result-card" style="border-left: 4px solid #06b6d4;">
+            <h3 style="margin: 0 0 10px 0;">Advanced Scenario Analysis</h3>
+            <p style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 13px;">${advancedScenarios.summary || ''}</p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-bottom: 12px;">
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Top Resilience</div>
+                    <div style="font-size: 18px; font-weight: 700;">${advancedScenarios.leaders?.top_resilience?.scenario || '-'}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Success Spread</div>
+                    <div style="font-size: 18px; font-weight: 700;">${formatPercent(advancedScenarios.dispersion?.success_rate_spread || 0, 1)}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Median Spread</div>
+                    <div style="font-size: 18px; font-weight: 700;">${formatCurrency(advancedScenarios.dispersion?.median_balance_spread || 0, 0)}</div>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr; gap: 10px; padding: 6px 0; border-bottom: 2px solid var(--border-color); font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">
+                <div>Scenario</div><div>Success</div><div>Downside (P10)</div><div>Resilience</div>
+            </div>
+            ${advancedRows || '<div style="padding: 8px 0; color: var(--text-secondary);">No advanced scenario rows available.</div>'}
+        </div>
+    ` : '';
+
+    const withdrawalRows = (dynamicWithdrawal?.strategies || []).map(strategy => `
+        <div style="padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+            <div style="display: flex; justify-content: space-between; gap: 10px; align-items: baseline;">
+                <div style="font-weight: 700; font-size: 13px;">${strategy.name}</div>
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    ${formatPercent(strategy.initial_withdrawal_rate || 0, 2)} (${formatCurrency(strategy.initial_withdrawal_amount || 0, 0)})
+                </div>
+            </div>
+            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">${strategy.rule || ''}</div>
+        </div>
+    `).join('');
+
+    const dynamicWithdrawalPanel = dynamicWithdrawal?.available ? `
+        <div class="result-card" style="border-left: 4px solid #ef4444;">
+            <h3 style="margin: 0 0 10px 0;">Dynamic Withdrawal Strategies</h3>
+            <p style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 13px;">${dynamicWithdrawal.summary || ''}</p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-bottom: 12px;">
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Base Withdrawal Rate</div>
+                    <div style="font-size: 20px; font-weight: 700;">${formatPercent(dynamicWithdrawal.inputs?.base_withdrawal_rate || 0, 2)}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Moderate Success</div>
+                    <div style="font-size: 20px; font-weight: 700;">${formatPercent(dynamicWithdrawal.inputs?.moderate_success_rate || 0, 1)}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Recommended</div>
+                    <div style="font-size: 18px; font-weight: 700; color: #ef4444;">${dynamicWithdrawal.recommended_strategy || '-'}</div>
+                </div>
+            </div>
+            ${withdrawalRows || '<div style="color: var(--text-secondary);">No withdrawal strategies available.</div>'}
+        </div>
+    ` : '';
+
+    const lifeEventRows = (lifeEvents?.events || []).map(item => `
+        <div style="padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+            <div style="display: flex; justify-content: space-between; gap: 10px;">
+                <div style="font-weight: 700; font-size: 13px;">${item.event}</div>
+                <div style="font-size: 12px;">
+                    ${formatPercent(item.projected_success_rate || 0, 1)}
+                    <span style="color: ${(item.success_rate_delta || 0) < 0 ? 'var(--danger-color)' : 'var(--success-color)'};">
+                        (${(item.success_rate_delta || 0) >= 0 ? '+' : ''}${formatPercent(item.success_rate_delta || 0, 1)})
+                    </span>
+                </div>
+            </div>
+            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 3px;">${item.details || ''}</div>
+        </div>
+    `).join('');
+
+    const lifeEventsPanel = lifeEvents?.available ? `
+        <div class="result-card" style="border-left: 4px solid #8b5cf6;">
+            <h3 style="margin: 0 0 10px 0;">Life Event Scenario Modeling</h3>
+            <p style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 13px;">${lifeEvents.summary || ''}</p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-bottom: 12px;">
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Baseline Success</div>
+                    <div style="font-size: 20px; font-weight: 700;">${formatPercent(lifeEvents.baseline?.success_rate || 0, 1)}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Baseline Median</div>
+                    <div style="font-size: 20px; font-weight: 700;">${formatCurrency(lifeEvents.baseline?.median_final_balance || 0, 0)}</div>
+                </div>
+            </div>
+            ${lifeEventRows || '<div style="color: var(--text-secondary);">No life-event scenarios available.</div>'}
+        </div>
+    ` : '';
+
+    const extendedCards = [
+        {
+            title: 'Disability Income Protection',
+            data: disability,
+            accent: '#16a34a',
+            metric: disability?.recommended_monthly_benefit ? `Recommended benefit: ${formatCurrency(disability.recommended_monthly_benefit, 0)}/mo` : ''
+        },
+        {
+            title: 'Long-Term Care Analysis',
+            data: ltc,
+            accent: '#0ea5e9',
+            metric: ltc?.projected_total_cost ? `Projected LTC total: ${formatCurrency(ltc.projected_total_cost, 0)}` : ''
+        },
+        {
+            title: 'Business Owner Retirement Planning',
+            data: businessOwner,
+            accent: '#f59e0b',
+            metric: businessOwner?.business_value ? `Business value: ${formatCurrency(businessOwner.business_value, 0)}` : ''
+        },
+        {
+            title: 'SECURE Act Beneficiary IRA Rules',
+            data: secureAct,
+            accent: '#7c3aed',
+            metric: secureAct?.default_rule_non_spouse_years ? `Non-spouse default: ${secureAct.default_rule_non_spouse_years}-year rule` : ''
+        },
+        {
+            title: 'Annuity Comparison Tool',
+            data: annuity,
+            accent: '#2563eb',
+            metric: annuity?.fixed_annuity_income ? `Fixed annuity est.: ${formatCurrency(annuity.fixed_annuity_income, 0)}/yr` : ''
+        },
+        {
+            title: 'Cashflow Budget Enhancements',
+            data: cashflowEnhancements,
+            accent: '#0891b2',
+            metric: cashflowEnhancements?.annual_surplus !== undefined ? `Annual surplus: ${formatCurrency(cashflowEnhancements.annual_surplus, 0)}` : ''
+        },
+        {
+            title: 'Retirement Lifestyle Planning',
+            data: lifestyle,
+            accent: '#d97706',
+            metric: lifestyle?.lean_lifestyle_budget ? `Lean budget: ${formatCurrency(lifestyle.lean_lifestyle_budget, 0)}` : ''
+        },
+        {
+            title: 'Document Vault & Beneficiary Tracking',
+            data: documentVault,
+            accent: '#4f46e5',
+            metric: documentVault?.document_completion_ratio !== undefined ? `Doc completion: ${formatPercent(documentVault.document_completion_ratio, 1)}` : ''
+        },
+        {
+            title: 'Advanced Investment Factor Analysis',
+            data: investmentFactors,
+            accent: '#0284c7',
+            metric: investmentFactors?.liquidity_ratio !== undefined ? `Liquidity ratio: ${formatPercent(investmentFactors.liquidity_ratio, 1)}` : ''
+        },
+        {
+            title: 'Family Legacy & Gifting Goals',
+            data: legacyGoals,
+            accent: '#9333ea',
+            metric: legacyGoals?.annual_gift_capacity ? `Annual gift capacity: ${formatCurrency(legacyGoals.annual_gift_capacity, 0)}` : ''
+        },
+        {
+            title: 'Risk Analysis Dashboard',
+            data: riskDashboard,
+            accent: '#dc2626',
+            metric: riskDashboard?.scores?.overall_risk_score !== undefined ? `Overall risk score: ${riskDashboard.scores.overall_risk_score}` : ''
+        }
+    ].filter(card => card.data?.available);
+
+    const extendedPlanningPanel = extendedCards.length > 0 ? `
+        <div class="result-card" style="border-left: 4px solid #334155;">
+            <h3 style="margin: 0 0 10px 0;">Additional Planning Modules</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px;">
+                ${extendedCards.map(card => `
+                    <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-left: 3px solid ${card.accent}; border-radius: 8px; padding: 10px;">
+                        <div style="font-size: 13px; font-weight: 700; margin-bottom: 4px;">${card.title}</div>
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">${card.data.summary || ''}</div>
+                        <div style="font-size: 12px; font-weight: 600; color: ${card.accent};">${card.metric || ''}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    ` : '';
+
+    const sequenceRows = (sequence?.cases || []).map(caseResult => `
+        <div style="display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+            <div>
+                <div style="font-weight: 600;">${caseResult.label}</div>
+                <div style="font-size: 11px; color: var(--text-secondary);">
+                    Crash window: ${caseResult.crash_window_years?.[0] || '-'}-${caseResult.crash_window_years?.[1] || '-'}
+                </div>
+            </div>
+            <div style="font-size: 13px;">
+                ${formatPercent(caseResult.success_rate, 1)}
+                <span style="color: ${(caseResult.success_rate_delta || 0) < 0 ? 'var(--danger-color)' : 'var(--success-color)'};">
+                    (${(caseResult.success_rate_delta || 0) >= 0 ? '+' : ''}${formatPercent(caseResult.success_rate_delta || 0, 1)})
+                </span>
+            </div>
+            <div style="font-size: 13px;">
+                ${formatCurrency(caseResult.median_final_balance || 0, 0)}
+                <span style="color: ${(caseResult.median_final_balance_delta || 0) < 0 ? 'var(--danger-color)' : 'var(--success-color)'};">
+                    (${(caseResult.median_final_balance_delta || 0) >= 0 ? '+' : ''}${formatCurrency(caseResult.median_final_balance_delta || 0, 0)})
+                </span>
+            </div>
+        </div>
+    `).join('');
+
+    const sequencePanel = sequence ? `
+        <div class="result-card" style="border-left: 4px solid var(--warning-color);">
+            <h3 style="margin: 0 0 10px 0;">Sequence Risk Stress Test</h3>
+            <p style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 13px;">
+                Moderate baseline: <strong>${formatPercent(sequence.baseline?.success_rate || 0, 1)}</strong> success,
+                median <strong>${formatCurrency(sequence.baseline?.median_final_balance || 0, 0)}</strong>.
+                Stress runs use ${(sequence.simulations || 0).toLocaleString()} simulations.
+            </p>
+            <div style="display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 10px; padding: 6px 0; border-bottom: 2px solid var(--border-color); font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">
+                <div>Case</div>
+                <div>Success Rate (Delta)</div>
+                <div>Median Balance (Delta)</div>
+            </div>
+            ${sequenceRows || '<div style="padding: 10px 0; color: var(--text-secondary);">No stress cases available.</div>'}
+            <p style="margin: 10px 0 0 0; color: var(--text-secondary); font-size: 13px;">
+                ${sequence.summary?.summary || 'No sequence-risk summary available.'}
+            </p>
+        </div>
+    ` : '';
+
+    return `${lifePanel}${debtPanel}${collegePanel}${pensionPanel}${estatePanel}${feePanel}${partTimePanel}${realEstatePanel}${advancedScenarioPanel}${dynamicWithdrawalPanel}${lifeEventsPanel}${extendedPlanningPanel}${sequencePanel}`;
+}
+
 function displaySingleScenarioResults(container, data, profile, simulations) {
     // Calculate success color
     const successRate = data.success_rate || 0;
@@ -989,6 +1549,9 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
     // Get the analysis result data (might be wrapped in lastAnalysisResult)
     const totalAssets = lastAnalysisResult?.total_assets || data.total_assets || 0;
     const yearsProjected = lastAnalysisResult?.years_projected || data.years_projected || 0;
+
+    const planningData = lastAnalysisResult || data || {};
+    const planningPanelsHtml = renderLifeInsuranceAndSequencePanels(planningData);
 
     container.innerHTML = `
         <div class="result-card">
@@ -1095,6 +1658,8 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
                 </div>
             </div>
         </div>
+
+        ${planningPanelsHtml}
 
         <!-- Timeline Chart -->
         <div class="result-card">
@@ -1211,6 +1776,8 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
     // Check if any scenario has warnings
     const anyWarnings = Object.values(scenarios).some(s => s.warnings && s.warnings.length > 0);
     const allWarnings = anyWarnings ? Object.values(scenarios).flatMap(s => s.warnings || []).filter((v, i, a) => a.indexOf(v) === i) : [];
+
+    const planningPanelsHtml = renderLifeInsuranceAndSequencePanels(data);
 
     container.innerHTML = `
         <div class="result-card">
@@ -1402,6 +1969,8 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
                 </button>
             </div>
         </div>
+
+        ${planningPanelsHtml}
     `;
 
     // Wire up CSP-safe navigation handlers
