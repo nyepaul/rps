@@ -73,3 +73,16 @@ def test_tax_torpedo_analysis_has_threshold_context():
     assert "thresholds" in torpedo
     assert "band" in torpedo
     assert "taxable_ss_pct" in torpedo
+
+
+def test_roth_conversion_includes_ladder_projection():
+    service = TaxOptimizationService(filing_status="mfj", state="CA", tax_year=2026)
+    result = service.analyze_roth_conversion(
+        current_taxable_income=120000,
+        traditional_balance=400000,
+    )
+    assert "conversion_ladder_5y" in result
+    ladder = result["conversion_ladder_5y"]
+    assert "rows" in ladder
+    assert len(ladder["rows"]) >= 1
+    assert ladder["total_converted"] > 0

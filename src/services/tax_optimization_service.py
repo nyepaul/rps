@@ -755,6 +755,11 @@ class TaxOptimizationService:
         optimal = self.roth_optimizer.find_optimal_conversion(
             current_taxable_income, traditional_balance
         )
+        ladder_5y = self.build_roth_conversion_ladder(
+            current_taxable_income=current_taxable_income,
+            traditional_balance=traditional_balance,
+            years=5,
+        )
 
         return {
             "current_taxable_income": current_taxable_income,
@@ -762,7 +767,74 @@ class TaxOptimizationService:
             "bracket_space": bracket_space,
             "scenarios": scenarios,
             "optimal_24pct": optimal,
+            "conversion_ladder_5y": ladder_5y,
             "recommendation": self._get_roth_recommendation(optimal, bracket_space),
+        }
+
+    def build_roth_conversion_ladder(
+        self,
+        current_taxable_income: float,
+        traditional_balance: float,
+        years: int = 5,
+        annual_growth: float = 0.05,
+        max_rate: float = 0.24,
+    ) -> Dict:
+        """Construct a multi-year conversion ladder using the target marginal-rate cap."""
+        rows = []
+        balance = max(0.0, float(traditional_balance))
+        total_converted = 0.0
+        total_conversion_tax = 0.0
+        total_irmaa = 0.0
+
+        for year in range(1, years + 1):
+            if balance <= 0:
+                break
+
+            optimal = self.roth_optimizer.find_optimal_conversion(
+                current_taxable_income, balance, max_rate=max_rate
+            )
+            amount = max(0.0, min(balance, float(optimal.get("conversion_amount", 0.0))))
+            if amount <= 0:
+                break
+
+            analysis = self.roth_optimizer.analyze_conversion_amount(
+                current_taxable_income, balance, amount
+            )
+            end_balance = max(0.0, (balance - amount) * (1 + annual_growth))
+
+            rows.append(
+                {
+                    "year": year,
+                    "start_balance": round(balance, 2),
+                    "conversion_amount": round(amount, 2),
+                    "conversion_tax": round(float(analysis["conversion_tax"]), 2),
+                    "irmaa_increase": round(float(analysis["irmaa_increase"]), 2),
+                    "total_cost": round(float(analysis["total_cost"]), 2),
+                    "new_marginal_rate": analysis["new_marginal_rate"],
+                    "end_balance": round(end_balance, 2),
+                }
+            )
+
+            total_converted += amount
+            total_conversion_tax += float(analysis["conversion_tax"])
+            total_irmaa += float(analysis["irmaa_increase"])
+            balance = end_balance
+
+        return {
+            "years_modeled": years,
+            "annual_growth_assumption": annual_growth,
+            "max_marginal_rate_target": max_rate,
+            "rows": rows,
+            "total_converted": round(total_converted, 2),
+            "total_conversion_tax": round(total_conversion_tax, 2),
+            "total_irmaa_increase": round(total_irmaa, 2),
+            "total_cost": round(total_conversion_tax + total_irmaa, 2),
+            "ending_balance": round(balance, 2),
+            "stopped_reason": (
+                "insufficient_bracket_space_or_balance"
+                if len(rows) < years
+                else "modeled_years_completed"
+            ),
         }
 
     def analyze_social_security(

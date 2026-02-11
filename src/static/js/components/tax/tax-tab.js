@@ -412,6 +412,26 @@ function renderTaxAnalysis(
                                 ` : ''}
                             </div>
                         </details>
+                        ${roth_conversion.conversion_ladder_5y?.rows?.length ? `
+                            <details style="cursor: pointer; margin-top: 6px;">
+                                <summary style="font-size: 12px; font-weight: 600; padding: 4px 0; user-select: none;">🪜 5-Year Conversion Ladder</summary>
+                                <div style="padding: 8px; background: rgba(255,255,255,0.1); border-radius: 6px; margin-top: 6px; font-size: 10px;">
+                                    <div style="margin-bottom: 6px; opacity: 0.85;">
+                                        Total Converted ${formatCurrency(roth_conversion.conversion_ladder_5y.total_converted, 0)},
+                                        Total Cost ${formatCurrency(roth_conversion.conversion_ladder_5y.total_cost, 0)},
+                                        Ending Balance ${formatCurrency(roth_conversion.conversion_ladder_5y.ending_balance, 0)}
+                                    </div>
+                                    ${roth_conversion.conversion_ladder_5y.rows.map((row) => `
+                                        <div style="display: grid; grid-template-columns: 50px 1fr 1fr 1fr; gap: 6px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.08);">
+                                            <span>Y${row.year}</span>
+                                            <span>Convert ${formatCurrency(row.conversion_amount, 0)}</span>
+                                            <span>Tax ${formatCurrency(row.conversion_tax, 0)}</span>
+                                            <span>End ${formatCurrency(row.end_balance, 0)}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </details>
+                        ` : ''}
                     </div>
                     ` : ''}
 
