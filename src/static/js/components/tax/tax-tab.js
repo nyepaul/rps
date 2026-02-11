@@ -70,6 +70,14 @@ const TAX_GLOSSARY = {
         title: 'Lifetime Savings',
         definition: 'Estimated long-term tax savings from converting now versus deferring and paying tax later.'
     },
+    primary_optimal_age: {
+        title: 'Primary Optimal Age',
+        definition: 'Claiming age that produces the strongest modeled lifetime outcome for the primary person under current assumptions.'
+    },
+    survivor_income_70: {
+        title: 'Survivor Income (70 Strategy)',
+        definition: 'Estimated survivor monthly Social Security income when the primary claiming strategy is delayed to age 70.'
+    },
     rmd: {
         title: 'RMD (Required Minimum Distribution)',
         definition: 'Mandatory annual withdrawals from certain retirement accounts, typically starting at age 73.'
@@ -451,13 +459,13 @@ function renderTaxAnalysis(
                             <div style="background: rgba(255,255,255,0.08); border-radius: 6px; padding: 8px; margin-bottom: 8px; font-size: 10px;">
                                 <div>WEP PIA: ${formatCurrency(social_security_analysis.adjustments.wep?.pia_before_wep || 0, 0)} → ${formatCurrency(social_security_analysis.adjustments.wep?.pia_after_wep || 0, 0)}</div>
                                 <div>GPO Offset (Monthly): ${formatCurrency(social_security_analysis.adjustments.gpo_offset_monthly || 0, 0)}</div>
-                                <div>Annual Earned Income: ${formatCurrency(social_security_analysis.adjustments.annual_earned_income || 0, 0)}</div>
+                                <div>${g('Annual Earned Income', 'annual_earned_income')}: ${formatCurrency(social_security_analysis.adjustments.annual_earned_income || 0, 0)}</div>
                             </div>
                         ` : ''}
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; margin-bottom: 8px;">
                             ${social_security_analysis.primary?.optimal ? `
                                 <div style="background: rgba(255,255,255,0.08); border-radius: 6px; padding: 8px;">
-                                    <div style="font-size: 10px; opacity: 0.7;" title="Claiming age that maximizes modeled lifetime benefit for the primary person.">Primary Optimal Age</div>
+                                    <div style="font-size: 10px; opacity: 0.7;" title="Claiming age that maximizes modeled lifetime benefit for the primary person.">${g('Primary Optimal Age', 'primary_optimal_age')}</div>
                                     <div style="font-size: 16px; font-weight: 700;">${social_security_analysis.primary.optimal.claiming_age}</div>
                                     <div style="font-size: 11px; opacity: 0.85;" title="Estimated monthly benefit at this claiming age.">${formatCurrency(social_security_analysis.primary.optimal.monthly_benefit, 0)}/mo</div>
                                 </div>
@@ -470,7 +478,7 @@ function renderTaxAnalysis(
                                 </div>
                             ` : ''}
                             <div style="background: rgba(34,197,94,0.14); border: 1px solid rgba(34,197,94,0.35); border-radius: 6px; padding: 8px;">
-                                <div style="font-size: 10px; opacity: 0.7;" title="Estimated survivor monthly Social Security income assuming a delay-to-70 strategy.">Survivor Income (70 Strategy)</div>
+                                <div style="font-size: 10px; opacity: 0.7;" title="Estimated survivor monthly Social Security income assuming a delay-to-70 strategy.">${g('Survivor Income (70 Strategy)', 'survivor_income_70')}</div>
                                 <div style="font-size: 16px; font-weight: 700;">${formatCurrency(social_security_analysis.household.survivor_monthly_estimate_at_70_strategy, 0)}/mo</div>
                             </div>
                         </div>
@@ -1736,8 +1744,8 @@ function showSocialSecurityStrategyExplanation() {
                     <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
                         <h3 style="margin: 0 0 12px 0; font-size: 14px; color: var(--success-color);">Outputs:</h3>
                         <ul style="margin: 0; padding-left: 20px; font-size: 13px;">
-                            <li><strong>Primary Optimal Age</strong>: Claiming age with strongest modeled lifetime outcome for primary.</li>
-                            <li><strong>Survivor Income (70 Strategy)</strong>: Estimated survivor monthly benefit when delay-to-70 assumptions are applied.</li>
+                            <li>${glossaryTerm('Primary Optimal Age', 'primary_optimal_age')}: Claiming age with strongest modeled lifetime outcome for primary.</li>
+                            <li>${glossaryTerm('Survivor Income (70 Strategy)', 'survivor_income_70')}: Estimated survivor monthly benefit when delay-to-70 assumptions are applied.</li>
                         </ul>
                     </div>
 
