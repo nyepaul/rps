@@ -150,8 +150,11 @@ def test_decrypt_with_tampered_ciphertext(encryption_service):
 
     ciphertext, iv = encryption_service.encrypt(plaintext)
 
-    # Tamper with ciphertext
-    tampered = ciphertext[:-1] + "X"
+    # Tamper with decoded ciphertext bytes so auth tag verification always fails
+    import base64
+    ciphertext_bytes = bytearray(base64.b64decode(ciphertext))
+    ciphertext_bytes[0] ^= 0x01
+    tampered = base64.b64encode(bytes(ciphertext_bytes)).decode("utf-8")
 
     # Should raise exception
     with pytest.raises(Exception):
