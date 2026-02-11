@@ -211,6 +211,38 @@ class TestJavaScriptCriticalIssues:
             const_canvas_count <= 1
         ), f"Found {const_canvas_count} 'const canvas' declarations (should be 1)"
 
+    def test_main_tab_restore_logic_present(self):
+        """Ensure refresh/back restores the active tab instead of defaulting prematurely."""
+        main_js = JS_BASE_DIR / "main.js"
+        if not main_js.exists():
+            pytest.skip("main.js not found")
+
+        content = main_js.read_text()
+        assert "function resolveInitialTab()" in content
+        assert "window.location.hash" in content
+        assert "window.history.state?.tab" in content
+        assert "STORAGE_KEYS.LAST_TAB" in content
+        assert "window.addEventListener('popstate'" in content
+        assert "window.history.pushState({ tab: tabName }" in content
+        assert "localStorage.setItem(STORAGE_KEYS.LAST_TAB, tabName)" in content
+
+    def test_glossary_utility_used_in_key_tabs(self):
+        """Ensure key tabs use the shared glossary utility and wiring."""
+        targets = [
+            JS_BASE_DIR / "components" / "tax" / "tax-tab.js",
+            JS_BASE_DIR / "components" / "dashboard" / "dashboard-tab.js",
+            JS_BASE_DIR / "components" / "withdrawal" / "withdrawal-tab.js",
+            JS_BASE_DIR / "components" / "comparison" / "comparison-tab.js",
+            JS_BASE_DIR / "components" / "financial-data" / "financial-data-tab.js",
+        ]
+
+        for target in targets:
+            if not target.exists():
+                pytest.skip(f"{target} not found")
+            content = target.read_text()
+            assert "../../utils/glossary.js" in content, f"{target.name} missing glossary util import"
+            assert "wireGlossaryTermClicks as wireGlossaryTerms" in content, f"{target.name} missing glossary wiring alias"
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
