@@ -183,7 +183,6 @@ def test_db(test_db_dir, request):
                 content TEXT NOT NULL,
                 content_iv TEXT,
                 created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL,
                 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
                 FOREIGN KEY (profile_id) REFERENCES profiles (id) ON DELETE CASCADE
             )

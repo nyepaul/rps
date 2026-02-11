@@ -1,5 +1,5 @@
 {
-    "version": "3.9.235",
+    "version": "3.9.236",
     "release_date": "2026-02-10",
-    "release_notes": "Fix Scenario Comparison legacy metrics/timeline compatibility for saved scenarios"
+    "release_notes": "Fix event tracking CSRF 400s and demo reseed profile table compatibility"
 }

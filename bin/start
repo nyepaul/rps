@@ -1,58 +1,42 @@
 #!/bin/bash
+set -euo pipefail
 
 echo "==================================================="
-echo "  Retirement Planning System - Starting...       "
+echo "  Retirement Planning System - Starting...         "
 echo "==================================================="
 echo ""
 
-# Get the project root directory
 PROJECT_ROOT="$(dirname "$0")/.."
 cd "$PROJECT_ROOT"
 
-# Check if Python 3 is installed
 if ! command -v python3 &> /dev/null; then
     echo "ERROR: Python 3 is not installed"
-    echo "Please install Python 3 and try again"
     exit 1
 fi
 
-# Create virtual environment if it doesn't exist
 if [ ! -d "src/venv" ]; then
     echo "Creating virtual environment..."
     python3 -m venv src/venv
     echo "✓ Virtual environment created"
 fi
 
-# Install/upgrade dependencies using venv's pip directly
 echo "Installing dependencies..."
 ./src/venv/bin/pip install --upgrade pip
 ./src/venv/bin/pip install -r src/requirements.txt
 
-# Create data directory
-mkdir -p data
+mkdir -p data logs
 
-echo "✓ Dependencies installed"
-echo ""
-echo "==================================================="
-echo "  Starting Flask Server...                        "
-echo "==================================================="
-echo ""
-echo "  Access the application at:"
-echo "  http://0.0.0.0:5137"
-echo ""
-echo "  Press Ctrl+C to stop"
-echo ""
-echo "==================================================="
-echo ""
+# Keep local behavior aligned with production unless explicitly overridden.
+export PYTHONPATH="$PWD:${PYTHONPATH:-}"
+export FLASK_ENV="${FLASK_ENV:-production}"
+export WEB_CONCURRENCY="${WEB_CONCURRENCY:-4}"
+export GUNICORN_TIMEOUT="${GUNICORN_TIMEOUT:-120}"
 
-# Create logs directory
-mkdir -p logs
+echo "Runtime mode: FLASK_ENV=$FLASK_ENV"
 
-# Check if production service is running
 if systemctl is-active --quiet rps 2>/dev/null; then
-    echo "⚠️  WARNING: Production service 'rps' is running on port 5137"
-    echo "   Stop it first with: sudo systemctl stop rps"
-    echo ""
+    echo "WARNING: Production service 'rps' is running on port 5137"
+    echo "Stop it first with: sudo systemctl stop rps"
     read -p "Stop production service and continue? [y/N] " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -64,27 +48,27 @@ if systemctl is-active --quiet rps 2>/dev/null; then
     fi
 fi
 
-# Kill any existing dev server on port 5137
+pkill -f "gunicorn.*src.wsgi:app" 2>/dev/null || true
 pkill -f "python src/app.py" 2>/dev/null || true
 pkill -f "flask run" 2>/dev/null || true
 
-# Run the application in the background using Flask CLI with reloader disabled
-# This ensures proper background execution (debug reloader spawns child processes that don't detach)
-export PYTHONPATH="$PWD:$PYTHONPATH"
-export FLASK_APP=src/app.py
-export FLASK_ENV=development
-
-nohup ./src/venv/bin/flask run --host=0.0.0.0 --port=5137 --no-reload > logs/dev-server.log 2>&1 &
+echo ""
+echo "Starting Gunicorn (prod-like runtime) on :5137"
+nohup ./src/venv/bin/gunicorn \
+    --workers "$WEB_CONCURRENCY" \
+    --bind "0.0.0.0:5137" \
+    --timeout "$GUNICORN_TIMEOUT" \
+    --access-logfile logs/gunicorn-access.log \
+    --error-logfile logs/gunicorn-error.log \
+    src.wsgi:app > logs/dev-server.log 2>&1 &
 PID=$!
 
-# Wait a moment and check if it started
 sleep 2
-if kill -0 $PID 2>/dev/null; then
+if kill -0 "$PID" 2>/dev/null; then
     echo "✓ Server started (PID: $PID)"
-    echo "  Logs: logs/dev-server.log"
-    echo "  Debug mode: ON (without auto-reload)"
-    echo ""
-    echo "  To stop: pkill -f 'flask run'"
+    echo "  URL: http://0.0.0.0:5137"
+    echo "  Logs: logs/dev-server.log, logs/gunicorn-*.log"
+    echo "  Stop: pkill -f 'gunicorn.*src.wsgi:app'"
 else
     echo "✗ Server failed to start. Check logs/dev-server.log"
     cat logs/dev-server.log

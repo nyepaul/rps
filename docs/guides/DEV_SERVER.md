@@ -10,7 +10,7 @@ RPS uses a two-port architecture:
 | 8087 | Apache | Reverse proxy (adds security headers, serves static files) |
 
 In production, gunicorn runs on 5137 via systemd (`rps.service`).
-In development, Flask dev server runs on 5137 via `bin/start`.
+In development, `bin/start` now also uses gunicorn on 5137 by default.
 
 Apache always listens on 8087 and proxies requests to 5137.
 
@@ -23,13 +23,13 @@ Apache always listens on 8087 and proxies requests to 5137.
 This will:
 - Create virtual environment if needed
 - Install dependencies
-- Start Flask in the background on port 5137
+- Start Gunicorn in the background on port 5137 (prod-like runtime)
 - Log output to `logs/dev-server.log`
 
 ## Stopping Development Server
 
 ```bash
-pkill -f 'python src/app.py'
+pkill -f 'gunicorn.*src.wsgi:app'
 ```
 
 ## Starting/Stopping Apache (port 8087)
@@ -44,7 +44,7 @@ sudo systemctl status apache2  # Check status
 
 | Component | Development | Production |
 |-----------|-------------|------------|
-| Backend | `./bin/start` (Flask dev server) | `systemctl start rps` (gunicorn) |
+| Backend | `./bin/start` (gunicorn, prod-like) | `systemctl start rps` (gunicorn) |
 | Frontend proxy | Apache on 8087 | Apache on 8087 |
 | Logs | `logs/dev-server.log` | `/var/www/rps.pan2.app/logs/` |
 
@@ -59,7 +59,7 @@ lsof -i :5137
 sudo systemctl stop rps
 
 # If it's a stale dev server
-pkill -f 'python src/app.py'
+pkill -f 'gunicorn.*src.wsgi:app'
 ```
 
 **Note:** `./bin/start` will automatically detect if the production service is running and prompt you to stop it.

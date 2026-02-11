@@ -3,10 +3,11 @@
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from src.services.enhanced_audit_logger import enhanced_audit_logger
-from src.extensions import limiter
+from src.extensions import limiter, csrf
 from datetime import datetime
 
 events_bp = Blueprint("events", __name__, url_prefix="/api/events")
+csrf.exempt(events_bp)
 
 
 @events_bp.route("/click", methods=["POST"])

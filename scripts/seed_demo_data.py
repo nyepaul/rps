@@ -526,6 +526,13 @@ def seed_demo_data():
             {"name": "Demo Dudeman", "data": dudeman_data}
         ]
 
+        # Resolve profile table name for schema compatibility
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('profiles','profile') ORDER BY CASE name WHEN 'profiles' THEN 0 ELSE 1 END LIMIT 1"
+        )
+        profile_table_row = cursor.fetchone()
+        profile_table = profile_table_row["name"] if profile_table_row else "profiles"
+
         # ============================================
         # CLEAR EXISTING DEMO DATA
         # ============================================
@@ -533,7 +540,7 @@ def seed_demo_data():
         cursor.execute("DELETE FROM conversations WHERE user_id = ?", (user_id,))
         cursor.execute("DELETE FROM action_items WHERE user_id = ?", (user_id,))
         cursor.execute("DELETE FROM scenarios WHERE user_id = ?", (user_id,))
-        cursor.execute("DELETE FROM profile WHERE user_id = ?", (user_id,))
+        cursor.execute(f"DELETE FROM {profile_table} WHERE user_id = ?", (user_id,))
 
         # ============================================
         # CREATE PROFILES (UNENCRYPTED - plain JSON)
@@ -542,8 +549,8 @@ def seed_demo_data():
         for p in profiles:
             print(f"  Creating profile: {p['name']}")
             # Store as plain JSON - NO ENCRYPTION
-            cursor.execute("""
-                INSERT INTO profile (user_id, name, birth_date, retirement_date, data, data_iv, created_at, updated_at)
+            cursor.execute(f"""
+                INSERT INTO {profile_table} (user_id, name, birth_date, retirement_date, data, data_iv, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, NULL, ?, ?)
             """, (
                 user_id,

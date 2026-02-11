@@ -2,8 +2,11 @@
 
 from datetime import datetime
 import json
+import logging
 from src.database import connection
 from src.services.encryption_service import encrypt, decrypt
+
+logger = logging.getLogger(__name__)
 
 
 class Conversation:
@@ -18,7 +21,7 @@ class Conversation:
         content=None,
         content_iv=None,
         created_at=None,
-        updated_at=None,
+        **kwargs,
     ):
         self.id = id
         self.user_id = user_id
@@ -28,7 +31,6 @@ class Conversation:
         self.content_iv = content_iv  # IV for content
         self._decrypted_content = None
         self.created_at = created_at or datetime.now().isoformat()
-        self.updated_at = updated_at or datetime.now().isoformat()
 
     @staticmethod
     def get_by_id(conversation_id: int, user_id: int):
@@ -76,8 +78,8 @@ class Conversation:
             if self.id is None:
                 cursor.execute(
                     """
-                    INSERT INTO conversations (user_id, profile_id, role, content, content_iv, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO conversations (user_id, profile_id, role, content, content_iv, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?)
                 """,
                     (
                         self.user_id,
@@ -86,19 +88,17 @@ class Conversation:
                         self.content,
                         self.content_iv,
                         self.created_at,
-                        self.updated_at,
                     ),
                 )
                 self.id = cursor.lastrowid
             else:
-                self.updated_at = datetime.now().isoformat()
                 cursor.execute(
                     """
                     UPDATE conversations
-                    SET role = ?, content = ?, content_iv = ?, updated_at = ?
+                    SET role = ?, content = ?, content_iv = ?
                     WHERE id = ? AND user_id = ?
                 """,
-                    (self.role, self.content, self.content_iv, self.updated_at, self.id, self.user_id),
+                    (self.role, self.content, self.content_iv, self.id, self.user_id),
                 )
         return self
 
@@ -127,18 +127,19 @@ class Conversation:
         if self.content and self.content_iv:
             try:
                 content_decrypted = decrypt(self.content, self.content_iv)
-            except (ValueError, TypeError, json.JSONDecodeError):
-                # Fallback to plain JSON (if content might be JSON)
+            except (ValueError, TypeError, json.JSONDecodeError) as e:
+                logger.warning("Conversation %s: decryption failed (%s), trying fallback", self.id, e)
+                # Fallback: content may be plain text stored with an IV
                 if isinstance(self.content, str):
                     try:
                         content_decrypted = json.loads(self.content)
                     except json.JSONDecodeError:
-                        pass
+                        content_decrypted = self.content
         elif isinstance(self.content, str):
             try:
                 content_decrypted = json.loads(self.content)
             except json.JSONDecodeError:
-                pass
+                content_decrypted = self.content
         else:
             content_decrypted = self.content
 
@@ -149,5 +150,4 @@ class Conversation:
             "role": self.role,
             "content": content_decrypted,
             "created_at": self.created_at,
-            "updated_at": self.updated_at,
         }

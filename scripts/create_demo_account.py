@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 """
+DEPRECATED: This script copies encrypted data without re-encrypting for the
+new user's DEK, making all copied encrypted content unreadable.
+
+Use instead:
+  - scripts/seed_demo_data.py  (creates fresh unencrypted demo data)
+  - Admin panel: Super Admin → Reset Demo Account endpoint
+
 Create a demo account and copy all data from paul's account.
 """
 import sys
@@ -213,6 +220,14 @@ def create_demo_account(db_path, source_username='paul', demo_username='demo', d
 
 
 if __name__ == '__main__':
+    import warnings
+    warnings.warn(
+        "create_demo_account.py is DEPRECATED - copied encrypted data will be unreadable. "
+        "Use scripts/seed_demo_data.py or the admin Reset Demo Account endpoint instead.",
+        DeprecationWarning,
+        stacklevel=1,
+    )
+
     # Get database path
     db_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'planning.db')
 
