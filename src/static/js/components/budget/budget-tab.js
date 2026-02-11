@@ -1725,6 +1725,7 @@ function showIncomeItemModal(parentContainer, category, index) {
  */
 function renderExpenseSection(parentContainer) {
     const container = parentContainer.querySelector('#expense-section');
+    const profile = store.get('currentProfile');
     const expenses = budgetData.expenses[currentPeriod];
 
     const categories = [

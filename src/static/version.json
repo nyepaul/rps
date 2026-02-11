@@ -1,5 +1,5 @@
 {
-    "version": "3.9.261",
+    "version": "3.9.262",
     "release_date": "2026-02-11",
-    "release_notes": "Add Advisor Fee Impact (AUM) assessment in Expenses and Feature Index shortcut"
+    "release_notes": "Fix Expenses refresh error: define profile in expense renderer"
 }
