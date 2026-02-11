@@ -208,6 +208,33 @@ function renderTaxAnalysis(container, analysis, profile, healthcarePlanning = nu
                                 <div style="margin-top: 6px; font-size: 10px; opacity: 0.85;">${social_security_analysis.household.recommendation}</div>
                             </div>
                         </details>
+                        ${social_security_analysis.household.top_strategies?.length ? `
+                            <details style="cursor: pointer; margin-top: 6px;">
+                                <summary style="font-size: 12px; font-weight: 600; padding: 4px 0; user-select: none;">🏁 Top Claiming Strategies (Primary/Spouse)</summary>
+                                <div style="padding: 8px; background: rgba(255,255,255,0.1); border-radius: 6px; margin-top: 6px;">
+                                    ${social_security_analysis.household.top_strategies.map((row, idx) => `
+                                        <div style="display: grid; grid-template-columns: 24px 1fr auto; gap: 8px; padding: 4px 0; font-size: 10px; align-items: center;">
+                                            <span style="opacity: 0.8;">#${idx + 1}</span>
+                                            <span>${row.label}</span>
+                                            <span style="font-weight: 700;">${formatCurrency(row.combined_lifetime_benefit, 0)} lifetime</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </details>
+                        ` : ''}
+                        ${social_security_analysis.household.breakeven_crossovers?.length ? `
+                            <details style="cursor: pointer; margin-top: 6px;">
+                                <summary style="font-size: 12px; font-weight: 600; padding: 4px 0; user-select: none;">📍 Breakeven Crossover Ages</summary>
+                                <div style="padding: 8px; background: rgba(255,255,255,0.1); border-radius: 6px; margin-top: 6px; font-size: 10px;">
+                                    ${social_security_analysis.household.breakeven_crossovers.map((row) => `
+                                        <div style="padding: 3px 0;">
+                                            ${row.person === 'primary' ? 'Primary' : 'Spouse'}: waiting from age ${row.from_claim_age} to ${row.to_claim_age}
+                                            breaks even around age <strong>${row.breakeven_age}</strong>.
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </details>
+                        ` : ''}
                     </div>
                     ` : ''}
 

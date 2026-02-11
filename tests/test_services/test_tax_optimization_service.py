@@ -49,3 +49,6 @@ def test_comprehensive_analysis_includes_social_security_block():
     assert "social_security_analysis" in result
     assert result["social_security_analysis"]["available"] is True
     assert result["social_security_analysis"]["household"]["survivor_monthly_estimate_at_70_strategy"] > 0
+    assert len(result["social_security_analysis"]["household"]["strategy_matrix"]) > 0
+    assert len(result["social_security_analysis"]["household"]["top_strategies"]) > 0
+    assert len(result["social_security_analysis"]["household"]["breakeven_crossovers"]) > 0

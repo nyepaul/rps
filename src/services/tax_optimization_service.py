@@ -1146,6 +1146,72 @@ class TaxOptimizationService:
                         }
                     )
 
+        # Build paired claiming strategy matrix for household optimization.
+        key_ages = [62, 67, 70]
+        p_by_age = {
+            item["claiming_age"]: item
+            for item in (primary_analysis.get("analyses") or [])
+        } if primary_analysis else {}
+        s_by_age = {
+            item["claiming_age"]: item
+            for item in (spouse_analysis.get("analyses") or [])
+        } if spouse_analysis else {}
+
+        strategy_matrix = []
+        for p_age in (key_ages if p_by_age else [None]):
+            for s_age in (key_ages if s_by_age else [None]):
+                p = p_by_age.get(p_age) if p_age is not None else None
+                s = s_by_age.get(s_age) if s_age is not None else None
+                strategy_matrix.append(
+                    {
+                        "primary_claim_age": p_age,
+                        "spouse_claim_age": s_age,
+                        "label": (
+                            f"P{p_age}/S{s_age}" if p_age is not None and s_age is not None
+                            else f"P{p_age}" if p_age is not None else f"S{s_age}"
+                        ),
+                        "combined_monthly_benefit": round(
+                            (p.get("monthly_benefit", 0) if p else 0)
+                            + (s.get("monthly_benefit", 0) if s else 0),
+                            2,
+                        ),
+                        "combined_lifetime_benefit": round(
+                            (p.get("lifetime_benefit", 0) if p else 0)
+                            + (s.get("lifetime_benefit", 0) if s else 0),
+                            2,
+                        ),
+                    }
+                )
+
+        strategy_matrix = sorted(
+            strategy_matrix,
+            key=lambda row: row["combined_lifetime_benefit"],
+            reverse=True,
+        )
+
+        def _extract_breakeven(analysis: Optional[Dict], who: str) -> List[Dict]:
+            if not analysis:
+                return []
+            rows = []
+            prev_age = None
+            for item in analysis.get("analyses") or []:
+                if "breakeven_age" in item:
+                    rows.append(
+                        {
+                            "person": who,
+                            "from_claim_age": prev_age,
+                            "to_claim_age": item["claiming_age"],
+                            "breakeven_age": item["breakeven_age"],
+                        }
+                    )
+                prev_age = item["claiming_age"]
+            return rows
+
+        breakeven_crossovers = (
+            _extract_breakeven(primary_analysis, "primary")
+            + _extract_breakeven(spouse_analysis, "spouse")
+        )
+
         primary_70 = (
             next(
                 (
@@ -1181,6 +1247,9 @@ class TaxOptimizationService:
             "spouse": spouse_analysis,
             "household": {
                 "combined_by_claiming_age": household,
+                "strategy_matrix": strategy_matrix,
+                "top_strategies": strategy_matrix[:3],
+                "breakeven_crossovers": breakeven_crossovers,
                 "survivor_monthly_estimate_at_70_strategy": round(survivor_estimate, 2),
                 "recommendation": "Delaying the higher earner to age 70 generally improves survivor income protection.",
             },

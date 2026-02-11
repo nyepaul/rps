@@ -40,6 +40,8 @@ def test_analyze_comprehensive(client, test_user, test_profile):
     data = response.get_json()
     assert "snapshot" in data
     assert "social_security_analysis" in data
+    assert "household" in data["social_security_analysis"]
+    assert "top_strategies" in data["social_security_analysis"]["household"]
     assert "roth_conversion" in data
     assert "rmd_analysis" in data
     assert "state_comparison" in data
