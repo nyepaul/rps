@@ -210,10 +210,41 @@ function renderGlossaryRows(items) {
                     <div class="glossary-term">${item.term}</div>
                     <div class="glossary-category">${item.category}</div>
                 </div>
-                <div class="glossary-definition">${item.definition}</div>
+                <div class="glossary-definition">
+                    <div>${item.definition}</div>
+                    <a
+                        class="glossary-link"
+                        href="${getGlossaryReferenceUrl(item)}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Read full definition for ${item.term}"
+                    >
+                        Read full definition
+                    </a>
+                </div>
             </div>
         `)
         .join('');
+}
+
+function getGlossaryReferenceUrl(item) {
+    const term = encodeURIComponent(item.term);
+
+    const financeCategories = new Set([
+        'Retirement',
+        'Tax',
+        'Tax/Healthcare',
+        'Healthcare',
+        'Housing',
+        'Investment',
+        'Economics'
+    ]);
+
+    if (financeCategories.has(item.category)) {
+        return `https://www.investopedia.com/search?q=${term}`;
+    }
+
+    return `https://en.wikipedia.org/wiki/Special:Search?search=${term}`;
 }
 
 // Simple markdown to HTML converter
@@ -597,6 +628,17 @@ export function renderLearnTab(container) {
                 color: var(--text-primary);
                 font-size: 12px;
                 line-height: 1.45;
+            }
+            .glossary-link {
+                display: inline-block;
+                margin-top: 6px;
+                font-size: 11px;
+                color: var(--accent-color);
+                text-decoration: none;
+                font-weight: 600;
+            }
+            .glossary-link:hover {
+                text-decoration: underline;
             }
             .learn-btn {
                 background: var(--accent-color);
