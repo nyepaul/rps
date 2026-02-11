@@ -1,5 +1,5 @@
 {
-    "version": "3.9.271",
+    "version": "3.9.272",
     "release_date": "2026-02-11",
-    "release_notes": "Make Feature Index rows fully clickable and remove per-row open buttons"
+    "release_notes": "Restyle Learning Hub Feature Index into compact card tiles matching learning cards"
 }

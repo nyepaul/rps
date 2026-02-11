@@ -7,8 +7,7 @@ import { apiClient } from '../../api/client.js';
 import {
     bindFeatureIndexActions,
     createFeatureIndex,
-    filterFeatureIndex,
-    renderFeatureIndexRows
+    filterFeatureIndex
 } from '../../utils/feature-index.js';
 
 // Article definitions mapping to skill files
@@ -228,6 +227,41 @@ function renderGlossaryRows(items) {
             </a>
         `)
         .join('');
+}
+
+function escapeHtml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function renderFeatureIndexCards(items) {
+    if (!items.length) {
+        return '<div style="padding: 10px 0; color: var(--text-secondary); font-size: 12px;">No feature index matches found.</div>';
+    }
+
+    return `
+        <div class="feature-index-grid">
+            ${items.map((item) => `
+                <div
+                    class="feature-index-card feature-index-row"
+                    data-action="${escapeHtml(item.action?.type || '')}"
+                    data-target="${escapeHtml(item.action?.target || '')}"
+                    role="button"
+                    tabindex="0"
+                    aria-label="${escapeHtml(item.action?.label || item.title || 'Open')}"
+                >
+                    <h3 style="font-size: 14px; margin-bottom: 4px;">${escapeHtml(item.title)}</h3>
+                    <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 6px;">${escapeHtml(item.area)} • ${escapeHtml(item.location)}</div>
+                    <p style="font-size: 12px; margin: 0 0 8px 0; color: var(--text-secondary); line-height: 1.4;">${escapeHtml(item.summary)}</p>
+                    <div style="font-size: 11px; color: var(--accent-color); font-weight: 600;">Read More</div>
+                </div>
+            `).join('')}
+        </div>
+    `;
 }
 
 function getGlossaryReferenceUrl(item) {
@@ -647,14 +681,25 @@ export function renderLearnTab(container) {
             .glossary-row:first-child {
                 border-top: 1px solid var(--border-color);
             }
-            #feature-index-list .feature-index-row:first-child {
-                border-top: 1px solid var(--border-color);
+            .feature-index-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+                gap: var(--space-2);
             }
-            .feature-index-row:hover {
+            .feature-index-card {
                 background: var(--bg-primary);
-                transform: translateX(2px);
+                padding: var(--space-2);
+                border-radius: 6px;
+                border: 1px solid var(--border-color);
+                cursor: pointer;
+                transition: all 0.2s;
             }
-            .feature-index-row:focus-visible {
+            .feature-index-card:hover {
+                border-color: var(--accent-color);
+                transform: translateX(4px);
+                background: var(--bg-tertiary);
+            }
+            .feature-index-card:focus-visible {
                 outline: 2px solid var(--accent-color);
                 outline-offset: 2px;
             }
@@ -887,7 +932,7 @@ export function renderLearnTab(container) {
         if (!featureIndexList) return;
         const query = featureIndexInput ? featureIndexInput.value : '';
         const filtered = filterFeatureIndex(featureIndexItems, query);
-        featureIndexList.innerHTML = renderFeatureIndexRows(filtered);
+        featureIndexList.innerHTML = renderFeatureIndexCards(filtered);
     };
 
     renderFeatureIndex();
