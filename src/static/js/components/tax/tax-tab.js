@@ -897,7 +897,10 @@ function renderTaxAnalysis(
                     <!-- State Tax Comparison -->
                     ${state_comparison && state_comparison.length > 0 ? `
                     <div style="background: #000; padding: 12px; border-radius: 8px; color: white; border: 1px solid #333; height: 100%;">
-                        <h2 style="font-size: 15px; margin: 0 0 8px 0; font-weight: 700;">🗺️ ${g('State Tax Comparison', 'state_tax_comparison')}</h2>
+                        <h2 style="font-size: 15px; margin: 0 0 8px 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                            🗺️ ${g('State Tax Comparison', 'state_tax_comparison')}
+                            <span id="state-tax-info" class="csp-hover-opacity" style="cursor: pointer; font-size: 14px; opacity: 0.7; transition: opacity 0.2s;" title="Click for explanation">ℹ️</span>
+                        </h2>
                         <p style="font-size: 10px; opacity: 0.7; margin: 0 0 12px 0; line-height: 1.4;">
                             Your annual tax burden if you lived in each state. Based on your current income.
                         </p>
@@ -1023,6 +1026,15 @@ function renderTaxAnalysis(
         rmdInfoIcon.addEventListener('click', (e) => {
             e.stopPropagation();
             showRMDAnalysisExplanation();
+        });
+    }
+
+    // Add event listener for State Tax Comparison info
+    const stateTaxInfoIcon = container.querySelector('#state-tax-info');
+    if (stateTaxInfoIcon) {
+        stateTaxInfoIcon.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showStateTaxComparisonExplanation();
         });
     }
 
@@ -1816,5 +1828,57 @@ function showRMDAnalysisExplanation() {
     document.body.appendChild(modal);
     wireGlossaryTermClicks(modal);
     modal.querySelector('#close-rmd-explanation').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+}
+
+function showStateTaxComparisonExplanation() {
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 20px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 24px; max-width: 700px; width: 100%; max-height: 90vh; overflow-y: auto; border: 2px solid var(--accent-color);">
+                <h2 style="margin: 0 0 16px 0; color: var(--accent-color);">
+                    🗺️ Understanding ${glossaryTerm('State Tax Comparison', 'state_tax_comparison')}
+                </h2>
+
+                <div style="color: var(--text-primary); line-height: 1.6;">
+                    <p style="margin: 0 0 16px 0;">
+                        This compares estimated annual state income tax if you lived in different states, using your current modeled income.
+                    </p>
+
+                    <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                        <h3 style="margin: 0 0 12px 0; font-size: 14px; color: var(--success-color);">How To Read It</h3>
+                        <ul style="margin: 0; padding-left: 20px; font-size: 13px;">
+                            <li>${glossaryTerm('No Income Tax States', 'no_income_tax')} show states where estimated wage/salary income tax is $0.</li>
+                            <li>${glossaryTerm('Low Tax States', 'low_tax_states')} show comparatively lower estimated tax outcomes.</li>
+                            <li>${glossaryTerm('Savings vs Current State', 'savings_vs_current')} is your modeled difference versus your current state.</li>
+                        </ul>
+                    </div>
+
+                    <div style="background: var(--warning-bg); color: var(--warning-text); padding: 12px; border-radius: 6px; margin-bottom: 16px; border: 1px solid var(--warning-color);">
+                        <strong>Important:</strong>
+                        <ul style="margin: 8px 0 0 0; padding-left: 20px; font-size: 13px;">
+                            <li>This section focuses on state income tax only, not total cost of living.</li>
+                            <li>Property tax, sales tax, insurance, healthcare network access, and housing costs can offset tax savings.</li>
+                            <li>Residency rules matter; multi-state situations require tax professional review.</li>
+                        </ul>
+                    </div>
+
+                    <div style="background: var(--info-bg); padding: 12px; border-radius: 6px; border-left: 3px solid var(--info-color);">
+                        <strong>Tip:</strong> Use this as a first-pass filter, then compare a short list of states with full retirement budget assumptions.
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px; text-align: right;">
+                    <button id="close-state-tax-explanation" style="padding: 10px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
+                        Got It
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    wireGlossaryTermClicks(modal);
+    modal.querySelector('#close-state-tax-explanation').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 }
