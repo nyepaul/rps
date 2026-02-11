@@ -11,6 +11,7 @@ import logging
 
 roadmap_bp = Blueprint("roadmap", __name__)
 logger = logging.getLogger(__name__)
+ALLOWED_PHASES = {"phase1", "phase2", "phase3", "backlog"}
 
 
 def require_super_admin():
@@ -57,7 +58,12 @@ def get_roadmap():
                 query += " AND status = ?"
                 params.append(status)
 
-            query += " ORDER BY CASE priority WHEN 'critical' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 END, created_at DESC"
+            query += (
+                " ORDER BY "
+                "CASE phase WHEN 'phase1' THEN 1 WHEN 'phase2' THEN 2 WHEN 'phase3' THEN 3 WHEN 'backlog' THEN 4 WHEN 'completed' THEN 5 ELSE 6 END, "
+                "CASE priority WHEN 'critical' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 END, "
+                "created_at DESC"
+            )
 
             cursor.execute(query, params)
             rows = cursor.fetchall()
@@ -108,7 +114,7 @@ def get_public_roadmap():
                 WHERE status != 'cancelled'
                 ORDER BY
                     CASE priority WHEN 'critical' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 END,
-                    CASE phase WHEN 'phase1' THEN 1 WHEN 'phase2' THEN 2 WHEN 'phase3' THEN 3 WHEN 'backlog' THEN 4 END,
+                    CASE phase WHEN 'phase1' THEN 1 WHEN 'phase2' THEN 2 WHEN 'phase3' THEN 3 WHEN 'backlog' THEN 4 WHEN 'completed' THEN 5 ELSE 6 END,
                     created_at DESC
             """
             cursor.execute(query)
@@ -220,6 +226,15 @@ def create_roadmap_item():
             return jsonify({"error": "Title is required"}), 400
         if not data.get("category"):
             return jsonify({"error": "Category is required"}), 400
+        if data.get("phase") and data.get("phase") not in ALLOWED_PHASES:
+            return (
+                jsonify(
+                    {
+                        "error": "Invalid phase. Allowed values: phase1, phase2, phase3, backlog"
+                    }
+                ),
+                400,
+            )
 
         with connection.db.get_connection() as conn:
             cursor = conn.cursor()
@@ -272,6 +287,15 @@ def update_roadmap_item(item_id):
 
     try:
         data = request.get_json()
+        if data.get("phase") and data.get("phase") not in ALLOWED_PHASES:
+            return (
+                jsonify(
+                    {
+                        "error": "Invalid phase. Allowed values: phase1, phase2, phase3, backlog"
+                    }
+                ),
+                400,
+            )
 
         with connection.db.get_connection() as conn:
             cursor = conn.cursor()

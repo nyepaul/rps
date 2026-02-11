@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS feature_roadmap (
         'UI/UX Enhancements'
     )),
     priority TEXT NOT NULL DEFAULT 'medium' CHECK(priority IN ('critical', 'high', 'medium', 'low')),
-    phase TEXT DEFAULT 'backlog' CHECK(phase IN ('phase1', 'phase2', 'phase3', 'backlog', 'completed')),
+    phase TEXT DEFAULT 'backlog' CHECK(phase IN ('phase1', 'phase2', 'phase3', 'backlog')),
     status TEXT DEFAULT 'planned' CHECK(status IN ('planned', 'in_progress', 'completed', 'on_hold', 'cancelled')),
     impact TEXT CHECK(impact IN ('high', 'medium', 'low')),
     effort TEXT CHECK(effort IN ('small', 'medium', 'large', 'xl')),
