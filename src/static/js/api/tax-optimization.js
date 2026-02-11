@@ -101,6 +101,15 @@ export const taxOptimizationAPI = {
         if (options.annualOutOfPocket !== undefined && options.annualOutOfPocket !== null && options.annualOutOfPocket !== '') {
             payload.annual_out_of_pocket = options.annualOutOfPocket;
         }
+        if (options.initialHsaBalance !== undefined && options.initialHsaBalance !== null && options.initialHsaBalance !== '') {
+            payload.initial_hsa_balance = options.initialHsaBalance;
+        }
+        if (options.annualHsaContribution !== undefined && options.annualHsaContribution !== null && options.annualHsaContribution !== '') {
+            payload.annual_hsa_contribution = options.annualHsaContribution;
+        }
+        if (options.hsaGrowth !== undefined && options.hsaGrowth !== null) {
+            payload.hsa_growth = options.hsaGrowth;
+        }
         return apiClient.post('/api/analysis/healthcare-planning', payload);
     }
 };

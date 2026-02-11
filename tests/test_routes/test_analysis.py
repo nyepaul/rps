@@ -216,3 +216,6 @@ def test_healthcare_planning_projection_endpoint(client, test_user, test_profile
     assert isinstance(payload.get("projection"), list)
     assert len(payload["projection"]) == 5
     assert "total_healthcare_cost" in payload["projection"][0]
+    assert "medicare_part_a" in payload["projection"][0]
+    assert "hsa_applied" in payload["projection"][0]
+    assert "net_healthcare_cost" in payload["projection"][0]

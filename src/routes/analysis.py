@@ -192,6 +192,9 @@ class HealthcarePlanningRequestSchema(BaseModel):
     filing_status: Optional[str] = None
     estimated_magi: Optional[float] = None
     annual_out_of_pocket: Optional[float] = None
+    initial_hsa_balance: Optional[float] = None
+    annual_hsa_contribution: Optional[float] = None
+    hsa_growth: Optional[float] = 0.04
     medical_inflation: Optional[float] = 0.055
     income_growth: Optional[float] = 0.02
 
@@ -203,7 +206,7 @@ class HealthcarePlanningRequestSchema(BaseModel):
             raise ValueError("years must be between 1 and 40")
         return v
 
-    @field_validator("medical_inflation", "income_growth")
+    @field_validator("medical_inflation", "income_growth", "hsa_growth")
     def validate_rates(cls, v):
         if v is None:
             return v
@@ -1154,6 +1157,16 @@ def analyze_healthcare_planning():
         if data.annual_out_of_pocket is not None
         else service.infer_base_out_of_pocket(profile_data)
     )
+    initial_hsa_balance = (
+        float(data.initial_hsa_balance)
+        if data.initial_hsa_balance is not None
+        else service.infer_hsa_balance(profile_data)
+    )
+    annual_hsa_contribution = (
+        float(data.annual_hsa_contribution)
+        if data.annual_hsa_contribution is not None
+        else service.infer_hsa_contribution(profile_data)
+    )
 
     projection = service.project(
         current_age=primary_age,
@@ -1163,6 +1176,9 @@ def analyze_healthcare_planning():
         income_growth=float(data.income_growth or 0.02),
         base_magi=base_magi,
         base_out_of_pocket=base_out_of_pocket,
+        initial_hsa_balance=initial_hsa_balance,
+        annual_hsa_contribution=annual_hsa_contribution,
+        hsa_growth=float(data.hsa_growth or 0.04),
     )
 
     enhanced_audit_logger.log(

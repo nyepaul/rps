@@ -456,6 +456,9 @@ function renderTaxAnalysis(container, analysis, profile, healthcarePlanning = nu
             const incomeGrowthPct = Number(container.querySelector('#healthcare-income-growth')?.value || 2.0);
             const estimatedMagiRaw = container.querySelector('#healthcare-estimated-magi')?.value ?? '';
             const annualOutOfPocketRaw = container.querySelector('#healthcare-annual-oop')?.value ?? '';
+            const initialHsaBalanceRaw = container.querySelector('#healthcare-hsa-balance')?.value ?? '';
+            const annualHsaContributionRaw = container.querySelector('#healthcare-hsa-contribution')?.value ?? '';
+            const hsaGrowthPct = Number(container.querySelector('#healthcare-hsa-growth')?.value || 4.0);
 
             recalcHealthcareBtn.disabled = true;
             recalcHealthcareBtn.textContent = 'Recalculating...';
@@ -468,6 +471,9 @@ function renderTaxAnalysis(container, analysis, profile, healthcarePlanning = nu
                         incomeGrowth: incomeGrowthPct / 100,
                         estimatedMagi: estimatedMagiRaw.trim() === '' ? null : Number(estimatedMagiRaw),
                         annualOutOfPocket: annualOutOfPocketRaw.trim() === '' ? null : Number(annualOutOfPocketRaw),
+                        initialHsaBalance: initialHsaBalanceRaw.trim() === '' ? null : Number(initialHsaBalanceRaw),
+                        annualHsaContribution: annualHsaContributionRaw.trim() === '' ? null : Number(annualHsaContributionRaw),
+                        hsaGrowth: hsaGrowthPct / 100,
                     }
                 );
                 renderTaxAnalysis(container, analysis, profile, updatedHealthcare, {
@@ -476,6 +482,9 @@ function renderTaxAnalysis(container, analysis, profile, healthcarePlanning = nu
                     incomeGrowthPct,
                     estimatedMagi: estimatedMagiRaw,
                     annualOutOfPocket: annualOutOfPocketRaw,
+                    initialHsaBalance: initialHsaBalanceRaw,
+                    annualHsaContribution: annualHsaContributionRaw,
+                    hsaGrowthPct,
                 });
             } catch (error) {
                 showError(`Healthcare projection update failed: ${error.message}`);
@@ -502,6 +511,9 @@ function renderHealthcarePlanningCard(healthcarePlanning, healthcareInputs = nul
         incomeGrowthPct: Number((healthcarePlanning.assumptions?.income_growth || 0.02) * 100).toFixed(1),
         estimatedMagi: '',
         annualOutOfPocket: '',
+        initialHsaBalance: healthcarePlanning.assumptions?.initial_hsa_balance ?? '',
+        annualHsaContribution: healthcarePlanning.assumptions?.annual_hsa_contribution ?? '',
+        hsaGrowthPct: Number((healthcarePlanning.assumptions?.hsa_growth || 0.04) * 100).toFixed(1),
     };
 
     return `
@@ -530,6 +542,18 @@ function renderHealthcarePlanningCard(healthcarePlanning, healthcareInputs = nul
                     Out-of-Pocket Override ($)
                     <input id="healthcare-annual-oop" type="number" min="0" step="500" value="${defaults.annualOutOfPocket}" placeholder="Auto from profile" style="padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" />
                 </label>
+                <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px;">
+                    Initial HSA Balance ($)
+                    <input id="healthcare-hsa-balance" type="number" min="0" step="500" value="${defaults.initialHsaBalance}" placeholder="Auto from profile" style="padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" />
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px;">
+                    Annual HSA Contribution ($)
+                    <input id="healthcare-hsa-contribution" type="number" min="0" step="250" value="${defaults.annualHsaContribution}" placeholder="Auto from profile" style="padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" />
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px;">
+                    HSA Growth (%)
+                    <input id="healthcare-hsa-growth" type="number" step="0.1" min="-10" max="25" value="${defaults.hsaGrowthPct}" style="padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" />
+                </label>
             </div>
             <div style="margin-bottom: 12px;">
                 <button id="recalc-healthcare-projection" style="padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--accent-color); color: var(--text-on-accent); cursor: pointer; font-weight: 600;">
@@ -553,6 +577,10 @@ function renderHealthcarePlanningCard(healthcarePlanning, healthcareInputs = nul
                     <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 2px;">Medical Inflation Assumption</div>
                     <div style="font-size: 16px; font-weight: 700;">${formatPercent(healthcarePlanning.assumptions.medical_inflation, 1)}</div>
                 </div>
+                <div style="background: var(--bg-primary); padding: 10px; border-radius: 6px;">
+                    <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 2px;">Projected Ending HSA</div>
+                    <div style="font-size: 16px; font-weight: 700;">${formatCurrency(rows[rows.length - 1].remaining_hsa_balance || 0, 0)}</div>
+                </div>
             </div>
             <details style="cursor: pointer;">
                 <summary style="font-size: 12px; font-weight: 600; padding: 4px 0; user-select: none;">
@@ -564,11 +592,13 @@ function renderHealthcarePlanningCard(healthcarePlanning, healthcareInputs = nul
                             <tr style="text-align: left; border-bottom: 1px solid var(--border-color);">
                                 <th style="padding: 4px;">Year</th>
                                 <th style="padding: 4px;">Eligible</th>
+                                <th style="padding: 4px;">Part A</th>
                                 <th style="padding: 4px;">Part B</th>
                                 <th style="padding: 4px;">Part D</th>
                                 <th style="padding: 4px;">IRMAA</th>
                                 <th style="padding: 4px;">Out-of-Pocket</th>
-                                <th style="padding: 4px;">Total</th>
+                                <th style="padding: 4px;">HSA Used</th>
+                                <th style="padding: 4px;">Net Cost</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -576,11 +606,13 @@ function renderHealthcarePlanningCard(healthcarePlanning, healthcareInputs = nul
                                 <tr style="border-bottom: 1px solid var(--border-color);">
                                     <td style="padding: 4px;">${row.year}</td>
                                     <td style="padding: 4px;">${row.medicare_eligible_people}</td>
+                                    <td style="padding: 4px;">${formatCurrency(row.medicare_part_a, 0)}</td>
                                     <td style="padding: 4px;">${formatCurrency(row.medicare_part_b, 0)}</td>
                                     <td style="padding: 4px;">${formatCurrency(row.medicare_part_d, 0)}</td>
                                     <td style="padding: 4px;">${formatCurrency(row.irmaa_surcharge, 0)}</td>
                                     <td style="padding: 4px;">${formatCurrency(row.out_of_pocket, 0)}</td>
-                                    <td style="padding: 4px; font-weight: 700;">${formatCurrency(row.total_healthcare_cost, 0)}</td>
+                                    <td style="padding: 4px;">${formatCurrency(row.hsa_applied || 0, 0)}</td>
+                                    <td style="padding: 4px; font-weight: 700;">${formatCurrency(row.net_healthcare_cost || row.total_healthcare_cost, 0)}</td>
                                 </tr>
                             `).join('')}
                         </tbody>
