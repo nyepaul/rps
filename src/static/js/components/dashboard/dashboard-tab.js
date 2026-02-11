@@ -12,6 +12,83 @@ import { calculateNetWorth, calculateLiquidAssets, calculateRetirementAssets, ca
 import { getChartThemeColors, registerChartForThemeUpdates } from '../../utils/charts.js';
 import { animateChildren } from '../../utils/animations.js';
 
+const DASHBOARD_GLOSSARY = {
+    social_security: {
+        title: 'Social Security',
+        definition: 'Federal retirement income program based on your earnings history and claiming age.'
+    },
+    early_social_security: {
+        title: 'Early Social Security (Age 62)',
+        definition: 'You can claim as early as 62, but monthly benefits are permanently reduced versus full retirement age.'
+    },
+    full_retirement_age: {
+        title: 'Full Retirement Age (FRA)',
+        definition: 'The age where you receive 100% of your primary insurance amount. For many users this is age 67.'
+    },
+    delayed_credits: {
+        title: 'Delayed Retirement Credits',
+        definition: 'If you delay Social Security past FRA up to age 70, benefits increase each year you wait.'
+    },
+    medicare: {
+        title: 'Medicare',
+        definition: 'U.S. federal health insurance program, generally available at age 65.'
+    },
+    rmd: {
+        title: 'RMD (Required Minimum Distribution)',
+        definition: 'Mandatory withdrawals from eligible pre-tax retirement accounts, generally starting at age 73.'
+    },
+    catch_up_contributions: {
+        title: 'Catch-Up Contributions',
+        definition: 'Additional annual retirement contributions allowed at age 50+ beyond standard limits.'
+    },
+    penalty_free_withdrawals: {
+        title: 'Penalty-Free Withdrawals (Age 59 1/2)',
+        definition: 'Age where most retirement account withdrawals are no longer subject to the 10% early-withdrawal penalty.'
+    },
+    tax_planning: {
+        title: 'Tax Planning for Distributions',
+        definition: 'Coordinating withdrawal timing and account types to manage taxable income and lifetime taxes.'
+    }
+};
+
+function dashboardGlossaryTerm(label, key) {
+    return `<button type="button" class="dash-glossary-term" data-dashboard-glossary-term="${key}" style="background: none; border: none; color: inherit; font: inherit; font-weight: inherit; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 2px; padding: 0;" title="Click for definition">${label}</button>`;
+}
+
+function wireDashboardGlossaryClicks(root) {
+    if (!root) return;
+    root.querySelectorAll('.dash-glossary-term').forEach((el) => {
+        el.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            showDashboardGlossaryDefinition(el.dataset.dashboardGlossaryTerm);
+        });
+    });
+}
+
+function showDashboardGlossaryDefinition(key) {
+    const item = DASHBOARD_GLOSSARY[key];
+    if (!item) return;
+
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10001; padding: 20px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; max-width: 540px; width: 100%; border: 2px solid var(--accent-color);">
+                <h3 style="margin: 0 0 10px 0; color: var(--accent-color);">${item.title}</h3>
+                <p style="margin: 0; line-height: 1.6; color: var(--text-primary);">${item.definition}</p>
+                <div style="margin-top: 16px; text-align: right;">
+                    <button id="close-dashboard-glossary-definition" style="padding: 8px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    modal.querySelector('#close-dashboard-glossary-definition').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+}
+
 export async function renderDashboardTab(container) {
     const currentUser = store.get('currentUser');
     const currentProfile = store.get('currentProfile');
@@ -2100,13 +2177,13 @@ function showAgeDetails(profile) {
                 ${currentAge >= 50 && currentAge < 60 ? `
                     <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px; border-left: 3px solid #f59e0b;">
                         <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 5px;">50s: Pre-Retirement Planning</div>
-                        <div style="font-size: 13px; color: var(--text-secondary);">Eligible for catch-up contributions ($7,500 401k, $1,000 IRA). Review healthcare and Social Security strategy.</div>
+                        <div style="font-size: 13px; color: var(--text-secondary);">Eligible for ${dashboardGlossaryTerm('catch-up contributions', 'catch_up_contributions')} ($7,500 401k, $1,000 IRA). Review healthcare and ${dashboardGlossaryTerm('Social Security', 'social_security')} strategy.</div>
                     </div>
                 ` : ''}
                 ${currentAge >= 60 ? `
                     <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px; border-left: 3px solid #ef4444;">
                         <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 5px;">60+: Transition Phase</div>
-                        <div style="font-size: 13px; color: var(--text-secondary);">Social Security claiming strategy critical. Medicare at 65. RMDs start at 73. Tax planning for distributions.</div>
+                        <div style="font-size: 13px; color: var(--text-secondary);">${dashboardGlossaryTerm('Social Security', 'social_security')} claiming strategy critical. ${dashboardGlossaryTerm('Medicare', 'medicare')} at 65. ${dashboardGlossaryTerm('RMDs', 'rmd')} start at 73. ${dashboardGlossaryTerm('Tax planning for distributions', 'tax_planning')}.</div>
                     </div>
                 ` : ''}
             </div>
@@ -2123,6 +2200,7 @@ function showAgeDetails(profile) {
     `;
 
     document.body.appendChild(modal);
+    wireDashboardGlossaryClicks(modal);
     modal.querySelector('#close-age-modal').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 }
@@ -2250,7 +2328,7 @@ function showRetirementDetails(profile) {
                 <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px; ${currentAge >= 50 ? 'opacity: 0.5;' : ''}">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                            <div style="font-weight: 600; color: var(--text-primary);">Age 50: Catch-Up Contributions</div>
+                            <div style="font-weight: 600; color: var(--text-primary);">Age 50: ${dashboardGlossaryTerm('Catch-Up Contributions', 'catch_up_contributions')}</div>
                             <div style="font-size: 12px; color: var(--text-secondary);">+$7,500 401(k), +$1,000 IRA annually</div>
                         </div>
                         ${currentAge >= 50 ? '<span style="color: #22c55e;">✓ Eligible</span>' : `<span style="color: var(--text-secondary);">${50 - currentAge} years</span>`}
@@ -2259,7 +2337,7 @@ function showRetirementDetails(profile) {
                 <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px; ${currentAge >= 59.5 ? 'opacity: 0.5;' : ''}">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                            <div style="font-weight: 600; color: var(--text-primary);">Age 59½: Penalty-Free Withdrawals</div>
+                            <div style="font-weight: 600; color: var(--text-primary);">Age 59½: ${dashboardGlossaryTerm('Penalty-Free Withdrawals', 'penalty_free_withdrawals')}</div>
                             <div style="font-size: 12px; color: var(--text-secondary);">Access retirement accounts without 10% penalty</div>
                         </div>
                         ${currentAge >= 59.5 ? '<span style="color: #22c55e;">✓ Eligible</span>' : `<span style="color: var(--text-secondary);">${(59.5 - currentAge).toFixed(1)} years</span>`}
@@ -2268,7 +2346,7 @@ function showRetirementDetails(profile) {
                 <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px; ${currentAge >= 62 ? 'opacity: 0.5;' : ''}">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                            <div style="font-weight: 600; color: var(--text-primary);">Age 62: Early Social Security</div>
+                            <div style="font-weight: 600; color: var(--text-primary);">Age 62: ${dashboardGlossaryTerm('Early Social Security', 'early_social_security')}</div>
                             <div style="font-size: 12px; color: var(--text-secondary);">Reduced benefits (~70% of full amount)</div>
                         </div>
                         ${currentAge >= 62 ? '<span style="color: #22c55e;">✓ Eligible</span>' : `<span style="color: var(--text-secondary);">${62 - currentAge} years</span>`}
@@ -2277,7 +2355,7 @@ function showRetirementDetails(profile) {
                 <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px; ${currentAge >= 65 ? 'opacity: 0.5;' : ''}">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                            <div style="font-weight: 600; color: var(--text-primary);">Age 65: Medicare Eligibility</div>
+                            <div style="font-weight: 600; color: var(--text-primary);">Age 65: ${dashboardGlossaryTerm('Medicare Eligibility', 'medicare')}</div>
                             <div style="font-size: 12px; color: var(--text-secondary);">Health insurance coverage begins</div>
                         </div>
                         ${currentAge >= 65 ? '<span style="color: #22c55e;">✓ Eligible</span>' : `<span style="color: var(--text-secondary);">${65 - currentAge} years</span>`}
@@ -2286,8 +2364,8 @@ function showRetirementDetails(profile) {
                 <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px; ${currentAge >= 67 ? 'opacity: 0.5;' : ''}">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                            <div style="font-weight: 600; color: var(--text-primary);">Age 67: Full Retirement Age</div>
-                            <div style="font-size: 12px; color: var(--text-secondary);">100% Social Security benefits (born 1960+)</div>
+                            <div style="font-weight: 600; color: var(--text-primary);">Age 67: ${dashboardGlossaryTerm('Full Retirement Age', 'full_retirement_age')}</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">100% ${dashboardGlossaryTerm('Social Security', 'social_security')} benefits (born 1960+)</div>
                         </div>
                         ${currentAge >= 67 ? '<span style="color: #22c55e;">✓ Eligible</span>' : `<span style="color: var(--text-secondary);">${67 - currentAge} years</span>`}
                     </div>
@@ -2295,8 +2373,8 @@ function showRetirementDetails(profile) {
                 <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px; ${currentAge >= 70 ? 'opacity: 0.5;' : ''}">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                            <div style="font-weight: 600; color: var(--text-primary);">Age 70: Maximum Social Security</div>
-                            <div style="font-size: 12px; color: var(--text-secondary);">~124% of full amount with delayed credits</div>
+                            <div style="font-weight: 600; color: var(--text-primary);">Age 70: Maximum ${dashboardGlossaryTerm('Social Security', 'social_security')}</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">~124% of full amount with ${dashboardGlossaryTerm('delayed credits', 'delayed_credits')}</div>
                         </div>
                         ${currentAge >= 70 ? '<span style="color: #22c55e;">✓ Eligible</span>' : `<span style="color: var(--text-secondary);">${70 - currentAge} years</span>`}
                     </div>
@@ -2304,7 +2382,7 @@ function showRetirementDetails(profile) {
                 <div style="padding: 12px; background: var(--bg-secondary); border-radius: 6px; ${currentAge >= 73 ? 'opacity: 0.5;' : ''}">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                            <div style="font-weight: 600; color: var(--text-primary);">Age 73: Required Minimum Distributions</div>
+                            <div style="font-weight: 600; color: var(--text-primary);">Age 73: ${dashboardGlossaryTerm('Required Minimum Distributions', 'rmd')}</div>
                             <div style="font-size: 12px; color: var(--text-secondary);">Must begin withdrawals from traditional accounts</div>
                         </div>
                         ${currentAge >= 73 ? '<span style="color: #22c55e;">✓ Eligible</span>' : `<span style="color: var(--text-secondary);">${73 - currentAge} years</span>`}
@@ -2316,7 +2394,7 @@ function showRetirementDetails(profile) {
                 <h4 style="margin: 0 0 10px 0; font-size: 14px; color: var(--text-primary);">💡 Retirement Planning Strategy</h4>
                 <p style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
                     Successful retirement planning requires understanding key milestones and making strategic decisions about
-                    Social Security, Medicare, and retirement account withdrawals. The timing of these decisions can significantly
+                    ${dashboardGlossaryTerm('Social Security', 'social_security')}, ${dashboardGlossaryTerm('Medicare', 'medicare')}, and retirement account withdrawals. The timing of these decisions can significantly
                     impact your lifetime retirement income. Use the Monte Carlo simulations and tax optimization tools to model
                     different scenarios.
                 </p>
@@ -2325,6 +2403,7 @@ function showRetirementDetails(profile) {
     `;
 
     document.body.appendChild(modal);
+    wireDashboardGlossaryClicks(modal);
     modal.querySelector('#close-retirement-modal').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 }
