@@ -36,6 +36,7 @@ class RothConversionRequest(BaseModel):
     ladder_growth_rate: Optional[float] = 0.05
     ladder_max_rate: Optional[float] = 0.24
     ladder_income_growth_rate: Optional[float] = 0.02
+    safety_buffer: Optional[float] = 500.0
 
 
 class SocialSecurityRequest(BaseModel):
@@ -211,6 +212,11 @@ def analyze_roth_conversion():
             if data.ladder_income_growth_rate is None
             else float(data.ladder_income_growth_rate)
         )
+        safety_buffer = (
+            500.0
+            if data.safety_buffer is None
+            else float(data.safety_buffer)
+        )
         result = service.analyze_roth_conversion(
             current_taxable_income=current_taxable,
             traditional_balance=traditional_balance,
@@ -219,6 +225,7 @@ def analyze_roth_conversion():
             ladder_growth_rate=ladder_growth_rate,
             ladder_max_rate=ladder_max_rate,
             ladder_income_growth_rate=ladder_income_growth_rate,
+            safety_buffer=safety_buffer,
         )
         result["profile_name"] = data.profile_name
 

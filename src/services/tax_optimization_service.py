@@ -733,6 +733,7 @@ class TaxOptimizationService:
         ladder_growth_rate: float = 0.05,
         ladder_max_rate: float = 0.24,
         ladder_income_growth_rate: float = 0.02,
+        safety_buffer: float = 500.0,
     ) -> Dict:
         """
         Analyze Roth conversion scenarios.
@@ -751,7 +752,7 @@ class TaxOptimizationService:
         )
         precision_recommendations = self.build_precision_recommendations(
             bracket_targets=bracket_targets,
-            safety_buffer=500.0,
+            safety_buffer=max(0.0, float(safety_buffer)),
         )
         bracket_headroom_projection = self.build_bracket_headroom_projection(
             current_taxable_income=current_taxable_income,
@@ -761,7 +762,7 @@ class TaxOptimizationService:
         )
         annual_safe_conversion_budget = self.build_annual_safe_conversion_budget(
             bracket_headroom_projection=bracket_headroom_projection,
-            safety_buffer=500.0,
+            safety_buffer=max(0.0, float(safety_buffer)),
         )
         front_load_recommendation = self.build_front_load_recommendation(
             annual_safe_conversion_budget=annual_safe_conversion_budget,

@@ -106,6 +106,7 @@ def test_roth_conversion_ladder_respects_custom_inputs():
         ladder_growth_rate=0.02,
         ladder_max_rate=0.22,
         ladder_income_growth_rate=0.03,
+        safety_buffer=1200,
     )
     ladder = result["conversion_ladder_5y"]
     assert ladder["years_modeled"] == 3
@@ -113,6 +114,7 @@ def test_roth_conversion_ladder_respects_custom_inputs():
     assert ladder["max_marginal_rate_target"] == 0.22
     assert ladder["income_growth_assumption"] == 0.03
     assert ladder["rows"][0]["taxable_income_assumption"] <= ladder["rows"][-1]["taxable_income_assumption"]
+    assert result["precision_recommendations"][0]["safe_buffer"] == 1200
 
 
 def test_roth_conversion_includes_variant_recommendation():

@@ -53,6 +53,9 @@ export const taxOptimizationAPI = {
         if (options.ladderIncomeGrowthRate !== undefined && options.ladderIncomeGrowthRate !== null) {
             payload.ladder_income_growth_rate = options.ladderIncomeGrowthRate;
         }
+        if (options.safetyBuffer !== undefined && options.safetyBuffer !== null) {
+            payload.safety_buffer = options.safetyBuffer;
+        }
         return apiClient.post('/api/tax-optimization/roth-conversion', payload);
     },
 

@@ -81,6 +81,7 @@ function getRothConversionInputs(container) {
         ladderGrowthRate: Number(container.querySelector('#roth-ladder-growth')?.value || 5.0) / 100,
         ladderMaxRate: Number(container.querySelector('#roth-ladder-max-rate')?.value || 24.0) / 100,
         ladderIncomeGrowthRate: Number(container.querySelector('#roth-ladder-income-growth')?.value || 2.0) / 100,
+        safetyBuffer: Number(container.querySelector('#roth-safety-buffer')?.value || 500),
     };
 }
 
@@ -118,6 +119,7 @@ function renderTaxAnalysis(
         ladderGrowthRate: roth_conversion?.conversion_ladder_5y?.annual_growth_assumption || 0.05,
         ladderMaxRate: roth_conversion?.conversion_ladder_5y?.max_marginal_rate_target || 0.24,
         ladderIncomeGrowthRate: roth_conversion?.conversion_ladder_5y?.income_growth_assumption || 0.02,
+        safetyBuffer: roth_conversion?.precision_recommendations?.[0]?.safe_buffer || 500,
     };
 
     container.innerHTML = `
@@ -368,6 +370,10 @@ function renderTaxAnalysis(
                             <label style="display: flex; flex-direction: column; gap: 4px; font-size: 10px;">
                                 Income Growth (%)
                                 <input id="roth-ladder-income-growth" type="number" step="0.1" min="-10" max="10" value="${(effectiveRothInputs.ladderIncomeGrowthRate * 100).toFixed(1)}" style="padding: 6px; border-radius: 4px; border: 1px solid #444; background: rgba(255,255,255,0.06); color: #fff;" />
+                            </label>
+                            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 10px;">
+                                Safety Buffer ($)
+                                <input id="roth-safety-buffer" type="number" step="100" min="0" max="50000" value="${effectiveRothInputs.safetyBuffer}" style="padding: 6px; border-radius: 4px; border: 1px solid #444; background: rgba(255,255,255,0.06); color: #fff;" />
                             </label>
                         </div>
                         <div style="margin-bottom: 8px;">
