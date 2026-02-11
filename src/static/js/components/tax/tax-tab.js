@@ -447,6 +447,18 @@ function renderTaxAnalysis(
                                         </div>
                                     </div>
                                 ` : ''}
+                                ${roth_conversion.bracket_targets?.length ? `
+                                    <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.2);">
+                                        <div style="font-weight: 600; margin-bottom: 6px;">🎯 Bracket-Edge Targets</div>
+                                        ${roth_conversion.bracket_targets.slice(0, 4).map((target) => `
+                                            <div style="display: grid; grid-template-columns: 90px 1fr 1fr; gap: 6px; padding: 4px 6px; border-radius: 3px; background: rgba(255,255,255,0.04); margin: 2px 0;">
+                                                <span>${target.target_bracket_label} ceiling</span>
+                                                <span>Convert ${formatCurrency(target.suggested_conversion, 0)}</span>
+                                                <span>Cost ${formatCurrency(target.projected_total_cost, 0)}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                ` : ''}
                             </div>
                         </details>
                         ${roth_conversion.conversion_ladder_5y?.rows?.length ? `

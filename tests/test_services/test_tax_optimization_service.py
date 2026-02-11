@@ -82,6 +82,7 @@ def test_roth_conversion_includes_ladder_projection():
         traditional_balance=400000,
     )
     assert "conversion_ladder_5y" in result
+    assert "bracket_targets" in result
     ladder = result["conversion_ladder_5y"]
     assert "rows" in ladder
     assert len(ladder["rows"]) >= 1

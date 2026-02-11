@@ -745,6 +745,10 @@ class TaxOptimizationService:
         bracket_space = self.roth_optimizer.calculate_bracket_space(
             current_taxable_income
         )
+        bracket_targets = self.build_bracket_edge_targets(
+            current_taxable_income=current_taxable_income,
+            traditional_balance=traditional_balance,
+        )
 
         # Analyze each conversion amount
         scenarios = []
@@ -780,6 +784,7 @@ class TaxOptimizationService:
             "current_taxable_income": current_taxable_income,
             "traditional_balance": traditional_balance,
             "bracket_space": bracket_space,
+            "bracket_targets": bracket_targets,
             "scenarios": scenarios,
             "optimal_24pct": optimal,
             "conversion_ladder_5y": ladder_5y,
@@ -935,6 +940,44 @@ class TaxOptimizationService:
             "metrics": metrics,
             "plans": ladders,
         }
+
+    def build_bracket_edge_targets(
+        self, current_taxable_income: float, traditional_balance: float
+    ) -> List[Dict]:
+        """Build precision targets for filling each reachable tax bracket edge."""
+        targets = []
+        brackets = self.calculator.get_brackets()
+        for lower, upper, rate in brackets:
+            if upper == float("inf"):
+                continue
+            if current_taxable_income >= upper:
+                continue
+
+            room = max(0.0, upper - max(current_taxable_income, lower))
+            if room <= 0:
+                continue
+
+            conversion = min(room, max(0.0, traditional_balance))
+            analysis = self.roth_optimizer.analyze_conversion_amount(
+                current_taxable_income=current_taxable_income,
+                traditional_balance=traditional_balance,
+                conversion_amount=conversion,
+            )
+            targets.append(
+                {
+                    "target_bracket_rate": round(rate, 4),
+                    "target_bracket_label": f"{int(rate * 100)}%",
+                    "bracket_floor": round(lower, 2),
+                    "bracket_ceiling": round(upper, 2),
+                    "room_to_ceiling": round(room, 2),
+                    "suggested_conversion": round(conversion, 2),
+                    "fully_fills_bracket": conversion >= room,
+                    "projected_conversion_tax": round(float(analysis["conversion_tax"]), 2),
+                    "projected_total_cost": round(float(analysis["total_cost"]), 2),
+                    "projected_new_marginal_rate": analysis["new_marginal_rate"],
+                }
+            )
+        return targets
 
     def analyze_social_security(
         self,

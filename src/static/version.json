@@ -1,5 +1,5 @@
 {
-    "version": "3.9.249",
-    "release_date": "2026-02-10",
-    "release_notes": "Roth ladder shows full modeled years including no-conversion rows with reasons"
+    "version": "3.9.250",
+    "release_date": "2026-02-11",
+    "release_notes": "Detailed tax bracket optimization: add Roth bracket-edge target guidance"
 }
