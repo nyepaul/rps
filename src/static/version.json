@@ -1,5 +1,5 @@
 {
-    "version": "3.9.267",
+    "version": "3.9.268",
     "release_date": "2026-02-11",
-    "release_notes": "Add 10 advanced planning modules with clickable analysis help cards and roadmap updates"
+    "release_notes": "Fix cash flow tooltip to preserve negative net cash flow sign"
 }

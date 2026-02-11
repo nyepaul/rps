@@ -730,7 +730,7 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
                             if (label) {
                                 label += ': ';
                             }
-                            const value = Math.abs(context.parsed.y);
+                            const value = context.parsed.y;
                             label += formatCurrency(value, 0);
                             return label;
                         }
