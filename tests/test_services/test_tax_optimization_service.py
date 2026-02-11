@@ -120,3 +120,17 @@ def test_roth_conversion_includes_variant_recommendation():
     assert variants["recommended"] in {"conservative", "balanced", "aggressive"}
     assert "metrics" in variants
     assert "plans" in variants
+
+
+def test_roth_conversion_ladder_keeps_modeled_years_when_no_space():
+    service = TaxOptimizationService(filing_status="mfj", state="CA", tax_year=2026)
+    result = service.analyze_roth_conversion(
+        current_taxable_income=1_000_000,
+        traditional_balance=100_000,
+        ladder_years=4,
+        ladder_growth_rate=0.03,
+        ladder_max_rate=0.20,
+    )
+    rows = result["conversion_ladder_5y"]["rows"]
+    assert len(rows) == 4
+    assert any(row.get("no_conversion_reason") for row in rows)

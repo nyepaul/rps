@@ -1,5 +1,5 @@
 {
-    "version": "3.9.248",
+    "version": "3.9.249",
     "release_date": "2026-02-10",
-    "release_notes": "Roth ladder now models annual taxable-income growth with configurable UI/API control"
+    "release_notes": "Roth ladder shows full modeled years including no-conversion rows with reasons"
 }

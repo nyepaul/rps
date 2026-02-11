@@ -465,6 +465,7 @@ function renderTaxAnalysis(
                                             <span>Convert ${formatCurrency(row.conversion_amount, 0)}</span>
                                             <span>Tax ${formatCurrency(row.conversion_tax, 0)}</span>
                                             <span>End ${formatCurrency(row.end_balance, 0)}</span>
+                                            ${row.no_conversion_reason ? `<span style="grid-column: 2 / span 4; opacity: 0.75;">Note: ${row.no_conversion_reason.replaceAll('_', ' ')}</span>` : ''}
                                         </div>
                                     `).join('')}
                                 </div>

@@ -806,7 +806,21 @@ class TaxOptimizationService:
 
         for year in range(1, years + 1):
             if balance <= 0:
-                break
+                rows.append(
+                    {
+                        "year": year,
+                        "taxable_income_assumption": 0.0,
+                        "start_balance": 0.0,
+                        "conversion_amount": 0.0,
+                        "conversion_tax": 0.0,
+                        "irmaa_increase": 0.0,
+                        "total_cost": 0.0,
+                        "new_marginal_rate": None,
+                        "end_balance": 0.0,
+                        "no_conversion_reason": "no_remaining_traditional_balance",
+                    }
+                )
+                continue
             year_taxable_income = taxable_income_base * ((1 + annual_income_growth) ** (year - 1))
 
             optimal = self.roth_optimizer.find_optimal_conversion(
@@ -814,7 +828,22 @@ class TaxOptimizationService:
             )
             amount = max(0.0, min(balance, float(optimal.get("conversion_amount", 0.0))))
             if amount <= 0:
-                break
+                rows.append(
+                    {
+                        "year": year,
+                        "taxable_income_assumption": round(year_taxable_income, 2),
+                        "start_balance": round(balance, 2),
+                        "conversion_amount": 0.0,
+                        "conversion_tax": 0.0,
+                        "irmaa_increase": 0.0,
+                        "total_cost": 0.0,
+                        "new_marginal_rate": optimal.get("new_marginal_rate"),
+                        "end_balance": round(balance * (1 + annual_growth), 2),
+                        "no_conversion_reason": "no_bracket_space_at_target_rate",
+                    }
+                )
+                balance = max(0.0, balance * (1 + annual_growth))
+                continue
 
             analysis = self.roth_optimizer.analyze_conversion_amount(
                 year_taxable_income, balance, amount
@@ -851,11 +880,7 @@ class TaxOptimizationService:
             "total_irmaa_increase": round(total_irmaa, 2),
             "total_cost": round(total_conversion_tax + total_irmaa, 2),
             "ending_balance": round(balance, 2),
-            "stopped_reason": (
-                "insufficient_bracket_space_or_balance"
-                if len(rows) < years
-                else "modeled_years_completed"
-            ),
+            "stopped_reason": "modeled_years_completed",
         }
 
     def build_roth_ladder_variants(
