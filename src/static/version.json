@@ -1,5 +1,5 @@
 {
-    "version": "3.9.257",
+    "version": "3.9.258",
     "release_date": "2026-02-11",
-    "release_notes": "Detailed tax bracket optimization: add Roth conversion tax timeline summary"
+    "release_notes": "Detailed tax bracket optimization: add Roth conversion risk flags"
 }

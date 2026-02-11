@@ -546,6 +546,16 @@ function renderTaxAnalysis(
                                         `).join('')}
                                     </div>
                                 ` : ''}
+                                ${roth_conversion.conversion_risk_flags?.has_risks ? `
+                                    <div style="margin-top: 10px; padding: 6px; border-radius: 4px; background: rgba(244,63,94,0.12); border: 1px solid rgba(244,63,94,0.35);">
+                                        <div style="font-weight: 600; margin-bottom: 4px;">⚠️ Plan Risk Flags</div>
+                                        ${roth_conversion.conversion_risk_flags.flags.map((flag) => `
+                                            <div style="font-size: 10px; margin: 2px 0;">
+                                                [${flag.severity}] ${flag.message}
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                ` : ''}
                             </div>
                         </details>
                         ${roth_conversion.conversion_ladder_5y?.rows?.length ? `

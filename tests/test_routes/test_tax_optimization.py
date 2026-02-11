@@ -74,6 +74,7 @@ def test_analyze_roth_conversion(client, test_user, test_profile):
     assert "conversion_window_summary" in data
     assert "conversion_execution_plan" in data
     assert "conversion_tax_timeline" in data
+    assert "conversion_risk_flags" in data
     assert "scenarios" in data
     assert "conversion_ladder_5y" in data
     assert "rows" in data["conversion_ladder_5y"]

@@ -807,6 +807,11 @@ class TaxOptimizationService:
         conversion_tax_timeline = self.build_conversion_tax_timeline(
             ladder=ladder_5y,
         )
+        conversion_risk_flags = self.build_conversion_risk_flags(
+            conversion_window_summary=conversion_window_summary,
+            front_load_recommendation=front_load_recommendation,
+            conversion_tax_timeline=conversion_tax_timeline,
+        )
 
         return {
             "current_taxable_income": current_taxable_income,
@@ -820,6 +825,7 @@ class TaxOptimizationService:
             "conversion_window_summary": conversion_window_summary,
             "conversion_execution_plan": conversion_execution_plan,
             "conversion_tax_timeline": conversion_tax_timeline,
+            "conversion_risk_flags": conversion_risk_flags,
             "scenarios": scenarios,
             "optimal_24pct": optimal,
             "conversion_ladder_5y": ladder_5y,
@@ -1214,6 +1220,44 @@ class TaxOptimizationService:
             "peak_conversion_tax": round(max(0.0, peak_tax), 2),
             "concentration_ratio": round(concentration_ratio, 2),
             "is_concentrated": concentration_ratio > 1.5,
+        }
+
+    @staticmethod
+    def build_conversion_risk_flags(
+        conversion_window_summary: Dict,
+        front_load_recommendation: Dict,
+        conversion_tax_timeline: Dict,
+    ) -> Dict:
+        """Generate compact risk flags for conversion plan quality."""
+        flags = []
+        if front_load_recommendation.get("should_front_load"):
+            flags.append(
+                {
+                    "code": "ceiling_crossover",
+                    "severity": "warning",
+                    "message": "Income is projected to hit the target bracket ceiling; front-loading may be required.",
+                }
+            )
+        if conversion_tax_timeline.get("is_concentrated"):
+            flags.append(
+                {
+                    "code": "tax_concentration",
+                    "severity": "warning",
+                    "message": "Conversion taxes are concentrated in one year; smoothing may reduce planning risk.",
+                }
+            )
+        if conversion_window_summary.get("open_year_count", 0) <= 1:
+            flags.append(
+                {
+                    "code": "narrow_window",
+                    "severity": "critical",
+                    "message": "Conversion window is narrow under current assumptions.",
+                }
+            )
+        return {
+            "has_risks": len(flags) > 0,
+            "count": len(flags),
+            "flags": flags,
         }
 
     def analyze_social_security(
