@@ -71,10 +71,59 @@ async function init() {
     // Load and display version
     loadVersion();
 
-    // Show initial tab - always start with welcome as landing page
-    // Note: We always show Welcome on page load, regardless of previous session
-    showTab('welcome');
+    // Restore tab on refresh/back: URL hash -> history state -> last saved tab -> welcome.
+    const initialTab = resolveInitialTab();
+    await showTab(initialTab, { updateHistory: false });
 
+    // Keep browser back/forward in sync with tab navigation.
+    window.addEventListener('popstate', async (event) => {
+        const requestedTab = sanitizeTabName(
+            event?.state?.tab || window.location.hash.replace('#', '')
+        ) || sanitizeTabName(localStorage.getItem(STORAGE_KEYS.LAST_TAB)) || 'welcome';
+        await showTab(requestedTab, { updateHistory: false });
+    });
+
+}
+
+function sanitizeTabName(tabName) {
+    if (!tabName) return null;
+    const normalized = String(tabName).trim().toLowerCase();
+    const allowedTabs = getAllowedTabNames();
+    if (allowedTabs.has(normalized) || normalized === 'admin') {
+        return normalized;
+    }
+    return null;
+}
+
+function getAllowedTabNames() {
+    const allowedTabs = new Set();
+    const progressive = APP_CONFIG.PROGRESSIVE_TABS || {};
+
+    (progressive.ALWAYS || []).forEach((tab) => allowedTabs.add(String(tab).toLowerCase()));
+    (progressive.LEVEL_1?.tabs || []).forEach((tab) => allowedTabs.add(String(tab).toLowerCase()));
+    (progressive.LEVEL_2?.tabs || []).forEach((tab) => allowedTabs.add(String(tab).toLowerCase()));
+    (progressive.LEVEL_3?.tabs || []).forEach((tab) => allowedTabs.add(String(tab).toLowerCase()));
+
+    // Keep tab restore resilient if config and rendered tabs diverge.
+    document.querySelectorAll('.tab[data-tab]').forEach((el) => {
+        const tab = el.getAttribute('data-tab');
+        if (tab) allowedTabs.add(String(tab).toLowerCase());
+    });
+
+    return allowedTabs;
+}
+
+function resolveInitialTab() {
+    const hashTab = sanitizeTabName(window.location.hash.replace('#', ''));
+    if (hashTab) return hashTab;
+
+    const historyTab = sanitizeTabName(window.history.state?.tab);
+    if (historyTab) return historyTab;
+
+    const lastTab = sanitizeTabName(localStorage.getItem(STORAGE_KEYS.LAST_TAB));
+    if (lastTab) return lastTab;
+
+    return 'welcome';
 }
 
 /**
@@ -333,7 +382,7 @@ function setupTabNavigation() {
     tabButtons.forEach(button => {
         button.addEventListener('click', () => {
             const tabName = button.getAttribute('data-tab');
-            showTab(tabName);
+            showTab(tabName, { updateHistory: true });
         });
     });
 }
@@ -341,7 +390,10 @@ function setupTabNavigation() {
 /**
  * Show specific tab
  */
-async function showTab(tabName) {
+async function showTab(tabName, options = {}) {
+    const { updateHistory = true } = options;
+    tabName = sanitizeTabName(tabName) || 'welcome';
+
     // 1. Force close any open dropdowns
     const dropdowns = document.querySelectorAll('.nav-dropdown');
     dropdowns.forEach(d => {
@@ -376,6 +428,18 @@ async function showTab(tabName) {
 
     // Save to localStorage
     localStorage.setItem(STORAGE_KEYS.LAST_TAB, tabName);
+
+    // Update URL/history for refresh + browser navigation behavior.
+    const targetHash = `#${tabName}`;
+    if (updateHistory) {
+        if (window.location.hash !== targetHash) {
+            window.history.pushState({ tab: tabName }, '', targetHash);
+        } else {
+            window.history.replaceState({ tab: tabName }, '', targetHash);
+        }
+    } else {
+        window.history.replaceState({ tab: tabName }, '', targetHash);
+    }
 
     // Track tab view
     const currentProfile = store.getState().currentProfile;

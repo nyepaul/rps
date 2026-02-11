@@ -9,6 +9,205 @@ import { taxOptimizationAPI } from '../../api/tax-optimization.js';
 import { formatCurrency, formatPercent, formatCompact } from '../../utils/formatters.js';
 import { showSuccess, showError, showLoading } from '../../utils/dom.js';
 
+const TAX_GLOSSARY = {
+    life_expectancy: {
+        title: 'Life Expectancy',
+        definition: 'How long benefits are projected. A longer horizon often increases the value of delayed claiming.'
+    },
+    annual_earned_income: {
+        title: 'Annual Earned Income',
+        definition: 'Wages/self-employment income while receiving benefits. Before full retirement age, earnings can temporarily reduce Social Security payments.'
+    },
+    noncovered_pension: {
+        title: 'Noncovered Pension',
+        definition: 'Pension income from work that did not pay into Social Security payroll taxes.'
+    },
+    wep: {
+        title: 'WEP (Windfall Elimination Provision)',
+        definition: 'A rule that can reduce your own Social Security retirement/disability benefit when you also receive a noncovered pension.'
+    },
+    gpo: {
+        title: 'GPO (Government Pension Offset)',
+        definition: 'A rule that can reduce spousal/survivor benefits, often by two-thirds of a noncovered pension amount.'
+    },
+    roth_conversion: {
+        title: 'Roth Conversion',
+        definition: 'Moving money from traditional retirement accounts into Roth accounts. Taxes are paid now, future qualified withdrawals are tax-free.'
+    },
+    ladder_years: {
+        title: 'Ladder Years',
+        definition: 'How many years the model spreads planned Roth conversions across.'
+    },
+    growth_rate: {
+        title: 'Growth Rate',
+        definition: 'Annual investment growth assumption used in projections.'
+    },
+    max_marginal_rate: {
+        title: 'Max Marginal Rate',
+        definition: 'The highest marginal tax rate you are willing to hit in the conversion plan.'
+    },
+    income_growth: {
+        title: 'Income Growth',
+        definition: 'Annual growth assumption for taxable income used when estimating future bracket headroom.'
+    },
+    safety_buffer: {
+        title: 'Safety Buffer',
+        definition: 'Dollar cushion left below a bracket ceiling to reduce risk of crossing into a higher bracket from estimate error.'
+    },
+    optimal_conversion: {
+        title: 'Optimal Conversion',
+        definition: 'The model-recommended amount to convert this year under the selected bracket and assumptions.'
+    },
+    tax_cost: {
+        title: 'Tax Cost',
+        definition: 'Estimated tax bill caused by the conversion amount.'
+    },
+    effective_rate: {
+        title: 'Effective Rate',
+        definition: 'Average tax rate on the conversion amount (tax cost divided by conversion amount), different from marginal rate.'
+    },
+    lifetime_savings: {
+        title: 'Lifetime Savings',
+        definition: 'Estimated long-term tax savings from converting now versus deferring and paying tax later.'
+    },
+    rmd: {
+        title: 'RMD (Required Minimum Distribution)',
+        definition: 'Mandatory annual withdrawals from certain retirement accounts, typically starting at age 73.'
+    },
+    qcd: {
+        title: 'QCD (Qualified Charitable Distribution)',
+        definition: 'A direct IRA-to-charity distribution that can satisfy RMD requirements while reducing taxable income.'
+    },
+    annual_giving_assumption: {
+        title: 'Annual Giving Assumption',
+        definition: 'Estimated yearly charitable giving used to model potential QCD strategies.'
+    },
+    taxable_rmd_after_qcd: {
+        title: 'Taxable RMD After QCD',
+        definition: 'The portion of required distribution still taxable after applying suggested QCD amounts.'
+    },
+    state_tax_comparison: {
+        title: 'State Tax Comparison',
+        definition: 'Side-by-side estimate of annual state income-tax burden by state, based on current profile income assumptions.'
+    },
+    no_income_tax: {
+        title: 'No Income Tax States',
+        definition: 'States with no broad wage/salary state income tax. Total tax burden can still include sales/property taxes.'
+    },
+    low_tax_states: {
+        title: 'Low Tax States',
+        definition: 'States with comparatively lower estimated income-tax burden under your modeled income.'
+    },
+    savings_vs_current: {
+        title: 'Savings vs Current State',
+        definition: 'Difference between estimated state tax in that state and your current state tax estimate.'
+    },
+    irmaa: {
+        title: 'IRMAA',
+        definition: 'Income-Related Monthly Adjustment Amount; an added Medicare Part B/D surcharge at higher MAGI levels.'
+    },
+    healthcare_projection: {
+        title: 'Healthcare & Medicare Projection',
+        definition: 'A year-by-year estimate of healthcare costs, Medicare premiums, IRMAA surcharges, and HSA offsets under your assumptions.'
+    },
+    projection_years: {
+        title: 'Projection Years',
+        definition: 'How many future years are included in the healthcare projection.'
+    },
+    medical_inflation: {
+        title: 'Medical Inflation',
+        definition: 'Annual growth assumption for healthcare costs such as premiums, prescriptions, and other medical expenses.'
+    },
+    estimated_magi: {
+        title: 'Estimated MAGI',
+        definition: 'Modified Adjusted Gross Income used to estimate IRMAA brackets and Medicare premium surcharges.'
+    },
+    out_of_pocket: {
+        title: 'Out-of-Pocket Costs',
+        definition: 'Expected annual medical spending not covered by insurance, including deductibles, copays, and coinsurance.'
+    },
+    hsa: {
+        title: 'HSA (Health Savings Account)',
+        definition: 'A tax-advantaged account that can be used for qualified medical expenses.'
+    },
+    hsa_growth: {
+        title: 'HSA Growth',
+        definition: 'Annual investment growth assumption applied to remaining HSA balance.'
+    },
+    medicare: {
+        title: 'Medicare',
+        definition: 'U.S. federal health insurance program, primarily for people age 65 and older and certain younger people with disabilities.'
+    },
+    medicare_part_a: {
+        title: 'Medicare Part A',
+        definition: 'Hospital insurance component of Medicare.'
+    },
+    medicare_part_b: {
+        title: 'Medicare Part B',
+        definition: 'Medical insurance for doctor services, outpatient care, and preventive services.'
+    },
+    medicare_part_d: {
+        title: 'Medicare Part D',
+        definition: 'Prescription drug coverage component of Medicare.'
+    },
+    medicare_eligible_people: {
+        title: 'Medicare Eligible',
+        definition: 'Number of household members currently projected as eligible for Medicare in that year.'
+    },
+    net_healthcare_cost: {
+        title: 'Net Healthcare Cost',
+        definition: 'Projected total healthcare cost after subtracting HSA amounts applied in that year.'
+    }
+};
+
+function glossaryTerm(label, key) {
+    return `<button type="button" class="glossary-term" data-glossary-term="${key}" style="background: none; border: none; color: inherit; font: inherit; font-weight: inherit; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 2px; padding: 0;" title="Click for definition">${label}</button>`;
+}
+
+function wireGlossaryTermClicks(root) {
+    if (!root) return;
+    root.querySelectorAll('.glossary-term').forEach((el) => {
+        el.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            showGlossaryDefinition(el.dataset.glossaryTerm);
+        });
+    });
+}
+
+function showGlossaryDefinition(key) {
+    const item = TAX_GLOSSARY[key];
+    if (!item) return;
+
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10001; padding: 20px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; max-width: 540px; width: 100%; border: 2px solid var(--accent-color);">
+                <h3 style="margin: 0 0 10px 0; color: var(--accent-color);">${item.title}</h3>
+                <p style="margin: 0; line-height: 1.6; color: var(--text-primary);">${item.definition}</p>
+                <div style="margin-top: 16px; text-align: right;">
+                    <button id="close-glossary-definition" style="padding: 8px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    modal.querySelector('#close-glossary-definition').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+}
+
+function normalizeRate(value, fallback = 0) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return fallback;
+    return n > 1 ? (n / 100) : n;
+}
+
+function formatRatePercent(value, digits = 1) {
+    return `${(normalizeRate(value) * 100).toFixed(digits)}%`;
+}
+
 export async function renderTaxTab(container) {
     const currentProfile = store.get('currentProfile');
 
@@ -107,6 +306,7 @@ function renderTaxAnalysis(
     rothInputs = null
 ) {
     const { snapshot, social_security_analysis, roth_conversion, rmd_analysis, state_comparison, recommendations } = analysis;
+    const g = glossaryTerm;
     const effectiveSocialInputs = socialSecurityInputs || {
         lifeExpectancy: 90,
         annualEarnedIncome: social_security_analysis?.adjustments?.annual_earned_income || 0,
@@ -116,9 +316,9 @@ function renderTaxAnalysis(
     };
     const effectiveRothInputs = rothInputs || {
         ladderYears: roth_conversion?.conversion_ladder_5y?.years_modeled || 5,
-        ladderGrowthRate: roth_conversion?.conversion_ladder_5y?.annual_growth_assumption || 0.05,
-        ladderMaxRate: roth_conversion?.conversion_ladder_5y?.max_marginal_rate_target || 0.24,
-        ladderIncomeGrowthRate: roth_conversion?.conversion_ladder_5y?.income_growth_assumption || 0.02,
+        ladderGrowthRate: normalizeRate(roth_conversion?.conversion_ladder_5y?.annual_growth_assumption, 0.05),
+        ladderMaxRate: normalizeRate(roth_conversion?.conversion_ladder_5y?.max_marginal_rate_target, 0.24),
+        ladderIncomeGrowthRate: normalizeRate(roth_conversion?.conversion_ladder_5y?.income_growth_assumption, 0.02),
         safetyBuffer: roth_conversion?.precision_recommendations?.[0]?.safe_buffer || 500,
     };
 
@@ -149,13 +349,13 @@ function renderTaxAnalysis(
                     <div style="background: var(--bg-primary); padding: 10px; border-radius: 6px;">
                         <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 2px;">Effective Rate</div>
                         <div style="font-size: 16px; font-weight: 700;">
-                            ${formatPercent(snapshot.rates.effective_rate / 100, 1)}
+                            ${formatPercent(normalizeRate(snapshot.rates.effective_rate), 1)}
                         </div>
                     </div>
                     <div style="background: var(--bg-primary); padding: 10px; border-radius: 6px;">
                         <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 2px;">Marginal Rate</div>
                         <div style="font-size: 16px; font-weight: 700; color: var(--warning-color);">
-                            ${formatPercent(snapshot.rates.marginal_rate / 100, 0)}
+                            ${formatPercent(normalizeRate(snapshot.rates.marginal_rate), 0)}
                         </div>
                     </div>
                     <div style="background: var(--bg-primary); padding: 10px; border-radius: 6px;">
@@ -219,27 +419,33 @@ function renderTaxAnalysis(
                     <!-- Social Security Analysis -->
                     ${social_security_analysis?.available ? `
                     <div style="background: #000; padding: 12px; border-radius: 8px; color: white; border: 1px solid #333;">
-                        <h2 style="font-size: 15px; margin: 0 0 10px 0; font-weight: 700;">👥 Social Security Strategy</h2>
+                        <h2 style="font-size: 15px; margin: 0 0 10px 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                            👥 Social Security Strategy
+                            <span id="social-security-info" class="csp-hover-opacity" style="cursor: pointer; font-size: 14px; opacity: 0.7; transition: opacity 0.2s;" title="Click for explanation">ℹ️</span>
+                        </h2>
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-bottom: 8px;">
-                            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 10px;">
-                                Life Expectancy
-                                <input id="ss-life-expectancy" type="number" min="70" max="110" value="${effectiveSocialInputs.lifeExpectancy}" style="padding: 6px; border-radius: 4px; border: 1px solid #444; background: rgba(255,255,255,0.06); color: #fff;" />
+                            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 10px;" title="How long benefits are projected. Longer life expectancy often favors delaying benefits.">
+                                ${g('Life Expectancy', 'life_expectancy')}
+                                <input id="ss-life-expectancy" type="number" min="70" max="110" value="${effectiveSocialInputs.lifeExpectancy}" title="Projection horizon for claiming strategy comparisons." style="padding: 6px; border-radius: 4px; border: 1px solid #444; background: rgba(255,255,255,0.06); color: #fff;" />
                             </label>
-                            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 10px;">
-                                Annual Earned Income ($)
-                                <input id="ss-annual-earned-income" type="number" min="0" step="1000" value="${effectiveSocialInputs.annualEarnedIncome}" style="padding: 6px; border-radius: 4px; border: 1px solid #444; background: rgba(255,255,255,0.06); color: #fff;" />
+                            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 10px;" title="Expected wages while receiving Social Security. Can reduce benefits before full retirement age.">
+                                ${g('Annual Earned Income ($)', 'annual_earned_income')}
+                                <input id="ss-annual-earned-income" type="number" min="0" step="1000" value="${effectiveSocialInputs.annualEarnedIncome}" title="Used for earnings-test adjustments in projected benefits." style="padding: 6px; border-radius: 4px; border: 1px solid #444; background: rgba(255,255,255,0.06); color: #fff;" />
                             </label>
-                            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 10px;">
-                                Noncovered Pension ($/yr)
-                                <input id="ss-noncovered-pension-annual" type="number" min="0" step="1000" value="${effectiveSocialInputs.noncoveredPensionAnnual}" style="padding: 6px; border-radius: 4px; border: 1px solid #444; background: rgba(255,255,255,0.06); color: #fff;" />
+                            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 10px;" title="Annual pension from non-Social Security-covered employment.">
+                                ${g('Noncovered Pension ($/yr)', 'noncovered_pension')}
+                                <input id="ss-noncovered-pension-annual" type="number" min="0" step="1000" value="${effectiveSocialInputs.noncoveredPensionAnnual}" title="Can trigger WEP/GPO reductions depending on eligibility." style="padding: 6px; border-radius: 4px; border: 1px solid #444; background: rgba(255,255,255,0.06); color: #fff;" />
                             </label>
                             <div style="display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; font-size: 10px;">
-                                <label style="display: flex; align-items: center; gap: 6px;"><input id="ss-apply-wep" type="checkbox" ${effectiveSocialInputs.applyWep ? 'checked' : ''} /> Apply WEP</label>
-                                <label style="display: flex; align-items: center; gap: 6px;"><input id="ss-apply-gpo" type="checkbox" ${effectiveSocialInputs.applyGpo ? 'checked' : ''} /> Apply GPO</label>
+                                <label style="display: flex; align-items: center; gap: 6px;" title="WEP may reduce your own Social Security benefit when you also receive a noncovered pension."><input id="ss-apply-wep" type="checkbox" ${effectiveSocialInputs.applyWep ? 'checked' : ''} /> ${g('Apply WEP', 'wep')}</label>
+                                <label style="display: flex; align-items: center; gap: 6px;" title="GPO may reduce spousal/survivor benefits by up to two-thirds of a noncovered pension."><input id="ss-apply-gpo" type="checkbox" ${effectiveSocialInputs.applyGpo ? 'checked' : ''} /> ${g('Apply GPO', 'gpo')}</label>
                             </div>
                         </div>
+                        <div style="font-size: 10px; opacity: 0.75; margin-bottom: 8px; line-height: 1.4;">
+                            Adjust assumptions, then recalculate to compare claiming ages, benefit levels, and survivor income under WEP/GPO scenarios.
+                        </div>
                         <div style="margin-bottom: 8px;">
-                            <button id="recalc-social-security-projection" style="padding: 8px 14px; border-radius: 6px; border: 1px solid #444; background: #1f2937; color: #fff; cursor: pointer; font-weight: 600;">Recalculate Social Security</button>
+                            <button id="recalc-social-security-projection" title="Re-runs Social Security optimization using the current inputs above." style="padding: 8px 14px; border-radius: 6px; border: 1px solid #444; background: #1f2937; color: #fff; cursor: pointer; font-weight: 600;">Recalculate Social Security</button>
                         </div>
                         ${social_security_analysis.adjustments ? `
                             <div style="background: rgba(255,255,255,0.08); border-radius: 6px; padding: 8px; margin-bottom: 8px; font-size: 10px;">
@@ -251,20 +457,20 @@ function renderTaxAnalysis(
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; margin-bottom: 8px;">
                             ${social_security_analysis.primary?.optimal ? `
                                 <div style="background: rgba(255,255,255,0.08); border-radius: 6px; padding: 8px;">
-                                    <div style="font-size: 10px; opacity: 0.7;">Primary Optimal Age</div>
+                                    <div style="font-size: 10px; opacity: 0.7;" title="Claiming age that maximizes modeled lifetime benefit for the primary person.">Primary Optimal Age</div>
                                     <div style="font-size: 16px; font-weight: 700;">${social_security_analysis.primary.optimal.claiming_age}</div>
-                                    <div style="font-size: 11px; opacity: 0.85;">${formatCurrency(social_security_analysis.primary.optimal.monthly_benefit, 0)}/mo</div>
+                                    <div style="font-size: 11px; opacity: 0.85;" title="Estimated monthly benefit at this claiming age.">${formatCurrency(social_security_analysis.primary.optimal.monthly_benefit, 0)}/mo</div>
                                 </div>
                             ` : ''}
                             ${social_security_analysis.spouse?.optimal ? `
                                 <div style="background: rgba(255,255,255,0.08); border-radius: 6px; padding: 8px;">
-                                    <div style="font-size: 10px; opacity: 0.7;">Spouse Optimal Age</div>
+                                    <div style="font-size: 10px; opacity: 0.7;" title="Claiming age that maximizes modeled lifetime benefit for spouse.">Spouse Optimal Age</div>
                                     <div style="font-size: 16px; font-weight: 700;">${social_security_analysis.spouse.optimal.claiming_age}</div>
-                                    <div style="font-size: 11px; opacity: 0.85;">${formatCurrency(social_security_analysis.spouse.optimal.monthly_benefit, 0)}/mo</div>
+                                    <div style="font-size: 11px; opacity: 0.85;" title="Estimated spouse monthly benefit at this claiming age.">${formatCurrency(social_security_analysis.spouse.optimal.monthly_benefit, 0)}/mo</div>
                                 </div>
                             ` : ''}
                             <div style="background: rgba(34,197,94,0.14); border: 1px solid rgba(34,197,94,0.35); border-radius: 6px; padding: 8px;">
-                                <div style="font-size: 10px; opacity: 0.7;">Survivor Income (70 Strategy)</div>
+                                <div style="font-size: 10px; opacity: 0.7;" title="Estimated survivor monthly Social Security income assuming a delay-to-70 strategy.">Survivor Income (70 Strategy)</div>
                                 <div style="font-size: 16px; font-weight: 700;">${formatCurrency(social_security_analysis.household.survivor_monthly_estimate_at_70_strategy, 0)}/mo</div>
                             </div>
                         </div>
@@ -351,28 +557,28 @@ function renderTaxAnalysis(
                     ${roth_conversion ? `
                     <div style="background: #000; padding: 12px; border-radius: 8px; color: white; border: 1px solid #333;">
                         <h2 style="font-size: 15px; margin: 0 0 10px 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-                            🔄 Roth Conversions
+                            🔄 ${g('Roth Conversions', 'roth_conversion')}
                             <span id="roth-conversion-info" class="csp-hover-opacity" style="cursor: pointer; font-size: 14px; opacity: 0.7; transition: opacity 0.2s;" title="Click for explanation">ℹ️</span>
                         </h2>
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 8px;">
                             <label style="display: flex; flex-direction: column; gap: 4px; font-size: 10px;">
-                                Ladder Years
+                                ${g('Ladder Years', 'ladder_years')}
                                 <input id="roth-ladder-years" type="number" min="1" max="20" value="${effectiveRothInputs.ladderYears}" style="padding: 6px; border-radius: 4px; border: 1px solid #444; background: rgba(255,255,255,0.06); color: #fff;" />
                             </label>
                             <label style="display: flex; flex-direction: column; gap: 4px; font-size: 10px;">
-                                Growth Rate (%)
+                                ${g('Growth Rate (%)', 'growth_rate')}
                                 <input id="roth-ladder-growth" type="number" step="0.1" min="-20" max="30" value="${(effectiveRothInputs.ladderGrowthRate * 100).toFixed(1)}" style="padding: 6px; border-radius: 4px; border: 1px solid #444; background: rgba(255,255,255,0.06); color: #fff;" />
                             </label>
                             <label style="display: flex; flex-direction: column; gap: 4px; font-size: 10px;">
-                                Max Marginal Rate (%)
+                                ${g('Max Marginal Rate (%)', 'max_marginal_rate')}
                                 <input id="roth-ladder-max-rate" type="number" step="1" min="10" max="50" value="${(effectiveRothInputs.ladderMaxRate * 100).toFixed(0)}" style="padding: 6px; border-radius: 4px; border: 1px solid #444; background: rgba(255,255,255,0.06); color: #fff;" />
                             </label>
                             <label style="display: flex; flex-direction: column; gap: 4px; font-size: 10px;">
-                                Income Growth (%)
+                                ${g('Income Growth (%)', 'income_growth')}
                                 <input id="roth-ladder-income-growth" type="number" step="0.1" min="-10" max="10" value="${(effectiveRothInputs.ladderIncomeGrowthRate * 100).toFixed(1)}" style="padding: 6px; border-radius: 4px; border: 1px solid #444; background: rgba(255,255,255,0.06); color: #fff;" />
                             </label>
                             <label style="display: flex; flex-direction: column; gap: 4px; font-size: 10px;">
-                                Safety Buffer ($)
+                                ${g('Safety Buffer ($)', 'safety_buffer')}
                                 <input id="roth-safety-buffer" type="number" step="100" min="0" max="50000" value="${effectiveRothInputs.safetyBuffer}" style="padding: 6px; border-radius: 4px; border: 1px solid #444; background: rgba(255,255,255,0.06); color: #fff;" />
                             </label>
                         </div>
@@ -383,14 +589,14 @@ function renderTaxAnalysis(
                         ${roth_conversion.optimal_24pct ? `
                             ${roth_conversion.optimal_24pct.conversion_amount > 0 ? `
                                 <div style="background: rgba(255,255,255,0.15); padding: 10px; border-radius: 6px; margin-bottom: 8px;">
-                                    <div style="font-size: 12px; font-weight: 700; margin-bottom: 2px;">Optimal Conversion (24% Bracket)</div>
+                                    <div style="font-size: 12px; font-weight: 700; margin-bottom: 2px;">${g('Optimal Conversion (24% Bracket)', 'optimal_conversion')}</div>
                                     <div style="font-size: 18px; font-weight: 700; color: #4ade80;">${formatCurrency(roth_conversion.optimal_24pct.conversion_amount, 0)}</div>
                                     <div style="font-size: 11px; opacity: 0.8; margin-top: 4px;">
-                                        Tax Cost: ${formatCurrency(roth_conversion.optimal_24pct.conversion_tax, 0)}
-                                        (${(roth_conversion.optimal_24pct.effective_rate_on_conversion * 100).toFixed(1)}% effective)
+                                        ${g('Tax Cost', 'tax_cost')}: ${formatCurrency(roth_conversion.optimal_24pct.conversion_tax, 0)}
+                                        (${formatRatePercent(roth_conversion.optimal_24pct.effective_rate_on_conversion, 1)} ${g('effective', 'effective_rate')})
                                     </div>
                                     <div style="font-size: 11px; opacity: 0.8; margin-top: 2px;">
-                                        Lifetime Savings: ${formatCurrency(roth_conversion.optimal_24pct.lifetime_savings || 0, 0)}
+                                        ${g('Lifetime Savings', 'lifetime_savings')}: ${formatCurrency(roth_conversion.optimal_24pct.lifetime_savings || 0, 0)}
                                     </div>
                                 </div>
                             ` : `
@@ -441,7 +647,7 @@ function renderTaxAnalysis(
                                                 <span>Convert ${formatCurrency(scenario.conversion_amount, 0)}:</span>
                                                 <span style="font-weight: 600;">
                                                     Tax ${formatCurrency(scenario.conversion_tax, 0)}
-                                                    @ ${scenario.new_marginal_rate ? (scenario.new_marginal_rate * 100).toFixed(0) : 'N/A'}% marginal
+                                                    @ ${scenario.new_marginal_rate ? formatRatePercent(scenario.new_marginal_rate, 0) : 'N/A'} marginal
                                                 </span>
                                             </div>
                                         `).join('')}
@@ -615,20 +821,20 @@ function renderTaxAnalysis(
                     ${rmd_analysis ? `
                     <div style="background: #000; padding: 12px; border-radius: 8px; color: white; border: 1px solid #333;">
                         <h2 style="font-size: 15px; margin: 0 0 10px 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-                            📅 RMD Analysis
+                            📅 ${g('RMD Analysis', 'rmd')}
                             <span id="rmd-analysis-info" class="csp-hover-opacity" style="cursor: pointer; font-size: 14px; opacity: 0.7; transition: opacity 0.2s;" title="Click for explanation">ℹ️</span>
                         </h2>
                         <div style="font-size: 12px; margin-bottom: 8px;">
                             ${rmd_analysis.current.required
                                 ? `Current RMD: <strong>${formatCurrency(rmd_analysis.current.rmd_amount, 0)}</strong>`
-                                : `RMDs begin in <strong>${rmd_analysis.summary.years_until_rmd} years</strong> (age 73)`}
+                                : `${g('RMDs', 'rmd')} begin in <strong>${rmd_analysis.summary.years_until_rmd} years</strong> (age 73)`}
                         </div>
                         ${rmd_analysis.qcd_planning ? `
                             <div style="background: rgba(34,197,94,0.16); border: 1px solid rgba(34,197,94,0.35); border-radius: 6px; padding: 8px; margin-bottom: 8px; font-size: 11px; line-height: 1.4;">
-                                <div style="font-weight: 700; margin-bottom: 4px;">QCD Planning</div>
-                                <div>Annual Giving Assumption: <strong>${formatCurrency(rmd_analysis.qcd_planning.annual_charitable_giving_assumption || 0, 0)}</strong></div>
-                                <div>Suggested QCD This Year: <strong>${formatCurrency(rmd_analysis.qcd_planning.current_year_suggested_qcd || 0, 0)}</strong></div>
-                                <div>Taxable RMD After QCD: <strong>${formatCurrency(rmd_analysis.qcd_planning.current_year_taxable_rmd_after_qcd || 0, 0)}</strong></div>
+                                <div style="font-weight: 700; margin-bottom: 4px;">${g('QCD Planning', 'qcd')}</div>
+                                <div>${g('Annual Giving Assumption', 'annual_giving_assumption')}: <strong>${formatCurrency(rmd_analysis.qcd_planning.annual_charitable_giving_assumption || 0, 0)}</strong></div>
+                                <div>Suggested ${g('QCD', 'qcd')} This Year: <strong>${formatCurrency(rmd_analysis.qcd_planning.current_year_suggested_qcd || 0, 0)}</strong></div>
+                                <div>${g('Taxable RMD After QCD', 'taxable_rmd_after_qcd')}: <strong>${formatCurrency(rmd_analysis.qcd_planning.current_year_taxable_rmd_after_qcd || 0, 0)}</strong></div>
                             </div>
                         ` : ''}
                         <details style="cursor: pointer;">
@@ -691,7 +897,7 @@ function renderTaxAnalysis(
                     <!-- State Tax Comparison -->
                     ${state_comparison && state_comparison.length > 0 ? `
                     <div style="background: #000; padding: 12px; border-radius: 8px; color: white; border: 1px solid #333; height: 100%;">
-                        <h2 style="font-size: 15px; margin: 0 0 8px 0; font-weight: 700;">🗺️ State Tax Comparison</h2>
+                        <h2 style="font-size: 15px; margin: 0 0 8px 0; font-weight: 700;">🗺️ ${g('State Tax Comparison', 'state_tax_comparison')}</h2>
                         <p style="font-size: 10px; opacity: 0.7; margin: 0 0 12px 0; line-height: 1.4;">
                             Your annual tax burden if you lived in each state. Based on your current income.
                         </p>
@@ -710,14 +916,14 @@ function renderTaxAnalysis(
                                     html += `
                                         <div style="margin-bottom: 12px;">
                                             <div style="font-size: 10px; font-weight: 600; opacity: 0.6; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
-                                                ✅ No Income Tax
+                                                ✅ ${g('No Income Tax', 'no_income_tax')}
                                             </div>
                                             ${noTaxStates.slice(0, 9).map(state => `
                                                 <div style="display: grid; grid-template-columns: 40px 1fr auto; gap: 8px; align-items: center; padding: 6px 8px; margin: 2px 0; background: rgba(34,197,94,0.1); border-radius: 4px; border-left: 3px solid #22c55e;">
                                                     <span style="font-size: 13px; font-weight: 700;">${state.state}</span>
                                                     <span style="font-size: 11px; color: #22c55e; font-weight: 600;">$0 tax</span>
                                                     <span style="font-size: 10px; background: rgba(34,197,94,0.2); padding: 2px 6px; border-radius: 3px; font-weight: 600;">
-                                                        💰 Save ${formatCurrency(Math.abs(state.savings_vs_current), 0)}
+                                                        💰 ${g('Save', 'savings_vs_current')} ${formatCurrency(Math.abs(state.savings_vs_current), 0)}
                                                     </span>
                                                 </div>
                                             `).join('')}
@@ -730,14 +936,14 @@ function renderTaxAnalysis(
                                     html += `
                                         <div style="margin-bottom: 12px;">
                                             <div style="font-size: 10px; font-weight: 600; opacity: 0.6; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
-                                                💚 Low Tax States
+                                                💚 ${g('Low Tax States', 'low_tax_states')}
                                             </div>
                                             ${lowTaxStates.slice(0, 6).map(state => `
                                                 <div style="display: grid; grid-template-columns: 40px 1fr auto; gap: 8px; align-items: center; padding: 6px 8px; margin: 2px 0; background: rgba(234,179,8,0.1); border-radius: 4px; border-left: 3px solid #eab308;">
                                                     <span style="font-size: 13px; font-weight: 700;">${state.state}</span>
                                                     <span style="font-size: 11px; color: #eab308; font-weight: 600;">${formatCurrency(state.estimated_tax, 0)} tax</span>
                                                     <span style="font-size: 10px; background: rgba(234,179,8,0.2); padding: 2px 6px; border-radius: 3px; font-weight: 600;">
-                                                        ${state.savings_vs_current >= 0 ? '💰 Save' : '💸 Pay'} ${formatCurrency(Math.abs(state.savings_vs_current), 0)}
+                                                        ${state.savings_vs_current >= 0 ? `💰 ${g('Save', 'savings_vs_current')}` : '💸 Pay'} ${formatCurrency(Math.abs(state.savings_vs_current), 0)}
                                                     </span>
                                                 </div>
                                             `).join('')}
@@ -757,7 +963,7 @@ function renderTaxAnalysis(
                                                     <span style="font-size: 13px; font-weight: 700;">${state.state}</span>
                                                     <span style="font-size: 11px; opacity: 0.9; font-weight: 600;">${formatCurrency(state.estimated_tax, 0)} tax</span>
                                                     <span style="font-size: 10px; background: ${state.savings_vs_current >= 0 ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}; color: ${state.savings_vs_current >= 0 ? '#22c55e' : '#ef4444'}; padding: 2px 6px; border-radius: 3px; font-weight: 600;">
-                                                        ${state.savings_vs_current >= 0 ? '💰' : '💸'} ${state.savings_vs_current >= 0 ? 'Save' : 'Pay'} ${formatCurrency(Math.abs(state.savings_vs_current), 0)}
+                                                        ${state.savings_vs_current >= 0 ? '💰' : '💸'} ${state.savings_vs_current >= 0 ? g('Save', 'savings_vs_current') : 'Pay'} ${formatCurrency(Math.abs(state.savings_vs_current), 0)}
                                                     </span>
                                                 </div>
                                             `).join('')}
@@ -780,6 +986,15 @@ function renderTaxAnalysis(
     if (infoIcon) {
         infoIcon.addEventListener('click', () => {
             showTaxSnapshotExplanation();
+        });
+    }
+
+    // Add event listener for Social Security Strategy info
+    const socialSecurityInfoIcon = container.querySelector('#social-security-info');
+    if (socialSecurityInfoIcon) {
+        socialSecurityInfoIcon.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showSocialSecurityStrategyExplanation();
         });
     }
 
@@ -811,11 +1026,21 @@ function renderTaxAnalysis(
         });
     }
 
+    // Add event listener for Healthcare & Medicare Projection info
+    const healthcareInfoIcon = container.querySelector('#healthcare-projection-info');
+    if (healthcareInfoIcon) {
+        healthcareInfoIcon.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showHealthcareProjectionExplanation();
+        });
+    }
+
     // CSP-safe hover: opacity toggle for info icons
     container.querySelectorAll('.csp-hover-opacity').forEach(el => {
         el.addEventListener('mouseenter', () => { el.style.opacity = '1'; });
         el.addEventListener('mouseleave', () => { el.style.opacity = '0.7'; });
     });
+    wireGlossaryTermClicks(container);
 
     // CSP-safe hover: card lift effect for recommendation cards
     container.querySelectorAll('.csp-hover-card').forEach(el => {
@@ -955,6 +1180,7 @@ function renderHealthcarePlanningCard(healthcarePlanning, healthcareInputs = nul
     const firstYear = rows[0];
     const fiveYear = rows[Math.min(4, rows.length - 1)];
     const tenYear = rows[Math.min(9, rows.length - 1)];
+    const g = glossaryTerm;
 
     const defaults = healthcareInputs || {
         years: healthcarePlanning.assumptions?.projection_years || 20,
@@ -969,40 +1195,41 @@ function renderHealthcarePlanningCard(healthcarePlanning, healthcareInputs = nul
 
     return `
         <div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--border-color);">
-            <h2 style="font-size: 15px; margin: 0 0 10px 0; font-weight: 700; color: var(--accent-color);">
-                🏥 Healthcare & Medicare Projection
+            <h2 style="font-size: 15px; margin: 0 0 10px 0; font-weight: 700; color: var(--accent-color); display: flex; align-items: center; gap: 8px;">
+                🏥 ${g('Healthcare & Medicare Projection', 'healthcare_projection')}
+                <span id="healthcare-projection-info" class="csp-hover-opacity" style="cursor: pointer; font-size: 14px; opacity: 0.7; transition: opacity 0.2s;" title="Click for explanation">ℹ️</span>
             </h2>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin-bottom: 10px;">
                 <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px;">
-                    Years
+                    ${g('Years', 'projection_years')}
                     <input id="healthcare-years" type="number" min="1" max="40" value="${defaults.years}" style="padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" />
                 </label>
                 <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px;">
-                    Medical Inflation (%)
+                    ${g('Medical Inflation (%)', 'medical_inflation')}
                     <input id="healthcare-medical-inflation" type="number" step="0.1" min="-10" max="25" value="${defaults.medicalInflationPct}" style="padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" />
                 </label>
                 <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px;">
-                    Income Growth (%)
+                    ${g('Income Growth (%)', 'income_growth')}
                     <input id="healthcare-income-growth" type="number" step="0.1" min="-10" max="25" value="${defaults.incomeGrowthPct}" style="padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" />
                 </label>
                 <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px;">
-                    MAGI Override ($)
+                    ${g('MAGI Override ($)', 'estimated_magi')}
                     <input id="healthcare-estimated-magi" type="number" min="0" step="1000" value="${defaults.estimatedMagi}" placeholder="Auto from profile" style="padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" />
                 </label>
                 <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px;">
-                    Out-of-Pocket Override ($)
+                    ${g('Out-of-Pocket Override ($)', 'out_of_pocket')}
                     <input id="healthcare-annual-oop" type="number" min="0" step="500" value="${defaults.annualOutOfPocket}" placeholder="Auto from profile" style="padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" />
                 </label>
                 <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px;">
-                    Initial HSA Balance ($)
+                    ${g('Initial HSA Balance ($)', 'hsa')}
                     <input id="healthcare-hsa-balance" type="number" min="0" step="500" value="${defaults.initialHsaBalance}" placeholder="Auto from profile" style="padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" />
                 </label>
                 <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px;">
-                    Annual HSA Contribution ($)
+                    ${g('Annual HSA Contribution ($)', 'hsa')}
                     <input id="healthcare-hsa-contribution" type="number" min="0" step="250" value="${defaults.annualHsaContribution}" placeholder="Auto from profile" style="padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" />
                 </label>
                 <label style="display: flex; flex-direction: column; gap: 4px; font-size: 11px;">
-                    HSA Growth (%)
+                    ${g('HSA Growth (%)', 'hsa_growth')}
                     <input id="healthcare-hsa-growth" type="number" step="0.1" min="-10" max="25" value="${defaults.hsaGrowthPct}" style="padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" />
                 </label>
             </div>
@@ -1035,21 +1262,21 @@ function renderHealthcarePlanningCard(healthcarePlanning, healthcareInputs = nul
             </div>
             <details style="cursor: pointer;">
                 <summary style="font-size: 12px; font-weight: 600; padding: 4px 0; user-select: none;">
-                    Medicare/IRMAA Cost Breakdown (First 5 Years)
+                    ${g('Medicare', 'medicare')}/${g('IRMAA', 'irmaa')} Cost Breakdown (First 5 Years)
                 </summary>
                 <div style="padding: 10px; background: var(--bg-primary); border-radius: 6px; margin-top: 6px; overflow-x: auto;">
                     <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
                         <thead>
                             <tr style="text-align: left; border-bottom: 1px solid var(--border-color);">
                                 <th style="padding: 4px;">Year</th>
-                                <th style="padding: 4px;">Eligible</th>
-                                <th style="padding: 4px;">Part A</th>
-                                <th style="padding: 4px;">Part B</th>
-                                <th style="padding: 4px;">Part D</th>
-                                <th style="padding: 4px;">IRMAA</th>
-                                <th style="padding: 4px;">Out-of-Pocket</th>
-                                <th style="padding: 4px;">HSA Used</th>
-                                <th style="padding: 4px;">Net Cost</th>
+                                <th style="padding: 4px;">${g('Eligible', 'medicare_eligible_people')}</th>
+                                <th style="padding: 4px;">${g('Part A', 'medicare_part_a')}</th>
+                                <th style="padding: 4px;">${g('Part B', 'medicare_part_b')}</th>
+                                <th style="padding: 4px;">${g('Part D', 'medicare_part_d')}</th>
+                                <th style="padding: 4px;">${g('IRMAA', 'irmaa')}</th>
+                                <th style="padding: 4px;">${g('Out-of-Pocket', 'out_of_pocket')}</th>
+                                <th style="padding: 4px;">${g('HSA Used', 'hsa')}</th>
+                                <th style="padding: 4px;">${g('Net Cost', 'net_healthcare_cost')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1072,6 +1299,59 @@ function renderHealthcarePlanningCard(healthcarePlanning, healthcareInputs = nul
             </details>
         </div>
     `;
+}
+
+function showHealthcareProjectionExplanation() {
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 20px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 24px; max-width: 700px; width: 100%; max-height: 90vh; overflow-y: auto; border: 2px solid var(--accent-color);">
+                <h2 style="margin: 0 0 16px 0; color: var(--accent-color); display: flex; align-items: center; gap: 8px;">
+                    🏥 Understanding ${glossaryTerm('Healthcare & Medicare Projection', 'healthcare_projection')}
+                </h2>
+
+                <div style="color: var(--text-primary); line-height: 1.6;">
+                    <p style="margin: 0 0 16px 0;">
+                        This section estimates annual healthcare costs across your projection horizon, including ${glossaryTerm('Medicare', 'medicare')} premiums, ${glossaryTerm('IRMAA', 'irmaa')} surcharges, out-of-pocket spending, and the effect of ${glossaryTerm('HSA', 'hsa')} balances.
+                    </p>
+
+                    <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                        <h3 style="margin: 0 0 12px 0; font-size: 14px; color: var(--accent-color);">Inputs You Control</h3>
+                        <ul style="margin: 0; padding-left: 20px; font-size: 13px;">
+                            <li>${glossaryTerm('Projection Years', 'projection_years')} and ${glossaryTerm('Medical Inflation', 'medical_inflation')} drive long-range growth in costs.</li>
+                            <li>${glossaryTerm('Estimated MAGI', 'estimated_magi')} can change projected ${glossaryTerm('IRMAA', 'irmaa')} surcharges.</li>
+                            <li>${glossaryTerm('Out-of-Pocket Costs', 'out_of_pocket')} override lets you model higher/lower recurring medical spend.</li>
+                            <li>${glossaryTerm('HSA', 'hsa')} balance, contribution, and ${glossaryTerm('HSA Growth', 'hsa_growth')} control how much healthcare spend can be offset tax-efficiently.</li>
+                        </ul>
+                    </div>
+
+                    <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                        <h3 style="margin: 0 0 12px 0; font-size: 14px; color: var(--success-color);">How To Read The Table</h3>
+                        <ul style="margin: 0; padding-left: 20px; font-size: 13px;">
+                            <li>${glossaryTerm('Part A', 'medicare_part_a')}, ${glossaryTerm('Part B', 'medicare_part_b')}, and ${glossaryTerm('Part D', 'medicare_part_d')} show projected Medicare premium components.</li>
+                            <li>${glossaryTerm('Eligible', 'medicare_eligible_people')} shows how many household members are projected on Medicare each year.</li>
+                            <li>${glossaryTerm('Net Cost', 'net_healthcare_cost')} reflects projected healthcare cost after HSA dollars applied in that year.</li>
+                        </ul>
+                    </div>
+
+                    <div style="background: var(--info-bg); padding: 12px; border-radius: 6px; border-left: 3px solid var(--info-color);">
+                        <strong>Tip:</strong> Re-run this section with conservative assumptions (higher medical inflation and lower HSA growth) to stress-test retirement cash flow.
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px; text-align: right;">
+                    <button id="close-healthcare-explanation" style="padding: 10px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
+                        Got It
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    wireGlossaryTermClicks(modal);
+    modal.querySelector('#close-healthcare-explanation').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 }
 
 /**
@@ -1135,6 +1415,7 @@ function showTaxSnapshotExplanation() {
     `;
 
     document.body.appendChild(modal);
+    wireGlossaryTermClicks(modal);
 
     // Close on button click
     modal.querySelector('#close-tax-explanation').addEventListener('click', () => {
@@ -1306,6 +1587,7 @@ function showRecommendationDetail(recommendation) {
     `;
 
     document.body.appendChild(modal);
+    wireGlossaryTermClicks(modal);
 
     // Close on button click
     modal.querySelector('#close-recommendation-detail').addEventListener('click', () => {
@@ -1361,7 +1643,7 @@ function showRothConversionExplanation() {
                         </div>
 
                         <div style="margin-bottom: 12px;">
-                            <strong>Marginal vs Effective Rate:</strong><br>
+                            <strong>Marginal vs ${glossaryTerm('Effective Rate', 'effective_rate')}:</strong><br>
                             <span style="font-size: 13px; color: var(--text-secondary);"><strong>Marginal</strong> = highest bracket you're in (what the last dollar pays). <strong>Effective</strong> = average rate across all brackets. Example: In 32% bracket but paying 27% effective because lower dollars taxed at 10%, 12%, 22%, 24%.</span>
                         </div>
 
@@ -1407,7 +1689,62 @@ function showRothConversionExplanation() {
     `;
 
     document.body.appendChild(modal);
+    wireGlossaryTermClicks(modal);
     modal.querySelector('#close-roth-explanation').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+}
+
+/**
+ * Show explanation modal for Social Security Strategy
+ */
+function showSocialSecurityStrategyExplanation() {
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 20px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 24px; max-width: 700px; width: 100%; max-height: 90vh; overflow-y: auto; border: 2px solid var(--accent-color);">
+                <h2 style="margin: 0 0 16px 0; color: var(--accent-color);">
+                    👥 Understanding Social Security Strategy
+                </h2>
+
+                <div style="color: var(--text-primary); line-height: 1.6;">
+                    <p style="margin: 0 0 16px 0;">
+                        This section compares claiming-age outcomes and survivor-income tradeoffs under your assumptions.
+                    </p>
+
+                    <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                        <h3 style="margin: 0 0 12px 0; font-size: 14px; color: var(--accent-color);">Inputs:</h3>
+                        <ul style="margin: 0; padding-left: 20px; font-size: 13px;">
+                            <li>${glossaryTerm('Life Expectancy', 'life_expectancy')}</li>
+                            <li>${glossaryTerm('Annual Earned Income', 'annual_earned_income')}</li>
+                            <li>${glossaryTerm('Noncovered Pension', 'noncovered_pension')}</li>
+                            <li>${glossaryTerm('WEP', 'wep')} / ${glossaryTerm('GPO', 'gpo')}</li>
+                        </ul>
+                    </div>
+
+                    <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                        <h3 style="margin: 0 0 12px 0; font-size: 14px; color: var(--success-color);">Outputs:</h3>
+                        <ul style="margin: 0; padding-left: 20px; font-size: 13px;">
+                            <li><strong>Primary Optimal Age</strong>: Claiming age with strongest modeled lifetime outcome for primary.</li>
+                            <li><strong>Survivor Income (70 Strategy)</strong>: Estimated survivor monthly benefit when delay-to-70 assumptions are applied.</li>
+                        </ul>
+                    </div>
+
+                    <div style="background: var(--info-bg); padding: 12px; border-radius: 6px; border-left: 3px solid var(--info-color);">
+                        <strong>Tip:</strong> Run multiple scenarios (with and without ${glossaryTerm('WEP', 'wep')}/${glossaryTerm('GPO', 'gpo')}) before final claiming decisions.
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px; text-align: right;">
+                    <button id="close-ss-explanation" style="padding: 10px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
+                        Got It
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    wireGlossaryTermClicks(modal);
+    modal.querySelector('#close-ss-explanation').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 }
 
@@ -1425,7 +1762,7 @@ function showRMDAnalysisExplanation() {
 
                 <div style="color: var(--text-primary); line-height: 1.6;">
                     <p style="margin: 0 0 16px 0;">
-                        <strong>Required Minimum Distributions (RMDs)</strong> are mandatory annual withdrawals from traditional IRAs and 401(k)s that the IRS requires starting at age 73.
+                        <strong>${glossaryTerm('Required Minimum Distributions (RMDs)', 'rmd')}</strong> are mandatory annual withdrawals from traditional IRAs and 401(k)s that the IRS requires starting at age 73.
                     </p>
 
                     <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
@@ -1451,7 +1788,7 @@ function showRMDAnalysisExplanation() {
                         <h3 style="margin: 0 0 12px 0; font-size: 14px;">⚠️ Why RMDs Matter:</h3>
                         <ul style="margin: 0; padding-left: 20px; font-size: 13px;">
                             <li>Forced taxable income can push you into higher brackets</li>
-                            <li>Can trigger Medicare IRMAA surcharges</li>
+                            <li>Can trigger Medicare ${glossaryTerm('IRMAA', 'irmaa')} surcharges</li>
                             <li>May make more Social Security taxable</li>
                             <li>Forced to sell regardless of market conditions</li>
                         </ul>
@@ -1461,7 +1798,7 @@ function showRMDAnalysisExplanation() {
                         <strong style="color: var(--success-color);">💡 Strategies:</strong>
                         <ul style="margin: 8px 0 0 0; padding-left: 20px; font-size: 13px;">
                             <li>Roth conversions before age 73 to reduce future RMDs</li>
-                            <li>QCDs: Donate RMDs to charity tax-free (age 70½+)</li>
+                            <li>${glossaryTerm('QCDs', 'qcd')}: Donate RMDs to charity tax-free (age 70½+)</li>
                             <li>Strategic withdrawals before 73 to smooth tax burden</li>
                         </ul>
                     </div>
@@ -1477,6 +1814,7 @@ function showRMDAnalysisExplanation() {
     `;
 
     document.body.appendChild(modal);
+    wireGlossaryTermClicks(modal);
     modal.querySelector('#close-rmd-explanation').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 }
