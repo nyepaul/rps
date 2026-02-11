@@ -40,6 +40,209 @@ function statHelpButton(helpType, title) {
     return `<button type="button" class="analysis-term-help" data-help="${helpType}" title="${title}" style="color: var(--accent-color); text-decoration: none; font-weight: bold; margin-left: 5px; background: none; border: none; cursor: pointer; padding: 0;">?</button>`;
 }
 
+function planningHelpButton(helpKey, label) {
+    return `<button type="button" class="analysis-planning-help" data-help-key="${helpKey}" title="Open explanation for ${label}" style="display: inline-flex; align-items: center; gap: 6px; background: none; border: none; padding: 0; margin: 0; color: inherit; font: inherit; font-weight: inherit; cursor: pointer;">
+        <span>${label}</span>
+        <span style="font-size: 12px; color: var(--accent-color);">ℹ️</span>
+    </button>`;
+}
+
+const ANALYSIS_CARD_HELP = {
+    life_insurance: {
+        title: 'Life Insurance Estimate',
+        context: 'A directional estimate of survivor protection needs based on income replacement, debts, and dependent support.',
+        metrics: [
+            'Coverage Need: modeled total protection target.',
+            'Existing Coverage: current policies already in place.',
+            'Coverage Gap: additional protection needed after existing coverage.',
+            'Suggested 20Y Term: practical term-policy amount to close most of the gap.'
+        ],
+        how_to_use: 'If gap is positive, price term insurance and compare cost with your budget and timeline until financial independence.'
+    },
+    estate_tax_gifting: {
+        title: 'Estate Tax & Gifting Strategy',
+        context: 'Screens your estate versus modeled federal exemption and provides gifting guidance.',
+        metrics: [
+            'Net Estate: current modeled estate value.',
+            'Taxable Today: amount above modeled exemption now.',
+            'Projected Taxable: potential taxable portion in future projection.',
+            'Annual Gift Capacity: annual transfer pace under current assumptions.'
+        ],
+        how_to_use: 'Even when taxable estate is zero, focus on beneficiary updates, will/trust quality, POA, and healthcare directives.'
+    },
+    investment_fee_impact: {
+        title: 'Investment Fee Impact Analyzer',
+        context: 'Quantifies fee drag and its compounding impact on long-term outcomes.',
+        metrics: [
+            'Investable Assets: accounts included in fee analysis.',
+            'Weighted Fee: blended expense rate across holdings.',
+            'Annual Fee Cost: approximate yearly fee dollars.',
+            'Long-Term Impact: cumulative projected fee drag over time.'
+        ],
+        how_to_use: 'Prioritize replacing high-fee holdings with lower-cost alternatives where strategy fit remains appropriate.'
+    },
+    real_estate_enhancements: {
+        title: 'Real Estate Enhancements',
+        context: 'Summarizes property equity now and projected equity under your assumptions.',
+        metrics: [
+            'Properties: number of tracked properties.',
+            'Current Equity: estimated value minus outstanding debt.',
+            'Projected Equity (10Y): modeled equity in ten years.',
+            'Cap Rate: optional income-yield indicator for investment properties.'
+        ],
+        how_to_use: 'Add sale timing assumptions to test downside protection, liquidity improvements, and retirement funding flexibility.'
+    },
+    advanced_scenario_analysis: {
+        title: 'Advanced Scenario Analysis',
+        context: 'Compares conservative/moderate/aggressive outcomes using resilience-oriented metrics.',
+        metrics: [
+            'Top Resilience: strongest durability profile in this run.',
+            'Success Spread: difference between best and worst success rates.',
+            'Median Spread: difference in median ending balances across scenarios.',
+            'Downside (P10): stress-case balance for each scenario.'
+        ],
+        how_to_use: 'Use the spread values to judge whether extra risk is being compensated by materially better outcomes.'
+    },
+    life_event_scenario_modeling: {
+        title: 'Life Event Scenario Modeling',
+        context: 'Applies common real-world shocks and opportunities to your baseline plan.',
+        metrics: [
+            'Baseline Success/Median: reference case before event overlays.',
+            'Event Delta: improvement or degradation versus baseline.',
+            'Details: short explanation of each event impact.'
+        ],
+        how_to_use: 'Prioritize actions that protect against negative deltas first (healthcare shocks, spending shocks), then optimize upside.'
+    },
+    additional_planning_modules: {
+        title: 'Additional Planning Modules',
+        context: 'A grouped set of specialized planning modules beyond the core simulation outputs.',
+        metrics: [
+            'Each module card includes a summary plus one anchor metric.',
+            'Modules are designed to surface gaps quickly and guide follow-up action.'
+        ],
+        how_to_use: 'Click each module title for context, then convert the highest-impact findings into Action Items.'
+    },
+    long_term_care_analysis: {
+        title: 'Long-Term Care Analysis',
+        context: 'Estimates late-life care burden and highlights funding gaps.',
+        metrics: ['Projected LTC total: modeled total long-term care cost.'],
+        how_to_use: 'Compare self-funding reserves versus insurance alternatives and update assumptions for location and care intensity.'
+    },
+    disability_income_protection: {
+        title: 'Disability Income Protection',
+        context: 'Estimates income-replacement needs if work capacity is reduced before retirement.',
+        metrics: ['Recommended monthly benefit: target replacement amount from disability coverage or reserves.'],
+        how_to_use: 'Use this to size employer/private disability coverage and emergency reserves.'
+    },
+    business_owner_retirement: {
+        title: 'Business Owner Retirement Planning',
+        context: 'Evaluates retirement dependence on business value and concentration risk.',
+        metrics: ['Business concentration signal: indicates how dependent retirement is on business proceeds.'],
+        how_to_use: 'Stress-test delayed sale/discounted valuation scenarios and build diversification plans ahead of exit.'
+    },
+    secure_act_beneficiary_ira: {
+        title: 'SECURE Act Beneficiary IRA Rules',
+        context: 'Flags inheritance distribution rules for non-spouse beneficiaries under current modeling.',
+        metrics: ['Non-spouse default rule: typically a 10-year distribution window.'],
+        how_to_use: 'Coordinate beneficiary designations and estate documents with current tax planning assumptions.'
+    },
+    annuity_comparison: {
+        title: 'Annuity Comparison Tool',
+        context: 'Compares guaranteed-income annuity framing versus flexible portfolio drawdown.',
+        metrics: ['Fixed annuity estimate: modeled annual guaranteed-income equivalent.'],
+        how_to_use: 'Use as a tradeoff study: certainty of income vs liquidity, control, and upside participation.'
+    },
+    cashflow_budget_enhancements: {
+        title: 'Cashflow Budget Enhancements',
+        context: 'Surfaces budgeting granularity and surplus tracking quality.',
+        metrics: ['Annual surplus: modeled yearly cushion after income and spending.'],
+        how_to_use: 'If surplus is thin or zero, prioritize expense detail cleanup and recurring-cashflow stabilization.'
+    },
+    retirement_lifestyle_planning: {
+        title: 'Retirement Lifestyle Planning',
+        context: 'Translates lifestyle choices into spending levels and sustainability tradeoffs.',
+        metrics: ['Lifestyle budget indicators: planning anchors for lean/moderate/spending targets.'],
+        how_to_use: 'Use these targets to align desired lifestyle with your success-rate tolerance.'
+    },
+    document_vault_beneficiary_tracking: {
+        title: 'Document Vault & Beneficiary Tracking',
+        context: 'Tracks legal-document readiness and beneficiary completeness.',
+        metrics: ['Doc completion: completion ratio for key legal and account documentation.'],
+        how_to_use: 'Target 100% on critical docs and beneficiary fields before optimization work.'
+    },
+    advanced_investment_factor_analysis: {
+        title: 'Advanced Investment Factor Analysis',
+        context: 'Examines liquidity, tax-bucket mix, and implementation flexibility.',
+        metrics: ['Liquidity ratio: near-term accessible assets relative to modeled needs.'],
+        how_to_use: 'Improve short-term liquidity before adding concentration or sequence-sensitive risk.'
+    },
+    family_legacy_gifting_goals: {
+        title: 'Family Legacy & Gifting Goals',
+        context: 'This is the primary legacy-wealth/family-planning module for pacing transfers tax-efficiently.',
+        metrics: ['Annual gift capacity: modeled yearly transfer pace under current assumptions.'],
+        how_to_use: 'Use this to stage gifts to heirs/charity while preserving retirement durability.'
+    },
+    risk_analysis_dashboard: {
+        title: 'Risk Analysis Dashboard',
+        context: 'Composite risk score across market durability, liquidity, debt pressure, and downside resilience.',
+        metrics: ['Overall risk score: rolled-up risk indicator from multiple dimensions.'],
+        how_to_use: 'Use score directionally; investigate underlying drivers before making allocation or spending changes.'
+    },
+    sequence_risk_stress_test: {
+        title: 'Sequence Risk Stress Test',
+        context: 'Injects market crashes at different retirement stages to test fragility to return ordering.',
+        metrics: [
+            'Success Rate Delta: change in probability vs baseline.',
+            'Median Balance Delta: change in expected ending balance vs baseline.',
+            'Crash Window: years where stress event is applied.'
+        ],
+        how_to_use: 'If early-crash deltas are severe, reduce withdrawal pressure, raise liquidity, or adjust retirement timing.'
+    }
+};
+
+function showPlanningCardHelpModal(helpKey) {
+    const help = ANALYSIS_CARD_HELP[helpKey];
+    if (!help) return;
+
+    const metricsHtml = (help.metrics || [])
+        .map((m) => `<li style="margin-bottom: 6px; color: var(--text-secondary); font-size: 14px;">${m}</li>`)
+        .join('');
+
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 10000; padding: 20px;';
+    modal.innerHTML = `
+        <div style="background: var(--bg-secondary); border-radius: 12px; max-width: 860px; width: 100%; max-height: 90vh; overflow-y: auto; position: relative; border: 1px solid var(--border-color);">
+            <button class="close-modal-btn" style="position: absolute; top: 15px; right: 15px; background: var(--bg-tertiary); border: none; color: var(--text-primary); font-size: 24px; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">×</button>
+            <div style="padding: 24px;">
+                <h2 style="font-size: 24px; margin: 0 0 12px 0; color: var(--accent-color);">📘 ${help.title}</h2>
+                <p style="margin: 0 0 14px 0; color: var(--text-secondary); line-height: 1.6;">${help.context}</p>
+                <h3 style="font-size: 17px; margin: 0 0 8px 0;">How to Read This Card</h3>
+                <ul style="margin: 0 0 14px 0; padding-left: 18px;">${metricsHtml}</ul>
+                <h3 style="font-size: 17px; margin: 0 0 6px 0;">How to Use It</h3>
+                <p style="margin: 0; color: var(--text-secondary); line-height: 1.6;">${help.how_to_use}</p>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    const closeModal = () => modal.remove();
+    modal.querySelector('.close-modal-btn').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+}
+
+function setupPlanningCardHelpHandlers(container) {
+    container.querySelectorAll('.analysis-planning-help').forEach((btn) => {
+        btn.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const helpKey = btn.dataset.helpKey;
+            if (helpKey) showPlanningCardHelpModal(helpKey);
+        });
+    });
+}
+
 export function renderAnalysisTab(container) {
     // Clean up previous keyboard handler if exists
     if (container._analysisKeyboardHandler) {
@@ -1010,7 +1213,7 @@ function renderLifeInsuranceAndSequencePanels(planningData) {
 
     const lifePanel = life ? `
         <div class="result-card" style="border-left: 4px solid var(--info-color);">
-            <h3 style="margin: 0 0 10px 0;">Life Insurance Estimate</h3>
+            <h3 style="margin: 0 0 10px 0;">${planningHelpButton('life_insurance', 'Life Insurance Estimate')}</h3>
             <p style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 13px;">
                 Directional planning estimate using income, expenses, debt, and dependents.
             </p>
@@ -1175,7 +1378,7 @@ function renderLifeInsuranceAndSequencePanels(planningData) {
 
     const estatePanel = estate?.available ? `
         <div class="result-card" style="border-left: 4px solid #7c3aed;">
-            <h3 style="margin: 0 0 10px 0;">Estate Tax & Gifting Strategy</h3>
+            <h3 style="margin: 0 0 10px 0;">${planningHelpButton('estate_tax_gifting', 'Estate Tax & Gifting Strategy')}</h3>
             <p style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 13px;">${estate.summary || ''}</p>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-bottom: 12px;">
                 <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
@@ -1213,7 +1416,7 @@ function renderLifeInsuranceAndSequencePanels(planningData) {
 
     const feePanel = feeImpact?.available ? `
         <div class="result-card" style="border-left: 4px solid #0ea5e9;">
-            <h3 style="margin: 0 0 10px 0;">Investment Fee Impact Analyzer</h3>
+            <h3 style="margin: 0 0 10px 0;">${planningHelpButton('investment_fee_impact', 'Investment Fee Impact Analyzer')}</h3>
             <p style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 13px;">${feeImpact.summary || ''}</p>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 12px;">
                 <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
@@ -1288,7 +1491,7 @@ function renderLifeInsuranceAndSequencePanels(planningData) {
 
     const realEstatePanel = realEstate?.available ? `
         <div class="result-card" style="border-left: 4px solid #22c55e;">
-            <h3 style="margin: 0 0 10px 0;">Real Estate Enhancements</h3>
+            <h3 style="margin: 0 0 10px 0;">${planningHelpButton('real_estate_enhancements', 'Real Estate Enhancements')}</h3>
             <p style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 13px;">${realEstate.summary || ''}</p>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 12px;">
                 <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
@@ -1323,7 +1526,7 @@ function renderLifeInsuranceAndSequencePanels(planningData) {
 
     const advancedScenarioPanel = advancedScenarios?.available ? `
         <div class="result-card" style="border-left: 4px solid #06b6d4;">
-            <h3 style="margin: 0 0 10px 0;">Advanced Scenario Analysis</h3>
+            <h3 style="margin: 0 0 10px 0;">${planningHelpButton('advanced_scenario_analysis', 'Advanced Scenario Analysis')}</h3>
             <p style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 13px;">${advancedScenarios.summary || ''}</p>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-bottom: 12px;">
                 <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
@@ -1397,7 +1600,7 @@ function renderLifeInsuranceAndSequencePanels(planningData) {
 
     const lifeEventsPanel = lifeEvents?.available ? `
         <div class="result-card" style="border-left: 4px solid #8b5cf6;">
-            <h3 style="margin: 0 0 10px 0;">Life Event Scenario Modeling</h3>
+            <h3 style="margin: 0 0 10px 0;">${planningHelpButton('life_event_scenario_modeling', 'Life Event Scenario Modeling')}</h3>
             <p style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 13px;">${lifeEvents.summary || ''}</p>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-bottom: 12px;">
                 <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
@@ -1416,66 +1619,77 @@ function renderLifeInsuranceAndSequencePanels(planningData) {
     const extendedCards = [
         {
             title: 'Disability Income Protection',
+            helpKey: 'disability_income_protection',
             data: disability,
             accent: '#16a34a',
             metric: disability?.recommended_monthly_benefit ? `Recommended benefit: ${formatCurrency(disability.recommended_monthly_benefit, 0)}/mo` : ''
         },
         {
             title: 'Long-Term Care Analysis',
+            helpKey: 'long_term_care_analysis',
             data: ltc,
             accent: '#0ea5e9',
             metric: ltc?.projected_total_cost ? `Projected LTC total: ${formatCurrency(ltc.projected_total_cost, 0)}` : ''
         },
         {
             title: 'Business Owner Retirement Planning',
+            helpKey: 'business_owner_retirement',
             data: businessOwner,
             accent: '#f59e0b',
             metric: businessOwner?.business_value ? `Business value: ${formatCurrency(businessOwner.business_value, 0)}` : ''
         },
         {
             title: 'SECURE Act Beneficiary IRA Rules',
+            helpKey: 'secure_act_beneficiary_ira',
             data: secureAct,
             accent: '#7c3aed',
             metric: secureAct?.default_rule_non_spouse_years ? `Non-spouse default: ${secureAct.default_rule_non_spouse_years}-year rule` : ''
         },
         {
             title: 'Annuity Comparison Tool',
+            helpKey: 'annuity_comparison',
             data: annuity,
             accent: '#2563eb',
             metric: annuity?.fixed_annuity_income ? `Fixed annuity est.: ${formatCurrency(annuity.fixed_annuity_income, 0)}/yr` : ''
         },
         {
             title: 'Cashflow Budget Enhancements',
+            helpKey: 'cashflow_budget_enhancements',
             data: cashflowEnhancements,
             accent: '#0891b2',
             metric: cashflowEnhancements?.annual_surplus !== undefined ? `Annual surplus: ${formatCurrency(cashflowEnhancements.annual_surplus, 0)}` : ''
         },
         {
             title: 'Retirement Lifestyle Planning',
+            helpKey: 'retirement_lifestyle_planning',
             data: lifestyle,
             accent: '#d97706',
             metric: lifestyle?.lean_lifestyle_budget ? `Lean budget: ${formatCurrency(lifestyle.lean_lifestyle_budget, 0)}` : ''
         },
         {
             title: 'Document Vault & Beneficiary Tracking',
+            helpKey: 'document_vault_beneficiary_tracking',
             data: documentVault,
             accent: '#4f46e5',
             metric: documentVault?.document_completion_ratio !== undefined ? `Doc completion: ${formatPercent(documentVault.document_completion_ratio, 1)}` : ''
         },
         {
             title: 'Advanced Investment Factor Analysis',
+            helpKey: 'advanced_investment_factor_analysis',
             data: investmentFactors,
             accent: '#0284c7',
             metric: investmentFactors?.liquidity_ratio !== undefined ? `Liquidity ratio: ${formatPercent(investmentFactors.liquidity_ratio, 1)}` : ''
         },
         {
             title: 'Family Legacy & Gifting Goals',
+            helpKey: 'family_legacy_gifting_goals',
             data: legacyGoals,
             accent: '#9333ea',
             metric: legacyGoals?.annual_gift_capacity ? `Annual gift capacity: ${formatCurrency(legacyGoals.annual_gift_capacity, 0)}` : ''
         },
         {
             title: 'Risk Analysis Dashboard',
+            helpKey: 'risk_analysis_dashboard',
             data: riskDashboard,
             accent: '#dc2626',
             metric: riskDashboard?.scores?.overall_risk_score !== undefined ? `Overall risk score: ${riskDashboard.scores.overall_risk_score}` : ''
@@ -1484,11 +1698,11 @@ function renderLifeInsuranceAndSequencePanels(planningData) {
 
     const extendedPlanningPanel = extendedCards.length > 0 ? `
         <div class="result-card" style="border-left: 4px solid #334155;">
-            <h3 style="margin: 0 0 10px 0;">Additional Planning Modules</h3>
+            <h3 style="margin: 0 0 10px 0;">${planningHelpButton('additional_planning_modules', 'Additional Planning Modules')}</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px;">
                 ${extendedCards.map(card => `
                     <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-left: 3px solid ${card.accent}; border-radius: 8px; padding: 10px;">
-                        <div style="font-size: 13px; font-weight: 700; margin-bottom: 4px;">${card.title}</div>
+                        <div style="font-size: 13px; font-weight: 700; margin-bottom: 4px;">${planningHelpButton(card.helpKey, card.title)}</div>
                         <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">${card.data.summary || ''}</div>
                         <div style="font-size: 12px; font-weight: 600; color: ${card.accent};">${card.metric || ''}</div>
                     </div>
@@ -1522,7 +1736,7 @@ function renderLifeInsuranceAndSequencePanels(planningData) {
 
     const sequencePanel = sequence ? `
         <div class="result-card" style="border-left: 4px solid var(--warning-color);">
-            <h3 style="margin: 0 0 10px 0;">Sequence Risk Stress Test</h3>
+            <h3 style="margin: 0 0 10px 0;">${planningHelpButton('sequence_risk_stress_test', 'Sequence Risk Stress Test')}</h3>
             <p style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 13px;">
                 Moderate baseline: <strong>${formatPercent(sequence.baseline?.success_rate || 0, 1)}</strong> success,
                 median <strong>${formatCurrency(sequence.baseline?.median_final_balance || 0, 0)}</strong>.
@@ -1735,6 +1949,7 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
 
     // Add click handlers to stat items for explanations
     setupStatItemClickHandlers(container);
+    setupPlanningCardHelpHandlers(container);
 
     // Render timeline chart if data available
     if (data.timeline) {
@@ -2014,6 +2229,7 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
 
     // Add click handlers to stat items for explanations in all scenarios
     setupStatItemClickHandlers(container);
+    setupPlanningCardHelpHandlers(container);
 
     // Render timeline charts for each scenario
     console.log('About to render timeline charts...');
