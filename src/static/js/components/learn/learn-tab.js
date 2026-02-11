@@ -531,11 +531,11 @@ export function renderLearnTab(container) {
             </div>
 
             <div class="learn-section" style="margin-bottom: var(--space-3);">
-                <button class="learn-collapse-btn" data-target="feature-index-body" aria-expanded="true">
+                <button class="learn-collapse-btn" data-target="feature-index-body" aria-expanded="false">
                     <span style="font-size: 16px; color: var(--accent-color); font-weight: 700;">🧭 Feature Index & Roadmap Locator</span>
                     <span class="learn-collapse-chevron" aria-hidden="true">▾</span>
                 </button>
-                <div id="feature-index-body" class="learn-collapsible-body">
+                <div id="feature-index-body" class="learn-collapsible-body collapsed">
                     <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: var(--space-2); margin-top: var(--space-2);">
                         <input
                             id="feature-index-filter"
@@ -553,11 +553,11 @@ export function renderLearnTab(container) {
             </div>
 
             <div class="learn-section" style="margin-bottom: var(--space-3);">
-                <button class="learn-collapse-btn" data-target="acronym-glossary-body" aria-expanded="true">
+                <button class="learn-collapse-btn" data-target="acronym-glossary-body" aria-expanded="false">
                     <span style="font-size: 16px; color: var(--accent-color); font-weight: 700;">🧾 Acronym Glossary</span>
                     <span class="learn-collapse-chevron" aria-hidden="true">▾</span>
                 </button>
-                <div id="acronym-glossary-body" class="learn-collapsible-body">
+                <div id="acronym-glossary-body" class="learn-collapsible-body collapsed">
                     <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: var(--space-2); margin-top: var(--space-2);">
                         <input
                             id="acronym-glossary-filter"
