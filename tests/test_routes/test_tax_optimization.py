@@ -69,6 +69,8 @@ def test_analyze_roth_conversion(client, test_user, test_profile):
     assert "scenarios" in data
     assert "conversion_ladder_5y" in data
     assert "rows" in data["conversion_ladder_5y"]
+    assert "ladder_variants" in data
+    assert data["ladder_variants"]["recommended"] in {"conservative", "balanced", "aggressive"}
     assert "profile_name" in data
 
 

@@ -765,6 +765,13 @@ class TaxOptimizationService:
             annual_growth=max(-0.5, float(ladder_growth_rate)),
             max_rate=max(0.1, min(0.5, float(ladder_max_rate))),
         )
+        ladder_variants = self.build_roth_ladder_variants(
+            current_taxable_income=current_taxable_income,
+            traditional_balance=traditional_balance,
+            years=max(1, int(ladder_years)),
+            annual_growth=max(-0.5, float(ladder_growth_rate)),
+            base_max_rate=max(0.1, min(0.5, float(ladder_max_rate))),
+        )
 
         return {
             "current_taxable_income": current_taxable_income,
@@ -773,6 +780,7 @@ class TaxOptimizationService:
             "scenarios": scenarios,
             "optimal_24pct": optimal,
             "conversion_ladder_5y": ladder_5y,
+            "ladder_variants": ladder_variants,
             "recommendation": self._get_roth_recommendation(optimal, bracket_space),
         }
 
@@ -840,6 +848,57 @@ class TaxOptimizationService:
                 if len(rows) < years
                 else "modeled_years_completed"
             ),
+        }
+
+    def build_roth_ladder_variants(
+        self,
+        current_taxable_income: float,
+        traditional_balance: float,
+        years: int,
+        annual_growth: float,
+        base_max_rate: float,
+    ) -> Dict:
+        """Build conservative/balanced/aggressive ladder variants and choose a recommendation."""
+        variants = {
+            "conservative": min(base_max_rate, 0.22),
+            "balanced": base_max_rate,
+            "aggressive": max(base_max_rate, 0.28),
+        }
+        ladders = {}
+        metrics = {}
+        for name, max_rate in variants.items():
+            ladder = self.build_roth_conversion_ladder(
+                current_taxable_income=current_taxable_income,
+                traditional_balance=traditional_balance,
+                years=years,
+                annual_growth=annual_growth,
+                max_rate=max_rate,
+            )
+            ladders[name] = ladder
+            converted = float(ladder["total_converted"])
+            cost = float(ladder["total_cost"])
+            metrics[name] = {
+                "total_converted": round(converted, 2),
+                "total_cost": round(cost, 2),
+                "effective_cost_rate": round((cost / converted) if converted > 0 else 0.0, 4),
+                "ending_balance": float(ladder["ending_balance"]),
+            }
+
+        # Prefer highest converted plan that stays near user-selected max rate (+3pp tolerance).
+        allowed = [
+            name for name in metrics
+            if metrics[name]["effective_cost_rate"] <= (base_max_rate + 0.03)
+        ]
+        candidate_pool = allowed if allowed else list(metrics.keys())
+        recommended = max(
+            candidate_pool,
+            key=lambda n: (metrics[n]["total_converted"], -metrics[n]["effective_cost_rate"]),
+        )
+
+        return {
+            "recommended": recommended,
+            "metrics": metrics,
+            "plans": ladders,
         }
 
     def analyze_social_security(

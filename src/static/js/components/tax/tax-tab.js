@@ -463,6 +463,28 @@ function renderTaxAnalysis(
                                 </div>
                             </details>
                         ` : ''}
+                        ${roth_conversion.ladder_variants?.plans ? `
+                            <details style="cursor: pointer; margin-top: 6px;">
+                                <summary style="font-size: 12px; font-weight: 600; padding: 4px 0; user-select: none;">🧭 Strategy Variants (Conservative/Balanced/Aggressive)</summary>
+                                <div style="padding: 8px; background: rgba(255,255,255,0.1); border-radius: 6px; margin-top: 6px; font-size: 10px;">
+                                    <div style="margin-bottom: 6px;">
+                                        Recommended: <strong>${roth_conversion.ladder_variants.recommended}</strong>
+                                    </div>
+                                    ${['conservative', 'balanced', 'aggressive'].map((name) => {
+                                        const metric = roth_conversion.ladder_variants.metrics?.[name];
+                                        if (!metric) return '';
+                                        return `
+                                            <div style="display: grid; grid-template-columns: 110px 1fr 1fr 1fr; gap: 6px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.08); ${roth_conversion.ladder_variants.recommended === name ? 'color:#4ade80;font-weight:700;' : ''}">
+                                                <span>${name}</span>
+                                                <span>Converted ${formatCurrency(metric.total_converted, 0)}</span>
+                                                <span>Cost ${formatCurrency(metric.total_cost, 0)}</span>
+                                                <span>End ${formatCurrency(metric.ending_balance, 0)}</span>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </details>
+                        ` : ''}
                     </div>
                     ` : ''}
 

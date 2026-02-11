@@ -1,5 +1,5 @@
 {
-    "version": "3.9.246",
+    "version": "3.9.247",
     "release_date": "2026-02-10",
-    "release_notes": "Roth optimizer controls: configurable ladder years, growth, and max marginal rate with live recalc"
+    "release_notes": "Roth optimizer strategy variants with recommended conservative/balanced/aggressive plan"
 }

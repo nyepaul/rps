@@ -101,3 +101,19 @@ def test_roth_conversion_ladder_respects_custom_inputs():
     assert ladder["years_modeled"] == 3
     assert ladder["annual_growth_assumption"] == 0.02
     assert ladder["max_marginal_rate_target"] == 0.22
+
+
+def test_roth_conversion_includes_variant_recommendation():
+    service = TaxOptimizationService(filing_status="mfj", state="CA", tax_year=2026)
+    result = service.analyze_roth_conversion(
+        current_taxable_income=120000,
+        traditional_balance=400000,
+        ladder_years=5,
+        ladder_growth_rate=0.05,
+        ladder_max_rate=0.24,
+    )
+    assert "ladder_variants" in result
+    variants = result["ladder_variants"]
+    assert variants["recommended"] in {"conservative", "balanced", "aggressive"}
+    assert "metrics" in variants
+    assert "plans" in variants
