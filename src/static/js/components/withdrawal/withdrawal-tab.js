@@ -21,6 +21,18 @@ const WITHDRAWAL_GLOSSARY = {
     rmd: {
         title: 'RMD (Required Minimum Distribution)',
         definition: 'Minimum annual withdrawal required from certain retirement accounts starting at age 73 under current rules.'
+    },
+    social_security_taxation: {
+        title: 'Social Security Taxation',
+        definition: 'Depending on combined income, a portion of Social Security benefits may be taxable at the federal level.'
+    },
+    tax_bracket_management: {
+        title: 'Tax Bracket Management',
+        definition: 'Planning withdrawals to stay within targeted tax brackets and avoid unnecessary marginal-rate increases.'
+    },
+    withdrawal_rate: {
+        title: 'Withdrawal Rate',
+        definition: 'The annual percentage of your portfolio withdrawn for spending. It affects sustainability and depletion risk.'
     }
 };
 
@@ -121,8 +133,8 @@ export function renderWithdrawalTab(container) {
                             <strong style="font-size: 12px;">💡 Planning Keys:</strong>
                             <ul style="margin: 8px 0 0 0; padding-left: 18px; color: var(--text-secondary); font-size: 11px; line-height: 1.4;">
                                 <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Required Minimum Distributions (RMDs)" data-title="RMD Rules" style="cursor: pointer; color: var(--accent-color); margin-bottom: 4px;">${glossaryTerm('RMDs', 'rmd')} start at age 73</li>
-                                <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Social Security Taxation" data-title="Social Security Taxes" style="cursor: pointer; color: var(--accent-color); margin-bottom: 4px;">Social Security may be taxable</li>
-                                <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Federal Income Tax Brackets (2024)" data-title="Tax Bracket Management" style="cursor: pointer; color: var(--accent-color);">Active bracket management</li>
+                                <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Social Security Taxation" data-title="Social Security Taxes" style="cursor: pointer; color: var(--accent-color); margin-bottom: 4px;">${glossaryTerm('Social Security', 'social_security_taxation')} may be taxable</li>
+                                <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Federal Income Tax Brackets (2024)" data-title="Tax Bracket Management" style="cursor: pointer; color: var(--accent-color);">${glossaryTerm('Active bracket management', 'tax_bracket_management')}</li>
                             </ul>
                         </div>
                     </div>
@@ -189,7 +201,7 @@ function renderCurrentWithdrawalState(data) {
 
     return `
         <div style="text-align: center;">
-            <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: var(--space-2);">Withdrawal Rate</div>
+            <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: var(--space-2);">${glossaryTerm('Withdrawal Rate', 'withdrawal_rate')}</div>
             <div style="font-size: var(--font-2xl); font-weight: bold; color: var(--accent-color);">${withdrawalRatePercent}%</div>
             <div style="font-size: var(--font-xs); color: var(--text-light); margin-top: var(--space-1);">Annual rate</div>
         </div>
