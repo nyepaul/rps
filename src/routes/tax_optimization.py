@@ -229,8 +229,15 @@ def analyze_social_security_timing():
             return jsonify({"error": "Profile data is empty"}), 400
 
         # Get Social Security data
+        person = profile_data.get("person", {})
+        spouse = profile_data.get("spouse", {})
         financial = profile_data.get("financial", {})
-        ss_benefit = financial.get("social_security_benefit", 0) or 0  # Monthly PIA
+        primary_ss = (
+            financial.get("social_security_benefit")
+            or person.get("social_security_benefit")
+            or 0
+        )  # Monthly PIA
+        spouse_ss = spouse.get("social_security_benefit", 0) or 0
 
         # Calculate current age
         current_age = 65
@@ -240,6 +247,18 @@ def analyze_social_security_timing():
                 current_age = (datetime.now() - birth).days // 365
             except Exception:
                 pass
+        elif person.get("current_age") is not None:
+            current_age = int(person.get("current_age"))
+
+        spouse_age = current_age
+        if spouse.get("birth_date"):
+            try:
+                spouse_birth = datetime.fromisoformat(spouse.get("birth_date"))
+                spouse_age = (datetime.now() - spouse_birth).days // 365
+            except Exception:
+                spouse_age = int(spouse.get("current_age") or current_age)
+        elif spouse.get("current_age") is not None:
+            spouse_age = int(spouse.get("current_age"))
 
         tax_settings = profile_data.get("tax_settings", {})
         filing_status = data.filing_status or tax_settings.get("filing_status", "mfj")
@@ -248,15 +267,62 @@ def analyze_social_security_timing():
         # Create service
         service = TaxOptimizationService(filing_status=filing_status, tax_year=tax_year)
 
-        # Analyze Social Security claiming strategies
-        result = service.analyze_social_security(
-            pia_at_fra=ss_benefit,  # Assuming this is PIA at FRA
-            current_age=current_age,
-            full_retirement_age=67,  # Default for those born 1960+
-            life_expectancy=data.life_expectancy,
+        # Analyze primary and spouse strategies separately.
+        primary_analysis = (
+            service.analyze_social_security(
+                pia_at_fra=float(primary_ss),
+                current_age=current_age,
+                full_retirement_age=67,
+                life_expectancy=data.life_expectancy,
+            )
+            if primary_ss > 0
+            else None
         )
-        result["profile_name"] = data.profile_name
+        spouse_analysis = (
+            service.analyze_social_security(
+                pia_at_fra=float(spouse_ss),
+                current_age=spouse_age,
+                full_retirement_age=67,
+                life_expectancy=data.life_expectancy,
+            )
+            if spouse_ss > 0
+            else None
+        )
 
+        household_analysis = service.analyze_household_social_security(
+            person={**person, "life_expectancy": data.life_expectancy},
+            spouse={**spouse, "life_expectancy": data.life_expectancy},
+            financial=financial,
+            current_age=current_age,
+            spouse_age=spouse_age,
+        )
+
+        # Backward-compatible top-level response mirrors primary analysis if present.
+        base = primary_analysis or spouse_analysis
+        if base is None:
+            return (
+                jsonify(
+                    {
+                        "profile_name": data.profile_name,
+                        "analyses": [],
+                        "optimal": None,
+                        "comparison": {},
+                        "recommendation": "Add Social Security benefit estimates to compare claiming strategies.",
+                        "primary_analysis": None,
+                        "spouse_analysis": None,
+                        "household_analysis": household_analysis.get("household"),
+                    }
+                ),
+                200,
+            )
+
+        result = {
+            **base,
+            "profile_name": data.profile_name,
+            "primary_analysis": primary_analysis,
+            "spouse_analysis": spouse_analysis,
+            "household_analysis": household_analysis.get("household"),
+        }
         return jsonify(result), 200
 
     except Exception as e:

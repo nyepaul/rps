@@ -1032,7 +1032,7 @@ class TaxOptimizationService:
         )
 
         # Get Social Security strategy analysis
-        ss_analysis = self._build_social_security_analysis(
+        ss_analysis = self.analyze_household_social_security(
             person=person,
             spouse=spouse,
             financial=financial,
@@ -1063,7 +1063,7 @@ class TaxOptimizationService:
             "recommendations": recommendations,
         }
 
-    def _build_social_security_analysis(
+    def analyze_household_social_security(
         self,
         *,
         person: Dict,

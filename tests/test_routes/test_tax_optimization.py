@@ -87,6 +87,8 @@ def test_analyze_social_security(client, test_user, test_profile):
     assert "analyses" in data
     assert "optimal" in data
     assert "comparison" in data
+    assert "primary_analysis" in data
+    assert "household_analysis" in data
     assert "profile_name" in data
 
 
@@ -112,6 +114,34 @@ def test_analyze_social_security_zero_pia(client, test_user, test_profile):
     data = response.get_json()
     assert "analyses" in data
     assert data["profile_name"] == "Test Profile"
+
+
+def test_analyze_social_security_includes_spouse_strategy(client, test_user, test_profile):
+    """Social Security timing should include spouse and household strategy data when spouse exists."""
+    client.post(
+        "/api/auth/login", json={"username": "testuser", "password": "TestPass123"}
+    )
+
+    profile_data = test_profile.data_dict or {}
+    profile_data["spouse"] = {
+        "name": "Test Spouse",
+        "current_age": 62,
+        "social_security_benefit": 2200,
+        "life_expectancy": 90,
+    }
+    test_profile.data_dict = profile_data
+    test_profile.save()
+
+    response = client.post(
+        "/api/tax-optimization/social-security-timing",
+        json={"profile_name": "Test Profile", "life_expectancy": 90},
+    )
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["spouse_analysis"] is not None
+    assert "strategy_matrix" in data["household_analysis"]
+    assert len(data["household_analysis"]["strategy_matrix"]) > 0
 
 
 def test_state_comparison(client, test_user, test_profile):
