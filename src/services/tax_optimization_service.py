@@ -770,6 +770,10 @@ class TaxOptimizationService:
             annual_safe_conversion_budget=annual_safe_conversion_budget,
             front_load_recommendation=front_load_recommendation,
         )
+        conversion_execution_plan = self.build_conversion_execution_plan(
+            annual_safe_conversion_budget=annual_safe_conversion_budget,
+            traditional_balance=traditional_balance,
+        )
 
         # Analyze each conversion amount
         scenarios = []
@@ -811,6 +815,7 @@ class TaxOptimizationService:
             "annual_safe_conversion_budget": annual_safe_conversion_budget,
             "front_load_recommendation": front_load_recommendation,
             "conversion_window_summary": conversion_window_summary,
+            "conversion_execution_plan": conversion_execution_plan,
             "scenarios": scenarios,
             "optimal_24pct": optimal,
             "conversion_ladder_5y": ladder_5y,
@@ -1147,6 +1152,34 @@ class TaxOptimizationService:
                 f"{open_year_count} of {total_years} years have safe conversion capacity; "
                 f"near-term budget is ${near_term_budget:,.0f}."
             ),
+        }
+
+    @staticmethod
+    def build_conversion_execution_plan(
+        annual_safe_conversion_budget: Dict,
+        traditional_balance: float,
+    ) -> Dict:
+        """Build a concrete annual conversion plan constrained by remaining traditional balance."""
+        remaining = max(0.0, float(traditional_balance))
+        rows = []
+        cumulative = 0.0
+        for row in annual_safe_conversion_budget.get("rows", []):
+            safe_budget = max(0.0, float(row.get("safe_conversion_budget", 0.0)))
+            recommended = min(safe_budget, remaining)
+            remaining = max(0.0, remaining - recommended)
+            cumulative += recommended
+            rows.append(
+                {
+                    "year": row.get("year"),
+                    "recommended_conversion": round(recommended, 2),
+                    "cumulative_conversion": round(cumulative, 2),
+                    "remaining_traditional_balance": round(remaining, 2),
+                }
+            )
+        return {
+            "rows": rows,
+            "total_recommended_conversion": round(cumulative, 2),
+            "remaining_traditional_balance": round(remaining, 2),
         }
 
     def analyze_social_security(
