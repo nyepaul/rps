@@ -804,6 +804,9 @@ class TaxOptimizationService:
             base_max_rate=max(0.1, min(0.5, float(ladder_max_rate))),
             annual_income_growth=max(-0.2, min(0.2, float(ladder_income_growth_rate))),
         )
+        conversion_tax_timeline = self.build_conversion_tax_timeline(
+            ladder=ladder_5y,
+        )
 
         return {
             "current_taxable_income": current_taxable_income,
@@ -816,6 +819,7 @@ class TaxOptimizationService:
             "front_load_recommendation": front_load_recommendation,
             "conversion_window_summary": conversion_window_summary,
             "conversion_execution_plan": conversion_execution_plan,
+            "conversion_tax_timeline": conversion_tax_timeline,
             "scenarios": scenarios,
             "optimal_24pct": optimal,
             "conversion_ladder_5y": ladder_5y,
@@ -1180,6 +1184,36 @@ class TaxOptimizationService:
             "rows": rows,
             "total_recommended_conversion": round(cumulative, 2),
             "remaining_traditional_balance": round(remaining, 2),
+        }
+
+    @staticmethod
+    def build_conversion_tax_timeline(ladder: Dict) -> Dict:
+        """Summarize annual conversion-tax concentration across the ladder horizon."""
+        rows = ladder.get("rows", [])
+        timeline = []
+        total_tax = 0.0
+        peak_year = None
+        peak_tax = -1.0
+        for row in rows:
+            year = int(row.get("year", 0))
+            tax = float(row.get("conversion_tax", 0.0))
+            timeline.append({"year": year, "conversion_tax": round(tax, 2)})
+            total_tax += tax
+            if tax > peak_tax:
+                peak_tax = tax
+                peak_year = year
+
+        years = len(timeline)
+        average_tax = (total_tax / years) if years > 0 else 0.0
+        concentration_ratio = (peak_tax / average_tax) if average_tax > 0 else 0.0
+        return {
+            "rows": timeline,
+            "total_conversion_tax": round(total_tax, 2),
+            "average_annual_conversion_tax": round(average_tax, 2),
+            "peak_tax_year": peak_year,
+            "peak_conversion_tax": round(max(0.0, peak_tax), 2),
+            "concentration_ratio": round(concentration_ratio, 2),
+            "is_concentrated": concentration_ratio > 1.5,
         }
 
     def analyze_social_security(

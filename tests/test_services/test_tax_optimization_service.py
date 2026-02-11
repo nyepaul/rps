@@ -89,6 +89,7 @@ def test_roth_conversion_includes_ladder_projection():
     assert "front_load_recommendation" in result
     assert "conversion_window_summary" in result
     assert "conversion_execution_plan" in result
+    assert "conversion_tax_timeline" in result
     ladder = result["conversion_ladder_5y"]
     assert "rows" in ladder
     assert len(ladder["rows"]) >= 1
@@ -176,3 +177,6 @@ def test_roth_front_load_recommendation_payload():
     plan = result["conversion_execution_plan"]
     assert "rows" in plan
     assert "total_recommended_conversion" in plan
+    timeline = result["conversion_tax_timeline"]
+    assert "rows" in timeline
+    assert "total_conversion_tax" in timeline
