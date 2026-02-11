@@ -1,5 +1,5 @@
 {
-    "version": "3.9.265",
+    "version": "3.9.266",
     "release_date": "2026-02-11",
-    "release_notes": "Collapse expense categories by default with click-to-expand accordion behavior"
+    "release_notes": "Collapse Advisor Fee Impact (AUM) panel until expanded in Expenses"
 }

@@ -17,6 +17,7 @@ let currentPeriod = "current";
 let budgetData = null;
 const DEFAULT_ADVISOR_FEE_RATE = 0.01;
 const expandedExpenseCategoryByPeriod = { current: null, future: null };
+const expandedAdvisorAumPanelByPeriod = { current: false, future: false };
 
 /**
  * Render Expense Tab
@@ -365,6 +366,7 @@ function calculateAdvisorFeeImpact(profile) {
 
 function renderAdvisorFeeAssessment(profile) {
     const { rows, totals } = calculateAdvisorFeeImpact(profile);
+    const isExpanded = Boolean(expandedAdvisorAumPanelByPeriod[currentPeriod]);
 
     if (!rows.length) {
         return `
@@ -377,11 +379,19 @@ function renderAdvisorFeeAssessment(profile) {
 
     return `
         <div style="margin-bottom: 10px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-left: 3px solid var(--accent-color); border-radius: 6px; padding: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
+            <div class="advisor-aum-panel-header" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; cursor: pointer; margin-bottom: ${isExpanded ? '8px' : '0'};">
                 <div>
                     <div style="font-size: 13px; font-weight: 700;">🧮 Advisor Fee Impact (AUM)</div>
                     <div style="font-size: 11px; color: var(--text-secondary);">Select managed accounts and fee rates. Then apply the calculated total to Expense category: Advisor Fees.</div>
                 </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 11px; color: var(--text-secondary); white-space: nowrap;">${formatCurrency(totals.annualFee, 0)}/yr</span>
+                    <span style="font-size: 11px; color: var(--text-secondary);">${isExpanded ? '▾' : '▸'}</span>
+                </div>
+            </div>
+
+            ${isExpanded ? `
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
                 <button id="apply-advisor-fee-expense-btn" style="padding: 5px 10px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 700;">
                     Apply To Expenses
                 </button>
@@ -426,6 +436,7 @@ function renderAdvisorFeeAssessment(profile) {
                     </div>
                 </div>
             `).join('')}
+            ` : ''}
         </div>
     `;
 }
@@ -2120,6 +2131,14 @@ function makeExpenseItemEditable(rowElement, category, index, expense, parentCon
  */
 function setupExpenseEventListeners(container) {
     const profile = store.get('currentProfile');
+
+    const advisorAumPanelHeader = container.querySelector('.advisor-aum-panel-header');
+    if (advisorAumPanelHeader) {
+        advisorAumPanelHeader.addEventListener('click', () => {
+            expandedAdvisorAumPanelByPeriod[currentPeriod] = !expandedAdvisorAumPanelByPeriod[currentPeriod];
+            renderExpenseSection(container);
+        });
+    }
 
     // Add custom category button handler
     const addCustomCategoryBtn = container.querySelector('#add-custom-category-btn');
