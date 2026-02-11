@@ -20,27 +20,32 @@ export function renderWelcomeTab(container) {
                     <div class="gs-step" data-tab="welcome" data-action="create" style="display: flex; align-items: baseline; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border-color);">
                         <span style="font-size: 12px; font-weight: 700; color: var(--text-secondary); min-width: 18px;">1.</span>
                         <a class="gs-link" href="#" style="font-size: 13px; font-weight: 600; color: var(--accent-color); text-decoration: none; min-width: 130px;">Create a profile</a>
-                        <span style="font-size: 12px; color: var(--text-secondary);">Name, birth date, retirement date</span>
+                        <span style="font-size: 12px; color: var(--text-secondary);">Name, birth date, retirement date, filing setup</span>
                     </div>
                     <div class="gs-step" data-tab="profile" style="display: flex; align-items: baseline; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border-color);">
                         <span style="font-size: 12px; font-weight: 700; color: var(--text-secondary); min-width: 18px;">2.</span>
                         <a class="gs-link" href="#" style="font-size: 13px; font-weight: 600; color: var(--accent-color); text-decoration: none; min-width: 130px;">Enter financial data</a>
-                        <span style="font-size: 12px; color: var(--text-secondary);">Income, expenses, assets, accounts</span>
+                        <span style="font-size: 12px; color: var(--text-secondary);">Income, expenses, assets, home, accounts, liabilities</span>
                     </div>
                     <div class="gs-step" data-tab="analysis" style="display: flex; align-items: baseline; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border-color);">
                         <span style="font-size: 12px; font-weight: 700; color: var(--text-secondary); min-width: 18px;">3.</span>
                         <a class="gs-link" href="#" style="font-size: 13px; font-weight: 600; color: var(--accent-color); text-decoration: none; min-width: 130px;">Run analysis</a>
-                        <span style="font-size: 12px; color: var(--text-secondary);">Monte Carlo simulation, calculation report</span>
+                        <span style="font-size: 12px; color: var(--text-secondary);">Monte Carlo simulation, cash flow and risk projection report</span>
                     </div>
-                    <div class="gs-step" data-tab="scenarios" style="display: flex; align-items: baseline; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border-color);">
+                    <div class="gs-step" data-tab="tax" style="display: flex; align-items: baseline; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border-color);">
                         <span style="font-size: 12px; font-weight: 700; color: var(--text-secondary); min-width: 18px;">4.</span>
+                        <a class="gs-link" href="#" style="font-size: 13px; font-weight: 600; color: var(--accent-color); text-decoration: none; min-width: 130px;">Optimize taxes</a>
+                        <span style="font-size: 12px; color: var(--text-secondary);">Roth conversions, Social Security, RMD, Medicare, state taxes</span>
+                    </div>
+                    <div class="gs-step" data-tab="comparison" style="display: flex; align-items: baseline; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border-color);">
+                        <span style="font-size: 12px; font-weight: 700; color: var(--text-secondary); min-width: 18px;">5.</span>
                         <a class="gs-link" href="#" style="font-size: 13px; font-weight: 600; color: var(--accent-color); text-decoration: none; min-width: 130px;">Compare scenarios</a>
-                        <span style="font-size: 12px; color: var(--text-secondary);">What-if variations on your plan</span>
+                        <span style="font-size: 12px; color: var(--text-secondary);">What-if comparisons and side-by-side outcomes</span>
                     </div>
                     <div class="gs-step" data-tab="action-items" style="display: flex; align-items: baseline; gap: 8px; padding: 6px 0;">
-                        <span style="font-size: 12px; font-weight: 700; color: var(--text-secondary); min-width: 18px;">5.</span>
+                        <span style="font-size: 12px; font-weight: 700; color: var(--text-secondary); min-width: 18px;">6.</span>
                         <a class="gs-link" href="#" style="font-size: 13px; font-weight: 600; color: var(--accent-color); text-decoration: none; min-width: 130px;">Review action items</a>
-                        <span style="font-size: 12px; color: var(--text-secondary);">Concrete next steps from your analysis</span>
+                        <span style="font-size: 12px; color: var(--text-secondary);">Execution checklist and progress tracking</span>
                     </div>
                 </div>
             </div>
@@ -61,10 +66,11 @@ export function renderWelcomeTab(container) {
                         <ul style="margin: 4px 0 0; padding-left: 18px; color: var(--text-secondary);">
                             <li>Multi-profile support for household planning</li>
                             <li>Monte Carlo simulation with configurable market assumptions</li>
-                            <li>Tax bracket modeling (federal + state), Roth conversions, RMDs</li>
-                            <li>Scenario comparison for what-if analysis</li>
+                            <li>Tax modeling (federal + state), Roth conversions, Social Security, RMDs, Medicare projection</li>
+                            <li>Scenario comparison, action items, and roadmap tracking</li>
+                            <li>Clickable glossary terms and contextual help across core planning pages</li>
+                            <li>Back/refresh tab restore that keeps you on the current working tab</li>
                             <li>AI-powered financial advisor (optional, requires API key)</li>
-                            <li>Action items and strategic roadmap tracking</li>
                         </ul>
                     </div>
                     <div>
@@ -73,6 +79,7 @@ export function renderWelcomeTab(container) {
                             <li>Profile data encrypted at rest with AES-256-GCM</li>
                             <li>Bcrypt password hashing, session-based authentication</li>
                             <li>Rate limiting, audit logging, input validation on all endpoints</li>
+                            <li>Deployment preflight quality checks for environment consistency and glossary coverage</li>
                         </ul>
                     </div>
                 </div>
