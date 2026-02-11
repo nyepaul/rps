@@ -11,6 +11,10 @@ import { STORAGE_KEYS } from '../../config.js';
 import { calculateNetWorth, calculateLiquidAssets, calculateRetirementAssets, calculateRealEstateEquity, calculateTotalDebts } from '../../utils/financial-calculations.js';
 import { getChartThemeColors, registerChartForThemeUpdates } from '../../utils/charts.js';
 import { animateChildren } from '../../utils/animations.js';
+import {
+    glossaryTerm as renderGlossaryTerm,
+    wireGlossaryTermClicks as wireGlossaryTerms,
+} from '../../utils/glossary.js';
 
 const DASHBOARD_GLOSSARY = {
     social_security: {
@@ -72,41 +76,11 @@ const DASHBOARD_GLOSSARY = {
 };
 
 function dashboardGlossaryTerm(label, key) {
-    return `<button type="button" class="dash-glossary-term" data-dashboard-glossary-term="${key}" style="background: none; border: none; color: inherit; font: inherit; font-weight: inherit; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 2px; padding: 0;" title="Click for definition">${label}</button>`;
+    return renderGlossaryTerm(label, key, { className: 'dash-glossary-term', attrName: 'dashboardGlossaryTerm' });
 }
 
 function wireDashboardGlossaryClicks(root) {
-    if (!root) return;
-    root.querySelectorAll('.dash-glossary-term').forEach((el) => {
-        el.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            showDashboardGlossaryDefinition(el.dataset.dashboardGlossaryTerm);
-        });
-    });
-}
-
-function showDashboardGlossaryDefinition(key) {
-    const item = DASHBOARD_GLOSSARY[key];
-    if (!item) return;
-
-    const modal = document.createElement('div');
-    modal.innerHTML = `
-        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10001; padding: 20px;">
-            <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; max-width: 540px; width: 100%; border: 2px solid var(--accent-color);">
-                <h3 style="margin: 0 0 10px 0; color: var(--accent-color);">${item.title}</h3>
-                <p style="margin: 0; line-height: 1.6; color: var(--text-primary);">${item.definition}</p>
-                <div style="margin-top: 16px; text-align: right;">
-                    <button id="close-dashboard-glossary-definition" style="padding: 8px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                        Close
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    modal.querySelector('#close-dashboard-glossary-definition').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+    wireGlossaryTerms(root, DASHBOARD_GLOSSARY, { className: 'dash-glossary-term', attrName: 'dashboardGlossaryTerm' });
 }
 
 export async function renderDashboardTab(container) {

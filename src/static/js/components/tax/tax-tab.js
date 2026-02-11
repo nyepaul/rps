@@ -8,6 +8,10 @@ import { store } from '../../state/store.js';
 import { taxOptimizationAPI } from '../../api/tax-optimization.js';
 import { formatCurrency, formatPercent, formatCompact } from '../../utils/formatters.js';
 import { showSuccess, showError, showLoading } from '../../utils/dom.js';
+import {
+    glossaryTerm as renderGlossaryTerm,
+    wireGlossaryTermClicks as wireGlossaryTerms,
+} from '../../utils/glossary.js';
 
 const TAX_GLOSSARY = {
     life_expectancy: {
@@ -169,41 +173,11 @@ const TAX_GLOSSARY = {
 };
 
 function glossaryTerm(label, key) {
-    return `<button type="button" class="glossary-term" data-glossary-term="${key}" style="background: none; border: none; color: inherit; font: inherit; font-weight: inherit; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 2px; padding: 0;" title="Click for definition">${label}</button>`;
+    return renderGlossaryTerm(label, key);
 }
 
 function wireGlossaryTermClicks(root) {
-    if (!root) return;
-    root.querySelectorAll('.glossary-term').forEach((el) => {
-        el.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            showGlossaryDefinition(el.dataset.glossaryTerm);
-        });
-    });
-}
-
-function showGlossaryDefinition(key) {
-    const item = TAX_GLOSSARY[key];
-    if (!item) return;
-
-    const modal = document.createElement('div');
-    modal.innerHTML = `
-        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10001; padding: 20px;">
-            <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; max-width: 540px; width: 100%; border: 2px solid var(--accent-color);">
-                <h3 style="margin: 0 0 10px 0; color: var(--accent-color);">${item.title}</h3>
-                <p style="margin: 0; line-height: 1.6; color: var(--text-primary);">${item.definition}</p>
-                <div style="margin-top: 16px; text-align: right;">
-                    <button id="close-glossary-definition" style="padding: 8px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                        Close
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    modal.querySelector('#close-glossary-definition').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+    wireGlossaryTerms(root, TAX_GLOSSARY);
 }
 
 function normalizeRate(value, fallback = 0) {
