@@ -15,6 +15,7 @@ import { renderImportPreviewModal } from "../shared/import-preview-modal.js";
 
 let currentPeriod = "current";
 let budgetData = null;
+const DEFAULT_ADVISOR_FEE_RATE = 0.01;
 
 /**
  * Render Expense Tab
@@ -238,11 +239,194 @@ function getDefaultExpenses() {
         subscriptions: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
         pet_care: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
         home_maintenance: { amount: 0, frequency: 'annual', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
+        advisor_fees: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
         debt_payments: { amount: 0, frequency: 'monthly', inflation_adjusted: false, subcategories: {}, start_date: null, end_date: null, ongoing: true },
         taxes: { amount: 0, frequency: 'annual', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
         discretionary: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true },
         other: { amount: 0, frequency: 'monthly', inflation_adjusted: true, subcategories: {}, start_date: null, end_date: null, ongoing: true }
     };
+}
+
+function normalizeFeeRate(rawRate) {
+    const parsed = Number(rawRate);
+    if (!Number.isFinite(parsed) || parsed < 0) return DEFAULT_ADVISOR_FEE_RATE;
+    if (parsed > 1) return parsed / 100;
+    return parsed;
+}
+
+function formatPercentDisplay(rate) {
+    return (rate * 100).toFixed(2);
+}
+
+function getAccountManagementKey(account, category, idx) {
+    if (account?.id) return `${category}:${account.id}`;
+    const name = String(account?.name || 'account').trim().toLowerCase().replace(/\s+/g, '_');
+    const institution = String(account?.institution || '').trim().toLowerCase().replace(/\s+/g, '_');
+    return `${category}:${name}:${institution}:${idx}`;
+}
+
+function getAdvisorManagedAccountCandidates(profile) {
+    const assets = profile?.data?.assets || {};
+    const groups = [
+        { key: 'retirement_accounts', label: 'Retirement' },
+        { key: 'taxable_accounts', label: 'Taxable' },
+        { key: 'education_accounts', label: 'Education' }
+    ];
+
+    const candidates = [];
+    groups.forEach(({ key, label }) => {
+        (assets[key] || []).forEach((account, idx) => {
+            const value = Number(account?.value || 0);
+            if (!Number.isFinite(value) || value <= 0) return;
+
+            const type = String(account?.type || '').toLowerCase();
+            const likelySelfManaged = ['checking', 'savings', 'cash'].includes(type);
+            const detectedRate = normalizeFeeRate(
+                account?.advisor_fee_rate ??
+                account?.advisory_fee ??
+                account?.fee_rate ??
+                account?.expense_ratio ??
+                DEFAULT_ADVISOR_FEE_RATE
+            );
+
+            candidates.push({
+                key: getAccountManagementKey(account, key, idx),
+                group: label,
+                name: account?.name || account?.type || 'Account',
+                value,
+                detectedRate,
+                defaultManaged: !likelySelfManaged
+            });
+        });
+    });
+
+    return candidates;
+}
+
+function ensureAdvisorFeeAssessment(profile) {
+    if (!budgetData.advisor_fee_assessment) {
+        budgetData.advisor_fee_assessment = {
+            current: { default_rate: DEFAULT_ADVISOR_FEE_RATE, accounts: {} },
+            future: { default_rate: DEFAULT_ADVISOR_FEE_RATE, accounts: {} }
+        };
+    }
+
+    if (!budgetData.advisor_fee_assessment[currentPeriod]) {
+        budgetData.advisor_fee_assessment[currentPeriod] = { default_rate: DEFAULT_ADVISOR_FEE_RATE, accounts: {} };
+    }
+
+    const periodConfig = budgetData.advisor_fee_assessment[currentPeriod];
+    if (!periodConfig.accounts) periodConfig.accounts = {};
+    if (!Number.isFinite(periodConfig.default_rate)) periodConfig.default_rate = DEFAULT_ADVISOR_FEE_RATE;
+
+    const candidates = getAdvisorManagedAccountCandidates(profile);
+    candidates.forEach((candidate) => {
+        if (!periodConfig.accounts[candidate.key]) {
+            periodConfig.accounts[candidate.key] = {
+                managed: candidate.defaultManaged,
+                fee_rate: candidate.detectedRate
+            };
+            return;
+        }
+        periodConfig.accounts[candidate.key].fee_rate = normalizeFeeRate(periodConfig.accounts[candidate.key].fee_rate);
+    });
+
+    return { periodConfig, candidates };
+}
+
+function calculateAdvisorFeeImpact(profile) {
+    const { periodConfig, candidates } = ensureAdvisorFeeAssessment(profile);
+    const rows = candidates.map((candidate) => {
+        const config = periodConfig.accounts[candidate.key] || { managed: false, fee_rate: periodConfig.default_rate };
+        const feeRate = normalizeFeeRate(config.fee_rate ?? periodConfig.default_rate);
+        const managed = Boolean(config.managed);
+        const annualFee = managed ? candidate.value * feeRate : 0;
+        return {
+            ...candidate,
+            managed,
+            feeRate,
+            annualFee
+        };
+    });
+
+    const totals = rows.reduce((acc, row) => {
+        if (row.managed) {
+            acc.managedAccounts += 1;
+            acc.managedValue += row.value;
+            acc.annualFee += row.annualFee;
+        }
+        acc.totalAccounts += 1;
+        return acc;
+    }, { totalAccounts: 0, managedAccounts: 0, managedValue: 0, annualFee: 0 });
+
+    return { rows, totals };
+}
+
+function renderAdvisorFeeAssessment(profile) {
+    const { rows, totals } = calculateAdvisorFeeImpact(profile);
+
+    if (!rows.length) {
+        return `
+            <div style="padding: 10px 12px; margin-bottom: 10px; background: var(--bg-tertiary); border-radius: 6px; border-left: 3px solid var(--accent-color);">
+                <div style="font-size: 12px; font-weight: 700; margin-bottom: 4px;">Advisor Fee Impact (AUM)</div>
+                <div style="font-size: 12px; color: var(--text-secondary);">No eligible investment accounts found yet. Add retirement/taxable accounts in Assets to assess advisor fee impact.</div>
+            </div>
+        `;
+    }
+
+    return `
+        <div style="margin-bottom: 10px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-left: 3px solid var(--accent-color); border-radius: 6px; padding: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
+                <div>
+                    <div style="font-size: 13px; font-weight: 700;">🧮 Advisor Fee Impact (AUM)</div>
+                    <div style="font-size: 11px; color: var(--text-secondary);">Select managed accounts and fee rates. Then apply the calculated total to Expense category: Advisor Fees.</div>
+                </div>
+                <button id="apply-advisor-fee-expense-btn" style="padding: 5px 10px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 700;">
+                    Apply To Expenses
+                </button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin-bottom: 8px;">
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; padding: 8px;">
+                    <div style="font-size: 10px; color: var(--text-secondary); text-transform: uppercase;">Managed Accounts</div>
+                    <div style="font-size: 15px; font-weight: 700;">${totals.managedAccounts}/${totals.totalAccounts}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; padding: 8px;">
+                    <div style="font-size: 10px; color: var(--text-secondary); text-transform: uppercase;">Managed Value</div>
+                    <div style="font-size: 15px; font-weight: 700;">${formatCurrency(totals.managedValue, 0)}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; padding: 8px;">
+                    <div style="font-size: 10px; color: var(--text-secondary); text-transform: uppercase;">Annual Advisor Fees</div>
+                    <div style="font-size: 15px; font-weight: 700; color: var(--warning-color);">${formatCurrency(totals.annualFee, 0)}</div>
+                </div>
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; padding: 8px;">
+                    <div style="font-size: 10px; color: var(--text-secondary); text-transform: uppercase;">Monthly Equivalent</div>
+                    <div style="font-size: 15px; font-weight: 700;">${formatCurrency(totals.annualFee / 12, 0)}</div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 90px 1.7fr 1fr 100px 1fr; gap: 8px; font-size: 10px; color: var(--text-secondary); text-transform: uppercase; padding: 4px 2px; border-bottom: 1px solid var(--border-color);">
+                <div>Managed</div><div>Account</div><div>Value</div><div>Fee %</div><div>Annual Fee</div>
+            </div>
+            ${rows.map((row) => `
+                <div style="display: grid; grid-template-columns: 90px 1.7fr 1fr 100px 1fr; gap: 8px; align-items: center; padding: 6px 2px; border-bottom: 1px solid var(--border-color);">
+                    <label style="display: flex; align-items: center; gap: 5px; font-size: 11px; cursor: pointer;">
+                        <input class="advisor-managed-toggle" data-key="${row.key}" type="checkbox" ${row.managed ? 'checked' : ''}>
+                        <span>${row.group}</span>
+                    </label>
+                    <div style="font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${row.name}">${row.name}</div>
+                    <div style="font-size: 12px;">${formatCurrency(row.value, 0)}</div>
+                    <div>
+                        <input class="advisor-fee-rate-input" data-key="${row.key}" type="number" min="0" max="10" step="0.01" value="${formatPercentDisplay(row.feeRate)}"
+                            style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
+                    </div>
+                    <div style="font-size: 12px; font-weight: 700; color: ${row.managed ? 'var(--warning-color)' : 'var(--text-secondary)'};">
+                        ${formatCurrency(row.annualFee, 0)}
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
 }
 
 /**
@@ -1561,6 +1745,7 @@ function renderExpenseSection(parentContainer) {
         { key: 'subscriptions', label: 'Subscriptions', icon: '📱', description: 'Streaming, apps, memberships' },
         { key: 'pet_care', label: 'Pet Care', icon: '🐾', description: 'Food, vet, grooming' },
         { key: 'home_maintenance', label: 'Home Maintenance', icon: '🔧', description: 'Repairs, landscaping, improvements' },
+        { key: 'advisor_fees', label: 'Advisor Fees', icon: '🧾', description: 'AUM/advisor management fees' },
         { key: 'debt_payments', label: 'Debt Payments', icon: '💳', description: 'Credit cards, loans (non-mortgage)' },
         { key: 'taxes', label: 'Taxes', icon: '📋', description: 'Property tax, estimated tax payments' },
         { key: 'discretionary', label: 'Discretionary', icon: '🎉', description: 'Shopping, misc spending' },
@@ -1597,6 +1782,9 @@ function renderExpenseSection(parentContainer) {
                     <strong style="color: var(--text-primary);">💡 Tip:</strong> Click on any expense item to edit its details
                 </p>
             </div>
+
+            ${renderAdvisorFeeAssessment(profile)}
+
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 8px;">
     `;
 
@@ -1706,6 +1894,7 @@ function makeExpenseItemEditable(rowElement, category, index, expense, parentCon
         subscriptions: 'Subscriptions',
         pet_care: 'Pet Care',
         home_maintenance: 'Home Maintenance',
+        advisor_fees: 'Advisor Fees',
         debt_payments: 'Debt Payments',
         taxes: 'Taxes',
         discretionary: 'Discretionary',
@@ -1924,6 +2113,8 @@ function makeExpenseItemEditable(rowElement, category, index, expense, parentCon
  * Setup expense event listeners
  */
 function setupExpenseEventListeners(container) {
+    const profile = store.get('currentProfile');
+
     // Add custom category button handler
     const addCustomCategoryBtn = container.querySelector('#add-custom-category-btn');
     if (addCustomCategoryBtn) {
@@ -1993,6 +2184,71 @@ function setupExpenseEventListeners(container) {
         el.addEventListener('mouseenter', () => { el.style.borderColor = 'var(--accent-color)'; });
         el.addEventListener('mouseleave', () => { el.style.borderColor = 'var(--border-color)'; });
     });
+
+    // Advisor fee assessment controls
+    container.querySelectorAll('.advisor-managed-toggle').forEach((input) => {
+        input.addEventListener('change', () => {
+            if (!profile) return;
+            const { periodConfig } = ensureAdvisorFeeAssessment(profile);
+            const key = input.dataset.key;
+            if (!key || !periodConfig.accounts[key]) return;
+            periodConfig.accounts[key].managed = input.checked;
+            renderExpenseSection(container);
+        });
+    });
+
+    container.querySelectorAll('.advisor-fee-rate-input').forEach((input) => {
+        input.addEventListener('change', () => {
+            if (!profile) return;
+            const { periodConfig } = ensureAdvisorFeeAssessment(profile);
+            const key = input.dataset.key;
+            if (!key || !periodConfig.accounts[key]) return;
+            const normalized = normalizeFeeRate(input.value);
+            periodConfig.accounts[key].fee_rate = normalized;
+            renderExpenseSection(container);
+        });
+    });
+
+    const applyAdvisorFeeBtn = container.querySelector('#apply-advisor-fee-expense-btn');
+    if (applyAdvisorFeeBtn) {
+        applyAdvisorFeeBtn.addEventListener('click', async () => {
+            if (!profile) return;
+            const { totals } = calculateAdvisorFeeImpact(profile);
+            const monthlyAmount = totals.annualFee / 12;
+
+            if (!Array.isArray(budgetData.expenses[currentPeriod].advisor_fees)) {
+                const legacy = budgetData.expenses[currentPeriod].advisor_fees;
+                budgetData.expenses[currentPeriod].advisor_fees = legacy && typeof legacy === 'object' && legacy.amount !== undefined
+                    ? [legacy]
+                    : [];
+            }
+
+            const expenseItems = budgetData.expenses[currentPeriod].advisor_fees;
+            const existingIndex = expenseItems.findIndex((item) => item.name === 'Advisor/AUM Fees (Managed Accounts)');
+            const computedItem = {
+                name: 'Advisor/AUM Fees (Managed Accounts)',
+                amount: Math.round(monthlyAmount * 100) / 100,
+                frequency: 'monthly',
+                inflation_adjusted: true,
+                ongoing: true,
+                start_date: null,
+                end_date: null,
+                source: 'calculated',
+                notes: `Computed from ${totals.managedAccounts} managed accounts (${formatCurrency(totals.managedValue, 0)} AUM at current rates)`
+            };
+
+            if (existingIndex >= 0) {
+                expenseItems[existingIndex] = computedItem;
+            } else {
+                expenseItems.push(computedItem);
+            }
+
+            renderExpenseSection(container);
+            renderBudgetSummary(container);
+            await saveBudget(profile, container);
+            showSuccess(`Advisor fee expense updated: ${formatCurrency(totals.annualFee, 0)}/yr`);
+        });
+    }
 }
 
 /**
@@ -2126,6 +2382,7 @@ function showExpenseEditorModal(parentContainer, category) {
         subscriptions: 'Subscriptions',
         pet_care: 'Pet Care',
         home_maintenance: 'Home Maintenance',
+        advisor_fees: 'Advisor Fees',
         debt_payments: 'Debt Payments',
         taxes: 'Taxes',
         discretionary: 'Discretionary',
@@ -2607,6 +2864,7 @@ function exportExpensesCSV(profile) {
         personal_care: 'Personal Care', clothing: 'Clothing', gifts: 'Gifts & Donations',
         childcare_education: 'Childcare & Education', charitable_giving: 'Charitable Giving',
         subscriptions: 'Subscriptions', pet_care: 'Pet Care', home_maintenance: 'Home Maintenance',
+        advisor_fees: 'Advisor Fees',
         debt_payments: 'Debt Payments', taxes: 'Taxes', discretionary: 'Discretionary', other: 'Other'
     };
 

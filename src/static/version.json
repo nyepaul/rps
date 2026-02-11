@@ -1,5 +1,5 @@
 {
-    "version": "3.9.260",
+    "version": "3.9.261",
     "release_date": "2026-02-11",
-    "release_notes": "Global feature index quick-launch and roadmap locator"
+    "release_notes": "Add Advisor Fee Impact (AUM) assessment in Expenses and Feature Index shortcut"
 }

@@ -32,7 +32,7 @@ const TAB_METADATA = {
     },
     expenses: {
         title: 'Expenses & Budget',
-        summary: 'Recurring expenses, retirement spending, and budget controls.',
+        summary: 'Recurring expenses, retirement spending, advisor fee (AUM) impact, and budget controls.',
         location: 'Expenses tab'
     },
     assets: {
@@ -98,6 +98,23 @@ const TAB_METADATA = {
 };
 
 const SPOTLIGHT_ENTRIES = [
+    {
+        id: 'advisor-fee-aum-impact',
+        title: 'Advisor Fee Impact (AUM)',
+        area: 'Expenses',
+        location: 'Expenses tab -> Advisor Fee Impact (AUM)',
+        summary: 'Identify advisor-managed accounts, set fee rates, and apply AUM fee totals into Advisor Fees expense.',
+        keywords: [
+            'aum',
+            'assets under management',
+            'advisor fees',
+            'advisory fee',
+            'managed accounts',
+            'expense ratio',
+            'fee drag'
+        ],
+        action: { type: 'tab', target: 'expenses', label: 'Open Expenses' }
+    },
     {
         id: 'legacy-family-planning',
         title: 'Legacy Wealth & Family Planning',
