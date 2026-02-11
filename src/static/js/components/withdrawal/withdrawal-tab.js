@@ -5,6 +5,62 @@
 import { store } from '../../state/store.js';
 import { formatCurrency } from '../../utils/formatters.js';
 
+const WITHDRAWAL_GLOSSARY = {
+    taxable: {
+        title: 'Taxable Accounts',
+        definition: 'Accounts funded with after-tax dollars. Withdrawals are generally tax-free on principal, while gains may be taxed.'
+    },
+    tax_deferred: {
+        title: 'Tax-Deferred Accounts',
+        definition: 'Traditional retirement accounts (e.g., 401(k), IRA) where taxes are deferred until withdrawal.'
+    },
+    roth: {
+        title: 'Roth Accounts',
+        definition: 'Accounts funded with after-tax dollars where qualified withdrawals are generally tax-free.'
+    },
+    rmd: {
+        title: 'RMD (Required Minimum Distribution)',
+        definition: 'Minimum annual withdrawal required from certain retirement accounts starting at age 73 under current rules.'
+    }
+};
+
+function glossaryTerm(label, key) {
+    return `<button type="button" class="withdrawal-glossary-term" data-glossary="${key}" style="background:none;border:none;color:inherit;font:inherit;font-weight:inherit;cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px;padding:0;" title="Click for definition">${label}</button>`;
+}
+
+function wireGlossaryClicks(root) {
+    if (!root) return;
+    root.querySelectorAll('.withdrawal-glossary-term').forEach((el) => {
+        el.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            showGlossaryDefinition(el.dataset.glossary);
+        });
+    });
+}
+
+function showGlossaryDefinition(key) {
+    const item = WITHDRAWAL_GLOSSARY[key];
+    if (!item) return;
+
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+        <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10001; padding: 20px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; max-width: 540px; width: 100%; border: 2px solid var(--accent-color);">
+                <h3 style="margin: 0 0 10px 0; color: var(--accent-color);">${item.title}</h3>
+                <p style="margin: 0; line-height: 1.6; color: var(--text-primary);">${item.definition}</p>
+                <div style="margin-top: 16px; text-align: right;">
+                    <button id="close-withdrawal-glossary-definition" style="padding: 8px 16px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Close</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.querySelector('#close-withdrawal-glossary-definition').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+}
+
 export function renderWithdrawalTab(container) {
     const profile = store.get('currentProfile');
 
@@ -64,7 +120,7 @@ export function renderWithdrawalTab(container) {
                         <div style="padding: 12px; background: var(--warning-bg); border-radius: 6px; border: 1px solid var(--warning-color);">
                             <strong style="font-size: 12px;">💡 Planning Keys:</strong>
                             <ul style="margin: 8px 0 0 0; padding-left: 18px; color: var(--text-secondary); font-size: 11px; line-height: 1.4;">
-                                <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Required Minimum Distributions (RMDs)" data-title="RMD Rules" style="cursor: pointer; color: var(--accent-color); margin-bottom: 4px;">RMDs start at age 73</li>
+                                <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Required Minimum Distributions (RMDs)" data-title="RMD Rules" style="cursor: pointer; color: var(--accent-color); margin-bottom: 4px;">${glossaryTerm('RMDs', 'rmd')} start at age 73</li>
                                 <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Social Security Taxation" data-title="Social Security Taxes" style="cursor: pointer; color: var(--accent-color); margin-bottom: 4px;">Social Security may be taxable</li>
                                 <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Federal Income Tax Brackets (2024)" data-title="Tax Bracket Management" style="cursor: pointer; color: var(--accent-color);">Active bracket management</li>
                             </ul>
@@ -76,7 +132,7 @@ export function renderWithdrawalTab(container) {
                         <!-- Taxable Section -->
                         <div class="strategy-card" data-target="list-taxable" style="background: var(--bg-primary); padding: 10px; border-radius: 6px; border-left: 4px solid var(--success-color); cursor: pointer; border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <h3 style="margin: 0; font-size: 13px;">1️⃣ Taxable Accounts First</h3>
+                                <h3 style="margin: 0; font-size: 13px;">1️⃣ ${glossaryTerm('Taxable', 'taxable')} Accounts First</h3>
                                 <span class="toggle-icon" style="font-size: 10px;">▶</span>
                             </div>
                             <div id="list-taxable" style="display: none; margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 8px;">
@@ -87,7 +143,7 @@ export function renderWithdrawalTab(container) {
                         <!-- Tax-Deferred Section -->
                         <div class="strategy-card" data-target="list-deferred" style="background: var(--bg-primary); padding: 10px; border-radius: 6px; border-left: 4px solid var(--info-color); cursor: pointer; border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <h3 style="margin: 0; font-size: 13px;">2️⃣ Tax-Deferred Second</h3>
+                                <h3 style="margin: 0; font-size: 13px;">2️⃣ ${glossaryTerm('Tax-Deferred', 'tax_deferred')} Second</h3>
                                 <span class="toggle-icon" style="font-size: 10px;">▶</span>
                             </div>
                             <div id="list-deferred" style="display: none; margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 8px;">
@@ -98,7 +154,7 @@ export function renderWithdrawalTab(container) {
                         <!-- Roth Section -->
                         <div class="strategy-card" data-target="list-roth" style="background: var(--bg-primary); padding: 10px; border-radius: 6px; border-left: 4px solid var(--accent-color); cursor: pointer; border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <h3 style="margin: 0; font-size: 13px;">3️⃣ Roth Accounts Last</h3>
+                                <h3 style="margin: 0; font-size: 13px;">3️⃣ ${glossaryTerm('Roth', 'roth')} Accounts Last</h3>
                                 <span class="toggle-icon" style="font-size: 10px;">▶</span>
                             </div>
                             <div id="list-roth" style="display: none; margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 8px;">
@@ -112,6 +168,7 @@ export function renderWithdrawalTab(container) {
     `;
 
     setupWithdrawalStrategyToggles(container);
+    wireGlossaryClicks(container);
     // Note: Learn links functionality would need importing showArticle if needed,
     // but the links exist in HTML. We should probably add the handler back if we want them to work.
     // For now, I'll add a simple handler if learn links exist.
