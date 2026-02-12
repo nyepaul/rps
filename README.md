@@ -33,6 +33,8 @@ A local-first financial planning application for Monte Carlo retirement simulati
 | `./bin/start` | Start application (creates venv, installs deps) |
 | `./bin/check-env-consistency` | Verify dev/prod dependency config is aligned |
 | `./bin/check-no-secrets` | Scan tracked files for secret-like tokens |
+| `./bin/check-repo-hygiene` | Block committing generated/local artifacts |
+| `./bin/check-quality-gates` | Run CI-equivalent quality gates locally |
 | `./bin/setup-git-hooks` | Enable local pre-push hook checks (`.githooks`) |
 | `./bin/manage stop` | Stop the application |
 | `./bin/manage status` | Check system health |
@@ -71,4 +73,4 @@ The following variables are used for system-level configuration or testing. **Us
 
 ---
 
-**Version**: patch | **Author**: pan
+**Version**: 3.9.279 | **Last Updated**: 2026-02-12

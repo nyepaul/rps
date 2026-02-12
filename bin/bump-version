@@ -26,13 +26,14 @@ sed -i "s|/js/login.js?v=.*\"|/js/login.js?v=$NEW_VERSION\"|g" src/static/login.
 
 # Update version in core documentation files
 echo "📖 Updating documentation files..."
-sed -i "s|Version: 3\.9\.[0-9]*|Version: $NEW_VERSION|g" GEMINI.md
-sed -i "s|\*\*Version\*\*: 3\.9\.[0-9]*|**Version**: $NEW_VERSION|g" README.md
-sed -i "s|(Current: 3\.9\.[0-9]*)|(Current: $NEW_VERSION)|g" CLAUDE.md
-sed -i "s|Version\*\*: 3\.9\.[0-9]*|Version**: $NEW_VERSION|g" GEMINI.md 2>/dev/null || true
-sed -i "s|RPS Version\*\*: 3\.9\.[0-9]*|RPS Version**: $NEW_VERSION|g" docs/ai-integration/GEMINI.md
-sed -i "s|Version:\*\* 3\.9\.[0-9]*|Version:** $NEW_VERSION|g" docs/security/SYSTEM_SECURITY_DOCUMENTATION.md
-sed -i "s|Version: 3\.9\.[0-9]*|Version: $NEW_VERSION|g" docs/security/AUDIT_LOGGING.md
+SEMVER_PATTERN='[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*'
+sed -i "s|Version: $SEMVER_PATTERN|Version: $NEW_VERSION|g" GEMINI.md
+sed -i "s|\*\*Version\*\*: $SEMVER_PATTERN|**Version**: $NEW_VERSION|g" README.md
+sed -i "s|(Current: $SEMVER_PATTERN)|(Current: $NEW_VERSION)|g" CLAUDE.md
+sed -i "s|Version\*\*: $SEMVER_PATTERN|Version**: $NEW_VERSION|g" GEMINI.md 2>/dev/null || true
+sed -i "s|RPS Version\*\*: $SEMVER_PATTERN|RPS Version**: $NEW_VERSION|g" docs/ai-integration/GEMINI.md
+sed -i "s|Version:\*\* $SEMVER_PATTERN|Version:** $NEW_VERSION|g" docs/security/SYSTEM_SECURITY_DOCUMENTATION.md
+sed -i "s|Version: $SEMVER_PATTERN|Version: $NEW_VERSION|g" docs/security/AUDIT_LOGGING.md
 sed -i "s|v3\.9\.[0-9]* reorganized|v$NEW_VERSION reorganized|g" docs/architecture/PROJECT_STRUCTURE.md
 
 echo "✅ Version bumped to $NEW_VERSION"
