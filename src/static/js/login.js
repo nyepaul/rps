@@ -428,7 +428,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function showMessage(text, type) {
         if (messageDiv) {
-            messageDiv.innerHTML = `<div class="${type}">${text}</div>`;
+            messageDiv.textContent = '';
+            const wrapper = document.createElement('div');
+            wrapper.className = type;
+            wrapper.textContent = String(text || '');
+            messageDiv.appendChild(wrapper);
         }
     }
 

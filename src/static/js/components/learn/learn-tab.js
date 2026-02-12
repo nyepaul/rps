@@ -250,11 +250,27 @@ function getGlossaryReferenceUrl(item) {
     return `https://en.wikipedia.org/wiki/Special:Search?search=${term}`;
 }
 
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function sanitizeUrl(url) {
+    const raw = String(url || '').trim();
+    if (!raw) return '#';
+    if (/^(https?:\/\/|\/)/i.test(raw)) return raw;
+    return '#';
+}
+
 // Simple markdown to HTML converter
 function markdownToHtml(markdown) {
     if (!markdown) return '';
 
-    let html = markdown
+    let html = escapeHtml(markdown)
         // Code blocks (must be first)
         .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code class="language-$1">$2</code></pre>')
         // Inline code
@@ -278,10 +294,15 @@ function markdownToHtml(markdown) {
         .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
         // Horizontal rules
         .replace(/^---$/gm, '<hr>')
-        // Links
-        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
         // Paragraphs (double newlines)
         .replace(/\n\n/g, '</p><p>');
+
+    // Links
+    html = html.replace(
+        /\[([^\]]+)\]\(([^)]+)\)/g,
+        (_, label, href) =>
+            `<a href="${sanitizeUrl(href)}" target="_blank" rel="noopener noreferrer">${label}</a>`
+    );
 
     // Wrap loose text in paragraphs
     html = '<p>' + html + '</p>';

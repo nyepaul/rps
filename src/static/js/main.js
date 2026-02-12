@@ -1114,14 +1114,24 @@ async function openSettings(defaultTab = 'general', focusElementId = null) {
             const newPassword = modal.querySelector('#new-password-input')?.value;
             const confirmPassword = modal.querySelector('#confirm-password-input')?.value;
             const messageDiv = modal.querySelector('#change-password-message');
+            const renderPasswordMessage = (text, color) => {
+                if (!messageDiv) return;
+                messageDiv.textContent = '';
+                const msg = document.createElement('div');
+                msg.style.color = color;
+                msg.style.fontSize = '13px';
+                msg.style.marginBottom = '15px';
+                msg.textContent = text;
+                messageDiv.appendChild(msg);
+            };
 
             if (!currentPassword || !newPassword || !confirmPassword) {
-                messageDiv.innerHTML = '<div style="color: #dc3545; font-size: 13px; margin-bottom: 15px;">Please fill in all password fields.</div>';
+                renderPasswordMessage('Please fill in all password fields.', '#dc3545');
                 return;
             }
 
             if (newPassword !== confirmPassword) {
-                messageDiv.innerHTML = '<div style="color: #dc3545; font-size: 13px; margin-bottom: 15px;">New passwords do not match.</div>';
+                renderPasswordMessage('New passwords do not match.', '#dc3545');
                 return;
             }
 
@@ -1135,13 +1145,13 @@ async function openSettings(defaultTab = 'general', focusElementId = null) {
                     new_password: newPassword
                 });
 
-                messageDiv.innerHTML = '<div style="color: #28a745; font-size: 13px; margin-bottom: 15px;">✅ Password updated successfully!</div>';
+                renderPasswordMessage('Password updated successfully!', '#28a745');
                 modal.querySelector('#current-password-input').value = '';
                 modal.querySelector('#new-password-input').value = '';
                 modal.querySelector('#confirm-password-input').value = '';
             } catch (error) {
                 console.error('Failed to update password:', error);
-                messageDiv.innerHTML = `<div style="color: #dc3545; font-size: 13px; margin-bottom: 15px;">❌ ${error.message || 'Failed to update password'}</div>`;
+                renderPasswordMessage(error.message || 'Failed to update password', '#dc3545');
             } finally {
                 updatePasswordBtn.disabled = false;
                 updatePasswordBtn.textContent = 'Update Password';

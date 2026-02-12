@@ -2,6 +2,15 @@
  * DOM utility functions
  */
 
+export function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 /**
  * Create element with attributes and children
  */
@@ -52,7 +61,7 @@ export function showLoading(container, message = 'Loading...') {
                 animation: spin 0.8s linear infinite;
                 margin: 0 auto 20px;
             "></div>
-            <div>${message}</div>
+            <div>${escapeHtml(message)}</div>
         </div>
         <style>
             @keyframes spin {
@@ -68,7 +77,7 @@ export function showLoading(container, message = 'Loading...') {
 export function showErrorInContainer(container, message) {
     container.innerHTML = `
         <div style="background: var(--danger-bg); color: var(--danger-color); padding: 20px; border-radius: 8px; margin: 20px;">
-            <strong>Error:</strong> ${message}
+            <strong>Error:</strong> ${escapeHtml(message)}
         </div>
     `;
 }

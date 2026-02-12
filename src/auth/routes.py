@@ -23,6 +23,11 @@ LOCKOUT_THRESHOLD = 5  # Failed attempts before lockout
 LOCKOUT_DURATION_MINUTES = 30  # Lockout duration
 
 
+def _log_auth_exception(message: str, error: Exception) -> None:
+    """Log auth errors server-side without exposing internals to clients."""
+    current_app.logger.error("%s: %s", message, error, exc_info=True)
+
+
 def check_account_lockout(username: str) -> tuple[bool, int]:
     """
     Check if account is locked due to too many failed login attempts.
@@ -348,9 +353,8 @@ def verify_email():
             return jsonify({"error": "Invalid or expired token"}), 400
 
     except Exception as e:
-        from flask import current_app
-        current_app.logger.error(f"Token verification failed: {str(e)}", exc_info=True)
-        return jsonify({"error": f"Invalid token: {str(e)}" if current_app.debug else "Invalid token"}), 400
+        _log_auth_exception("Token verification failed", e)
+        return jsonify({"error": "Invalid token"}), 400
 
 
 @auth_bp.route("/login", methods=["POST"])
@@ -704,7 +708,8 @@ def update_preferences():
 
         return jsonify({"message": "Preferences updated", "preferences": existing}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        _log_auth_exception("Failed to update preferences", e)
+        return jsonify({"error": "Failed to update preferences"}), 500
 
 
 class APIKeySchema(BaseModel):
@@ -851,7 +856,8 @@ def get_api_keys():
         return jsonify(result), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        _log_auth_exception("Failed to load API keys", e)
+        return jsonify({"error": "Failed to load API keys"}), 500
 
 
 @auth_bp.route("/api-keys", methods=["POST"])
@@ -861,8 +867,11 @@ def save_api_keys():
     try:
         # Validate input
         data = APIKeySchema(**request.json)
+    except ValidationError as e:
+        return jsonify({"error": sanitize_pydantic_error(e)}), 400
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        _log_auth_exception("Invalid API key payload", e)
+        return jsonify({"error": "Invalid API key payload"}), 400
 
     try:
         # Get current user's keys
@@ -898,7 +907,8 @@ def save_api_keys():
         return jsonify({"message": "API keys saved successfully"}), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        _log_auth_exception("Failed to save API keys", e)
+        return jsonify({"error": "Failed to save API keys"}), 500
 
 
 @auth_bp.route("/test-api-key", methods=["POST"])
@@ -950,7 +960,8 @@ def test_api_key():
             return jsonify({"error": f"Unknown provider: {provider}"}), 400
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        _log_auth_exception("API key test failed", e)
+        return jsonify({"error": "API key test failed"}), 500
 
 
 @auth_bp.route("/test-stored-key", methods=["POST"])
@@ -1005,7 +1016,8 @@ def test_stored_key():
         else:
             return jsonify({"error": f"Unknown provider: {provider}"}), 400
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        _log_auth_exception("Stored API key test failed", e)
+        return jsonify({"error": "Stored API key test failed"}), 500
 
 
 @auth_bp.route("/delete-api-key", methods=["POST"])
@@ -1030,7 +1042,8 @@ def delete_api_key():
         else:
             return jsonify({"error": "Key not found"}), 404
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        _log_auth_exception("Failed to delete API key", e)
+        return jsonify({"error": "Failed to delete API key"}), 500
 
 
 class PasswordResetRequestSchema(BaseModel):
@@ -1261,7 +1274,8 @@ def validate_reset_token():
         if not token:
             return jsonify({"error": "Token is required"}), 400
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        _log_auth_exception("Invalid reset token validation request", e)
+        return jsonify({"error": "Token is required"}), 400
 
     user = User.get_by_reset_token(token)
 
@@ -1499,8 +1513,8 @@ def change_password():
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     except Exception as e:
-        print(f"Error changing password: {e}")
-        return jsonify({"error": f"Failed to change password: {str(e)}"}), 500
+        _log_auth_exception("Error changing password", e)
+        return jsonify({"error": "Failed to change password"}), 500
 
 
 @auth_bp.route("/recovery-code/generate", methods=["POST"])
@@ -1602,8 +1616,8 @@ def generate_recovery_code():
         )
 
     except Exception as e:
-        print(f"Error generating recovery code: {e}")
-        return jsonify({"error": f"Failed to generate recovery code: {str(e)}"}), 500
+        _log_auth_exception("Error generating recovery code", e)
+        return jsonify({"error": "Failed to generate recovery code"}), 500
 
 
 @auth_bp.route("/password-reset/recovery", methods=["POST"])

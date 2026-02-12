@@ -2,7 +2,7 @@
 
 from flask import Blueprint, request, jsonify, Response
 from flask_login import login_required, current_user
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, ValidationError
 from typing import Optional
 from datetime import datetime, timezone
 from src.models.profile import Profile
@@ -15,6 +15,7 @@ from src.services.asset_service import (
 from src.services.encryption_service import get_encryption_service
 from src.services.enhanced_audit_logger import enhanced_audit_logger
 from src.extensions import limiter
+from src.utils.error_sanitizer import sanitize_pydantic_error
 
 profiles_bp = Blueprint("profiles", __name__, url_prefix="/api")
 
@@ -147,10 +148,17 @@ def create_profile():
     """Create a new profile for the current user."""
     try:
         data = ProfileCreateSchema(**request.json)
+    except ValidationError as e:
+        enhanced_audit_logger.log(
+            action="CREATE_PROFILE_VALIDATION_ERROR",
+            details={"error": sanitize_pydantic_error(e)},
+            status_code=400,
+        )
+        return jsonify({"error": sanitize_pydantic_error(e)}), 400
     except Exception as e:
         enhanced_audit_logger.log(
             action="CREATE_PROFILE_VALIDATION_ERROR",
-            details={"error": str(e)},
+            details={"error": "Invalid request data"},
             status_code=400,
         )
         return jsonify({"error": "Invalid request data"}), 400
@@ -211,10 +219,17 @@ def update_profile(name: str):
     """Update a profile (with ownership check)."""
     try:
         data = ProfileUpdateSchema(**request.json)
+    except ValidationError as e:
+        enhanced_audit_logger.log(
+            action="UPDATE_PROFILE_VALIDATION_ERROR",
+            details={"profile_name": name, "error": sanitize_pydantic_error(e)},
+            status_code=400,
+        )
+        return jsonify({"error": sanitize_pydantic_error(e)}), 400
     except Exception as e:
         enhanced_audit_logger.log(
             action="UPDATE_PROFILE_VALIDATION_ERROR",
-            details={"profile_name": name, "error": str(e)},
+            details={"profile_name": name, "error": "Invalid request data"},
             status_code=400,
         )
         return jsonify({"error": "Invalid request data"}), 400

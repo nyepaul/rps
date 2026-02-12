@@ -300,9 +300,13 @@ async function testNewKey(provider, container) {
     const input = container.querySelector(`#${inputId}`);
     const statusEl = container.querySelector(`#${provider}-test-status`);
     const value = input.value.trim();
+    const setStatus = (text, color) => {
+        statusEl.textContent = String(text || '');
+        statusEl.style.color = color;
+    };
 
     if (!value) {
-        statusEl.innerHTML = '<span style="color: var(--warning-color);">⚠ Please enter a value first</span>';
+        setStatus('⚠ Please enter a value first', 'var(--warning-color)');
         return;
     }
 
@@ -310,12 +314,12 @@ async function testNewKey(provider, container) {
     if (!isUrl) {
         const validation = validateApiKey(provider, value);
         if (!validation.valid) {
-            statusEl.innerHTML = `<span style="color: var(--danger-color);">✗ ${validation.error}</span>`;
+            setStatus(`✗ ${validation.error}`, 'var(--danger-color)');
             return;
         }
     }
 
-    statusEl.innerHTML = '<span style="color: var(--text-secondary);">⏳ Testing...</span>';
+    setStatus('⏳ Testing...', 'var(--text-secondary)');
 
     try {
         const response = await fetch('/api/auth/test-api-key', {
@@ -328,13 +332,13 @@ async function testNewKey(provider, container) {
         const result = await response.json();
         if (response.ok && result.success) {
             // Test passed! Auto-save the key
-            statusEl.innerHTML = `<span style="color: var(--success-color);">✓ Valid! ${result.model || ''} - Saving...</span>`;
+            setStatus(`✓ Valid! ${result.model || ''} - Saving...`, 'var(--success-color)');
 
             // Save immediately
             const saveSuccess = await saveAllSettings(container);
 
             if (saveSuccess) {
-                statusEl.innerHTML = `<span style="color: var(--success-color);">✓ Saved and verified!</span>`;
+                setStatus('✓ Saved and verified!', 'var(--success-color)');
                 showSuccess(`${provider.charAt(0).toUpperCase() + provider.slice(1)} API key saved successfully`);
 
                 // Reload the component to show "configured" state
@@ -342,13 +346,13 @@ async function testNewKey(provider, container) {
                     renderAPIKeysSettings(container);
                 }, 1000);
             } else {
-                statusEl.innerHTML = `<span style="color: var(--warning-color);">✓ Valid but save failed - use modal Save button</span>`;
+                setStatus('✓ Valid but save failed - use modal Save button', 'var(--warning-color)');
             }
         } else {
-            statusEl.innerHTML = `<span style="color: var(--danger-color);">✗ ${result.error || 'Connection failed'}</span>`;
+            setStatus(`✗ ${result.error || 'Connection failed'}`, 'var(--danger-color)');
         }
     } catch (error) {
-        statusEl.innerHTML = `<span style="color: var(--danger-color);">✗ Network error</span>`;
+        setStatus('✗ Network error', 'var(--danger-color)');
     }
 }
 

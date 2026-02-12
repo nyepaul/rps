@@ -192,7 +192,12 @@ async function loadUserBackups(container) {
         });
 
     } catch (error) {
-        listContainer.innerHTML = `<div style="color: var(--danger-color); padding: 20px;">Failed to load backups: ${error.message}</div>`;
+        listContainer.textContent = '';
+        const errorNode = document.createElement('div');
+        errorNode.style.color = 'var(--danger-color)';
+        errorNode.style.padding = '20px';
+        errorNode.textContent = `Failed to load backups: ${error.message || 'Unknown error'}`;
+        listContainer.appendChild(errorNode);
     }
 }
 
