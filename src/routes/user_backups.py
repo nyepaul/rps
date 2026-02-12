@@ -10,6 +10,13 @@ import json
 import os
 
 user_backups_bp = Blueprint("user_backups", __name__, url_prefix="/api/backups")
+MAX_IMPORT_SIZE_BYTES = 5 * 1024 * 1024
+ALLOWED_IMPORT_MIME_TYPES = {
+    "application/json",
+    "text/json",
+    "text/plain",
+    "application/octet-stream",
+}
 
 
 @user_backups_bp.route("", methods=["GET"])
@@ -105,9 +112,25 @@ def import_backup():
             return jsonify({"error": "No selected file"}), 400
 
         if file:
+            if not file.filename.lower().endswith(".json"):
+                return jsonify({"error": "Only .json backup files are supported"}), 400
+
+            if file.mimetype not in ALLOWED_IMPORT_MIME_TYPES:
+                return jsonify({"error": "Unsupported backup file type"}), 400
+
             # Read and validate JSON
             try:
-                backup_data = json.load(file)
+                payload = file.read(MAX_IMPORT_SIZE_BYTES + 1)
+                if not payload:
+                    return jsonify({"error": "Backup file is empty"}), 400
+                if len(payload) > MAX_IMPORT_SIZE_BYTES:
+                    return jsonify({"error": "Backup file is too large"}), 400
+
+                backup_data = json.loads(payload.decode("utf-8"))
+                if not isinstance(backup_data, dict):
+                    return jsonify({"error": "Invalid backup file structure"}), 400
+            except UnicodeDecodeError:
+                return jsonify({"error": "Backup file must be UTF-8 encoded JSON"}), 400
             except json.JSONDecodeError:
                 return jsonify({"error": "Invalid backup file (not valid JSON)"}), 400
 

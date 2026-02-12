@@ -1,5 +1,5 @@
 {
-    "version": "3.9.282",
+    "version": "3.9.283",
     "release_date": "2026-02-12",
-    "release_notes": "Security Phase 2: rate limits, anti-enumeration, CSRF controls, logging redaction"
+    "release_notes": "Security Phase 3: backup path containment, import validation, config fallback, structured logging"
 }

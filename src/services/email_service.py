@@ -76,7 +76,7 @@ class EmailService:
                 f.write("Link: [redacted]\n")
                 f.write(f"-----------------------------------\n\n")
         except Exception as log_ex:
-            print(f"Failed to log email to file: {log_ex}")
+            current_app.logger.warning("Failed to log email to file: %s", log_ex)
 
         # Logging for development and troubleshooting
         try:
@@ -111,7 +111,7 @@ class EmailService:
             mail.send(msg)
             return True
         except Exception as e:
-            print(f"Flask-Mail SMTP failed: {e}")
+            current_app.logger.warning("Flask-Mail SMTP failed: %s", e)
             # Fallback to local sendmail binary
             try:
                 import subprocess
@@ -144,7 +144,7 @@ class EmailService:
                 
                 return all_success
             except Exception as ex:
-                print(f"Sendmail fallback failed: {ex}")
+                current_app.logger.error("Sendmail fallback failed: %s", ex, exc_info=True)
                 return False
 
     @staticmethod
@@ -181,7 +181,7 @@ class EmailService:
                 f.write("Link: [redacted]\n")
                 f.write(f"-----------------------------------\n\n")
         except Exception as log_ex:
-            print(f"Failed to log reset email to file: {log_ex}")
+            current_app.logger.warning("Failed to log reset email to file: %s", log_ex)
 
         # Email body (HTML)
         html_body = f"""
@@ -333,14 +333,14 @@ class EmailService:
             mail.send(msg)
             return True
         except Exception as e:
-            print(f"Flask-Mail SMTP failed: {e}")
+            current_app.logger.warning("Flask-Mail SMTP failed: %s", e)
 
             # Fallback: Try direct local sendmail binary if on localhost
             # This bypasses SMTP/TLS issues common with local Postfix configurations
             server = current_app.config.get("MAIL_SERVER")
             if server in ["localhost", "127.0.0.1"]:
                 try:
-                    print("Attempting fallback to local sendmail binary...")
+                    current_app.logger.info("Attempting fallback to local sendmail binary.")
                     import subprocess
                     from email.mime.text import MIMEText
                     from email.mime.multipart import MIMEMultipart
@@ -376,12 +376,16 @@ class EmailService:
                         stdout, stderr = process.communicate(input=mime_msg.as_bytes())
 
                         if process.returncode != 0:
-                            print(f"Sendmail binary failed for {target}: {stderr.decode()}")
+                            current_app.logger.error(
+                                "Sendmail binary failed for %s: %s", target, stderr.decode()
+                            )
                             all_success = False
                     
                     return all_success
                 except Exception as ex:
-                    print(f"Sendmail fallback exception: {ex}")
+                    current_app.logger.error(
+                        "Sendmail fallback exception: %s", ex, exc_info=True
+                    )
 
             return False
 
@@ -424,7 +428,9 @@ class EmailService:
             if not email.lower().endswith(".local")
         ]
         if not super_admin_emails:
-            print("No super admins configured to receive new account notifications")
+            current_app.logger.warning(
+                "No super admins configured to receive new account notifications"
+            )
             return False
 
         subject = f"RPS - New Account Created: {username}"
@@ -508,7 +514,9 @@ Admin Panel: {base_url}/admin.html
                 mail.send(msg)
                 any_sent = True
             except Exception as e:
-                print(f"Flask-Mail SMTP failed for {admin_email}: {e}")
+                current_app.logger.warning(
+                    "Flask-Mail SMTP failed for %s: %s", admin_email, e
+                )
                 # Fallback to local sendmail binary
                 try:
                     import subprocess
@@ -533,7 +541,12 @@ Admin Panel: {base_url}/admin.html
                     if process.returncode == 0:
                         any_sent = True
                 except Exception as ex:
-                    print(f"Sendmail fallback failed for {admin_email}: {ex}")
+                    current_app.logger.error(
+                        "Sendmail fallback failed for %s: %s",
+                        admin_email,
+                        ex,
+                        exc_info=True,
+                    )
 
         return any_sent
 
@@ -611,7 +624,9 @@ Admin Panel: {base_url}/admin.html
             mail.send(msg)
             return True
         except Exception as e:
-            print(f"Flask-Mail SMTP failed for login notification: {e}")
+            current_app.logger.warning(
+                "Flask-Mail SMTP failed for login notification: %s", e
+            )
             # Fallback to local sendmail binary
             try:
                 import subprocess
@@ -633,5 +648,9 @@ Admin Panel: {base_url}/admin.html
                 process.communicate(input=mime_msg.as_bytes())
                 return process.returncode == 0
             except Exception as ex:
-                print(f"Sendmail fallback failed for login notification: {ex}")
+                current_app.logger.error(
+                    "Sendmail fallback failed for login notification: %s",
+                    ex,
+                    exc_info=True,
+                )
                 return False

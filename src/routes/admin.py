@@ -3609,6 +3609,8 @@ def get_selective_backup_details(filename: str):
         return jsonify(details), 200
     except FileNotFoundError:
         return jsonify({"error": "Backup not found"}), 404
+    except ValueError:
+        return jsonify({"error": "Invalid backup filename"}), 400
     except Exception as e:
         current_app.logger.error(f"Error getting selective backup details: {e}")
         return jsonify({"error": "An internal error occurred"}), 500
@@ -3682,6 +3684,9 @@ def restore_selective_backup(filename: str):
     except FileNotFoundError:
         return jsonify({"error": "Backup not found"}), 404
     except ValueError as e:
+        error_text = str(e)
+        if "filename" in error_text.lower():
+            return jsonify({"error": "Invalid backup filename"}), 400
         return jsonify({"error": "Invalid request data"}), 400
     except Exception as e:
         current_app.logger.error(f"Error restoring selective backup: {e}")
@@ -3710,6 +3715,8 @@ def delete_selective_backup(filename: str):
 
     except FileNotFoundError:
         return jsonify({"error": "Backup not found"}), 404
+    except ValueError:
+        return jsonify({"error": "Invalid backup filename"}), 400
     except Exception as e:
         current_app.logger.error(f"Error deleting selective backup: {e}")
         return jsonify({"error": "An internal error occurred"}), 500

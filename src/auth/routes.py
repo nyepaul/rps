@@ -218,7 +218,7 @@ def register():
         token = user.generate_verification_token()
         EmailService.send_verification_email(user.email, token)
     except Exception as e:
-        print(f"Failed to send verification email: {e}")
+        current_app.logger.warning("Failed to send verification email: %s", e)
         # We still create the account, user can resend later
 
     # Notify super admins of new account
@@ -227,7 +227,7 @@ def register():
 
         EmailService.send_new_account_notification(user.username, user.email, verification_token=token)
     except Exception as e:
-        print(f"Failed to send admin notification: {e}")
+        current_app.logger.warning("Failed to send admin notification: %s", e)
         # Non-critical, don't fail registration
 
     # Log the registration
@@ -303,7 +303,7 @@ def resend_verification():
                 500,
             )
     except Exception as e:
-        print(f"Resend verification error: {e}")
+        current_app.logger.warning("Resend verification error: %s", e)
         return jsonify({"error": "Failed to send email"}), 500
 
 
@@ -490,9 +490,11 @@ def login():
             user.save()
 
             session["user_dek"] = base64.b64encode(raw_dek).decode("utf-8")
-            print(f"Auto-migrated user {user.username} to individual encryption key")
+            current_app.logger.info(
+                "Auto-migrated user %s to individual encryption key", user.username
+            )
         except Exception as e:
-            print(f"Failed to auto-migrate user key: {e}")
+            current_app.logger.warning("Failed to auto-migrate user key: %s", e)
 
     # Update last login
     user.update_last_login()
@@ -523,7 +525,7 @@ def login():
             from src.services.email_service import EmailService
             EmailService.send_login_notification(user.username, user.email)
         except Exception as e:
-            print(f"Failed to send login notification email: {e}")
+            current_app.logger.warning("Failed to send login notification email: %s", e)
 
     # Check if we should present recovery code (first login or not shown yet)
     recovery_code_to_show = None
@@ -540,7 +542,7 @@ def login():
             user.temp_recovery_code = None
             user.save()
         except Exception as e:
-            print(f"Failed to decrypt temp recovery code: {e}")
+            current_app.logger.warning("Failed to decrypt temp recovery code: %s", e)
             
     # CASE 2: User doesn't have a recovery code set up OR it was never shown (Existing users)
     elif not user.recovery_encrypted_dek or not user.recovery_code_shown:
@@ -566,9 +568,11 @@ def login():
                 user.save()
                 
                 recovery_code_to_show = recovery_code
-                print(f"Auto-generated/shown recovery code for user {user.username}")
+                current_app.logger.info(
+                    "Auto-generated/shown recovery code for user %s", user.username
+                )
         except Exception as e:
-            print(f"Failed to auto-generate recovery code: {e}")
+            current_app.logger.warning("Failed to auto-generate recovery code: %s", e)
 
     return (
         jsonify(
@@ -1141,7 +1145,7 @@ def request_password_reset():
 
         email_sent = EmailService.send_password_reset_email(user.email, token)
     except Exception as e:
-        print(f"Error sending email: {e}")
+        current_app.logger.warning("Error sending reset email: %s", e)
 
     # For local development/testing convenience when email is not configured
     if not email_sent:
@@ -1228,7 +1232,7 @@ def reset_password():
                 user.save()
                 dek_recovered = True
         except Exception as e:
-            print(f"Token reset recovery failed: {e}")
+            current_app.logger.warning("Token reset recovery failed: %s", e)
 
     # Fallback: Force reset (Data Loss)
     if not dek_recovered:
@@ -1406,7 +1410,7 @@ def offline_change_password():
                 dek_b64 = email_service.decrypt(user.email_encrypted_dek, user.email_iv)
                 recovery_method = "email_backup"
             except Exception as e:
-                print(f"Email recovery failed: {e}")
+                current_app.logger.warning("Email recovery failed: %s", e)
 
         # 4. Use Password-Based Recovery (if email failed or as primary)
         if not dek_b64:
@@ -1457,7 +1461,7 @@ def offline_change_password():
             )
 
     except Exception as e:
-        print(f"Error in offline password change: {e}")
+        current_app.logger.error("Error in offline password change: %s", e, exc_info=True)
         return jsonify({"error": "Failed to change password"}), 500
 
 
@@ -1493,7 +1497,7 @@ def change_password():
                 dek_b64 = temp_service.decrypt(user.encrypted_dek, user.dek_iv)
                 session["user_dek"] = dek_b64
             except Exception as e:
-                print(f"Failed to update DEK in session: {e}")
+                current_app.logger.warning("Failed to update DEK in session: %s", e)
 
         # Log the password change
         EnhancedAuditLogger.log(
@@ -1716,7 +1720,7 @@ def reset_password_with_recovery():
         )
 
     except Exception as e:
-        print(f"Recovery error: {e}")
+        current_app.logger.error("Recovery error: %s", e, exc_info=True)
         return jsonify({"error": "Failed to reset password using recovery code"}), 500
 
 

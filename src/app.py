@@ -103,7 +103,15 @@ def create_app(config_name="development"):
     app = Flask(__name__, static_folder="static", static_url_path="")
 
     # Load configuration
-    config_class = config[config_name]
+    config_class = config.get(config_name)
+    if config_class is None:
+        fallback = "development"
+        app.logger.warning(
+            "Unknown config '%s'. Falling back to '%s'.",
+            config_name,
+            fallback,
+        )
+        config_class = config[fallback]
     app.config.from_object(config_class)
     if hasattr(config_class, "init_app"):
         config_class.init_app(app)

@@ -5,12 +5,16 @@ Allows admins to backup/restore specific profiles or groups of profiles.
 
 import os
 import json
+import re
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from src.database import connection
 from src.auth.models import User
 from src.models.group import Group
+
+logger = logging.getLogger(__name__)
 
 
 class SelectiveBackupService:
@@ -244,7 +248,7 @@ class SelectiveBackupService:
                     }
                 )
             except Exception as e:
-                print(f"Error reading backup {backup_file}: {e}")
+                logger.warning("Error reading backup %s: %s", backup_file, e)
                 continue
 
         return backups
@@ -252,7 +256,7 @@ class SelectiveBackupService:
     @staticmethod
     def get_backup_details(filename: str) -> Dict[str, Any]:
         """Get detailed information about a specific backup."""
-        backup_path = SelectiveBackupService.get_backup_dir() / filename
+        backup_path = SelectiveBackupService._resolve_backup_path(filename)
 
         if not backup_path.exists():
             raise FileNotFoundError(f"Backup file {filename} not found")
@@ -298,7 +302,7 @@ class SelectiveBackupService:
             profile_ids: Optional list of profile IDs to restore (restores all if None)
             restore_mode: 'merge' (add/update) or 'replace' (delete existing first)
         """
-        backup_path = SelectiveBackupService.get_backup_dir() / filename
+        backup_path = SelectiveBackupService._resolve_backup_path(filename)
 
         if not backup_path.exists():
             raise FileNotFoundError(f"Backup file {filename} not found")
@@ -511,13 +515,34 @@ class SelectiveBackupService:
     @staticmethod
     def delete_backup(filename: str) -> bool:
         """Delete a selective backup file."""
-        backup_path = SelectiveBackupService.get_backup_dir() / filename
+        backup_path = SelectiveBackupService._resolve_backup_path(filename)
 
         if not backup_path.exists():
             raise FileNotFoundError(f"Backup file {filename} not found")
 
         backup_path.unlink()
         return True
+
+    @staticmethod
+    def _resolve_backup_path(filename: str) -> Path:
+        """Resolve a backup filename safely inside the selective backup directory."""
+        if not isinstance(filename, str) or not filename:
+            raise ValueError("Invalid backup filename")
+
+        normalized = Path(filename).name
+        if normalized != filename:
+            raise ValueError("Invalid backup filename")
+
+        if not re.fullmatch(r"selective_[A-Za-z0-9_-]+\.json", normalized):
+            raise ValueError("Invalid backup filename")
+
+        backup_dir = SelectiveBackupService.get_backup_dir().resolve()
+        backup_path = (backup_dir / normalized).resolve()
+
+        if not str(backup_path).startswith(str(backup_dir) + os.sep):
+            raise ValueError("Invalid backup filename")
+
+        return backup_path
 
     @staticmethod
     def _format_size(size_bytes: int) -> str:

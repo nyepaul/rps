@@ -2,6 +2,7 @@
 
 import os  # Moved to top
 import json
+import logging
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from flask import request, has_request_context, session, current_app
@@ -13,6 +14,8 @@ from src.services.ip_intelligence import ip_intelligence
 import socket
 import dns.resolver
 import dns.reversename
+
+logger = logging.getLogger(__name__)
 
 # Geolocation cache to prevent hitting rate limits
 # Cache structure: {ip_address: {'data': {...}, 'timestamp': datetime}}
@@ -228,7 +231,7 @@ class EnhancedAuditLogger:
             # No PTR record found or timeout
             pass
         except Exception as e:
-            print(f"Reverse DNS lookup failed for {ip_address}: {e}")
+            logger.warning("Reverse DNS lookup failed for %s: %s", ip_address, e)
 
         # Fallback to socket.gethostbyaddr with short timeout
         try:
@@ -279,7 +282,7 @@ class EnhancedAuditLogger:
 
                     return asn_data
         except Exception as e:
-            print(f"ASN lookup failed for {ip_address}: {e}")
+            logger.warning("ASN lookup failed for %s: %s", ip_address, e)
 
         return None
 
@@ -425,7 +428,7 @@ class EnhancedAuditLogger:
                 "is_bot": ua.is_bot,
             }
         except Exception as e:
-            print(f"User agent parsing failed: {e}")
+            logger.warning("User agent parsing failed: %s", e)
             return {"browser": "Unknown", "os": "Unknown", "device": "Unknown"}
 
     @staticmethod
@@ -1165,7 +1168,7 @@ class EnhancedAuditLogger:
                 conn.commit()
         except Exception as e:
             # Don't let audit logging failures break the application
-            print(f"Enhanced audit logging failed: {e}")
+            logger.error("Enhanced audit logging failed: %s", e, exc_info=True)
 
     @staticmethod
     def log_login_attempt(

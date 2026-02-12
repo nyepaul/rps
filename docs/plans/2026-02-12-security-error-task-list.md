@@ -36,6 +36,12 @@ Execution tracker. This file is being updated as phases are implemented.
   - Additional route/auth run: `venv/bin/pytest -q tests/test_routes/test_auth.py tests/test_routes/test_admin_users.py tests/test_routes/test_admin_groups.py tests/test_api_keys.py`
   - Result: `27 passed`
   - Version bumped to `3.9.282` for Phase 2 deployment.
+- 2026-02-12 Phase 3 implemented and validated.
+  - Test run: `venv/bin/pytest -q tests/exhaustive/test_selective_backup.py tests/test_app_factory_config.py tests/test_routes/test_auth.py tests/test_routes/test_admin_users.py tests/test_routes/test_admin_groups.py tests/test_api_keys.py`
+  - Result: `33 passed`
+  - Security regression run: `venv/bin/pytest -q tests/test_security_comprehensive.py tests/exhaustive/test_security_active.py`
+  - Result: `11 passed`
+  - Version bumped to `3.9.283` for Phase 3 deployment.
 
 ## Delta vs prior revision of this file
 
@@ -253,10 +259,10 @@ Execution tracker. This file is being updated as phases are implemented.
 | 2.7 | CSRF exemption hardening | High | Backend | 0.5 day | Done | Endpoint CSRF behavior tests |
 | 2.8 | `target=\"_blank\"` rel hardening | High | Frontend | 0.25 day | Done | Static grep gate + UI smoke |
 | 2.9 | Registration enumeration hardening | High | Backend | 0.5 day | Done | Registration behavior tests |
-| 3.1 | Path containment in selective backup service | Medium | Backend | 0.5 day | Todo | Traversal payload tests |
-| 3.2 | Config key robustness in `create_app` | Medium | Backend | 0.25 day | Todo | Unknown-env startup test |
-| 3.3 | Replace `print()` with logger | Medium | Backend | 0.5 day | Todo | Search gate on target modules |
-| 3.4 | Backup import validation hardening | Medium | Backend | 0.5 day | Todo | Upload validation tests |
+| 3.1 | Path containment in selective backup service | Medium | Backend | 0.5 day | Done | Traversal payload tests |
+| 3.2 | Config key robustness in `create_app` | Medium | Backend | 0.25 day | Done | Unknown-env startup test |
+| 3.3 | Replace `print()` with logger | Medium | Backend | 0.5 day | Done | Search gate on target modules |
+| 3.4 | Backup import validation hardening | Medium | Backend | 0.5 day | Done | Upload validation tests |
 | 4.1 | CI dependency scan + pin upgrades | Follow-up | DevOps/Backend | 0.5 day | Todo | CI scan artifact + green build |
 
 ## Sprint batching (suggested)
