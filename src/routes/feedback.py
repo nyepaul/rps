@@ -1,6 +1,6 @@
 """Feedback routes for user comments, feature requests, and bug reports."""
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_login import login_required, current_user
 from pydantic import BaseModel, field_validator
 from typing import Optional
@@ -102,7 +102,7 @@ def submit_feedback():
     try:
         data = FeedbackSchema(**request.json)
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": "Invalid request data"}), 400
 
     # Sanitize content to prevent XSS
     sanitized_content = html.escape(data.content)
@@ -231,7 +231,7 @@ def submit_feedback():
         )
 
     except Exception as e:
-        print(f"Error saving feedback: {e}")
+        current_app.logger.error(f"Error saving feedback: {e}")
         enhanced_audit_logger.log(
             action="SUBMIT_FEEDBACK_ERROR",
             details={"type": request.json.get("type"), "error": str(e)},
@@ -277,7 +277,7 @@ def get_feedback_users():
         return jsonify({"users": users}), 200
 
     except Exception as e:
-        print(f"Error fetching feedback users: {e}")
+        current_app.logger.error(f"Error fetching feedback users: {e}")
         return jsonify({"error": "Failed to fetch users"}), 500
 
 
@@ -387,7 +387,7 @@ def get_all_feedback():
         )
 
     except Exception as e:
-        print(f"Error fetching feedback: {e}")
+        current_app.logger.error(f"Error fetching feedback: {e}")
         return jsonify({"error": "Failed to fetch feedback"}), 500
 
 
@@ -453,7 +453,7 @@ def update_feedback_status(feedback_id: int):
         )
 
     except Exception as e:
-        print(f"Error updating feedback: {e}")
+        current_app.logger.error(f"Error updating feedback: {e}")
         return jsonify({"error": "Failed to update feedback"}), 500
 
 
@@ -488,7 +488,7 @@ def get_feedback_content(feedback_id: int):
         )
 
     except Exception as e:
-        print(f"Error fetching feedback content: {e}")
+        current_app.logger.error(f"Error fetching feedback content: {e}")
         return jsonify({"error": "Failed to fetch content"}), 500
 
 
@@ -522,7 +522,7 @@ def delete_feedback(feedback_id: int):
         )
 
     except Exception as e:
-        print(f"Error deleting feedback: {e}")
+        current_app.logger.error(f"Error deleting feedback: {e}")
         return jsonify({"error": "Failed to delete feedback"}), 500
 
 
@@ -599,7 +599,7 @@ def get_my_feedback():
         )
 
     except Exception as e:
-        print(f"Error fetching user feedback: {e}")
+        current_app.logger.error(f"Error fetching user feedback: {e}")
         enhanced_audit_logger.log(
             action="VIEW_MY_FEEDBACK_ERROR", details={"error": str(e)}, status_code=500
         )
@@ -677,7 +677,7 @@ def update_my_feedback(feedback_id: int):
         )
 
     except Exception as e:
-        print(f"Error updating user feedback: {e}")
+        current_app.logger.error(f"Error updating user feedback: {e}")
         enhanced_audit_logger.log(
             action="UPDATE_MY_FEEDBACK_ERROR",
             details={"feedback_id": feedback_id, "error": str(e)},
@@ -721,7 +721,7 @@ def delete_my_feedback(feedback_id: int):
         )
 
     except Exception as e:
-        print(f"Error deleting user feedback: {e}")
+        current_app.logger.error(f"Error deleting user feedback: {e}")
         enhanced_audit_logger.log(
             action="DELETE_MY_FEEDBACK_ERROR",
             details={"feedback_id": feedback_id, "error": str(e)},
@@ -837,7 +837,7 @@ def add_reply(feedback_id: int):
             )
 
     except Exception as e:
-        print(f"Error adding reply: {e}")
+        current_app.logger.error(f"Error adding reply: {e}")
         return jsonify({"error": "Failed to add reply"}), 500
 
 
@@ -893,7 +893,7 @@ def get_replies(feedback_id: int):
         return jsonify({"replies": replies, "total": len(replies)}), 200
 
     except Exception as e:
-        print(f"Error fetching replies: {e}")
+        current_app.logger.error(f"Error fetching replies: {e}")
         return jsonify({"error": "Failed to fetch replies"}), 500
 
 
@@ -953,7 +953,7 @@ def update_reply(reply_id: int):
             )
 
     except Exception as e:
-        print(f"Error updating reply: {e}")
+        current_app.logger.error(f"Error updating reply: {e}")
         return jsonify({"error": "Failed to update reply"}), 500
 
 
@@ -977,7 +977,7 @@ def delete_reply(reply_id: int):
             )
 
     except Exception as e:
-        print(f"Error deleting reply: {e}")
+        current_app.logger.error(f"Error deleting reply: {e}")
         return jsonify({"error": "Failed to delete reply"}), 500
 
 
@@ -1029,7 +1029,7 @@ def get_my_feedback_thread(feedback_id: int):
         return jsonify(feedback), 200
 
     except Exception as e:
-        print(f"Error fetching feedback thread: {e}")
+        current_app.logger.error(f"Error fetching feedback thread: {e}")
         return jsonify({"error": "Failed to fetch feedback thread"}), 500
 
 
@@ -1091,5 +1091,5 @@ def get_feedback_thread_admin(feedback_id: int):
         return jsonify(feedback), 200
 
     except Exception as e:
-        print(f"Error fetching feedback thread: {e}")
+        current_app.logger.error(f"Error fetching feedback thread: {e}")
         return jsonify({"error": "Failed to fetch feedback thread"}), 500

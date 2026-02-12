@@ -5,7 +5,7 @@ import json
 import requests
 import os
 from io import BytesIO
-from flask import Blueprint, request, jsonify, Response
+from flask import Blueprint, request, jsonify, Response, current_app
 from flask_login import login_required, current_user
 from PIL import Image
 
@@ -72,14 +72,14 @@ def process_pdf_content(pdf_bytes, max_pages=150):
 
         # If we extracted significant text, return chunks
         if any(len(c.strip()) > 50 for c in text_chunks):
-            print(
+            current_app.logger.info(
                 f"Extracted {len(text_chunks)} text chunks from {pdf_document.page_count} pages."
             )
             pdf_document.close()
             return text_chunks, "text"
 
         # 2. Fallback to images (scanned PDF)
-        print("Scanned PDF detected. Rendering pages to images...")
+        current_app.logger.info("Scanned PDF detected. Rendering pages to images...")
         images = []
         # Limit image conversion to 20 pages for more data coverage
         for i in range(min(pdf_document.page_count, 20)):
@@ -96,7 +96,7 @@ def process_pdf_content(pdf_bytes, max_pages=150):
         # For images, each image is its own chunk
         return images, "images"
     except Exception as e:
-        print(f"PDF processing error: {str(e)}")
+        current_app.logger.error(f"PDF processing error: {str(e)}")
         raise Exception(f"Failed to process PDF: {str(e)}")
 
 
@@ -204,7 +204,7 @@ def resilient_parse_llm_json(text_response, list_key):
     except Exception:
         pass
 
-    print(f"Failed to parse LLM response as JSON: {text_response[:200]}...")
+    current_app.logger.warning(f"Failed to parse LLM response as JSON: {text_response[:200]}...")
     return []
 
 
@@ -306,7 +306,7 @@ def call_gemini_with_fallback(
             model_id = model_name.replace("models/", "")
             full_model_path = f"models/{model_id}"
 
-            print(f"Attempting Gemini model: {full_model_path}")
+            current_app.logger.info(f"Attempting Gemini model: {full_model_path}")
 
             # Build request based on whether we have image data
             if image_data:
@@ -384,24 +384,24 @@ def call_gemini_with_fallback(
 
             response = requests.post(url, json=payload, timeout=60)
 
-            print(f"  Gemini API Response: status={response.status_code}")
+            current_app.logger.debug(f"Gemini API Response: status={response.status_code}")
 
             if response.status_code == 200:
                 result = response.json()
                 if "candidates" in result and len(result["candidates"]) > 0:
                     text = result["candidates"][0]["content"]["parts"][0]["text"]
-                    print(
-                        f"  Success with model: {model_name}, response length: {len(text)}"
+                    current_app.logger.info(
+                        f"Success with model: {model_name}, response length: {len(text)}"
                     )
                     return text
                 else:
-                    print(f"  No candidates in response: {json.dumps(result)[:500]}")
+                    current_app.logger.warning(f"No candidates in response: {json.dumps(result)[:500]}")
                     raise Exception(f"No candidates in response: {result}")
             else:
                 error_text = (
                     response.text[:500] if response.text else "No response body"
                 )
-                print(f"  Gemini API Error: {response.status_code} - {error_text}")
+                current_app.logger.error(f"Gemini API Error: {response.status_code} - {error_text}")
                 error_detail = (
                     response.json() if response.text else {"error": response.text}
                 )
@@ -410,7 +410,7 @@ def call_gemini_with_fallback(
         except Exception as e:
             last_error = e
             error_str = str(e)
-            print(f"Model {model_name} failed: {error_str}")
+            current_app.logger.error(f"Model {model_name} failed: {error_str}")
 
             # Check for quota errors - try other models if quota exceeded on this specific one
             if (
@@ -681,11 +681,11 @@ def call_claude(prompt, api_key, history=None, system_prompt=None, model=None):
             if response.status_code == 200:
                 return response.json()["content"][0]["text"]
             else:
-                print(
+                current_app.logger.error(
                     f"Claude API error for {model}: {response.status_code} {response.text[:200]}"
                 )
         except Exception as e:
-            print(f"Claude API exception for {model}: {str(e)}")
+            current_app.logger.error(f"Claude API exception for {model}: {str(e)}")
             continue
     raise Exception("Claude API call failed.")
 
@@ -1007,17 +1007,17 @@ def advisor_chat():
         )
 
     except Exception as e:
-        print(f"Advisor chat error: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Advisor chat error: {str(e)}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
     except Exception as e:
-        print(f"Advisor chat error: {str(e)}")
+        current_app.logger.error(f"Advisor chat error: {str(e)}")
         enhanced_audit_logger.log(
             action="AI_ADVISOR_CHAT_ERROR",
             details={"profile_name": profile_name, "error": str(e)},
             status_code=500,
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @ai_services_bp.route("/advisor/history", methods=["GET"])
@@ -1194,7 +1194,7 @@ def extract_items(item_type):
             except Exception:
                 return jsonify({"error": "Invalid image file"}), 400
     except Exception as e:
-        return jsonify({"error": f"Invalid file content: {str(e)}"}), 400
+        return jsonify({"error": "Invalid file content"}), 400
 
     try:
         profile = Profile.get_by_name(profile_name, current_user.id)
@@ -1222,7 +1222,7 @@ def extract_items(item_type):
             )
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
     prompt = config["prompt"]
 
@@ -1302,7 +1302,7 @@ def extract_items(item_type):
                             )
                         else:
                             # Skip image chunks for non-vision providers, continue with warning
-                            print(
+                            current_app.logger.error(
                                 f"WARNING: Provider '{provider}' cannot process image chunks from scanned PDF"
                             )
                             continue
@@ -1402,7 +1402,7 @@ def extract_items(item_type):
                 details={"error": str(e)},
                 status_code=500,
             )
-            yield json.dumps({"error": str(e)}) + "\n"
+            yield json.dumps({"error": "An internal error occurred"}) + "\n"
 
     return Response(generate(), mimetype="application/x-ndjson")
 
@@ -1518,7 +1518,7 @@ def enhance_csv_import():
                     item["ai_suggestions"] = ai_enhancements[i]
                     enhanced_count += 1
         except Exception as json_e:
-            print(f"AI JSON Parse Error: {str(json_e)}")
+            current_app.logger.error(f"AI JSON Parse Error: {str(json_e)}")
             # Fallback to non-enhanced results
 
         enhanced_audit_logger.log(
@@ -1542,5 +1542,5 @@ def enhance_csv_import():
         )
 
     except Exception as e:
-        print(f"Enhance CSV error: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Enhance CSV error: {str(e)}")
+        return jsonify({"error": "An internal error occurred"}), 500

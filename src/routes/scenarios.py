@@ -70,7 +70,7 @@ def list_scenarios():
         enhanced_audit_logger.log(
             action="LIST_SCENARIOS_ERROR", details={"error": str(e)}, status_code=500
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @scenarios_bp.route("/scenario/<int:scenario_id>", methods=["GET"])
@@ -101,7 +101,7 @@ def get_scenario(scenario_id: int):
             details={"scenario_id": scenario_id, "error": str(e)},
             status_code=500,
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @scenarios_bp.route("/scenarios", methods=["POST"])
@@ -116,7 +116,7 @@ def create_scenario():
             details={"error": str(e)},
             status_code=400,
         )
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": "Invalid request data"}), 400
 
     try:
         # Resolve profile_id if profile_name provided
@@ -171,7 +171,7 @@ def create_scenario():
             details={"scenario_name": request.json.get("name"), "error": str(e)},
             status_code=500,
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @scenarios_bp.route("/scenario/<int:scenario_id>", methods=["PUT"])
@@ -186,7 +186,7 @@ def update_scenario(scenario_id: int):
             details={"scenario_id": scenario_id, "error": str(e)},
             status_code=400,
         )
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": "Invalid request data"}), 400
 
     try:
         # Get scenario with ownership check
@@ -238,7 +238,7 @@ def update_scenario(scenario_id: int):
             details={"scenario_id": scenario_id, "error": str(e)},
             status_code=500,
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @scenarios_bp.route("/scenario/<int:scenario_id>", methods=["DELETE"])
@@ -273,4 +273,4 @@ def delete_scenario(scenario_id: int):
             details={"scenario_id": scenario_id, "error": str(e)},
             status_code=500,
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500

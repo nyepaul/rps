@@ -2,7 +2,7 @@
 Routes for user-specific data backups.
 """
 
-from flask import Blueprint, jsonify, request, send_file
+from flask import Blueprint, jsonify, request, send_file, current_app
 from flask_login import login_required, current_user
 from src.services.user_backup_service import UserBackupService
 from src.services.enhanced_audit_logger import EnhancedAuditLogger
@@ -20,7 +20,8 @@ def list_backups():
         backups = UserBackupService.list_backups(current_user.id)
         return jsonify({"backups": backups}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @user_backups_bp.route("", methods=["POST"])
@@ -46,7 +47,8 @@ def create_backup():
             201,
         )
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @user_backups_bp.route("/<int:backup_id>/download", methods=["GET"])
@@ -86,7 +88,8 @@ def download_backup(backup_id):
             mimetype="application/json"
         )
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @user_backups_bp.route("/import", methods=["POST"])
@@ -114,7 +117,7 @@ def import_backup():
                     current_user.id, backup_data
                 )
             except ValueError as e:
-                return jsonify({"error": str(e)}), 400
+                return jsonify({"error": "Invalid request data"}), 400
 
             # Create a safety backup of current state first
             UserBackupService.create_backup(current_user.id, "Pre-import Automatic Backup")
@@ -146,7 +149,8 @@ def import_backup():
             }), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @user_backups_bp.route("/<int:backup_id>/restore", methods=["POST"])
@@ -160,7 +164,7 @@ def restore_backup(backup_id):
                 current_user.id, "Pre-restore Automatic Backup"
             )
         except Exception as e:
-            print(f"Failed to create safety backup: {e}")
+            current_app.logger.error(f"Failed to create safety backup: {e}")
 
         result = UserBackupService.restore_backup(current_user.id, backup_id)
 
@@ -178,7 +182,8 @@ def restore_backup(backup_id):
             200,
         )
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @user_backups_bp.route("/<int:backup_id>", methods=["DELETE"])
@@ -198,4 +203,5 @@ def delete_backup(backup_id):
 
         return jsonify({"message": "Backup deleted successfully"}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500

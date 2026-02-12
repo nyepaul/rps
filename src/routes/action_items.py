@@ -149,7 +149,7 @@ def generate_action_items():
             },
             status_code=500,
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @action_items_bp.route("/action-items", methods=["GET"])
@@ -184,7 +184,7 @@ def list_action_items():
         enhanced_audit_logger.log(
             action="LIST_ACTION_ITEMS_ERROR", details={"error": str(e)}, status_code=500
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @action_items_bp.route("/action-item/<int:item_id>", methods=["GET"])
@@ -215,7 +215,7 @@ def get_action_item(item_id: int):
             details={"item_id": item_id, "error": str(e)},
             status_code=500,
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @action_items_bp.route("/action-items", methods=["POST"])
@@ -230,7 +230,7 @@ def create_action_item():
             details={"error": str(e)},
             status_code=400,
         )
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": "Invalid request data"}), 400
 
     try:
         # Resolve profile_id if profile_name provided
@@ -286,7 +286,7 @@ def create_action_item():
             details={"error": str(e)},
             status_code=500,
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @action_items_bp.route("/action-item/<int:item_id>", methods=["PUT"])
@@ -301,7 +301,7 @@ def update_action_item(item_id: int):
             details={"item_id": item_id, "error": str(e)},
             status_code=400,
         )
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": "Invalid request data"}), 400
 
     try:
         # Get action item with ownership check
@@ -373,7 +373,7 @@ def update_action_item(item_id: int):
             details={"item_id": item_id, "error": str(e)},
             status_code=500,
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @action_items_bp.route("/action-item/<int:item_id>", methods=["DELETE"])
@@ -408,4 +408,4 @@ def delete_action_item(item_id: int):
             details={"item_id": item_id, "error": str(e)},
             status_code=500,
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500

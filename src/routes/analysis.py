@@ -321,7 +321,7 @@ def run_analysis():
         # Log the unexpected error
         import logging
         logging.error(f"Unexpected analysis validation error: {str(e)}", exc_info=True)
-        return jsonify({"error": f"Invalid request data: {str(e)}"}), 400
+        return jsonify({"error": "Invalid request data"}), 400
 
     try:
         # Get profile with ownership check
@@ -640,8 +640,6 @@ def run_analysis():
         filing_status = tax_settings.get("filing_status") or default_filing
         state = tax_settings.get("state") or address_data.get("state") or "NY"
         tax_year = int(tax_settings.get("tax_year") or datetime.now().year)
-        tax_year = int(tax_settings.get("tax_year") or datetime.now().year)
-        tax_year = int(tax_settings.get("tax_year") or datetime.now().year)
 
         financial_profile = FinancialProfile(
             person1=person1,
@@ -912,7 +910,7 @@ def run_analysis():
             details={"profile_name": profile_name, "error": str(e)},
             status_code=400,
         )
-        return jsonify({"error": f"Missing required field: {str(e)}"}), 400
+        return jsonify({"error": "Missing required field"}), 400
     except Exception as e:
         profile_name = json_data.get("profile_name")
         enhanced_audit_logger.log(
@@ -920,7 +918,7 @@ def run_analysis():
             details={"profile_name": profile_name, "error": str(e)},
             status_code=500,
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @analysis_bp.route("/analysis/cashflow-details", methods=["POST"])
@@ -935,7 +933,7 @@ def get_cashflow_details():
     except Exception as e:
         import logging
         logging.error(f"Unexpected cashflow validation error: {str(e)}", exc_info=True)
-        return jsonify({"error": f"Invalid request data: {str(e)}"}), 400
+        return jsonify({"error": "Invalid request data"}), 400
 
     try:
         # Get profile with ownership check
@@ -1288,7 +1286,7 @@ def get_cashflow_details():
         return jsonify(response), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @analysis_bp.route("/analysis/healthcare-planning", methods=["POST"])
@@ -1502,7 +1500,7 @@ def analyze_social_security():
             },
             status_code=500,
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @analysis_bp.route("/analysis/roth-conversion", methods=["POST"])
@@ -1643,7 +1641,7 @@ def analyze_roth_conversion():
             },
             status_code=500,
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @analysis_bp.route("/analysis/rebalance", methods=["POST"])
@@ -1704,7 +1702,7 @@ def analyze_rebalancing():
             },
             status_code=500,
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @analysis_bp.route("/analysis/calculation-report", methods=["POST"])
@@ -1786,7 +1784,7 @@ def get_calculation_report():
             logger.error(f"Error accessing profile data: {e}")
             import traceback
             logger.error(traceback.format_exc())
-            return jsonify({"error": f"Error accessing profile data: {str(e)}"}), 500
+            return jsonify({"error": "Error accessing profile data"}), 500
 
         # Build report sections
         report = {
@@ -2744,4 +2742,4 @@ def get_calculation_report():
             },
             status_code=500,
         )
-        return jsonify({"error": f"{str(e)} - Check server logs for details"}), 500
+        return jsonify({"error": "An internal error occurred"}), 500

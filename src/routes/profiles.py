@@ -107,7 +107,7 @@ def list_profiles():
         enhanced_audit_logger.log(
             action="LIST_PROFILES_ERROR", details={"error": str(e)}, status_code=500
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @profiles_bp.route("/profile/<name>", methods=["GET"])
@@ -138,7 +138,7 @@ def get_profile(name: str):
             details={"profile_name": name, "error": str(e)},
             status_code=500,
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @profiles_bp.route("/profiles", methods=["POST"])
@@ -153,7 +153,7 @@ def create_profile():
             details={"error": str(e)},
             status_code=400,
         )
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": "Invalid request data"}), 400
 
     try:
         # Check if profile with same name already exists for this user
@@ -202,7 +202,7 @@ def create_profile():
             details={"profile_name": request.json.get("name"), "error": str(e)},
             status_code=500,
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @profiles_bp.route("/profile/<name>", methods=["PUT"])
@@ -217,7 +217,7 @@ def update_profile(name: str):
             details={"profile_name": name, "error": str(e)},
             status_code=400,
         )
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": "Invalid request data"}), 400
 
     try:
         # Get profile with ownership check
@@ -307,7 +307,7 @@ def update_profile(name: str):
             details={"profile_name": name, "error": str(e)},
             status_code=500,
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @profiles_bp.route("/profile/<name>", methods=["DELETE"])
@@ -342,7 +342,7 @@ def delete_profile(name: str):
             details={"profile_name": name, "error": str(e)},
             status_code=500,
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @profiles_bp.route("/profile/<name>/clone", methods=["POST"])
@@ -438,7 +438,7 @@ def clone_profile(name: str):
             details={"source_profile": name, "error": str(e)},
             status_code=500,
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @profiles_bp.route("/profile/<name>/assets/export", methods=["GET"])
@@ -501,7 +501,7 @@ def export_assets_csv(name: str):
             details={"profile_name": name, "error": str(e)},
             status_code=500,
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @profiles_bp.route("/profile/<name>/assets/import", methods=["POST"])
@@ -552,7 +552,7 @@ def import_assets_csv(name: str):
                 },
                 status_code=400,
             )
-            return jsonify({"error": f"Invalid CSV format: {str(e)}"}), 400
+            return jsonify({"error": "Invalid CSV format"}), 400
 
         # Get current profile data
         data_dict = profile.data_dict
@@ -612,7 +612,7 @@ def import_assets_csv(name: str):
             details={"profile_name": name, "error": str(e)},
             status_code=500,
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @profiles_bp.route("/profiles/<name>/migrate-keys", methods=["POST"])
@@ -641,7 +641,7 @@ def migrate_profile_keys(name: str):
         
         return jsonify({"message": "No keys found in profile"}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 @profiles_bp.route("/profile/<name>/transactions/import", methods=["POST"])
 @login_required
@@ -799,7 +799,7 @@ def import_transactions_stream(name: str):
             )
 
         except ValueError as e:
-            yield json.dumps({"status": "error", "error": str(e)}) + "\n"
+            yield json.dumps({"status": "error", "error": "Invalid request data"}) + "\n"
         except Exception as e:
             import logging
 
@@ -944,4 +944,4 @@ def reconcile_transactions(name: str):
             details={"profile_name": name, "error": str(e)},
             status_code=500,
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500

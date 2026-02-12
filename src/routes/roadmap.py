@@ -95,7 +95,7 @@ def get_roadmap():
 
     except Exception as e:
         logger.error(f"Error fetching roadmap: {e}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @roadmap_bp.route("/api/roadmap/public", methods=["GET"])
@@ -164,7 +164,7 @@ def get_public_roadmap():
 
     except Exception as e:
         logger.error(f"Error fetching public roadmap: {e}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @roadmap_bp.route("/api/roadmap/<int:item_id>", methods=["GET"])
@@ -207,7 +207,7 @@ def get_roadmap_item(item_id):
 
     except Exception as e:
         logger.error(f"Error fetching roadmap item: {e}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @roadmap_bp.route("/api/roadmap", methods=["POST"])
@@ -274,7 +274,7 @@ def create_roadmap_item():
 
     except Exception as e:
         logger.error(f"Error creating roadmap item: {e}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @roadmap_bp.route("/api/roadmap/<int:item_id>", methods=["PUT"])
@@ -352,7 +352,7 @@ def update_roadmap_item(item_id):
 
     except Exception as e:
         logger.error(f"Error updating roadmap item: {e}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @roadmap_bp.route("/api/roadmap/<int:item_id>", methods=["DELETE"])
@@ -385,7 +385,7 @@ def delete_roadmap_item(item_id):
 
     except Exception as e:
         logger.error(f"Error deleting roadmap item: {e}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @roadmap_bp.route("/api/roadmap/stats", methods=["GET"])
@@ -456,4 +456,4 @@ def get_roadmap_stats():
 
     except Exception as e:
         logger.error(f"Error fetching roadmap stats: {e}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500

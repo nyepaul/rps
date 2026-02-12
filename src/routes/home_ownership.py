@@ -52,7 +52,7 @@ def create_home_ownership_scenario():
         home_service = HomeOwnershipService(profile.data_dict)
         analysis_results = home_service.analyze_scenario(scenario_params)
     except Exception as e:
-        return jsonify({"error": f"Error running home ownership analysis: {str(e)}"}), 500
+        return jsonify({"error": "Error running home ownership analysis"}), 500
 
     # Save the scenario results
     scenario = Scenario(

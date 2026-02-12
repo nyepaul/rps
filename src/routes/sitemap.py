@@ -36,4 +36,4 @@ def get_sitemap():
 
         return jsonify(data), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500

@@ -166,7 +166,8 @@ def get_audit_logs():
         return jsonify(result), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error fetching audit logs: {e}")
+        return jsonify({"error": "Failed to retrieve data"}), 500
 
 
 @admin_bp.route("/logs/statistics", methods=["GET"])
@@ -203,7 +204,8 @@ def get_log_statistics():
         return response, 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error fetching log statistics: {e}")
+        return jsonify({"error": "Failed to retrieve data"}), 500
 
 
 @admin_bp.route("/logs/ip-locations", methods=["GET"])
@@ -243,7 +245,8 @@ def get_ip_locations():
         return response, 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error fetching IP locations: {e}")
+        return jsonify({"error": "Failed to retrieve data"}), 500
 
 
 @admin_bp.route("/logs/<int:log_id>", methods=["GET"])
@@ -301,8 +304,8 @@ def get_log_by_id(log_id: int):
         return jsonify(log_dict), 200
 
     except Exception as e:
-        print(f"Error fetching log {log_id}: {e}")
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error fetching log {log_id}: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/logs/export", methods=["GET"])
@@ -375,7 +378,8 @@ def export_audit_logs():
             return jsonify(result), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/config", methods=["GET"])
@@ -394,7 +398,8 @@ def get_audit_config():
         return jsonify({"config": config}), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/config", methods=["PUT"])
@@ -443,7 +448,7 @@ def update_audit_config():
         )
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": "Invalid request data"}), 400
 
 
 @admin_bp.route("/users", methods=["GET"])
@@ -548,7 +553,8 @@ def list_users():
         }), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/users/<int:user_id>", methods=["PUT"])
@@ -618,7 +624,7 @@ def update_user(user_id: int):
         )
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": "Invalid request data"}), 400
 
 
 @admin_bp.route("/users/<int:user_id>/password", methods=["PUT"])
@@ -674,7 +680,8 @@ def reset_user_password(user_id: int):
         )
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 # ============================================================================
@@ -695,7 +702,8 @@ def list_groups():
 
         return jsonify({"groups": [g.to_dict() for g in groups]}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/groups", methods=["POST"])
@@ -719,7 +727,8 @@ def create_group():
             201,
         )
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/groups/<int:group_id>", methods=["GET"])
@@ -753,7 +762,8 @@ def get_group(group_id):
             200,
         )
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/groups/<int:group_id>", methods=["PUT"])
@@ -784,7 +794,8 @@ def update_group(group_id):
             200,
         )
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/groups/<int:group_id>", methods=["DELETE"])
@@ -807,7 +818,8 @@ def delete_group(group_id):
 
         return jsonify({"message": "Group deleted successfully"}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/groups/<int:group_id>/members/<int:user_id>",
@@ -839,7 +851,8 @@ def add_group_member(group_id, user_id):
 
         return jsonify({"message": "User added to group"}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/groups/<int:group_id>/members/<int:user_id>",
@@ -863,7 +876,8 @@ def remove_group_member(group_id, user_id):
 
         return jsonify({"message": "User removed from group"}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/users/<int:user_id>/managed-groups/<int:group_id>",
@@ -890,7 +904,8 @@ def assign_managed_group(user_id, group_id):
 
         return jsonify({"message": "Managed group assigned to admin"}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route(
@@ -915,7 +930,8 @@ def remove_managed_group(user_id, group_id):
 
         return jsonify({"message": "Managed group removed from admin"}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/users/<int:user_id>/groups", methods=["GET"])
@@ -935,7 +951,8 @@ def get_user_groups(user_id):
         groups = user.get_groups()
         return jsonify({"groups": [g.to_dict() for g in groups]}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/users/<int:user_id>/managed-groups", methods=["GET"])
@@ -954,7 +971,8 @@ def get_admin_managed_groups(user_id):
         groups = user.get_managed_groups()
         return jsonify({"groups": [g.to_dict() for g in groups]}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/users/<int:user_id>/super-admin", methods=["PUT"])
@@ -1035,7 +1053,7 @@ def update_super_admin_status(user_id: int):
         )
 
     except Exception as e:
-        print(f"Error updating super admin status: {e}")
+        current_app.logger.error(f"Error updating super admin status: {e}")
         return jsonify({"error": "Failed to update super admin status"}), 500
 
 
@@ -1061,7 +1079,8 @@ def get_user_profiles(user_id: int):
         return jsonify({"profiles": profiles}), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/users/<int:user_id>/report", methods=["GET"])
@@ -1200,8 +1219,8 @@ def get_user_report(user_id: int):
         return jsonify({"report": report}), 200
 
     except Exception as e:
-        print(f"Error generating user report: {e}")
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error generating user report: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/users/<int:user_id>", methods=["DELETE"])
@@ -1305,8 +1324,8 @@ def delete_user(user_id: int):
         )
 
     except Exception as e:
-        print(f"Error deleting user: {e}")
-        return jsonify({"error": f"Failed to delete user: {str(e)}"}), 500
+        current_app.logger.error(f"Error deleting user: {e}")
+        return jsonify({"error": "Failed to delete user"}), 500
 
 
 @admin_bp.route("/users/<int:user_id>/groups/<int:group_id>", methods=["POST"])
@@ -1333,7 +1352,8 @@ def add_user_to_group(user_id, group_id):
 
         return jsonify({"message": "User added to group"}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/users/<int:user_id>/groups/<int:group_id>",
@@ -1361,7 +1381,8 @@ def remove_user_from_group(user_id, group_id):
 
         return jsonify({"message": "User removed from group"}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/system/info", methods=["GET"])
@@ -1421,7 +1442,8 @@ def get_system_info():
         return jsonify({"system_info": stats}), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/system/stats-detail", methods=["GET"])
@@ -1481,7 +1503,8 @@ def get_stats_detail():
         }), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/database/schema", methods=["GET"])
@@ -1585,8 +1608,8 @@ def get_database_schema():
         return jsonify({"schema": schema}), 200
 
     except Exception as e:
-        print(f"Error fetching database schema: {e}")
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error fetching database schema: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/reset-demo-account", methods=["POST"])
@@ -1615,8 +1638,8 @@ def reset_demo_account():
         )
 
         if result.returncode != 0:
-            print(f"Demo reset script failed: {result.stderr}")
-            return jsonify({"error": f"Script failed: {result.stderr}"}), 500
+            current_app.logger.error(f"Demo reset script failed: {result.stderr}")
+            return jsonify({"error": "Script failed"}), 500
 
         # Log admin action
         enhanced_audit_logger.log_admin_action(
@@ -1643,8 +1666,8 @@ def reset_demo_account():
         )
 
     except Exception as e:
-        print(f"Error resetting demo account: {e}")
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error resetting demo account: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/users/<int:user_id>/timeline", methods=["GET"])
@@ -1710,7 +1733,7 @@ def get_user_activity_timeline(user_id: int):
         return jsonify(timeline), 200
 
     except Exception as e:
-        print(f"Error generating user timeline: {e}")
+        current_app.logger.error(f"Error generating user timeline: {e}")
         return jsonify({"error": "Failed to generate user timeline"}), 500
 
 
@@ -1766,8 +1789,8 @@ def get_documentation(doc_name: str):
                              as_attachment=False)
 
     except Exception as e:
-        print(f"Error serving documentation: {e}")
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error serving documentation: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/smtp/config", methods=["GET"])
@@ -1802,7 +1825,8 @@ def get_smtp_config():
         return jsonify({"config": config}), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/smtp/config", methods=["PUT"])
@@ -1878,7 +1902,7 @@ def update_smtp_config():
         )
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": "Invalid request data"}), 400
 
 
 # ============================================================================
@@ -1987,8 +2011,8 @@ def list_backups():
         return jsonify({"backups": backups, "total": len(backups)}), 200
 
     except Exception as e:
-        print(f"Error listing backups: {e}")
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error listing backups: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/backup/data", methods=["POST"])
@@ -2057,8 +2081,8 @@ def run_data_backup():
     except subprocess.TimeoutExpired:
         return jsonify({"error": "Backup timed out"}), 500
     except Exception as e:
-        print(f"Error running data backup: {e}")
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error running data backup: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/backup/system", methods=["POST"])
@@ -2127,8 +2151,8 @@ def run_system_backup():
     except subprocess.TimeoutExpired:
         return jsonify({"error": "Backup timed out"}), 500
     except Exception as e:
-        print(f"Error running system backup: {e}")
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error running system backup: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/backup/full", methods=["POST"])
@@ -2197,8 +2221,8 @@ def run_full_backup():
     except subprocess.TimeoutExpired:
         return jsonify({"error": "Backup timed out"}), 500
     except Exception as e:
-        print(f"Error running full backup: {e}")
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error running full backup: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/backup/schedule", methods=["GET"])
@@ -2278,8 +2302,8 @@ def get_backup_schedule():
         )
 
     except Exception as e:
-        print(f"Error getting backup schedule: {e}")
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error getting backup schedule: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/backup/<backup_type>/<filename>/metadata", methods=["GET"])
@@ -2339,8 +2363,8 @@ def get_backup_metadata(backup_type: str, filename: str):
                 return jsonify({"error": "No metadata found in backup"}), 404
 
     except Exception as e:
-        print(f"Error getting backup metadata: {e}")
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error getting backup metadata: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/backup/restore", methods=["POST"])
@@ -2455,8 +2479,8 @@ def restore_backup():
     except subprocess.TimeoutExpired:
         return jsonify({"error": "Restore timed out"}), 500
     except Exception as e:
-        print(f"Error restoring backup: {e}")
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error restoring backup: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/backup/<backup_type>/<filename>", methods=["DELETE"])
@@ -2517,8 +2541,8 @@ def delete_backup(backup_type: str, filename: str):
         )
 
     except Exception as e:
-        print(f"Error deleting backup: {e}")
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error deleting backup: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 # ==========================================
@@ -2745,11 +2769,11 @@ def get_users_by_location_report():
         return response, 200
 
     except Exception as e:
-        print(f"Error generating users-by-location report: {e}")
+        current_app.logger.error(f"Error generating users-by-location report: {e}")
         import traceback
 
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/reports/user-activity", methods=["GET"])
@@ -3003,11 +3027,11 @@ def get_user_activity_report():
         return response, 200
 
     except Exception as e:
-        print(f"Error generating user activity report: {e}")
+        current_app.logger.error(f"Error generating user activity report: {e}")
         import traceback
 
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/password-requests", methods=["GET"])
@@ -3110,8 +3134,8 @@ def process_password_reset(request_id):
             return jsonify({"error": "Invalid action"}), 400
 
     except Exception as e:
-        print(f"Error processing password reset: {e}")
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error processing password reset: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 # ============================================================================
@@ -3157,7 +3181,8 @@ def get_users_backup_summary():
         users = [dict(row) for row in rows]
         return jsonify({"users": users}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/backups/users/bulk-create", methods=["POST"])
@@ -3236,7 +3261,7 @@ def bulk_restore_user_backups():
                 UserBackupService.create_backup(
                     uid, f"Pre-restore Safety (Bulk Admin)")
             except Exception as e:
-                print(f"Safety backup failed for user {uid}: {e}")
+                current_app.logger.error(f"Safety backup failed for user {uid}: {e}")
 
             # Restore
             UserBackupService.restore_backup(uid, latest_backup["id"])
@@ -3295,7 +3320,8 @@ def list_user_backups(user_id):
         backups = UserBackupService.list_backups(user_id)
         return jsonify({"backups": backups}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/users/<int:user_id>/backups", methods=["POST"])
@@ -3338,7 +3364,8 @@ def create_user_backup(user_id):
             201,
         )
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route(
@@ -3374,7 +3401,7 @@ def restore_user_backup(user_id, backup_id):
                     current_user.username})"
             )
         except Exception as e:
-            print(f"Admin safety backup failed: {e}")
+            current_app.logger.error(f"Admin safety backup failed: {e}")
 
         result = UserBackupService.restore_backup(user_id, backup_id)
 
@@ -3394,7 +3421,8 @@ def restore_user_backup(user_id, backup_id):
             200,
         )
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/users/<int:user_id>/backups/<int:backup_id>",
@@ -3432,7 +3460,8 @@ def delete_user_backup(user_id, backup_id):
 
         return jsonify({"message": "Backup deleted successfully"}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Admin route error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 # =============================================================================
@@ -3452,8 +3481,8 @@ def get_profiles_for_backup():
         profiles = SelectiveBackupService.get_all_profiles_with_details()
         return jsonify({"profiles": profiles}), 200
     except Exception as e:
-        print(f"Error getting profiles for backup: {e}")
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error getting profiles for backup: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/backup/selective/groups", methods=["GET"])
@@ -3468,8 +3497,8 @@ def get_groups_for_backup():
         groups = SelectiveBackupService.get_all_groups_with_profile_counts()
         return jsonify({"groups": groups}), 200
     except Exception as e:
-        print(f"Error getting groups for backup: {e}")
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error getting groups for backup: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/backup/selective", methods=["GET"])
@@ -3491,8 +3520,8 @@ def list_selective_backups():
 
         return jsonify({"backups": backups}), 200
     except Exception as e:
-        print(f"Error listing selective backups: {e}")
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error listing selective backups: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/backup/selective", methods=["POST"])
@@ -3550,10 +3579,10 @@ def create_selective_backup():
         )
 
     except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": "Invalid request data"}), 400
     except Exception as e:
-        print(f"Error creating selective backup: {e}")
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error creating selective backup: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/backup/selective/<filename>", methods=["GET"])
@@ -3570,8 +3599,8 @@ def get_selective_backup_details(filename: str):
     except FileNotFoundError:
         return jsonify({"error": "Backup not found"}), 404
     except Exception as e:
-        print(f"Error getting selective backup details: {e}")
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error getting selective backup details: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/backup/selective/<filename>/restore", methods=["POST"])
@@ -3642,10 +3671,10 @@ def restore_selective_backup(filename: str):
     except FileNotFoundError:
         return jsonify({"error": "Backup not found"}), 404
     except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": "Invalid request data"}), 400
     except Exception as e:
-        print(f"Error restoring selective backup: {e}")
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error restoring selective backup: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @admin_bp.route("/backup/selective/<filename>", methods=["DELETE"])
@@ -3671,5 +3700,5 @@ def delete_selective_backup(filename: str):
     except FileNotFoundError:
         return jsonify({"error": "Backup not found"}), 404
     except Exception as e:
-        print(f"Error deleting selective backup: {e}")
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error deleting selective backup: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500

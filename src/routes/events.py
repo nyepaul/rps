@@ -1,6 +1,6 @@
 """Client-side event tracking routes for granular user activity logging."""
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, current_app, request, jsonify
 from flask_login import login_required, current_user
 from src.services.enhanced_audit_logger import enhanced_audit_logger
 from src.extensions import limiter, csrf
@@ -63,7 +63,7 @@ def log_click():
 
     except Exception as e:
         # Don't fail the request if logging fails
-        print(f"Click logging error: {e}")
+        current_app.logger.error(f"Click logging error: {e}")
         return jsonify({"status": "error"}), 200
 
 
@@ -182,7 +182,7 @@ def log_batch():
         return jsonify({"status": "logged", "count": logged_count}), 200
 
     except Exception as e:
-        print(f"Batch logging error: {e}")
+        current_app.logger.error(f"Batch logging error: {e}")
         return jsonify({"status": "error"}), 200
 
 
@@ -230,7 +230,7 @@ def log_page_view():
         return jsonify({"status": "logged"}), 200
 
     except Exception as e:
-        print(f"Page view logging error: {e}")
+        current_app.logger.error(f"Page view logging error: {e}")
         return jsonify({"status": "error"}), 200
 
 
@@ -373,7 +373,7 @@ def log_session_event():
         return jsonify({"status": "logged"}), 200
 
     except Exception as e:
-        print(f"Session logging error: {e}")
+        current_app.logger.error(f"Session logging error: {e}")
         return jsonify({"status": "error"}), 200
 
 
@@ -430,5 +430,5 @@ def log_client_error():
         return jsonify({"status": "logged"}), 200
 
     except Exception as e:
-        print(f"Error logging error: {e}")
+        current_app.logger.error(f"Error logging error: {e}")
         return jsonify({"status": "error"}), 200

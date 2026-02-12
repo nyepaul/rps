@@ -1,6 +1,6 @@
 """Budget and expense management routes."""
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_login import login_required, current_user
 from src.models.profile import Profile
 from src.services.enhanced_audit_logger import enhanced_audit_logger
@@ -88,8 +88,8 @@ def copy_expenses():
         )
 
     except Exception as e:
-        print(f"Error copying expenses: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error copying expenses: {str(e)}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 def json_safe_copy(obj):

@@ -304,7 +304,7 @@ def generate_analysis():
             },
             status_code=500,
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @reports_bp.route("/portfolio", methods=["POST"])
@@ -364,7 +364,7 @@ def generate_portfolio():
             },
             status_code=500,
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @reports_bp.route("/action-plan", methods=["POST"])
@@ -442,4 +442,4 @@ def generate_action_plan():
             },
             status_code=500,
         )
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500

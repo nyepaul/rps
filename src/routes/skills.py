@@ -33,7 +33,7 @@ def list_skills():
 
         return jsonify({"skills": skills}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @skills_bp.route("/skills/<filename>", methods=["GET"])
@@ -62,4 +62,4 @@ def get_skill(filename):
 
         return jsonify({"content": content, "filename": filename}), 200
     except Exception as e:
-        return jsonify({"error": f"Error reading skill file: {str(e)}"}), 500
+        return jsonify({"error": "Error reading skill file"}), 500
