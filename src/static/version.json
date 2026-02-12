@@ -1,5 +1,5 @@
 {
-    "version": "3.9.279",
+    "version": "3.9.280",
     "release_date": "2026-02-12",
-    "release_notes": "TBPD: quality gates verified and CI stability fix released"
+    "release_notes": "TBPD: repo structure cleanup and README accuracy updates"
 }
