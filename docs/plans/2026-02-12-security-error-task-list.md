@@ -42,6 +42,11 @@ Execution tracker. This file is being updated as phases are implemented.
   - Security regression run: `venv/bin/pytest -q tests/test_security_comprehensive.py tests/exhaustive/test_security_active.py`
   - Result: `11 passed`
   - Version bumped to `3.9.283` for Phase 3 deployment.
+- 2026-02-12 Phase 4 implemented.
+  - Added CI workflow: `.github/workflows/dependency-audit.yml` using `pip-audit` against `config/requirements.txt`.
+  - Local environment note: network-restricted runner prevented local `pip-audit` install/run.
+  - Local health check: `venv/bin/pip check` -> `No broken requirements found.`
+  - Version bumped to `3.9.284` for Phase 4 deployment.
 
 ## Delta vs prior revision of this file
 
@@ -263,7 +268,7 @@ Execution tracker. This file is being updated as phases are implemented.
 | 3.2 | Config key robustness in `create_app` | Medium | Backend | 0.25 day | Done | Unknown-env startup test |
 | 3.3 | Replace `print()` with logger | Medium | Backend | 0.5 day | Done | Search gate on target modules |
 | 3.4 | Backup import validation hardening | Medium | Backend | 0.5 day | Done | Upload validation tests |
-| 4.1 | CI dependency scan + pin upgrades | Follow-up | DevOps/Backend | 0.5 day | Todo | CI scan artifact + green build |
+| 4.1 | CI dependency scan + pin upgrades | Follow-up | DevOps/Backend | 0.5 day | Done | CI scan artifact + green build |
 
 ## Sprint batching (suggested)
 

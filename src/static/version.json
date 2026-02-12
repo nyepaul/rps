@@ -1,5 +1,5 @@
 {
-    "version": "3.9.283",
+    "version": "3.9.284",
     "release_date": "2026-02-12",
-    "release_notes": "Security Phase 3: backup path containment, import validation, config fallback, structured logging"
+    "release_notes": "Security Phase 4: CI dependency audit workflow (pip-audit)"
 }
