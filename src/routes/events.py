@@ -10,6 +10,19 @@ events_bp = Blueprint("events", __name__, url_prefix="/api/events")
 csrf.exempt(events_bp)
 
 
+def _is_trusted_origin() -> bool:
+    """Compensating CSRF control for beacon/fetch event endpoints."""
+    allowed_origin = request.host_url.rstrip("/")
+    origin = (request.headers.get("Origin") or "").rstrip("/")
+    referer = request.headers.get("Referer") or ""
+
+    if origin:
+        return origin == allowed_origin
+    if referer:
+        return referer.startswith(f"{allowed_origin}/") or referer == allowed_origin
+    return False
+
+
 @events_bp.route("/click", methods=["POST"])
 @login_required
 @limiter.limit("60 per minute")
@@ -29,6 +42,9 @@ def log_click():
         y: Click Y coordinate
     """
     try:
+        if not _is_trusted_origin():
+            return jsonify({"error": "Invalid request origin"}), 403
+
         data = request.get_json(silent=True) or {}
 
         # Extract and sanitize click data
@@ -85,6 +101,9 @@ def log_batch():
         performance: Performance metrics (optional)
     """
     try:
+        if not _is_trusted_origin():
+            return jsonify({"error": "Invalid request origin"}), 403
+
         data = request.get_json(silent=True) or {}
         events = data.get("events", [])
 
@@ -200,6 +219,9 @@ def log_page_view():
         timestamp: Client-side timestamp
     """
     try:
+        if not _is_trusted_origin():
+            return jsonify({"error": "Invalid request origin"}), 403
+
         data = request.get_json(silent=True) or {}
 
         page = str(data.get("page", ""))[:100]
@@ -252,6 +274,9 @@ def log_session_event():
         performance: Page performance metrics (optional)
     """
     try:
+        if not _is_trusted_origin():
+            return jsonify({"error": "Invalid request origin"}), 403
+
         data = request.get_json(silent=True) or {}
 
         event = str(data.get("event", ""))[:50]
@@ -394,6 +419,9 @@ def log_client_error():
         timestamp: Client-side timestamp
     """
     try:
+        if not _is_trusted_origin():
+            return jsonify({"error": "Invalid request origin"}), 403
+
         data = request.get_json(silent=True) or {}
 
         message = str(data.get("message", ""))[:500]

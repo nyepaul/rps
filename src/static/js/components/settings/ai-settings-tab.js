@@ -65,7 +65,7 @@ export function renderAPIKeysTab(container) {
                         Anthropic Claude API Key
                     </label>
                     <p style="color: var(--text-secondary); font-size: 12px; margin: 0 0 10px 0;">
-                        Get your API key from <a href="https://console.anthropic.com/" target="_blank" style="color: var(--accent-color);">console.anthropic.com</a>
+                        Get your API key from <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer" style="color: var(--accent-color);">console.anthropic.com</a>
                     </p>
                     <div style="position: relative;">
                         <input
@@ -104,7 +104,7 @@ export function renderAPIKeysTab(container) {
                         Google Gemini API Key
                     </label>
                     <p style="color: var(--text-secondary); font-size: 12px; margin: 0 0 10px 0;">
-                        Get your API key from <a href="https://makersuite.google.com/app/apikey" target="_blank" style="color: var(--accent-color);">Google AI Studio</a>
+                        Get your API key from <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style="color: var(--accent-color);">Google AI Studio</a>
                     </p>
                     <div style="position: relative;">
                         <input
@@ -143,7 +143,7 @@ export function renderAPIKeysTab(container) {
                         Zhipu AI (GLM) API Key
                     </label>
                     <p style="color: var(--text-secondary); font-size: 12px; margin: 0 0 10px 0;">
-                        Get your API key from <a href="https://open.bigmodel.cn/" target="_blank" style="color: var(--accent-color);">open.bigmodel.cn</a>
+                        Get your API key from <a href="https://open.bigmodel.cn/" target="_blank" rel="noopener noreferrer" style="color: var(--accent-color);">open.bigmodel.cn</a>
                     </p>
                     <div style="position: relative;">
                         <input

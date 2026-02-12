@@ -1,6 +1,7 @@
 """Email service for sending transactional emails."""
 
 import os
+import hashlib
 from datetime import datetime
 from flask import current_app
 from flask_mail import Message
@@ -9,6 +10,19 @@ from src.extensions import mail
 
 class EmailService:
     """Service for sending emails."""
+
+    @staticmethod
+    def _redact_email(email: str) -> str:
+        if not email or "@" not in email:
+            return "***"
+        local, domain = email.split("@", 1)
+        return f"{local[:2]}***@{domain}"
+
+    @staticmethod
+    def _token_fingerprint(token: str) -> str:
+        if not token:
+            return "missing"
+        return hashlib.sha256(token.encode("utf-8")).hexdigest()[:12]
 
     @staticmethod
     def send_verification_email(email: str, token: str, base_url: str = None):
@@ -56,9 +70,10 @@ class EmailService:
             log_path = os.path.join(Config.DATA_DIR, "sent_emails.log")
             with open(log_path, "a") as f:
                 f.write(f"--- {datetime.now().isoformat()} ---\n")
-                f.write(f"To: {email}\n")
+                f.write(f"To: {EmailService._redact_email(email)}\n")
                 f.write(f"Subject: {subject}\n")
-                f.write(f"Link: {verification_link}\n")
+                f.write(f"Token fingerprint: {EmailService._token_fingerprint(token)}\n")
+                f.write("Link: [redacted]\n")
                 f.write(f"-----------------------------------\n\n")
         except Exception as log_ex:
             print(f"Failed to log email to file: {log_ex}")
@@ -69,9 +84,9 @@ class EmailService:
             enhanced_audit_logger.log(
                 action="EMAIL_VERIFICATION_GENERATED",
                 details={
-                    "email": email,
-                    "link": verification_link,
-                    "info": "Link logged to server for recovery in case of email delivery failure."
+                    "email": EmailService._redact_email(email),
+                    "token_fingerprint": EmailService._token_fingerprint(token),
+                    "info": "Verification token generated."
                 }
             )
         except Exception:
@@ -160,9 +175,10 @@ class EmailService:
             log_path = os.path.join(Config.DATA_DIR, "sent_emails.log")
             with open(log_path, "a") as f:
                 f.write(f"--- {datetime.now().isoformat()} ---\n")
-                f.write(f"To: {email}\n")
+                f.write(f"To: {EmailService._redact_email(email)}\n")
                 f.write(f"Subject: {subject}\n")
-                f.write(f"Link: {reset_link}\n")
+                f.write(f"Token fingerprint: {EmailService._token_fingerprint(token)}\n")
+                f.write("Link: [redacted]\n")
                 f.write(f"-----------------------------------\n\n")
         except Exception as log_ex:
             print(f"Failed to log reset email to file: {log_ex}")

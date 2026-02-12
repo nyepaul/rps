@@ -28,6 +28,13 @@ def _log_auth_exception(message: str, error: Exception) -> None:
     current_app.logger.error("%s: %s", message, error, exc_info=True)
 
 
+def _user_or_ip_limit_key() -> str:
+    """Use authenticated user id when available, otherwise fall back to remote IP."""
+    if current_user.is_authenticated:
+        return f"user:{current_user.id}"
+    return request.remote_addr or "unknown"
+
+
 def check_account_lockout(username: str) -> tuple[bool, int]:
     """
     Check if account is locked due to too many failed login attempts.
@@ -70,9 +77,10 @@ def check_account_lockout(username: str) -> tuple[bool, int]:
             return True, LOCKOUT_DURATION_MINUTES
 
         return False, 0
-    except Exception:
-        # If check fails, don't lock out (fail open for availability)
-        return False, 0
+    except Exception as e:
+        logging.error("Account lockout backend failure for '%s': %s", username, e)
+        # Safer degraded mode: temporary block while lockout telemetry is unavailable.
+        return True, 1
 
 
 class ResetWithRecoverySchema(BaseModel):
@@ -146,13 +154,12 @@ def register():
     except Exception as e:
         return jsonify({"error": "Invalid registration data"}), 400
 
-    # Check if username already exists
-    if User.get_by_username(data.username):
-        return jsonify({"error": "Username already exists"}), 400
-
-    # Check if email already exists
-    if User.get_by_email(data.email):
-        return jsonify({"error": "Email already exists"}), 400
+    # Prevent enumeration by returning the same response for either conflict.
+    if User.get_by_username(data.username) or User.get_by_email(data.email):
+        return (
+            jsonify({"error": "Registration failed. Please review your details and try again."}),
+            400,
+        )
 
     # Create user object first to get the correct salt (derived from username + email)
     user = User(
@@ -913,7 +920,8 @@ def save_api_keys():
 
 @auth_bp.route("/test-api-key", methods=["POST"])
 @login_required
-@limiter.exempt
+@limiter.limit("30 per minute")
+@limiter.limit("10 per minute", key_func=_user_or_ip_limit_key)
 def test_api_key():
     """Test an API key to verify it works."""
     try:
@@ -966,6 +974,8 @@ def test_api_key():
 
 @auth_bp.route("/test-stored-key", methods=["POST"])
 @login_required
+@limiter.limit("30 per minute")
+@limiter.limit("10 per minute", key_func=_user_or_ip_limit_key)
 def test_stored_key():
     """Test a stored API key."""
     try:

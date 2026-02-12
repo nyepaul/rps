@@ -239,7 +239,7 @@ function renderProviderCard(provider) {
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <button class="test-key-btn" data-provider="${provider.id}" style="padding: 4px 10px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px;">🧪 Test & Save</button>
-                    ${provider.url ? `<a href="${provider.url}" target="_blank" style="font-size: 11px; color: var(--accent-color); text-decoration: none;">Get Key ↗</a>` : ''}
+                    ${provider.url ? `<a href="${provider.url}" target="_blank" rel="noopener noreferrer" style="font-size: 11px; color: var(--accent-color); text-decoration: none;">Get Key ↗</a>` : ''}
                 </div>
                 <div id="${provider.id}-test-status" style="margin-top: 6px; font-size: 11px;"></div>
             </div>

@@ -4,6 +4,7 @@ import base64
 import json
 import requests
 import os
+import hashlib
 from io import BytesIO
 from flask import Blueprint, request, jsonify, Response, current_app
 from flask_login import login_required, current_user
@@ -204,7 +205,12 @@ def resilient_parse_llm_json(text_response, list_key):
     except Exception:
         pass
 
-    current_app.logger.warning(f"Failed to parse LLM response as JSON: {text_response[:200]}...")
+    response_fingerprint = hashlib.sha256(text_response.encode("utf-8")).hexdigest()[:12]
+    current_app.logger.warning(
+        "Failed to parse LLM response as JSON (len=%s, fp=%s)",
+        len(text_response),
+        response_fingerprint,
+    )
     return []
 
 

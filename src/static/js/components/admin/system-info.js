@@ -116,7 +116,7 @@ export async function renderSystemInfo(container) {
                             <div style="font-weight: 600; margin-bottom: 5px;">📄 System Security Documentation</div>
                             <div style="font-size: 12px; opacity: 0.9; margin-bottom: 8px;">Complete security architecture and encryption details</div>
                             <div style="display: flex; gap: 10px;">
-                                <a href="/api/admin/documentation/system-security" target="_blank" style="padding: 4px 12px; background: rgba(255,255,255,0.2); border-radius: 4px; color: white; text-decoration: none; font-size: 11px; font-weight: 600; transition: all 0.2s;">👁️ View</a>
+                                <a href="/api/admin/documentation/system-security" target="_blank" rel="noopener noreferrer" style="padding: 4px 12px; background: rgba(255,255,255,0.2); border-radius: 4px; color: white; text-decoration: none; font-size: 11px; font-weight: 600; transition: all 0.2s;">👁️ View</a>
                                 <a href="/api/admin/documentation/system-security?download=true" style="padding: 4px 12px; background: rgba(255,255,255,0.2); border-radius: 4px; color: white; text-decoration: none; font-size: 11px; font-weight: 600; transition: all 0.2s;">💾 Save</a>
                             </div>
                         </div>
@@ -124,7 +124,7 @@ export async function renderSystemInfo(container) {
                             <div style="font-weight: 600; margin-bottom: 5px;">📄 User & Profile Relationship Guide</div>
                             <div style="font-size: 12px; opacity: 0.9; margin-bottom: 8px;">Data hierarchy and secure segregation</div>
                             <div style="display: flex; gap: 10px;">
-                                <a href="/api/admin/documentation/user-profile-relationship" target="_blank" style="padding: 4px 12px; background: rgba(255,255,255,0.2); border-radius: 4px; color: white; text-decoration: none; font-size: 11px; font-weight: 600; transition: all 0.2s;">👁️ View</a>
+                                <a href="/api/admin/documentation/user-profile-relationship" target="_blank" rel="noopener noreferrer" style="padding: 4px 12px; background: rgba(255,255,255,0.2); border-radius: 4px; color: white; text-decoration: none; font-size: 11px; font-weight: 600; transition: all 0.2s;">👁️ View</a>
                                 <a href="/api/admin/documentation/user-profile-relationship?download=true" style="padding: 4px 12px; background: rgba(255,255,255,0.2); border-radius: 4px; color: white; text-decoration: none; font-size: 11px; font-weight: 600; transition: all 0.2s;">💾 Save</a>
                             </div>
                         </div>
@@ -132,7 +132,7 @@ export async function renderSystemInfo(container) {
                             <div style="font-weight: 600; margin-bottom: 5px;">📄 Asset Fields Reference</div>
                             <div style="font-size: 12px; opacity: 0.9; margin-bottom: 8px;">Complete asset type and field documentation</div>
                             <div style="display: flex; gap: 10px;">
-                                <a href="/api/admin/documentation/asset-fields" target="_blank" style="padding: 4px 12px; background: rgba(255,255,255,0.2); border-radius: 4px; color: white; text-decoration: none; font-size: 11px; font-weight: 600; transition: all 0.2s;">👁️ View</a>
+                                <a href="/api/admin/documentation/asset-fields" target="_blank" rel="noopener noreferrer" style="padding: 4px 12px; background: rgba(255,255,255,0.2); border-radius: 4px; color: white; text-decoration: none; font-size: 11px; font-weight: 600; transition: all 0.2s;">👁️ View</a>
                                 <a href="/api/admin/documentation/asset-fields?download=true" style="padding: 4px 12px; background: rgba(255,255,255,0.2); border-radius: 4px; color: white; text-decoration: none; font-size: 11px; font-weight: 600; transition: all 0.2s;">💾 Save</a>
                             </div>
                         </div>

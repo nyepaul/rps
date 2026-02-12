@@ -30,7 +30,6 @@ def init_extensions(app):
     # Exempt API routes from CSRF (using session-based auth + CORS instead)
     csrf.exempt("auth.register")
     csrf.exempt("auth.login")
-    csrf.exempt("auth.logout")
     csrf.exempt("auth.session")
     csrf.exempt("auth.request_password_reset")
     csrf.exempt("auth.reset_password")

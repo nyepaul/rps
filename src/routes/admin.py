@@ -21,6 +21,13 @@ from src.extensions import limiter
 admin_bp = Blueprint("admin", __name__, url_prefix="/api/admin")
 
 
+def _escape_csv_formula(value):
+    """Prevent CSV formula injection when exporting untrusted fields."""
+    if isinstance(value, str) and value and value[0] in ("=", "+", "-", "@"):
+        return f"'{value}"
+    return value
+
+
 class AuditConfigSchema(BaseModel):
     """Schema for audit configuration updates."""
 
@@ -359,10 +366,15 @@ def export_audit_logs():
 
             output = io.StringIO()
             if result["logs"]:
-                writer = csv.DictWriter(
-                    output, fieldnames=result["logs"][0].keys())
+                fieldnames = list(result["logs"][0].keys())
+                writer = csv.DictWriter(output, fieldnames=fieldnames)
                 writer.writeheader()
-                writer.writerows(result["logs"])
+                for log_row in result["logs"]:
+                    safe_row = {
+                        key: _escape_csv_formula(log_row.get(key))
+                        for key in fieldnames
+                    }
+                    writer.writerow(safe_row)
 
             from flask import Response
 
@@ -1614,7 +1626,7 @@ def get_database_schema():
 
 @admin_bp.route("/reset-demo-account", methods=["POST"])
 @login_required
-@admin_required
+@super_admin_required
 def reset_demo_account():
     """Reset the demo account using the seed_demo_data.py script."""
     try:
@@ -1653,7 +1665,6 @@ def reset_demo_account():
                 {
                     "message": "Demo account reset successfully",
                     "username": "demo",
-                    "password": "Demo1234",
                     "profiles": [
                         "Demo Junior",
                         "Demo Thompson",

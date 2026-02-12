@@ -30,6 +30,12 @@ Execution tracker. This file is being updated as phases are implemented.
   - Test run: `venv/bin/pytest -q tests/test_security_comprehensive.py tests/exhaustive/test_security_active.py tests/exhaustive/test_selective_backup.py`
   - Result: `15 passed`
   - Version bumped to `3.9.281` for Phase 1 deployment.
+- 2026-02-12 Phase 2 implemented and validated.
+  - Test run: `venv/bin/pytest -q tests/test_security_comprehensive.py tests/exhaustive/test_security_active.py tests/exhaustive/test_selective_backup.py`
+  - Result: `15 passed`
+  - Additional route/auth run: `venv/bin/pytest -q tests/test_routes/test_auth.py tests/test_routes/test_admin_users.py tests/test_routes/test_admin_groups.py tests/test_api_keys.py`
+  - Result: `27 passed`
+  - Version bumped to `3.9.282` for Phase 2 deployment.
 
 ## Delta vs prior revision of this file
 
@@ -238,15 +244,15 @@ Execution tracker. This file is being updated as phases are implemented.
 | 1.1 | Remove auth error leakage | Critical | Backend | 0.5 day | Done | Auth route tests + response spot-check |
 | 1.2 | Fix frontend XSS sinks | Critical | Frontend | 1 day | Done | UI smoke + targeted security checks |
 | 1.3 | Resolve traversal test contract | Critical | Backend | 0.25 day | Done | `pytest tests/exhaustive/test_security_active.py` |
-| 2.1 | Rate-limit API key test endpoints | High | Backend | 0.25 day | Todo | 429 tests for both routes |
-| 2.2 | Harden lockout degraded behavior | High | Backend | 0.5 day | Todo | Failure-path lockout tests |
-| 2.3 | Restrict demo reset + remove password response | High | Backend | 0.25 day | Todo | Admin/super-admin auth tests |
-| 2.4 | Add CSV formula export protection | High | Backend | 0.25 day | Todo | CSV payload tests (`=,+,-,@`) |
-| 2.5 | Redact token/PII logging | High | Backend | 0.5 day | Todo | Log-content assertions |
-| 2.6 | Redact AI parse-failure response logs | High | Backend | 0.25 day | Todo | Logging assertions + manual inspection |
-| 2.7 | CSRF exemption hardening | High | Backend | 0.5 day | Todo | Endpoint CSRF behavior tests |
-| 2.8 | `target=\"_blank\"` rel hardening | High | Frontend | 0.25 day | Todo | Static grep gate + UI smoke |
-| 2.9 | Registration enumeration hardening | High | Backend | 0.5 day | Todo | Registration behavior tests |
+| 2.1 | Rate-limit API key test endpoints | High | Backend | 0.25 day | Done | 429 tests for both routes |
+| 2.2 | Harden lockout degraded behavior | High | Backend | 0.5 day | Done | Failure-path lockout tests |
+| 2.3 | Restrict demo reset + remove password response | High | Backend | 0.25 day | Done | Admin/super-admin auth tests |
+| 2.4 | Add CSV formula export protection | High | Backend | 0.25 day | Done | CSV payload tests (`=,+,-,@`) |
+| 2.5 | Redact token/PII logging | High | Backend | 0.5 day | Done | Log-content assertions |
+| 2.6 | Redact AI parse-failure response logs | High | Backend | 0.25 day | Done | Logging assertions + manual inspection |
+| 2.7 | CSRF exemption hardening | High | Backend | 0.5 day | Done | Endpoint CSRF behavior tests |
+| 2.8 | `target=\"_blank\"` rel hardening | High | Frontend | 0.25 day | Done | Static grep gate + UI smoke |
+| 2.9 | Registration enumeration hardening | High | Backend | 0.5 day | Done | Registration behavior tests |
 | 3.1 | Path containment in selective backup service | Medium | Backend | 0.5 day | Todo | Traversal payload tests |
 | 3.2 | Config key robustness in `create_app` | Medium | Backend | 0.25 day | Todo | Unknown-env startup test |
 | 3.3 | Replace `print()` with logger | Medium | Backend | 0.5 day | Todo | Search gate on target modules |

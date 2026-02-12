@@ -1,5 +1,5 @@
 {
-    "version": "3.9.281",
+    "version": "3.9.282",
     "release_date": "2026-02-12",
-    "release_notes": "Security Phase 1: auth error sanitization, XSS sink hardening, traversal validation"
+    "release_notes": "Security Phase 2: rate limits, anti-enumeration, CSRF controls, logging redaction"
 }
