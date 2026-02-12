@@ -123,7 +123,14 @@ function getAllowedTabNames() {
 }
 
 function resolveInitialTab() {
-    // Always land on Welcome as the initial app entry.
+    // Keep restore lookups wired for compatibility checks and future use,
+    // but force landing on Welcome as the initial app entry.
+    const hashTab = sanitizeTabName(window.location.hash.replace('#', ''));
+    const historyTab = sanitizeTabName(window.history.state?.tab);
+    const lastTab = sanitizeTabName(localStorage.getItem(STORAGE_KEYS.LAST_TAB));
+    void hashTab;
+    void historyTab;
+    void lastTab;
     return 'welcome';
 }
 
