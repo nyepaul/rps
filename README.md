@@ -17,6 +17,9 @@ A local-first financial planning application for Monte Carlo retirement simulati
 ## Quick Start
 
 ```bash
+# Install local git hooks (recommended)
+./bin/setup-git-hooks
+
 # Configure AI features (optional)
 ./bin/setup-api-keys
 
@@ -25,6 +28,12 @@ A local-first financial planning application for Monte Carlo retirement simulati
 
 # Open http://127.0.0.1:5137
 ```
+
+## Prerequisites
+
+- Python 3.12+
+- `pip` (for dependency installation in `./bin/start`)
+- Optional: `cloudflared` (only needed for `./bin/manage tunnel`)
 
 ## Commands
 
@@ -40,7 +49,20 @@ A local-first financial planning application for Monte Carlo retirement simulati
 | `./bin/manage stop` | Stop the application |
 | `./bin/manage status` | Check system health |
 | `./bin/manage backup` | Backup SQLite database |
+| `./bin/restore` | Restore from backup archive |
+| `./bin/backup-data` | Create data-only backup |
+| `./bin/backup-system` | Create system/config backup |
+| `./bin/setup-backup-timer` | Configure scheduled automated backups |
+| `./bin/bump-version <x.y.z> "<notes>"` | Update release version + cache-busting metadata |
 | `./bin/manage tunnel` | Create secure public URL |
+
+## Release Workflow
+
+Use `TBPD` for releases:
+1. **Test**: `./bin/check-quality-gates`
+2. **Bump**: `./bin/bump-version <x.y.z> "<notes>"`
+3. **Push**: `git push origin main`
+4. **Deploy**: `sudo ./bin/deploy`
 
 ## Architecture
 
