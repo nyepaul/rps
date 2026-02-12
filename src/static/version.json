@@ -1,5 +1,5 @@
 {
-    "version": "3.9.277",
-    "release_date": "2026-02-11",
-    "release_notes": "Fix welcome landing behavior and keep tab-restore compatibility checks"
+    "version": "3.9.278",
+    "release_date": "2026-02-12",
+    "release_notes": "Enforce repo hygiene and add gitleaks secret scanning in CI"
 }
