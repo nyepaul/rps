@@ -36,6 +36,7 @@ A local-first financial planning application for Monte Carlo retirement simulati
 | `./bin/check-repo-hygiene` | Block committing generated/local artifacts |
 | `./bin/check-quality-gates` | Run CI-equivalent quality gates locally |
 | `./bin/setup-git-hooks` | Enable local pre-push hook checks (`.githooks`) |
+| `sudo ./bin/deploy` | Deploy latest `main` to production (server environment) |
 | `./bin/manage stop` | Stop the application |
 | `./bin/manage status` | Check system health |
 | `./bin/manage backup` | Backup SQLite database |
