@@ -9,6 +9,9 @@ import { loadTemplate } from '../../utils/template-loader.js';
 import { setupContextualHelp } from '../../utils/contextual-help.js';
 import { validatePositiveNumber, clearFieldError } from '../../utils/validation.js';
 
+const DEFAULT_INITIAL_RENT_PM = 4000;
+const DEFAULT_RENT_INCREASE_ANNUAL_PCT = 0.03;
+
 function buildDefaultHomeAsset(index = 1) {
     return {
         id: crypto.randomUUID(),
@@ -25,8 +28,8 @@ function buildDefaultHomeAsset(index = 1) {
         interest_rate: 0,
         loan_term_years: 30,
         remaining_loan_balance: 0,
-        initial_rent_pm: 0,
-        rent_increase_annual_pct: 0.03,
+        initial_rent_pm: DEFAULT_INITIAL_RENT_PM,
+        rent_increase_annual_pct: DEFAULT_RENT_INCREASE_ANNUAL_PCT,
         is_primary_residence: index === 1,
     };
 }
@@ -156,29 +159,43 @@ export async function renderHomeTab(container) {
     setupHomeFormHandlers(container, profile);
 }
 
+function _setVal(container, selector, value) {
+    const el = container.querySelector(selector);
+    if (el) el.value = value;
+}
+function _setChecked(container, selector, value) {
+    const el = container.querySelector(selector);
+    if (el) el.checked = value;
+}
+
 function populateHomeForm(container, homeAsset) {
-    container.querySelector('#home_name').value = homeAsset.name || 'Primary Residence';
-    container.querySelector('#is_primary_residence').checked = Boolean(homeAsset.is_primary_residence);
-    container.querySelector('#current_value').value = homeAsset.current_value || '';
-    container.querySelector('#appreciation_annual_pct').value = (homeAsset.appreciation_annual_pct * 100 || 3);
-    container.querySelector('#property_tax_rate').value = (homeAsset.property_tax_rate * 100 || 1.5);
-    container.querySelector('#home_insurance_annual').value = homeAsset.home_insurance_annual || '';
-    container.querySelector('#maintenance_annual_pct').value = (homeAsset.maintenance_annual_pct * 100 || 1);
+    _setVal(container, '#home_name', homeAsset.name || 'Primary Residence');
+    _setChecked(container, '#is_primary_residence', Boolean(homeAsset.is_primary_residence));
+    _setVal(container, '#current_value', homeAsset.current_value || '');
+    _setVal(container, '#appreciation_annual_pct', homeAsset.appreciation_annual_pct * 100 || 3);
+    _setVal(container, '#property_tax_rate', homeAsset.property_tax_rate * 100 || 1.5);
+    _setVal(container, '#home_insurance_annual', homeAsset.home_insurance_annual || '');
+    _setVal(container, '#maintenance_annual_pct', homeAsset.maintenance_annual_pct * 100 || 1);
 
     const hasMortgage = homeAsset.has_mortgage ?? true;
-    container.querySelector('#has_mortgage_yes').checked = hasMortgage;
-    container.querySelector('#has_mortgage_no').checked = !hasMortgage;
+    _setChecked(container, '#has_mortgage_yes', hasMortgage);
+    _setChecked(container, '#has_mortgage_no', !hasMortgage);
     toggleMortgageDetails(container, hasMortgage);
 
-    container.querySelector('#purchase_price').value = homeAsset.purchase_price || '';
-    container.querySelector('#down_payment').value = homeAsset.down_payment || '';
-    container.querySelector('#loan_amount').value = homeAsset.loan_amount || '';
-    container.querySelector('#interest_rate').value = (homeAsset.interest_rate * 100 || '');
-    container.querySelector('#loan_term_years').value = homeAsset.loan_term_years || '';
-    container.querySelector('#remaining_loan_balance').value = homeAsset.remaining_loan_balance || '';
+    _setVal(container, '#purchase_price', homeAsset.purchase_price || '');
+    _setVal(container, '#down_payment', homeAsset.down_payment || '');
+    _setVal(container, '#loan_amount', homeAsset.loan_amount || '');
+    _setVal(container, '#interest_rate', homeAsset.interest_rate * 100 || '');
+    _setVal(container, '#loan_term_years', homeAsset.loan_term_years || '');
+    _setVal(container, '#remaining_loan_balance', homeAsset.remaining_loan_balance || '');
 
-    container.querySelector('#initial_rent_pm').value = homeAsset.initial_rent_pm || '';
-    container.querySelector('#rent_increase_annual_pct').value = (homeAsset.rent_increase_annual_pct * 100 || 3);
+    const initialRent = Number(homeAsset.initial_rent_pm);
+    const rentIncreasePct = Number(homeAsset.rent_increase_annual_pct);
+    _setVal(container, '#initial_rent_pm', Number.isFinite(initialRent) && initialRent > 0 ? initialRent : DEFAULT_INITIAL_RENT_PM);
+    _setVal(container, '#rent_increase_annual_pct',
+        Number.isFinite(rentIncreasePct) && rentIncreasePct > 0
+            ? (rentIncreasePct * 100)
+            : (DEFAULT_RENT_INCREASE_ANNUAL_PCT * 100));
 }
 
 function setupHomeFormHandlers(container, profile) {

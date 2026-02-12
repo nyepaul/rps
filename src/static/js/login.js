@@ -61,6 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (resendVerificationForm) resendVerificationForm.classList.add('hidden');
 
         // Show appropriate form
+        const heading = document.querySelector('h1');
         if (mode === 'login') {
             loginForm.classList.remove('hidden');
             toggleText.textContent = "Don't have an account? ";
@@ -68,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleLink.classList.remove('hidden');
             backToLoginLink.classList.add('hidden');
             if (resendLinkContainer) resendLinkContainer.classList.remove('hidden');
-            document.querySelector('h1').textContent = "Welcome Back";
+            if (heading) heading.textContent = "Welcome Back";
         } else if (mode === 'register') {
             registerForm.classList.remove('hidden');
             toggleText.textContent = "Already have an account? ";
@@ -76,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleLink.classList.remove('hidden');
             backToLoginLink.classList.add('hidden');
             if (resendLinkContainer) resendLinkContainer.classList.add('hidden');
-            document.querySelector('h1').textContent = "Create Account";
+            if (heading) heading.textContent = "Create Account";
         } else if (mode === 'resend') {
             if (resendVerificationForm) resendVerificationForm.classList.remove('hidden');
             toggleText.textContent = "Back to ";
@@ -84,21 +85,21 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleLink.classList.remove('hidden');
             backToLoginLink.classList.add('hidden');
             if (resendLinkContainer) resendLinkContainer.classList.add('hidden');
-            document.querySelector('h1').textContent = "Resend Verification";
+            if (heading) heading.textContent = "Resend Verification";
         } else if (mode === 'resetRequest') {
             resetRequestForm.classList.remove('hidden');
             toggleText.textContent = "";
             toggleLink.classList.add('hidden');
             backToLoginLink.classList.remove('hidden');
             if (resendLinkContainer) resendLinkContainer.classList.add('hidden');
-            document.querySelector('h1').textContent = "Reset Password";
+            if (heading) heading.textContent = "Reset Password";
         } else if (mode === 'resetPassword') {
             resetPasswordForm.classList.remove('hidden');
             toggleText.textContent = "";
             toggleLink.classList.add('hidden');
             backToLoginLink.classList.remove('hidden');
             if (resendLinkContainer) resendLinkContainer.classList.add('hidden');
-            document.querySelector('h1').textContent = "Set New Password";
+            if (heading) heading.textContent = "Set New Password";
         }
     }
     

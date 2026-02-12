@@ -9,6 +9,15 @@ import { setupContextualHelp } from '../../utils/contextual-help.js';
 import { setFieldError, setFieldWarning, clearFieldError, validateAge } from '../../utils/validation.js';
 import { loadTemplate } from '../../utils/template-loader.js';
 
+function _setVal(container, selector, value) {
+    const el = container.querySelector(selector);
+    if (el) el.value = value;
+}
+function _setText(container, selector, value) {
+    const el = container.querySelector(selector);
+    if (el) el.textContent = value;
+}
+
 export async function renderProfileTab(container) {
     const profile = store.get('currentProfile');
 
@@ -44,15 +53,15 @@ export async function renderProfileTab(container) {
     const financial = data.financial || {};
     const address = data.address || {};
 
-    container.querySelector('#profile-name-display').textContent = profile.name;
-    container.querySelector('#name').value = profile.name || '';
-    container.querySelector('#birth_date').value = profile.birth_date || '';
-    container.querySelector('#retirement_date').value = profile.retirement_date || '';
-    container.querySelector('#current_age').value = person.current_age || '';
-    container.querySelector('#retirement_age').value = person.retirement_age || '';
-    container.querySelector('#life_expectancy').value = person.life_expectancy || 95;
-    container.querySelector('#ss_benefit').value = financial.social_security_benefit || 0;
-    
+    _setText(container, '#profile-name-display', profile.name);
+    _setVal(container, '#name', profile.name || '');
+    _setVal(container, '#birth_date', profile.birth_date || '');
+    _setVal(container, '#retirement_date', profile.retirement_date || '');
+    _setVal(container, '#current_age', person.current_age || '');
+    _setVal(container, '#retirement_age', person.retirement_age || '');
+    _setVal(container, '#life_expectancy', person.life_expectancy || 95);
+    _setVal(container, '#ss_benefit', financial.social_security_benefit || 0);
+
     // Select SS Claiming Age
     const ssClaimingAgeSelect = container.querySelector('#ss_claiming_age');
     if (ssClaimingAgeSelect) {
@@ -60,26 +69,26 @@ export async function renderProfileTab(container) {
         ssClaimingAgeSelect.value = valueToSelect;
     }
 
-    container.querySelector('#annual_401k').value = (financial.annual_401k_contribution_rate || 0) * 100;
-    container.querySelector('#employer_match').value = (financial.employer_match_rate || 0) * 100;
+    _setVal(container, '#annual_401k', (financial.annual_401k_contribution_rate || 0) * 100);
+    _setVal(container, '#employer_match', (financial.employer_match_rate || 0) * 100);
 
     // Address
-    container.querySelector('#address_street').value = address.street || '';
-    container.querySelector('#address_city').value = address.city || '';
-    container.querySelector('#address_zip').value = address.zip || '';
+    _setVal(container, '#address_street', address.street || '');
+    _setVal(container, '#address_city', address.city || '');
+    _setVal(container, '#address_zip', address.zip || '');
     const addressStateSelect = container.querySelector('#address_state');
     if (addressStateSelect) {
         addressStateSelect.value = address.state || '';
     }
 
     // Spouse
-    container.querySelector('#spouse_name').value = spouse.name || '';
-    container.querySelector('#spouse_birth_date').value = spouse.birth_date || '';
-    container.querySelector('#spouse_retirement_date').value = spouse.retirement_date || '';
-    container.querySelector('#spouse_current_age').value = spouse.current_age || '';
-    container.querySelector('#spouse_retirement_age').value = spouse.retirement_age || '';
-    container.querySelector('#spouse_life_expectancy').value = spouse.life_expectancy || 95;
-    container.querySelector('#spouse_ss_benefit').value = spouse.social_security_benefit || 0;
+    _setVal(container, '#spouse_name', spouse.name || '');
+    _setVal(container, '#spouse_birth_date', spouse.birth_date || '');
+    _setVal(container, '#spouse_retirement_date', spouse.retirement_date || '');
+    _setVal(container, '#spouse_current_age', spouse.current_age || '');
+    _setVal(container, '#spouse_retirement_age', spouse.retirement_age || '');
+    _setVal(container, '#spouse_life_expectancy', spouse.life_expectancy || 95);
+    _setVal(container, '#spouse_ss_benefit', spouse.social_security_benefit || 0);
     const spouseSSClaimingAgeSelect = container.querySelector('#spouse_ss_claiming_age');
     if (spouseSSClaimingAgeSelect) {
         const valueToSelect = spouse.ss_claiming_age ? spouse.ss_claiming_age.toString() : '67';

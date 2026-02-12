@@ -1,5 +1,5 @@
 {
-    "version": "3.9.275",
+    "version": "3.9.277",
     "release_date": "2026-02-11",
-    "release_notes": "Default-collapse Feature Index and Acronym Glossary sections in Learning Hub"
+    "release_notes": "Fix welcome landing behavior and keep tab-restore compatibility checks"
 }

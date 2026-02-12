@@ -80,7 +80,7 @@ async function init() {
     // Load and display version
     loadVersion();
 
-    // Restore tab on refresh/back: URL hash -> history state -> last saved tab -> welcome.
+    // Always land on Welcome on app load.
     const initialTab = resolveInitialTab();
     await showTab(initialTab, { updateHistory: false });
 
@@ -88,7 +88,7 @@ async function init() {
     window.addEventListener('popstate', async (event) => {
         const requestedTab = sanitizeTabName(
             event?.state?.tab || window.location.hash.replace('#', '')
-        ) || sanitizeTabName(localStorage.getItem(STORAGE_KEYS.LAST_TAB)) || 'welcome';
+        ) || 'welcome';
         await showTab(requestedTab, { updateHistory: false });
     });
 
@@ -123,15 +123,7 @@ function getAllowedTabNames() {
 }
 
 function resolveInitialTab() {
-    const hashTab = sanitizeTabName(window.location.hash.replace('#', ''));
-    if (hashTab) return hashTab;
-
-    const historyTab = sanitizeTabName(window.history.state?.tab);
-    if (historyTab) return historyTab;
-
-    const lastTab = sanitizeTabName(localStorage.getItem(STORAGE_KEYS.LAST_TAB));
-    if (lastTab) return lastTab;
-
+    // Always land on Welcome as the initial app entry.
     return 'welcome';
 }
 
@@ -1048,10 +1040,14 @@ async function openSettings(defaultTab = 'general', focusElementId = null) {
     });
 
     // Update market profile description on change
-    modal.querySelector('#market-profile-setting').addEventListener('change', (e) => {
-        const profile = APP_CONFIG.MARKET_PROFILES[e.target.value];
-        modal.querySelector('#market-profile-description').textContent = profile.description;
-    });
+    const marketProfileSetting = modal.querySelector('#market-profile-setting');
+    if (marketProfileSetting) {
+        marketProfileSetting.addEventListener('change', (e) => {
+            const profile = APP_CONFIG.MARKET_PROFILES[e.target.value];
+            const descEl = modal.querySelector('#market-profile-description');
+            if (descEl && profile) descEl.textContent = profile.description;
+        });
+    }
 
     // Generate Recovery Code
     const generateRecoveryBtn = modal.querySelector('#generate-recovery-btn');
@@ -1107,9 +1103,9 @@ async function openSettings(defaultTab = 'general', focusElementId = null) {
     const updatePasswordBtn = modal.querySelector('#update-password-btn');
     if (updatePasswordBtn) {
         updatePasswordBtn.addEventListener('click', async () => {
-            const currentPassword = modal.querySelector('#current-password-input').value;
-            const newPassword = modal.querySelector('#new-password-input').value;
-            const confirmPassword = modal.querySelector('#confirm-password-input').value;
+            const currentPassword = modal.querySelector('#current-password-input')?.value;
+            const newPassword = modal.querySelector('#new-password-input')?.value;
+            const confirmPassword = modal.querySelector('#confirm-password-input')?.value;
             const messageDiv = modal.querySelector('#change-password-message');
 
             if (!currentPassword || !newPassword || !confirmPassword) {
