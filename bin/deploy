@@ -105,6 +105,8 @@ rsync -a --delete \
     --exclude='.claude' \
     --exclude='.idea' \
     --exclude='.vscode' \
+    --exclude='.env' \
+    --exclude='.env.production' \
     --exclude='.DS_Store' \
     --exclude='*.swp' \
     --exclude='*.swo' \
@@ -217,11 +219,13 @@ Group=www-data
 WorkingDirectory=$TARGET_DIR
 Environment="PATH=$TARGET_DIR/venv/bin"
 Environment="MPLCONFIGDIR=$TARGET_DIR/.config/matplotlib"
+EnvironmentFile=-$TARGET_DIR/.env
+EnvironmentFile=-$TARGET_DIR/.env.production
 Environment="FLASK_ENV=production"
 Environment="APP_BASE_URL=https://rps.pan2.app"
 Environment="MAIL_DEFAULT_SENDER=RPS <noreply@pan2.app>"
 Environment="SESSION_COOKIE_SECURE=true"
-ExecStart=$TARGET_DIR/venv/bin/gunicorn -w 4 --timeout 600 -b 127.0.0.1:5137 --access-logfile - --error-logfile - "src.app:create_app('production')"
+ExecStart=$TARGET_DIR/venv/bin/gunicorn -w 4 --timeout 600 -b 127.0.0.1:5137 --access-logfile - --error-logfile - src.wsgi:app
 Restart=always
 RestartSec=10
 StandardOutput=append:$TARGET_DIR/logs/rps.log
@@ -252,9 +256,32 @@ else
     TIMEOUT_CMD=""
 fi
 
+# Load environment files for pre-start validation parity with systemd unit.
+if [ -f "$TARGET_DIR/.env" ]; then
+    set -a
+    # shellcheck disable=SC1090
+    . "$TARGET_DIR/.env"
+    set +a
+fi
+if [ -f "$TARGET_DIR/.env.production" ]; then
+    set -a
+    # shellcheck disable=SC1090
+    . "$TARGET_DIR/.env.production"
+    set +a
+fi
+
+if [ -z "${ENCRYPTION_KEY:-}" ]; then
+    echo -e "${RED}  ✗ ENCRYPTION_KEY is missing. Set it in $TARGET_DIR/.env or $TARGET_DIR/.env.production.${NC}"
+    exit 1
+fi
+if [ -z "${SECRET_KEY:-}" ]; then
+    echo -e "${RED}  ✗ SECRET_KEY is missing. Set it in $TARGET_DIR/.env or $TARGET_DIR/.env.production.${NC}"
+    exit 1
+fi
+
 # Show real-time output for validation to diagnose hangs
 set +e
-VALIDATION_ERROR=$( $TIMEOUT_CMD "$TARGET_DIR/venv/bin/python" -c "from src.app import create_app; create_app('production'); print('Application factory successfully loaded.')" 2>&1 )
+VALIDATION_ERROR=$( FLASK_ENV=production $TIMEOUT_CMD "$TARGET_DIR/venv/bin/python" -c "from src.wsgi import app; print('Application factory successfully loaded.')" 2>&1 )
 RET_CODE=$?
 set -e
 

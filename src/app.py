@@ -103,7 +103,10 @@ def create_app(config_name="development"):
     app = Flask(__name__, static_folder="static", static_url_path="")
 
     # Load configuration
-    app.config.from_object(config[config_name])
+    config_class = config[config_name]
+    app.config.from_object(config_class)
+    if hasattr(config_class, "init_app"):
+        config_class.init_app(app)
 
     # Initialize extensions
     init_extensions(app)
