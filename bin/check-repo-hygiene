@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+# Disallow generated/local artifacts in tracked files.
+declare -a FORBIDDEN_PATTERNS=(
+  '^backups/(data|system|incremental|selective)/'
+  '^test_results/(?!README\.md$)'
+  '^logs/'
+  '^htmlcov/'
+  '^\.pytest_cache/'
+  '^\.coverage$'
+  '^firebase-debug\.log$'
+  '^data/.*\.db(-.*)?$'
+)
+
+violations=""
+for pattern in "${FORBIDDEN_PATTERNS[@]}"; do
+  while IFS= read -r file; do
+    [[ -z "$file" ]] && continue
+    violations+="$file"$'\n'
+  done < <(git ls-files | grep -P "$pattern" || true)
+done
+
+if [[ -n "$violations" ]]; then
+  echo "Repo hygiene check failed. Remove generated/local artifacts from git tracking:"
+  echo "$violations" | sed '/^$/d' | sort -u
+  exit 1
+fi
+
+echo "Repo hygiene check passed."

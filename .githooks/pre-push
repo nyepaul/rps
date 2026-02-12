@@ -3,3 +3,4 @@ set -euo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 "$REPO_ROOT/bin/check-no-secrets"
+"$REPO_ROOT/bin/check-repo-hygiene"
