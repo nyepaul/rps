@@ -1,5 +1,5 @@
 {
-    "version": "3.9.278",
+    "version": "3.9.279",
     "release_date": "2026-02-12",
-    "release_notes": "Enforce repo hygiene and add gitleaks secret scanning in CI"
+    "release_notes": "TBPD: quality gates verified and CI stability fix released"
 }
