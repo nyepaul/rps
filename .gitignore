@@ -45,6 +45,9 @@ backups/data/rps_data_*
 backups/system/*.tar.gz
 backups/system/*.tar
 backups/system/rps_system_*
+backups/incremental/*.tar.gz
+backups/incremental/*.tar
+backups/selective/*.json
 
 # Log files in root (should be in logs/)
 /*.log
@@ -57,3 +60,5 @@ scripts/debug_user_model.py
 htmlcov/
 .pytest_cache/
 *_report.txt
+test_results/*.txt
+test_results/*.json
