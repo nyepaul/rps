@@ -1,5 +1,5 @@
 {
-    "version": "3.9.290",
+    "version": "3.9.291",
     "release_date": "2026-02-13",
-    "release_notes": "fix: cashflow tab reads SS/pension/401k from person object fallback when financial object missing"
+    "release_notes": "chore: exhaustive validation; harden prod smoke/link checks"
 }
