@@ -1,5 +1,5 @@
 {
-    "version": "3.9.291",
+    "version": "3.9.292",
     "release_date": "2026-02-13",
-    "release_notes": "chore: exhaustive validation; harden prod smoke/link checks"
+    "release_notes": "feat: click-to-detail modals for 529 + estate planning"
 }
