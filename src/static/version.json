@@ -1,5 +1,5 @@
 {
-    "version": "3.9.289",
-    "release_date": "2026-02-12",
-    "release_notes": "Income stream add-button fix and UI behavior polish"
+    "version": "3.9.290",
+    "release_date": "2026-02-13",
+    "release_notes": "fix: cashflow tab reads SS/pension/401k from person object fallback when financial object missing"
 }

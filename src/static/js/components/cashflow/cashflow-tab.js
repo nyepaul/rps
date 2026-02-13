@@ -1070,9 +1070,9 @@ function showCardDetailModal(metric) {
 
         case 'retirement-benefits':
             title = '🏖️ Retirement Benefits Details';
-            const p1SS = financial.social_security_benefit || 0;
-            const p1Pension = financial.pension_benefit || 0;
-            const p1ClaimingAge = financial.ss_claiming_age || 67;
+            const p1SS = financial.social_security_benefit || data.person?.social_security_benefit || 0;
+            const p1Pension = financial.pension_benefit || data.person?.pension_benefit || 0;
+            const p1ClaimingAge = financial.ss_claiming_age || data.person?.ss_claiming_age || 67;
             const p2SS = spouse?.social_security_benefit || 0;
             const p2Pension = spouse?.pension_benefit || 0;
             const p2ClaimingAge = spouse?.ss_claiming_age || 67;
@@ -1784,7 +1784,7 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
         let p2Pension = 0;
 
         // --- Person 1 Social Security (based on claiming age) ---
-        const p1ClaimingAge = financial.ss_claiming_age || 67;
+        const p1ClaimingAge = financial.ss_claiming_age || data.person?.ss_claiming_age || 67;
         const p1BirthDate = profile.birth_date ? new Date(profile.birth_date) : null;
         let p1SSStarted = false;
 
@@ -1798,7 +1798,7 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
         }
 
         if (p1SSStarted) {
-            p1SocialSecurity = financial.social_security_benefit || 0;
+            p1SocialSecurity = financial.social_security_benefit || data.person?.social_security_benefit || 0;
             // Estimate SS from employment income if not explicitly set
             if (!p1SocialSecurity && p1AnnualEmployment > 0) {
                 p1SocialSecurity = estimateMonthlySSBenefit(p1AnnualEmployment, p1ClaimingAge);
@@ -1808,7 +1808,7 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
 
         // Pension always starts at retirement
         if (isRetired) {
-            p1Pension = financial.pension_benefit || 0;
+            p1Pension = financial.pension_benefit || data.person?.pension_benefit || 0;
             retirementBenefits += p1Pension;
         }
 
@@ -2004,8 +2004,8 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
 
         if (!isRetired && workIncome > 0) {
             // Extract 401k rates from financial data
-            const contributionRate = financial.annual_401k_contribution_rate || 0;
-            const matchRate = financial.employer_match_rate || 0;
+            const contributionRate = financial.annual_401k_contribution_rate || data.person?.annual_401k_contribution_rate || 0;
+            const matchRate = financial.employer_match_rate || data.person?.employer_match_rate || 0;
 
             // Calculate monthly contributions (401k is on salary only, not budget income)
             monthly401kContribution = workIncome * contributionRate;
