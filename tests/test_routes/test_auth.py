@@ -2,7 +2,12 @@
 Integration tests for authentication routes
 """
 
+import secrets
 import pytest
+
+TEST_PASSWORD = "TestPass123"
+TEST_PASSWORD_ALT = f"AuthAlt-{secrets.token_urlsafe(12)}-B2!"
+INVALID_PASSWORD = f"Bad-{secrets.token_urlsafe(12)}-C3!"
 
 
 def test_register_new_user(client, test_db):
@@ -12,7 +17,7 @@ def test_register_new_user(client, test_db):
         json={
             "username": "newuser",
             "email": "new@example.com",
-            "password": "NewPass123",
+            "password": TEST_PASSWORD_ALT,
         },
     )
 
@@ -32,7 +37,7 @@ def test_register_duplicate_username(client, test_user):
         json={
             "username": "testuser",  # Already exists
             "email": "different@example.com",
-            "password": "Pass1234",
+            "password": TEST_PASSWORD_ALT,
         },
     )
 
@@ -49,7 +54,7 @@ def test_register_duplicate_email(client, test_user):
         json={
             "username": "differentuser",
             "email": "test@example.com",  # Already exists
-            "password": "Pass1234",
+            "password": TEST_PASSWORD_ALT,
         },
     )
 
@@ -63,13 +68,13 @@ def test_register_invalid_data(client, test_db):
     """Test registration with invalid data."""
     # Missing username
     response = client.post(
-        "/api/auth/register", json={"email": "test@example.com", "password": "Pass123"}
+        "/api/auth/register", json={"email": "test@example.com", "password": TEST_PASSWORD}
     )
     assert response.status_code == 400
 
     # Missing email
     response = client.post(
-        "/api/auth/register", json={"username": "testuser", "password": "Pass123"}
+        "/api/auth/register", json={"username": "testuser", "password": TEST_PASSWORD}
     )
     assert response.status_code == 400
 
@@ -83,7 +88,7 @@ def test_register_invalid_data(client, test_db):
 def test_login_success(client, test_user):
     """Test successful login."""
     response = client.post(
-        "/api/auth/login", json={"username": "testuser", "password": "TestPass123"}
+        "/api/auth/login", json={"username": "testuser", "password": TEST_PASSWORD}
     )
 
     assert response.status_code == 200
@@ -99,7 +104,7 @@ def test_login_success(client, test_user):
 def test_login_wrong_password(client, test_user):
     """Test login with wrong password."""
     response = client.post(
-        "/api/auth/login", json={"username": "testuser", "password": "WrongPassword"}
+        "/api/auth/login", json={"username": "testuser", "password": INVALID_PASSWORD}
     )
 
     assert response.status_code == 401
@@ -110,7 +115,7 @@ def test_login_wrong_password(client, test_user):
 def test_login_nonexistent_user(client, test_db):
     """Test login with non-existent user."""
     response = client.post(
-        "/api/auth/login", json={"username": "nonexistent", "password": "SomePass123"}
+        "/api/auth/login", json={"username": "nonexistent", "password": INVALID_PASSWORD}
     )
 
     assert response.status_code == 401
@@ -125,7 +130,7 @@ def test_login_missing_credentials(client, test_db):
     assert response.status_code == 400
 
     # Missing username
-    response = client.post("/api/auth/login", json={"password": "TestPass123"})
+    response = client.post("/api/auth/login", json={"password": TEST_PASSWORD})
     assert response.status_code == 400
 
 
@@ -133,7 +138,7 @@ def test_logout(client, test_user):
     """Test logout."""
     # Login first
     response = client.post(
-        "/api/auth/login", json={"username": "testuser", "password": "TestPass123"}
+        "/api/auth/login", json={"username": "testuser", "password": TEST_PASSWORD}
     )
     assert response.status_code == 200
 
@@ -148,7 +153,7 @@ def test_session_check_authenticated(client, test_user):
     """Test session check for authenticated user."""
     # Login
     client.post(
-        "/api/auth/login", json={"username": "testuser", "password": "TestPass123"}
+        "/api/auth/login", json={"username": "testuser", "password": TEST_PASSWORD}
     )
 
     # Check session
@@ -181,7 +186,7 @@ def test_protected_route_with_auth(client, test_user):
     """Test that protected routes work with authentication."""
     # Login
     client.post(
-        "/api/auth/login", json={"username": "testuser", "password": "TestPass123"}
+        "/api/auth/login", json={"username": "testuser", "password": TEST_PASSWORD}
     )
 
     # Access protected route
@@ -193,7 +198,7 @@ def test_login_case_sensitive(client, test_user):
     """Test that login is case-sensitive."""
     response = client.post(
         "/api/auth/login",
-        json={"username": "TestUser", "password": "TestPass123"},  # Wrong case
+        json={"username": "TestUser", "password": TEST_PASSWORD},  # Wrong case
     )
 
     assert response.status_code == 401
@@ -203,7 +208,7 @@ def test_multiple_login_attempts(client, test_user):
     """Test multiple login attempts."""
     # First login
     response1 = client.post(
-        "/api/auth/login", json={"username": "testuser", "password": "TestPass123"}
+        "/api/auth/login", json={"username": "testuser", "password": TEST_PASSWORD}
     )
     assert response1.status_code == 200
 
@@ -212,6 +217,6 @@ def test_multiple_login_attempts(client, test_user):
 
     # Second login
     response2 = client.post(
-        "/api/auth/login", json={"username": "testuser", "password": "TestPass123"}
+        "/api/auth/login", json={"username": "testuser", "password": TEST_PASSWORD}
     )
     assert response2.status_code == 200

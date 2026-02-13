@@ -638,7 +638,10 @@ function renderTaxAnalysis(
                                             <strong>Effective vs Marginal Rate:</strong><br>
                                             • <strong>Marginal rate</strong> is your highest bracket (what the last dollar pays)<br>
                                             • Your <strong>effective rate</strong> is the average across all brackets<br>
-                                            • Example: If you convert $50k and pay $16,359 in tax, that's ${roth_conversion.scenarios[2] ? ((roth_conversion.scenarios[2].conversion_tax / roth_conversion.scenarios[2].conversion_amount) * 100).toFixed(1) : '~32.7'}% effective
+                                            • ${roth_conversion.scenarios[2]
+                                                ? `Example: If you convert ${formatCurrency(roth_conversion.scenarios[2].conversion_amount, 0)} and pay ${formatCurrency(roth_conversion.scenarios[2].conversion_tax, 0)} in federal conversion tax, that's ${((roth_conversion.scenarios[2].conversion_tax / roth_conversion.scenarios[2].conversion_amount) * 100).toFixed(1)}% effective`
+                                                : 'Example: Effective rate is total conversion cost divided by conversion amount'
+                                            }
                                         </div>
                                     </div>
                                 ` : ''}
@@ -729,14 +732,17 @@ function renderTaxAnalysis(
                                     <div style="margin-top: 10px; padding: 6px; border-radius: 4px; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35);">
                                         <div style="font-weight: 600; margin-bottom: 4px;">🧾 Conversion Tax Timeline</div>
                                         <div style="font-size: 10px; margin-bottom: 4px;">
-                                            Total tax ${formatCurrency(roth_conversion.conversion_tax_timeline.total_conversion_tax, 0)},
-                                            Avg/year ${formatCurrency(roth_conversion.conversion_tax_timeline.average_annual_conversion_tax, 0)},
+                                            Federal conversion tax ${formatCurrency(roth_conversion.conversion_tax_timeline.total_conversion_tax, 0)},
+                                            IRMAA ${formatCurrency(roth_conversion.conversion_tax_timeline.total_irmaa_increase || 0, 0)},
+                                            Total plan cost ${formatCurrency(roth_conversion.conversion_tax_timeline.total_plan_cost || roth_conversion.conversion_tax_timeline.total_conversion_tax, 0)},
+                                            Avg/year ${formatCurrency(roth_conversion.conversion_tax_timeline.average_annual_total_cost || roth_conversion.conversion_tax_timeline.average_annual_conversion_tax, 0)},
                                             Peak Y${roth_conversion.conversion_tax_timeline.peak_tax_year}
                                         </div>
                                         ${roth_conversion.conversion_tax_timeline.rows.map((row) => `
-                                            <div style="display: grid; grid-template-columns: 50px 1fr; gap: 6px; padding: 2px 0; font-size: 10px;">
+                                            <div style="display: grid; grid-template-columns: 50px 1fr 1fr; gap: 6px; padding: 2px 0; font-size: 10px;">
                                                 <span>Y${row.year}</span>
-                                                <span>${formatCurrency(row.conversion_tax, 0)}</span>
+                                                <span>Tax ${formatCurrency(row.conversion_tax, 0)}</span>
+                                                <span>Total ${formatCurrency(row.total_cost || row.conversion_tax, 0)}</span>
                                             </div>
                                         `).join('')}
                                     </div>

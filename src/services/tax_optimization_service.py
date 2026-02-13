@@ -1199,24 +1199,41 @@ class TaxOptimizationService:
         rows = ladder.get("rows", [])
         timeline = []
         total_tax = 0.0
+        total_irmaa = 0.0
+        total_plan_cost = 0.0
         peak_year = None
         peak_tax = -1.0
         for row in rows:
             year = int(row.get("year", 0))
             tax = float(row.get("conversion_tax", 0.0))
-            timeline.append({"year": year, "conversion_tax": round(tax, 2)})
+            irmaa = float(row.get("irmaa_increase", max(0.0, float(row.get("total_cost", tax)) - tax)))
+            total_cost = float(row.get("total_cost", tax + irmaa))
+            timeline.append(
+                {
+                    "year": year,
+                    "conversion_tax": round(tax, 2),
+                    "irmaa_increase": round(irmaa, 2),
+                    "total_cost": round(total_cost, 2),
+                }
+            )
             total_tax += tax
+            total_irmaa += irmaa
+            total_plan_cost += total_cost
             if tax > peak_tax:
                 peak_tax = tax
                 peak_year = year
 
         years = len(timeline)
         average_tax = (total_tax / years) if years > 0 else 0.0
+        average_total_cost = (total_plan_cost / years) if years > 0 else 0.0
         concentration_ratio = (peak_tax / average_tax) if average_tax > 0 else 0.0
         return {
             "rows": timeline,
             "total_conversion_tax": round(total_tax, 2),
+            "total_irmaa_increase": round(total_irmaa, 2),
+            "total_plan_cost": round(total_plan_cost, 2),
             "average_annual_conversion_tax": round(average_tax, 2),
+            "average_annual_total_cost": round(average_total_cost, 2),
             "peak_tax_year": peak_year,
             "peak_conversion_tax": round(max(0.0, peak_tax), 2),
             "concentration_ratio": round(concentration_ratio, 2),

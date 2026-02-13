@@ -1,5 +1,5 @@
 {
-    "version": "3.9.287",
+    "version": "3.9.288",
     "release_date": "2026-02-12",
-    "release_notes": "Phase 6 innerHTML user-data hardening and guard expansion"
+    "release_notes": "Tax planner consistency fixes, GitGuardian hygiene guards, and validation tests"
 }

@@ -186,3 +186,64 @@ def test_roth_front_load_recommendation_payload():
     risk_flags = result["conversion_risk_flags"]
     assert "has_risks" in risk_flags
     assert "flags" in risk_flags
+
+
+def test_roth_conversion_timeline_totals_match_ladder_rows():
+    """Timeline aggregates should reconcile exactly to the modeled ladder rows."""
+    service = TaxOptimizationService(filing_status="mfj", state="CA", tax_year=2026)
+    result = service.analyze_roth_conversion(
+        current_taxable_income=109_170,
+        traditional_balance=170_000,
+        ladder_years=5,
+        ladder_growth_rate=0.05,
+        ladder_max_rate=0.24,
+        ladder_income_growth_rate=0.02,
+        safety_buffer=500,
+    )
+
+    ladder_rows = result["conversion_ladder_5y"]["rows"]
+    timeline = result["conversion_tax_timeline"]
+
+    sum_federal_tax = round(sum(float(row.get("conversion_tax", 0.0)) for row in ladder_rows), 2)
+    sum_irmaa = round(sum(float(row.get("irmaa_increase", 0.0)) for row in ladder_rows), 2)
+    sum_total_cost = round(sum(float(row.get("total_cost", 0.0)) for row in ladder_rows), 2)
+
+    assert timeline["total_conversion_tax"] == sum_federal_tax
+    assert timeline["total_irmaa_increase"] == sum_irmaa
+    assert timeline["total_plan_cost"] == sum_total_cost
+
+
+def test_roth_headroom_budget_and_execution_plan_are_consistent():
+    """Headroom, safe budget, and execution plan should stay internally consistent."""
+    service = TaxOptimizationService(filing_status="mfj", state="CA", tax_year=2026)
+    result = service.analyze_roth_conversion(
+        current_taxable_income=109_170,
+        traditional_balance=170_000,
+        ladder_years=5,
+        ladder_growth_rate=0.05,
+        ladder_max_rate=0.24,
+        ladder_income_growth_rate=0.02,
+        safety_buffer=500,
+    )
+
+    headroom_rows = result["bracket_headroom_projection"]["rows"]
+    budget = result["annual_safe_conversion_budget"]
+    budget_rows = budget["rows"]
+    plan = result["conversion_execution_plan"]
+    window = result["conversion_window_summary"]
+
+    assert len(headroom_rows) == len(budget_rows) == len(plan["rows"])
+
+    for headroom, safe in zip(headroom_rows, budget_rows):
+        expected_safe = max(0.0, float(headroom["headroom_to_target_ceiling"]) - float(safe["safety_buffer"]))
+        assert round(float(safe["safe_conversion_budget"]), 2) == round(expected_safe, 2)
+
+    sum_safe_budget = round(sum(float(row["safe_conversion_budget"]) for row in budget_rows), 2)
+    assert budget["total_safe_conversion_budget"] == sum_safe_budget
+
+    near_term_expected = round(sum(float(row["safe_conversion_budget"]) for row in budget_rows[:2]), 2)
+    assert window["near_term_safe_budget"] == near_term_expected
+
+    sum_recommended = round(sum(float(row["recommended_conversion"]) for row in plan["rows"]), 2)
+    assert plan["total_recommended_conversion"] == sum_recommended
+    assert plan["remaining_traditional_balance"] == round(170_000 - sum_recommended, 2)

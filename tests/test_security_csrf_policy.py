@@ -1,10 +1,15 @@
 """CSRF policy tests for auth and event endpoints."""
 
 import os
+import secrets
 import pytest
 
 from src.app import create_app
 from src.auth.models import User
+
+TEST_USER_PASSWORD = f"Csrf-{secrets.token_urlsafe(12)}-A1!"
+TEST_RESET_PASSWORD = f"Reset-{secrets.token_urlsafe(12)}-B2!"
+INVALID_LOGIN_PASSWORD = f"Invalid-{secrets.token_urlsafe(8)}-C3!"
 
 
 @pytest.fixture(scope="function")
@@ -32,7 +37,7 @@ def _create_user():
         id=None,
         username="csrfuser",
         email="csrf@example.com",
-        password_hash=User.hash_password("CsrfPass123"),
+        password_hash=User.hash_password(TEST_USER_PASSWORD),
         email_verified=True,
     )
     user.save()
@@ -42,7 +47,7 @@ def _create_user():
 def _login(client):
     return client.post(
         "/api/auth/login",
-        json={"username": "csrfuser", "password": "CsrfPass123"},
+        json={"username": "csrfuser", "password": TEST_USER_PASSWORD},
     )
 
 
@@ -59,7 +64,7 @@ def test_register_is_csrf_exempt(client_csrf):
         json={
             "username": "csrfnew",
             "email": "csrfnew@example.com",
-            "password": "CsrfPass123",
+            "password": TEST_USER_PASSWORD,
         },
     )
     assert response.status_code == 201
@@ -78,7 +83,7 @@ def test_login_is_csrf_exempt(client_csrf):
     """Login should remain CSRF exempt for unauthenticated flow."""
     response = client_csrf.post(
         "/api/auth/login",
-        json={"username": "missing-user", "password": "bad-pass"},
+        json={"username": "missing-user", "password": INVALID_LOGIN_PASSWORD},
     )
     # Invalid credentials, but not CSRF-blocked.
     assert response.status_code == 401
@@ -94,7 +99,7 @@ def test_password_reset_endpoints_are_csrf_exempt(client_csrf):
 
     reset = client_csrf.post(
         "/api/auth/password-reset/reset",
-        json={"token": "invalid-token", "password": "Newpass123"},
+        json={"token": "invalid-token", "password": TEST_RESET_PASSWORD},
     )
     assert reset.status_code == 400
 
