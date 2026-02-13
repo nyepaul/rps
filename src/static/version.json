@@ -1,5 +1,5 @@
 {
-    "version": "3.9.292",
+    "version": "3.9.293",
     "release_date": "2026-02-13",
-    "release_notes": "feat: click-to-detail modals for 529 + estate planning"
+    "release_notes": "fix: analysis multi-scenario click-to-detail wiring"
 }
