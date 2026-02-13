@@ -1,5 +1,5 @@
 {
-    "version": "3.9.288",
+    "version": "3.9.289",
     "release_date": "2026-02-12",
-    "release_notes": "Tax planner consistency fixes, GitGuardian hygiene guards, and validation tests"
+    "release_notes": "Income stream add-button fix and UI behavior polish"
 }

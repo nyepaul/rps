@@ -104,6 +104,14 @@ export function renderIncomeTab(container) {
 function setupIncomeStreamsHandlers(container, profile, incomeStreams) {
     renderIncomeStreamsList(container, incomeStreams);
 
+    // Add Income button
+    const addIncomeBtn = container.querySelector('#add-income-stream-btn');
+    if (addIncomeBtn) {
+        addIncomeBtn.addEventListener('click', () => {
+            showIncomeStreamModal(container, profile, null, incomeStreams);
+        });
+    }
+
     // Actions dropdown menu
     const actionsBtn = container.querySelector('#income-actions-btn');
     const actionsMenu = container.querySelector('#income-actions-menu');
