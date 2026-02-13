@@ -13,13 +13,11 @@ pass_case() { printf '[PASS] %s\n' "$1"; pass=$((pass + 1)); }
 fail_case() { printf '[FAIL] %s\n' "$1"; fail=$((fail + 1)); }
 
 curl_retry() {
-  # Some environments have flaky IPv6/AAAA resolution; retry forcing IPv4 on DNS errors.
+  # Some environments have flaky DNS; retry and fall back to IPv4 / --resolve.
   local rc out attempt max_attempts
   local url hostport host port ip
-  local -a extra
   max_attempts="${RPS_CURL_RETRIES:-4}"
 
-  # Prefer pinning an IPv4 via --resolve to avoid curl resolver flakiness.
   url="${@: -1}"
   hostport="${url#*://}"
   hostport="${hostport%%/*}"
@@ -28,37 +26,29 @@ curl_retry() {
   if [[ -n "$host" && "$host" == "$hostport" ]]; then
     port=443
   fi
-  if [[ -n "$host" ]]; then
-    if [[ "$host" == "rps.pan2.app" ]]; then
-      # Hardcode known Cloudflare A records to avoid DNS flakiness.
-      extra=( -4 )
-    else
-      # Use getent (more likely to work in constrained environments than dig).
-      ip="$(getent ahostsv4 "$host" 2>/dev/null | awk 'NR==1{print $1}' || true)"
-      if [[ -n "$ip" ]]; then
-        extra=( -4 --resolve "${host}:${port}:${ip}" )
-      else
-        extra=( -4 )
-      fi
-    fi
-  else
-    extra=( -4 )
-  fi
 
   attempt=1
   while [[ "$attempt" -le "$max_attempts" ]]; do
-    # Always alternate between known Cloudflare A records for rps.pan2.app (avoid DNS + single-IP failures).
-    if [[ "$host" == "rps.pan2.app" ]]; then
-      if (( attempt % 2 == 1 )); then
-        extra=( -4 --resolve "${host}:${port}:104.21.44.217" )
-      else
-        extra=( -4 --resolve "${host}:${port}:172.67.203.239" )
-      fi
+    set +e
+    out=$(curl "$@")
+    rc=$?
+
+    # DNS error: try forcing IPv4.
+    if [[ "$rc" -eq 6 ]]; then
+      out=$(curl -4 "$@")
+      rc=$?
     fi
 
-    set +e
-    out=$(curl "${extra[@]}" "$@")
-    rc=$?
+    # If DNS is still failing for the default production host, bypass resolver via --resolve.
+    if [[ "$rc" -eq 6 && "$host" == "rps.pan2.app" ]]; then
+      if (( attempt % 2 == 1 )); then
+        ip="104.21.44.217"
+      else
+        ip="172.67.203.239"
+      fi
+      out=$(curl -4 --resolve "${host}:${port}:${ip}" "$@")
+      rc=$?
+    fi
     set -e
 
     if [[ "$rc" -eq 0 ]]; then
