@@ -82,18 +82,24 @@ call_api 'auth_session' GET '/api/auth/session'
 call_api 'api_version' GET '/api/version'
 call_api 'profiles_list' GET '/api/profiles'
 
-profiles_json=$(cat "$RESP_FILE")
-profiles=$(python3 - <<'PY'
-import json,re,sys
-d=json.loads(sys.stdin.read() or "{}")
-names=[p.get("name","") for p in (d.get("profiles") or []) if p.get("name")]
-rx=sys.argv[1]
+profiles=$(
+  RPS_SMOKE_PROFILE_REGEX="$PROFILE_REGEX" python3 - <<'PY'
+import json, os, re
+from pathlib import Path
+
+d = {}
+p = Path("/tmp/rps_smoke_resp.json")
+if p.exists():
+    d = json.loads(p.read_text() or "{}")
+
+names = [x.get("name", "") for x in (d.get("profiles") or []) if x.get("name")]
+rx = os.environ.get("RPS_SMOKE_PROFILE_REGEX") or ""
 if rx:
-    r=re.compile(rx)
-    names=[n for n in names if r.search(n)]
+    r = re.compile(rx)
+    names = [n for n in names if r.search(n)]
 print("\n".join(names))
 PY
-"$PROFILE_REGEX" <<<"$profiles_json")
+)
 
 if [[ -z "${profiles}" ]]; then
   fail_case "no profiles matched (regex=${PROFILE_REGEX:-<none>})"
@@ -124,6 +130,11 @@ done <<<"$profiles"
 if [[ "$RUN_MUTATIONS" == "1" ]]; then
   # Use the first matched profile for create/delete flows.
   first_profile=$(printf '%s\n' "$profiles" | head -n 1)
+  if [[ -z "$first_profile" ]]; then
+    fail_case "mutations requested but no profile available"
+    info "SUMMARY base=${BASE_URL} user=${USERNAME} pass=${pass} fail=${fail}"
+    exit 2
+  fi
 
   call_api 'scenarios_list' GET '/api/scenarios'
   call_api 'scenario_create' POST '/api/scenarios' "{\"name\":\"API Smoke Scenario\",\"profile_name\":\"${first_profile}\",\"parameters\":{\"simulations\":${SIMS}},\"results\":{\"smoke\":true}}"
@@ -176,4 +187,3 @@ call_api 'auth_logout' POST '/api/auth/logout'
 
 info "SUMMARY base=${BASE_URL} user=${USERNAME} sims=${SIMS} pass=${pass} fail=${fail} mutations=${RUN_MUTATIONS} regex=${PROFILE_REGEX:-<none>}"
 [[ "$fail" -eq 0 ]]
-
