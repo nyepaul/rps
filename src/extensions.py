@@ -27,13 +27,8 @@ def init_extensions(app):
     login_manager.refresh_view = None  # Don't auto-refresh sessions
 
     csrf.init_app(app)
-    # Exempt API routes from CSRF (using session-based auth + CORS instead)
-    csrf.exempt("auth.register")
-    csrf.exempt("auth.login")
-    csrf.exempt("auth.session")
-    csrf.exempt("auth.request_password_reset")
-    csrf.exempt("auth.reset_password")
-    csrf.exempt("auth.validate_reset_token")
+    # Endpoint-level exemptions are declared in route modules.
+    # Keep CSRF policy centralized at the route decorator level to avoid drift.
 
     # Initialize limiter
     # If not enabled, testing, debug mode, or explicitly set to memory, use memory storage

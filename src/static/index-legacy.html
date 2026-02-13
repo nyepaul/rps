@@ -1656,9 +1656,9 @@
             <div style="margin-top: 20px; padding: 15px; background: var(--bg-tertiary); border-radius: 4px; font-size: 13px; color: var(--text-secondary);">
                 <strong>📚 Resources:</strong>
                 <ul style="margin: 10px 0 0 20px; line-height: 1.8;">
-                    <li><a href="https://www.irs.gov/retirement-plans/plan-participant-employee/retirement-topics-required-minimum-distributions-rmds" target="_blank">IRS RMD Rules</a></li>
-                    <li><a href="https://www.irs.gov/retirement-plans/retirement-plans-faqs-regarding-iras-distributions-withdrawals" target="_blank">IRA Distribution Rules</a></li>
-                    <li><a href="https://www.medicare.gov/your-medicare-costs/part-b-costs" target="_blank">Medicare IRMAA Thresholds</a></li>
+                    <li><a href="https://www.irs.gov/retirement-plans/plan-participant-employee/retirement-topics-required-minimum-distributions-rmds" target="_blank" rel="noopener noreferrer">IRS RMD Rules</a></li>
+                    <li><a href="https://www.irs.gov/retirement-plans/retirement-plans-faqs-regarding-iras-distributions-withdrawals" target="_blank" rel="noopener noreferrer">IRA Distribution Rules</a></li>
+                    <li><a href="https://www.medicare.gov/your-medicare-costs/part-b-costs" target="_blank" rel="noopener noreferrer">Medicare IRMAA Thresholds</a></li>
                 </ul>
             </div>
         </div>
@@ -5448,7 +5448,7 @@ Return ONLY the JSON array, no other text.`;
                     let actionLink = '';
                     if (!item.description.includes('<a href')) {
                         const query = encodeURIComponent(`${item.category} ${item.description} guide`);
-                        actionLink = ` <a href="https://www.google.com/search?q=${query}" target="_blank" style="color: #3498db; text-decoration: none; font-size: 12px; border: 1px solid #3498db; padding: 2px 6px; border-radius: 4px; margin-left: 5px;">Search Guide ↗</a>`;
+                        actionLink = ` <a href="https://www.google.com/search?q=${query}" target="_blank" rel="noopener noreferrer" style="color: #3498db; text-decoration: none; font-size: 12px; border: 1px solid #3498db; padding: 2px 6px; border-radius: 4px; margin-left: 5px;">Search Guide ↗</a>`;
                     }
 
                     const isCompleted = item.status === 'completed';
@@ -7071,7 +7071,7 @@ Return ONLY the JSON array, no other text.`;
                                        style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);"
                                        onkeyup="wizardData.p1_ss = this.value">
                                 <p style="font-size: 13px; color: var(--text-secondary); margin-top: 6px;">
-                                    💡 Check your estimate at <a href="https://www.ssa.gov/myaccount/" target="_blank" style="color: var(--accent-color);">ssa.gov/myaccount</a>
+                                    💡 Check your estimate at <a href="https://www.ssa.gov/myaccount/" target="_blank" rel="noopener noreferrer" style="color: var(--accent-color);">ssa.gov/myaccount</a>
                                 </p>
                             </div>
                         </div>

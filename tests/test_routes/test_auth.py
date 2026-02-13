@@ -26,7 +26,7 @@ def test_register_new_user(client, test_db):
 
 
 def test_register_duplicate_username(client, test_user):
-    """Test duplicates are rejected without leaking existence details."""
+    """Test duplicate username gets non-enumerating success response."""
     response = client.post(
         "/api/auth/register",
         json={
@@ -36,14 +36,14 @@ def test_register_duplicate_username(client, test_user):
         },
     )
 
-    assert response.status_code == 400
+    assert response.status_code == 200
     data = response.get_json()
-    assert "error" in data
-    assert data["error"] == "Registration failed. Please review your details and try again."
+    assert "message" in data
+    assert "registration successful" in data["message"].lower()
 
 
 def test_register_duplicate_email(client, test_user):
-    """Test duplicates are rejected without leaking existence details."""
+    """Test duplicate email gets non-enumerating success response."""
     response = client.post(
         "/api/auth/register",
         json={
@@ -53,10 +53,10 @@ def test_register_duplicate_email(client, test_user):
         },
     )
 
-    assert response.status_code == 400
+    assert response.status_code == 200
     data = response.get_json()
-    assert "error" in data
-    assert data["error"] == "Registration failed. Please review your details and try again."
+    assert "message" in data
+    assert "registration successful" in data["message"].lower()
 
 
 def test_register_invalid_data(client, test_db):

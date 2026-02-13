@@ -156,9 +156,25 @@ def register():
 
     # Prevent enumeration by returning the same response for either conflict.
     if User.get_by_username(data.username) or User.get_by_email(data.email):
+        # Log the attempt for security tracking
+        EnhancedAuditLogger.log(
+            action="USER_REGISTER_ENUMERATION_ATTEMPT",
+            details=json.dumps({"username": data.username, "email": data.email}),
+            status_code=200,
+        )
+        
+        # If email exists, notify the user of the attempt
+        existing_user = User.get_by_email(data.email)
+        if existing_user:
+            try:
+                from src.services.email_service import EmailService
+                EmailService.send_registration_attempt_email(existing_user.email)
+            except Exception:
+                pass # Don't delay response for email failures
+
         return (
-            jsonify({"error": "Registration failed. Please review your details and try again."}),
-            400,
+            jsonify({"message": "Registration successful. Please check your email to verify your account."}),
+            200,
         )
 
     # Create user object first to get the correct salt (derived from username + email)

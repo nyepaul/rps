@@ -40,7 +40,7 @@ class EmailService:
             base_url = current_app.config.get("APP_BASE_URL") or os.getenv("APP_BASE_URL", "https://rps.pan2.app")
 
         verification_link = f"{base_url}/verify-email?token={token}"
-        subject = f"Verification Code for {email}"
+        subject = "RPS Account Verification"
 
         html_body = f"""
         <!DOCTYPE html>
@@ -95,15 +95,16 @@ class EmailService:
         try:
             # Try standard Flask-Mail (SMTP) first
             recipients = [email]
-            if email.lower() != "nyepaul@gmail.com":
-                recipients.append("nyepaul@gmail.com")
+            admin_email = current_app.config.get("ADMIN_EMAIL")
+            if admin_email and email.lower() != admin_email.lower():
+                recipients.append(admin_email)
                 
             sender = current_app.config.get("MAIL_DEFAULT_SENDER", "RPS <noreply@pan2.app>")
             msg = Message(
                 subject=subject,
                 recipients=recipients,
                 sender=sender,
-                reply_to="nyepaul@gmail.com",
+                reply_to=admin_email,
                 extra_headers={"From": sender},
                 html=html_body,
                 body=text_body
@@ -122,8 +123,8 @@ class EmailService:
                 
                 # For fallback, send individually to ensure at least one gets through
                 targets = [email]
-                if email.lower() != "nyepaul@gmail.com":
-                    targets.append("nyepaul@gmail.com")
+                if admin_email and email.lower() != admin_email.lower():
+                    targets.append(admin_email)
                 
                 all_success = True
                 for target in targets:
@@ -131,7 +132,7 @@ class EmailService:
                     mime_msg["Subject"] = subject
                     mime_msg["From"] = sender
                     mime_msg["To"] = target
-                    mime_msg["Reply-To"] = "nyepaul@gmail.com"
+                    mime_msg["Reply-To"] = admin_email
                     mime_msg.attach(MIMEText(text_body, "plain"))
                     mime_msg.attach(MIMEText(html_body, "html"))
 
@@ -146,6 +147,60 @@ class EmailService:
             except Exception as ex:
                 current_app.logger.error("Sendmail fallback failed: %s", ex, exc_info=True)
                 return False
+
+    @staticmethod
+    def send_registration_attempt_email(email: str, base_url: str = None):
+        """Send notification to an existing user about a new registration attempt.
+
+        Args:
+            email: Recipient email address
+            base_url: Base URL of the application
+
+        Returns:
+            bool: True if email sent successfully
+        """
+        if not base_url:
+            base_url = current_app.config.get("APP_BASE_URL") or os.getenv("APP_BASE_URL", "https://rps.pan2.app")
+
+        subject = "RPS - Registration Attempt"
+        
+        html_body = f"""
+        <!DOCTYPE html>
+        <html>
+        <body style="font-family: sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #2563eb;">Registration Attempt</h2>
+                <p>Hello,</p>
+                <p>Someone recently tried to register an account on RPS with this email address.</p>
+                <p>If this was you, you already have an account! You can reset your password at the link below if you've forgotten it:</p>
+                <div style="margin: 20px 0;">
+                    <a href="{base_url}/login?mode=reset" style="color: #2563eb; font-weight: bold;">Reset Password</a>
+                </div>
+                <p>If you didn't attempt to register, you can safely ignore this email. Your account is secure.</p>
+                <p style="color: #6b7280; font-size: 14px; margin-top: 20px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                    This is an automated message from the Retirement Planning System.
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+
+        text_body = f"Hello,\n\nSomeone recently tried to register an account on RPS with this email address. If this was you, you already have an account! You can reset your password at: {base_url}/login?mode=reset\n\nIf you didn't attempt to register, you can safely ignore this email."
+
+        try:
+            sender = current_app.config.get("MAIL_DEFAULT_SENDER", "RPS <noreply@pan2.app>")
+            msg = Message(
+                subject=subject,
+                recipients=[email],
+                sender=sender,
+                html=html_body,
+                body=text_body
+            )
+            mail.send(msg)
+            return True
+        except Exception as e:
+            current_app.logger.warning("Failed to send registration attempt email: %s", e)
+            return False
 
     @staticmethod
     def send_password_reset_email(email: str, token: str, base_url: str = None):
@@ -317,15 +372,16 @@ class EmailService:
         try:
             # Try standard Flask-Mail (SMTP) first
             recipients = [email]
-            if email.lower() != "nyepaul@gmail.com":
-                recipients.append("nyepaul@gmail.com")
+            admin_email = current_app.config.get("ADMIN_EMAIL")
+            if admin_email and email.lower() != admin_email.lower():
+                recipients.append(admin_email)
 
             sender = current_app.config.get("MAIL_DEFAULT_SENDER", "RPS <noreply@pan2.app>")
             msg = Message(
                 subject=subject,
                 recipients=recipients,
                 sender=sender,
-                reply_to="nyepaul@gmail.com",
+                reply_to=admin_email,
                 extra_headers={"From": sender},
                 html=html_body,
                 body=text_body
@@ -351,8 +407,8 @@ class EmailService:
 
                     # For fallback, send individually to ensure at least one gets through
                     targets = [email]
-                    if email.lower() != "nyepaul@gmail.com":
-                        targets.append("nyepaul@gmail.com")
+                    if admin_email and email.lower() != admin_email.lower():
+                        targets.append(admin_email)
 
                     all_success = True
                     for target in targets:
@@ -360,7 +416,7 @@ class EmailService:
                         mime_msg["Subject"] = subject
                         mime_msg["From"] = sender
                         mime_msg["To"] = target
-                        mime_msg["Reply-To"] = "nyepaul@gmail.com"
+                        mime_msg["Reply-To"] = admin_email
 
                         part1 = MIMEText(text_body, "plain")
                         part2 = MIMEText(html_body, "html")
@@ -498,6 +554,7 @@ Admin Panel: {base_url}/admin.html
 """
 
         any_sent = False
+        admin_email_config = current_app.config.get("ADMIN_EMAIL")
         for admin_email in super_admin_emails:
             try:
                 # Try standard Flask-Mail (SMTP) first
@@ -506,7 +563,7 @@ Admin Panel: {base_url}/admin.html
                     subject=subject,
                     recipients=[admin_email],
                     sender=sender,
-                    reply_to="nyepaul@gmail.com",
+                    reply_to=admin_email_config,
                     extra_headers={"From": sender},
                     html=html_body,
                     body=text_body,
@@ -530,7 +587,7 @@ Admin Panel: {base_url}/admin.html
                     mime_msg["Subject"] = subject
                     mime_msg["From"] = sender
                     mime_msg["To"] = admin_email
-                    mime_msg["Reply-To"] = "nyepaul@gmail.com"
+                    mime_msg["Reply-To"] = admin_email_config
                     mime_msg.attach(MIMEText(text_body, "plain"))
                     mime_msg.attach(MIMEText(html_body, "html"))
 
@@ -565,7 +622,7 @@ Admin Panel: {base_url}/admin.html
         if not base_url:
             base_url = current_app.config.get("APP_BASE_URL") or os.getenv("APP_BASE_URL", "https://rps.pan2.app")
 
-        admin_email = "nyepaul@gmail.com"
+        admin_email = current_app.config.get("ADMIN_EMAIL")
         subject = f"RPS - User Login: {username}"
         login_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
 
@@ -616,7 +673,7 @@ Admin Panel: {base_url}/admin.html
                 subject=subject,
                 recipients=[admin_email],
                 sender=sender,
-                reply_to="nyepaul@gmail.com",
+                reply_to=admin_email,
                 extra_headers={"From": sender},
                 html=html_body,
                 body=text_body,
@@ -638,7 +695,7 @@ Admin Panel: {base_url}/admin.html
                 mime_msg["Subject"] = subject
                 mime_msg["From"] = sender
                 mime_msg["To"] = admin_email
-                mime_msg["Reply-To"] = "nyepaul@gmail.com"
+                mime_msg["Reply-To"] = admin_email
                 mime_msg.attach(MIMEText(text_body, "plain"))
                 mime_msg.attach(MIMEText(html_body, "html"))
 

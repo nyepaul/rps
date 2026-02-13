@@ -341,7 +341,8 @@ class User(UserMixin):
             self.email_salt = base64.b64encode(email_salt).decode("utf-8")
 
         except Exception as e:
-            print(f"Failed to update email recovery backup: {e}")
+            from flask import current_app
+            current_app.logger.error(f"Failed to update email recovery backup: {e}")
 
     def get_kek_salt(self) -> bytes:
         """Generate deterministic salt from username and email."""
@@ -409,7 +410,8 @@ class User(UserMixin):
                         # Update instance
                         self.encrypted_dek = new_enc_dek
                         self.dek_iv = new_iv
-                        print(
+                        from flask import current_app
+                        current_app.logger.info(
                             f"Migrated user {self.username} to new encryption config (salt + iterations)"
                         )
 

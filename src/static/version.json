@@ -1,5 +1,5 @@
 {
-    "version": "3.9.284",
+    "version": "3.9.285",
     "release_date": "2026-02-12",
-    "release_notes": "Security Phase 4: CI dependency audit workflow (pip-audit)"
+    "release_notes": "Security completion: CSRF policy tests, legacy rel hardening, PII-safe verification subject, dependency pin updates"
 }
