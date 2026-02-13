@@ -2623,7 +2623,7 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
     // Add click handlers to stat items for explanations in all scenarios
     setupStatItemClickHandlers(container);
     setupPlanningCardHelpHandlers(container);
-    setupPlanningCardDetailHandlers(container, planningData);
+    setupPlanningCardDetailHandlers(container, data);
 
     // Render timeline charts for each scenario
     console.log('About to render timeline charts...');
