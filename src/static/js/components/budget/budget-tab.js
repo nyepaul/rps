@@ -4,7 +4,7 @@
  */
 
 import { store } from '../../state/store.js';
-import { showError, showSuccess, showLoading } from '../../utils/dom.js';
+import { showError, showSuccess, showLoading, escapeHtml } from '../../utils/dom.js';
 import { formatCurrency, parseCurrency } from '../../utils/formatters.js';
 import { APP_CONFIG } from '../../config.js';
 import { showAIImportModal } from "../ai/ai-import-modal.js";
@@ -87,7 +87,7 @@ export function renderBudgetTab(container) {
                 <div>
                     <h1 style="margin: 0; font-size: var(--font-2xl);">💸 Expense Management</h1>
                     <p style="color: var(--text-secondary); margin: 0; font-size: 13px;">
-                        Tracking <strong>${profile.name}'s</strong> recurring costs
+                        Tracking <strong>${escapeHtml(profile.name)}'s</strong> recurring costs
                     </p>
                 </div>
                 <div style="display: flex; gap: 8px; align-items: center;">
@@ -422,13 +422,13 @@ function renderAdvisorFeeAssessment(profile) {
             ${rows.map((row) => `
                 <div style="display: grid; grid-template-columns: 90px 1.7fr 1fr 100px 1fr; gap: 8px; align-items: center; padding: 6px 2px; border-bottom: 1px solid var(--border-color);">
                     <label style="display: flex; align-items: center; gap: 5px; font-size: 11px; cursor: pointer;">
-                        <input class="advisor-managed-toggle" data-key="${row.key}" type="checkbox" ${row.managed ? 'checked' : ''}>
-                        <span>${row.group}</span>
+                        <input class="advisor-managed-toggle" data-key="${escapeHtml(row.key)}" type="checkbox" ${row.managed ? 'checked' : ''}>
+                        <span>${escapeHtml(row.group)}</span>
                     </label>
-                    <div style="font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${row.name}">${row.name}</div>
+                    <div style="font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(row.name)}">${escapeHtml(row.name)}</div>
                     <div style="font-size: 12px;">${formatCurrency(row.value, 0)}</div>
                     <div>
-                        <input class="advisor-fee-rate-input" data-key="${row.key}" type="number" min="0" max="10" step="0.01" value="${formatPercentDisplay(row.feeRate)}"
+                        <input class="advisor-fee-rate-input" data-key="${escapeHtml(row.key)}" type="number" min="0" max="10" step="0.01" value="${formatPercentDisplay(row.feeRate)}"
                             style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
                     </div>
                     <div style="font-size: 12px; font-weight: 700; color: ${row.managed ? 'var(--warning-color)' : 'var(--text-secondary)'};">
@@ -510,6 +510,7 @@ function renderCollegeExpensesSection(parentContainer) {
 
     for (let i = 0; i < collegeExpenses.length; i++) {
         const expense = collegeExpenses[i];
+        const safeChildName = escapeHtml(expense.child_name || 'Child');
         const age = currentYear - expense.birth_year;
         const yearsUntilCollege = expense.start_year - currentYear;
 
@@ -523,10 +524,10 @@ function renderCollegeExpensesSection(parentContainer) {
         }
 
         html += `
-            <div class="college-expense-row" data-index="${i}" data-enabled="${expense.enabled}" style="padding: var(--space-2) var(--space-3); background: var(--bg-primary); border-radius: 4px; border: 1px solid ${expense.enabled ? 'var(--border-color)' : 'var(--text-secondary)'}; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; flex-wrap: wrap; gap: var(--space-2); ${expense.enabled ? '' : 'opacity: 0.6;'}"
+            <div class="college-expense-row" data-index="${i}" data-enabled="${expense.enabled}" style="padding: var(--space-2) var(--space-3); background: var(--bg-primary); border-radius: 4px; border: 1px solid ${expense.enabled ? 'var(--border-color)' : 'var(--text-secondary)'}; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; flex-wrap: wrap; gap: var(--space-2); ${expense.enabled ? '' : 'opacity: 0.6;'}">
                 <div style="display: flex; align-items: center; gap: var(--space-2); flex: 1; font-size: var(--font-sm); flex-wrap: wrap;">
                     <span style="font-size: var(--font-md);">🎓</span>
-                    <span style="font-weight: 600;">${expense.child_name}</span>
+                    <span style="font-weight: 600;">${safeChildName}</span>
                     <span style="color: var(--text-secondary);">Age ${age}</span>
                     <span style="color: var(--text-secondary);">${formatCurrency(expense.annual_cost, 0)}/year</span>
                     <span style="font-size: var(--font-xs); margin-left: var(--space-1);">${statusText}</span>
@@ -594,7 +595,7 @@ function makeCollegeExpenseRowEditable(rowElement, expense, index, parentContain
     rowElement.innerHTML = `
         <div style="padding: 10px 12px; background: var(--bg-tertiary); border-radius: 6px; border: 2px solid var(--accent-color);">
             <div style="margin-bottom: 6px; font-weight: 600; font-size: 13px; color: var(--accent-color);">
-                ${expense.child_name} (Age ${age})
+                ${escapeHtml(expense.child_name || 'Child')} (Age ${age})
             </div>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px 10px; margin-bottom: 10px;">
                 <div>
@@ -751,7 +752,7 @@ function showCollegeExpenseModal(parentContainer, index) {
 
     modal.innerHTML = `
         <div style="background: var(--bg-secondary); padding: var(--space-4); border-radius: 8px; max-width: 650px; width: 90%;">
-            <h2 style="margin: 0 0 var(--space-3) 0; font-size: var(--font-lg);">Edit College Expense - ${expense.child_name}</h2>
+            <h2 style="margin: 0 0 var(--space-3) 0; font-size: var(--font-lg);">Edit College Expense - ${escapeHtml(expense.child_name || 'Child')}</h2>
             <form id="college-expense-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-3);">
                 <div style="grid-column: 1 / -1;">
                     <label style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer; font-size: var(--font-sm);">
@@ -1002,7 +1003,7 @@ function showExpenseBreakdownModal(period, title, totalExpenses, accentColor, as
                                 <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-color);">
                                     ${items.map(item => `
                                         <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); padding: 2px 0;">
-                                            <span>${item.name || item.child_name || 'Item'}</span>
+                                            <span>${escapeHtml(item.name || item.child_name || 'Item')}</span>
                                             <span>${formatCurrency(item.annualAmount || item.annual_cost || 0, 0)}/yr</span>
                                         </div>
                                     `).join('')}
@@ -1471,11 +1472,13 @@ function showInvestmentConfigModal(parentContainer) {
  */
 function renderIncomeItem(item, category, index) {
     const amount = annualAmount(item.amount || 0, item.frequency || 'monthly');
+    const safeName = escapeHtml(item.name || 'Unnamed');
+    const safeFrequency = escapeHtml(item.frequency || 'monthly');
     return `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: var(--bg-primary); border-radius: 4px; border: 1px solid var(--border-color);">
             <div style="display: flex; align-items: center; gap: 8px; flex: 1; font-size: 13px;">
-                <span style="font-weight: 500;">${item.name || 'Unnamed'}</span>
-                <span style="color: var(--text-secondary);">${formatCurrency(item.amount || 0)}/${item.frequency || 'monthly'} (${formatCurrency(amount)}/yr)</span>
+                <span style="font-weight: 500;">${safeName}</span>
+                <span style="color: var(--text-secondary);">${formatCurrency(item.amount || 0)}/${safeFrequency} (${formatCurrency(amount)}/yr)</span>
             </div>
             <div style="display: flex; gap: 4px;">
                 <button class="edit-income-btn" data-category="${category}" data-index="${index}" style="padding: 4px 8px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 11px;">
@@ -1638,7 +1641,7 @@ function showIncomeItemModal(parentContainer, category, index) {
             <form id="income-item-form">
                 <div style="margin-bottom: 10px;">
                     <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">Name</label>
-                    <input type="text" id="income-name" value="${item.name}" required
+                    <input type="text" id="income-name" value="${escapeHtml(item.name)}" required
                            style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 13px;">
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
@@ -1659,12 +1662,12 @@ function showIncomeItemModal(parentContainer, category, index) {
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
                     <div>
                         <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">Start Date</label>
-                        <input type="date" id="income-start-date" value="${item.start_date}" required
+                        <input type="date" id="income-start-date" value="${escapeHtml(item.start_date)}" required
                                style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 13px;">
                     </div>
                     <div>
                         <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">End Date (Optional)</label>
-                        <input type="date" id="income-end-date" value="${item.end_date || ''}"
+                        <input type="date" id="income-end-date" value="${escapeHtml(item.end_date || '')}"
                                style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 13px;">
                     </div>
                 </div>
@@ -1862,9 +1865,9 @@ function renderExpenseSection(parentContainer) {
                 html += `
                     <div class="expense-item-row" data-category="${cat.key}" data-index="${index}" style="padding: 4px 6px; background: var(--bg-secondary); border-radius: 3px; border: 1px solid var(--border-color); border-left: 2px solid ${badge.borderColor}; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;">
                         <div style="display: flex; align-items: center; gap: 4px; flex: 1; font-size: 11px; overflow: hidden;">
-                            <span style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${expense.name || cat.label}</span>
-                            ${source !== 'specified' ? `<span style="font-size: 9px;" ${tooltip ? `title="${tooltip}"` : ''}>${badge.text}</span>` : ''}
-                            <span style="color: var(--text-secondary); white-space: nowrap;">${formatCurrency(expense.amount || 0, 0)}/${expense.frequency[0].toLowerCase()}</span>
+                            <span style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(expense.name || cat.label)}</span>
+                            ${source !== 'specified' ? `<span style="font-size: 9px;" ${tooltip ? `title="${escapeHtml(tooltip)}"` : ''}>${badge.text}</span>` : ''}
+                            <span style="color: var(--text-secondary); white-space: nowrap;">${formatCurrency(expense.amount || 0, 0)}/${escapeHtml((expense.frequency || 'monthly')[0].toLowerCase())}</span>
                         </div>
                         <div style="display: flex; gap: 2px; flex-shrink: 0;">
                             <button class="delete-expense-item-btn" data-category="${cat.key}" data-index="${index}" style="padding: 0 4px; background: transparent; border: none; cursor: pointer; font-size: 10px; color: var(--danger-color);" title="Delete">✕</button>
@@ -1955,14 +1958,14 @@ function makeExpenseItemEditable(rowElement, category, index, expense, parentCon
     rowElement.innerHTML = `
         <div style="padding: 10px 12px; background: var(--bg-tertiary); border-radius: 6px; border: 2px solid var(--accent-color);">
             <div style="margin-bottom: 6px; font-weight: 600; font-size: 13px; color: var(--accent-color);">
-                ${categoryLabel}
+                ${escapeHtml(categoryLabel)}
             </div>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px 10px; margin-bottom: 10px;">
                 <div style="grid-column: 1 / -1;">
                     <label style="display: block; font-size: 9px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;">
                         Description / Name
                     </label>
-                    <input type="text" name="name" value="${expense.name || ''}" placeholder="${categoryLabel}"
+                    <input type="text" name="name" value="${escapeHtml(expense.name || '')}" placeholder="${escapeHtml(categoryLabel)}"
                            style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
                 </div>
                 <div>
@@ -1986,14 +1989,14 @@ function makeExpenseItemEditable(rowElement, category, index, expense, parentCon
                     <label style="display: block; font-size: 9px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;">
                         Start Date
                     </label>
-                    <input type="date" name="start_date" value="${defaultStartDate}" ${expense.ongoing !== false ? 'disabled' : ''}
+                    <input type="date" name="start_date" value="${escapeHtml(defaultStartDate)}" ${expense.ongoing !== false ? 'disabled' : ''}
                            style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
                 </div>
                 <div>
                     <label style="display: block; font-size: 9px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;">
                         End Date
                     </label>
-                    <input type="date" name="end_date" value="${defaultEndDate}" ${expense.ongoing !== false ? 'disabled' : ''}
+                    <input type="date" name="end_date" value="${escapeHtml(defaultEndDate)}" ${expense.ongoing !== false ? 'disabled' : ''}
                            style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
                 </div>
                 <div style="grid-column: 1 / -1; display: flex; gap: 10px; flex-wrap: wrap;">

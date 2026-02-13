@@ -6,7 +6,7 @@
 import { store } from '../../state/store.js';
 import { profilesAPI } from '../../api/profiles.js';
 import { formatCurrency, parseCurrency } from '../../utils/formatters.js';
-import { showError, showSuccess } from '../../utils/dom.js';
+import { showError, showSuccess, escapeHtml } from '../../utils/dom.js';
 import { showAIImportModal } from "../ai/ai-import-modal.js";
 import { showTransactionImportModal } from "../transactions/transaction-import-modal.js";
 import { INCOME_CONFIG } from "../../utils/csv-parser.js";
@@ -51,7 +51,7 @@ export function renderIncomeTab(container) {
                 <div style="min-width: 0; flex: 1;">
                     <h1 style="font-size: var(--font-2xl); margin: 0;">💰 Income Streams</h1>
                     <p style="color: var(--text-secondary); margin: 0; font-size: 13px;">
-                        Tracking <strong>${profile.name}'s</strong> recurring income
+                        Tracking <strong>${escapeHtml(profile.name)}'s</strong> recurring income
                     </p>
                 </div>
                 <div style="display: flex; gap: 8px; align-items: center;">
@@ -377,11 +377,13 @@ function renderIncomeStreamRow(stream, index) {
         tooltip = parts.join(' • ');
     }
 
+    const safeStreamName = escapeHtml(stream.name || 'Unnamed');
+    const safeTooltip = tooltip ? `title="${escapeHtml(tooltip)}"` : '';
     return `
         <div class="income-row" data-index="${index}" style="padding: 8px 12px; background: var(--bg-primary); border-radius: 4px; border: 1px solid var(--border-color); border-left: 3px solid ${badge.borderColor}; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; flex-wrap: wrap; gap: var(--space-2);">
             <div style="display: flex; align-items: center; gap: var(--space-2); flex: 1; font-size: 13px; flex-wrap: wrap;">
-                <span style="font-weight: 700;">${stream.name}</span>
-                <span style="display: inline-block; padding: 2px 8px; background: ${badge.color}; color: var(--text-on-badge); border-radius: 12px; font-size: 10px; font-weight: 600;" ${tooltip ? `title="${tooltip}"` : ''}>${badge.text}</span>
+                <span style="font-weight: 700;">${safeStreamName}</span>
+                <span style="display: inline-block; padding: 2px 8px; background: ${badge.color}; color: var(--text-on-badge); border-radius: 12px; font-size: 10px; font-weight: 600;" ${safeTooltip}>${badge.text}</span>
                 <span style="color: var(--text-secondary);">${formatCurrency(stream.amount, 0)}/mo (${formatCurrency(annual, 0)}/yr)</span>
                 <span style="font-size: 11px; color: var(--text-secondary); opacity: 0.8;">${dateInfo}</span>
             </div>
@@ -421,7 +423,7 @@ function makeIncomeRowEditable(rowElement, stream, index, incomeStreams, parentC
                     <label style="display: block; font-size: 9px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;">
                         Name
                     </label>
-                    <input type="text" name="name" value="${stream.name || ''}" required
+                    <input type="text" name="name" value="${escapeHtml(stream.name || '')}" required
                            style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
                 </div>
                 <div>
@@ -435,21 +437,21 @@ function makeIncomeRowEditable(rowElement, stream, index, incomeStreams, parentC
                     <label style="display: block; font-size: 9px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;">
                         Start Date
                     </label>
-                    <input type="date" name="start_date" value="${stream.start_date || ''}"
+                    <input type="date" name="start_date" value="${escapeHtml(stream.start_date || '')}"
                            style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
                 </div>
                 <div>
                     <label style="display: block; font-size: 9px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;">
                         End Date
                     </label>
-                    <input type="date" name="end_date" value="${defaultEndDate}"
+                    <input type="date" name="end_date" value="${escapeHtml(defaultEndDate)}"
                            style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
                 </div>
                 <div style="grid-column: 1 / -1;">
                     <label style="display: block; font-size: 9px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;">
                         Description
                     </label>
-                    <input type="text" name="description" value="${stream.description || ''}"
+                    <input type="text" name="description" value="${escapeHtml(stream.description || '')}"
                            style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
                 </div>
             </div>
@@ -561,7 +563,7 @@ function showIncomeStreamModal(parentContainer, profile, editIndex, incomeStream
             <form id="income-stream-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-4);">
                 <div style="grid-column: 1 / -1;">
                     <label style="display: block; margin-bottom: var(--space-2); font-weight: 500; font-size: var(--font-sm);">Name *</label>
-                    <input type="text" id="stream-name" value="${stream.name}" required placeholder="e.g., Consulting Work, Rental Income"
+                    <input type="text" id="stream-name" value="${escapeHtml(stream.name)}" required placeholder="e.g., Consulting Work, Rental Income"
                            style="width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-base);">
                 </div>
                 <div>
@@ -572,20 +574,20 @@ function showIncomeStreamModal(parentContainer, profile, editIndex, incomeStream
                 </div>
                 <div>
                     <label style="display: block; margin-bottom: var(--space-2); font-weight: 500; font-size: var(--font-sm);">Start Date</label>
-                    <input type="date" id="stream-start-date" value="${stream.start_date || ''}"
+                    <input type="date" id="stream-start-date" value="${escapeHtml(stream.start_date || '')}"
                            style="width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-base);">
                     <small style="color: var(--text-secondary); font-size: var(--font-xs);">When income begins</small>
                 </div>
                 <div>
                     <label style="display: block; margin-bottom: var(--space-2); font-weight: 500; font-size: var(--font-sm);">End Date</label>
-                    <input type="date" id="stream-end-date" value="${stream.end_date || ''}"
+                    <input type="date" id="stream-end-date" value="${escapeHtml(stream.end_date || '')}"
                            style="width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-base);">
                     <small style="color: var(--text-secondary); font-size: var(--font-xs);">Optional end date</small>
                 </div>
                 <div style="grid-column: 1 / -1;">
                     <label style="display: block; margin-bottom: var(--space-2); font-weight: 500; font-size: var(--font-sm);">Description</label>
                     <textarea id="stream-description" placeholder="Optional notes about this income stream"
-                              style="width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-base); min-height: 60px;">${stream.description || ''}</textarea>
+                              style="width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-base); min-height: 60px;">${escapeHtml(stream.description || '')}</textarea>
                 </div>
                 <div style="grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: var(--space-3); padding-top: var(--space-2); border-top: 1px solid var(--border-color);">
                     <button type="button" id="cancel-btn" style="padding: var(--space-2) var(--space-4); background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: var(--font-sm);">

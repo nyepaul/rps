@@ -1,5 +1,5 @@
 {
-    "version": "3.9.286",
+    "version": "3.9.287",
     "release_date": "2026-02-12",
-    "release_notes": "Security closure: frontend sink hardening, runtime print removal, innerHTML guard test"
+    "release_notes": "Phase 6 innerHTML user-data hardening and guard expansion"
 }

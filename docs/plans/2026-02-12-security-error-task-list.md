@@ -1,63 +1,80 @@
-# Security and Error Master Task List (Closed 2026-02-13)
+# Security and Error Master Task List (Vetted 2026-02-13)
 
-Comparison against prior plan complete. Remaining tasks were implemented and verified in this pass.
+Re-verified against current code state and updated after Phase 6 implementation work.
 
-## Status Summary
+## Verification Snapshot
 
-| ID | Item | Status | Evidence |
-|---|---|---|---|
-| 5.1 | Mask final auth error leak | Done | `src/auth/routes.py:1544` returns safe message and logs server-side |
-| 5.2 | Frontend `innerHTML` remediation | Done (phase-2 closure) | Unsafe runtime interpolation paths patched; static guard added |
-| 5.3 | Final `_blank` link hardening | Done | `src/static/js/components/learn/learn-tab.js:218` includes `rel="noopener noreferrer"` |
-| 5.4 | Remove residual `print()` | Done | `src/database/audit_logger.py` now uses logger; no runtime `print()` calls in app services/database |
+- Latest known security regression result: `37 passed` (guard + auth/csrf/security suites).
+- Auth error masking remains in place:
+  - `src/auth/routes.py:1544`
+  - `src/auth/routes.py:1545`
+- CSRF exemption policy tests remain present:
+  - `tests/test_security_csrf_policy.py:77`
+  - `tests/test_security_csrf_policy.py:87`
+- Runtime `print()` calls in core logger paths checked:
+  - `src/database/audit_logger.py` -> none
+  - `src/services/audit_narrative_generator.py` -> none
+- Frontend error-message sink guard exists:
+  - `tests/test_frontend_innerhtml_guard.py`
 
-## Implemented in This Closure Pass
+## Code-vs-Plan Result
 
-### Backend/logging hardening
+### Closed items (verified)
 
-- Replaced runtime `print()` fallback with structured logging:
-- `src/database/audit_logger.py`
-- `src/services/audit_narrative_generator.py`
+1. Auth client error sanitization: closed.
+2. Error/status `innerHTML` hardening phase: closed for direct runtime/server error interpolation class.
+3. `_blank`/`rel` hardening from prior plan: closed in active modules.
+4. Runtime `print()` removal in application logger paths: closed.
 
-### Frontend sink hardening (remaining open paths)
+### Remaining gap (not yet closed)
 
-- Public/auth:
-- `src/static/js/verify-email.js` moved to safe DOM text rendering (`textContent`) for response messages.
+1. None in the previously open Phase 6 scope.
 
-- User/admin roadmap and profile flows:
-- `src/static/js/components/welcome/welcome-tab.js`
-- `src/static/js/components/roadmap/roadmap-viewer.js`
-- `src/static/js/components/admin/roadmap-panel.js`
-- `src/static/js/components/admin/backup-manager.js`
+Implementation notes:
+- User-derived string interpolation in `innerHTML` template sinks was hardened in:
+  - `src/static/js/components/income/income-tab.js`
+  - `src/static/js/components/budget/budget-tab.js`
+  - `src/static/js/components/profile/profile-tab.js`
+- `src/static/js/components/financial-data/financial-data-tab.js` remained in scope and was re-reviewed as safe-static content (no user-provided interpolation).
 
-- Additional hotspot closures discovered during verification:
-- `src/static/js/components/admin/logs-viewer.js`
-- `src/static/js/components/admin/config-editor.js`
-- `src/static/js/components/admin/group-management.js`
-- `src/static/js/components/admin/users-by-location-report.js`
-- `src/static/js/components/admin/user-timeline.js`
-- `src/static/js/components/admin/feedback-viewer.js`
-- `src/static/js/components/admin/demo-management.js`
-- `src/static/js/components/dashboard/dashboard-tab.js`
-- `src/static/js/components/cashflow/cashflow-tab.js`
+## Phase 6 Plan (Status: Implemented)
 
-### CI/static guard (P3)
+### 6.1 Scope Freeze and Classification
 
-- Added regression guard test:
-- `tests/test_frontend_innerhtml_guard.py`
-- Guard prevents direct runtime/server error interpolation patterns inside `innerHTML` template literals.
+1. Build file-level sink inventory for:
+   - `src/static/js/components/income/income-tab.js`
+   - `src/static/js/components/budget/budget-tab.js`
+   - `src/static/js/components/financial-data/financial-data-tab.js`
+   - `src/static/js/components/profile/profile-tab.js`
+2. Classify each interpolation as:
+   - `safe-static`
+   - `safe-escaped`
+   - `unsafe-unescaped`
 
-## Verification
+### 6.2 Remediation Order
 
-- Command:
-- `venv/bin/pytest -q tests/test_frontend_innerhtml_guard.py tests/test_routes/test_auth.py tests/test_security_csrf_policy.py tests/test_security_comprehensive.py tests/exhaustive/test_security_active.py tests/exhaustive/test_selective_backup.py`
-- Result:
-- `37 passed in 64.16s`
+1. P0: inline edit forms and modals where `value="${...}"` is built with `innerHTML`.
+2. P1: list/table row renderers showing names/descriptions/categories.
+3. P2: secondary display-only sections and confirmation/summary modals.
 
-## Exit Criteria Check
+### 6.3 Implementation Standard
 
-- No runtime `print()` calls in application services/database paths: pass.
-- No direct unsafe runtime/server error interpolation into `innerHTML` templates (guarded): pass.
-- CSRF policy tests remain green: pass.
-- Dependency audit status remains previously green in CI: pass.
+1. Prefer DOM construction (`createElement`, `.textContent`, `.setAttribute`) for user data.
+2. If template literals are retained, require explicit escaping helper for every dynamic user field.
+3. Avoid mixed trusted/untrusted interpolation in one template block.
 
+### 6.4 Guardrail Expansion
+
+1. Extend `tests/test_frontend_innerhtml_guard.py` beyond runtime error strings to include user-data tokens in `innerHTML` templates (for example: `stream.`, `item.`, `expense.`, `profile.`, `asset.`, `group.`).
+2. Add allowlist mechanism for reviewed safe-only cases to keep CI actionable.
+
+### 6.5 Exit Criteria
+
+1. No unescaped user-provided fields interpolated into `innerHTML` templates in phase-6 scope files. `Done`
+2. Guard test passes with expanded patterns. `Done`
+3. Security regression suite remains green. `Pending full regression rerun in TBPD step`
+
+## Execution Readiness
+
+- Phase 6 plan implementation is complete in code.
+- Remaining operational steps: TBPD (`test`, `bump`, `push`, `deploy`) and post-deploy verification.

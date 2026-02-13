@@ -4,7 +4,7 @@
 
 import { profilesAPI } from '../../api/profiles.js';
 import { store } from '../../state/store.js';
-import { showSuccess, showError, showSpinner, hideSpinner } from '../../utils/dom.js';
+import { showSuccess, showError, showSpinner, hideSpinner, escapeHtml } from '../../utils/dom.js';
 import { setupContextualHelp } from '../../utils/contextual-help.js';
 import { setFieldError, setFieldWarning, clearFieldError, validateAge } from '../../utils/validation.js';
 import { loadTemplate } from '../../utils/template-loader.js';
@@ -353,11 +353,12 @@ function setupSmartDefaults(container) {
                 const response = await fetch('https://ipapi.co/json/');
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.region_code && data.country_code === 'US') {
+                    const regionCode = typeof data.region_code === 'string' ? data.region_code.trim().toUpperCase() : '';
+                    if (/^[A-Z]{2}$/.test(regionCode) && data.country_code === 'US') {
                         // Check if the option exists
-                        const option = stateSelect.querySelector(`option[value="${data.region_code}"]`);
+                        const option = stateSelect.querySelector(`option[value="${regionCode}"]`);
                         if (option) {
-                            stateSelect.value = data.region_code;
+                            stateSelect.value = regionCode;
                             
                             // Visual cue
                             stateSelect.style.transition = 'background-color 0.5s';
@@ -411,7 +412,7 @@ function addChildToForm(container, child = {}, index = null) {
             <div class="form-grid">
                 <div class="form-group">
                     <label for="child_${newIndex}_name">Name</label>
-                    <input id="child_${newIndex}_name" type="text" name="child_${newIndex}_name" value="${child.name || ''}" placeholder="Optional">
+                    <input id="child_${newIndex}_name" type="text" name="child_${newIndex}_name" value="${escapeHtml(child.name || '')}" placeholder="Optional">
                 </div>
                 <div class="form-group">
                     <label for="child_${newIndex}_birth_year">Birth Year</label>
@@ -419,7 +420,7 @@ function addChildToForm(container, child = {}, index = null) {
                 </div>
                 <div class="form-group" style="grid-column: span 2;">
                     <label for="child_${newIndex}_notes">Notes</label>
-                    <input id="child_${newIndex}_notes" type="text" name="child_${newIndex}_notes" value="${child.notes || ''}" placeholder="e.g., College 2028-2032">
+                    <input id="child_${newIndex}_notes" type="text" name="child_${newIndex}_notes" value="${escapeHtml(child.notes || '')}" placeholder="e.g., College 2028-2032">
                 </div>
             </div>
         </div>
