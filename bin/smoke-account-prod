@@ -1,0 +1,179 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Generic production smoke runner for ANY account.
+# Defaults are safe/non-mutating: it validates endpoints across *all* profiles.
+#
+# Usage:
+#   RPS_SMOKE_USER=demo RPS_SMOKE_PASS=Demo1234 bin/smoke-account-prod
+#   RPS_SMOKE_USER=paul RPS_SMOKE_PASS=Paul1234 bin/smoke-account-prod
+#   RPS_SMOKE_MUTATIONS=1 RPS_SMOKE_USER=demo RPS_SMOKE_PASS=Demo1234 bin/smoke-account-prod
+#
+# Optional:
+#   RPS_SMOKE_SIMS=1000
+#   RPS_SMOKE_PROFILE_REGEX='^(Demo|Paul)$'
+
+BASE_URL="${1:-https://rps.pan2.app}"
+USERNAME="${RPS_SMOKE_USER:-demo}"
+PASSWORD="${RPS_SMOKE_PASS:-Demo1234}"
+SIMS="${RPS_SMOKE_SIMS:-1000}"
+PROFILE_REGEX="${RPS_SMOKE_PROFILE_REGEX:-}"
+RUN_MUTATIONS="${RPS_SMOKE_MUTATIONS:-0}"
+
+COOKIE_JAR="/tmp/rps_smoke_cookie.txt"
+RESP_FILE="/tmp/rps_smoke_resp.json"
+
+pass=0
+fail=0
+csrf=""
+
+info() { printf '%s\n' "$*"; }
+pass_case() { info "[PASS] $1"; pass=$((pass + 1)); }
+fail_case() { info "[FAIL] $1"; fail=$((fail + 1)); }
+
+call_api() {
+  local name="$1" method="$2" path="$3" payload="${4:-}"
+  local code body
+  local -a headers=( -H "Referer: ${BASE_URL}/" -H "Origin: ${BASE_URL}" )
+
+  if [[ "$method" != "GET" && -n "$csrf" ]]; then
+    headers+=( -H "X-CSRF-Token: ${csrf}" )
+  fi
+
+  if [[ -n "$payload" ]]; then
+    code=$(curl -sS -o "$RESP_FILE" -w '%{http_code}' -c "$COOKIE_JAR" -b "$COOKIE_JAR" "${headers[@]}" -H 'Content-Type: application/json' -X "$method" "${BASE_URL}${path}" -d "$payload")
+  else
+    code=$(curl -sS -o "$RESP_FILE" -w '%{http_code}' -c "$COOKIE_JAR" -b "$COOKIE_JAR" "${headers[@]}" -X "$method" "${BASE_URL}${path}")
+  fi
+
+  body=$(cat "$RESP_FILE" 2>/dev/null || true)
+  if [[ "$code" == "200" || "$code" == "201" || "$code" == "204" ]]; then
+    pass_case "${name} (${code})"
+    return 0
+  fi
+
+  fail_case "${name} (${code}) body=${body}"
+  return 1
+}
+
+rm -f "$COOKIE_JAR" "$RESP_FILE"
+
+call_api 'auth_login' POST '/api/auth/login' "{\"username\":\"${USERNAME}\",\"password\":\"${PASSWORD}\"}"
+call_api 'get_csrf' GET '/api/csrf'
+csrf=$(python3 - <<'PY'
+import json
+from pathlib import Path
+p=Path('/tmp/rps_smoke_resp.json')
+if p.exists():
+    d=json.loads(p.read_text())
+    print(d.get('csrf_token',''))
+else:
+    print('')
+PY
+)
+
+if [[ -z "$csrf" ]]; then
+  fail_case 'csrf token missing'
+  info "SUMMARY base=${BASE_URL} user=${USERNAME} pass=${pass} fail=${fail}"
+  exit 2
+fi
+
+call_api 'auth_session' GET '/api/auth/session'
+call_api 'api_version' GET '/api/version'
+call_api 'profiles_list' GET '/api/profiles'
+
+profiles_json=$(cat "$RESP_FILE")
+profiles=$(python3 - <<'PY'
+import json,re,sys
+d=json.loads(sys.stdin.read() or "{}")
+names=[p.get("name","") for p in (d.get("profiles") or []) if p.get("name")]
+rx=sys.argv[1]
+if rx:
+    r=re.compile(rx)
+    names=[n for n in names if r.search(n)]
+print("\n".join(names))
+PY
+"$PROFILE_REGEX" <<<"$profiles_json")
+
+if [[ -z "${profiles}" ]]; then
+  fail_case "no profiles matched (regex=${PROFILE_REGEX:-<none>})"
+  info "SUMMARY base=${BASE_URL} user=${USERNAME} pass=${pass} fail=${fail}"
+  exit 2
+fi
+
+while IFS= read -r profile_name; do
+  [[ -z "$profile_name" ]] && continue
+  info "-- profile=${profile_name} --"
+  profile_enc=$(python3 - <<'PY' "$profile_name"
+import urllib.parse,sys
+print(urllib.parse.quote(sys.argv[1], safe=''))
+PY
+)
+
+  call_api 'profile_get' GET "/api/profile/${profile_enc}"
+
+  call_api 'analysis_run' POST '/api/analysis' "{\"profile_name\":\"${profile_name}\",\"simulations\":${SIMS},\"spending_model\":\"constant_real\"}"
+  call_api 'analysis_cashflow' POST '/api/analysis/cashflow-details' "{\"profile_name\":\"${profile_name}\",\"simulations\":${SIMS},\"spending_model\":\"constant_real\"}"
+  call_api 'analysis_calculation_report' POST '/api/analysis/calculation-report' "{\"profile_name\":\"${profile_name}\",\"simulations\":${SIMS},\"spending_model\":\"constant_real\"}"
+
+  # Tax endpoints can be slower; still validate them per-profile since they are relied on for "source of truth".
+  call_api 'tax_analyze' POST '/api/tax-optimization/analyze' "{\"profile_name\":\"${profile_name}\"}"
+  call_api 'tax_snapshot' POST '/api/tax-optimization/snapshot' "{\"profile_name\":\"${profile_name}\"}"
+done <<<"$profiles"
+
+if [[ "$RUN_MUTATIONS" == "1" ]]; then
+  # Use the first matched profile for create/delete flows.
+  first_profile=$(printf '%s\n' "$profiles" | head -n 1)
+
+  call_api 'scenarios_list' GET '/api/scenarios'
+  call_api 'scenario_create' POST '/api/scenarios' "{\"name\":\"API Smoke Scenario\",\"profile_name\":\"${first_profile}\",\"parameters\":{\"simulations\":${SIMS}},\"results\":{\"smoke\":true}}"
+  scenario_id=$(python3 - <<'PY'
+import json
+from pathlib import Path
+p=Path('/tmp/rps_smoke_resp.json')
+try:
+    d=json.loads(p.read_text())
+except Exception:
+    d={}
+print((d.get('scenario') or {}).get('id') or '')
+PY
+)
+  if [[ -n "$scenario_id" ]]; then
+    call_api 'scenario_get' GET "/api/scenario/${scenario_id}"
+    call_api 'scenario_update' PUT "/api/scenario/${scenario_id}" '{"name":"API Smoke Scenario Updated"}'
+    call_api 'scenario_delete' DELETE "/api/scenario/${scenario_id}"
+  else
+    fail_case 'scenario_create_no_id'
+  fi
+
+  call_api 'action_items_list' GET '/api/action-items'
+  call_api 'action_items_generate' POST '/api/action-items/generate' "{\"profile_name\":\"${first_profile}\"}"
+  call_api 'action_item_create' POST '/api/action-items' "{\"profile_name\":\"${first_profile}\",\"title\":\"Smoke test action item\",\"category\":\"test\",\"priority\":\"low\",\"status\":\"pending\"}"
+  item_id=$(python3 - <<'PY'
+import json
+from pathlib import Path
+p=Path('/tmp/rps_smoke_resp.json')
+try:
+    d=json.loads(p.read_text())
+except Exception:
+    d={}
+print((d.get('action_item') or {}).get('id') or '')
+PY
+)
+  if [[ -n "$item_id" ]]; then
+    call_api 'action_item_get' GET "/api/action-item/${item_id}"
+    call_api 'action_item_update' PUT "/api/action-item/${item_id}" '{"status":"completed"}'
+    call_api 'action_item_delete' DELETE "/api/action-item/${item_id}"
+  else
+    fail_case 'action_item_create_no_id'
+  fi
+fi
+
+call_api 'home_ownership_scenarios_list' GET '/api/home-ownership/scenarios'
+call_api 'skills_list' GET '/api/skills'
+call_api 'roadmap_public' GET '/api/roadmap/public'
+call_api 'auth_logout' POST '/api/auth/logout'
+
+info "SUMMARY base=${BASE_URL} user=${USERNAME} sims=${SIMS} pass=${pass} fail=${fail} mutations=${RUN_MUTATIONS} regex=${PROFILE_REGEX:-<none>}"
+[[ "$fail" -eq 0 ]]
+

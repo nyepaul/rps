@@ -16,18 +16,41 @@ import os
 import sqlite3
 import json
 import bcrypt
+from pathlib import Path
 from datetime import datetime, timedelta
 
 # Add project root to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-DB_PATH = '/var/www/rps.pan2.app/data/planning.db'
-# Fallback for local dev
-if not os.path.exists(DB_PATH):
-    DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'planning.db')
+def _resolve_db_path() -> str:
+    """Resolve the SQLite DB path safely.
+
+    Priority:
+    1) Explicit env override (supports local/prod automation).
+    2) Docker layout (/app/data).
+    3) Repo/installation layout (../data/planning.db from this script).
+    """
+    env_path = os.environ.get("RPS_DB_PATH") or os.environ.get("DATABASE_PATH")
+    if env_path:
+        return env_path
+
+    if os.path.exists("/app/data"):
+        return "/app/data/planning.db"
+
+    base_dir = Path(__file__).resolve().parent.parent
+    return str(base_dir / "data" / "planning.db")
+
+
+DB_PATH = _resolve_db_path()
 
 def seed_demo_data():
     print(f"Seeding full demo data into: {DB_PATH}")
+
+    # Safety: don't accidentally create a new empty DB due to a bad path.
+    if not os.path.exists(DB_PATH):
+        print(f"ERROR: DB file not found: {DB_PATH}", file=sys.stderr)
+        print("Set RPS_DB_PATH to override the location.", file=sys.stderr)
+        raise SystemExit(2)
 
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
