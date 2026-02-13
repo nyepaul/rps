@@ -152,6 +152,60 @@ def test_update_profile(client, test_user, test_profile):
     assert data["profile"]["data"]["financial"]["annual_income"] == 150000
 
 
+def test_update_profile_rejects_gifts_above_annual_exclusion_without_override(client, test_user, test_profile):
+    """Gifts are special: exceeding annual exclusion should be blocked unless explicitly allowed."""
+    client.post(
+        "/api/auth/login", json={"username": "testuser", "password": "TestPass123"}
+    )
+
+    # 2 children, spouse present => donors=2, beneficiaries=2, exclusion default=18000 => allowed=72000/yr
+    new_data = {
+        **(test_profile.data_dict or {}),
+        "spouse": {"name": "Spouse Person", "birth_date": "1981-01-01"},
+        "children": [{"name": "Kid1", "birth_date": "2010-01-01"}, {"name": "Kid2", "birth_date": "2012-01-01"}],
+        "budget": {
+            "expenses": {
+                "current": {"gifts": [{"name": "Gifts to sons", "amount": 100000, "frequency": "annual"}]},
+                "future": {},
+            }
+        },
+    }
+
+    resp = client.put(
+        f"/api/profile/{test_profile.name}",
+        json={"data": new_data},
+    )
+    assert resp.status_code == 400
+    body = resp.get_json()
+    assert "annual exclusion" in (body.get("error") or "").lower()
+
+
+def test_update_profile_allows_gifts_above_annual_exclusion_with_override(client, test_user, test_profile):
+    """If user explicitly allows above-exclusion gifting, updates should proceed."""
+    client.post(
+        "/api/auth/login", json={"username": "testuser", "password": "TestPass123"}
+    )
+
+    new_data = {
+        **(test_profile.data_dict or {}),
+        "spouse": {"name": "Spouse Person", "birth_date": "1981-01-01"},
+        "children": [{"name": "Kid1", "birth_date": "2010-01-01"}, {"name": "Kid2", "birth_date": "2012-01-01"}],
+        "budget": {
+            "gifting_policy": {"allow_above_annual_exclusion": True},
+            "expenses": {
+                "current": {"gifts": [{"name": "Gifts to sons", "amount": 100000, "frequency": "annual"}]},
+                "future": {},
+            }
+        },
+    }
+
+    resp = client.put(
+        f"/api/profile/{test_profile.name}",
+        json={"data": new_data},
+    )
+    assert resp.status_code == 200
+
+
 def test_update_profile_not_found(client, test_user):
     """Test updating non-existent profile."""
     # Login

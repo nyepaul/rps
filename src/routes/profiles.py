@@ -19,6 +19,91 @@ from src.utils.error_sanitizer import sanitize_pydantic_error
 
 profiles_bp = Blueprint("profiles", __name__, url_prefix="/api")
 
+def _annualize_amount(amount, frequency: str) -> float:
+    try:
+        amt = float(amount or 0.0)
+    except Exception:
+        amt = 0.0
+    freq = (frequency or "monthly").strip().lower()
+    if freq in ("monthly", "m"):
+        return amt * 12.0
+    if freq in ("quarterly", "q"):
+        return amt * 4.0
+    if freq in ("weekly", "w"):
+        return amt * 52.0
+    if freq in ("biweekly", "bw"):
+        return amt * 26.0
+    if freq in ("semi-annual", "semiannual", "s"):
+        return amt * 2.0
+    if freq in ("annual", "yearly", "a", "y"):
+        return amt
+    # Default: treat unknown frequency as annual to avoid inflating.
+    return amt
+
+
+def _sum_annual_budget_gifts(budget: dict, period: str) -> float:
+    """Sum annualized Gifts spending for a budget period."""
+    expenses = (budget or {}).get("expenses") or {}
+    period_exp = (expenses.get(period) or {}) if isinstance(expenses, dict) else {}
+    gifts = period_exp.get("gifts")
+    if gifts is None:
+        return 0.0
+
+    items = []
+    if isinstance(gifts, list):
+        items = gifts
+    elif isinstance(gifts, dict) and gifts.get("amount") is not None:
+        # Legacy single-object format
+        items = [gifts]
+
+    total = 0.0
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        total += _annualize_amount(item.get("amount"), item.get("frequency"))
+    return float(total)
+
+
+def _validate_budget_gifting_policy(profile_data: dict) -> Optional[str]:
+    """Validate annual-exclusion gifting guardrails for budget 'gifts'."""
+    budget = (profile_data or {}).get("budget") or {}
+    gifting_policy = (budget.get("gifting_policy") or {}) if isinstance(budget, dict) else {}
+    allow_above = bool(gifting_policy.get("allow_above_annual_exclusion"))
+    if allow_above:
+        return None
+
+    # User override: allow changing the annual exclusion without code changes.
+    tax_settings = (profile_data or {}).get("tax_settings") or {}
+    exclusion = tax_settings.get("annual_gift_exclusion")
+    if exclusion is None:
+        exclusion = tax_settings.get("annual_gift_exclusion_per_donor_per_recipient")
+    try:
+        exclusion_amt = float(exclusion) if exclusion is not None else 18000.0
+    except Exception:
+        exclusion_amt = 18000.0
+
+    spouse = (profile_data or {}).get("spouse") or {}
+    has_spouse = bool(spouse.get("name") or spouse.get("birth_date"))
+    donors = 2 if has_spouse else 1
+    children = (profile_data or {}).get("children") or []
+    beneficiaries = len(children) if isinstance(children, list) and children else 1
+
+    allowed_annual = exclusion_amt * donors * beneficiaries
+    planned_current = _sum_annual_budget_gifts(budget, "current")
+    planned_future = _sum_annual_budget_gifts(budget, "future")
+
+    eps = 1e-6
+    if planned_current > allowed_annual + eps or planned_future > allowed_annual + eps:
+        return (
+            f"Planned Gifts exceed the annual exclusion modeled by the app. "
+            f"Allowed (annual exclusion): {allowed_annual:,.0f}/yr "
+            f"(exclusion {exclusion_amt:,.0f} x donors {donors} x beneficiaries {beneficiaries}). "
+            f"Planned: current {planned_current:,.0f}/yr, future {planned_future:,.0f}/yr. "
+            f"Reduce Gifts, adjust beneficiaries/donors inputs, or set budget.gifting_policy.allow_above_annual_exclusion=true "
+            f"(may require Form 709 / uses lifetime exemption)."
+        )
+    return None
+
 
 class ProfileCreateSchema(BaseModel):
     """Schema for creating a profile."""
@@ -296,6 +381,22 @@ def update_profile(name: str):
                 else:
                     # No api_keys in incoming data, preserve existing
                     new_data["api_keys"] = existing_data["api_keys"]
+
+            # Validate gifting guardrails (treat as "edit check" for wealth transfer planning).
+            gifting_error = None
+            try:
+                if isinstance(new_data, dict) and "budget" in new_data:
+                    gifting_error = _validate_budget_gifting_policy(new_data)
+            except Exception:
+                gifting_error = None
+
+            if gifting_error:
+                enhanced_audit_logger.log(
+                    action="UPDATE_PROFILE_GIFTING_VALIDATION_ERROR",
+                    details={"profile_name": name, "error": gifting_error},
+                    status_code=400,
+                )
+                return jsonify({"error": gifting_error}), 400
             profile.data = new_data
 
         profile.save()

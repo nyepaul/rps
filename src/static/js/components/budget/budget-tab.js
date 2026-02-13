@@ -1201,6 +1201,35 @@ function annualAmount(amount, frequency) {
     return amount; // Default to annual
 }
 
+function getAnnualGiftsForPeriod(budget, period) {
+    const expenses = budget?.expenses?.[period] || {};
+    const gifts = expenses?.gifts;
+    if (!gifts) return 0;
+
+    const items = Array.isArray(gifts) ? gifts : (gifts?.amount !== undefined ? [gifts] : []);
+    return items.reduce((sum, item) => {
+        if (!item) return sum;
+        const amt = Number(item.amount || 0);
+        const freq = item.frequency || 'monthly';
+        return sum + annualAmount(amt, freq);
+    }, 0);
+}
+
+function getAnnualGiftExclusionLimit(profile) {
+    const taxSettings = profile?.data?.tax_settings || {};
+    const override = taxSettings.annual_gift_exclusion ?? taxSettings.annual_gift_exclusion_per_donor_per_recipient;
+    const exclusion = Number(override || 18000);
+
+    const spouse = profile?.data?.spouse || {};
+    const hasSpouse = Boolean(spouse?.name || spouse?.birth_date);
+    const donors = hasSpouse ? 2 : 1;
+
+    const children = profile?.data?.children || [];
+    const beneficiaries = Array.isArray(children) && children.length ? children.length : 1;
+
+    return { exclusion, donors, beneficiaries, allowedAnnual: exclusion * donors * beneficiaries };
+}
+
 /**
  * Render Income Section
  */
@@ -2955,6 +2984,31 @@ async function saveBudget(profile, container) {
         if (saveBtn) {
             saveBtn.disabled = true;
             saveBtn.textContent = 'Saving...';
+        }
+
+        // Edit-check for gifting: annual exclusion guardrail.
+        // Gifts are not a normal "random expense" for most users; exceeding annual exclusion typically has filing implications.
+        if (!budgetData.gifting_policy) budgetData.gifting_policy = {};
+        const allowAbove = Boolean(budgetData.gifting_policy.allow_above_annual_exclusion);
+        const { allowedAnnual, exclusion, donors, beneficiaries } = getAnnualGiftExclusionLimit(profile);
+        const plannedCurrent = getAnnualGiftsForPeriod(budgetData, 'current');
+        const plannedFuture = getAnnualGiftsForPeriod(budgetData, 'future');
+        const eps = 1e-6;
+
+        if (!allowAbove && (plannedCurrent > allowedAnnual + eps || plannedFuture > allowedAnnual + eps)) {
+            const msg =
+                `Planned Gifts exceed the annual exclusion modeled by the app.\n\n` +
+                `Allowed (annual exclusion): $${Math.round(allowedAnnual).toLocaleString()}/yr ` +
+                `($${Math.round(exclusion).toLocaleString()} x donors ${donors} x beneficiaries ${beneficiaries}).\n` +
+                `Planned: current $${Math.round(plannedCurrent).toLocaleString()}/yr, ` +
+                `future $${Math.round(plannedFuture).toLocaleString()}/yr.\n\n` +
+                `This may require Form 709 / uses lifetime exemption.\n\n` +
+                `Press OK to allow gifts above annual exclusion and save anyway. Press Cancel to revise.`;
+
+            if (!window.confirm(msg)) {
+                throw new Error('Gifts exceed annual exclusion (revise Gifts or allow above-exclusion gifting).');
+            }
+            budgetData.gifting_policy.allow_above_annual_exclusion = true;
         }
 
         // Import profiles API
