@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Release gate: one command to validate local + production checks before deploying.
+#
+# Runs:
+# - Local: ./bin/check-quality-gates + full pytest via ./bin/test
+# - Prod: UI link checks + account/profile smoke checks (demo + paul)
+#
+# Usage:
+#   ./bin/release-gate
+#
+# Env:
+#   RPS_BASE_URL=https://rps.pan2.app
+#   RPS_SMOKE_DEMO_PASS=Demo1234          (optional; defaults to Demo1234)
+#   RPS_SMOKE_PAUL_PASS=...              (required to run paul checks)
+#   RPS_RELEASE_SIMS=1000                (optional)
+#   RPS_RELEASE_RETRIES=3                (optional; retries flaky network checks)
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
+
+BASE_URL="${RPS_BASE_URL:-https://rps.pan2.app}"
+SIMS="${RPS_RELEASE_SIMS:-1000}"
+RETRIES="${RPS_RELEASE_RETRIES:-3}"
+
+DEMO_USER="demo"
+DEMO_PASS="${RPS_SMOKE_DEMO_PASS:-Demo1234}"
+PAUL_USER="paul"
+PAUL_PASS="${RPS_SMOKE_PAUL_PASS:-}"
+
+info() { printf '%s\n' "$*"; }
+
+retry() {
+  local name="$1"
+  shift
+
+  local i
+  i=1
+  while [[ "$i" -le "$RETRIES" ]]; do
+    if "$@"; then
+      return 0
+    fi
+    info "[WARN] ${name} failed (attempt ${i}/${RETRIES})"
+    sleep "$(python3 - <<PY
+print(f"{0.8 * $i:.1f}")
+PY
+)"
+    i=$((i + 1))
+  done
+  info "[FAIL] ${name} failed after ${RETRIES} attempts"
+  return 1
+}
+
+info "==> Local quality gates"
+./bin/check-quality-gates
+
+info "==> Local full test suite (pytest)"
+./bin/test -q
+
+info "==> Production sanity: version"
+curl -sS "${BASE_URL}/api/version" >/dev/null
+
+info "==> Production UI links"
+retry "check-ui-links-prod" ./bin/check-ui-links-prod "$BASE_URL"
+
+info "==> Production smoke: demo (all profiles)"
+retry "smoke-account-prod demo" env \
+  RPS_SMOKE_SIMS="$SIMS" \
+  RPS_SMOKE_USER="$DEMO_USER" \
+  RPS_SMOKE_PASS="$DEMO_PASS" \
+  ./bin/smoke-account-prod "$BASE_URL"
+
+if [[ -n "$PAUL_PASS" ]]; then
+  info "==> Production smoke: paul (all profiles)"
+  retry "smoke-account-prod paul" env \
+    RPS_SMOKE_SIMS="$SIMS" \
+    RPS_SMOKE_USER="$PAUL_USER" \
+    RPS_SMOKE_PASS="$PAUL_PASS" \
+    ./bin/smoke-account-prod "$BASE_URL"
+else
+  info "==> Skipping paul production smoke (set RPS_SMOKE_PAUL_PASS to enable)"
+fi
+
+info "==> RELEASE GATE PASSED"
+

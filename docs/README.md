@@ -53,6 +53,7 @@ For a detailed map of the project, see **[architecture/PROJECT_STRUCTURE.md](arc
 ./tests/run_comprehensive_tests.sh   # Run comprehensive test suite
 ./bin/check-quality-gates            # Run CI-equivalent quality gates
 ./bin/test                           # Run full pytest (uses repo venv)
+./bin/release-gate                   # Run local + production pre-deploy checks
 ```
 
 ## Need Help?
