@@ -1,5 +1,5 @@
 import { apiClient } from '../../api/client.js';
-import { showError, showSuccess, copyToClipboard } from '../../utils/dom.js';
+import { showError, showSuccess, copyToClipboard, escapeHtml } from '../../utils/dom.js';
 
 export function renderPasswordRequests(container) {
     container.innerHTML = `
@@ -40,7 +40,8 @@ async function loadRequests() {
         const requests = await apiClient.get('/api/admin/password-requests');
         renderTable(requests);
     } catch (error) {
-        document.getElementById('requestsTableContainer').innerHTML = `<div class="error" style="color: var(--danger-color); padding: 10px; background: var(--danger-bg); border-radius: 6px; font-size: 13px;">Failed to load requests: ${error.message}</div>`;
+        const safeErrorMessage = escapeHtml(error?.message || 'Unknown error');
+        document.getElementById('requestsTableContainer').innerHTML = `<div class="error" style="color: var(--danger-color); padding: 10px; background: var(--danger-bg); border-radius: 6px; font-size: 13px;">Failed to load requests: ${safeErrorMessage}</div>`;
     }
 }
 

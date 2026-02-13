@@ -1541,7 +1541,8 @@ def change_password():
         )
 
     except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+        _log_auth_exception("Invalid password change request", e)
+        return jsonify({"error": "Invalid password change request"}), 400
     except Exception as e:
         _log_auth_exception("Error changing password", e)
         return jsonify({"error": "Failed to change password"}), 500

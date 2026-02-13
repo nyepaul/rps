@@ -1,12 +1,21 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const messageDiv = document.getElementById('message');
     const spinner = document.getElementById('spinner');
+
+    const setMessage = (kind, message) => {
+        if (!messageDiv) return;
+        messageDiv.replaceChildren();
+        const node = document.createElement('div');
+        node.className = kind;
+        node.textContent = message;
+        messageDiv.appendChild(node);
+    };
     
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
 
     if (!token) {
-        messageDiv.innerHTML = '<div class="error">Invalid or missing verification token.</div>';
+        setMessage('error', 'Invalid or missing verification token.');
         spinner.classList.remove('active');
         return;
     }
@@ -26,14 +35,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (response.ok) {
-            messageDiv.innerHTML = `<div class="success">${data.message || 'Email verified successfully!'}</div>`;
+            setMessage('success', data.message || 'Email verified successfully!');
             setTimeout(() => window.location.href = '/login', 3000);
         } else {
-            messageDiv.innerHTML = `<div class="error">${data.error || 'Verification failed. The link may be expired or invalid.'}</div>`;
+            setMessage('error', data.error || 'Verification failed. The link may be expired or invalid.');
         }
     } catch (error) {
         console.error('Verification error:', error);
-        messageDiv.innerHTML = '<div class="error">Network error. Please try again later.</div>';
+        setMessage('error', 'Network error. Please try again later.');
     } finally {
         spinner.classList.remove('active');
     }

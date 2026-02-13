@@ -4,7 +4,7 @@
  */
 
 import { apiClient } from '../../api/client.js';
-import { showSuccess, showError } from '../../utils/dom.js';
+import { showSuccess, showError, escapeHtml } from '../../utils/dom.js';
 
 /**
  * Render roadmap panel
@@ -100,9 +100,10 @@ export async function renderRoadmapPanel(container) {
 
     } catch (error) {
         console.error('Error loading roadmap:', error);
+        const safeErrorMessage = escapeHtml(error?.message || 'Unknown error');
         container.innerHTML = `
             <div style="padding: var(--space-5); text-align: center;">
-                <p style="color: var(--danger-color);">Error loading roadmap: ${error.message}</p>
+                <p style="color: var(--danger-color);">Error loading roadmap: ${safeErrorMessage}</p>
             </div>
         `;
     }

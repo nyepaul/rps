@@ -7,6 +7,7 @@ Describes user actions in plain English for easy comprehension.
 
 import json
 import html
+import logging
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from src.database import connection
@@ -107,7 +108,7 @@ class AuditNarrativeGenerator:
                 return logs
 
         except Exception as e:
-            print(f"Error fetching user logs: {e}")
+            logging.getLogger(__name__).error("Error fetching user logs: %s", e, exc_info=True)
             return []
 
     @staticmethod
@@ -154,7 +155,7 @@ class AuditNarrativeGenerator:
             }
 
         except Exception as e:
-            print(f"Error converting log to narrative: {e}")
+            logging.getLogger(__name__).error("Error converting log to narrative: %s", e, exc_info=True)
             return None
 
     @staticmethod

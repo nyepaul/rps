@@ -6,7 +6,7 @@
 import { store } from '../../state/store.js';
 import { profilesAPI } from '../../api/profiles.js';
 import { formatCurrency, formatCompact } from '../../utils/formatters.js';
-import { showSuccess, showError, showSpinner, hideSpinner } from '../../utils/dom.js';
+import { showSuccess, showError, showSpinner, hideSpinner, escapeHtml } from '../../utils/dom.js';
 import { STORAGE_KEYS } from '../../config.js';
 import { calculateNetWorth, calculateLiquidAssets, calculateRetirementAssets, calculateRealEstateEquity, calculateTotalDebts } from '../../utils/financial-calculations.js';
 import { getChartThemeColors, registerChartForThemeUpdates } from '../../utils/charts.js';
@@ -98,12 +98,13 @@ export async function renderDashboardTab(container) {
         renderProfileDashboard(container, profiles, currentProfile, currentUser);
     } catch (error) {
         console.error('Error loading profiles:', error);
+        const safeErrorMessage = escapeHtml(error?.message || 'Could not load your profiles');
         container.innerHTML = `
             <div style="text-align: center; padding: 60px;">
                 <div style="font-size: 48px; margin-bottom: 20px; color: var(--danger-color);">⚠️</div>
                 <h2 style="margin-bottom: 10px;">Error Loading Profiles</h2>
                 <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                    ${error.message || 'Could not load your profiles'}
+                    ${safeErrorMessage}
                 </p>
                 <button id="dash-retry-btn" style="padding: 10px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer;">
                     Retry

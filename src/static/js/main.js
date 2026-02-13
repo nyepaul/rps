@@ -11,7 +11,7 @@ import { showFeedbackModal } from './components/feedback/feedback-modal.js';
 import { showRoadmapViewer } from './components/roadmap/roadmap-viewer.js';
 import { activityTracker } from './utils/activityTracker.js';
 import { renderUserBackups } from './components/settings/user-backups.js';
-import { showSpinner, hideSpinner } from './utils/dom.js';
+import { showSpinner, hideSpinner, escapeHtml } from './utils/dom.js';
 import { startOnboarding } from './components/onboarding/onboarding-wizard.js';
 import { setupAriaLabels } from './utils/a11y.js';
 import {
@@ -466,10 +466,12 @@ async function showTab(tabName, options = {}) {
         console.log(`📄 Showing tab: ${tabName}`);
     } catch (error) {
         console.error(`❌ Error loading tab ${tabName}:`, error);
+        const safeTabName = escapeHtml(tabName);
+        const safeErrorMessage = escapeHtml(error?.message || 'Unknown error');
         container.innerHTML = `
             <div class="tab-content active">
                 <div style="background: var(--danger-bg); padding: 20px; border-radius: 8px; margin: 20px;">
-                    <strong>Error:</strong> Could not load ${tabName} tab. ${error.message}
+                    <strong>Error:</strong> Could not load ${safeTabName} tab. ${safeErrorMessage}
                 </div>
             </div>
         `;

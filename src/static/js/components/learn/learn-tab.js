@@ -469,10 +469,11 @@ export async function showArticle(article) {
     // Create modal
     const modal = document.createElement('div');
     modal.className = 'learn-modal';
+    const safeArticleTitle = escapeHtml(article.title || 'Article');
     modal.innerHTML = `
         <div class="learn-modal-content">
             <div class="learn-modal-header">
-                <h2>${article.title}</h2>
+                <h2>${safeArticleTitle}</h2>
                 <button class="learn-modal-close" aria-label="Close">&times;</button>
             </div>
             <div class="learn-modal-body">
@@ -532,10 +533,11 @@ export async function showArticle(article) {
         }
     } catch (error) {
         console.error('Error loading article:', error);
+        const safeErrorMessage = escapeHtml(error?.message || 'Please try again later.');
         modal.querySelector('.learn-modal-body').innerHTML = `
             <div class="learn-error">
                 <p>Unable to load article content.</p>
-                <p style="font-size: 14px; color: var(--text-secondary);">${error.message || 'Please try again later.'}</p>
+                <p style="font-size: 14px; color: var(--text-secondary);">${safeErrorMessage}</p>
             </div>
         `;
     }

@@ -4,6 +4,7 @@
  */
 
 import { apiClient } from '../../api/client.js';
+import { escapeHtml } from '../../utils/dom.js';
 import { showLogDetails, showIPLocationsMap, showIPListView } from './logs-viewer.js';
 
 /**
@@ -126,11 +127,12 @@ async function loadReport(container) {
 
     } catch (error) {
         console.error('Failed to load report:', error);
+        const safeErrorMessage = escapeHtml(error?.message || 'Unknown error');
         contentDiv.innerHTML = `
             <div style="display: flex; align-items: center; justify-content: center; height: 400px;">
                 <div style="text-align: center; color: var(--danger-color);">
                     <div style="font-size: 48px; margin-bottom: 10px;">❌</div>
-                    <div>Failed to load report: ${error.message}</div>
+                    <div>Failed to load report: ${safeErrorMessage}</div>
                 </div>
             </div>
         `;
@@ -723,6 +725,7 @@ async function showIPLogs(userId, ipAddress, city, country) {
 
     } catch (error) {
         console.error('Failed to load IP logs:', error);
-        modal.querySelector('#ip-logs-container').innerHTML = `<div style="color: var(--danger-color); padding: 20px;">Error: ${error.message}</div>`;
+        const safeErrorMessage = escapeHtml(error?.message || 'Unknown error');
+        modal.querySelector('#ip-logs-container').innerHTML = `<div style="color: var(--danger-color); padding: 20px;">Error: ${safeErrorMessage}</div>`;
     }
 }

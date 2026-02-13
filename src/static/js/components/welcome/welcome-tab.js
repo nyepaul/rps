@@ -5,7 +5,7 @@
 import { profilesAPI } from '../../api/profiles.js';
 import { store } from '../../state/store.js';
 import { STORAGE_KEYS } from '../../config.js';
-import { showError, showSuccess } from '../../utils/dom.js';
+import { showError, showSuccess, escapeHtml } from '../../utils/dom.js';
 
 export function renderWelcomeTab(container) {
     container.innerHTML = `
@@ -205,9 +205,10 @@ async function loadProfiles(container) {
         setupProfileHandlers(container, profiles);
 
     } catch (error) {
+        const safeErrorMessage = escapeHtml(error?.message || 'Unknown error');
         profilesContainer.innerHTML = `
             <div style="text-align: center; padding: 20px; color: var(--danger-color);">
-                Error loading profiles: ${error.message}
+                Error loading profiles: ${safeErrorMessage}
             </div>
         `;
     }

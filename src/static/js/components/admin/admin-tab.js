@@ -3,7 +3,7 @@
  */
 
 import { store } from '../../state/store.js';
-import { showError } from '../../utils/dom.js';
+import { showError, escapeHtml } from '../../utils/dom.js';
 import { apiClient } from '../../api/client.js';
 
 // Cache-busting: propagate version from parent URL to dynamic sub-module imports
@@ -222,7 +222,9 @@ function setupSubTabSwitching(container) {
                 if (isGroupItem) {
                     groupTrigger.style.borderBottomColor = 'var(--accent-color)';
                     groupTrigger.style.color = 'var(--accent-color)';
-                    groupTrigger.innerHTML = `👥 User (${btn.textContent.trim().split(' ')[1]}) <span style="font-size: 10px;">▼</span>`;
+                    const selectedUserToken = btn.textContent.trim().split(' ')[1] || '';
+                    const safeSelectedUserToken = escapeHtml(selectedUserToken);
+                    groupTrigger.innerHTML = `👥 User (${safeSelectedUserToken}) <span style="font-size: 10px;">▼</span>`;
                 } else {
                     groupTrigger.style.borderBottomColor = 'transparent';
                     groupTrigger.style.color = 'var(--text-secondary)';
@@ -236,7 +238,8 @@ function setupSubTabSwitching(container) {
                     reportsTrigger.style.borderBottomColor = 'var(--accent-color)';
                     reportsTrigger.style.color = 'var(--accent-color)';
                     const reportName = btn.textContent.trim().split(' ').slice(1).join(' ');
-                    reportsTrigger.innerHTML = `📊 Reports (${reportName}) <span style="font-size: 10px;">▼</span>`;
+                    const safeReportName = escapeHtml(reportName);
+                    reportsTrigger.innerHTML = `📊 Reports (${safeReportName}) <span style="font-size: 10px;">▼</span>`;
                 } else {
                     reportsTrigger.style.borderBottomColor = 'transparent';
                     reportsTrigger.style.color = 'var(--text-secondary)';
@@ -303,17 +306,21 @@ async function showSubTab(container, subtab) {
             case 'system':
                 await load('./system-info.js').then(m => m.renderSystemInfo(contentContainer));
                 break;
-            default:
-                contentContainer.innerHTML = `<div>Unknown subtab: ${subtab}</div>`;
+            default: {
+                const safeSubtab = escapeHtml(subtab);
+                contentContainer.innerHTML = `<div>Unknown subtab: ${safeSubtab}</div>`;
+            }
         }
     } catch (error) {
         console.error(`Error loading ${subtab}:`, error);
         showError(`Failed to load ${subtab}: ${error.message}`);
+        const safeSubtab = escapeHtml(subtab);
+        const safeErrorMessage = escapeHtml(error?.message || 'Unknown error');
         contentContainer.innerHTML = `
             <div style="text-align: center; padding: 60px;">
                 <div style="font-size: 48px; margin-bottom: 20px;">❌</div>
-                <div style="color: var(--danger-color);">Error loading ${subtab}</div>
-                <div style="color: var(--text-secondary); margin-top: 10px;">${error.message}</div>
+                <div style="color: var(--danger-color);">Error loading ${safeSubtab}</div>
+                <div style="color: var(--text-secondary); margin-top: 10px;">${safeErrorMessage}</div>
             </div>
         `;
     }

@@ -11,6 +11,7 @@ import { APP_CONFIG } from '../../config.js';
 import { calculateAllocation } from '../../utils/financial-calculations.js';
 import { getChartThemeColors, registerChartForThemeUpdates } from '../../utils/charts.js';
 import { showCalculationReport } from '../analysis/calculation-report.js';
+import { escapeHtml } from '../../utils/dom.js';
 
 // Track metric visibility state across chart refreshes
 const metricVisibilityState = {
@@ -166,11 +167,12 @@ export function renderCashFlowTab(container) {
             console.error('Error initializing cash flow chart:', error);
             const chartContainer = container.querySelector('#cashflow-chart')?.parentElement;
             if (chartContainer) {
+                const safeErrorMessage = escapeHtml(error?.message || 'Unknown error');
                 chartContainer.innerHTML = `
                     <div style="display: flex; align-items: center; justify-content: center; height: 700px; flex-direction: column; gap: 12px; color: var(--danger-color);">
                         <div style="font-size: 32px;">⚠️</div>
                         <div style="font-size: 14px;">Failed to initialize chart</div>
-                        <div style="font-size: 12px; color: var(--text-secondary);">${error.message}</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">${safeErrorMessage}</div>
                         <div style="font-size: 11px; color: var(--text-secondary);">Check browser console for details</div>
                     </div>
                 `;
@@ -840,10 +842,11 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
         console.error('Error creating cash flow chart:', error);
         // Show error message to user
         if (canvasElement && canvasElement.parentElement) {
+            const safeErrorMessage = escapeHtml(error?.message || 'Unknown error');
             canvasElement.parentElement.innerHTML = `
                 <div style="display: flex; align-items: center; justify-content: center; height: 350px; flex-direction: column; gap: 12px; color: var(--danger-color);">
                     <div style="font-size: 32px;">⚠️</div>
-                    <div style="font-size: 14px;">Failed to render chart: ${error.message}</div>
+                    <div style="font-size: 14px;">Failed to render chart: ${safeErrorMessage}</div>
                     <div style="font-size: 12px; color: var(--text-secondary);">Check console for details</div>
                 </div>
             `;

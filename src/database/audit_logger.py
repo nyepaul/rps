@@ -1,5 +1,6 @@
 """Audit logging service for tracking data access and modifications."""
 
+import logging
 from datetime import datetime
 from typing import Optional
 from flask import request, has_request_context
@@ -73,8 +74,7 @@ class AuditLogger:
                 conn.commit()
         except Exception as e:
             # Don't let audit logging failures break the application
-            # In production, you'd want to log this to a separate error log
-            print(f"Audit logging failed: {e}")
+            logging.getLogger(__name__).error("Audit logging failed: %s", e, exc_info=True)
 
     @staticmethod
     def log_create(

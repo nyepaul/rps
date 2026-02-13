@@ -5,6 +5,11 @@
 import { store } from '../../state/store.js';
 import { showSuccess, showError } from '../../utils/dom.js';
 
+function setStatusText(statusElement, text, color) {
+    statusElement.textContent = text;
+    statusElement.style.color = color;
+}
+
 /**
  * Render the API Keys settings tab
  */
@@ -405,7 +410,7 @@ async function loadExistingKeys(container, profile) {
  */
 async function testAPIKey(provider, apiKey, statusElement) {
     if (!apiKey || apiKey.trim() === '') {
-        statusElement.innerHTML = '<span style="color: var(--danger-color);">⚠️ Please enter an API key</span>';
+        setStatusText(statusElement, '⚠️ Please enter an API key', 'var(--danger-color)');
         return false;
     }
 
@@ -426,14 +431,15 @@ async function testAPIKey(provider, apiKey, statusElement) {
         const result = await response.json();
 
         if (response.ok && result.success) {
-            statusElement.innerHTML = `<span style="color: var(--success-color);">✓ Success! ${result.model || ''} (auto-saving...)</span>`;
+            const modelLabel = result.model ? `${result.model} ` : '';
+            setStatusText(statusElement, `✓ Success! ${modelLabel}(auto-saving...)`, 'var(--success-color)');
             return true;
         } else {
-            statusElement.innerHTML = `<span style="color: var(--danger-color);">✗ ${result.error || 'Connection failed'}</span>`;
+            setStatusText(statusElement, `✗ ${result.error || 'Connection failed'}`, 'var(--danger-color)');
             return false;
         }
     } catch (error) {
-        statusElement.innerHTML = `<span style="color: var(--danger-color);">✗ Error: ${error.message}</span>`;
+        setStatusText(statusElement, `✗ Error: ${error.message || 'Unknown error'}`, 'var(--danger-color)');
         return false;
     }
 }
@@ -444,11 +450,11 @@ async function testAPIKey(provider, apiKey, statusElement) {
 async function saveAPIKeys(profile, claudeKey, geminiKey, zhipuKey, statusElement) {
     // Validate at least one key is provided
     if (!claudeKey && !geminiKey && !zhipuKey) {
-        statusElement.innerHTML = '<span style="color: var(--danger-color);">⚠️ Please enter at least one API key</span>';
+        setStatusText(statusElement, '⚠️ Please enter at least one API key', 'var(--danger-color)');
         return;
     }
 
-    statusElement.innerHTML = '<span style="color: var(--text-secondary);">💾 Saving...</span>';
+    setStatusText(statusElement, '💾 Saving...', 'var(--text-secondary)');
 
     try {
         const payload = {};
@@ -471,7 +477,7 @@ async function saveAPIKeys(profile, claudeKey, geminiKey, zhipuKey, statusElemen
         });
 
         if (response.ok) {
-            statusElement.innerHTML = '<span style="color: var(--success-color);">✓ API keys saved successfully</span>';
+            setStatusText(statusElement, '✓ API keys saved successfully', 'var(--success-color)');
             showSuccess('API keys saved and encrypted');
 
             // Clear inputs and reload masked versions
@@ -480,11 +486,11 @@ async function saveAPIKeys(profile, claudeKey, geminiKey, zhipuKey, statusElemen
             }, 1500);
         } else {
             const result = await response.json();
-            statusElement.innerHTML = `<span style="color: var(--danger-color);">✗ ${result.error || 'Failed to save'}</span>`;
+            setStatusText(statusElement, `✗ ${result.error || 'Failed to save'}`, 'var(--danger-color)');
             showError(result.error || 'Failed to save API keys');
         }
     } catch (error) {
-        statusElement.innerHTML = `<span style="color: var(--danger-color);">✗ Error: ${error.message}</span>`;
+        setStatusText(statusElement, `✗ Error: ${error.message || 'Unknown error'}`, 'var(--danger-color)');
         showError(`Error saving API keys: ${error.message}`);
     }
 }

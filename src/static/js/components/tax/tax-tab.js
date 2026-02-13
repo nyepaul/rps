@@ -7,7 +7,7 @@
 import { store } from '../../state/store.js';
 import { taxOptimizationAPI } from '../../api/tax-optimization.js';
 import { formatCurrency, formatPercent, formatCompact } from '../../utils/formatters.js';
-import { showSuccess, showError, showLoading } from '../../utils/dom.js';
+import { showSuccess, showError, showLoading, escapeHtml } from '../../utils/dom.js';
 import {
     glossaryTerm as renderGlossaryTerm,
     wireGlossaryTermClicks as wireGlossaryTerms,
@@ -227,12 +227,13 @@ export async function renderTaxTab(container) {
         renderTaxAnalysis(container, analysis, currentProfile, healthcarePlanning);
     } catch (error) {
         console.error('Error loading tax analysis:', error);
+        const safeErrorMessage = escapeHtml(error?.message || 'Could not load tax optimization data');
         container.innerHTML = `
             <div style="text-align: center; padding: 60px;">
                 <div style="font-size: 48px; margin-bottom: 20px; color: var(--danger-color);">⚠️</div>
                 <h2 style="margin-bottom: 10px;">Error Loading Tax Analysis</h2>
                 <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                    ${error.message || 'Could not load tax optimization data'}
+                    ${safeErrorMessage}
                 </p>
                 <button class="csp-nav" data-target="tax" style="padding: 10px 24px; background: var(--accent-color); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer;">
                     Retry

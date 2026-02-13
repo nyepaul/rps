@@ -4,7 +4,7 @@
 
 import { store } from '../../state/store.js';
 import { apiClient } from '../../api/client.js';
-import { showSuccess } from '../../utils/dom.js';
+import { showSuccess, escapeHtml } from '../../utils/dom.js';
 
 export function showAdvisorWizard() {
     const profile = store.get('currentProfile');
@@ -88,7 +88,8 @@ async function runStep1(profile) {
         nextBtn.onclick = () => runStep2(profile);
 
     } catch (error) {
-        resultsDiv.innerHTML = `<div style="color: var(--danger-color);">❌ Could not connect to backend: ${error.message}</div>`;
+        const safeErrorMessage = escapeHtml(error?.message || 'Unknown error');
+        resultsDiv.innerHTML = `<div style="color: var(--danger-color);">❌ Could not connect to backend: ${safeErrorMessage}</div>`;
     }
 }
 

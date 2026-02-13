@@ -3,7 +3,7 @@
  */
 
 import { apiClient } from '../../api/client.js';
-import { showError } from '../../utils/dom.js';
+import { showError, escapeHtml } from '../../utils/dom.js';
 
 /**
  * Render system information dashboard
@@ -223,7 +223,8 @@ function setupStatCardClicks(container) {
                 try {
                     detailData = await apiClient.get('/api/admin/system/stats-detail');
                 } catch (err) {
-                    panel.innerHTML = `<div style="background: var(--bg-secondary); border-radius: 0 0 12px 12px; padding: 20px; color: var(--danger-color);">Failed to load: ${err.message}</div>`;
+                    const safeErrorMessage = escapeHtml(err?.message || 'Unknown error');
+                    panel.innerHTML = `<div style="background: var(--bg-secondary); border-radius: 0 0 12px 12px; padding: 20px; color: var(--danger-color);">Failed to load: ${safeErrorMessage}</div>`;
                     return;
                 }
             }
@@ -526,11 +527,12 @@ async function renderDatabaseSchema(container, schema) {
 
     } catch (error) {
         console.error('Error rendering schema diagram:', error);
+        const safeErrorMessage = escapeHtml(error?.message || 'Unknown error');
         diagramDiv.innerHTML = `
             <div style="text-align: center; padding: 40px; color: var(--danger-color);">
                 <div style="font-size: 24px; margin-bottom: 10px;">❌</div>
                 <div>Failed to render diagram</div>
-                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 10px;">${error.message}</div>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 10px;">${safeErrorMessage}</div>
             </div>
         `;
     }

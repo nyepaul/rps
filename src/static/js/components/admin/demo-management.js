@@ -4,6 +4,7 @@
  */
 
 import { apiClient } from '../../api/client.js';
+import { escapeHtml } from '../../utils/dom.js';
 
 /**
  * Render demo management interface
@@ -75,6 +76,9 @@ function setupResetDemoButton(container) {
 
         try {
             const response = await apiClient.post('/api/admin/reset-demo-account', {});
+            const safeUsername = escapeHtml(response?.username || 'demo');
+            const safePassword = escapeHtml(response?.password || 'Not returned');
+            const safeProfiles = escapeHtml(((response?.profiles || []).join(', ')) || 'None');
 
             // Show success message
             resultDiv.style.display = 'block';
@@ -82,9 +86,9 @@ function setupResetDemoButton(container) {
                 <div style="padding: 15px; background: var(--success-bg); border: 1px solid var(--success-color); border-radius: 8px;">
                     <div style="font-weight: 600; margin-bottom: 8px; color: var(--success-color);">✅ Demo Account Reset Successfully</div>
                     <div style="font-size: 13px;">
-                        <div>Username: <strong>${response.username}</strong></div>
-                        <div>Password: <strong>${response.password}</strong></div>
-                        <div>Profiles: <strong>${(response.profiles || []).join(', ')}</strong></div>
+                        <div>Username: <strong>${safeUsername}</strong></div>
+                        <div>Password: <strong>${safePassword}</strong></div>
+                        <div>Profiles: <strong>${safeProfiles}</strong></div>
                     </div>
                 </div>
             `;
@@ -95,13 +99,14 @@ function setupResetDemoButton(container) {
 
         } catch (error) {
             console.error('Failed to reset demo account:', error);
+            const safeErrorMessage = escapeHtml(error?.message || 'Unknown error occurred');
 
             // Show error message
             resultDiv.style.display = 'block';
             resultDiv.innerHTML = `
                 <div style="padding: 15px; background: var(--danger-bg); border: 1px solid var(--danger-color); border-radius: 8px;">
                     <div style="font-weight: 600; margin-bottom: 8px; color: var(--danger-color);">❌ Reset Failed</div>
-                    <div style="font-size: 13px;">${error.message || 'Unknown error occurred'}</div>
+                    <div style="font-size: 13px;">${safeErrorMessage}</div>
                 </div>
             `;
 

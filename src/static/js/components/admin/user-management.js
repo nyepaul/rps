@@ -3,7 +3,7 @@
  */
 
 import { apiClient } from '../../api/client.js';
-import { showSuccess, showError } from '../../utils/dom.js';
+import { showSuccess, showError, escapeHtml } from '../../utils/dom.js';
 import { store } from '../../state/store.js';
 import { showUserReport } from './user-report.js';
 
@@ -693,7 +693,8 @@ async function showManageUserBackupsModal(userId, username) {
             });
 
         } catch (error) {
-            listContainer.innerHTML = `<div style="color: var(--danger-color);">Error: ${error.message}</div>`;
+            const safeErrorMessage = escapeHtml(error?.message || 'Unknown error');
+            listContainer.innerHTML = `<div style="color: var(--danger-color);">Error: ${safeErrorMessage}</div>`;
         }
     };
 

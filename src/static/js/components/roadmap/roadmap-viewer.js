@@ -4,6 +4,7 @@
  */
 
 import { apiClient } from '../../api/client.js';
+import { escapeHtml } from '../../utils/dom.js';
 
 let currentModal = null;
 
@@ -241,10 +242,11 @@ async function loadRoadmapContent() {
 
     } catch (error) {
         console.error('Error loading roadmap:', error);
+        const safeErrorMessage = escapeHtml(error?.message || 'Unknown error');
         container.innerHTML = `
             <div style="text-align: center; padding: 40px; color: var(--danger-color);">
                 <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
-                <p>Failed to load roadmap: ${error.message}</p>
+                <p>Failed to load roadmap: ${safeErrorMessage}</p>
             </div>
         `;
     }

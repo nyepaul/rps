@@ -3,7 +3,7 @@
  */
 
 import { apiClient } from '../../api/client.js';
-import { showError, showSuccess } from '../../utils/dom.js';
+import { showError, showSuccess, escapeHtml } from '../../utils/dom.js';
 
 // Module state for selective backup
 let selectiveState = {
@@ -1054,10 +1054,11 @@ async function loadBackups(container, type = 'all') {
 
     } catch (error) {
         console.error('Error loading backups:', error);
+        const safeErrorMessage = escapeHtml(error?.message || 'Unknown error');
         listContainer.innerHTML = `
             <div style="text-align: center; padding: 40px; color: var(--error-color);">
                 <div style="font-size: 32px; margin-bottom: 10px;">❌</div>
-                Failed to load backups: ${error.message}
+                Failed to load backups: ${safeErrorMessage}
             </div>
         `;
     }

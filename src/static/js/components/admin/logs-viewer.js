@@ -3,7 +3,7 @@
  */
 
 import { apiClient } from '../../api/client.js';
-import { showSuccess, showError } from '../../utils/dom.js';
+import { showSuccess, showError, escapeHtml } from '../../utils/dom.js';
 
 // Sort state
 let currentSort = {
@@ -469,11 +469,12 @@ async function loadLogs(container, offset = 0) {
     } catch (error) {
         console.error('Failed to load logs:', error);
         showError(`Failed to load logs: ${error.message}`);
+        const safeErrorMessage = escapeHtml(error?.message || 'Unknown error');
         tableContainer.innerHTML = `
             <div style="text-align: center; padding: 60px; color: var(--danger-color);">
                 <div style="font-size: 48px; margin-bottom: 15px;">❌</div>
                 <div>Failed to load logs</div>
-                <div style="font-size: 13px; margin-top: 10px;">${error.message}</div>
+                <div style="font-size: 13px; margin-top: 10px;">${safeErrorMessage}</div>
             </div>
         `;
     }

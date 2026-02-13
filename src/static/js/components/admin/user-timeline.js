@@ -4,7 +4,7 @@
  */
 
 import { apiClient } from '../../api/client.js';
-import { showSuccess, showError } from '../../utils/dom.js';
+import { showSuccess, showError, escapeHtml } from '../../utils/dom.js';
 
 // User mapping for input (username -> user_id)
 let userMapping = {};
@@ -248,12 +248,13 @@ async function loadUserTimeline(container, userId) {
 
     } catch (error) {
         contentDiv.style.display = 'block';
+        const safeErrorMessage = escapeHtml(error?.message || 'Failed to load user timeline');
         contentDiv.innerHTML = `
             <div style="background: var(--danger-bg); padding: 20px; border-radius: 12px; text-align: center;">
                 <div style="font-size: 48px; margin-bottom: 15px;">⚠️</div>
                 <h3 style="margin-bottom: 10px;">Error Loading Timeline</h3>
                 <p style="color: var(--text-secondary); margin: 0;">
-                    ${error.message || 'Failed to load user timeline'}
+                    ${safeErrorMessage}
                 </p>
             </div>
         `;

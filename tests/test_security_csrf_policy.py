@@ -74,6 +74,31 @@ def test_password_reset_request_is_csrf_exempt(client_csrf):
     assert response.status_code == 200
 
 
+def test_login_is_csrf_exempt(client_csrf):
+    """Login should remain CSRF exempt for unauthenticated flow."""
+    response = client_csrf.post(
+        "/api/auth/login",
+        json={"username": "missing-user", "password": "bad-pass"},
+    )
+    # Invalid credentials, but not CSRF-blocked.
+    assert response.status_code == 401
+
+
+def test_password_reset_endpoints_are_csrf_exempt(client_csrf):
+    """Reset/validate endpoints should fail by token semantics, not CSRF."""
+    validate = client_csrf.post(
+        "/api/auth/password-reset/validate-token",
+        json={"token": "invalid-token"},
+    )
+    assert validate.status_code == 400
+
+    reset = client_csrf.post(
+        "/api/auth/password-reset/reset",
+        json={"token": "invalid-token", "password": "Newpass123"},
+    )
+    assert reset.status_code == 400
+
+
 def test_logout_requires_csrf_token(client_csrf):
     """Logout should reject missing CSRF token and accept valid token."""
     _create_user()

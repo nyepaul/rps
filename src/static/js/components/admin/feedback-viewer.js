@@ -4,7 +4,7 @@
  */
 
 import { apiClient } from '../../api/client.js';
-import { showError, showSuccess } from '../../utils/dom.js';
+import { showError, showSuccess, escapeHtml } from '../../utils/dom.js';
 import { store } from '../../state/store.js';
 
 /**
@@ -698,13 +698,14 @@ async function loadFeedback(container) {
 
     } catch (error) {
         console.error('Error loading feedback:', error);
+        const safeErrorMessage = escapeHtml(error?.message || 'Unknown error');
         listContainer.innerHTML = `
             <div style="text-align: center; padding: 60px;">
                 <div style="font-size: 64px; margin-bottom: 20px;">❌</div>
                 <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--danger-color);">
                     Error Loading Feedback
                 </div>
-                <div style="color: var(--text-secondary);">${error.message}</div>
+                <div style="color: var(--text-secondary);">${safeErrorMessage}</div>
             </div>
         `;
     }

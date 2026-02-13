@@ -1,5 +1,5 @@
 {
-    "version": "3.9.285",
+    "version": "3.9.286",
     "release_date": "2026-02-12",
-    "release_notes": "Security completion: CSRF policy tests, legacy rel hardening, PII-safe verification subject, dependency pin updates"
+    "release_notes": "Security closure: frontend sink hardening, runtime print removal, innerHTML guard test"
 }
