@@ -107,6 +107,61 @@ class TestFinancialIntegrity:
             abs(final_row["portfolio_balance"] - expected_balance) < 10.0
         ), f"Balance error: Got {final_row['portfolio_balance']}, Expected {expected_balance}"
 
+    def test_income_stream_missing_start_date_defaults_to_current_year(self):
+        """Income streams without a start_date should still count starting in current_year."""
+        person1 = Person(
+            name="Start Date Missing",
+            birth_date=datetime(1985, 1, 1),
+            retirement_date=datetime(2050, 1, 1),
+            social_security=0,
+        )
+
+        profile = FinancialProfile(
+            person1=person1,
+            person2=Person("None", datetime(1985, 1, 1), datetime(2050, 1, 1), 0),
+            children=[],
+            liquid_assets=0.0,
+            traditional_ira=0.0,
+            roth_ira=0.0,
+            pension_lump_sum=0.0,
+            pension_annual=0.0,
+            annual_expenses=0.0,
+            target_annual_income=0.0,
+            risk_tolerance="moderate",
+            asset_allocation={"stocks": 0.0, "bonds": 0.0},
+            future_expenses=[],
+            investment_types=[{"account": "Checking", "value": 0.0}],
+            income_streams=[
+                {
+                    "name": "Other Income",
+                    "amount": 1000.0,
+                    "frequency": "monthly",
+                    "start_date": None,  # critical: missing start date
+                    "type": "other",
+                    "inflation_adjusted": False,
+                }
+            ],
+            budget=None,
+            filing_status="single",
+            state="NY",
+        )
+
+        assumptions = MarketAssumptions(
+            stock_return_mean=0,
+            bond_return_mean=0,
+            cash_return_mean=0,
+            inflation_mean=0,
+            stock_allocation=0,
+        )
+
+        model = RetirementModel(profile)
+        model.current_year = 2026
+        ledger = model.run_detailed_projection(years=1, assumptions=assumptions)
+
+        # With zero expenses and no contributions, gross income should match the stream amount.
+        assert abs(ledger[0]["gross_income"] - 1000.0) < 0.01
+        assert abs(sum(r["gross_income"] for r in ledger) - 12000.0) < 0.1
+
     def test_rmd_factors(self):
         """Test Required Minimum Distribution calculations."""
         person1 = Person("RMD User", datetime(1950, 1, 1), datetime(2015, 1, 1), 0)

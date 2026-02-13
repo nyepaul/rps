@@ -31,6 +31,16 @@ def safe_float(value, default=0.0):
         return default
 
 
+def safe_year_from_iso(value, default=None):
+    """Safely extract year from an ISO date string (or datetime-like), with a fallback."""
+    if not value:
+        return default
+    try:
+        return datetime.fromisoformat(str(value)).year
+    except Exception:
+        return default
+
+
 @dataclass
 class Person:
     name: str
@@ -585,13 +595,10 @@ class RetirementModel:
         if self.profile.income_streams:
             for s in self.profile.income_streams:
                 try:
-                    start_year = datetime.fromisoformat(s["start_date"]).year
-                    end_year = 9999
-                    if s.get("end_date"):
-                        try:
-                            end_year = datetime.fromisoformat(s["end_date"]).year
-                        except Exception:
-                            pass
+                    start_year = safe_year_from_iso(
+                        s.get("start_date"), default=self.current_year
+                    )
+                    end_year = safe_year_from_iso(s.get("end_date"), default=9999)
 
                     # Convert to annual amount based on frequency
                     raw_amount = safe_float(s.get("amount", 0))
@@ -874,12 +881,90 @@ class RetirementModel:
                 employment_income_gross + other_ordinary_income_gross, gross_ss
             )
 
+            # --- Pre-tax Contributions (Reduce taxable income) ---
+            p1_401k_contrib = np.zeros(simulations)
+            p2_401k_contrib = np.zeros(simulations)
+
+            if not p1_retired or not p2_retired:
+                current_employment = {}
+                if self.profile.budget:
+                    current_employment = (
+                        self.profile.budget.get("income", {})
+                        .get("current", {})
+                        .get("employment", {})
+                    )
+
+                # Person 1 contributions
+                if not p1_retired:
+                    p1_salary = (
+                        current_employment.get("primary_person", 0) * current_cpi
+                        if self.profile.budget
+                        else employment_income_gross
+                    )
+                    rate = safe_float(
+                        self.profile.person1.annual_401k_contribution_rate, 0
+                    )
+                    if rate == 0:
+                        rate = safe_float(
+                            self.profile.person1.annual_401k_contribution, 0
+                        ) / np.maximum(p1_salary, 1)
+                    p1_401k_contrib = p1_salary * rate
+                    limit = self.contribution_limits["401k_base"]
+                    if p1_age >= self.contribution_limits["catchup_age"]:
+                        limit += self.contribution_limits["401k_catchup"]
+                    p1_401k_contrib = np.minimum(p1_401k_contrib, limit)
+
+                # Person 2 contributions
+                if not p2_retired:
+                    p2_salary = (
+                        current_employment.get("spouse", 0) * current_cpi
+                        if self.profile.budget
+                        else employment_income_gross
+                    )
+                    rate = safe_float(
+                        self.profile.person2.annual_401k_contribution_rate, 0
+                    )
+                    if rate == 0:
+                        rate = safe_float(
+                            self.profile.person2.annual_401k_contribution, 0
+                        ) / np.maximum(p2_salary, 1)
+                    p2_401k_contrib = p2_salary * rate
+                    limit = self.contribution_limits["401k_base"]
+                    if p2_age >= self.contribution_limits["catchup_age"]:
+                        limit += self.contribution_limits["401k_catchup"]
+                    p2_401k_contrib = np.minimum(p2_401k_contrib, limit)
+
+            # IRA (Pre-tax portion)
+            ira_contrib_annual = safe_float(self.profile.annual_ira_contribution, 0)
+            ira_pretax_contrib = np.zeros(simulations)
+            roth_fraction = safe_float(self.profile.ira_roth_split, 0.5)
+            if ira_contrib_annual > 0 and (not p1_retired or not p2_retired):
+                max_age = max(p1_age, p2_age)
+                ira_limit = self.contribution_limits["ira_base"]
+                if max_age >= self.contribution_limits["catchup_age"]:
+                    ira_limit += self.contribution_limits["ira_catchup"]
+                if (
+                    not p1_retired
+                    and not p2_retired
+                    and getattr(self.profile, "filing_status", "mfj") == "mfj"
+                ):
+                    ira_limit *= 2
+                ira_contrib_annual = min(ira_contrib_annual, ira_limit)
+                ira_pretax_contrib = np.full(
+                    simulations, ira_contrib_annual * (1 - roth_fraction)
+                )
+
             # --- Tax Step 3: Combined Federal Income Tax ---
             total_ordinary_taxable_gross = (
                 employment_income_gross + other_ordinary_income_gross + taxable_ss
             )
             taxable_income_federal = np.maximum(
-                0, total_ordinary_taxable_gross - std_deduction
+                0,
+                total_ordinary_taxable_gross
+                - p1_401k_contrib
+                - p2_401k_contrib
+                - ira_pretax_contrib
+                - std_deduction,
             )
 
             fed_tax_paid, _ = self._vectorized_federal_tax(taxable_income_federal)
@@ -924,6 +1009,7 @@ class RetirementModel:
                     p1_retired,
                     p2_retired,
                     current_housing_costs,
+                    exclude_retirement_savings=True,
                 )
                 # Apply spending multiplier to non-housing expenses
                 # This models how spending patterns change (e.g., less travel when older, more healthcare)
@@ -945,142 +1031,57 @@ class RetirementModel:
             # During retirement: expenses typically exceed income → shortfall withdrawn from investments
             net_cash_flow = total_income - target_spending
 
-            # D2. Handle Pre-Retirement Contributions
-            # CRITICAL: Subtract retirement contributions from available cash flow FIRST
-            # This ensures 401k contributions reduce take-home income (pre-tax deduction)
-            total_401k_contributions = 0
-            if not p1_retired or not p2_retired:
-                # Get employment income for calculating employer match
-                employment_income = 0
-                current_employment = {}
-                if self.profile.budget:
-                    current_employment = (
-                        self.profile.budget.get("income", {})
-                        .get("current", {})
-                        .get("employment", {})
-                    )
-                    if not p1_retired:
-                        employment_income += current_employment.get("primary_person", 0)
-                    if not p2_retired:
-                        employment_income += current_employment.get("spouse", 0)
+            # D2. Handle Retirement Contributions (Portfolio Updates)
+            # CRITICAL: Subtract retirement contributions from available cash flow
+            # This ensures contributions reduce take-home income.
 
-                # Person 1 contributions (if working)
-                if not p1_retired:
-                    # Get person 1's salary
-                    if self.profile.budget:
-                        p1_salary = current_employment.get("primary_person", 0)
-                    else:
-                        # Fallback to gross employment income if no budget
-                        p1_salary = employment_income_gross
+            # Update Portfolio Balances
+            pretax_std += p1_401k_contrib + p2_401k_contrib + ira_pretax_contrib
+            m_roth_contrib_annual = ira_contrib_annual * roth_fraction
+            roth += m_roth_contrib_annual
 
-                    # Calculate 401k contribution as % of salary (preferred method)
-                    contribution_rate = safe_float(
-                        self.profile.person1.annual_401k_contribution_rate, 0
-                    )
-                    if contribution_rate == 0:
-                        # Fallback to legacy fixed amount if rate not set
-                        contribution_rate = safe_float(
-                            self.profile.person1.annual_401k_contribution, 0
-                        ) / np.maximum(p1_salary, 1)  # Convert fixed to rate
+            # Calculate and add Employer Match
+            if not p1_retired:
+                p1_salary_match = (
+                    current_employment.get("primary_person", 0) * current_cpi
+                    if self.profile.budget
+                    else employment_income_gross
+                )
+                p1_match = p1_salary_match * safe_float(
+                    self.profile.person1.employer_match_rate, 0
+                )
+                # Cap total (employee + employer) at Section 415(c) limit
+                p1_415c_limit = self.contribution_limits["section_415c"]
+                if p1_age >= self.contribution_limits["catchup_age"]:
+                    p1_415c_limit = self.contribution_limits["section_415c_catchup"]
+                p1_match = np.minimum(p1_match, p1_415c_limit - p1_401k_contrib)
+                p1_match = np.maximum(p1_match, 0)
+                pretax_std += p1_match
 
-                    p1_401k = p1_salary * contribution_rate
+            if not p2_retired:
+                p2_salary_match = (
+                    current_employment.get("spouse", 0) * current_cpi
+                    if self.profile.budget
+                    else employment_income_gross
+                )
+                p2_match = p2_salary_match * safe_float(
+                    self.profile.person2.employer_match_rate, 0
+                )
+                p2_415c_limit = self.contribution_limits["section_415c"]
+                if p2_age >= self.contribution_limits["catchup_age"]:
+                    p2_415c_limit = self.contribution_limits["section_415c_catchup"]
+                p2_match = np.minimum(p2_match, p2_415c_limit - p2_401k_contrib)
+                p2_match = np.maximum(p2_match, 0)
+                pretax_std += p2_match
 
-                    # Enforce IRS 401k employee deferral limit (with age 50+ catch-up)
-                    p1_401k_limit = self.contribution_limits["401k_base"]
-                    if p1_age >= self.contribution_limits["catchup_age"]:
-                        p1_401k_limit += self.contribution_limits["401k_catchup"]
-                    p1_401k = np.minimum(p1_401k, p1_401k_limit)
-
-                    if np.any(p1_401k > 0):
-                        # Track total contributions to subtract from cash flow
-                        total_401k_contributions += p1_401k
-                        pretax_std += p1_401k  # Add 401k contribution to retirement account
-                        # Add employer match (free money - doesn't reduce take-home)
-                        employer_match = p1_salary * safe_float(
-                            self.profile.person1.employer_match_rate, 0
-                        )
-                        # Cap total (employee + employer) at Section 415(c) limit
-                        p1_415c_limit = self.contribution_limits["section_415c"]
-                        if p1_age >= self.contribution_limits["catchup_age"]:
-                            p1_415c_limit = self.contribution_limits["section_415c_catchup"]
-                        employer_match = np.minimum(employer_match, p1_415c_limit - p1_401k)
-                        employer_match = np.maximum(employer_match, 0)
-                        pretax_std += employer_match
-
-                # Person 2 contributions (if working)
-                if not p2_retired:
-                    # For person2, we need to extract their salary separately
-                    if self.profile.budget:
-                        p2_salary = current_employment.get("spouse", 0)
-                    else:
-                        # Fallback to gross employment income if no budget
-                        # Note: if both working and no budget, p1 and p2 might both use full gross
-                        # which is an overestimation, but better than crashing.
-                        p2_salary = employment_income_gross
-
-                    # Calculate 401k contribution as % of salary
-                    p2_contribution_rate = safe_float(
-                        self.profile.person2.annual_401k_contribution_rate, 0
-                    )
-                    if p2_contribution_rate == 0:
-                        # Fallback to legacy fixed amount if rate not set
-                        p2_contribution_rate = safe_float(
-                            self.profile.person2.annual_401k_contribution, 0
-                        ) / np.maximum(p2_salary, 1)
-
-                    p2_401k = p2_salary * p2_contribution_rate
-
-                    # Enforce IRS 401k employee deferral limit (with age 50+ catch-up)
-                    p2_401k_limit = self.contribution_limits["401k_base"]
-                    if p2_age >= self.contribution_limits["catchup_age"]:
-                        p2_401k_limit += self.contribution_limits["401k_catchup"]
-                    p2_401k = np.minimum(p2_401k, p2_401k_limit)
-
-                    total_401k_contributions += p2_401k
-                    pretax_std += p2_401k  # Add 401k contribution to retirement account
-
-                    # Add employer match (free money - doesn't reduce take-home)
-                    p2_employer_match = p2_salary * safe_float(
-                        self.profile.person2.employer_match_rate, 0
-                    )
-                    # Cap total (employee + employer) at Section 415(c) limit
-                    p2_415c_limit = self.contribution_limits["section_415c"]
-                    if p2_age >= self.contribution_limits["catchup_age"]:
-                        p2_415c_limit = self.contribution_limits["section_415c_catchup"]
-                    p2_employer_match = np.minimum(p2_employer_match, p2_415c_limit - p2_401k)
-                    p2_employer_match = np.maximum(p2_employer_match, 0)
-                    pretax_std += p2_employer_match
-
-                # IRA contributions (from profile level)
-                ira_contrib = safe_float(self.profile.annual_ira_contribution, 0)
-                if ira_contrib > 0:
-                    # Enforce IRS IRA limit (with age 50+ catch-up)
-                    # p1_age/p2_age are always plain ints in the simulation loop
-                    max_age = max(p1_age, p2_age)
-                    ira_limit = self.contribution_limits["ira_base"]
-                    if max_age >= self.contribution_limits["catchup_age"]:
-                        ira_limit += self.contribution_limits["ira_catchup"]
-                    # For MFJ with both working, each spouse gets their own IRA limit
-                    both_working = not p1_retired and not p2_retired
-                    if both_working and self.profile.filing_status == "mfj":
-                        ira_limit *= 2
-                    ira_contrib = min(ira_contrib, ira_limit)
-                    # IRA contributions are post-tax, so they reduce available cash
-                    total_401k_contributions += ira_contrib
-                    # Split between pretax and Roth based on configurable split
-                    roth_fraction = safe_float(self.profile.ira_roth_split, 0.5)
-                    pretax_std += ira_contrib * (1 - roth_fraction)
-                    roth += ira_contrib * roth_fraction
+            # Subtract ALL employee contributions from net cash flow
+            net_cash_flow -= (
+                p1_401k_contrib + p2_401k_contrib + np.full(simulations, ira_contrib_annual)
+            )
 
             # D3. Calculate final surplus/shortfall AFTER retirement contributions
-            # Subtract 401k/IRA contributions from net cash flow (these are pre-tax/post-tax deductions)
-            net_cash_flow -= total_401k_contributions
-            shortfall = np.maximum(
-                0, -net_cash_flow
-            )  # Positive when expenses > income (need withdrawals)
-            surplus = np.maximum(
-                0, net_cash_flow
-            )  # Positive when income > expenses (can save)
+            shortfall = np.maximum(0, -net_cash_flow)
+            surplus = np.maximum(0, net_cash_flow)
 
             # D4. Allocate remaining surplus to taxable brokerage
             # 401k/IRA contributions (with IRS limits) were already applied above.
@@ -1436,13 +1437,10 @@ class RetirementModel:
         if self.profile.income_streams:
             for s in self.profile.income_streams:
                 try:
-                    start_year = datetime.fromisoformat(s["start_date"]).year
-                    end_year = 9999
-                    if s.get("end_date"):
-                        try:
-                            end_year = datetime.fromisoformat(s["end_date"]).year
-                        except Exception:
-                            pass
+                    start_year = safe_year_from_iso(
+                        s.get("start_date"), default=self.current_year
+                    )
+                    end_year = safe_year_from_iso(s.get("end_date"), default=9999)
 
                     # Convert to annual amount immediately during preparation
                     raw_amount = safe_float(s.get("amount", 0))
@@ -1582,6 +1580,62 @@ class RetirementModel:
                 active_pension_annual + other_taxable_annual + other_budget_annual
             )
 
+            # --- Pre-tax Contributions (Reduce taxable income) ---
+            p1_401k_annual = 0
+            if not p1_retired:
+                p1_salary = total_employment_annual
+                rate = safe_float(self.profile.person1.annual_401k_contribution_rate, 0)
+                if rate == 0:
+                    rate = (
+                        safe_float(self.profile.person1.annual_401k_contribution, 0)
+                        / np.maximum(p1_salary, 1)
+                    )
+                p1_401k_annual = p1_salary * rate
+                limit = self.contribution_limits["401k_base"]
+                if p1_age_start >= self.contribution_limits["catchup_age"]:
+                    limit += self.contribution_limits["401k_catchup"]
+                p1_401k_annual = np.minimum(p1_401k_annual, limit)
+
+            p2_401k_annual = 0
+            if not p2_retired:
+                p2_salary = total_employment_annual
+                if self.profile.budget:
+                    p2_salary = (
+                        self.profile.budget.get("income", {})
+                        .get("current", {})
+                        .get("employment", {})
+                        .get("spouse", 0)
+                        * current_cpi
+                    )
+                rate = safe_float(self.profile.person2.annual_401k_contribution_rate, 0)
+                if rate == 0:
+                    rate = (
+                        safe_float(self.profile.person2.annual_401k_contribution, 0)
+                        / np.maximum(p2_salary, 1)
+                    )
+                p2_401k_annual = p2_salary * rate
+                limit = self.contribution_limits["401k_base"]
+                if p2_age_start >= self.contribution_limits["catchup_age"]:
+                    limit += self.contribution_limits["401k_catchup"]
+                p2_401k_annual = np.minimum(p2_401k_annual, limit)
+
+            ira_contrib_annual = safe_float(self.profile.annual_ira_contribution, 0)
+            if ira_contrib_annual > 0:
+                max_age = max(p1_age_start, p2_age_start)
+                ira_limit = self.contribution_limits["ira_base"]
+                if max_age >= self.contribution_limits["catchup_age"]:
+                    ira_limit += self.contribution_limits["ira_catchup"]
+                if (
+                    not p1_retired
+                    and not p2_retired
+                    and getattr(self.profile, "filing_status", "mfj") == "mfj"
+                ):
+                    ira_limit *= 2
+                ira_contrib_annual = min(ira_contrib_annual, ira_limit)
+
+            roth_fraction = safe_float(self.profile.ira_roth_split, 0.5)
+            ira_pretax_annual = ira_contrib_annual * (1 - roth_fraction)
+
             # --- ANNUAL Tax Calculations ---
             taxable_ss_annual = self._vectorized_taxable_ss(
                 total_employment_annual + total_other_ord_annual, gross_ss_annual
@@ -1593,9 +1647,18 @@ class RetirementModel:
             std_deduction = self.get_standard_deduction(
                 current_cpi, p1_age_start, p2_age_start
             )
-            fed_tax_annual, _ = self._vectorized_federal_tax(
-                np.maximum(0, total_ord_taxable_annual - std_deduction)
+
+            # Reduce taxable income by pre-tax contributions
+            taxable_income_federal = np.maximum(
+                0,
+                total_ord_taxable_annual
+                - p1_401k_annual
+                - p2_401k_annual
+                - ira_pretax_annual
+                - std_deduction,
             )
+
+            fed_tax_annual, _ = self._vectorized_federal_tax(taxable_income_federal)
 
             state_rate = (
                 0.0585 if getattr(self.profile, "state", "NY") == "NY" else 0.05
@@ -1686,6 +1749,7 @@ class RetirementModel:
                             p1_retired,
                             p2_retired,
                             m_housing * 12,
+                            exclude_retirement_savings=True,
                         )
                         / 12
                     )
@@ -1697,9 +1761,11 @@ class RetirementModel:
                 m_target_spending += irmaa_mo
 
                 # Cash flow
-                m_available_cash = (m_ord_taxable + (m_gross_ss - m_taxable_ss)) - (
-                    m_fed_tax + m_state_tax + m_fica_tax
-                )
+                # Reduce available cash by pre-tax contributions (Mimic paycheck deduction)
+                m_pretax_contrib = (p1_401k_annual + p2_401k_annual + ira_pretax_annual) / 12
+                m_available_cash = (
+                    (m_ord_taxable - m_pretax_contrib) + (m_gross_ss - m_taxable_ss)
+                ) - (m_fed_tax + m_state_tax + m_fica_tax)
 
                 # Track taxes from home-sale liquidation in this month.
                 home_sale_ltcg_tax = 0
@@ -1751,6 +1817,24 @@ class RetirementModel:
                 # Update Balances
                 cash += m_surplus
                 taxable_val += m_liquidation_proceeds
+                
+                # Add Retirement Contributions to portfolio (Tax-deferred/Roth)
+                # This ensures contributions from rates increase the portfolio balance.
+                pretax_std += (p1_401k_annual + p2_401k_annual + ira_pretax_annual) / 12
+                m_roth_contrib = (ira_contrib_annual * roth_fraction) / 12
+                roth += m_roth_contrib
+                
+                # Deduct Roth contribution from available cash if not already in budget
+                # Actually, if we want to be safe, we subtract it here too.
+                cash -= m_roth_contrib
+                
+                # Add Employer Match (Free money)
+                if not p1_retired:
+                    p1_match = total_employment_annual * safe_float(self.profile.person1.employer_match_rate, 0)
+                    pretax_std += p1_match / 12
+                if not p2_retired:
+                    p2_match = total_employment_annual * safe_float(self.profile.person2.employer_match_rate, 0)
+                    pretax_std += p2_match / 12
 
                 # --- Handle Withdrawals (Robust Waterfall) ---
                 m_withdrawals = 0
@@ -2026,7 +2110,7 @@ class RetirementModel:
         if self.profile.income_streams:
             for s in self.profile.income_streams:
                 try:
-                    start_year = datetime.fromisoformat(s["start_date"]).year
+                    start_year = safe_year_from_iso(s.get("start_date"), default=9999)
                     if start_year <= rmd_year:
                         pension_annual += safe_float(s.get("amount", 0))
                 except Exception:
@@ -2238,6 +2322,7 @@ class RetirementModel:
         p1_retired: bool,
         p2_retired: bool,
         housing_costs: np.ndarray,
+        exclude_retirement_savings: bool = False,
     ) -> np.ndarray:
         """Calculate total expenses from budget categories for a given year (Vectorized)"""
         if not self.profile.budget:
@@ -2266,6 +2351,9 @@ class RetirementModel:
             period_expenses = expenses_section.get(period, {})
 
             for category, cat_data in period_expenses.items():
+                if exclude_retirement_savings and category.lower() in ("savings", "investment"):
+                    continue
+
                 category_total = np.zeros_like(current_cpi)
                 expense_items = (
                     cat_data
@@ -2278,6 +2366,11 @@ class RetirementModel:
                 )
 
                 for item in expense_items:
+                    if exclude_retirement_savings:
+                        name = (item.get("name") or "").lower()
+                        if any(k in name for k in ("401k", "ira", "roth", "retirement", "contribution", "savings")):
+                            continue
+
                     amount = item.get("amount", 0)
                     amount = self._annual_amount(
                         amount, item.get("frequency", "monthly")

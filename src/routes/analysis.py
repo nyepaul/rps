@@ -61,6 +61,10 @@ from src.__version__ import __version__
 analysis_bp = Blueprint("analysis", __name__, url_prefix="/api")
 
 
+EMPLOYMENT_STREAM_TYPES = {"salary", "hourly", "wages", "bonus"}
+EMPLOYMENT_STREAM_SOURCES = {"employment"}
+
+
 def transform_assets_to_investment_types(assets_data):
     """Transform frontend asset structure to investment_types format for the retirement model.
 
@@ -140,6 +144,82 @@ def transform_assets_to_investment_types(assets_data):
         )
 
     return investment_types
+
+
+def _annualize_stream_amount(stream):
+    """Convert a stream amount to annual dollars using its frequency."""
+    amount = float(stream.get("amount", 0) or 0)
+    frequency = (stream.get("frequency") or "monthly").lower()
+    if frequency == "monthly":
+        return amount * 12
+    if frequency == "weekly":
+        return amount * 52
+    if frequency == "biweekly":
+        return amount * 26
+    if frequency == "quarterly":
+        return amount * 4
+    if frequency == "annual":
+        return amount
+    # Keep legacy behavior for unknown frequencies.
+    return amount * 12
+
+
+def _is_employment_stream(stream):
+    return (
+        stream.get("type") in EMPLOYMENT_STREAM_TYPES
+        or stream.get("source") in EMPLOYMENT_STREAM_SOURCES
+    )
+
+
+def _prepare_budget_and_income_streams(profile_data, spouse_data):
+    """Normalize budget/income inputs so employment income is counted exactly once."""
+    raw_budget = profile_data.get("budget", {})
+    budget_data = raw_budget.copy() if isinstance(raw_budget, dict) else {}
+    raw_streams = profile_data.get("income_streams", [])
+    mc_income_streams = raw_streams[:] if isinstance(raw_streams, list) else []
+
+    if not budget_data:
+        return budget_data, mc_income_streams
+
+    if not budget_data.get("income"):
+        primary_salary = 0
+        spouse_salary = 0
+        spouse_first = (
+            (spouse_data.get("name") or "").lower().split()[0]
+            if spouse_data.get("name")
+            else ""
+        )
+        for stream in mc_income_streams:
+            if not _is_employment_stream(stream):
+                continue
+            annual_amount = _annualize_stream_amount(stream)
+            stream_name = (stream.get("name") or "").lower()
+            is_spouse = stream.get("owner") == "spouse" or (
+                spouse_first and spouse_first in stream_name
+            )
+            if is_spouse:
+                spouse_salary += annual_amount
+            else:
+                primary_salary += annual_amount
+
+        budget_data["income"] = {
+            "current": {
+                "employment": {
+                    "primary_person": primary_salary,
+                    "spouse": spouse_salary,
+                }
+            },
+            "future": {},
+        }
+
+    # If budget income is present (native or synthesized), strip employment streams
+    # so employment does not flow through both pathways.
+    if budget_data.get("income"):
+        mc_income_streams = [
+            s for s in mc_income_streams if not _is_employment_stream(s)
+        ]
+
+    return budget_data, mc_income_streams
 
 
 class MarketProfileSchema(BaseModel):
@@ -575,56 +655,10 @@ def run_analysis():
             )
         )
 
-        # Build budget data and resolve income_streams vs budget.income overlap
-        # Income must flow through ONE path only to avoid double-counting:
-        #   - income_streams -> model's stream processing (with per-person retirement gating)
-        #   - budget.income -> model's budget income processing
-        # We prefer income_streams (more granular) and skip budget employment when both exist.
-        budget_data = profile_data.get("budget", {})
-        mc_income_streams = profile_data.get("income_streams", [])
-
-        if budget_data and not budget_data.get("income"):
-            # No budget.income section -- income will flow via income_streams only.
-            # BUT the model's 401k calculation needs salary from budget.income.current.employment
-            # when a budget exists (lines 1125-1126, 1168-1169 in retirement_model.py).
-            # Populate employment salary from income_streams so 401k contributions work.
-            primary_salary = 0
-            spouse_salary_for_budget = 0
-            spouse_first = (spouse_data.get("name") or "").lower().split()[0] if spouse_data.get("name") else ""
-            for stream in mc_income_streams:
-                if stream.get("source") in ("employment",) or stream.get("type") in (
-                    "salary", "hourly", "wages", "bonus",
-                ):
-                    amt = stream.get("amount", 0)
-                    freq = stream.get("frequency", "monthly")
-                    annual = amt * 12 if freq in ("monthly", "") else (amt if freq == "annual" else amt * 12)
-
-                    stream_name = (stream.get("name") or "").lower()
-                    is_spouse = stream.get("owner") == "spouse" or (spouse_first and spouse_first in stream_name)
-                    if is_spouse:
-                        spouse_salary_for_budget += annual
-                    else:
-                        primary_salary += annual
-
-            budget_data["income"] = {
-                "current": {
-                    "employment": {
-                        "primary_person": primary_salary,
-                        "spouse": spouse_salary_for_budget,
-                    }
-                },
-                "future": {}
-            }
-        elif budget_data and budget_data.get("income"):
-            # Budget has explicit income section -- use budget for employment, strip employment
-            # from income_streams to avoid double-counting.
-            employment_types = {"salary", "hourly", "wages", "bonus"}
-            employment_sources = {"employment"}
-            mc_income_streams = [
-                s for s in mc_income_streams
-                if s.get("type") not in employment_types
-                and s.get("source") not in employment_sources
-            ]
+        # Normalize income paths so employment is counted exactly once.
+        budget_data, mc_income_streams = _prepare_budget_and_income_streams(
+            profile_data, spouse_data
+        )
 
         # Get tax settings with proper address fallback
         address_data = profile_data.get("address", {})
@@ -1167,47 +1201,10 @@ def get_cashflow_details():
             )
         )
 
-        # Build budget data and resolve income_streams vs budget.income overlap
-        budget_data = profile_data.get("budget", {})
-        mc_income_streams = profile_data.get("income_streams", [])
-
-        if budget_data and not budget_data.get("income"):
-            # Populate employment salary from income_streams for 401k calculations
-            primary_salary = 0
-            spouse_salary_for_budget = 0
-            spouse_first = (spouse_data.get("name") or "").lower().split()[0] if spouse_data.get("name") else ""
-            for stream in mc_income_streams:
-                if stream.get("source") in ("employment",) or stream.get("type") in (
-                    "salary", "hourly", "wages", "bonus",
-                ):
-                    amt = stream.get("amount", 0)
-                    freq = stream.get("frequency", "monthly")
-                    annual = amt * 12 if freq in ("monthly", "") else (amt if freq == "annual" else amt * 12)
-
-                    stream_name = (stream.get("name") or "").lower()
-                    is_spouse = stream.get("owner") == "spouse" or (spouse_first and spouse_first in stream_name)
-                    if is_spouse:
-                        spouse_salary_for_budget += annual
-                    else:
-                        primary_salary += annual
-
-            budget_data["income"] = {
-                "current": {
-                    "employment": {
-                        "primary_person": primary_salary,
-                        "spouse": spouse_salary_for_budget,
-                    }
-                },
-                "future": {}
-            }
-        elif budget_data and budget_data.get("income"):
-            employment_types = {"salary", "hourly", "wages", "bonus"}
-            employment_sources = {"employment"}
-            mc_income_streams = [
-                s for s in mc_income_streams
-                if s.get("type") not in employment_types
-                and s.get("source") not in employment_sources
-            ]
+        # Normalize income paths so employment is counted exactly once.
+        budget_data, mc_income_streams = _prepare_budget_and_income_streams(
+            profile_data, spouse_data
+        )
 
         # Get tax settings with proper address fallback
         address_data = profile_data.get("address", {})
@@ -2551,34 +2548,10 @@ def get_calculation_report():
                 employer_match_rate=spouse_data.get("employer_match_rate") or 0,
             )
 
-            projection_budget_data = budget_data.copy() if isinstance(budget_data, dict) else {}
-            mc_income_streams = income_streams[:] if isinstance(income_streams, list) else []
-            spouse_first = (spouse_data.get("name") or "").lower().split()[0] if spouse_data.get("name") else ""
-            if projection_budget_data and not projection_budget_data.get("income"):
-                primary_salary = 0
-                spouse_salary = 0
-                for stream in mc_income_streams:
-                    if stream.get("source") in ("employment",) or stream.get("type") in ("salary", "hourly", "wages", "bonus"):
-                        amt = float(stream.get("amount", 0) or 0)
-                        freq = (stream.get("frequency") or "monthly").lower()
-                        annual_amt = amt * 12 if freq in ("monthly", "") else (amt if freq == "annual" else amt * 12)
-                        stream_name = (stream.get("name") or "").lower()
-                        if stream.get("owner") == "spouse" or (spouse_first and spouse_first in stream_name):
-                            spouse_salary += annual_amt
-                        else:
-                            primary_salary += annual_amt
-
-                projection_budget_data["income"] = {
-                    "current": {"employment": {"primary_person": primary_salary, "spouse": spouse_salary}},
-                    "future": {},
-                }
-            elif projection_budget_data and projection_budget_data.get("income"):
-                employment_types = {"salary", "hourly", "wages", "bonus"}
-                employment_sources = {"employment"}
-                mc_income_streams = [
-                    s for s in mc_income_streams
-                    if s.get("type") not in employment_types and s.get("source") not in employment_sources
-                ]
+            projection_budget_data, mc_income_streams = _prepare_budget_and_income_streams(
+                {"budget": budget_data, "income_streams": income_streams},
+                spouse_data,
+            )
 
             has_spouse_for_projection = bool(
                 spouse_data.get("birth_date")

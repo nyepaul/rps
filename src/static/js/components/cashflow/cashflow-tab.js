@@ -1956,8 +1956,36 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
         const investmentBasisReturn = investmentIncome * 0.4;  // Tax-free
         const investmentCapitalGains = investmentIncome * 0.6;  // Taxed at LTCG rates
 
+        // --- 401k Retirement Contributions (Pre-retirement only) ---
+        let monthly401kContribution = 0;
+        let monthlyEmployerMatch = 0;
+
+        if (!isRetired && workIncome > 0) {
+            // Extract 401k rates from financial data
+            const contributionRate = financial.annual_401k_contribution_rate || data.person?.annual_401k_contribution_rate || 0;
+            const matchRate = financial.employer_match_rate || data.person?.employer_match_rate || 0;
+
+            // Calculate monthly contributions (401k is on salary only, not budget income)
+            monthly401kContribution = workIncome * contributionRate;
+            monthlyEmployerMatch = workIncome * matchRate;
+        }
+
+        // --- IRA Contributions (Pre-retirement only) ---
+        let monthlyIRAContribution = 0;
+        let monthlyPretaxIRA = 0;
+
+        if (!isRetired) {
+            // Extract annual IRA contribution from financial data
+            const annualIRAContribution = financial.annual_ira_contribution || 0;
+            monthlyIRAContribution = annualIRAContribution / 12;
+            
+            const rothFraction = financial.ira_roth_split !== undefined ? financial.ira_roth_split : 0.5;
+            monthlyPretaxIRA = monthlyIRAContribution * (1 - rothFraction);
+        }
+
         // Ordinary income (excludes investment gains - those are taxed separately)
-        const monthlyTaxableOrdinary = totalWorkIncome + totalPension + taxableSS;
+        // Subtract pre-tax retirement contributions from taxable income
+        const monthlyTaxableOrdinary = Math.max(0, (totalWorkIncome + totalPension + taxableSS) - monthly401kContribution - monthlyPretaxIRA);
 
         // Apply standard deduction (monthly)
         const filingStatus = financial.filing_status || 'mfj';
@@ -1997,29 +2025,6 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
 
         // Add LTCG tax to federal tax
         monthlyFederalTax += ltcgTax;
-
-        // --- 401k Retirement Contributions (Pre-retirement only) ---
-        let monthly401kContribution = 0;
-        let monthlyEmployerMatch = 0;
-
-        if (!isRetired && workIncome > 0) {
-            // Extract 401k rates from financial data
-            const contributionRate = financial.annual_401k_contribution_rate || data.person?.annual_401k_contribution_rate || 0;
-            const matchRate = financial.employer_match_rate || data.person?.employer_match_rate || 0;
-
-            // Calculate monthly contributions (401k is on salary only, not budget income)
-            monthly401kContribution = workIncome * contributionRate;
-            monthlyEmployerMatch = workIncome * matchRate;
-        }
-
-        // --- IRA Contributions (Pre-retirement only) ---
-        let monthlyIRAContribution = 0;
-
-        if (!isRetired) {
-            // Extract annual IRA contribution from financial data
-            const annualIRAContribution = financial.annual_ira_contribution || 0;
-            monthlyIRAContribution = annualIRAContribution / 12;
-        }
 
         // Total expenses including taxes
         const totalExpensesThisMonth = expenses + monthlyFederalTax + monthlyStateTax + monthlyFicaTax;

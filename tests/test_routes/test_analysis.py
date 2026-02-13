@@ -4,6 +4,8 @@ import pytest
 import json
 from datetime import datetime
 from src.routes.analysis import AnalysisRequestSchema, HealthcarePlanningRequestSchema
+from src.models.profile import Profile
+from src.services.retirement_model import RetirementModel
 
 
 class TestAnalysisRequestSchema:
@@ -287,3 +289,258 @@ def test_analysis_includes_phase1_planning_fields(client, test_user, test_profil
     assert "baseline" in payload["sequence_risk_visualization"]
     assert "cases" in payload["sequence_risk_visualization"]
     assert isinstance(payload["sequence_risk_visualization"]["cases"], list)
+
+
+def _create_overlap_profile(test_user, name, include_budget_income=False):
+    budget = {
+        "expenses": {
+            "current": {
+                "housing": [{"name": "Rent", "amount": 2000, "frequency": "monthly"}],
+                "food": [{"name": "Food", "amount": 600, "frequency": "monthly"}],
+            }
+        }
+    }
+    if include_budget_income:
+        budget["income"] = {
+            "current": {
+                "employment": {
+                    "primary_person": 130000,
+                    "spouse": 70000,
+                }
+            },
+            "future": {},
+        }
+
+    profile = Profile(
+        user_id=test_user.id,
+        name=name,
+        birth_date="1985-01-01",
+        retirement_date="2050-01-01",
+        data={
+            "person": {
+                "name": "Primary Person",
+                "birth_date": "1985-01-01",
+                "retirement_date": "2050-01-01",
+                "life_expectancy": 90,
+                "annual_401k_contribution_rate": 0.10,
+                "employer_match_rate": 0.04,
+            },
+            "spouse": {
+                "name": "Sam Spouse",
+                "birth_date": "1987-01-01",
+                "retirement_date": "2052-01-01",
+                "annual_401k_contribution_rate": 0.08,
+                "employer_match_rate": 0.03,
+            },
+            "income_streams": [
+                {
+                    "name": "Primary Salary",
+                    "amount": 10000,
+                    "frequency": "monthly",
+                    "source": "employment",
+                    "start_date": "2020-01-01",
+                },
+                {
+                    "name": "Sam Salary",
+                    "amount": 5000,
+                    "frequency": "monthly",
+                    "source": "employment",
+                    "owner": "spouse",
+                    "start_date": "2020-01-01",
+                },
+                {
+                    "name": "Dividends",
+                    "amount": 1000,
+                    "frequency": "monthly",
+                    "source": "investment",
+                    "start_date": "2020-01-01",
+                },
+            ],
+            "budget": budget,
+            "assets": {
+                "taxable_accounts": [{"name": "Brokerage", "type": "brokerage", "value": 200000, "cost_basis": 150000}],
+                "retirement_accounts": [{"name": "401k", "type": "401k", "value": 300000, "cost_basis": 250000}],
+            },
+            "tax_settings": {"filing_status": "mfj", "state": "NY", "tax_year": 2024},
+        },
+    )
+    profile.save()
+    return profile
+
+
+def test_cashflow_details_avoids_employment_double_count_when_budget_income_missing(client, test_user):
+    profile = _create_overlap_profile(test_user, "Overlap Missing Budget Income", include_budget_income=False)
+    login_res = client.post("/api/auth/login", json={"username": "testuser", "password": "TestPass123"})
+    assert login_res.status_code == 200
+
+    response = client.post(
+        "/api/analysis/cashflow-details",
+        json={"profile_name": profile.name, "simulations": 100, "spending_model": "constant_real"},
+    )
+    assert response.status_code == 200
+
+    ledger = response.get_json()["ledger"]
+    first = ledger[0]
+    annual_external_income = (
+        first["gross_income"] - first["withdrawals"] - first["liquidation_proceeds"]
+    ) * 12
+    # 120k + 60k employment + 12k dividends
+    assert annual_external_income == pytest.approx(192000, abs=1.0)
+
+
+def test_cashflow_details_uses_budget_employment_once_when_present(client, test_user):
+    profile = _create_overlap_profile(test_user, "Overlap Explicit Budget Income", include_budget_income=True)
+    login_res = client.post("/api/auth/login", json={"username": "testuser", "password": "TestPass123"})
+    assert login_res.status_code == 200
+
+    response = client.post(
+        "/api/analysis/cashflow-details",
+        json={"profile_name": profile.name, "simulations": 100, "spending_model": "constant_real"},
+    )
+    assert response.status_code == 200
+
+    ledger = response.get_json()["ledger"]
+    first = ledger[0]
+    annual_external_income = (
+        first["gross_income"] - first["withdrawals"] - first["liquidation_proceeds"]
+    ) * 12
+    # budget employment (130k + 70k) + 12k dividends (from stream)
+    assert annual_external_income == pytest.approx(212000, abs=1.0)
+
+
+def test_cashflow_details_counts_income_stream_with_missing_start_date(client, test_user):
+    """Regression: missing start_date should not silently drop income in cashflow-details."""
+    profile = Profile(
+        user_id=test_user.id,
+        name="Missing Start Date Income",
+        birth_date="1985-01-01",
+        retirement_date="2050-01-01",
+        data={
+            "person": {"name": "Primary", "life_expectancy": 90},
+            "spouse": {},
+            "assets": {
+                "taxable_accounts": [{"name": "Checking", "type": "checking", "value": 0, "cost_basis": 0}],
+                "retirement_accounts": [],
+            },
+            # Use non-employment stream so budget employment synthesis doesn't matter.
+            "income_streams": [
+                {
+                    "name": "Other Income",
+                    "amount": 1000,
+                    "frequency": "monthly",
+                    "type": "other",
+                    "start_date": None,
+                    "end_date": None,
+                    "inflation_adjusted": False,
+                }
+            ],
+            "budget": {
+                "expenses": {"current": {"other": [{"name": "Zero", "amount": 0, "frequency": "monthly"}]}},
+            },
+            "tax_settings": {"filing_status": "single", "state": "NY", "tax_year": 2024},
+        },
+    )
+    profile.save()
+
+    login_res = client.post(
+        "/api/auth/login", json={"username": "testuser", "password": "TestPass123"}
+    )
+    assert login_res.status_code == 200
+
+    response = client.post(
+        "/api/analysis/cashflow-details",
+        json={"profile_name": profile.name, "simulations": 100, "spending_model": "constant_real"},
+    )
+    assert response.status_code == 200
+    ledger = response.get_json()["ledger"]
+    assert ledger
+
+    # With no expenses and no taxes on small income, month 1 gross should ~= 1000
+    assert ledger[0]["gross_income"] == pytest.approx(1000.0, abs=0.5)
+
+
+def test_analysis_profile_strips_employment_streams_when_budget_income_synthesized(client, test_user, monkeypatch):
+    profile = _create_overlap_profile(test_user, "Run Analysis Overlap Missing Income", include_budget_income=False)
+    login_res = client.post("/api/auth/login", json={"username": "testuser", "password": "TestPass123"})
+    assert login_res.status_code == 200
+
+    captured = []
+
+    def fake_monte_carlo(self, years, simulations, assumptions, spending_model="constant_real", market_periods=None):
+        captured.append(
+            {
+                "streams": list(self.profile.income_streams or []),
+                "has_budget_income": bool((self.profile.budget or {}).get("income")),
+            }
+        )
+        return {
+            "success_rate": 0.85,
+            "median_final_balance": 1000000.0,
+            "percentile_10": 500000.0,
+            "percentile_90": 1500000.0,
+            "expected_value": 1050000.0,
+            "std_deviation": 100000.0,
+            "starting_portfolio": 500000.0,
+            "annual_withdrawal_need": 0.0,
+            "simulations": simulations,
+            "timeline": {"years": [2026], "p5": [500000.0], "median": [1000000.0], "p95": [1500000.0]},
+            "warnings": [],
+            "recommendations": [],
+        }
+
+    monkeypatch.setattr(RetirementModel, "monte_carlo_simulation", fake_monte_carlo)
+
+    response = client.post(
+        "/api/analysis",
+        json={"profile_name": profile.name, "simulations": 100, "spending_model": "constant_real"},
+    )
+    assert response.status_code == 200
+    assert captured
+
+    for call in captured:
+        assert call["has_budget_income"] is True
+        assert all(
+            (s.get("source") not in ("employment",))
+            and (s.get("type") not in ("salary", "hourly", "wages", "bonus"))
+            for s in call["streams"]
+        )
+
+
+def test_analysis_profile_strips_employment_streams_when_budget_income_exists(client, test_user, monkeypatch):
+    profile = _create_overlap_profile(test_user, "Run Analysis Overlap Explicit Income", include_budget_income=True)
+    login_res = client.post("/api/auth/login", json={"username": "testuser", "password": "TestPass123"})
+    assert login_res.status_code == 200
+
+    captured = []
+
+    def fake_monte_carlo(self, years, simulations, assumptions, spending_model="constant_real", market_periods=None):
+        captured.append(list(self.profile.income_streams or []))
+        return {
+            "success_rate": 0.85,
+            "median_final_balance": 1000000.0,
+            "percentile_10": 500000.0,
+            "percentile_90": 1500000.0,
+            "expected_value": 1050000.0,
+            "std_deviation": 100000.0,
+            "starting_portfolio": 500000.0,
+            "annual_withdrawal_need": 0.0,
+            "simulations": simulations,
+            "timeline": {"years": [2026], "p5": [500000.0], "median": [1000000.0], "p95": [1500000.0]},
+            "warnings": [],
+            "recommendations": [],
+        }
+
+    monkeypatch.setattr(RetirementModel, "monte_carlo_simulation", fake_monte_carlo)
+
+    response = client.post(
+        "/api/analysis",
+        json={"profile_name": profile.name, "simulations": 100, "spending_model": "constant_real"},
+    )
+    assert response.status_code == 200
+    assert captured
+    for streams in captured:
+        assert all(
+            (s.get("source") not in ("employment",))
+            and (s.get("type") not in ("salary", "hourly", "wages", "bonus"))
+            for s in streams
+        )
