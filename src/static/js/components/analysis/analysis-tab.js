@@ -5,7 +5,7 @@
 import { analysisAPI } from '../../api/analysis.js';
 import { profilesAPI } from '../../api/profiles.js';
 import { store } from '../../state/store.js';
-import { showSuccess, showError, showErrorInContainer, showLoading } from '../../utils/dom.js';
+import { showSuccess, showError, showErrorInContainer, showLoading, escapeHtml } from '../../utils/dom.js';
 import { formatCurrency, formatPercent, formatCompact } from '../../utils/formatters.js';
 import { renderStandardTimelineChart } from '../../utils/charts.js';
 import { APP_CONFIG } from '../../config.js';
@@ -351,6 +351,208 @@ function setupPlanningCardHelpHandlers(container) {
             if (helpKey) showPlanningCardHelpModal(helpKey);
         });
     });
+}
+
+function showPlanningDetailModal(title, html) {
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 10000; padding: 20px;';
+    modal.innerHTML = `
+        <div style="background: var(--bg-secondary); border-radius: 12px; max-width: 920px; width: 100%; max-height: 90vh; overflow-y: auto; position: relative; border: 1px solid var(--border-color);">
+            <button class="close-modal-btn" style="position: absolute; top: 15px; right: 15px; background: var(--bg-tertiary); border: none; color: var(--text-primary); font-size: 24px; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">×</button>
+            <div style="padding: 24px;">
+                <h2 style="font-size: 22px; margin: 0 0 12px 0; color: var(--accent-color);">${escapeHtml(title)}</h2>
+                ${html}
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    const closeModal = () => modal.remove();
+    modal.querySelector('.close-modal-btn').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+}
+
+function renderKeyValueTable(rows) {
+    const body = (rows || [])
+        .map(({ k, v }) => `
+            <div style="display: grid; grid-template-columns: 1.3fr 1.7fr; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+                <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">${escapeHtml(k)}</div>
+                <div style="font-size: 13px; color: var(--text-primary); font-weight: 600;">${v}</div>
+            </div>
+        `)
+        .join('');
+    return `<div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 14px;">${body}</div>`;
+}
+
+function showCollege529Details(college) {
+    if (!college?.available) return;
+
+    const a = college.assumptions || {};
+    const rows = [
+        { k: 'Annual College Cost (Today)', v: formatCurrency(a.annual_college_cost_today || 0, 0) },
+        { k: 'Years in College', v: escapeHtml(String(a.years_in_college ?? 4)) },
+        { k: 'Tuition Inflation', v: formatPercent(a.tuition_inflation || 0, 2) },
+        { k: 'Expected 529 Return', v: formatPercent(a.expected_529_return || 0, 2) },
+        { k: 'Target Funding Ratio', v: formatPercent(a.target_funding_ratio ?? 1.0, 2) }
+    ];
+
+    const totals = college.household_totals || {};
+    const totalsRows = [
+        { k: 'Existing 529 Balance', v: formatCurrency(totals.existing_529_balance || 0, 0) },
+        { k: 'Target Funding (Total)', v: formatCurrency(totals.target_funding_total || 0, 0) },
+        { k: 'Monthly Savings Needed (Total)', v: formatCurrency(totals.monthly_savings_needed_total || 0, 0) }
+    ];
+
+    const html = `
+        <p style="margin: 0 0 14px 0; color: var(--text-secondary); line-height: 1.6;">
+            This module estimates a target education fund per child by inflating annual college costs for each college year, then computes a monthly savings amount to close the gap using an ordinary-annuity future value formula.
+        </p>
+        <h3 style="font-size: 15px; margin: 0 0 8px 0;">Assumptions</h3>
+        ${renderKeyValueTable(rows)}
+        <h3 style="font-size: 15px; margin: 16px 0 8px 0;">Household Totals</h3>
+        ${renderKeyValueTable(totalsRows)}
+        <h3 style="font-size: 15px; margin: 16px 0 8px 0;">Per-Child Rows</h3>
+        <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 14px;">
+            ${(college.children || []).map((c) => `
+                <div style="display:flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+                    <div style="font-weight: 700;">${escapeHtml(c.name || 'Child')}</div>
+                    <div style="color: var(--text-secondary);">${formatCurrency(c.monthly_savings_needed || 0, 0)}/mo</div>
+                </div>
+            `).join('') || '<div style="color: var(--text-secondary);">No child rows available.</div>'}
+        </div>
+    `;
+    showPlanningDetailModal('529 College Savings Planner Details', html);
+}
+
+function showCollege529ChildDetails(college, childIndex) {
+    if (!college?.available) return;
+    const child = (college.children || [])[childIndex];
+    if (!child) return;
+
+    const a = college.assumptions || {};
+    const yearsToCollege = Number(child.years_to_college || 0);
+    const gap = Number(child.funding_gap || 0);
+    const r = Number(a.expected_529_return || 0) / 12.0;
+    const n = Math.max(0, yearsToCollege) * 12;
+    const factor = (yearsToCollege > 0 && r > 0) ? ((((1 + r) ** n) - 1) / r) : null;
+
+    const childRows = [
+        { k: 'Child', v: escapeHtml(String(child.name || `Child ${childIndex + 1}`)) },
+        { k: 'Years to College', v: escapeHtml(String(child.years_to_college ?? '-')) },
+        { k: 'Projected Total College Cost', v: formatCurrency(child.projected_total_college_cost || 0, 0) },
+        { k: 'Target Funding', v: formatCurrency(child.target_funding || 0, 0) },
+        { k: 'Current 529 (Allocated)', v: formatCurrency(child.existing_529_allocation || 0, 0) },
+        { k: 'Funding Gap', v: formatCurrency(child.funding_gap || 0, 0) },
+        { k: 'Monthly Savings Needed', v: formatCurrency(child.monthly_savings_needed || 0, 0) }
+    ];
+
+    const formulaHtml = yearsToCollege <= 0
+        ? `<div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+            <strong>When years to college is 0:</strong> monthly_needed = gap / 12.
+        </div>`
+        : `<div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+            <strong>Ordinary annuity:</strong><br>
+            r = expected_return / 12 = ${formatPercent(a.expected_529_return || 0, 2)} / 12<br>
+            n = years_to_college * 12 = ${n}<br>
+            factor = ((1 + r)^n - 1) / r = ${factor ? factor.toFixed(2) : 'N/A'}<br>
+            monthly_needed = gap / factor = ${formatCurrency(gap, 0)} / ${factor ? factor.toFixed(2) : 'N/A'}
+        </div>`;
+
+    const html = `
+        <h3 style="font-size: 15px; margin: 0 0 8px 0;">Row Breakdown</h3>
+        ${renderKeyValueTable(childRows)}
+        <h3 style="font-size: 15px; margin: 16px 0 8px 0;">How Monthly Need Is Calculated</h3>
+        <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 14px;">
+            ${formulaHtml}
+        </div>
+    `;
+    showPlanningDetailModal(`529 Details: ${child.name || `Child ${childIndex + 1}`}`, html);
+}
+
+function showEstateGiftingDetails(estate) {
+    if (!estate?.available) return;
+
+    const a = estate.assumptions || {};
+    const e = estate.estate || {};
+    const g = estate.gifting || {};
+
+    const assumptionsRows = [
+        { k: 'Federal Exemption (Per Person)', v: formatCurrency(a.federal_exemption_per_person || 0, 0) },
+        { k: 'Annual Gift Exclusion (Per Donor/Recipient)', v: formatCurrency(a.annual_gift_exclusion_per_donor_per_recipient || 0, 0) },
+        { k: 'Annual Growth Rate (Estate Projection)', v: formatPercent(a.annual_growth_rate || 0, 2) },
+        { k: 'Projection Years', v: escapeHtml(String(a.projection_years ?? '-')) }
+    ];
+
+    const estateRows = [
+        { k: 'Gross Estate', v: formatCurrency(e.gross_estate || 0, 0) },
+        { k: 'Liabilities', v: formatCurrency(e.liabilities || 0, 0) },
+        { k: 'Net Estate', v: formatCurrency(e.net_estate || 0, 0) },
+        { k: 'Federal Exemption (Total)', v: formatCurrency(e.federal_exemption_total || 0, 0) },
+        { k: 'Taxable Estate Today', v: formatCurrency(e.taxable_estate_today || 0, 0) },
+        { k: 'Projected Estate', v: formatCurrency(e.projected_estate || 0, 0) },
+        { k: 'Projected Taxable Estate', v: formatCurrency(e.projected_taxable_estate || 0, 0) }
+    ];
+
+    const giftingRows = [
+        { k: 'Beneficiaries Count', v: escapeHtml(String(g.beneficiaries_count ?? '-')) },
+        { k: 'Donors Count', v: escapeHtml(String(g.donors_count ?? '-')) },
+        { k: 'Annual Gifting Capacity', v: formatCurrency(g.annual_gifting_capacity || 0, 0) }
+    ];
+
+    const html = `
+        <p style="margin: 0 0 14px 0; color: var(--text-secondary); line-height: 1.6;">
+            This card is a screening tool: it compares modeled net estate to a simplified federal exemption and shows an annual exclusion gifting capacity estimate.
+        </p>
+        <h3 style="font-size: 15px; margin: 0 0 8px 0;">Assumptions</h3>
+        ${renderKeyValueTable(assumptionsRows)}
+        <h3 style="font-size: 15px; margin: 16px 0 8px 0;">Estate Breakdown</h3>
+        ${renderKeyValueTable(estateRows)}
+        <h3 style="font-size: 15px; margin: 16px 0 8px 0;">Gifting Capacity</h3>
+        ${renderKeyValueTable(giftingRows)}
+        ${estate.recommendations?.length ? `
+            <h3 style="font-size: 15px; margin: 16px 0 8px 0;">Recommendations</h3>
+            <ul style="margin: 0; padding-left: 18px; color: var(--text-secondary);">
+                ${estate.recommendations.map(r => `<li style="margin-bottom: 6px;">${escapeHtml(String(r))}</li>`).join('')}
+            </ul>
+        ` : ''}
+    `;
+    showPlanningDetailModal('Estate Tax & Gifting Strategy Details', html);
+}
+
+function setupPlanningCardDetailHandlers(container, planningData) {
+    // Remove previous handler if present (tab re-renders)
+    if (container._planningDetailClickHandler) {
+        container.removeEventListener('click', container._planningDetailClickHandler);
+        container._planningDetailClickHandler = null;
+    }
+
+    const handler = (event) => {
+        const trigger = event.target.closest('[data-detail]');
+        if (!trigger || !container.contains(trigger)) return;
+        const type = trigger.dataset.detail;
+        if (!type) return;
+
+        if (type === 'college') {
+            event.preventDefault();
+            showCollege529Details(planningData?.college_529_plan);
+            return;
+        }
+        if (type === 'college-child') {
+            event.preventDefault();
+            const idx = Number.parseInt(trigger.dataset.childIndex || '-1', 10);
+            if (!Number.isFinite(idx) || idx < 0) return;
+            showCollege529ChildDetails(planningData?.college_529_plan, idx);
+            return;
+        }
+        if (type === 'estate') {
+            event.preventDefault();
+            showEstateGiftingDetails(planningData?.estate_tax_gifting_strategy);
+        }
+    };
+
+    container._planningDetailClickHandler = handler;
+    container.addEventListener('click', handler);
 }
 
 export function renderAnalysisTab(container) {
@@ -1415,8 +1617,8 @@ function renderLifeInsuranceAndSequencePanels(planningData) {
     ` : '';
 
     const collegeRows = (college?.children || []).map((child, idx) => `
-        <div style="display: grid; grid-template-columns: 1.4fr 0.8fr 1fr 1fr 1fr; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border-color);">
-            <div style="font-size: 13px; font-weight: 600;">${child.name || `Child ${idx + 1}`}</div>
+        <div data-detail="college-child" data-child-index="${idx}" title="Click for details" style="display: grid; grid-template-columns: 1.4fr 0.8fr 1fr 1fr 1fr; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border-color); cursor: pointer;">
+            <div style="font-size: 13px; font-weight: 600;">${escapeHtml(child.name || `Child ${idx + 1}`)}</div>
             <div style="font-size: 13px;">${Number.isFinite(child.years_to_college) ? child.years_to_college : '-'}</div>
             <div style="font-size: 13px;">${formatCurrency(child.target_funding || 0, 0)}</div>
             <div style="font-size: 13px;">${formatCurrency(child.existing_529_allocation || 0, 0)}</div>
@@ -1426,20 +1628,20 @@ function renderLifeInsuranceAndSequencePanels(planningData) {
 
     const collegePanel = college?.available ? `
         <div class="result-card" style="border-left: 4px solid var(--success-color);">
-            <h3 style="margin: 0 0 10px 0;">529 College Savings Planner</h3>
+            <h3 style="margin: 0 0 10px 0;"><button type="button" data-detail="college" title="Click for details" style="display: inline-flex; align-items: center; gap: 6px; background: none; border: none; padding: 0; margin: 0; color: inherit; font: inherit; font-weight: 700; cursor: pointer;">529 College Savings Planner <span style="font-size: 12px; color: var(--accent-color);">ℹ️</span></button></h3>
             <p style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 13px;">
                 ${college.summary || '529 summary unavailable.'}
             </p>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 12px;">
-                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                <div data-detail="college" title="Click for details" style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; cursor: pointer;">
                     <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Current 529 Balance</div>
                     <div style="font-size: 20px; font-weight: 700;">${formatCurrency(college.household_totals?.existing_529_balance || 0, 0)}</div>
                 </div>
-                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                <div data-detail="college" title="Click for details" style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; cursor: pointer;">
                     <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Target Funding</div>
                     <div style="font-size: 20px; font-weight: 700;">${formatCurrency(college.household_totals?.target_funding_total || 0, 0)}</div>
                 </div>
-                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                <div data-detail="college" title="Click for details" style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; cursor: pointer;">
                     <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Monthly Savings Needed</div>
                     <div style="font-size: 20px; font-weight: 700; color: var(--success-color);">${formatCurrency(college.household_totals?.monthly_savings_needed_total || 0, 0)}</div>
                 </div>
@@ -1501,23 +1703,23 @@ function renderLifeInsuranceAndSequencePanels(planningData) {
             <h3 style="margin: 0 0 10px 0;">${planningHelpButton('estate_tax_gifting', 'Estate Tax & Gifting Strategy')}</h3>
             <p style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 13px;">${estate.summary || ''}</p>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-bottom: 12px;">
-                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                <div data-detail="estate" title="Click for details" style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; cursor: pointer;">
                     <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Net Estate</div>
                     <div style="font-size: 20px; font-weight: 700;">${formatCurrency(estate.estate?.net_estate || 0, 0)}</div>
                 </div>
-                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                <div data-detail="estate" title="Click for details" style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; cursor: pointer;">
                     <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Taxable Today</div>
                     <div style="font-size: 20px; font-weight: 700; color: ${(estate.estate?.taxable_estate_today || 0) > 0 ? 'var(--danger-color)' : 'var(--success-color)'};">
                         ${formatCurrency(estate.estate?.taxable_estate_today || 0, 0)}
                     </div>
                 </div>
-                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                <div data-detail="estate" title="Click for details" style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; cursor: pointer;">
                     <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Projected Taxable</div>
                     <div style="font-size: 20px; font-weight: 700; color: ${(estate.estate?.projected_taxable_estate || 0) > 0 ? 'var(--danger-color)' : 'var(--success-color)'};">
                         ${formatCurrency(estate.estate?.projected_taxable_estate || 0, 0)}
                     </div>
                 </div>
-                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                <div data-detail="estate" title="Click for details" style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; cursor: pointer;">
                     <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Annual Gift Capacity</div>
                     <div style="font-size: 20px; font-weight: 700; color: #7c3aed;">${formatCurrency(estate.gifting?.annual_gifting_capacity || 0, 0)}</div>
                 </div>
@@ -2140,6 +2342,7 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
     // Add click handlers to stat items for explanations
     setupStatItemClickHandlers(container);
     setupPlanningCardHelpHandlers(container);
+    setupPlanningCardDetailHandlers(container, planningData);
 
     // Render timeline chart if data available
     if (data.timeline) {
@@ -2420,6 +2623,7 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
     // Add click handlers to stat items for explanations in all scenarios
     setupStatItemClickHandlers(container);
     setupPlanningCardHelpHandlers(container);
+    setupPlanningCardDetailHandlers(container, planningData);
 
     // Render timeline charts for each scenario
     console.log('About to render timeline charts...');

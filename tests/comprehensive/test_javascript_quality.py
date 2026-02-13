@@ -226,6 +226,17 @@ class TestJavaScriptCriticalIssues:
         assert "window.history.pushState({ tab: tabName }" in content
         assert "localStorage.setItem(STORAGE_KEYS.LAST_TAB, tabName)" in content
 
+    def test_analysis_planning_cards_have_click_details(self):
+        """Ensure key Analysis planning cards expose click-to-detail triggers."""
+        analysis_tab = JS_BASE_DIR / "components" / "analysis" / "analysis-tab.js"
+        if not analysis_tab.exists():
+            pytest.skip("analysis-tab.js not found")
+
+        content = analysis_tab.read_text()
+        assert 'data-detail="college"' in content
+        assert 'data-detail="college-child"' in content
+        assert 'data-detail="estate"' in content
+
     def test_glossary_utility_used_in_key_tabs(self):
         """Ensure key tabs use the shared glossary utility and wiring."""
         targets = [
