@@ -35,15 +35,34 @@ call_api() {
   local name="$1" method="$2" path="$3" payload="${4:-}"
   local code body
   local -a headers=( -H "Referer: ${BASE_URL}/" -H "Origin: ${BASE_URL}" )
+  local rc
 
   if [[ "$method" != "GET" && -n "$csrf" ]]; then
     headers+=( -H "X-CSRF-Token: ${csrf}" )
   fi
 
   if [[ -n "$payload" ]]; then
+    set +e
     code=$(curl -sS -o "$RESP_FILE" -w '%{http_code}' -c "$COOKIE_JAR" -b "$COOKIE_JAR" "${headers[@]}" -H 'Content-Type: application/json' -X "$method" "${BASE_URL}${path}" -d "$payload")
+    rc=$?
+    if [[ "$rc" -eq 6 ]]; then
+      code=$(curl -4 -sS -o "$RESP_FILE" -w '%{http_code}' -c "$COOKIE_JAR" -b "$COOKIE_JAR" "${headers[@]}" -H 'Content-Type: application/json' -X "$method" "${BASE_URL}${path}" -d "$payload")
+      rc=$?
+    fi
+    set -e
   else
+    set +e
     code=$(curl -sS -o "$RESP_FILE" -w '%{http_code}' -c "$COOKIE_JAR" -b "$COOKIE_JAR" "${headers[@]}" -X "$method" "${BASE_URL}${path}")
+    rc=$?
+    if [[ "$rc" -eq 6 ]]; then
+      code=$(curl -4 -sS -o "$RESP_FILE" -w '%{http_code}' -c "$COOKIE_JAR" -b "$COOKIE_JAR" "${headers[@]}" -X "$method" "${BASE_URL}${path}")
+      rc=$?
+    fi
+    set -e
+  fi
+  if [[ "$rc" -ne 0 ]]; then
+    fail_case "${name} (curl_rc=${rc})"
+    return 1
   fi
 
   body=$(cat "$RESP_FILE" 2>/dev/null || true)

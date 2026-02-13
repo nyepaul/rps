@@ -11,10 +11,62 @@ fail=0
 pass_case() { printf '[PASS] %s\n' "$1"; pass=$((pass + 1)); }
 fail_case() { printf '[FAIL] %s\n' "$1"; fail=$((fail + 1)); }
 
+curl_retry() {
+  # Some environments have flaky IPv6/AAAA resolution; retry forcing IPv4 on DNS errors.
+  local rc out attempt max_attempts
+  local url hostport host port ip
+  local -a extra
+  max_attempts="${RPS_CURL_RETRIES:-4}"
+
+  # If we can resolve an A record via dig, prefer pinning it via --resolve to avoid curl resolver flakiness.
+  url="${@: -1}"
+  hostport="${url#*://}"
+  hostport="${hostport%%/*}"
+  host="${hostport%%:*}"
+  port="${hostport##*:}"
+  if [[ -n "$host" && "$host" == "$hostport" ]]; then
+    port=443
+  fi
+  if [[ -n "$host" ]]; then
+    ip="$(dig +short A "$host" 2>/dev/null | head -n 1 || true)"
+    if [[ -n "$ip" ]]; then
+      extra=( -4 --resolve "${host}:${port}:${ip}" )
+    else
+      extra=( -4 )
+    fi
+  else
+    extra=( -4 )
+  fi
+
+  attempt=1
+  while [[ "$attempt" -le "$max_attempts" ]]; do
+    set +e
+    out=$(curl "${extra[@]}" "$@")
+    rc=$?
+    set -e
+
+    if [[ "$rc" -eq 0 ]]; then
+      printf '%s' "$out"
+      return 0
+    fi
+
+    # Backoff: 0.2s, 0.4s, 0.6s, ...
+    sleep "$(python3 - <<PY
+print(f"{0.2 * $attempt:.1f}")
+PY
+)"
+    attempt=$((attempt + 1))
+  done
+
+  # Keep the caller running under set -e; treat as "no response".
+  printf '000'
+  return 0
+}
+
 check_path() {
   local path="$1"
   local code
-  code=$(curl -sS -o /tmp/rps_link_resp -w '%{http_code}' -H "Referer: ${BASE_URL}/" -H "Origin: ${BASE_URL}" "${BASE_URL}${path}")
+  code=$(curl_retry -sS -o /tmp/rps_link_resp -w '%{http_code}' -H "Referer: ${BASE_URL}/" -H "Origin: ${BASE_URL}" "${BASE_URL}${path}")
   if [[ "$code" =~ ^2|3 ]]; then
     pass_case "${path} (${code})"
   else
@@ -23,7 +75,7 @@ check_path() {
 }
 
 for page in / /login; do
-  code=$(curl -sS -o "$TMP_HTML" -w '%{http_code}' "${BASE_URL}${page}")
+  code=$(curl_retry -sS -o "$TMP_HTML" -w '%{http_code}' "${BASE_URL}${page}")
   if [[ ! "$code" =~ ^2|3 ]]; then
     fail_case "page ${page} (${code})"
     continue
