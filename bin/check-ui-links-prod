@@ -2,8 +2,9 @@
 set -euo pipefail
 
 BASE_URL="${1:-https://rps.pan2.app}"
-TMP_HTML="/tmp/rps_ui_links.html"
-TMP_LIST="/tmp/rps_ui_links.txt"
+TMP_HTML="$(mktemp /tmp/rps_ui_links_html.XXXXXX)"
+TMP_LIST="$(mktemp /tmp/rps_ui_links_list.XXXXXX)"
+TMP_RESP="$(mktemp /tmp/rps_ui_links_resp.XXXXXX)"
 
 pass=0
 fail=0
@@ -18,7 +19,7 @@ curl_retry() {
   local -a extra
   max_attempts="${RPS_CURL_RETRIES:-4}"
 
-  # If we can resolve an A record via dig, prefer pinning it via --resolve to avoid curl resolver flakiness.
+  # Prefer pinning an IPv4 via --resolve to avoid curl resolver flakiness.
   url="${@: -1}"
   hostport="${url#*://}"
   hostport="${hostport%%/*}"
@@ -28,11 +29,17 @@ curl_retry() {
     port=443
   fi
   if [[ -n "$host" ]]; then
-    ip="$(dig +short A "$host" 2>/dev/null | head -n 1 || true)"
-    if [[ -n "$ip" ]]; then
-      extra=( -4 --resolve "${host}:${port}:${ip}" )
-    else
+    if [[ "$host" == "rps.pan2.app" ]]; then
+      # Hardcode known Cloudflare A records to avoid DNS flakiness.
       extra=( -4 )
+    else
+      # Use getent (more likely to work in constrained environments than dig).
+      ip="$(getent ahostsv4 "$host" 2>/dev/null | awk 'NR==1{print $1}' || true)"
+      if [[ -n "$ip" ]]; then
+        extra=( -4 --resolve "${host}:${port}:${ip}" )
+      else
+        extra=( -4 )
+      fi
     fi
   else
     extra=( -4 )
@@ -40,6 +47,15 @@ curl_retry() {
 
   attempt=1
   while [[ "$attempt" -le "$max_attempts" ]]; do
+    # Always alternate between known Cloudflare A records for rps.pan2.app (avoid DNS + single-IP failures).
+    if [[ "$host" == "rps.pan2.app" ]]; then
+      if (( attempt % 2 == 1 )); then
+        extra=( -4 --resolve "${host}:${port}:104.21.44.217" )
+      else
+        extra=( -4 --resolve "${host}:${port}:172.67.203.239" )
+      fi
+    fi
+
     set +e
     out=$(curl "${extra[@]}" "$@")
     rc=$?
@@ -66,13 +82,18 @@ PY
 check_path() {
   local path="$1"
   local code
-  code=$(curl_retry -sS -o /tmp/rps_link_resp -w '%{http_code}' -H "Referer: ${BASE_URL}/" -H "Origin: ${BASE_URL}" "${BASE_URL}${path}")
+  code=$(curl_retry -sS -o "$TMP_RESP" -w '%{http_code}' -H "Referer: ${BASE_URL}/" -H "Origin: ${BASE_URL}" "${BASE_URL}${path}")
   if [[ "$code" =~ ^2|3 ]]; then
     pass_case "${path} (${code})"
   else
     fail_case "${path} (${code})"
   fi
 }
+
+cleanup() {
+  rm -f "$TMP_HTML" "$TMP_LIST" "$TMP_RESP"
+}
+trap cleanup EXIT
 
 for page in / /login; do
   code=$(curl_retry -sS -o "$TMP_HTML" -w '%{http_code}' "${BASE_URL}${page}")

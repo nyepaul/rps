@@ -4,8 +4,9 @@ set -euo pipefail
 BASE_URL="${1:-https://rps.pan2.app}"
 USERNAME="${RPS_SMOKE_USER:-demo}"
 PASSWORD="${RPS_SMOKE_PASS:-Demo1234}"
-COOKIE_JAR="/tmp/rps_demo_cookie.txt"
-RESP_FILE="/tmp/rps_resp.json"
+COOKIE_JAR="$(mktemp /tmp/rps_demo_cookie.XXXXXX)"
+RESP_FILE="$(mktemp /tmp/rps_demo_resp.XXXXXX)"
+export RESP_FILE
 
 pass=0
 fail=0
@@ -15,6 +16,11 @@ profile_name=""
 info() { printf '%s\n' "$*"; }
 pass_case() { info "[PASS] $1"; pass=$((pass + 1)); }
 fail_case() { info "[FAIL] $1"; fail=$((fail + 1)); }
+
+cleanup() {
+  rm -f "$COOKIE_JAR" "$RESP_FILE"
+}
+trap cleanup EXIT
 
 call_api() {
   local name="$1" method="$2" path="$3" payload="${4:-}"
@@ -60,14 +66,12 @@ call_api() {
   return 1
 }
 
-rm -f "$COOKIE_JAR" "$RESP_FILE"
-
 call_api 'auth_login' POST '/api/auth/login' "{\"username\":\"${USERNAME}\",\"password\":\"${PASSWORD}\"}"
 call_api 'get_csrf' GET '/api/csrf'
 csrf=$(python3 - <<'PY'
 import json
 from pathlib import Path
-p=Path('/tmp/rps_resp.json')
+p=Path(__import__('os').environ['RESP_FILE'])
 if p.exists():
     d=json.loads(p.read_text())
     print(d.get('csrf_token',''))
@@ -89,7 +93,7 @@ call_api 'profiles_list' GET '/api/profiles'
 profile_name=$(python3 - <<'PY'
 import json
 from pathlib import Path
-p=Path('/tmp/rps_resp.json')
+p=Path(__import__('os').environ['RESP_FILE'])
 d=json.loads(p.read_text()) if p.exists() else {}
 profiles=d.get('profiles',[])
 name='Demo Thompson'

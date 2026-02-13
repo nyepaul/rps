@@ -44,6 +44,7 @@ A local-first financial planning application for Monte Carlo retirement simulati
 | `./bin/check-no-secrets` | Scan tracked files for secret-like tokens |
 | `./bin/check-repo-hygiene` | Block committing generated/local artifacts |
 | `./bin/check-quality-gates` | Run CI-equivalent quality gates locally |
+| `./bin/test [args...]` | Run full pytest suite using repo venv |
 | `./bin/setup-git-hooks` | Enable local pre-push hook checks (`.githooks`) |
 | `sudo ./bin/deploy` | Deploy latest `main` to production (server environment) |
 | `./bin/manage stop` | Stop the application |
@@ -59,7 +60,7 @@ A local-first financial planning application for Monte Carlo retirement simulati
 ## Release Workflow
 
 Use `TBPD` for releases:
-1. **Test**: `./bin/check-quality-gates`
+1. **Test**: `./bin/check-quality-gates && ./bin/test`
 2. **Bump**: `./bin/bump-version <x.y.z> "<notes>"`
 3. **Push**: `git push origin main`
 4. **Deploy**: `sudo ./bin/deploy`

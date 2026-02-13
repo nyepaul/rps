@@ -20,8 +20,8 @@ SIMS="${RPS_SMOKE_SIMS:-1000}"
 PROFILE_REGEX="${RPS_SMOKE_PROFILE_REGEX:-}"
 RUN_MUTATIONS="${RPS_SMOKE_MUTATIONS:-0}"
 
-COOKIE_JAR="/tmp/rps_smoke_cookie.txt"
-RESP_FILE="/tmp/rps_smoke_resp.json"
+COOKIE_JAR="$(mktemp /tmp/rps_smoke_cookie.XXXXXX)"
+RESP_FILE="$(mktemp /tmp/rps_smoke_resp.XXXXXX)"
 
 pass=0
 fail=0
@@ -30,6 +30,11 @@ csrf=""
 info() { printf '%s\n' "$*"; }
 pass_case() { info "[PASS] $1"; pass=$((pass + 1)); }
 fail_case() { info "[FAIL] $1"; fail=$((fail + 1)); }
+
+cleanup() {
+  rm -f "$COOKIE_JAR" "$RESP_FILE"
+}
+trap cleanup EXIT
 
 call_api() {
   local name="$1" method="$2" path="$3" payload="${4:-}"
@@ -75,19 +80,18 @@ call_api() {
   return 1
 }
 
-rm -f "$COOKIE_JAR" "$RESP_FILE"
-
 call_api 'auth_login' POST '/api/auth/login' "{\"username\":\"${USERNAME}\",\"password\":\"${PASSWORD}\"}"
 call_api 'get_csrf' GET '/api/csrf'
-csrf=$(python3 - <<'PY'
+csrf=$(python3 - "$RESP_FILE" <<'PY'
 import json
-from pathlib import Path
-p=Path('/tmp/rps_smoke_resp.json')
-if p.exists():
-    d=json.loads(p.read_text())
-    print(d.get('csrf_token',''))
-else:
-    print('')
+import sys
+
+path = sys.argv[1]
+try:
+    d = json.loads(open(path, "r", encoding="utf-8").read() or "{}")
+except Exception:
+    d = {}
+print(d.get("csrf_token", ""))
 PY
 )
 
@@ -102,12 +106,12 @@ call_api 'api_version' GET '/api/version'
 call_api 'profiles_list' GET '/api/profiles'
 
 profiles=$(
-  RPS_SMOKE_PROFILE_REGEX="$PROFILE_REGEX" python3 - <<'PY'
+  RESP_FILE="$RESP_FILE" RPS_SMOKE_PROFILE_REGEX="$PROFILE_REGEX" python3 - <<'PY'
 import json, os, re
 from pathlib import Path
 
 d = {}
-p = Path("/tmp/rps_smoke_resp.json")
+p = Path(os.environ["RESP_FILE"])
 if p.exists():
     d = json.loads(p.read_text() or "{}")
 
@@ -157,12 +161,10 @@ if [[ "$RUN_MUTATIONS" == "1" ]]; then
 
   call_api 'scenarios_list' GET '/api/scenarios'
   call_api 'scenario_create' POST '/api/scenarios' "{\"name\":\"API Smoke Scenario\",\"profile_name\":\"${first_profile}\",\"parameters\":{\"simulations\":${SIMS}},\"results\":{\"smoke\":true}}"
-  scenario_id=$(python3 - <<'PY'
+  scenario_id=$(python3 - "$RESP_FILE" <<'PY'
 import json
-from pathlib import Path
-p=Path('/tmp/rps_smoke_resp.json')
 try:
-    d=json.loads(p.read_text())
+    d=json.loads(open(__import__("sys").argv[1], "r", encoding="utf-8").read())
 except Exception:
     d={}
 print((d.get('scenario') or {}).get('id') or '')
@@ -179,12 +181,10 @@ PY
   call_api 'action_items_list' GET '/api/action-items'
   call_api 'action_items_generate' POST '/api/action-items/generate' "{\"profile_name\":\"${first_profile}\"}"
   call_api 'action_item_create' POST '/api/action-items' "{\"profile_name\":\"${first_profile}\",\"title\":\"Smoke test action item\",\"category\":\"test\",\"priority\":\"low\",\"status\":\"pending\"}"
-  item_id=$(python3 - <<'PY'
+  item_id=$(python3 - "$RESP_FILE" <<'PY'
 import json
-from pathlib import Path
-p=Path('/tmp/rps_smoke_resp.json')
 try:
-    d=json.loads(p.read_text())
+    d=json.loads(open(__import__("sys").argv[1], "r", encoding="utf-8").read())
 except Exception:
     d={}
 print((d.get('action_item') or {}).get('id') or '')
