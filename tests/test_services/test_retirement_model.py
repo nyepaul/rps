@@ -129,6 +129,76 @@ def test_monte_carlo_with_budget():
     assert result["starting_portfolio"] == 100000
 
 
+def test_calculate_budget_expenses_includes_college_expenses_by_year():
+    p1 = Person("P1", datetime(1980, 1, 1), datetime(2045, 1, 1), 0)
+    p2 = Person("P2", datetime(1980, 1, 1), datetime(2045, 1, 1), 0)
+
+    budget = {
+        "expenses": {
+            "current": {
+                "food": {
+                    "amount": 1000,
+                    "frequency": "monthly",
+                    "inflation_adjusted": True,
+                },
+            },
+            "future": {},
+        },
+        "college_expenses": [
+            {
+                "child_name": "Tyler",
+                "start_year": 2030,
+                "end_year": 2033,
+                "annual_cost": 30000,
+                "enabled": True,
+            }
+        ],
+    }
+
+    profile = FinancialProfile(
+        person1=p1,
+        person2=p2,
+        children=[{"name": "Tyler", "birth_year": 2012}],
+        liquid_assets=0,
+        traditional_ira=0,
+        roth_ira=0,
+        pension_lump_sum=0,
+        pension_annual=0,
+        annual_expenses=0,
+        target_annual_income=0,
+        risk_tolerance="moderate",
+        asset_allocation={"stocks": 0.0, "bonds": 0.0},
+        future_expenses=[],
+        investment_types=[],
+        budget=budget,
+    )
+
+    model = RetirementModel(profile)
+
+    cpi = np.array([1.0])
+    housing_costs = np.array([0.0])
+
+    # In college window: food + college annual cost
+    in_year = model.calculate_budget_expenses(
+        simulation_year=2030,
+        current_cpi=cpi,
+        p1_retired=False,
+        p2_retired=False,
+        housing_costs=housing_costs,
+    )
+    assert float(in_year[0]) == 1000 * 12 + 30000
+
+    # Outside college window: only food
+    out_year = model.calculate_budget_expenses(
+        simulation_year=2029,
+        current_cpi=cpi,
+        p1_retired=False,
+        p2_retired=False,
+        housing_costs=housing_costs,
+    )
+    assert float(out_year[0]) == 1000 * 12
+
+
 # =========================================================================
 # Tax Function Tests
 # =========================================================================

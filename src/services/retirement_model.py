@@ -2330,6 +2330,7 @@ class RetirementModel:
 
         budget = self.profile.budget
         expenses_section = budget.get("expenses", {})
+        college_expenses = budget.get("college_expenses") or []
 
         # Define category weights for partial retirement
         # 1.0 = transition fully when first person retires
@@ -2389,19 +2390,47 @@ class RetirementModel:
                 period_data[category] = category_total
             return period_data
 
+        def get_college_expenses_total() -> np.ndarray:
+            """
+            College expenses are modeled as explicit annual costs over a year range.
+            These are not part of current/future budget categories; they apply in the
+            specified simulation years regardless of retirement status.
+            """
+            total = np.zeros_like(current_cpi)
+            for item in college_expenses:
+                try:
+                    if not item or not item.get("enabled", True):
+                        continue
+                    start_year = int(item.get("start_year") or 0)
+                    end_year = int(item.get("end_year") or 0)
+                    if start_year <= simulation_year <= end_year:
+                        annual_cost = float(item.get("annual_cost") or 0.0)
+                        # Default to inflation-adjusted unless explicitly disabled.
+                        if item.get("inflation_adjusted", True):
+                            total += annual_cost * current_cpi
+                        else:
+                            total += annual_cost
+                except Exception:
+                    continue
+            return total
+
+        college_total = get_college_expenses_total()
+
         if not p1_retired and not p2_retired:
             # Both working: 100% current
             current_map = get_period_expenses("current")
-            return (
+            base = (
                 sum(current_map.values()) if current_map else np.zeros_like(current_cpi)
             )
+            return base + college_total
 
         if p1_retired and p2_retired:
             # Both retired: 100% future
             future_map = get_period_expenses("future")
-            return (
+            base = (
                 sum(future_map.values()) if future_map else np.zeros_like(current_cpi)
             )
+            return base + college_total
 
         # Partial Retirement: One is retired, one is working
         current_map = get_period_expenses("current")
@@ -2420,4 +2449,4 @@ class RetirementModel:
             # Blended value for this category
             total_expenses += (c_val * (1 - weight)) + (f_val * weight)
 
-        return total_expenses
+        return total_expenses + college_total
