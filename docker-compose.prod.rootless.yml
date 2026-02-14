@@ -30,7 +30,7 @@ services:
       # Ensure matplotlib cache is writable even with bind-mounts.
       - MPLCONFIGDIR=/tmp/matplotlib
     env_file:
-      - .env.production
+      - .env.production.rootless
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs

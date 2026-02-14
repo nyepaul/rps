@@ -14,6 +14,7 @@ NC='\033[0m'
 SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TARGET_DIR="/var/www/rps.pan2.app"
 SERVICE_NAME="rps"
+DOCKER_MODE="${RPS_DOCKER_MODE:-rootful}" # rootful|rootless
 
 echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${GREEN}║              RPS Docker Deployment to Production               ║${NC}"
@@ -31,6 +32,11 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 if ! docker compose version >/dev/null 2>&1; then
   echo -e "${RED}ERROR:${NC} docker compose is not available (compose v2 required)." >&2
+  exit 2
+fi
+
+if [[ "$DOCKER_MODE" != "rootful" && "$DOCKER_MODE" != "rootless" ]]; then
+  echo -e "${RED}ERROR:${NC} invalid RPS_DOCKER_MODE='$DOCKER_MODE' (use rootful or rootless)." >&2
   exit 2
 fi
 
@@ -64,22 +70,60 @@ else
 fi
 
 echo -e "${YELLOW}→ Validating production env file...${NC}"
-if [[ ! -f "$TARGET_DIR/.env.production" ]]; then
-  echo -e "${RED}ERROR:${NC} missing $TARGET_DIR/.env.production (must include SECRET_KEY and ENCRYPTION_KEY)." >&2
-  exit 2
+if [[ "$DOCKER_MODE" == "rootless" ]]; then
+  if [[ ! -f "$TARGET_DIR/.env.production.rootless" ]]; then
+    if [[ ! -f "$TARGET_DIR/.env.production" ]]; then
+      echo -e "${RED}ERROR:${NC} missing $TARGET_DIR/.env.production (required to bootstrap .env.production.rootless)." >&2
+      exit 2
+    fi
+    echo "  ℹ Creating $TARGET_DIR/.env.production.rootless from .env.production"
+    cp "$TARGET_DIR/.env.production" "$TARGET_DIR/.env.production.rootless"
+    chown paul:paul "$TARGET_DIR/.env.production.rootless"
+    chmod 600 "$TARGET_DIR/.env.production.rootless"
+  fi
+  echo "  ✓ .env.production.rootless present"
+else
+  if [[ ! -f "$TARGET_DIR/.env.production" ]]; then
+    echo -e "${RED}ERROR:${NC} missing $TARGET_DIR/.env.production (must include SECRET_KEY and ENCRYPTION_KEY)." >&2
+    exit 2
+  fi
+  echo "  ✓ .env.production present"
 fi
-echo "  ✓ .env.production present"
 
 echo -e "${YELLOW}→ Installing systemd service...${NC}"
-cp "$TARGET_DIR/systemd/rps-docker.service" "/etc/systemd/system/${SERVICE_NAME}.service"
+if [[ "$DOCKER_MODE" == "rootless" ]]; then
+  cp "$TARGET_DIR/systemd/rps-docker-rootless.service" "/etc/systemd/system/${SERVICE_NAME}.service"
+else
+  cp "$TARGET_DIR/systemd/rps-docker.service" "/etc/systemd/system/${SERVICE_NAME}.service"
+fi
 chmod 644 "/etc/systemd/system/${SERVICE_NAME}.service"
 systemctl daemon-reload
 echo "  ✓ systemd unit installed as ${SERVICE_NAME}.service"
 
-echo -e "${YELLOW}→ Building docker image...${NC}"
 cd "$TARGET_DIR"
-docker compose -f docker-compose.prod.yml build
-echo "  ✓ Image built"
+
+if [[ "$DOCKER_MODE" == "rootless" ]]; then
+  echo -e "${YELLOW}→ Preflight: rootless docker socket...${NC}"
+  if [[ ! -S "/run/user/1000/docker.sock" ]]; then
+    echo -e "${RED}ERROR:${NC} missing /run/user/1000/docker.sock (rootless docker daemon not running for user 'paul')." >&2
+    echo "Try: systemctl --user start docker (as paul) and enable lingering." >&2
+    exit 2
+  fi
+  echo "  ✓ rootless socket present"
+
+  # Free the port from any rootful stack before starting rootless.
+  echo -e "${YELLOW}→ Stopping rootful stack (to free port 5137)...${NC}"
+  docker compose -f docker-compose.prod.yml down || true
+  echo "  ✓ rootful stack stopped (if it was running)"
+
+  echo -e "${YELLOW}→ Building docker image (rootless daemon)...${NC}"
+  sudo -u paul env DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f docker-compose.prod.rootless.yml build
+  echo "  ✓ Image built (rootless)"
+else
+  echo -e "${YELLOW}→ Building docker image...${NC}"
+  docker compose -f docker-compose.prod.yml build
+  echo "  ✓ Image built"
+fi
 
 echo -e "${YELLOW}→ Starting service...${NC}"
 systemctl enable --now "${SERVICE_NAME}.service"
