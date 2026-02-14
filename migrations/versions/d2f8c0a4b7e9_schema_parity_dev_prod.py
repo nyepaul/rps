@@ -77,10 +77,39 @@ def upgrade() -> None:
             "password_reset_requests", sa.Column("expires_at", sa.Text(), nullable=True)
         )
 
+    # Ensure feedback_replies exists for fresh installs.
+    # Older environments may have created this table via ad-hoc SQL.
+    if not _table_exists(conn, "feedback_replies"):
+        op.execute(
+            """
+            CREATE TABLE feedback_replies (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                feedback_id INTEGER NOT NULL,
+                admin_id INTEGER NOT NULL,
+                reply_text TEXT NOT NULL,
+                is_private INTEGER DEFAULT 0 CHECK(is_private IN (0, 1)),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (feedback_id) REFERENCES feedback(id) ON DELETE CASCADE,
+                FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+            """
+        )
+        op.execute(
+            "CREATE INDEX IF NOT EXISTS idx_feedback_replies_feedback_id ON feedback_replies(feedback_id)"
+        )
+        op.execute(
+            "CREATE INDEX IF NOT EXISTS idx_feedback_replies_admin_id ON feedback_replies(admin_id)"
+        )
+        op.execute(
+            "CREATE INDEX IF NOT EXISTS idx_feedback_replies_created_at ON feedback_replies(created_at)"
+        )
+
     # Index parity.
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS idx_feedback_replies_is_private ON feedback_replies(is_private)"
-    )
+    if _table_exists(conn, "feedback_replies") and _column_exists(conn, "feedback_replies", "is_private"):
+        op.execute(
+            "CREATE INDEX IF NOT EXISTS idx_feedback_replies_is_private ON feedback_replies(is_private)"
+        )
     op.execute(
         "CREATE INDEX IF NOT EXISTS idx_password_reset_requests_token ON password_reset_requests(support_token)"
     )

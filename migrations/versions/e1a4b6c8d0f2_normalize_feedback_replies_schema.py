@@ -18,6 +18,17 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def _table_exists(conn) -> bool:
+    return (
+        conn.execute(
+            sa.text(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='feedback_replies' LIMIT 1"
+            )
+        ).fetchone()
+        is not None
+    )
+
+
 def _needs_rebuild(conn) -> bool:
     cols = conn.execute(sa.text("PRAGMA table_info(feedback_replies)")).fetchall()
     is_private = next((row for row in cols if row[1] == "is_private"), None)
@@ -32,6 +43,38 @@ def _needs_rebuild(conn) -> bool:
 
 def upgrade() -> None:
     conn = op.get_bind()
+
+    # Fresh installs may not have this table yet; create it in the normalized shape.
+    if not _table_exists(conn):
+        op.execute(
+            """
+            CREATE TABLE feedback_replies (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                feedback_id INTEGER NOT NULL,
+                admin_id INTEGER NOT NULL,
+                reply_text TEXT NOT NULL,
+                is_private INTEGER DEFAULT 0 CHECK(is_private IN (0, 1)),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (feedback_id) REFERENCES feedback(id) ON DELETE CASCADE,
+                FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+            """
+        )
+        op.execute(
+            "CREATE INDEX IF NOT EXISTS idx_feedback_replies_feedback_id ON feedback_replies(feedback_id)"
+        )
+        op.execute(
+            "CREATE INDEX IF NOT EXISTS idx_feedback_replies_admin_id ON feedback_replies(admin_id)"
+        )
+        op.execute(
+            "CREATE INDEX IF NOT EXISTS idx_feedback_replies_created_at ON feedback_replies(created_at)"
+        )
+        op.execute(
+            "CREATE INDEX IF NOT EXISTS idx_feedback_replies_is_private ON feedback_replies(is_private)"
+        )
+        return
+
     if not _needs_rebuild(conn):
         return
 

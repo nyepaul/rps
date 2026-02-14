@@ -29,6 +29,16 @@ A local-first financial planning application for Monte Carlo retirement simulati
 # Open http://127.0.0.1:5137
 ```
 
+### Docker Localhost Runtime (Recommended)
+
+Runs RPS via Docker + Redis, bound to `127.0.0.1` only:
+
+```bash
+./bin/docker-setup
+```
+
+Then open `http://127.0.0.1:5137`.
+
 ## Prerequisites
 
 - Python 3.12+
@@ -40,6 +50,7 @@ A local-first financial planning application for Monte Carlo retirement simulati
 | Command | Description |
 |---------|-------------|
 | `./bin/start` | Start application (creates venv, installs deps) |
+| `./bin/docker-setup` | Create `.env` and start Docker Compose runtime (Redis included) |
 | `./bin/check-env-consistency` | Verify dev/prod dependency config is aligned |
 | `./bin/check-no-secrets` | Scan tracked files for secret-like tokens |
 | `./bin/check-repo-hygiene` | Block committing generated/local artifacts |

@@ -84,37 +84,23 @@ start_simple() {
 }
 
 start_docker() {
-    log INFO "Building Docker image..."
+    log INFO "Starting application in Docker (docker compose)..."
     cd "${PROJECT_ROOT}"
-    if ! docker build -f docker/Dockerfile -t retirement-planning .;
-    then
-        error_exit "Docker build failed"
+
+    if ! command -v docker >/dev/null 2>&1; then
+        error_exit "docker is not installed or not on PATH"
     fi
 
-    log INFO "Starting container..."
-    # Check if running
-    if docker ps -q -f name=retirement-planner > /dev/null;
-    then
-        log WARNING "Container already running. Restarting..."
-        docker stop retirement-planner >/dev/null
-        docker rm retirement-planner >/dev/null
+    if ! docker compose version >/dev/null 2>&1; then
+        error_exit "docker compose is not available (Docker Desktop / compose v2 required)"
     fi
 
-    # Use .env file if it exists
-    local env_file=""
-    if [[ -f "${PROJECT_ROOT}/.env" ]]; then
-        env_file="--env-file ${PROJECT_ROOT}/.env"
-        log INFO "Using environment variables from .env file"
+    # Prefer dev compose file (builds from source). For image-only installs, use docker-compose.yml directly.
+    if [[ -f "${PROJECT_ROOT}/docker-compose.dev.yml" ]]; then
+        docker compose -f docker-compose.dev.yml up -d --build
     else
-        log WARNING "No .env file found. Use bin/generate-secrets to create one."
+        docker compose up -d
     fi
-
-    docker run -d \
-        --name retirement-planner \
-        -p 127.0.0.1:5137:5137 \
-        ${env_file} \
-        -v "${PROJECT_ROOT}/data:/app/data" \
-        retirement-planning
 
     log SUCCESS "Application started at http://127.0.0.1:5137"
 }

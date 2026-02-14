@@ -1,5 +1,5 @@
 {
-    "version": "3.9.295",
+    "version": "3.9.296",
     "release_date": "2026-02-14",
-    "release_notes": "fix: avoid stale JS by injecting runtime version into html"
+    "release_notes": "feat: docker-only localhost runtime (compose+redis) and safe migrations"
 }

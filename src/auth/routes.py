@@ -187,6 +187,10 @@ def register():
 
     # Tag demo accounts but do not bypass encryption
     user._is_demo_account = data.username.lower() == "demo"
+    # Localhost installs may not have SMTP; allow disabling verification.
+    require_verification = current_app.config.get("RPS_REQUIRE_EMAIL_VERIFICATION", True)
+    if not require_verification:
+        user.email_verified = True
 
     # Generate user-specific encryption key (DEK)
     dek = EncryptionService.generate_dek()
@@ -227,15 +231,16 @@ def register():
 
     user.save()
 
-    # Send verification email
-    try:
-        from src.services.email_service import EmailService
+    # Send verification email (optional)
+    if require_verification:
+        try:
+            from src.services.email_service import EmailService
 
-        token = user.generate_verification_token()
-        EmailService.send_verification_email(user.email, token)
-    except Exception as e:
-        current_app.logger.warning("Failed to send verification email: %s", e)
-        # We still create the account, user can resend later
+            token = user.generate_verification_token()
+            EmailService.send_verification_email(user.email, token)
+        except Exception as e:
+            current_app.logger.warning("Failed to send verification email: %s", e)
+            # We still create the account; user can resend later.
 
     # Notify super admins of new account
     try:
@@ -270,7 +275,6 @@ def register():
         )
 
     # In development mode, expose the verification token for easy activation
-    from flask import current_app
     if (
         current_app.config.get("DEBUG")
         or current_app.config.get("FLASK_ENV") == "development"
@@ -418,7 +422,15 @@ def login():
 
     # Check if user exists and password is correct
     if not user or not user.check_password(data.password):
-        # Log failed login attempt
+        # Get real client IP for logging
+        client_ip = EnhancedAuditLogger._get_real_client_ip()
+        
+        # Log to Python logger for fail2ban
+        current_app.logger.warning(
+            "FAILED LOGIN ATTEMPT: username='%s', ip='%s'", data.username, client_ip
+        )
+
+        # Log failed login attempt to database
         EnhancedAuditLogger.log(
             action="LOGIN_FAILED",
             table_name="users",
@@ -433,6 +445,11 @@ def login():
 
     # Check if user is active
     if not user.is_active:
+        client_ip = EnhancedAuditLogger._get_real_client_ip()
+        current_app.logger.warning(
+            "DISABLED ACCOUNT LOGIN ATTEMPT: username='%s', ip='%s'", data.username, client_ip
+        )
+
         # Log failed login attempt - disabled account
         EnhancedAuditLogger.log(
             action="LOGIN_FAILED",
@@ -449,8 +466,9 @@ def login():
     # Check email verification (Legacy users might have NULL, treat as verified)
     # email_verified: 1=Verified, 0=Unverified
     # If attribute doesn't exist yet on model (migration lag), assume verified
+    require_verification = current_app.config.get("RPS_REQUIRE_EMAIL_VERIFICATION", True)
     is_verified = getattr(user, "email_verified", 1)
-    if is_verified == 0:
+    if require_verification and is_verified == 0:
         return (
             jsonify(
                 {

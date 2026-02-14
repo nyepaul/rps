@@ -66,6 +66,13 @@ class Config:
     # Encryption
     ENCRYPTION_KEY = os.environ.get("ENCRYPTION_KEY")  # Must be set in production
 
+    # Email verification
+    # For localhost Docker installs without SMTP, allow disabling verification.
+    # Keep default true for production safety.
+    RPS_REQUIRE_EMAIL_VERIFICATION = (
+        os.environ.get("RPS_REQUIRE_EMAIL_VERIFICATION", "true").lower() == "true"
+    )
+
     # File Upload
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
 

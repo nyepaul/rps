@@ -261,14 +261,14 @@ def test_multi_user_isolation(client, test_db):
         json={
             "username": "user1",
             "email": "user1@example.com",
-            "password": "Password123",
+            "password": "Password1234",
         },
     )
     
     test_db.execute("UPDATE users SET email_verified = 1 WHERE username = 'user1'")
     
     client.post(
-        "/api/auth/login", json={"username": "user1", "password": "Password123"}
+        "/api/auth/login", json={"username": "user1", "password": "Password1234"}
     )
 
     client.post(
@@ -297,14 +297,14 @@ def test_multi_user_isolation(client, test_db):
         json={
             "username": "user2",
             "email": "user2@example.com",
-            "password": "Password123",
+            "password": "Password1234",
         },
     )
     
     test_db.execute("UPDATE users SET email_verified = 1 WHERE username = 'user2'")
     
     login_resp = client.post(
-        "/api/auth/login", json={"username": "user2", "password": "Password123"}
+        "/api/auth/login", json={"username": "user2", "password": "Password1234"}
     )
     assert login_resp.status_code == 200
 
@@ -340,7 +340,7 @@ def test_multi_user_isolation(client, test_db):
 
     # Login back as user1
     client.post(
-        "/api/auth/login", json={"username": "user1", "password": "Password123"}
+        "/api/auth/login", json={"username": "user1", "password": "Password1234"}
     )
 
     # User1 should still see their own data

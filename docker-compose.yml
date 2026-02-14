@@ -1,0 +1,44 @@
+services:
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - rps_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  rps:
+    # For offline installs: set RPS_IMAGE to the image you loaded/tagged locally.
+    image: ${RPS_IMAGE:-retirement-planning:latest}
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${RPS_HOST_PORT:-5137}:5137"
+    environment:
+      - FLASK_ENV=production
+      - HOST=0.0.0.0
+      - PORT=5137
+      - REDIS_URL=redis://redis:6379
+      - RATELIMIT_ENABLED=true
+      # Localhost HTTP install defaults:
+      - SESSION_COOKIE_SECURE=false
+      - APP_BASE_URL=http://127.0.0.1:${RPS_HOST_PORT:-5137}
+      - CORS_ORIGINS=http://127.0.0.1:${RPS_HOST_PORT:-5137}
+      - RPS_REQUIRE_EMAIL_VERIFICATION=false
+    env_file:
+      - .env
+    volumes:
+      - rps_data:/app/data
+      - rps_logs:/app/logs
+      - rps_backups:/app/backups
+    restart: unless-stopped
+
+volumes:
+  rps_data:
+  rps_logs:
+  rps_backups:
+  rps_redis:
