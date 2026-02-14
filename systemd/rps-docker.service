@@ -1,0 +1,20 @@
+[Unit]
+Description=RPS - Retirement and Wealth Planning System (Docker Compose)
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/var/www/rps.pan2.app
+
+# Build and start containers. Build is done at deploy time too, but keep this for safety.
+ExecStart=/usr/bin/docker compose -f docker-compose.prod.yml up -d --remove-orphans
+ExecStop=/usr/bin/docker compose -f docker-compose.prod.yml down
+
+TimeoutStartSec=600
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target
+

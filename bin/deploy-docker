@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Docker-based production deployment.
+# - Syncs repo to /var/www/rps.pan2.app
+# - Builds the docker image
+# - Starts via systemd unit (rps.service) that runs docker compose
+
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+TARGET_DIR="/var/www/rps.pan2.app"
+SERVICE_NAME="rps"
+
+echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║              RPS Docker Deployment to Production               ║${NC}"
+echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
+echo ""
+
+if [[ $EUID -ne 0 ]]; then
+  echo -e "${RED}ERROR:${NC} run with sudo: sudo ./bin/deploy-docker" >&2
+  exit 2
+fi
+
+if ! command -v docker >/dev/null 2>&1; then
+  echo -e "${RED}ERROR:${NC} docker is not installed." >&2
+  exit 2
+fi
+if ! docker compose version >/dev/null 2>&1; then
+  echo -e "${RED}ERROR:${NC} docker compose is not available (compose v2 required)." >&2
+  exit 2
+fi
+
+mkdir -p "$TARGET_DIR"
+
+echo -e "${YELLOW}→ Syncing application files...${NC}"
+rsync -a --delete \
+  --exclude '.git' \
+  --exclude '.env.production' \
+  --exclude 'data' \
+  --exclude 'logs' \
+  --exclude 'backups' \
+  --exclude '__pycache__' \
+  --exclude 'venv' \
+  --exclude 'src/venv' \
+  --exclude '.pytest_cache' \
+  "$SOURCE_DIR/" "$TARGET_DIR/"
+echo "  ✓ Files synced"
+
+echo -e "${YELLOW}→ Ensuring data/log directories exist...${NC}"
+mkdir -p "$TARGET_DIR/data" "$TARGET_DIR/logs" "$TARGET_DIR/backups" "$TARGET_DIR/data/redis"
+echo "  ✓ Directories ready"
+
+echo -e "${YELLOW}→ Backing up database (if present)...${NC}"
+DB_FILE="$TARGET_DIR/data/planning.db"
+if [[ -f "$DB_FILE" ]]; then
+  cp "$DB_FILE" "$TARGET_DIR/backups/planning_$(date +%Y%m%d_%H%M%S)_pre_docker.db"
+  echo "  ✓ DB backed up"
+else
+  echo "  ℹ No DB file yet"
+fi
+
+echo -e "${YELLOW}→ Validating production env file...${NC}"
+if [[ ! -f "$TARGET_DIR/.env.production" ]]; then
+  echo -e "${RED}ERROR:${NC} missing $TARGET_DIR/.env.production (must include SECRET_KEY and ENCRYPTION_KEY)." >&2
+  exit 2
+fi
+echo "  ✓ .env.production present"
+
+echo -e "${YELLOW}→ Installing systemd service...${NC}"
+cp "$TARGET_DIR/systemd/rps-docker.service" "/etc/systemd/system/${SERVICE_NAME}.service"
+chmod 644 "/etc/systemd/system/${SERVICE_NAME}.service"
+systemctl daemon-reload
+echo "  ✓ systemd unit installed as ${SERVICE_NAME}.service"
+
+echo -e "${YELLOW}→ Building docker image...${NC}"
+cd "$TARGET_DIR"
+docker compose -f docker-compose.prod.yml build
+echo "  ✓ Image built"
+
+echo -e "${YELLOW}→ Starting service...${NC}"
+systemctl enable --now "${SERVICE_NAME}.service"
+systemctl restart "${SERVICE_NAME}.service"
+systemctl is-active --quiet "${SERVICE_NAME}.service" && echo "  ✓ Service running"
+
+echo -e "${YELLOW}→ Health check...${NC}"
+for i in $(seq 1 30); do
+  if curl -fsS "http://127.0.0.1:5137/health" >/dev/null 2>&1; then
+    echo "  ✓ Health OK"
+    echo ""
+    echo "Deployed at: https://rps.pan2.app"
+    exit 0
+  fi
+  sleep 1
+done
+
+echo -e "${RED}✗ Health check failed.${NC}"
+echo "Try:"
+echo "  systemctl status ${SERVICE_NAME}.service"
+echo "  docker compose -f $TARGET_DIR/docker-compose.prod.yml ps"
+echo "  docker compose -f $TARGET_DIR/docker-compose.prod.yml logs --tail=200 rps"
+exit 1

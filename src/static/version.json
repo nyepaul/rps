@@ -1,5 +1,5 @@
 {
-    "version": "3.9.297",
+    "version": "3.9.298",
     "release_date": "2026-02-14",
-    "release_notes": "chore: docker-only runtime enforcement and schema parity migrations"
+    "release_notes": "chore(deploy): production docker compose + systemd deploy"
 }
