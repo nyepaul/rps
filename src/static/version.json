@@ -1,5 +1,5 @@
 {
-    "version": "3.9.299",
+    "version": "3.9.300",
     "release_date": "2026-02-14",
-    "release_notes": "chore(docker): portable one-command install + GHCR multi-arch publish"
+    "release_notes": "fix(monte-carlo): prevent dropping employment income when budget income exists"
 }

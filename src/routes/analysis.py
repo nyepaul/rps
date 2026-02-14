@@ -181,15 +181,15 @@ def _prepare_budget_and_income_streams(profile_data, spouse_data):
     if not budget_data:
         return budget_data, mc_income_streams
 
-    if not budget_data.get("income"):
-        primary_salary = 0
-        spouse_salary = 0
+    def _stream_employment_totals(streams):
+        primary_salary = 0.0
+        spouse_salary = 0.0
         spouse_first = (
             (spouse_data.get("name") or "").lower().split()[0]
             if spouse_data.get("name")
             else ""
         )
-        for stream in mc_income_streams:
+        for stream in streams:
             if not _is_employment_stream(stream):
                 continue
             annual_amount = _annualize_stream_amount(stream)
@@ -201,6 +201,20 @@ def _prepare_budget_and_income_streams(profile_data, spouse_data):
                 spouse_salary += annual_amount
             else:
                 primary_salary += annual_amount
+        return primary_salary, spouse_salary
+
+    def _budget_employment_total(budget_income):
+        emp = (budget_income or {}).get("current", {}).get("employment", {}) or {}
+        return float(emp.get("primary_person", 0) or 0) + float(emp.get("spouse", 0) or 0)
+
+    stream_primary, stream_spouse = _stream_employment_totals(mc_income_streams)
+
+    # If the budget has no income section, synthesize one from employment streams.
+    if not budget_data.get("income"):
+        primary_salary = 0
+        spouse_salary = 0
+        primary_salary = stream_primary
+        spouse_salary = stream_spouse
 
         budget_data["income"] = {
             "current": {
@@ -211,6 +225,19 @@ def _prepare_budget_and_income_streams(profile_data, spouse_data):
             },
             "future": {},
         }
+    else:
+        # If a budget income section exists but doesn't include employment dollars, we can
+        # safely synthesize employment from streams to avoid silently dropping income.
+        # This occurs when users fill "budget" but only model income via income_streams.
+        if _budget_employment_total(budget_data.get("income")) <= 0 and (stream_primary + stream_spouse) > 0:
+            budget_data.setdefault("income", {})
+            budget_data["income"].setdefault("current", {})
+            budget_data["income"]["current"].setdefault("employment", {})
+            budget_data["income"]["current"]["employment"].setdefault("primary_person", 0)
+            budget_data["income"]["current"]["employment"].setdefault("spouse", 0)
+
+            budget_data["income"]["current"]["employment"]["primary_person"] = float(stream_primary)
+            budget_data["income"]["current"]["employment"]["spouse"] = float(stream_spouse)
 
     # If budget income is present (native or synthesized), strip employment streams
     # so employment does not flow through both pathways.
