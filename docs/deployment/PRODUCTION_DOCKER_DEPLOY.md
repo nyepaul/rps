@@ -7,6 +7,15 @@ As of **2026-02-14**, RPS production runs **only** via Docker Compose (with Redi
 
 This repo includes a safe deploy script: `bin/deploy-docker`.
 
+## Rootless Docker Mode (Recommended)
+
+Production can run against **rootless Docker** (`dockerd-rootless.sh`) so containers run without a root daemon.
+
+In rootless mode:
+- `rps.service` runs `docker compose` as user `paul` using `DOCKER_HOST=unix:///run/user/1000/docker.sock`
+- The app bind mounts (`data/`, `logs/`, `backups/`) must be writable by `paul`
+- Secrets are read from `/var/www/rps.pan2.app/.env.production.rootless` (owned by `paul`, mode `600`)
+
 ## Prereqs (Production Host)
 
 - Docker Engine + Docker Compose v2
@@ -40,24 +49,24 @@ From your checked-out repo (this workspace):
 ```bash
 cd /home/paul/src/rps
 git pull
-sudo ./bin/deploy-docker
+sudo RPS_DOCKER_MODE=rootless ./bin/deploy-docker
 ```
 
 What it does:
 
 - `rsync` code to `/var/www/rps.pan2.app/` (preserves `.env.production`, `data/`, `logs/`, `backups/`)
 - Creates a pre-deploy DB backup (if `data/planning.db` exists)
-- Builds the image via `docker compose -f docker-compose.prod.yml build`
-- Installs/updates systemd unit as `rps.service`
-- Starts the Compose stack (Redis + RPS)
+- Builds the image via the **rootless** daemon
+- Installs/updates systemd unit as `rps.service` (rootless compose)
+- Starts the Compose stack (Redis + RPS) via rootless docker
 - Health checks `http://127.0.0.1:5137/health`
 
 ## Manage
 
 ```bash
 sudo systemctl status rps.service
-sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml ps
-sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml logs --tail=200 rps
+DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f /var/www/rps.pan2.app/docker-compose.prod.rootless.yml ps
+DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f /var/www/rps.pan2.app/docker-compose.prod.rootless.yml logs --tail=200 rps
 ```
 
 ## Rollback (Fast)
@@ -89,4 +98,3 @@ sudo ss -ltnp | rg ":5137" || true
 ```
 
 Only one stack can bind `127.0.0.1:5137`.
-
