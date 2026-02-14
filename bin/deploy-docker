@@ -46,6 +46,7 @@ echo -e "${YELLOW}→ Syncing application files...${NC}"
 rsync -a --delete \
   --exclude '.git' \
   --exclude '.env.production' \
+  --exclude '.env.production.rootless' \
   --exclude 'data' \
   --exclude 'logs' \
   --exclude 'backups' \
