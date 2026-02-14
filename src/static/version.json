@@ -1,5 +1,5 @@
 {
-    "version": "3.9.296",
+    "version": "3.9.297",
     "release_date": "2026-02-14",
-    "release_notes": "feat: docker-only localhost runtime (compose+redis) and safe migrations"
+    "release_notes": "chore: docker-only runtime enforcement and schema parity migrations"
 }

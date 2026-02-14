@@ -1,76 +1,14 @@
 #!/bin/bash
 set -euo pipefail
 
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
+
 echo "==================================================="
-echo "  Retirement Planning System - Starting...         "
+echo "  RPS - Docker Runtime (localhost)                 "
 echo "==================================================="
 echo ""
-
-PROJECT_ROOT="$(dirname "$0")/.."
-cd "$PROJECT_ROOT"
-
-if ! command -v python3 &> /dev/null; then
-    echo "ERROR: Python 3 is not installed"
-    exit 1
-fi
-
-if [ ! -d "src/venv" ]; then
-    echo "Creating virtual environment..."
-    python3 -m venv src/venv
-    echo "✓ Virtual environment created"
-fi
-
-echo "Installing dependencies..."
-./src/venv/bin/pip install --upgrade pip
-./src/venv/bin/pip install -r config/requirements.txt
-
-mkdir -p data logs
-
-# Keep local behavior aligned with production unless explicitly overridden.
-export PYTHONPATH="$PWD:${PYTHONPATH:-}"
-export FLASK_ENV="${FLASK_ENV:-production}"
-export WEB_CONCURRENCY="${WEB_CONCURRENCY:-4}"
-export GUNICORN_TIMEOUT="${GUNICORN_TIMEOUT:-120}"
-
-echo "Runtime mode: FLASK_ENV=$FLASK_ENV"
-
-if systemctl is-active --quiet rps 2>/dev/null; then
-    echo "WARNING: Production service 'rps' is running on port 5137"
-    echo "Stop it first with: sudo systemctl stop rps"
-    read -p "Stop production service and continue? [y/N] " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        sudo systemctl stop rps
-        echo "✓ Production service stopped"
-    else
-        echo "Aborted."
-        exit 1
-    fi
-fi
-
-pkill -f "gunicorn.*src.wsgi:app" 2>/dev/null || true
-pkill -f "python src/app.py" 2>/dev/null || true
-pkill -f "flask run" 2>/dev/null || true
-
+echo "RPS is now intended to run via Docker Compose."
 echo ""
-echo "Starting Gunicorn (prod-like runtime) on :5137"
-nohup ./src/venv/bin/gunicorn \
-    --workers "$WEB_CONCURRENCY" \
-    --bind "0.0.0.0:5137" \
-    --timeout "$GUNICORN_TIMEOUT" \
-    --access-logfile logs/gunicorn-access.log \
-    --error-logfile logs/gunicorn-error.log \
-    src.wsgi:app > logs/dev-server.log 2>&1 &
-PID=$!
 
-sleep 2
-if kill -0 "$PID" 2>/dev/null; then
-    echo "✓ Server started (PID: $PID)"
-    echo "  URL: http://0.0.0.0:5137"
-    echo "  Logs: logs/dev-server.log, logs/gunicorn-*.log"
-    echo "  Stop: pkill -f 'gunicorn.*src.wsgi:app'"
-else
-    echo "✗ Server failed to start. Check logs/dev-server.log"
-    cat logs/dev-server.log
-    exit 1
-fi
+exec "${ROOT_DIR}/bin/docker-setup"

@@ -17,6 +17,11 @@ This document describes running RPS entirely inside Docker. This is the recommen
 Then open:
 - `http://127.0.0.1:5137`
 
+### Stop / Restart
+
+- Stop: `docker compose down`
+- Restart: `docker compose up -d`
+
 ### Port Conflicts
 
 If port `5137` is already in use, set a different host port:
@@ -84,5 +89,4 @@ docker tag <loaded_image_id> retirement-planning:latest
 ./bin/docker-setup
 ```
 
-If you prefer not to tag, set:
-- `RPS_IMAGE=<your_image_name:tag>` in your environment before running setup.
+If you prefer not to tag, set `RPS_IMAGE=<your_image_name:tag>` in your environment before running setup.

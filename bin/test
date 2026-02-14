@@ -8,9 +8,10 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 if [[ ! -x "./venv/bin/python" ]]; then
-  echo "ERROR: venv not found. Run ./bin/start first to create it." >&2
-  exit 2
+  echo "venv not found; creating ./venv and installing dev requirements..." >&2
+  python3 -m venv ./venv
+  ./venv/bin/pip install --quiet --upgrade pip
+  ./venv/bin/pip install --quiet -r config/requirements-dev.txt
 fi
 
 exec ./venv/bin/python -m pytest "$@"
-

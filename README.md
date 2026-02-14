@@ -23,7 +23,7 @@ A local-first financial planning application for Monte Carlo retirement simulati
 # Configure AI features (optional)
 ./bin/setup-api-keys
 
-# Start the server
+# Start RPS (Docker Compose + Redis, localhost only)
 ./bin/start
 
 # Open http://127.0.0.1:5137
@@ -41,21 +41,20 @@ Then open `http://127.0.0.1:5137`.
 
 ## Prerequisites
 
-- Python 3.12+
-- `pip` (for dependency installation in `./bin/start`)
+- Docker Desktop (Windows/macOS) or Docker Engine + Compose v2 (Linux)
 - Optional: `cloudflared` (only needed for `./bin/manage tunnel`)
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `./bin/start` | Start application (creates venv, installs deps) |
+| `./bin/start` | Start RPS (Docker Compose + Redis) |
 | `./bin/docker-setup` | Create `.env` and start Docker Compose runtime (Redis included) |
 | `./bin/check-env-consistency` | Verify dev/prod dependency config is aligned |
 | `./bin/check-no-secrets` | Scan tracked files for secret-like tokens |
 | `./bin/check-repo-hygiene` | Block committing generated/local artifacts |
 | `./bin/check-quality-gates` | Run CI-equivalent quality gates locally |
-| `./bin/test [args...]` | Run full pytest suite using repo venv |
+| `./bin/test [args...]` | Run full pytest suite (auto-creates `./venv` if missing) |
 | `./bin/release-gate` | Run local + production pre-deploy checks (recommended) |
 | `./bin/setup-git-hooks` | Enable local pre-push hook checks (`.githooks`) |
 | `sudo ./bin/deploy` | Deploy latest `main` to production (server environment) |

@@ -63,8 +63,8 @@ show_help() {
     echo "Usage: $0 [command]"
     echo ""
     echo "Commands:"
-    echo "  start         Start application (simple mode)"
-    echo "  start-docker  Start application in Docker"
+    echo "  start         Start application (Docker compose)"
+    echo "  start-docker  Alias for start"
     echo "  stop          Stop application"
     echo "  restart       Restart application"
     echo "  logs          View application logs"
@@ -79,8 +79,8 @@ show_help() {
 }
 
 start_simple() {
-    log INFO "Starting application in simple mode..."
-    exec "${PROJECT_ROOT}/bin/start"
+    # Docker-only runtime: keep legacy command working by delegating.
+    start_docker
 }
 
 start_docker() {
@@ -102,45 +102,38 @@ start_docker() {
         docker compose up -d
     fi
 
-    log SUCCESS "Application started at http://127.0.0.1:5137"
+    local port="${RPS_HOST_PORT:-5137}"
+    log SUCCESS "Application started at http://127.0.0.1:${port}"
 }
 
 stop_app() {
     log INFO "Stopping application..."
-    local stopped=false
-    
-    if docker ps -q -f name=retirement-planner > /dev/null;
-    then
-        docker stop retirement-planner >/dev/null || true
-        docker rm retirement-planner >/dev/null || true
-        log SUCCESS "Docker container stopped"
-        stopped=true
+    cd "${PROJECT_ROOT}"
+
+    if ! command -v docker >/dev/null 2>&1; then
+        log WARNING "docker not available; nothing to stop"
+        return
     fi
 
-    if pgrep -f "src/app.py" > /dev/null;
-    then
-        pkill -f "src/app.py" || true
-        log SUCCESS "Python process stopped"
-        stopped=true
+    if ! docker compose version >/dev/null 2>&1; then
+        log WARNING "docker compose not available; nothing to stop"
+        return
     fi
 
-    if [[ "$stopped" == "false" ]]; then
-        log INFO "No running application found"
+    # Prefer dev compose file when present.
+    if [[ -f "${PROJECT_ROOT}/docker-compose.dev.yml" ]]; then
+        docker compose -f docker-compose.dev.yml down || true
     fi
+    docker compose down || true
+    log SUCCESS "Docker compose stopped"
 }
 
 view_logs() {
-    if docker ps -q -f name=retirement-planner > /dev/null;
-    then
-        docker logs -f retirement-planner
+    cd "${PROJECT_ROOT}"
+    if [[ -f "${PROJECT_ROOT}/docker-compose.dev.yml" ]]; then
+        docker compose -f docker-compose.dev.yml logs -f rps
     else
-        # Follow the latest log file in logs/ dir
-        local latest_log=$(ls -t "${LOG_DIR}"/*.log 2>/dev/null | head -n1)
-        if [[ -n "$latest_log" ]]; then
-            tail -f "$latest_log"
-        else
-            log WARNING "No logs found"
-        fi
+        docker compose logs -f rps
     fi
 }
 
@@ -182,28 +175,24 @@ clean_all() {
 check_status() {
     echo "Application Status"
     echo "=================="
-    
-    local running=false
-    if docker ps | grep -q retirement-planner;
-    then
-        echo -e "Docker container: ${GREEN}RUNNING${NC}"
-        running=true
-    elif pgrep -f "src/app.py" > /dev/null;
-    then
-        echo -e "Python process: ${GREEN}RUNNING${NC}"
-        running=true
-    else
-        echo -e "Status: ${RED}STOPPED${NC}"
-    fi
-    
-    echo ""
-    if [[ "$running" == "true" ]]; then
-        if curl -s http://127.0.0.1:5137/health > /dev/null;
-        then
+
+    cd "${PROJECT_ROOT}"
+    if docker compose version >/dev/null 2>&1; then
+        if [[ -f "${PROJECT_ROOT}/docker-compose.dev.yml" ]]; then
+            docker compose -f docker-compose.dev.yml ps
+        else
+            docker compose ps
+        fi
+
+        local port="${RPS_HOST_PORT:-5137}"
+        echo ""
+        if curl -s "http://127.0.0.1:${port}/health" > /dev/null 2>&1; then
             echo -e "Health check: ${GREEN}OK${NC}"
         else
-            echo -e "Health check: ${RED}FAILED${NC}"
+            echo -e "Health check: ${YELLOW}NOT READY${NC}"
         fi
+    else
+        echo -e "docker compose: ${RED}NOT AVAILABLE${NC}"
     fi
     
     echo ""
@@ -230,7 +219,7 @@ view_skills() {
 # Main dispatch
 case "${1:-}" in
     start)
-        start_simple
+        start_docker
         ;;
     start-docker)
         start_docker
@@ -241,7 +230,7 @@ case "${1:-}" in
     restart)
         stop_app
         sleep 2
-        start_simple
+        start_docker
         ;;
     logs)
         view_logs
