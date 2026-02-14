@@ -3,7 +3,7 @@
 Authored by: pan
 """
 
-from flask import Flask, send_from_directory, jsonify, request, g, session
+from flask import Flask, send_from_directory, jsonify, request, g, session, Response
 from flask_wtf.csrf import generate_csrf
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_login import current_user, logout_user
@@ -389,14 +389,28 @@ def create_app(config_name="development"):
         return {"error": "Invalid request data"}, 400
 
     # Routes
+    def _serve_versioned_html(filename: str):
+        """
+        Serve static HTML with a runtime version token replaced.
+        This avoids shipping hardcoded JS query params (which can cause clients to load stale bundles).
+        """
+        try:
+            static_path = os.path.join(app.static_folder, filename)
+            with open(static_path, "r", encoding="utf-8") as f:
+                content = f.read().replace("__RPS_VERSION__", __version__)
+            return Response(content, mimetype="text/html")
+        except Exception:
+            # Fall back to vanilla static serving if anything goes wrong.
+            return send_from_directory(app.static_folder, filename)
+
     @app.route("/")
     def index():
-        # Serve modular HTML
-        return send_from_directory(app.static_folder, "index.html")
+        # Serve modular HTML (with version token replaced)
+        return _serve_versioned_html("index.html")
 
     @app.route("/login")
     def login_page():
-        return send_from_directory(app.static_folder, "login.html")
+        return _serve_versioned_html("login.html")
 
     @app.route("/account-recovery")
     def account_recovery_page():
