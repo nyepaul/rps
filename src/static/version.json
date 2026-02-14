@@ -1,5 +1,5 @@
 {
-    "version": "3.9.294",
+    "version": "3.9.295",
     "release_date": "2026-02-14",
-    "release_notes": "fix: include budget college expenses in cashflow; security: non-root docker + hardening tools"
+    "release_notes": "fix: avoid stale JS by injecting runtime version into html"
 }
