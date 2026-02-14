@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+import os
+import sys
+from pathlib import Path
+
+# Add project root to path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+def check_security():
+    print("=== RPS Security Hardening Audit ===")
+    
+    issues = 0
+    
+    # 1. Check Secret Key
+    secret_key = os.environ.get("SECRET_KEY")
+    if not secret_key:
+        print("[-] WARNING: SECRET_KEY not set in environment. Using default.")
+        issues += 1
+    elif secret_key == "dev-secret-key-change-in-production":
+        print("[-] DANGER: SECRET_KEY is set to the insecure default value!")
+        issues += 1
+    else:
+        print("[+] SUCCESS: SECRET_KEY is set and custom.")
+
+    # 2. Check Encryption Key
+    enc_key = os.environ.get("ENCRYPTION_KEY")
+    if not enc_key:
+        print("[-] DANGER: ENCRYPTION_KEY not set! Production data will not be encrypted.")
+        issues += 1
+    else:
+        print("[+] SUCCESS: ENCRYPTION_KEY is set.")
+
+    # 3. Check Database Permissions
+    db_path = Path("data/planning.db")
+    if db_path.exists():
+        mode = oct(db_path.stat().st_mode)[-3:]
+        if mode != "600":
+            print("[-] WARNING: Database permissions are " + mode + ". Recommended: 600.")
+            issues += 1
+        else:
+            print("[+] SUCCESS: Database permissions are restrictive (600).")
+    
+    # 4. Check for Debug Mode
+    flask_env = os.environ.get("FLASK_ENV", "production")
+    if flask_env == "development":
+        print("[-] WARNING: Running in development mode. Disable for production.")
+        issues += 1
+    else:
+        print("[+] SUCCESS: Running in production mode.")
+
+    # 5. Check if running as root (if in container)
+    if os.getuid() == 0:
+        print("[-] DANGER: Running as root user! Container escaping is much easier.")
+        issues += 1
+    else:
+        print("[+] SUCCESS: Running as non-root user.")
+
+    print("\nAudit complete. Found " + str(issues) + " security issues.")
+    if issues > 0:
+        print("Please address the issues marked [-] to harden your system.")
+
+if __name__ == "__main__":
+    check_security()

@@ -93,8 +93,8 @@ class ResetWithRecoverySchema(BaseModel):
 
     @field_validator("new_password")
     def validate_password(cls, v):
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
+        if len(v) < 12:
+            raise ValueError("Password must be at least 12 characters")
         if not re.search(r"[A-Z]", v):
             raise ValueError("Password must contain at least one uppercase letter")
         if not re.search(r"[a-z]", v):
@@ -123,8 +123,8 @@ class RegisterSchema(BaseModel):
 
     @field_validator("password")
     def validate_password(cls, v):
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
+        if len(v) < 12:
+            raise ValueError("Password must be at least 12 characters")
         if not re.search(r"[A-Z]", v):
             raise ValueError("Password must contain at least one uppercase letter")
         if not re.search(r"[a-z]", v):
@@ -381,7 +381,7 @@ def verify_email():
 
 
 @auth_bp.route("/login", methods=["POST"])
-@limiter.limit("10 per minute")
+@limiter.limit("5 per minute")
 @csrf.exempt
 def login():
     """Log in a user and decrypt their encryption key."""
@@ -1091,8 +1091,8 @@ class PasswordResetSchema(BaseModel):
 
     @field_validator("password")
     def validate_password(cls, v):
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
+        if len(v) < 12:
+            raise ValueError("Password must be at least 12 characters")
         if not re.search(r"[A-Z]", v):
             raise ValueError("Password must contain at least one uppercase letter")
         if not re.search(r"[a-z]", v):
@@ -1349,8 +1349,8 @@ class OfflinePasswordChangeSchema(BaseModel):
 
     @field_validator("new_password")
     def validate_password(cls, v):
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
+        if len(v) < 12:
+            raise ValueError("Password must be at least 12 characters")
         if not re.search(r"[A-Z]", v):
             raise ValueError("Password must contain at least one uppercase letter")
         if not re.search(r"[a-z]", v):
@@ -1368,8 +1368,8 @@ class PasswordChangeSchema(BaseModel):
 
     @field_validator("new_password")
     def validate_password(cls, v):
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
+        if len(v) < 12:
+            raise ValueError("Password must be at least 12 characters")
         if not re.search(r"[A-Z]", v):
             raise ValueError("Password must contain at least one uppercase letter")
         if not re.search(r"[a-z]", v):

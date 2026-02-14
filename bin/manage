@@ -100,9 +100,19 @@ start_docker() {
         docker rm retirement-planner >/dev/null
     fi
 
+    # Use .env file if it exists
+    local env_file=""
+    if [[ -f "${PROJECT_ROOT}/.env" ]]; then
+        env_file="--env-file ${PROJECT_ROOT}/.env"
+        log INFO "Using environment variables from .env file"
+    else
+        log WARNING "No .env file found. Use bin/generate-secrets to create one."
+    fi
+
     docker run -d \
         --name retirement-planner \
-        -p 5137:5137 \
+        -p 127.0.0.1:5137:5137 \
+        ${env_file} \
         -v "${PROJECT_ROOT}/data:/app/data" \
         retirement-planning
 

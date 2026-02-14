@@ -3205,9 +3205,7 @@ def bulk_create_user_backups():
 
     data = request.json
     user_ids = data.get("user_ids", [])
-    label = data.get(
-        "label", f"Bulk Backup {
-            datetime.now().strftime('%Y-%m-%d')}")
+    label = data.get("label", f"Bulk Backup {datetime.now().strftime('%Y-%m-%d')}")
 
     results = []
     success_count = 0
@@ -3408,8 +3406,8 @@ def restore_user_backup(user_id, backup_id):
         # Create safety backup first
         try:
             UserBackupService.create_backup(
-                user_id, f"Pre-restore Safety Backup (Admin: {
-                    current_user.username})"
+                user_id,
+                f"Pre-restore Safety Backup (Admin: {current_user.username})",
             )
         except Exception as e:
             current_app.logger.error(f"Admin safety backup failed: {e}")
