@@ -27,7 +27,9 @@ check_contains() {
 check_file "config/requirements.txt"
 check_file "src/requirements.txt"
 check_file "bin/start"
+check_file "bin/docker-setup"
 check_file "docker/Dockerfile"
+check_file "docker-compose.yml"
 
 if [ -f "$PROJECT_ROOT/src/requirements.txt" ]; then
     NON_COMMENT_LINES="$(
@@ -45,7 +47,7 @@ if [ -f "$PROJECT_ROOT/src/requirements.txt" ]; then
     fi
 fi
 
-check_contains "bin/start" "pip install -r config/requirements\\.txt" "dev startup installs config/requirements.txt"
+check_contains "bin/start" "bin/docker-setup" "startup delegates to docker setup"
 check_contains "docker/Dockerfile" "COPY config/requirements\\.txt /app/config/requirements\\.txt" "docker copies config/requirements.txt"
 check_contains "docker/Dockerfile" "pip install --no-cache-dir -r /app/config/requirements\\.txt" "docker installs config/requirements.txt"
 
