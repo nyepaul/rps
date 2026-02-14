@@ -10,6 +10,9 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
+    # Rootless docker runs in user-namespace; container root maps to the host user.
+    # Run as root inside the container so bind-mounted SQLite/dirs remain writable.
+    user: "0:0"
     depends_on:
       - redis
     ports:
