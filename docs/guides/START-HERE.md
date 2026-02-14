@@ -44,4 +44,4 @@ Pensions are no longer static hardcoded values. You can model them as:
 - **docs/guides/TROUBLESHOOTING.md**: Solutions for "Failed to Fetch" or Port errors.
 
 ---
-*Press **Ctrl+C** in the terminal to stop the server when finished.*
+Stop the local Docker runtime with: `./bin/manage stop`

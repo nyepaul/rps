@@ -23,7 +23,7 @@ Add these exports to your `~/.zshrc` or `~/.bashrc` to make them persistent.
 
 ### Development
 ```bash
-./bin/start             # Start Flask server (port 5137) + creates venv if needed
+./bin/start             # Start Docker Compose runtime (RPS + Redis) on port 5137
 ./bin/manage start      # Alternative way to start server
 ./bin/manage stop       # Stop the application
 ./bin/manage status     # Check if server is running + health check
@@ -44,7 +44,7 @@ pytest tests/test_routes/  # Test API routes
 ### Deployment
 ```bash
 ./bin/manage tunnel     # Start Cloudflare tunnel for public HTTPS access
-sudo ./bin/deploy       # Production deployment
+sudo ./bin/deploy-docker  # Production deployment (Docker Compose)
 ```
 
 ## System Architecture

@@ -6,11 +6,11 @@ RPS uses a two-port architecture:
 
 | Port | Service | Purpose |
 |------|---------|---------|
-| 5137 | Flask/Gunicorn | Python backend API |
+| 5137 | Docker-published RPS (`gunicorn` inside container) | Python backend API |
 | 8087 | Apache | Reverse proxy (adds security headers, serves static files) |
 
-In production, gunicorn runs on 5137 via systemd (`rps.service`).
-In development, `bin/start` now also uses gunicorn on 5137 by default.
+In production, the Docker Compose stack is started via systemd (`rps.service`) and publishes `127.0.0.1:5137`.
+In development, `./bin/start` starts the Docker Compose runtime on `127.0.0.1:5137` by default.
 
 Apache always listens on 8087 and proxies requests to 5137.
 
@@ -21,15 +21,20 @@ Apache always listens on 8087 and proxies requests to 5137.
 ```
 
 This will:
-- Create virtual environment if needed
-- Install dependencies
-- Start Gunicorn in the background on port 5137 (prod-like runtime)
-- Log output to `logs/dev-server.log`
+- Create `.env` if needed
+- Start Docker Compose (`rps` + `redis`)
+- Publish `http://127.0.0.1:5137`
+
+If you want a build-from-source dev runtime, use:
+
+```bash
+docker compose -f docker-compose.dev.yml up -d --build
+```
 
 ## Stopping Development Server
 
 ```bash
-pkill -f 'gunicorn.*src.wsgi:app'
+./bin/manage stop
 ```
 
 ## Starting/Stopping Apache (port 8087)
@@ -44,38 +49,41 @@ sudo systemctl status apache2  # Check status
 
 | Component | Development | Production |
 |-----------|-------------|------------|
-| Backend | `./bin/start` (gunicorn, prod-like) | `systemctl start rps` (gunicorn) |
+| Backend | `./bin/start` (docker compose) | `sudo systemctl restart rps.service` (docker compose) |
 | Frontend proxy | Apache on 8087 | Apache on 8087 |
-| Logs | `logs/dev-server.log` | `/var/www/rps.pan2.app/logs/` |
+| Logs | `docker compose logs -f rps` | `sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml logs -f rps` |
 
 ## Troubleshooting
 
 ### Port 5137 already in use
 ```bash
 # Check what's using it
-lsof -i :5137
+sudo ss -ltnp | rg ":5137" || true
 
-# If it's gunicorn (production), stop it first
-sudo systemctl stop rps
+# Check rootful docker (production)
+sudo docker ps --format "table {{.Names}}\t{{.Ports}}"
 
-# If it's a stale dev server
-pkill -f 'gunicorn.*src.wsgi:app'
+# Check rootless docker (if present)
+DOCKER_HOST=unix:///run/user/1000/docker.sock docker ps --format "table {{.Names}}\t{{.Ports}}" || true
+
+# Stop local dev stack
+./bin/manage stop
 ```
 
-**Note:** `./bin/start` will automatically detect if the production service is running and prompt you to stop it.
+Only one service can bind `127.0.0.1:5137` at a time.
 
 ## Boot Configuration
 
-Both services are enabled to start on boot:
+On the production host, these services are typically enabled to start on boot:
 ```bash
 # Check if enabled
-systemctl is-enabled rps apache2
+systemctl is-enabled rps.service apache2
 
 # Disable auto-start (if needed)
-sudo systemctl disable rps
+sudo systemctl disable rps.service
 
 # Re-enable auto-start
-sudo systemctl enable rps
+sudo systemctl enable rps.service
 ```
 
 ### Port 8087 not responding

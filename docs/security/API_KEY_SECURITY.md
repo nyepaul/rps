@@ -198,8 +198,8 @@ The codebase includes `app_legacy.py` which used environment variables for API k
 
 2. **Secure Environment File**:
    ```bash
-   chmod 600 /var/www/rps.pan2.app/.env
-   chown www-data:www-data /var/www/rps.pan2.app/.env
+   chmod 600 /var/www/rps.pan2.app/.env.production
+   chown root:root /var/www/rps.pan2.app/.env.production
    ```
 
 3. **Never Commit Secrets**:

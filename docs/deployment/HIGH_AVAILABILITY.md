@@ -13,23 +13,24 @@ RPS uses a multi-layered approach to ensure continuous availability:
 ## Architecture
 
 ```
-[Users] → [Cloudflare Tunnel] → [Apache2:8087] → [Flask/Gunicorn:5137]
-            ↑                      ↑                  ↑
-            |                      |                  |
-       Health Check            Restart           Restart
-       Every 5min              Always            Always
+[Users] → [Cloudflare Tunnel] → [Apache2:8087] → [Docker publish:127.0.0.1:5137] → [RPS container:5137]
+            ↑                      ↑                      ↑                            ↑
+            |                      |                      |                            |
+       Health Check            Restart                 Port bind                    Docker restart
+       Every 5min              Always                 (docker-proxy)                unless-stopped
 ```
 
 ## 1. Systemd Auto-Restart Policies
 
 ### RPS Service (`/etc/systemd/system/rps.service`)
-```ini
-Restart=always
-RestartSec=10
-```
-- **Restart=always**: Service restarts on ANY failure (crash, exit, signal)
-- **RestartSec=10**: Waits 10 seconds between restart attempts
-- **Result**: Automatic recovery within 10 seconds of any failure
+RPS is started by systemd, but the actual process supervision is handled by Docker.
+
+- `rps.service` runs `docker compose ... up -d` (Type=oneshot) to ensure the stack is up at boot.
+- The `rps` container uses Docker Compose `restart: unless-stopped` for automatic restart on crash.
+
+Operationally, this means:
+- If `gunicorn` crashes inside the container, Docker restarts the container.
+- If the whole stack is down, `systemctl restart rps.service` brings it back up.
 
 ### Apache2 Service (`/etc/systemd/system/apache2.service.d/restart.conf`)
 ```ini
@@ -48,14 +49,14 @@ StartLimitBurst=3
 ### Health Check Script (`/var/www/rps.pan2.app/bin/health-check.sh`)
 
 Runs every 5 minutes via systemd timer to verify:
-- ✓ RPS service is running
+- ✓ Docker Compose stack is up (RPS + Redis)
 - ✓ Apache2 service is running
-- ✓ Flask app responds on localhost:5137
+- ✓ RPS responds on localhost:5137
 - ✓ Apache proxy responds on localhost:8087
 - ✓ External site accessible at https://rps.pan2.app
 
 **Automatic Recovery Actions:**
-- Detects stopped services → Restarts them automatically
+- Detects stopped services/containers → Restarts them automatically
 - Logs all checks to `/var/www/rps.pan2.app/logs/health-check.log`
 - Returns exit code 0 on success, 1 on any failure
 
@@ -77,13 +78,15 @@ sudo systemctl status apache2.service
 
 # Health check timer
 sudo systemctl status rps-health-check.timer
+
+# Docker containers
+sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml ps
 ```
 
 ### View Logs
 ```bash
-# RPS application logs
-tail -f /var/www/rps.pan2.app/logs/rps.log
-tail -f /var/www/rps.pan2.app/logs/rps-error.log
+# RPS container logs
+sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml logs -f rps
 
 # Health check logs
 tail -f /var/www/rps.pan2.app/logs/health-check.log
@@ -108,7 +111,7 @@ systemctl list-timers rps-health-check.timer
 
 | Failure Scenario | Detection Time | Recovery Time | Total Downtime |
 |------------------|----------------|---------------|----------------|
-| RPS process crash | Immediate | 10 seconds | ~10 seconds |
+| RPS process crash (inside container) | Immediate | 1-10 seconds | ~1-10 seconds |
 | Apache2 crash | Immediate | 10 seconds | ~10 seconds |
 | HTTP endpoint failure | Up to 5 minutes | 10-15 seconds | 5-6 minutes max |
 | Server reboot | N/A | 2-3 minutes | 2-3 minutes |
@@ -117,14 +120,14 @@ systemctl list-timers rps-health-check.timer
 
 ### Test RPS Auto-Restart
 ```bash
-# Kill the RPS process (simulates crash)
-sudo systemctl kill rps.service -s KILL
+# Kill the container (simulates crash)
+sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml kill rps
 
-# Wait 12 seconds
-sleep 12
+# Wait a few seconds (Docker restart policy should bring it back)
+sleep 5
 
 # Verify it restarted
-sudo systemctl status rps.service
+sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml ps
 curl http://localhost:8087/
 ```
 
@@ -192,8 +195,8 @@ tail -20 /var/www/rps.pan2.app/logs/health-check.log
 # Check for repeated failures
 sudo journalctl -u rps.service -n 50
 
-# Check application error logs
-tail -50 /var/www/rps.pan2.app/logs/rps-error.log
+# Check container logs
+sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml logs --tail=200 rps
 
 # Common issues:
 # - Database locked: Remove .db-shm and .db-wal files
@@ -219,7 +222,7 @@ sudo /var/www/rps.pan2.app/bin/health-check.sh
 sudo systemctl status cloudflared
 
 # Test each layer individually
-curl http://localhost:5137/    # Flask app
+curl http://localhost:5137/    # RPS (docker-published)
 curl http://localhost:8087/    # Apache proxy
 curl https://rps.pan2.app/     # External access
 ```

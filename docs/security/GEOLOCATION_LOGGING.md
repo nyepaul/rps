@@ -204,7 +204,7 @@ Geolocation data is retained according to audit log retention policy:
 **Solution:** Run the backfill script:
 ```bash
 cd /var/www/rps.pan2.app
-sudo ./venv/bin/python scripts/backfill_geolocation_coordinates.py
+sudo docker compose -f docker-compose.prod.yml exec -T rps python scripts/backfill_geolocation_coordinates.py
 ```
 
 This will add coordinates to all historical logs with geolocation data.

@@ -1,5 +1,9 @@
 # Enhanced Audit Logging - Deployment Guide
 
+> [!NOTE]
+> This document is **historical** (pre-2026-02-14). Production now deploys via `sudo ./bin/deploy-docker` (Docker Compose).
+> Avoid manual file copying; deploy from source control instead.
+
 ## Overview
 Enhanced comprehensive audit logging has been implemented to track user activities including:
 - Login/logout events with IP addresses and geolocation
@@ -70,7 +74,7 @@ cd /var/www/rps.pan2.app
 
 ### Step 3: Restart Application
 ```bash
-sudo systemctl restart rps
+sudo systemctl restart rps.service
 ```
 
 ### Step 4: Verify Logging is Working

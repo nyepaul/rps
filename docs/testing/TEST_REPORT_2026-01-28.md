@@ -358,7 +358,7 @@ test_database_isolation_second_test ✓
 
 ### Deployment Steps
 1. Backup current database
-2. Run `sudo ./bin/deploy` or `./bin/restart`
+2. Run `sudo ./bin/deploy-docker` or `./bin/restart`
 3. Monitor logs for errors
 4. Test critical user paths
 5. Monitor error rates

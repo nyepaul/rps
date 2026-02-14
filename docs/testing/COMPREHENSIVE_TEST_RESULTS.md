@@ -214,7 +214,7 @@ The financial calculation engine is working correctly and consistently across:
 **Version:** 3.8.104
 **Git Status:** Committed and pushed
 **Production Status:** Ready to deploy
-**Command:** `sudo ./bin/deploy`
+**Command:** `sudo ./bin/deploy-docker`
 
 ---
 

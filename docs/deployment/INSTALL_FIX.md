@@ -1,40 +1,26 @@
 # Quick Fix for Deployed Instance
 
+> [!NOTE]
+> This document is **historical** (pre-2026-02-14). Production now runs via **Docker Compose** and installs dependencies in the image.
+> Use `docs/deployment/PRODUCTION_DOCKER_DEPLOY.md` for current production operations.
+
 If the service fails to start, run these commands on the server:
 
-1. **Install missing dependency:**
+1. **Redeploy cleanly (recommended):**
    ```bash
-   sudo systemctl stop rps
-   
-   # Install user-agents in the venv
-   sudo -H -u www-data /var/www/rps.pan2.app/venv/bin/pip install user-agents
-   
-   # Verify
-   sudo -u www-data /var/www/rps.pan2.app/venv/bin/pip show user-agents
+   cd /home/paul/src/rps
+   git pull
+   sudo ./bin/deploy-docker
    ```
 
-2. **Fix matplotlib permission issue:**
+2. **Check Status:**
    ```bash
-   sudo mkdir -p /var/www/rps.pan2.app/.config/matplotlib
-   sudo chown -R www-data:www-data /var/www/rps.pan2.app/.config
+   sudo systemctl status rps.service
+   sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml ps
    ```
 
-3. **Restart Service:**
+3. **Check Logs:**
    ```bash
-   sudo systemctl start rps
-   ```
-
-4. **Check Status:**
-   ```bash
-   sudo systemctl status rps
-   ```
-
-5. **Check Logs:**
-   ```bash
-   tail -20 /var/www/rps.pan2.app/logs/rps-error.log
-   ```
-
-   Detailed logs:
-   ```bash
-   sudo journalctl -u rps -n 50
+   sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml logs --tail=200 rps
+   sudo journalctl -u rps.service -n 100 --no-pager
    ```

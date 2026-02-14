@@ -15,21 +15,23 @@ For production environments (like `pan2.app`), the recommended setup is a local 
 
 ### configuration
 
-Set these environment variables in your systemd `env.conf`:
+Set these environment variables in your production env file:
 
-```ini
+- `/var/www/rps.pan2.app/.env.production`
+
+```bash
 # Security Keys
-Environment="SECRET_KEY=..."
-Environment="ENCRYPTION_KEY=..."
-Environment="BACKUP_KEY_PEPPER=..."
+SECRET_KEY=...
+ENCRYPTION_KEY=...
+BACKUP_KEY_PEPPER=...
 
 # Local Email relay
-Environment="MAIL_SERVER=127.0.0.1"
-Environment="MAIL_PORT=25"
-Environment="MAIL_USE_TLS=false"
-Environment="MAIL_USE_SSL=false"
-Environment="MAIL_DEFAULT_SENDER=rps@pan2.app"
-Environment="APP_BASE_URL=https://rps.pan2.app"
+MAIL_SERVER=127.0.0.1
+MAIL_PORT=25
+MAIL_USE_TLS=false
+MAIL_USE_SSL=false
+MAIL_DEFAULT_SENDER=rps@pan2.app
+APP_BASE_URL=https://rps.pan2.app
 ```
 
 ### Benefits of Local Relay
@@ -74,7 +76,7 @@ echo "Test mail" | mail -s "Test Subject" your-email@gmail.com
 ### Application Logs
 Check the application logs for delivery errors:
 ```bash
-tail -f /var/www/rps.pan2.app/logs/rps.log
+sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml logs -f rps
 ```
 
 Look for "Flask-Mail SMTP failed" or "Sendmail fallback failed".

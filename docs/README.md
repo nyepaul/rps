@@ -9,6 +9,10 @@ Welcome to the RPS documentation. This directory contains comprehensive guides f
 - **[guides/QUICKSTART.md](guides/QUICKSTART.md)** - 5-minute quick start guide
 - **[../README.md](../README.md)** - Project overview and main documentation
 
+### Deployment
+- **[deployment/DEPLOYMENT.md](deployment/DEPLOYMENT.md)** - Deployment overview (Docker-only)
+- **[deployment/PRODUCTION_DOCKER_DEPLOY.md](deployment/PRODUCTION_DOCKER_DEPLOY.md)** - Production deploy/runbook
+
 ### Architecture & Technical
 - **[architecture/SYSTEM-OVERVIEW.md](architecture/SYSTEM-OVERVIEW.md)** - Complete system architecture, features, and technical details
 - **[architecture/PROJECT_STRUCTURE.md](architecture/PROJECT_STRUCTURE.md)** - Detailed codebase organization
@@ -64,5 +68,5 @@ For a detailed map of the project, see **[architecture/PROJECT_STRUCTURE.md](arc
 
 ---
 
-**Last Updated**: January 2026 (v3.9 Reorganized)
+**Last Updated**: February 2026 (Docker-only runtime)
 **RPS Version**: 3.9

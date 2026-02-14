@@ -3,7 +3,11 @@
 I've updated the code to better handle errors. Follow these steps:
 
 ## Step 1: Stop the current server
-In the terminal where the server is running, press: **Ctrl+C**
+If RPS is running, stop the Docker stack:
+
+```bash
+./bin/manage stop
+```
 
 ## Step 2: Restart the server
 ```bash
@@ -23,7 +27,10 @@ Press **Cmd+Shift+R** (Mac) or **Ctrl+Shift+R** (Windows/Linux) to hard refresh.
    - OR a detailed error message explaining what went wrong
 
 ## If you still get an error:
-1. Check the terminal output where the server is running - it will show the actual Python error
+1. Check container logs:
+   ```bash
+   ./bin/manage logs
+   ```
 2. Take a screenshot and share it with me
 3. OR look in the browser console (press F12, click "Console" tab) for error details
 

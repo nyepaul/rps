@@ -57,7 +57,7 @@ Then open `http://127.0.0.1:5137`.
 | `./bin/test [args...]` | Run full pytest suite (auto-creates `./venv` if missing) |
 | `./bin/release-gate` | Run local + production pre-deploy checks (recommended) |
 | `./bin/setup-git-hooks` | Enable local pre-push hook checks (`.githooks`) |
-| `sudo ./bin/deploy` | Deploy latest `main` to production (server environment) |
+| `sudo ./bin/deploy-docker` | Deploy latest `main` to production (Docker Compose) |
 | `./bin/manage stop` | Stop the application |
 | `./bin/manage status` | Check system health |
 | `./bin/manage backup` | Backup SQLite database |
@@ -74,7 +74,7 @@ Use `TBPD` for releases:
 1. **Test**: `./bin/release-gate`
 2. **Bump**: `./bin/bump-version <x.y.z> "<notes>"`
 3. **Push**: `git push origin main`
-4. **Deploy**: `sudo ./bin/deploy`
+4. **Deploy**: `sudo ./bin/deploy-docker`
 
 ## Architecture
 
@@ -108,4 +108,4 @@ The following variables are used for system-level configuration or testing. **Us
 
 ---
 
-**Version**: 3.9.293 | **Last Updated**: 2026-02-13
+**Version**: 3.9.298 | **Last Updated**: 2026-02-14

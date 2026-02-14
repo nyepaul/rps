@@ -2,6 +2,10 @@
 
 **Technical implementation details for the Welcome Screen, Wizard, Learn Hub, and Progression System**
 
+> [!IMPORTANT]
+> Runtime is **Docker-only** (as of 2026-02-14). Use `./bin/start` (Docker Compose) to run the app locally.
+> For a source-build dev runtime, use `docker compose -f docker-compose.dev.yml up -d --build`.
+
 ---
 
 ## Architecture Overview
@@ -914,13 +918,8 @@ describe('Progression System', () => {
 ### Local Development
 
 ```bash
-# Setup
+# Run (Docker Compose)
 cd /home/paul/src/rps
-python3 -m venv venv
-source venv/bin/activate
-pip install -r config/requirements.txt
-
-# Run
 ./bin/start
 
 # Access
@@ -930,42 +929,20 @@ open http://127.0.0.1:5137
 ### Production Deployment
 
 ```bash
-# Use production WSGI server
-uv pip install gunicorn
-
-# Run with Gunicorn
-gunicorn -w 4 -b 0.0.0.0:5137 src.app:app
-
-# Or use waitress (Windows-compatible)
-uv pip install waitress
-waitress-serve --host=0.0.0.0 --port=5137 src.app:app
+cd /home/paul/src/rps
+git pull
+sudo ./bin/deploy-docker
 ```
 
 ### Docker Deployment
 
-```dockerfile
-# Dockerfile
-FROM python:3.14-slim
+RPS ships with:
+- `docker/Dockerfile`
+- `docker-compose.yml` (image-only install)
+- `docker-compose.dev.yml` (build-from-source dev)
+- `docker-compose.prod.yml` (production)
 
-WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY src/ ./src/
-COPY skills/ ./skills/
-COPY data/ ./data/
-
-EXPOSE 5137
-
-CMD ["python3", "src/app.py"]
-```
-
-```bash
-# Build and run
-docker build -t rps .
-docker run -p 5137:5137 -v $(pwd)/data:/app/data rps
-```
+See `docs/deployment/DOCKER_ONLY_RUNTIME.md` and `docs/deployment/PRODUCTION_DOCKER_DEPLOY.md`.
 
 ---
 

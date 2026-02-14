@@ -1,5 +1,9 @@
 # Phase 1 Complete: Unified CSV Parser 🎉
 
+> [!NOTE]
+> This is a phase-completion writeup for earlier work. For current runtime/deployment, see:
+> `docs/deployment/DEPLOYMENT.md` and `docs/deployment/DOCKER_ONLY_RUNTIME.md`.
+
 ## What Was Built
 
 I've successfully implemented **Phase 1** of the hybrid CSV+AI import system. The RPS application now has a **unified CSV parser utility** that standardizes importing across all three tabs.
@@ -174,10 +178,10 @@ Configs include:
 ### Server Not Running
 ```bash
 # Check status
-sudo systemctl status rps
+sudo systemctl status rps.service
 
 # Start if needed
-sudo systemctl start rps
+sudo systemctl start rps.service
 
 # Or run in dev mode
 ./bin/start

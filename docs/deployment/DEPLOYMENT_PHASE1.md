@@ -1,5 +1,9 @@
 # Phase 1 Deployment Guide
 
+> [!NOTE]
+> This document is **historical** (pre-2026-02-14). RPS now runs **Docker-only**.
+> Use `docs/deployment/DEPLOYMENT.md` and `docs/deployment/PRODUCTION_DOCKER_DEPLOY.md` instead.
+
 ## Current Status
 
 ✅ **Phase 1 code is complete and committed**
@@ -20,7 +24,7 @@ Deploy to production immediately to test:
 git push origin main
 
 # Deploy to production
-sudo ./bin/deploy
+sudo ./bin/deploy-docker
 ```
 
 This will:
@@ -35,7 +39,7 @@ Stop production service temporarily and run dev server:
 
 ```bash
 # Stop production service
-sudo systemctl stop rps
+sudo systemctl stop rps.service
 
 # Start dev server
 ./bin/start
@@ -43,7 +47,7 @@ sudo systemctl stop rps
 # Test at http://127.0.0.1:5137/
 
 # When done, restart production
-sudo systemctl start rps
+sudo systemctl start rps.service
 ```
 
 **Note**: This will interrupt production users.
@@ -71,7 +75,7 @@ FLASK_PORT=5138 python app.py
 git push origin main
 
 # 2. Deploy
-sudo ./bin/deploy
+sudo ./bin/deploy-docker
 
 # 3. Verify deployment
 curl http://127.0.0.1:5137/js/utils/csv-parser.js | head -5
@@ -121,11 +125,11 @@ If issues are found after deployment:
 git revert HEAD
 
 # Redeploy
-sudo ./bin/deploy
+sudo ./bin/deploy-docker
 
 # Or checkout previous commit
 git checkout 58cef7b  # Previous commit before skew correction
-sudo ./bin/deploy
+sudo ./bin/deploy-docker
 ```
 
 ## Current Git Status
@@ -153,7 +157,7 @@ d2b1e9e (HEAD -> main) chore: correct version skew to 3.9.150
 1. **Deploy now** (recommended)
    ```bash
    git push origin main
-   sudo ./bin/deploy
+   sudo ./bin/deploy-docker
    ```
 
 2. **Test thoroughly**
@@ -167,8 +171,8 @@ d2b1e9e (HEAD -> main) chore: correct version skew to 3.9.150
 
 ## Notes
 
-- Production service runs as systemd service: `sudo systemctl status rps`
-- Logs available: `./bin/manage logs` or `sudo journalctl -u rps -f`
+- Production service runs as systemd service: `sudo systemctl status rps.service`
+- Logs available: `./bin/manage logs` or `sudo journalctl -u rps.service -f`
 - Service automatically restarts on deployment
 - No database migrations needed for Phase 1
 
@@ -176,4 +180,4 @@ d2b1e9e (HEAD -> main) chore: correct version skew to 3.9.150
 
 **Ready to deploy!** 🚀
 
-Run: `git push origin main && sudo ./bin/deploy`
+Run: `git push origin main && sudo ./bin/deploy-docker`

@@ -642,7 +642,7 @@ If only the database is corrupted:
 ./bin/restore --latest --type database
 
 # Restart application
-sudo systemctl restart rps
+sudo systemctl restart rps.service
 ```
 
 ### Configuration Errors
@@ -660,13 +660,13 @@ If data was accidentally deleted but system is still running:
 
 ```bash
 # Stop application first
-sudo systemctl stop rps
+sudo systemctl stop rps.service
 
 # Restore latest backup
 ./bin/restore --latest
 
 # Restart application
-sudo systemctl start rps
+sudo systemctl start rps.service
 ```
 
 ## Monitoring and Alerts
@@ -805,13 +805,13 @@ chown paul:paul backups/
 
 ```bash
 # Stop RPS application before backup
-sudo systemctl stop rps
+sudo systemctl stop rps.service
 
 # Run backup
 ./bin/backup
 
 # Restart application
-sudo systemctl start rps
+sudo systemctl start rps.service
 ```
 
 Note: The backup script uses SQLite's `.backup` command which handles locks gracefully.

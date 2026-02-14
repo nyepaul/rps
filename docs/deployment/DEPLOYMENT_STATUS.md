@@ -1,5 +1,9 @@
 # Deployment Status Summary
 
+> [!NOTE]
+> This document is **historical** (pre-2026-02-14). Production now runs via **Docker Compose**.
+> Use `docs/deployment/DEPLOYMENT.md` and `docs/deployment/PRODUCTION_DOCKER_DEPLOY.md`.
+
 ## Current Status: ⚠️ ACTION REQUIRED
 
 The RPS application has been deployed to `/var/www/rps.pan2.app/` but requires one manual fix to start.
@@ -17,45 +21,17 @@ The RPS application has been deployed to `/var/www/rps.pan2.app/` but requires o
 
 ## Required Action
 
-Run the fix script to install the missing package:
+Deploy with the current Docker-based deploy script:
 
 ```bash
-/tmp/fix_rps.sh
-```
-
-Or manually:
-
-```bash
-sudo systemctl stop rps
-sudo -H -u www-data /var/www/rps.pan2.app/venv/bin/pip install user-agents
-sudo mkdir -p /var/www/rps.pan2.app/.config/matplotlib
-sudo chown -R www-data:www-data /var/www/rps.pan2.app/.config
-sudo systemctl start rps
-sudo systemctl status rps
-curl http://localhost:5137/health
+cd /home/paul/src/rps
+git pull
+sudo ./bin/deploy-docker
 ```
 
 ## After Fix is Applied
 
-Once the service is running:
-
-1. Configure environment variables:
-   ```bash
-   sudo cp /var/www/rps.pan2.app/.env.production.example /var/www/rps.pan2.app/.env
-   sudo nano /var/www/rps.pan2.app/.env
-   ```
-
-   Set:
-   - `SECRET_KEY` - Random secret for Flask sessions
-   - `ENCRYPTION_KEY` - Generate with: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`
-   - `CORS_ORIGINS` - Set to `https://rps.pan2.app`
-
-2. Restart after env configuration:
-   ```bash
-   sudo systemctl restart rps
-   ```
-
-3. Configure Cloudflare Tunnel to point to `http://localhost:8087`
+Once the service is running, ensure `/var/www/rps.pan2.app/.env.production` exists (must include `SECRET_KEY` and `ENCRYPTION_KEY`).
 
 ## Verification
 
@@ -63,17 +39,17 @@ Test the deployment:
 
 ```bash
 # Check service status
-sudo systemctl status rps
+sudo systemctl status rps.service
 
-# Test direct Flask endpoint
-curl http://localhost:5137/health
+# Test direct RPS endpoint
+curl http://127.0.0.1:5137/health
 
 # Test Apache proxy
 curl http://localhost:8087/health
 
 # View logs
-tail -f /var/www/rps.pan2.app/logs/rps.log
-sudo journalctl -u rps -f
+sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml logs --tail=200 rps
+sudo journalctl -u rps.service -n 100 --no-pager
 ```
 
 ## Architecture
@@ -83,7 +59,7 @@ sudo journalctl -u rps -f
         ↓
 [Apache:8087] ← Configure tunnel to point here
         ↓
-[Flask:5137] ← Internal application
+[Docker publish:127.0.0.1:5137] ← Internal application
 ```
 
 ## Files Created
@@ -91,7 +67,7 @@ sudo journalctl -u rps -f
 - `/var/www/rps.pan2.app/` - Application directory
 - `/etc/apache2/sites-available/rps.pan2.app.conf` - Apache config
 - `/etc/systemd/system/rps.service` - Systemd service
-- `~/src/rps/bin/deploy` - Deployment automation script
+- `~/src/rps/bin/deploy-docker` - Deployment automation script
 - `~/src/rps/DEPLOYMENT.md` - Full deployment guide
 - `~/src/rps/docs/API_KEY_SECURITY.md` - Security documentation
 
@@ -102,7 +78,7 @@ For future updates, just run:
 ```bash
 cd ~/src/rps
 git pull
-sudo ./bin/deploy
+sudo ./bin/deploy-docker
 ```
 
 The deployment script now includes all necessary fixes.
@@ -119,14 +95,14 @@ The deployment script now includes all necessary fixes.
 
 If service fails:
 ```bash
-sudo journalctl -u rps -n 50
-tail -50 /var/www/rps.pan2.app/logs/rps-error.log
+sudo journalctl -u rps.service -n 100 --no-pager
+sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml logs --tail=200 rps
 ```
 
-If database errors:
+Migrations run automatically on container start. To force-run:
 ```bash
-cd /var/www/rps.pan2.app
-sudo -u www-data ./venv/bin/alembic upgrade head
+sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml exec -T rps \
+  python -m alembic -c config/alembic.ini upgrade head
 ```
 
 ## Contact
@@ -134,4 +110,4 @@ sudo -u www-data ./venv/bin/alembic upgrade head
 For issues, check:
 - GitHub: https://github.com/nyepaul/rps
 - Logs: `/var/www/rps.pan2.app/logs/`
-- Service status: `sudo systemctl status rps`
+- Service status: `sudo systemctl status rps.service`

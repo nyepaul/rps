@@ -15,7 +15,7 @@ cd rps
 
 You should see:
 ```
-Starting Flask Server...
+Starting RPS (Docker Compose)...
 Access the application at:
 http://127.0.0.1:5137
 ```
@@ -41,25 +41,19 @@ chmod +x bin/manage
 
 ---
 
-## Error: "python3: command not found"
+## Error: "docker: command not found" / Docker not running
 
-Python 3 is not installed.
+RPS runs via Docker Compose. If Docker is missing or not running, `./bin/start` will fail.
 
 ### Solution:
 
-**macOS:**
-```bash
-brew install python3
-```
+1. Install Docker Desktop (Mac/Windows) or Docker Engine (Linux)
+2. Start Docker
+3. Retry:
 
-**Linux (Ubuntu/Debian):**
 ```bash
-sudo apt update
-sudo apt install python3 python3-pip python3-venv
+./bin/start
 ```
-
-**Windows:**
-Download from: https://www.python.org/downloads/
 
 ---
 
@@ -73,14 +67,19 @@ Another application is using port 5137.
 
 Find and kill the process:
 ```bash
-lsof -i :5137
-kill <PID>
+sudo ss -ltnp | rg ":5137" || true
 ```
 
-**Option 2: Stop any existing RPS instance**
+**Option 2: Stop any existing RPS instance (local dev)**
 ```bash
 ./bin/manage stop
 ./bin/start
+```
+
+**Option 3: If a rootless Docker stack is holding the port**
+
+```bash
+DOCKER_HOST=unix:///run/user/1000/docker.sock docker ps --format "table {{.Names}}\t{{.Ports}}" || true
 ```
 
 ---
@@ -107,22 +106,15 @@ Click "Load Saved Profile" in the Profile tab, or enter your data manually.
 
 ### Solution:
 
-**If pip install fails:**
-```bash
-python3 -m pip install --upgrade pip
-python3 -m pip install -r requirements.txt
-```
+RPS dependencies are installed inside the Docker image.
 
-**If numpy/pandas fail (missing compiler):**
+If the Docker build fails:
+1. Check free disk space
+2. Restart Docker
+3. Rebuild:
 
-macOS:
 ```bash
-xcode-select --install
-```
-
-Linux:
-```bash
-sudo apt install build-essential python3-dev
+docker compose -f docker-compose.dev.yml build --no-cache
 ```
 
 ---
@@ -134,9 +126,9 @@ sudo apt install build-essential python3-dev
 ./bin/start
 ```
 
-To reset all data (WARNING: deletes profiles):
+To reset all local Docker data (WARNING: deletes profiles):
 ```bash
-rm data/planning.db
+docker compose down -v
 ./bin/start
 ```
 
@@ -144,23 +136,18 @@ rm data/planning.db
 
 ## Still having issues?
 
-1. **Check Python version:**
-   ```bash
-   python3 --version
-   ```
-   Should be 3.10 or higher
-
-2. **Check if server is running:**
+1. **Check if server is running:**
    ```bash
    curl http://127.0.0.1:5137/health
    ```
    Should return: `{"status":"healthy"}`
 
-3. **View server logs:**
-   Look at terminal where you ran `./bin/start`
-   Errors will appear there
+2. **View server logs:**
+   ```bash
+   ./bin/manage logs
+   ```
 
-4. **Check logs directory:**
+3. **Check logs directory:**
    ```bash
    cat logs/app.log
    ```

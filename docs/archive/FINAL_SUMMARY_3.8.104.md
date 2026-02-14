@@ -1,5 +1,9 @@
 # Final Summary - RPS v3.8.104 Deployment
 
+> [!NOTE]
+> This is an archived deployment summary. Current production runs via Docker Compose; see:
+> `docs/deployment/PRODUCTION_DOCKER_DEPLOY.md`.
+
 **Deployment Date:** 2026-01-22 21:08:11
 **Version:** 3.8.104
 **Status:** ✅ **SUCCESSFULLY DEPLOYED TO PRODUCTION**
@@ -239,20 +243,20 @@ Location: `/tmp/comprehensive_test.py`
 ### Quick Commands
 ```bash
 # Check service status
-sudo systemctl status rps
+sudo systemctl status rps.service
 
 # Restart service
-sudo systemctl restart rps
+sudo systemctl restart rps.service
 
 # View logs
-sudo journalctl -u rps -f
+sudo journalctl -u rps.service -f
 tail -f /var/www/rps.pan2.app/logs/rps.log
 ```
 
 ### Rollback (if needed)
 ```bash
 git checkout 33d5333  # Previous version
-sudo ./bin/deploy
+sudo ./bin/deploy-docker
 ```
 
 ---

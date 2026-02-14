@@ -9,7 +9,10 @@ Open your terminal and run:
 ```bash
 ./bin/start
 ```
-*Wait for the message: "Access the application at: http://127.0.0.1:5137"*
+Then verify:
+```bash
+curl http://127.0.0.1:5137/health
+```
 
 ### Step 2: Open the Dashboard
 Navigate to **[http://127.0.0.1:5137](http://127.0.0.1:5137)** in your web browser.
@@ -52,10 +55,10 @@ To unlock personalized strategies, you need to configure an AI provider.
 
 | Task | Command / Action |
 |------|------------------|
-| **Stop Server** | Press `Ctrl+C` in the terminal. |
+| **Stop Server** | Run `./bin/manage stop`. |
 | **Backup Data** | Run `./bin/backup` to save your database and profiles. |
 | **Reset Admin** | Run `./bin/reset-admin-password` if you lose access. |
-| **Update System** | Run `git pull` followed by `sudo ./bin/deploy`. |
+| **Update System** | Run `git pull` then `./bin/start` (local). For production, use `sudo ./bin/deploy-docker`. |
 
 ---
 

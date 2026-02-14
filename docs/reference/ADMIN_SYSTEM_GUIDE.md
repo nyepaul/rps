@@ -557,9 +557,13 @@ The enhanced audit logger uses **ip-api.com** for IP geo-location:
    ```bash
    chmod +x ./bin/promote-admin
    ```
-2. Use Python directly:
+2. Run it inside the RPS container (recommended):
    ```bash
-   src/venv/bin/python ./bin/promote-admin username
+   # Local dev (from repo root)
+   docker compose exec -T rps ./bin/promote-admin username
+
+   # Production
+   sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml exec -T rps ./bin/promote-admin username
    ```
 3. Check database exists at `data/planning.db`
 

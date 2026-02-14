@@ -1,5 +1,9 @@
 # Phase 1 Complete: Standardized CSV Parsing
 
+> [!NOTE]
+> This is a phase-completion writeup for earlier work. For current runtime/deployment, see:
+> `docs/deployment/DEPLOYMENT.md` and `docs/deployment/DOCKER_ONLY_RUNTIME.md`.
+
 ## Summary
 
 Phase 1 of the hybrid CSV+AI import system is now implemented. All three tabs (Income, Budget, Assets) now use a **unified CSV parser utility** instead of duplicated parsing logic.
