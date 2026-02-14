@@ -54,7 +54,7 @@ sudo RPS_DOCKER_MODE=rootless ./bin/deploy-docker
 
 What it does:
 
-- `rsync` code to `/var/www/rps.pan2.app/` (preserves `.env.production`, `data/`, `logs/`, `backups/`)
+- `rsync` code to `/var/www/rps.pan2.app/` (preserves `.env.production`, `.env.production.rootless`, `data/`, `logs/`, `backups/`)
 - Creates a pre-deploy DB backup (if `data/planning.db` exists)
 - Builds the image via the **rootless** daemon
 - Installs/updates systemd unit as `rps.service` (rootless compose)
@@ -74,13 +74,13 @@ DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f /var/www/rps.pan
 1. Stop containers:
 
 ```bash
-sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml down
+DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f /var/www/rps.pan2.app/docker-compose.prod.rootless.yml down
 ```
 
 2. Restore the DB from `/var/www/rps.pan2.app/backups/` (pick the most recent `*_pre_docker.db` or other known-good backup), then bring the stack back up:
 
 ```bash
-sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml up -d
+DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f /var/www/rps.pan2.app/docker-compose.prod.rootless.yml up -d
 ```
 
 ## Common Failure: Port 5137 Already In Use
@@ -88,11 +88,11 @@ sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml up -d
 If `docker compose up` fails to publish `127.0.0.1:5137`, check both Docker daemons:
 
 ```bash
-# Rootful docker (production)
-sudo docker ps --format "table {{.Names}}\t{{.Ports}}"
-
-# Rootless docker (if present on the host)
+# Rootless docker (production)
 DOCKER_HOST=unix:///run/user/1000/docker.sock docker ps --format "table {{.Names}}\t{{.Ports}}" || true
+
+# Rootful docker (if present on the host)
+sudo docker ps --format "table {{.Names}}\t{{.Ports}}"
 
 sudo ss -ltnp | rg ":5137" || true
 ```

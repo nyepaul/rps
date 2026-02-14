@@ -107,7 +107,7 @@ Verified with Demo Dudeman profile:
 git add .
 git commit -m "fix: Cash Flow Tab now uses accurate Monte Carlo projections"
 git push
-sudo ./bin/deploy-docker
+sudo RPS_DOCKER_MODE=rootless ./bin/deploy-docker
 ```
 
 ## Related Issues

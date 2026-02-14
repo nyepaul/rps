@@ -10,17 +10,17 @@ If the service fails to start, run these commands on the server:
    ```bash
    cd /home/paul/src/rps
    git pull
-   sudo ./bin/deploy-docker
+   sudo RPS_DOCKER_MODE=rootless ./bin/deploy-docker
    ```
 
 2. **Check Status:**
    ```bash
    sudo systemctl status rps.service
-   sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml ps
+   DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f /var/www/rps.pan2.app/docker-compose.prod.rootless.yml ps
    ```
 
 3. **Check Logs:**
    ```bash
-   sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml logs --tail=200 rps
+   DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f /var/www/rps.pan2.app/docker-compose.prod.rootless.yml logs --tail=200 rps
    sudo journalctl -u rps.service -n 100 --no-pager
    ```

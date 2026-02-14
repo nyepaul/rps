@@ -1,0 +1,22 @@
+[Unit]
+Description=RPS - Retirement and Wealth Planning System (Rootless Docker Compose)
+After=network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/var/www/rps.pan2.app
+
+# Run docker compose against the rootless daemon socket.
+User=paul
+Environment=DOCKER_HOST=unix:///run/user/1000/docker.sock
+
+ExecStart=/usr/bin/docker compose -f docker-compose.prod.rootless.yml up -d --remove-orphans
+ExecStop=/usr/bin/docker compose -f docker-compose.prod.rootless.yml down
+
+TimeoutStartSec=600
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target
+

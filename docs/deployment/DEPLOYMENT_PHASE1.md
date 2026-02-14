@@ -24,7 +24,7 @@ Deploy to production immediately to test:
 git push origin main
 
 # Deploy to production
-sudo ./bin/deploy-docker
+sudo RPS_DOCKER_MODE=rootless ./bin/deploy-docker
 ```
 
 This will:
@@ -75,7 +75,7 @@ FLASK_PORT=5138 python app.py
 git push origin main
 
 # 2. Deploy
-sudo ./bin/deploy-docker
+sudo RPS_DOCKER_MODE=rootless ./bin/deploy-docker
 
 # 3. Verify deployment
 curl http://127.0.0.1:5137/js/utils/csv-parser.js | head -5
@@ -125,11 +125,11 @@ If issues are found after deployment:
 git revert HEAD
 
 # Redeploy
-sudo ./bin/deploy-docker
+sudo RPS_DOCKER_MODE=rootless ./bin/deploy-docker
 
 # Or checkout previous commit
 git checkout 58cef7b  # Previous commit before skew correction
-sudo ./bin/deploy-docker
+sudo RPS_DOCKER_MODE=rootless ./bin/deploy-docker
 ```
 
 ## Current Git Status
@@ -157,7 +157,7 @@ d2b1e9e (HEAD -> main) chore: correct version skew to 3.9.150
 1. **Deploy now** (recommended)
    ```bash
    git push origin main
-   sudo ./bin/deploy-docker
+   sudo RPS_DOCKER_MODE=rootless ./bin/deploy-docker
    ```
 
 2. **Test thoroughly**
@@ -180,4 +180,4 @@ d2b1e9e (HEAD -> main) chore: correct version skew to 3.9.150
 
 **Ready to deploy!** 🚀
 
-Run: `git push origin main && sudo ./bin/deploy-docker`
+Run: `git push origin main && sudo RPS_DOCKER_MODE=rootless ./bin/deploy-docker`

@@ -15,9 +15,13 @@ For production environments (like `pan2.app`), the recommended setup is a local 
 
 ### configuration
 
-Set these environment variables in your production env file:
+Set these environment variables in your production env file.
 
-- `/var/www/rps.pan2.app/.env.production`
+For rootless production (recommended), settings are loaded from:
+
+- `/var/www/rps.pan2.app/.env.production.rootless`
+
+If `.env.production.rootless` does not exist yet, `sudo RPS_DOCKER_MODE=rootless ./bin/deploy-docker` will bootstrap it from `/var/www/rps.pan2.app/.env.production`.
 
 ```bash
 # Security Keys
@@ -76,7 +80,7 @@ echo "Test mail" | mail -s "Test Subject" your-email@gmail.com
 ### Application Logs
 Check the application logs for delivery errors:
 ```bash
-sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml logs -f rps
+DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f /var/www/rps.pan2.app/docker-compose.prod.rootless.yml logs -f rps
 ```
 
 Look for "Flask-Mail SMTP failed" or "Sendmail fallback failed".

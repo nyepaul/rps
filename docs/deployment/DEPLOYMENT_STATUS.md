@@ -26,12 +26,15 @@ Deploy with the current Docker-based deploy script:
 ```bash
 cd /home/paul/src/rps
 git pull
-sudo ./bin/deploy-docker
+sudo RPS_DOCKER_MODE=rootless ./bin/deploy-docker
 ```
 
 ## After Fix is Applied
 
-Once the service is running, ensure `/var/www/rps.pan2.app/.env.production` exists (must include `SECRET_KEY` and `ENCRYPTION_KEY`).
+Once the service is running:
+- `/var/www/rps.pan2.app/.env.production` must exist (bootstrap source)
+- `/var/www/rps.pan2.app/.env.production.rootless` must exist (used by rootless compose)
+Both must include `SECRET_KEY` and `ENCRYPTION_KEY`.
 
 ## Verification
 
@@ -48,7 +51,7 @@ curl http://127.0.0.1:5137/health
 curl http://localhost:8087/health
 
 # View logs
-sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml logs --tail=200 rps
+DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f /var/www/rps.pan2.app/docker-compose.prod.rootless.yml logs --tail=200 rps
 sudo journalctl -u rps.service -n 100 --no-pager
 ```
 
@@ -78,7 +81,7 @@ For future updates, just run:
 ```bash
 cd ~/src/rps
 git pull
-sudo ./bin/deploy-docker
+sudo RPS_DOCKER_MODE=rootless ./bin/deploy-docker
 ```
 
 The deployment script now includes all necessary fixes.
@@ -96,12 +99,12 @@ The deployment script now includes all necessary fixes.
 If service fails:
 ```bash
 sudo journalctl -u rps.service -n 100 --no-pager
-sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml logs --tail=200 rps
+DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f /var/www/rps.pan2.app/docker-compose.prod.rootless.yml logs --tail=200 rps
 ```
 
 Migrations run automatically on container start. To force-run:
 ```bash
-sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml exec -T rps \
+DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f /var/www/rps.pan2.app/docker-compose.prod.rootless.yml exec -T rps \
   python -m alembic -c config/alembic.ini upgrade head
 ```
 

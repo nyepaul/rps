@@ -132,7 +132,7 @@ sudo systemctl status rps-backup.timer
    - Size: ~44M
 
 7. **Configuration Files**
-   - `.env` and `.env.production` (environment variables)
+   - `.env`, `.env.production`, and `.env.production.rootless` (environment variables)
    - `config/alembic.ini` (database migration config)
    - `requirements.txt`, `pyproject.toml`, `setup.py`
    - `config/pytest.ini`, `.gitignore`
@@ -168,7 +168,7 @@ sudo systemctl status rps-backup.timer
    - Size: ~44M
 
 2. **Configuration Files**
-   - `.env` and `.env.production` (environment variables)
+   - `.env`, `.env.production`, and `.env.production.rootless` (environment variables)
    - `alembic.ini` (database migration config)
    - `version.json` (tracks RPS version for the data)
 

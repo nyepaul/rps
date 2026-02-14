@@ -931,7 +931,7 @@ open http://127.0.0.1:5137
 ```bash
 cd /home/paul/src/rps
 git pull
-sudo ./bin/deploy-docker
+sudo RPS_DOCKER_MODE=rootless ./bin/deploy-docker
 ```
 
 ### Docker Deployment
@@ -940,7 +940,8 @@ RPS ships with:
 - `docker/Dockerfile`
 - `docker-compose.yml` (image-only install)
 - `docker-compose.dev.yml` (build-from-source dev)
-- `docker-compose.prod.yml` (production)
+- `docker-compose.prod.yml` (rootful production)
+- `docker-compose.prod.rootless.yml` (rootless production)
 
 See `docs/deployment/DOCKER_ONLY_RUNTIME.md` and `docs/deployment/PRODUCTION_DOCKER_DEPLOY.md`.
 

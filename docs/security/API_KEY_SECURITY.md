@@ -198,8 +198,13 @@ The codebase includes `app_legacy.py` which used environment variables for API k
 
 2. **Secure Environment File**:
    ```bash
+   # Rootful bootstrap file (kept root-owned)
    chmod 600 /var/www/rps.pan2.app/.env.production
    chown root:root /var/www/rps.pan2.app/.env.production
+
+   # Rootless runtime file (used by rootless compose)
+   chmod 600 /var/www/rps.pan2.app/.env.production.rootless
+   chown paul:paul /var/www/rps.pan2.app/.env.production.rootless
    ```
 
 3. **Never Commit Secrets**:

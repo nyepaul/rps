@@ -256,7 +256,7 @@ tail -f /var/www/rps.pan2.app/logs/rps.log
 ### Rollback (if needed)
 ```bash
 git checkout 33d5333  # Previous version
-sudo ./bin/deploy-docker
+sudo RPS_DOCKER_MODE=rootless ./bin/deploy-docker
 ```
 
 ---

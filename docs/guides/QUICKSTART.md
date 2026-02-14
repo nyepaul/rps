@@ -58,7 +58,7 @@ To unlock personalized strategies, you need to configure an AI provider.
 | **Stop Server** | Run `./bin/manage stop`. |
 | **Backup Data** | Run `./bin/backup` to save your database and profiles. |
 | **Reset Admin** | Run `./bin/reset-admin-password` if you lose access. |
-| **Update System** | Run `git pull` then `./bin/start` (local). For production, use `sudo ./bin/deploy-docker`. |
+| **Update System** | Run `git pull` then `./bin/start` (local). For production, use `sudo RPS_DOCKER_MODE=rootless ./bin/deploy-docker`. |
 
 ---
 

@@ -62,6 +62,7 @@ Properly excludes:
 .env
 .env.local
 .env.production
+.env.production.rootless
 data/
 data/*.db
 data/*.db-*
@@ -152,6 +153,7 @@ No instances of hardcoded Bearer tokens found.
 # Environment files
 git ls-files | grep "\.env"
 git log --all --full-history -- .env .env.local .env.production
+git log --all --full-history -- .env.production.rootless
 
 # API key patterns
 grep -r "REDACTED_GAPI_" --include="*.py" --include="*.js" .

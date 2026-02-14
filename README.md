@@ -57,7 +57,7 @@ Then open `http://127.0.0.1:5137`.
 | `./bin/test [args...]` | Run full pytest suite (auto-creates `./venv` if missing) |
 | `./bin/release-gate` | Run local + production pre-deploy checks (recommended) |
 | `./bin/setup-git-hooks` | Enable local pre-push hook checks (`.githooks`) |
-| `sudo ./bin/deploy-docker` | Deploy latest `main` to production (Docker Compose) |
+| `sudo RPS_DOCKER_MODE=rootless ./bin/deploy-docker` | Deploy latest `main` to production (rootless Docker Compose) |
 | `./bin/manage stop` | Stop the application |
 | `./bin/manage status` | Check system health |
 | `./bin/manage backup` | Backup SQLite database |
@@ -74,7 +74,7 @@ Use `TBPD` for releases:
 1. **Test**: `./bin/release-gate`
 2. **Bump**: `./bin/bump-version <x.y.z> "<notes>"`
 3. **Push**: `git push origin main`
-4. **Deploy**: `sudo ./bin/deploy-docker`
+4. **Deploy**: `sudo RPS_DOCKER_MODE=rootless ./bin/deploy-docker`
 
 ## Architecture
 

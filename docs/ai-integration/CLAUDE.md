@@ -44,7 +44,7 @@ pytest tests/test_routes/  # Test API routes
 ### Deployment
 ```bash
 ./bin/manage tunnel     # Start Cloudflare tunnel for public HTTPS access
-sudo ./bin/deploy-docker  # Production deployment (Docker Compose)
+sudo RPS_DOCKER_MODE=rootless ./bin/deploy-docker  # Production deployment (rootless Docker Compose)
 ```
 
 ## System Architecture

@@ -51,7 +51,7 @@ sudo systemctl status apache2  # Check status
 |-----------|-------------|------------|
 | Backend | `./bin/start` (docker compose) | `sudo systemctl restart rps.service` (docker compose) |
 | Frontend proxy | Apache on 8087 | Apache on 8087 |
-| Logs | `docker compose logs -f rps` | `sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml logs -f rps` |
+| Logs | `docker compose logs -f rps` | `DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f /var/www/rps.pan2.app/docker-compose.prod.rootless.yml logs -f rps` |
 
 ## Troubleshooting
 

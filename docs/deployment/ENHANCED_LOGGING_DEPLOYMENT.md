@@ -1,7 +1,7 @@
 # Enhanced Audit Logging - Deployment Guide
 
 > [!NOTE]
-> This document is **historical** (pre-2026-02-14). Production now deploys via `sudo ./bin/deploy-docker` (Docker Compose).
+> This document is **historical** (pre-2026-02-14). Production now deploys via `sudo RPS_DOCKER_MODE=rootless ./bin/deploy-docker` (rootless Docker Compose).
 > Avoid manual file copying; deploy from source control instead.
 
 ## Overview

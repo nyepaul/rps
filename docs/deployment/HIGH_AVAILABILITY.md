@@ -80,13 +80,13 @@ sudo systemctl status apache2.service
 sudo systemctl status rps-health-check.timer
 
 # Docker containers
-sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml ps
+DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f /var/www/rps.pan2.app/docker-compose.prod.rootless.yml ps
 ```
 
 ### View Logs
 ```bash
 # RPS container logs
-sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml logs -f rps
+DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f /var/www/rps.pan2.app/docker-compose.prod.rootless.yml logs -f rps
 
 # Health check logs
 tail -f /var/www/rps.pan2.app/logs/health-check.log
@@ -121,13 +121,13 @@ systemctl list-timers rps-health-check.timer
 ### Test RPS Auto-Restart
 ```bash
 # Kill the container (simulates crash)
-sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml kill rps
+DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f /var/www/rps.pan2.app/docker-compose.prod.rootless.yml kill rps
 
 # Wait a few seconds (Docker restart policy should bring it back)
 sleep 5
 
 # Verify it restarted
-sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml ps
+DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f /var/www/rps.pan2.app/docker-compose.prod.rootless.yml ps
 curl http://localhost:8087/
 ```
 
@@ -196,7 +196,7 @@ tail -20 /var/www/rps.pan2.app/logs/health-check.log
 sudo journalctl -u rps.service -n 50
 
 # Check container logs
-sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml logs --tail=200 rps
+DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f /var/www/rps.pan2.app/docker-compose.prod.rootless.yml logs --tail=200 rps
 
 # Common issues:
 # - Database locked: Remove .db-shm and .db-wal files

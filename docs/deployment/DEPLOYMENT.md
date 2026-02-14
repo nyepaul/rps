@@ -21,15 +21,17 @@ For the production Docker workflow, also see: `docs/deployment/PRODUCTION_DOCKER
 - `SECRET_KEY`
 - `ENCRYPTION_KEY`
 
+In rootless mode (recommended), the app loads env from `/var/www/rps.pan2.app/.env.production.rootless` (created automatically by the deploy script if missing).
+
 2. Run the deployment script:
 
 ```bash
 cd /home/paul/src/rps
-sudo ./bin/deploy-docker
+sudo RPS_DOCKER_MODE=rootless ./bin/deploy-docker
 ```
 
 This will:
-- Sync code to `/var/www/rps.pan2.app/` (preserving `.env.production`, `data/`, `logs/`, `backups/`)
+- Sync code to `/var/www/rps.pan2.app/` (preserving `.env.production`, `.env.production.rootless`, `data/`, `logs/`, `backups/`)
 - Back up the SQLite DB before the cutover (if present)
 - Build the Docker image
 - Start the Docker Compose stack via systemd (`rps.service`)
@@ -68,13 +70,13 @@ sudo systemctl restart rps.service
 sudo journalctl -u rps.service -f
 
 # Container status/logs
-sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml ps
-sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml logs --tail=200 rps
+DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f /var/www/rps.pan2.app/docker-compose.prod.rootless.yml ps
+DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f /var/www/rps.pan2.app/docker-compose.prod.rootless.yml logs --tail=200 rps
 ```
 
 ### Application Logs
 ```bash
-sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml logs -f rps
+DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f /var/www/rps.pan2.app/docker-compose.prod.rootless.yml logs -f rps
 ```
 
 ### Apache Management
@@ -90,7 +92,7 @@ After making changes to the code:
 ```bash
 cd /home/paul/src/rps
 ./bin/check-quality-gates
-sudo ./bin/deploy-docker
+sudo RPS_DOCKER_MODE=rootless ./bin/deploy-docker
 ```
 
 ## Database Management
@@ -99,7 +101,7 @@ The SQLite database is located at `/var/www/rps.pan2.app/data/planning.db`
 
 ### Backup
 ```bash
-sudo -u www-data sqlite3 /var/www/rps.pan2.app/data/planning.db ".backup /var/www/rps.pan2.app/backups/backup-$(date +%Y%m%d-%H%M%S).db"
+sudo -u paul sqlite3 /var/www/rps.pan2.app/data/planning.db ".backup /var/www/rps.pan2.app/backups/backup-$(date +%Y%m%d-%H%M%S).db"
 ```
 
 ### Migrations
@@ -109,13 +111,14 @@ Migrations run automatically on container start (see `docker/entrypoint.sh`).
 
 To force-run migrations manually:
 cd /var/www/rps.pan2.app
-sudo docker compose -f docker-compose.prod.yml exec -T rps python -m alembic -c config/alembic.ini upgrade head
+DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f docker-compose.prod.rootless.yml exec -T rps \
+  python -m alembic -c config/alembic.ini upgrade head
 ```
 
 ## Security Considerations
 
 1. **Encryption Key**: Never commit `.env` files to git. Keep `ENCRYPTION_KEY` secure - it protects all user data.
-2. **File Permissions**: Application runs as `www-data` user with restricted permissions
+2. **File Permissions**: In rootless mode, bind mounts are written by the service user (`paul`). Keep `data/`, `logs/`, and `backups/` writable by `paul`.
 3. **Cloudflare Tunnel**: Provides HTTPS and DDoS protection
 4. **Session Security**: Configured for secure cookies in production
 5. **API Keys**: User API keys for AI services are stored per-profile, encrypted with AES-256-GCM
@@ -129,7 +132,7 @@ sudo docker compose -f docker-compose.prod.yml exec -T rps python -m alembic -c 
 ### Service won't start
 ```bash
 sudo journalctl -u rps.service -n 100 --no-pager
-sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml logs --tail=200 rps
+DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f /var/www/rps.pan2.app/docker-compose.prod.rootless.yml logs --tail=200 rps
 ```
 
 ### Apache errors
@@ -140,19 +143,18 @@ tail -50 /var/log/apache2/rps-error.log
 
 ### Permission errors
 ```bash
-sudo chown -R www-data:www-data /var/www/rps.pan2.app
-sudo chmod -R 755 /var/www/rps.pan2.app
-sudo chmod -R 775 /var/www/rps.pan2.app/data
-sudo chmod -R 775 /var/www/rps.pan2.app/logs
+# Rootless runtime needs bind mounts writable by user 'paul':
+sudo chown -R paul:paul /var/www/rps.pan2.app/data /var/www/rps.pan2.app/logs /var/www/rps.pan2.app/backups
+sudo chmod -R 775 /var/www/rps.pan2.app/data /var/www/rps.pan2.app/logs /var/www/rps.pan2.app/backups
 ```
 
 ### Database locked errors
 ```bash
 # Stop the containers, check for stale locks
-sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml down
+DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f /var/www/rps.pan2.app/docker-compose.prod.rootless.yml down
 sudo rm -f /var/www/rps.pan2.app/data/*.db-shm
 sudo rm -f /var/www/rps.pan2.app/data/*.db-wal
-sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml up -d
+DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f /var/www/rps.pan2.app/docker-compose.prod.rootless.yml up -d
 ```
 
 ## Accessing the Application
@@ -177,7 +179,7 @@ ingress:
 
 1. Pull latest changes in development directory
 2. Run quality gates: `cd /home/paul/src/rps && ./bin/check-quality-gates`
-3. Deploy: `sudo ./bin/deploy-docker`
+3. Deploy: `sudo RPS_DOCKER_MODE=rootless ./bin/deploy-docker`
 
 The deployment script automatically:
 - Backs up and updates files

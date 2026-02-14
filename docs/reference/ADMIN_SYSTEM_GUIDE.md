@@ -563,7 +563,7 @@ The enhanced audit logger uses **ip-api.com** for IP geo-location:
    docker compose exec -T rps ./bin/promote-admin username
 
    # Production
-   sudo docker compose -f /var/www/rps.pan2.app/docker-compose.prod.yml exec -T rps ./bin/promote-admin username
+   DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f /var/www/rps.pan2.app/docker-compose.prod.rootless.yml exec -T rps ./bin/promote-admin username
    ```
 3. Check database exists at `data/planning.db`
 
