@@ -1,0 +1,38 @@
+services:
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - rps_rootless_redis:/data
+    restart: unless-stopped
+
+  rps:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    depends_on:
+      - redis
+    ports:
+      - "127.0.0.1:${RPS_HOST_PORT:-5137}:5137"
+    environment:
+      - FLASK_ENV=production
+      - HOST=0.0.0.0
+      - PORT=5137
+      - REDIS_URL=redis://redis:6379
+      - RATELIMIT_ENABLED=true
+      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-true}
+      - APP_BASE_URL=${APP_BASE_URL:-https://rps.pan2.app}
+      - CORS_ORIGINS=${CORS_ORIGINS:-https://rps.pan2.app}
+      - RPS_REQUIRE_EMAIL_VERIFICATION=${RPS_REQUIRE_EMAIL_VERIFICATION:-true}
+      # Ensure matplotlib cache is writable even with bind-mounts.
+      - MPLCONFIGDIR=/tmp/matplotlib
+    env_file:
+      - .env.production
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./backups:/app/backups
+    restart: unless-stopped
+
+volumes:
+  rps_rootless_redis:
