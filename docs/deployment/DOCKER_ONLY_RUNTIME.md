@@ -11,11 +11,21 @@ This document describes running RPS entirely inside Docker. This is the recommen
 2. In the RPS directory:
 
 ```bash
-./bin/docker-setup
+docker compose up -d
 ```
 
 Then open:
 - `http://127.0.0.1:5137`
+
+On first boot, the container will:
+- generate required secrets (persisted in the `rps_data` Docker volume)
+- run migrations
+- seed the `demo` account (login: `demo` / `Demo1234`)
+
+If you prefer a helper script:
+```bash
+./bin/docker-setup
+```
 
 ### Stop / Restart
 
@@ -27,13 +37,13 @@ Then open:
 If port `5137` is already in use, set a different host port:
 
 ```bash
-RPS_HOST_PORT=55137 ./bin/docker-setup
+RPS_HOST_PORT=55137 docker compose up -d
 ```
 
 ### Windows PowerShell
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\bin\docker-setup.ps1
+docker compose up -d
 ```
 
 ## What Runs
@@ -55,9 +65,8 @@ Docker named volumes are used:
 
 ## Configuration
 
-Secrets are stored in `.env` (created by setup scripts):
-- `SECRET_KEY`
-- `ENCRYPTION_KEY`
+Secrets are auto-generated (unless provided via environment) and persisted under:
+- `/app/data/.secrets/` (inside the container, stored in the `rps_data` volume)
 
 Localhost defaults are set in `docker-compose.yml`:
 - `SESSION_COOKIE_SECURE=false`
@@ -81,12 +90,12 @@ docker load -i rps_image.tar
 
 2. Tag it (optional but recommended):
 ```bash
-docker tag <loaded_image_id> retirement-planning:latest
+docker tag <loaded_image_id> ghcr.io/nyepaul/rps:latest
 ```
 
-3. Run setup:
+3. Start:
 ```bash
-./bin/docker-setup
+docker compose up -d
 ```
 
-If you prefer not to tag, set `RPS_IMAGE=<your_image_name:tag>` in your environment before running setup.
+If you prefer not to tag, set `RPS_IMAGE=<your_image_name:tag>` in your environment before starting.

@@ -26,6 +26,10 @@ services:
       - APP_BASE_URL=https://rps.pan2.app
       - CORS_ORIGINS=https://rps.pan2.app
       - RPS_REQUIRE_EMAIL_VERIFICATION=true
+      # Production safety: require explicit secrets and never seed demo content.
+      - RPS_AUTO_SECRETS=false
+      - RPS_SEED_DEMO=false
+      - RPS_DROP_PRIVS=false
       # Ensure matplotlib cache is writable even with bind-mounts.
       - MPLCONFIGDIR=/tmp/matplotlib
     env_file:
@@ -35,4 +39,3 @@ services:
       - ./logs:/app/logs
       - ./backups:/app/backups
     restart: unless-stopped
-

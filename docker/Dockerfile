@@ -1,17 +1,32 @@
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm AS builder
 
-# Create a non-root user for security
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+WORKDIR /build
+
+# Build wheels in a builder layer, so we can keep the runtime image free of build tooling.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libc6-dev \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY config/requirements.txt /build/requirements.txt
+RUN pip wheel --no-cache-dir -r /build/requirements.txt -w /wheels
+
+# Install wheels into a relocatable prefix we can copy into the runtime image.
+RUN pip install --no-cache-dir --no-index --find-links=/wheels -r /build/requirements.txt --prefix=/install
+
+
+FROM python:3.11-slim-bookworm
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
+# Create a non-root user for security. Entry point can drop privileges after init.
+RUN groupadd -r appuser && useradd -r -g appuser appuser \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends gosu \
+  && rm -rf /var/lib/apt/lists/*
 
-# Install the same dependency set used by production deploys.
-COPY config/requirements.txt /app/config/requirements.txt
-RUN pip install --no-cache-dir -r /app/config/requirements.txt
+# Copy python deps from builder; no compiler toolchain in final image.
+COPY --from=builder /install /usr/local
 
 COPY config/ /app/config/
 COPY migrations/ /app/migrations/
@@ -20,18 +35,10 @@ COPY src/ /app/src/
 COPY skills/ /app/skills/
 COPY docker/entrypoint.sh /app/docker/entrypoint.sh
 
-# Make entrypoint executable
-RUN chmod +x /app/docker/entrypoint.sh
+RUN chmod +x /app/docker/entrypoint.sh \
+  && mkdir -p /app/data \
+  && chown -R appuser:appuser /app
 
-# Create data directory and set ownership
-RUN mkdir -p /app/data && chown -R appuser:appuser /app
-
-# Switch to non-root user
-USER appuser
-
-WORKDIR /app
-
-# Set PYTHONPATH to include the /app directory for module resolution
 ENV PYTHONPATH=/app
 
 EXPOSE 5137

@@ -48,8 +48,10 @@ if [ -f "$PROJECT_ROOT/src/requirements.txt" ]; then
 fi
 
 check_contains "bin/start" "bin/docker-setup" "startup delegates to docker setup"
-check_contains "docker/Dockerfile" "COPY config/requirements\\.txt /app/config/requirements\\.txt" "docker copies config/requirements.txt"
-check_contains "docker/Dockerfile" "pip install --no-cache-dir -r /app/config/requirements\\.txt" "docker installs config/requirements.txt"
+# Docker build must be wired to the canonical dependency file.
+check_contains "docker/Dockerfile" "COPY config/requirements\\.txt /build/requirements\\.txt" "docker copies config/requirements.txt into builder"
+check_contains "docker/Dockerfile" "pip wheel --no-cache-dir -r /build/requirements\\.txt -w /wheels" "docker builds wheels from config/requirements.txt"
+check_contains "docker/Dockerfile" "pip install --no-cache-dir --no-index --find-links=/wheels -r /build/requirements\\.txt --prefix=/install" "docker installs from wheels built from config/requirements.txt"
 
 if [ "$ERRORS" -gt 0 ]; then
     echo ""

@@ -34,10 +34,20 @@ A local-first financial planning application for Monte Carlo retirement simulati
 Runs RPS via Docker + Redis, bound to `127.0.0.1` only:
 
 ```bash
-./bin/docker-setup
+docker compose up -d
 ```
 
 Then open `http://127.0.0.1:5137`.
+
+On first boot, the container will:
+- generate required secrets (persisted in the `rps_data` Docker volume)
+- run migrations
+- seed the `demo` account (login: `demo` / `Demo1234`)
+
+You can also use the helper:
+```bash
+./bin/docker-setup
+```
 
 ## Prerequisites
 
@@ -49,7 +59,7 @@ Then open `http://127.0.0.1:5137`.
 | Command | Description |
 |---------|-------------|
 | `./bin/start` | Start RPS (Docker Compose + Redis) |
-| `./bin/docker-setup` | Create `.env` and start Docker Compose runtime (Redis included) |
+| `./bin/docker-setup` | Start Docker Compose runtime (Redis included; secrets auto-init on first boot) |
 | `./bin/check-env-consistency` | Verify dev/prod dependency config is aligned |
 | `./bin/check-no-secrets` | Scan tracked files for secret-like tokens |
 | `./bin/check-repo-hygiene` | Block committing generated/local artifacts |
@@ -92,6 +102,7 @@ Use `TBPD` for releases:
 - [Developer Guide](docs/guides/DEVELOPER_GUIDE.md)
 - [Admin System](docs/reference/ADMIN_SYSTEM_GUIDE.md)
 - [Deployment](docs/deployment/DEPLOYMENT.md)
+- [Portable Docker Install](docs/deployment/PORTABLE_DOCKER_INSTALL.md)
 - [Security](docs/security/SYSTEM_SECURITY_DOCUMENTATION.md)
 - [Backup & Restore](docs/guides/BACKUP_GUIDE.md)
 
@@ -108,4 +119,4 @@ The following variables are used for system-level configuration or testing. **Us
 
 ---
 
-**Version**: 3.9.298 | **Last Updated**: 2026-02-14
+**Version**: 3.9.299 | **Last Updated**: 2026-02-14

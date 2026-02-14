@@ -9,7 +9,8 @@ fi
 
 NEW_VERSION=$1
 RELEASE_NOTES=${2:-"Bug fixes and improvements"}
-RELEASE_DATE=$(date +%Y-%m-%d)
+# Use UTC date for consistency across environments/timezones.
+RELEASE_DATE=$(date -u +%Y-%m-%d)
 
 # Update centralized version.json
 cat > src/static/version.json <<EOF
