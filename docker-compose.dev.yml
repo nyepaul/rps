@@ -24,7 +24,6 @@ services:
       - BACKUP_KEY_PEPPER=${BACKUP_KEY_PEPPER:-}
       - SESSION_COOKIE_SECURE=false
       - APP_BASE_URL=http://127.0.0.1:${RPS_HOST_PORT:-5137}
-      - CORS_ORIGINS=http://127.0.0.1:${RPS_HOST_PORT:-5137}
       - RPS_REQUIRE_EMAIL_VERIFICATION=false
       - RPS_AUTO_SECRETS=true
       - RPS_SEED_DEMO=true

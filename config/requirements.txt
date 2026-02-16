@@ -1,6 +1,5 @@
 # Existing dependencies
 flask==3.1.2
-flask-cors==6.0.2
 numpy==2.4.1
 reportlab==4.4.9
 pillow==12.1.1

@@ -24,7 +24,6 @@ services:
       - RATELIMIT_ENABLED=true
       - SESSION_COOKIE_SECURE=true
       - APP_BASE_URL=https://rps.pan2.app
-      - CORS_ORIGINS=https://rps.pan2.app
       - RPS_REQUIRE_EMAIL_VERIFICATION=true
       # Production safety: require explicit secrets and never seed demo content.
       - RPS_AUTO_SECRETS=false

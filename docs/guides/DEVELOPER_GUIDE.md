@@ -480,13 +480,11 @@ function showLevelUpNotification(newLevel) {
 # app.py
 
 from flask import Flask, request, jsonify, send_file
-from flask_cors import CORS
 import sqlite3
 import json
 import os
 
 app = Flask(__name__, static_folder='static', static_url_path='')
-CORS(app)
 
 # Database initialization
 def init_db():

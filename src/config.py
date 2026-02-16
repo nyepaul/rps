@@ -49,13 +49,10 @@ class Config:
     SESSION_COOKIE_NAME = "rps_session_v2"
     PERMANENT_SESSION_LIFETIME = 1800  # 30 minutes inactivity timeout
 
-    # CSRF - Exempt API endpoints (REST API uses session auth + CORS)
+    # CSRF
     WTF_CSRF_ENABLED = True
     WTF_CSRF_TIME_LIMIT = None  # No time limit
     WTF_CSRF_CHECK_DEFAULT = True  # Enable globally for security
-
-    # CORS
-    CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "*").split(",")
 
     # Rate Limiting
     # Use Redis for rate limit storage (required for multi-worker Gunicorn setup)
