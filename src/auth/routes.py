@@ -231,6 +231,8 @@ def register():
 
     user.save()
 
+    token = None
+
     # Send verification email (optional)
     if require_verification:
         try:
@@ -246,7 +248,11 @@ def register():
     try:
         from src.services.email_service import EmailService
 
-        EmailService.send_new_account_notification(user.username, user.email, verification_token=token)
+        EmailService.send_new_account_notification(
+            user.username,
+            user.email,
+            verification_token=token,
+        )
     except Exception as e:
         current_app.logger.warning("Failed to send admin notification: %s", e)
         # Non-critical, don't fail registration
@@ -1135,6 +1141,10 @@ def request_password_reset():
     except Exception as e:
         return jsonify({"error": "Invalid request data"}), 400
 
+    generic_message = (
+        "If the account exists and the email matches, a password reset link has been sent."
+    )
+
     # Get user by username
     user = User.get_by_username(data.username)
 
@@ -1144,54 +1154,33 @@ def request_password_reset():
     if user and user.email.lower() == data.email.lower():
         email_match = True
 
-    if not email_match:
-        # Return generic success message to prevent enumeration
-        return (
-            jsonify(
-                {
-                    "message": "If the account exists and the email matches, a password reset link has been sent.",
-                    "email_sent": False,
-                }
-            ),
-            200,
-        )
-
-    # Check email verification status
-    is_verified = getattr(user, "email_verified", 1)
-    if is_verified == 0:
-        return (
-            jsonify(
-                {
-                    "error": "Email not verified. Please verify your email first.",
-                    "email_sent": False,
-                }
-            ),
-            400,
-        )
-
-    # Generate reset token
-    token = user.generate_reset_token(expiry_hours=1)
-
-    # Send reset email
+    token = None
     email_sent = False
-    try:
-        from src.services.email_service import EmailService
+    user_is_verified = bool(getattr(user, "email_verified", 1)) if user else False
 
-        email_sent = EmailService.send_password_reset_email(user.email, token)
-    except Exception as e:
-        current_app.logger.warning("Error sending reset email: %s", e)
+    if email_match and user_is_verified:
+        # Generate reset token
+        token = user.generate_reset_token(expiry_hours=1)
 
-    # For local development/testing convenience when email is not configured
-    if not email_sent:
-        # Log token to server logs ONLY (do not expose in API)
-        logging.warning(f"Email not configured. Password reset requested for user: {user.username}")
+        # Send reset email
+        try:
+            from src.services.email_service import EmailService
 
-    # Return success message (without token in production)
+            email_sent = EmailService.send_password_reset_email(user.email, token)
+        except Exception as e:
+            current_app.logger.warning("Error sending reset email: %s", e)
+
+        # For local development/testing convenience when email is not configured
+        if not email_sent:
+            # Log metadata only; do not leak token via API response
+            logging.warning(
+                "Email not configured. Password reset requested for user: %s",
+                user.username,
+            )
+
+    # Return generic success message only (no account metadata)
     response_data = {
-        "message": "If the account exists and the email matches, a password reset link has been sent.",
-        "username": data.username,
-        "email_sent": email_sent,
-        "is_admin": user.is_admin if user else False,
+        "message": generic_message,
     }
 
     # In development mode, expose the token to the frontend for easy testing
@@ -1201,8 +1190,9 @@ def request_password_reset():
         current_app.config.get("DEBUG")
         or current_app.config.get("FLASK_ENV") == "development"
     ):
-        response_data["token"] = token
-        response_data["development_mode"] = True
+        if token:
+            response_data["token"] = token
+            response_data["development_mode"] = True
 
     return jsonify(response_data), 200
 
@@ -1347,7 +1337,6 @@ def validate_reset_token():
                     # 'email': user.email, # Don't expose email
                     "has_encrypted_data": has_encrypted_data,
                     "can_recover_via_email": can_recover_via_email,
-                    "is_admin": user.is_admin,
                     "warning": warning,
                 }
             ),

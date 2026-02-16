@@ -1,5 +1,5 @@
 {
-    "version": "3.9.300",
-    "release_date": "2026-02-14",
-    "release_notes": "fix(monte-carlo): prevent dropping employment income when budget income exists"
+    "version": "3.9.301",
+    "release_date": "2026-02-16",
+    "release_notes": "security: harden password-reset responses to prevent account metadata leakage"
 }

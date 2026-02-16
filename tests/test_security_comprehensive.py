@@ -5,6 +5,39 @@ from src.auth.models import User
 
 class TestSecurityComprehensive:
 
+    def test_password_reset_request_does_not_leak_account_metadata(self, client):
+        """Password reset request should not expose account/admin/email-match metadata."""
+        user = User(
+            id=None,
+            username="recover_me",
+            email="recover@example.com",
+            password_hash=User.hash_password("StrongPass123A"),
+            email_verified=True,
+        )
+        user.save()
+
+        matched = client.post(
+            "/api/auth/password-reset/request",
+            json={"username": "recover_me", "email": "recover@example.com"},
+        )
+        assert matched.status_code == 200
+        matched_json = matched.get_json()
+        assert "message" in matched_json
+        assert "username" not in matched_json
+        assert "is_admin" not in matched_json
+        assert "email_sent" not in matched_json
+
+        missing = client.post(
+            "/api/auth/password-reset/request",
+            json={"username": "no_user", "email": "no_user@example.com"},
+        )
+        assert missing.status_code == 200
+        missing_json = missing.get_json()
+        assert "message" in missing_json
+        assert "username" not in missing_json
+        assert "is_admin" not in missing_json
+        assert "email_sent" not in missing_json
+
     def test_unauthorized_access(self, client):
         """Test that critical endpoints reject unauthenticated requests."""
         endpoints = [

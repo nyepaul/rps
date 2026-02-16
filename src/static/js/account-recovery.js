@@ -226,20 +226,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Request failed');
         
-        // Show Admin Help link if user is admin
-        if (data.is_admin) {
-            show('admin-help-link');
-            const sep = get('admin-help-separator');
-            if (sep) sep.style.display = 'inline-block';
-        }
-
         if (data.token) { // Dev mode
             showAlert('success', '<strong>Dev Mode:</strong> Token generated: ' + data.token);
             state.token = data.token;
             // Auto-advance for convenience
             // setTimeout(() => apiValidateToken(data.token), 2000); 
-        } else if (data.email_sent === false) {
-            showAlert('warning', 'Account found, but email service is offline. Contact admin.');
         } else {
             showAlert('success', 'Reset link sent to your email.');
         }
@@ -257,13 +248,6 @@ document.addEventListener('DOMContentLoaded', () => {
         state.username = data.username;
         state.hasEncryptedData = data.has_encrypted_data;
         state.canRecoverViaEmail = data.can_recover_via_email;
-
-        // Show Admin Help link if user is admin
-        if (data.is_admin) {
-            show('admin-help-link');
-            const sep = get('admin-help-separator');
-            if (sep) sep.style.display = 'inline-block';
-        }
 
         setupResetView();
         switchView('view-reset');
