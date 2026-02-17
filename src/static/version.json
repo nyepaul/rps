@@ -1,5 +1,5 @@
 {
-    "version": "3.9.301",
-    "release_date": "2026-02-16",
-    "release_notes": "security: harden password-reset responses to prevent account metadata leakage"
+    "version": "3.9.302",
+    "release_date": "2026-02-17",
+    "release_notes": "security: remediate critical and high vulnerabilities in auth and config"
 }

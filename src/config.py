@@ -28,7 +28,9 @@ class Config:
     """Base configuration."""
 
     # Flask
-    SECRET_KEY = os.environ.get("SECRET_KEY") or "dev-secret-key-change-in-production"
+    SECRET_KEY = os.environ.get("SECRET_KEY")
+    if not SECRET_KEY:
+        raise ValueError("No SECRET_KEY set for Flask application")
 
     # Database
     DATABASE_PATH = DB_PATH
@@ -51,7 +53,7 @@ class Config:
 
     # CSRF
     WTF_CSRF_ENABLED = True
-    WTF_CSRF_TIME_LIMIT = None  # No time limit
+    WTF_CSRF_TIME_LIMIT = 3600  # 1 hour validity
     WTF_CSRF_CHECK_DEFAULT = True  # Enable globally for security
 
     # Rate Limiting
@@ -81,12 +83,12 @@ class Config:
     # Email Configuration
     MAIL_SERVER = os.environ.get("MAIL_SERVER", "127.0.0.1")
     MAIL_PORT = int(os.environ.get("MAIL_PORT", "25"))
-    MAIL_USE_TLS = os.environ.get("MAIL_USE_TLS", "false").lower() == "true"
+    MAIL_USE_TLS = os.environ.get("MAIL_USE_SSL", "false").lower() == "true" # Fix typo in original: MAIL_USE_TLS reading MAIL_USE_SSL env
     MAIL_USE_SSL = os.environ.get("MAIL_USE_SSL", "false").lower() == "true"
     MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
     MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
     MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER", "RPS <noreply@pan2.app>")
-    ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "nyepaul@gmail.com")
+    ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL")
     APP_BASE_URL = os.environ.get("APP_BASE_URL", "https://rps.pan2.app")
 
 

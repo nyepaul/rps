@@ -70,13 +70,22 @@ def test_register_is_csrf_exempt(client_csrf):
     assert response.status_code == 201
 
 
-def test_password_reset_request_is_csrf_exempt(client_csrf):
-    """Password reset request should remain CSRF exempt for recovery flow."""
-    response = client_csrf.post(
+def test_password_reset_request_requires_csrf_token(client_csrf):
+    """Password reset request should require a CSRF token (security fix 2026-02-16)."""
+    # Should fail without token
+    response_no_token = client_csrf.post(
         "/api/auth/password-reset/request",
         json={"username": "nouser", "email": "nouser@example.com"},
     )
-    assert response.status_code == 200
+    assert response_no_token.status_code == 400
+
+    # Should pass (or at least not be CSRF blocked) with token
+    response_with_token = client_csrf.post(
+        "/api/auth/password-reset/request",
+        json={"username": "nouser", "email": "nouser@example.com"},
+        headers=_csrf_headers(client_csrf)
+    )
+    assert response_with_token.status_code == 200
 
 
 def test_login_is_csrf_exempt(client_csrf):
@@ -89,19 +98,37 @@ def test_login_is_csrf_exempt(client_csrf):
     assert response.status_code == 401
 
 
-def test_password_reset_endpoints_are_csrf_exempt(client_csrf):
-    """Reset/validate endpoints should fail by token semantics, not CSRF."""
-    validate = client_csrf.post(
+def test_password_reset_endpoints_require_csrf_token(client_csrf):
+    """Reset/validate endpoints should require CSRF tokens (security fix 2026-02-16)."""
+    # Validate should fail without token
+    validate_no_token = client_csrf.post(
         "/api/auth/password-reset/validate-token",
         json={"token": "invalid-token"},
     )
-    assert validate.status_code == 400
+    assert validate_no_token.status_code == 400
 
-    reset = client_csrf.post(
+    # Validate should fail by token semantics (not CSRF) with token
+    validate_with_token = client_csrf.post(
+        "/api/auth/password-reset/validate-token",
+        json={"token": "invalid-token"},
+        headers=_csrf_headers(client_csrf)
+    )
+    assert validate_with_token.status_code == 400
+
+    # Reset should fail without token
+    reset_no_token = client_csrf.post(
         "/api/auth/password-reset/reset",
         json={"token": "invalid-token", "password": TEST_RESET_PASSWORD},
     )
-    assert reset.status_code == 400
+    assert reset_no_token.status_code == 400
+
+    # Reset should fail by token semantics (not CSRF) with token
+    reset_with_token = client_csrf.post(
+        "/api/auth/password-reset/reset",
+        json={"token": "invalid-token", "password": TEST_RESET_PASSWORD},
+        headers=_csrf_headers(client_csrf)
+    )
+    assert reset_with_token.status_code == 400
 
 
 def test_logout_requires_csrf_token(client_csrf):

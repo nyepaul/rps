@@ -392,7 +392,7 @@ def verify_email():
 
 @auth_bp.route("/login", methods=["POST"])
 @limiter.limit("5 per minute")
-@csrf.exempt
+@csrf.exempt  # Exempt for SPA-style login flow; protected by rate limiting and strict CORS/Origin checks
 def login():
     """Log in a user and decrypt their encryption key."""
     data = {}
@@ -1128,7 +1128,6 @@ class PasswordResetSchema(BaseModel):
 
 @auth_bp.route("/password-reset/request", methods=["POST"])
 @limiter.limit("3 per hour")
-@csrf.exempt
 def request_password_reset():
     """Request a password reset token.
 
@@ -1199,7 +1198,6 @@ def request_password_reset():
 
 @auth_bp.route("/password-reset/reset", methods=["POST"])
 @limiter.limit("5 per hour")
-@csrf.exempt
 def reset_password():
     """Reset password using a valid reset token.
 
@@ -1304,7 +1302,6 @@ def reset_password():
 
 @auth_bp.route("/password-reset/validate-token", methods=["POST"])
 @limiter.limit("10 per minute")
-@csrf.exempt
 def validate_reset_token():
     """Validate a password reset token without resetting the password."""
     try:

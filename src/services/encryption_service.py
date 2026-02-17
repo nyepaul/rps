@@ -40,7 +40,12 @@ class EncryptionService:
     def _derive_key(
         self, key_material: str, salt: bytes = b"retirement-planning-salt"
     ) -> bytes:
-        """Derive a 32-byte key from material."""
+        """Derive a 32-byte key from material.
+        
+        SECURITY WARNING: The default salt is static.
+        TODO(HIGH-003): Generate and persist a random salt for server-level key derivation.
+        Changing this requires a migration of all encrypted data.
+        """
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
@@ -70,7 +75,11 @@ class EncryptionService:
     def get_kek_from_password(
         password: str, salt: bytes = b"user-kek-salt", iterations: int = 600000
     ) -> bytes:
-        """Derive a Key Encryption Key (KEK) from a user password."""
+        """Derive a Key Encryption Key (KEK) from a user password.
+        
+        SECURITY WARNING: The default salt is static. New users use user-specific salts.
+        TODO(HIGH-004): Complete migration for legacy users and remove default salt.
+        """
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
