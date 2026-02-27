@@ -1218,7 +1218,7 @@ function getAnnualGiftsForPeriod(budget, period) {
 function getAnnualGiftExclusionLimit(profile) {
     const taxSettings = profile?.data?.tax_settings || {};
     const override = taxSettings.annual_gift_exclusion ?? taxSettings.annual_gift_exclusion_per_donor_per_recipient;
-    const exclusion = Number(override || 18000);
+    const exclusion = Number(override || 19000);
 
     const spouse = profile?.data?.spouse || {};
     const hasSpouse = Boolean(spouse?.name || spouse?.birth_date);

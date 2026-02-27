@@ -119,4 +119,4 @@ The following variables are used for system-level configuration or testing. **Us
 
 ---
 
-**Version**: 3.9.1 | **Last Updated**: 2026-02-14
+**Version**: 3.10.0 | **Last Updated**: 2026-02-14

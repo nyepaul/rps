@@ -161,56 +161,56 @@ const SECTIONS = [
                 federal_tax = &Sigma; min(remaining, bracket_width) &times; rate
             </div>
 
-            <h4>2024 Tax Brackets -- Married Filing Jointly</h4>
+            <h4>2025 Tax Brackets -- Married Filing Jointly</h4>
             <table>
                 <thead><tr><th>Rate</th><th>Income Range</th></tr></thead>
                 <tbody>
-                    <tr><td>10%</td><td>$0 - $23,200</td></tr>
-                    <tr><td>12%</td><td>$23,200 - $94,300</td></tr>
-                    <tr><td>22%</td><td>$94,300 - $201,050</td></tr>
-                    <tr><td>24%</td><td>$201,050 - $383,900</td></tr>
-                    <tr><td>32%</td><td>$383,900 - $487,450</td></tr>
-                    <tr><td>35%</td><td>$487,450 - $731,200</td></tr>
-                    <tr><td>37%</td><td>$731,200+</td></tr>
+                    <tr><td>10%</td><td>$0 - $23,850</td></tr>
+                    <tr><td>12%</td><td>$23,850 - $96,950</td></tr>
+                    <tr><td>22%</td><td>$96,950 - $206,700</td></tr>
+                    <tr><td>24%</td><td>$206,700 - $394,600</td></tr>
+                    <tr><td>32%</td><td>$394,600 - $501,050</td></tr>
+                    <tr><td>35%</td><td>$501,050 - $751,600</td></tr>
+                    <tr><td>37%</td><td>$751,600+</td></tr>
                 </tbody>
             </table>
 
-            <h4>2024 Tax Brackets -- Single</h4>
+            <h4>2025 Tax Brackets -- Single</h4>
             <table>
                 <thead><tr><th>Rate</th><th>Income Range</th></tr></thead>
                 <tbody>
-                    <tr><td>10%</td><td>$0 - $11,600</td></tr>
-                    <tr><td>12%</td><td>$11,600 - $47,150</td></tr>
-                    <tr><td>22%</td><td>$47,150 - $100,525</td></tr>
-                    <tr><td>24%</td><td>$100,525 - $191,950</td></tr>
-                    <tr><td>32%</td><td>$191,950 - $243,725</td></tr>
-                    <tr><td>35%</td><td>$243,725 - $609,350</td></tr>
-                    <tr><td>37%</td><td>$609,350+</td></tr>
+                    <tr><td>10%</td><td>$0 - $11,925</td></tr>
+                    <tr><td>12%</td><td>$11,925 - $48,475</td></tr>
+                    <tr><td>22%</td><td>$48,475 - $103,350</td></tr>
+                    <tr><td>24%</td><td>$103,350 - $197,300</td></tr>
+                    <tr><td>32%</td><td>$197,300 - $250,525</td></tr>
+                    <tr><td>35%</td><td>$250,525 - $626,350</td></tr>
+                    <tr><td>37%</td><td>$626,350+</td></tr>
                 </tbody>
             </table>
 
-            <h4>2024 Tax Brackets -- Head of Household</h4>
+            <h4>2025 Tax Brackets -- Head of Household</h4>
             <table>
                 <thead><tr><th>Rate</th><th>Income Range</th></tr></thead>
                 <tbody>
-                    <tr><td>10%</td><td>$0 - $16,550</td></tr>
-                    <tr><td>12%</td><td>$16,550 - $63,100</td></tr>
-                    <tr><td>22%</td><td>$63,100 - $100,500</td></tr>
-                    <tr><td>24%</td><td>$100,500 - $191,950</td></tr>
-                    <tr><td>32%</td><td>$191,950 - $243,700</td></tr>
-                    <tr><td>35%</td><td>$243,700 - $609,350</td></tr>
-                    <tr><td>37%</td><td>$609,350+</td></tr>
+                    <tr><td>10%</td><td>$0 - $17,000</td></tr>
+                    <tr><td>12%</td><td>$17,000 - $64,850</td></tr>
+                    <tr><td>22%</td><td>$64,850 - $103,350</td></tr>
+                    <tr><td>24%</td><td>$103,350 - $197,300</td></tr>
+                    <tr><td>32%</td><td>$197,300 - $250,500</td></tr>
+                    <tr><td>35%</td><td>$250,500 - $626,350</td></tr>
+                    <tr><td>37%</td><td>$626,350+</td></tr>
                 </tbody>
             </table>
 
-            <h4>Standard Deduction (2024)</h4>
+            <h4>Standard Deduction (2025)</h4>
             <table>
                 <thead><tr><th>Filing Status</th><th>Base</th><th>Age 65+ Additional</th></tr></thead>
                 <tbody>
-                    <tr><td>Single</td><td>$14,600</td><td>+$1,950</td></tr>
-                    <tr><td>Married Filing Jointly</td><td>$29,200</td><td>+$1,550 per spouse</td></tr>
-                    <tr><td>Head of Household</td><td>$21,900</td><td>+$1,950</td></tr>
-                    <tr><td>Married Filing Separately</td><td>$14,600</td><td>+$1,550</td></tr>
+                    <tr><td>Single</td><td>$15,000</td><td>+$2,000</td></tr>
+                    <tr><td>Married Filing Jointly</td><td>$30,000</td><td>+$1,600 per spouse</td></tr>
+                    <tr><td>Head of Household</td><td>$22,500</td><td>+$2,000</td></tr>
+                    <tr><td>Married Filing Separately</td><td>$15,000</td><td>+$1,600</td></tr>
                 </tbody>
             </table>
             <p>Standard deduction is inflation-adjusted in the simulation: base &times; cpi</p>
@@ -221,11 +221,11 @@ const SECTIONS = [
         title: 'FICA Taxes',
         content: `
             <div class="formula">
-                Social Security Tax = min(employment_income, $168,600) &times; 6.2%<br>
+                Social Security Tax = min(employment_income, $176,100) &times; 6.2%<br>
                 ${glossaryTerm('Medicare', 'medicare')} Tax = employment_income &times; 1.45%<br>
                 Total ${glossaryTerm('FICA', 'fica')} = SS Tax + Medicare Tax
             </div>
-            <p>Social Security wage base for 2024: <strong>$168,600</strong>. Only employment income is subject to FICA.</p>
+            <p>Social Security wage base for 2025: <strong>$176,100</strong>. Only employment income is subject to FICA.</p>
         `
     },
     {
@@ -290,12 +290,13 @@ const SECTIONS = [
         content: `
             <p>${glossaryTerm('LTCG', 'ltcg')} rates are <strong>stacked on top of ordinary income</strong> to determine the applicable rate.</p>
 
-            <h4>2024 LTCG Thresholds</h4>
+            <h4>2025 LTCG Thresholds</h4>
             <table>
                 <thead><tr><th>Filing Status</th><th>0% Up To</th><th>15% Up To</th><th>20% Above</th></tr></thead>
                 <tbody>
-                    <tr><td>MFJ</td><td>$94,050</td><td>$583,750</td><td>$583,750</td></tr>
-                    <tr><td>Single / HoH</td><td>$47,025</td><td>$518,900</td><td>$518,900</td></tr>
+                    <tr><td>MFJ</td><td>$96,700</td><td>$600,050</td><td>$600,050</td></tr>
+                    <tr><td>Single</td><td>$48,350</td><td>$533,400</td><td>$533,400</td></tr>
+                    <tr><td>HoH</td><td>$64,750</td><td>$566,700</td><td>$566,700</td></tr>
                 </tbody>
             </table>
 
@@ -317,58 +318,59 @@ const SECTIONS = [
         content: `
             <p>${glossaryTerm('IRMAA', 'irmaa')} uses a <strong>2-year ${glossaryTerm('MAGI', 'magi')} lookback</strong>.</p>
 
-            <h4>2024 Annual Surcharges -- Married Filing Jointly</h4>
+            <h4>2025 Annual Surcharges -- Married Filing Jointly</h4>
             <table>
                 <thead><tr><th>MAGI Range</th><th>Annual Surcharge</th></tr></thead>
                 <tbody>
-                    <tr><td>$0 - $206,000</td><td>$0</td></tr>
-                    <tr><td>$206,000 - $258,000</td><td>$839</td></tr>
-                    <tr><td>$258,000 - $322,000</td><td>$2,098</td></tr>
-                    <tr><td>$322,000 - $386,000</td><td>$3,355</td></tr>
-                    <tr><td>$386,000 - $750,000</td><td>$4,613</td></tr>
-                    <tr><td>$750,000+</td><td>$5,030</td></tr>
+                    <tr><td>$0 - $212,000</td><td>$0</td></tr>
+                    <tr><td>$212,000 - $266,000</td><td>$888</td></tr>
+                    <tr><td>$266,000 - $334,000</td><td>$2,231</td></tr>
+                    <tr><td>$334,000 - $400,000</td><td>$3,575</td></tr>
+                    <tr><td>$400,000 - $750,000</td><td>$4,919</td></tr>
+                    <tr><td>$750,000+</td><td>$5,327</td></tr>
                 </tbody>
             </table>
 
-            <h4>2024 Annual Surcharges -- Single</h4>
+            <h4>2025 Annual Surcharges -- Single / MFS</h4>
             <table>
                 <thead><tr><th>MAGI Range</th><th>Annual Surcharge</th></tr></thead>
                 <tbody>
-                    <tr><td>$0 - $103,000</td><td>$0</td></tr>
-                    <tr><td>$103,000 - $129,000</td><td>$839</td></tr>
-                    <tr><td>$129,000 - $161,000</td><td>$2,098</td></tr>
-                    <tr><td>$161,000 - $193,000</td><td>$3,355</td></tr>
-                    <tr><td>$193,000 - $500,000</td><td>$4,613</td></tr>
-                    <tr><td>$500,000+</td><td>$5,030</td></tr>
+                    <tr><td>$0 - $106,000</td><td>$0</td></tr>
+                    <tr><td>$106,000 - $133,000</td><td>$888</td></tr>
+                    <tr><td>$133,000 - $167,000</td><td>$2,231</td></tr>
+                    <tr><td>$167,000 - $200,000</td><td>$3,575</td></tr>
+                    <tr><td>$200,000 - $500,000</td><td>$4,919</td></tr>
+                    <tr><td>$500,000+</td><td>$5,327</td></tr>
                 </tbody>
             </table>
-            <p>For MFJ, surcharge is <strong>doubled</strong> if both spouses are on Medicare (both age 65+).</p>
+            <p>For MFJ, surcharge is <strong>doubled</strong> if both spouses are on Medicare (both age 65+). MFS filers use single-filer thresholds per IRS rules.</p>
         `
     },
     {
         id: 'contributions',
         title: 'Retirement Account Contributions',
         content: `
-            <h4>2024 IRS Contribution Limits</h4>
+            <h4>2025 IRS Contribution Limits</h4>
             <table>
                 <thead><tr><th>Limit</th><th>Amount</th></tr></thead>
                 <tbody>
-                    <tr><td>401(k) Employee Deferral</td><td>$23,000</td></tr>
-                    <tr><td>401(k) Catch-Up (age 50+)</td><td>+$7,500</td></tr>
+                    <tr><td>401(k) Employee Deferral</td><td>$23,500</td></tr>
+                    <tr><td>401(k) Catch-Up (age 50-59, 64+)</td><td>+$7,500</td></tr>
+                    <tr><td>401(k) Super Catch-Up (age 60-63, SECURE 2.0)</td><td>+$11,250</td></tr>
                     <tr><td>IRA Base</td><td>$7,000</td></tr>
                     <tr><td>IRA Catch-Up (age 50+)</td><td>+$1,000</td></tr>
-                    <tr><td>Section 415(c) Total</td><td>$69,000</td></tr>
-                    <tr><td>Section 415(c) with Catch-Up</td><td>$76,500</td></tr>
+                    <tr><td>Section 415(c) Total</td><td>$70,000</td></tr>
+                    <tr><td>Section 415(c) with Catch-Up</td><td>$77,500</td></tr>
                 </tbody>
             </table>
 
             <h4>401(k) Contribution Formula</h4>
             <div class="formula">
                 employee_contrib = salary &times; contribution_rate<br>
-                limit = $23,000 (+ $7,500 if age &ge; 50)<br>
+                limit = $23,500 (+ $11,250 if age 60-63; + $7,500 if age &ge; 50 otherwise)<br>
                 employee_contrib = min(employee_contrib, limit)<br><br>
                 employer_match = salary &times; match_rate<br>
-                total_limit = $69,000 (or $76,500 if age &ge; 50)<br>
+                total_limit = $70,000 (or $77,500 if age &ge; 50)<br>
                 employer_match = min(employer_match, total_limit - employee_contrib)
             </div>
 
@@ -508,11 +510,11 @@ const SECTIONS = [
             <h4>Conversion Opportunity Window</h4>
             <div class="formula">
                 conversion_years = (age 73 - current_age) - years_to_retirement<br><br>
-                top_of_12% = $94,300<br>
-                top_of_22% = $201,050<br>
-                standard_deduction = $29,200 + $3,100 (65+) = $32,300<br><br>
-                available_12% = max(0, $94,300 - $32,300 - retirement_income)<br>
-                available_22% = $201,050 - $94,300 = $106,750
+                top_of_12% = $96,950<br>
+                top_of_22% = $206,700<br>
+                standard_deduction = $30,000 + $3,200 (65+, both spouses) = $33,200<br><br>
+                available_12% = max(0, $96,950 - $33,200 - retirement_income)<br>
+                available_22% = $206,700 - $96,950 = $109,750
             </div>
 
             <h4>Effective Rate</h4>
@@ -640,13 +642,13 @@ const SECTIONS = [
         title: 'Wealth Transfer / Gifting',
         content: `
             <div class="formula">
-                annual_gift_per_child = $18,000 &times; 2 (both spouses) = $36,000<br>
-                total_annual_gifts = $36,000 &times; number_of_children<br>
+                annual_gift_per_child = $19,000 &times; 2 (both spouses) = $38,000<br>
+                total_annual_gifts = $38,000 &times; number_of_children<br>
                 years = min(person1_years, person2_years)<br>
                 lifetime_gifts = annual_gifts &times; years<br><br>
                 percentage_transferred = lifetime_gifts / net_worth &times; 100
             </div>
-            <p>Uses the 2024 annual gift tax exclusion of <strong>$18,000 per recipient per donor</strong>.</p>
+            <p>Uses the 2025 annual gift tax exclusion of <strong>$19,000 per recipient per donor</strong>.</p>
         `
     }
 ];

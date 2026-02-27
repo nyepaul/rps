@@ -1,5 +1,5 @@
 {
-    "version": "3.9.1",
+    "version": "3.10.0",
     "release_date": "2026-02-27",
-    "release_notes": "fix: financial accuracy - state tax by state, 2025 tax policy, SS taxability, IRMAA MFS, super-catchup, monthly compounding"
+    "release_notes": "feat: 2025 tax year - updated brackets, IRMAA, LTCG, FICA, contribution limits, super-catchup, state tax accuracy, SS taxability fix, IRMAA MFS fix, monthly compounding fix"
 }
