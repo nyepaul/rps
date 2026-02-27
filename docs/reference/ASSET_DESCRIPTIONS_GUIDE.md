@@ -1,49 +1,46 @@
 # Asset Descriptions Guide
 
-The Asset Management tab now displays relevant, context-aware descriptions for each asset instead of allocation percentages.
+The Asset Management tab displays relevant, context-aware descriptions for each asset, summarizing key details horizontally.
 
 ## Description Examples by Asset Type
 
 ### Retirement Accounts
-| Name | Type | Description | Value |
-|------|------|-------------|-------|
-| Vanguard 401k | 🏦 401(k) | **401(k)** • 60% Stocks, 40% Bonds | $500,000 |
-| Roth IRA | 🏦 Roth IRA | **Roth IRA** • 100% Stocks | $150,000 |
-| SEP IRA | 🏦 SEP IRA | **SEP IRA** • 70% Stocks, 30% Bonds | $200,000 |
+| Name | Type | Attributes (Horizontal) | Value |
+|------|------|-------------------------|-------|
+| Vanguard 401k | 🏦 401(k) | **Stocks:** 60% • **Bonds:** 40% • **Acct:** ****1234 | $500,000 |
+| Roth IRA | 🏦 Roth IRA | **Stocks:** 100% | $150,000 |
 
 ### Bank/Brokerage Accounts
-| Name | Type | Description | Value |
-|------|------|-------------|-------|
-| Emergency Fund | 💰 Savings Account | **Savings Account** | $50,000 |
-| Joint Checking | 💰 Checking Account | **Checking Account** | $15,000 |
-| Brokerage | 💰 Brokerage Account | **Brokerage Account** • 80% Stocks, 20% Bonds | $300,000 |
-| 12-Month CD | 💰 Certificate of Deposit | **Certificate of Deposit** • 4.5% APY • Matures: Dec 2026 | $100,000 |
-| Money Market | 💰 Money Market | **Money Market** | $25,000 |
+| Name | Type | Attributes (Horizontal) | Value |
+|------|------|-------------------------|-------|
+| Brokerage | 💰 Brokerage Account | **Institution:** Fidelity • **Stocks:** 80% • **Bonds:** 20% | $300,000 |
+| Emergency Fund | 💰 Savings Account | **Institution:** Ally | $50,000 |
 
 ### Real Estate
-| Name | Type | Description | Value |
-|------|------|-------------|-------|
-| Family Home | 🏠 Primary Residence | **Primary Residence** • 123 Main St, Anytown | $200,000 (Equity) |
-| Beach Condo | 🏠 Vacation Home | **Vacation Home** • Malibu, CA • Rental: $48,000/yr | $150,000 (Equity) |
-| Rental Property | 🏠 Rental Property | **Rental Property** • Downtown • Rental: $36,000/yr | $180,000 (Equity) |
-| Investment Land | 🏠 Land | **Land** • Rural acreage | $75,000 |
-| Office Building | 🏠 Commercial Property | **Commercial Property** • Rental: $120,000/yr | $450,000 (Equity) |
+| Name | Type | Attributes (Horizontal) | Value |
+|------|------|-------------------------|-------|
+| Family Home | 🏠 Primary Residence | **Address:** 123 Main St | $200,000 equity* |
+| Rental Property | 🏠 Rental Property | **Address:** Downtown • **Rent:** $3,000/mo | $180,000 equity* |
+
+*\*Real Estate value displays equity (Market Value - Mortgage) when a mortgage is present.*
 
 ### Pensions/Annuities
-| Name | Type | Description | Value |
-|------|------|-------------|-------|
-| State Pension | 💵 Pension | **Pension** • CalPERS • Starts at age 65 • COLA adjusted | $4,500/mo |
-| Fixed Annuity | 💵 Annuity | **Annuity** • MetLife • Starts: Jan 2028 | $2,000/mo |
-| Teacher Pension | 💵 Pension | **Pension** • School District • Starts at age 62 | $3,200/mo |
+| Name | Type | Attributes (Horizontal) | Value |
+|------|------|-------------------------|-------|
+| State Pension | 💵 Pension | **Provider:** CalPERS • **Start Age:** 65 | $4,500/mo |
+| Fixed Annuity | 💵 Annuity | **Provider:** MetLife • **Start Age:** 60 | $2,000/mo |
 
 ### Other Assets
-| Name | Type | Description | Value |
-|------|------|-------------|-------|
-| Startup Equity | 📦 Business Interest | **Business Interest** • 15% ownership • Income: $25,000/yr | $500,000 |
-| HSA | 📦 Health Savings Account | **Health Savings Account** • 50% Stocks, 50% Bonds | $45,000 |
-| Family Trust | 📦 Trust | **Trust** • Income: $50,000/yr | $1,000,000 |
-| Art Collection | 📦 Collectible | **Collectible** | $150,000 |
-| Bitcoin | 📦 Cryptocurrency | **Cryptocurrency** | $75,000 |
+| Name | Type | Attributes (Horizontal) | Value |
+|------|------|-------------------------|-------|
+| Startup Equity | 📦 Business Interest | **Ownership:** 15% • **Income:** $25,000/yr | $500,000 |
+| HSA | 📦 HSA | **Institution:** Optum • **Stocks:** 100% | $45,000 |
+
+### Liabilities
+| Name | Type | Attributes (Horizontal) | Value |
+|------|------|-------------------------|-------|
+| Student Loan | 💳 Student Loan | **Lender:** Navient • **Rate:** 5.5% | $35,000 |
+| Car Loan | 💳 Auto Loan | **Lender:** Toyota FS • **Rate:** 2.9% | $12,000 |
 
 ## Description Logic
 
@@ -52,39 +49,34 @@ The system intelligently shows the most relevant information for each asset type
 ### 1. **Primary Type Label**
 Always shows the specific asset type (401(k), Savings Account, Primary Residence, etc.)
 
-### 2. **Additional Context** (when available)
-- **Real Estate**: Address, annual rental income
-- **Bank Accounts (CDs)**: Interest rate, maturity date
-- **Pensions**: Provider, start age/date, COLA status
-- **Business**: Ownership percentage, annual income
-- **Other**: Relevant income streams
+### 2. **Contextual Attributes**
+- **Institutions**: Shown for all accounts when provided.
+- **Allocations**: Shown for Retirement, Brokerage, and HSA accounts.
+- **Real Estate**: Shows Address and Monthly Rental Income.
+- **Pensions**: Shows Provider and Start Age.
+- **Liabilities**: Shows Lender and Interest Rate.
 
-### 3. **Allocation Fallback**
-For investment accounts without other descriptions, shows allocation (Stocks/Bonds/Cash percentages)
+### 3. **Value Specialization**
+- **Pensions**: Displays as `$/mo`.
+- **Real Estate**: Displays as `Equity (Mkt: $ - Mort: $)`.
+- **All Others**: Displays total current value.
 
 ## Benefits
 
-✅ **At-a-glance understanding** - See property type, account type immediately
-✅ **Relevant context** - Shows what matters for each asset
-✅ **Rental income visibility** - See rental properties' income potential
-✅ **Maturity tracking** - Know when CDs mature
-✅ **COLA indicators** - See which pensions adjust for inflation
-✅ **Ownership clarity** - See business ownership percentages
-✅ **Address reference** - Quick property location lookup
+✅ **At-a-glance understanding** - See property type, account type immediately.
+✅ **Equity Visibility** - See real estate equity instead of just market value.
+✅ **Allocation Tracking** - Monitor your portfolio mix without opening every account.
+✅ **Lender/Institution Info** - Quick reference for where your money is held.
 
 ## Format
 
-Descriptions use bullet points (•) to separate multiple pieces of information, making them easy to scan:
+Attributes use bullet points (•) to separate multiple pieces of information, with labels in bold for clarity:
 
 ```
-Primary Residence • 123 Main St, Anytown
-Rental Property • Downtown • Rental: $36,000/yr
-Certificate of Deposit • 4.5% APY • Matures: Dec 2026
-Pension • CalPERS • Starts at age 65 • COLA adjusted
+Institution: Vanguard • Stocks: 60% • Bonds: 40%
+Address: 123 Main St • Rent: $3,000/mo
+Lender: Navient • Rate: 5.5%
 ```
 
-Special formatting:
-- **COLA adjusted** appears in green to highlight inflation protection
-- **100% Cash** appears in green
-- **100% Stocks** appears in accent color
-- All monetary values use standard currency formatting
+**Last Updated:** 2026-02-27
+**Version:** 3.10.0

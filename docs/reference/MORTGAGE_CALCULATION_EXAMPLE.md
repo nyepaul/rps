@@ -1,109 +1,92 @@
-# Real Estate Mortgage Balance Calculations
+# Real Estate & Debt Calculations
 
-This document shows how mortgage balances are calculated and displayed throughout the application.
+This document shows how mortgage balances and other liabilities are calculated and displayed throughout the application.
 
 ## Calculation Formula
 
+### Real Estate Equity
 ```
 Equity = Market Value - Mortgage Balance
 ```
 
-## Example Properties
+### Total Net Worth
+```
+Net Worth = Total Assets - Total Debts
+```
 
-### Example 1: Primary Residence
+---
+
+## Example Properties & Debts
+
+### Example 1: Primary Residence (Real Estate)
 - **Market Value**: $500,000
 - **Mortgage Balance**: $300,000
 - **Equity**: $200,000
 
 **Display in Asset List:**
-```
-Primary Home                          $200,000
-                                      (Equity)
-                                      Market: $500,000
-                                      Mortgage: -$300,000
-```
+- Shows: **$200,000 equity**
+- Details: `Mkt: $500,000 - Mort: $300,000`
 
-### Example 2: Rental Property
-- **Market Value**: $400,000
-- **Mortgage Balance**: $250,000
-- **Equity**: $150,000
+### Example 2: Student Loan (Liability)
+- **Debt Type**: Student Loan
+- **Lender**: Navient
+- **Current Balance**: $35,000
+- **Interest Rate**: 5.5%
 
 **Display in Asset List:**
-```
-Rental Property                       $150,000
-                                      (Equity)
-                                      Market: $400,000
-                                      Mortgage: -$250,000
-```
+- Shows: **$35,000** (as a liability)
+- Details: `Lender: Navient • Rate: 5.5%`
 
-### Example 3: Paid-Off Property
-- **Market Value**: $350,000
-- **Mortgage Balance**: $0
-- **Equity**: $350,000
+---
 
-**Display in Asset List:**
-```
-Beach House                           $350,000
-```
-(No mortgage breakdown shown when balance is $0)
-
-## Net Worth Calculation
+## Net Worth Calculation Example
 
 ```
-Total Assets:
+TOTAL ASSETS:
   Retirement Accounts:    $1,000,000
   Taxable Accounts:         $500,000
-  Real Estate (Market):   $1,250,000  ($500k + $400k + $350k)
+  Real Estate (Market):   $1,250,000  ($500k Primary + $400k Rental + $350k Vacation)
   Other Assets:             $100,000
   ───────────────────────
-  Subtotal:               $2,850,000
+  Gross Assets:           $2,850,000
 
-Total Debts:
+TOTAL DEBTS:
   Mortgage Balances:        $550,000  ($300k + $250k)
+  Other Liabilities:         $47,000  ($35k Student Loan + $12k Car Loan)
   ───────────────────────
-  Subtotal:                 $550,000
+  Total Debts:              $597,000
 
-Net Worth = $2,850,000 - $550,000 = $2,300,000
+NET WORTH:
+  $2,850,000 (Assets) - $597,000 (Debts) = $2,253,000
 ```
 
-## Where Mortgage Balance is Shown
+---
+
+## Where Debt is Shown
 
 1. **Asset List** (Assets Tab)
-   - Shows equity in bold
-   - Shows market value and mortgage as details below
-   - Mortgage shown in red with negative sign
+   - Real estate rows show **equity** prominently.
+   - Liabilities rows show the **outstanding balance**.
 
 2. **Summary Cards** (Assets Tab)
-   - "Real Estate Equity" card shows total equity across all properties
-   - Automatically calculated as: Σ(Market Value - Mortgage Balance)
+   - **Real Estate Equity**: Σ(Market Value - Mortgage Balance).
+   - **Total Liabilities**: Σ(Mortgages + Other Debts).
 
 3. **Dashboard Profile Cards**
-   - Shows "Net Worth" which includes equity calculation
-   - Net Worth = All Assets - All Debts
+   - **Net Worth**: Calculated as `Total Assets - Total Debts`.
 
 4. **Profile Info Modal** (Dashboard)
-   - Detailed breakdown section:
-     - Real Estate (Market Value): $X
-     - • Mortgage Balances: -$Y
-     - = Real Estate Equity: $Z
-     - Total Assets: $A
-     - Total Debts: $B
-     - Net Worth: $A - $B
+   - Detailed breakdown section showing Gross Assets, Total Debts, and the resulting Net Worth.
+
+---
 
 ## Utility Functions
 
 Located in: `/src/static/js/utils/financial-calculations.js`
 
-- `calculateNetWorth(assets)` - Returns net worth, total assets, total debts, and breakdown
-- `calculateRealEstateEquity(assets)` - Returns total equity across all properties
-- `calculateTotalDebts(assets)` - Returns sum of all mortgage balances
+- `calculateNetWorth(assets)` - Returns net worth, total assets, total debts, and detailed breakdown.
+- `calculateRealEstateEquity(assets)` - Returns total equity across all properties.
+- `calculateTotalDebts(assets)` - Returns sum of all mortgages and liabilities.
 
-## Extensibility
-
-The system is designed to easily add other debt types:
-- Auto loans
-- Student loans
-- Credit card debt
-- Personal loans
-
-Simply add the debt fields to asset structures and update `calculateTotalDebts()`.
+**Last Updated:** 2026-02-27
+**Version:** 3.10.0

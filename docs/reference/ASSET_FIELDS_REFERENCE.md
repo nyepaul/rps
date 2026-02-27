@@ -8,13 +8,14 @@ All retirement account types collect the same information:
 **Types:** 401(k), Roth 401(k), Traditional IRA, Roth IRA, SEP IRA, SIMPLE IRA, 403(b), 457
 
 **Fields:**
-- Account Name (required)
-- Financial Institution
-- Account Number (last 4 digits)
-- Current Balance (required)
-- Stock Allocation (%)
-- Bond Allocation (%)
-- Cash Allocation (%)
+- **Account Name** (`name`) (required)
+- **Account Type** (`type`) (required)
+- **Financial Institution** (`institution`)
+- **Account Number** (`account_number`) (last 4 digits)
+- **Current Balance** (`value`) (required)
+- **Stock Allocation (%)** (`stock_pct`)
+- **Bond Allocation (%)** (`bond_pct`)
+- **Cash Allocation (%)** (`cash_pct`)
 
 ---
 
@@ -22,98 +23,55 @@ All retirement account types collect the same information:
 
 ### Brokerage Account
 **Fields:**
-- Account Name (required)
-- Financial Institution
-- Account Number (last 4 digits)
-- Current Balance (required)
-- Cost Basis (for capital gains calculation)
-- Stock Allocation (%)
-- Bond Allocation (%)
-- Cash Allocation (%)
+- **Account Name** (`name`) (required)
+- **Account Type** (`type`) (required)
+- **Financial Institution** (`institution`)
+- **Account Number** (`account_number`)
+- **Current Balance** (`value`) (required)
+- **Cost Basis** (`cost_basis`) (for capital gains calculation)
+- **Stock Allocation (%)** (`stock_pct`)
+- **Bond Allocation (%)** (`bond_pct`)
+- **Cash Allocation (%)** (`cash_pct`)
 
 ### Savings, Checking, Cash, Money Market
 **Fields:**
-- Account Name (required)
-- Financial Institution
-- Account Number (last 4 digits)
-- Current Balance (required)
-
-_Note: No allocation or cost basis fields since these are cash equivalents._
+- **Account Name** (`name`) (required)
+- **Account Type** (`type`) (required)
+- **Financial Institution** (`institution`)
+- **Account Number** (`account_number`)
+- **Current Balance** (`value`) (required)
 
 ### Certificate of Deposit (CD)
 **Fields:**
-- Account Name (required)
-- Financial Institution
-- Account Number (last 4 digits)
-- **Principal Amount (required)** - Amount originally deposited
-- **Interest Rate (APY %)** - Fixed interest rate
-- **Maturity Date** - When the CD matures
-- **Term (Months)** - CD term length
-- **Current Value** - Current value including accrued interest (optional)
-
-_Note: CDs have structured terms and don't have investment allocations._
+- **Account Name** (`name`) (required)
+- **Account Type** (`type`) (required)
+- **Financial Institution** (`institution`)
+- **Account Number** (`account_number`)
+- **Principal Amount** (`principal`) (required) - Amount originally deposited
+- **Interest Rate (APY %)** (`interest_rate`) - Fixed interest rate
+- **Maturity Date** (`maturity_date`) - When the CD matures
+- **Term (Months)** (`term_months`) - CD term length
+- **Current Balance** (`value`) (required) - Current value including accrued interest
 
 ---
 
 ## Real Estate
 
-### Primary Residence
-**Fields:**
-- Property Name (required)
-- Address
-- Current Market Value (required)
-- Purchase Price (for cost basis)
-- Purchase Date
-- Mortgage Balance
-- Annual Property Costs (taxes, HOA, insurance)
+### Property Types:
+Primary Residence, Rental Property, Vacation Home, Land, Commercial Property
 
-### Rental Property
 **Fields:**
-- Property Name (required)
-- Address
-- Current Market Value (required)
-- Purchase Price
-- Purchase Date
-- Mortgage Balance
-- **Annual Rental Income** - Gross rental income per year
-- **Annual Operating Expenses** - Maintenance, repairs, management, utilities
-- **Occupancy Rate (%)** - Average occupancy percentage
-- Annual Property Costs (taxes, HOA, insurance)
-
-### Vacation Home
-**Fields:**
-- Property Name (required)
-- Address
-- Current Market Value (required)
-- Purchase Price
-- Purchase Date
-- Mortgage Balance
-- **Annual Rental Income** - If rented out (Airbnb, VRBO, etc.)
-- **Annual Operating Expenses** - If generating rental income
-- Annual Property Costs (taxes, HOA, insurance)
-
-### Land
-**Fields:**
-- Property Name (required)
-- Address
-- Current Market Value (required)
-- Purchase Price
-- Annual Property Costs (taxes, insurance)
-
-_Note: Land typically doesn't have mortgage or purchase date fields._
-
-### Commercial Property
-**Fields:**
-- Property Name (required)
-- Address
-- Current Market Value (required)
-- Purchase Price
-- Purchase Date
-- Mortgage Balance
-- **Annual Rental Income** - Gross rental income
-- **Annual Operating Expenses** - Maintenance, repairs, management
-- **Occupancy Rate (%)** - Average occupancy percentage
-- Annual Property Costs (taxes, insurance)
+- **Property Name** (`name`) (required)
+- **Property Type** (`type`) (required)
+- **Address** (`address`)
+- **Current Market Value** (`value`) (required)
+- **Purchase Price** (`purchase_price`) (for cost basis)
+- **Purchase Date** (`purchase_date`) (hidden for Land)
+- **Mortgage Balance** (`mortgage_balance`) (hidden for Land)
+- **Annual Rental Income** (`annual_rental_income`) (for Rental, Vacation, Commercial)
+- **Annual Operating Expenses** (`annual_expenses`) (for Rental, Vacation, Commercial)
+- **Occupancy Rate (%)** (`occupancy_rate`) (for Rental, Commercial)
+- **Annual Property Costs** (`annual_costs`) (taxes, HOA, insurance)
 
 ---
 
@@ -121,84 +79,69 @@ _Note: Land typically doesn't have mortgage or purchase date fields._
 
 ### Pension
 **Fields:**
-- Pension Name (required)
-- Provider/Employer
-- Monthly Benefit (required)
-- Start Date
-- Start Age (when benefits begin)
-- Inflation Adjusted (checkbox)
-- **Survivor Benefit (%)** - Percentage paid to survivor
+- **Pension Name** (`name`) (required)
+- **Type** (`type`) (required)
+- **Provider/Employer** (`provider`)
+- **Monthly Benefit** (`monthly_benefit`) (required)
+- **Start Date** (`start_date`)
+- **Start Age** (`start_age`) (when benefits begin)
+- **Inflation Adjusted** (`inflation_adjusted`) (checkbox)
+- **Survivor Benefit (%)** (`survivor_benefit_pct`) - Percentage paid to survivor
 
 ### Annuity
 **Fields:**
-- Annuity Name (required)
-- Provider
-- Monthly Benefit (required)
-- Start Date
-- Start Age
-- Inflation Adjusted (checkbox)
-- **Annuity Type** - Fixed, Variable, or Indexed
-- **Current Value** - Current account value if deferred
+- **Annuity Name** (`name`) (required)
+- **Type** (`type`) (required)
+- **Provider** (`provider`)
+- **Monthly Benefit** (`monthly_benefit`) (required)
+- **Start Date** (`start_date`)
+- **Start Age** (`start_age`)
+- **Inflation Adjusted** (`inflation_adjusted`)
+- **Annuity Type** (`annuity_type`) - Fixed, Variable, or Indexed
+- **Current Value** (`current_value`) - Current account value if deferred
 
 ---
 
 ## Other Assets
 
-### Health Savings Account (HSA)
-**Fields:**
-- Asset Name (required)
-- Estimated Value (required)
-- **Financial Institution**
-- **Stock Allocation (%)**
-- **Bond Allocation (%)**
-- **Cash Allocation (%)**
+**Types:** Business Interest, Collectible, Trust, HSA, Cryptocurrency, Other
 
-_Note: HSAs are treated like investment accounts since they can be invested._
-
-### Business Interest
 **Fields:**
-- Asset Name (required)
-- Estimated Value (required)
-- **Ownership Percentage (%)** - Your ownership stake
-- **Annual Income/Distributions** - Annual distributions received
-- **Valuation Method** - Professional appraisal, comparable sales, book value, revenue multiple, or earnings multiple
+- **Asset Name** (`name`) (required)
+- **Asset Type** (`type`) (required)
+- **Estimated Value** (`value`) (required)
+- **Financial Institution** (`institution`) (for HSA)
+- **Stock/Bond/Cash Allocation** (for HSA)
+- **Ownership Percentage (%)** (`ownership_pct`) (for Business)
+- **Annual Income/Distributions** (`annual_income`) (for Business, Trust)
+- **Valuation Method** (`valuation_method`) (for Business)
+- **Cost Basis** (`cost_basis`) (for Crypto, Collectible)
+- **Purchase Date** (`purchase_date`) (for Crypto, Collectible)
+- **Trust Type** (`trust_type`) (for Trust)
+- **Description** (`description`)
 
-### Cryptocurrency
-**Fields:**
-- Asset Name (required)
-- Estimated Value (required)
-- **Cost Basis** - Original purchase price (for capital gains)
-- **Purchase Date**
+---
 
-### Collectible
-**Fields:**
-- Asset Name (required)
-- Estimated Value (required)
-- **Cost Basis** - Original purchase price
-- **Purchase Date**
-- Description
+## Debts & Liabilities
 
-### Trust
-**Fields:**
-- Asset Name (required)
-- Estimated Value (required)
-- **Trust Type** - Revocable living trust, irrevocable trust, charitable trust, special needs trust, or other
-- **Annual Income/Distributions** - Annual distributions received
-- Description
+**Types:** Mortgage, Student Loan, Credit Card, Auto Loan, Personal Loan, Other Debt
 
-### Other
 **Fields:**
-- Asset Name (required)
-- Estimated Value (required)
-- Description
+- **Debt Name** (`name`) (required)
+- **Debt Type** (`type`) (required)
+- **Lender** (`institution`)
+- **Current Balance** (`value`) (required)
+- **Interest Rate (%)** (`interest_rate`)
+- **Monthly Payment** (`monthly_payment`)
+- **Estimated Payoff Date** (`maturity_date`)
+- **Description** (`description`)
 
 ---
 
 ## Implementation Notes
 
-- Fields marked in **bold** are type-specific and only appear for that particular asset type
-- All fields dynamically show/hide based on the asset type selected
-- Required fields are marked with an asterisk (*) in the UI
-- The form validates that all required fields are completed before allowing submission
-- Allocation percentages are displayed as whole numbers (0-100) but stored as decimals (0-1)
-- Currency fields accept various formats: $1,000, 1000, 1k, etc.
+- **Bold** labels match the UI; `code_names` match the profile JSON structure.
+- **Required fields** must be completed before saving.
+- **Allocation percentages** are entered as 0-100 but stored as 0.0-1.0.
+- **Currency fields** are sanitized during extraction.
+- **Conditional display**: Fields like `occupancy_rate` only appear when relevant to the selected type.

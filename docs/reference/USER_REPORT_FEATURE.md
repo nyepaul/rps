@@ -53,12 +53,17 @@ Each user row now includes a blue **📊 (chart)** button in the Actions column 
 
 The endpoint queries multiple tables:
 - `users` - User account info
-- `profile` - User profiles
+- `profiles` - User profiles (Renamed in v3.9)
 - `scenarios` - Monte Carlo scenarios
 - `conversations` - AI advisor messages
 - `action_items` - User action items
 - `enhanced_audit_log` - Activity tracking
 - `feedback` - User feedback
+
+---
+
+**Last Updated:** 2026-02-27
+**Version:** 3.10.0
 
 ### Frontend
 **File**: `src/static/js/components/admin/user-report.js`
