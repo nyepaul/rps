@@ -31,6 +31,8 @@ jobs:
         run: ./bin/check-glossary-coverage
 
       - name: Run targeted regression tests
+        env:
+          SECRET_KEY: ci-test-secret-key
         run: |
           pytest -q \
             tests/comprehensive/test_javascript_quality.py::TestJavaScriptCriticalIssues::test_main_tab_restore_logic_present \
