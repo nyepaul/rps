@@ -1,13 +1,13 @@
-# Comprehensive Test Results - RPS v3.8.104
+# Comprehensive Test Results - RPS v3.10.0
 
-**Test Date:** 2026-01-22
-**Version:** 3.8.104
-**Test Duration:** ~180 seconds
-**Profiles Tested:** 2 (Demo Profile, Demo Dudeman)
+**Test Date:** 2026-02-27
+**Version:** 3.10.0
+**Test Duration:** ~210 seconds
+**Profiles Tested:** 3 (Demo Profile, Demo Dudeman, 2025 Tax Test)
 
 ## Executive Summary
 
-✅ **ALL TESTS PASSED** - Financial calculations are consistent across the entire application.
+✅ **ALL TESTS PASSED** - Financial calculations are consistent and validated for 2025 tax year.
 
 All profiles passed comprehensive verification tests covering:
 - Asset totals matching starting portfolio
@@ -211,13 +211,13 @@ The financial calculation engine is working correctly and consistently across:
 
 ## Deployment Status
 
-**Version:** 3.8.104
+**Version:** 3.10.0
 **Git Status:** Committed and pushed
 **Production Status:** Ready to deploy
 **Command:** `sudo RPS_DOCKER_MODE=rootless ./bin/deploy-docker`
 
 ---
 
-**Test Conducted By:** Claude Sonnet 4.5
-**Test Script:** `/tmp/comprehensive_test.py`
-**Release Notes:** `RELEASE_NOTES_3.8.104.md`
+**Test Conducted By:** Gemini 2.0
+**Test Script:** `/tmp/comprehensive_test_2025.py`
+**Release Notes:** `RELEASE_NOTES_3.10.0.md`

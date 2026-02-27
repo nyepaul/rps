@@ -20,10 +20,18 @@ Navigate to: **[http://127.0.0.1:5137](http://127.0.0.1:5137)**
 
 ---
 
-## What's New in Version 3.9
+## What's New in Version 3.10.0
 
-### Smart Recommendations
-The system connects directly to Gemini and Claude. Click the **"AI Recommendations"** button to get a prioritized list of strategic moves tailored to your specific balances and income.
+### 2025 Tax Year Updates
+The system now includes full support for the 2025 tax year, including:
+- Updated Federal Income Tax brackets (Single and MFJ).
+- Updated Standard Deduction amounts.
+- New IRMAA (Medicare) surcharge thresholds.
+- Updated Social Security (FICA) wage base and taxability logic.
+- Long-Term Capital Gains (LTCG) bracket updates.
+
+### AI Strategic Advisor
+The system connects directly to Gemini, Claude, OpenAI, and Local LLMs. Click the **"AI Advisor"** tab to get a prioritized list of strategic moves tailored to your specific balances and income.
 
 ### Quick Apply
 Found a better strategy in the AI advice? Use the **"Quick Apply"** button to instantly update your retirement dates or spending targets without manual entry.
@@ -32,9 +40,10 @@ Found a better strategy in the AI advice? Use the **"Quick Apply"** button to in
 On the **Dashboard**, use the sliders to test "What If" scenarios in real-time. See how reducing spending by $10k/year or working 2 years longer impacts your 30-year projection.
 
 ### Flexible Income Streams
-Pensions are no longer static hardcoded values. You can model them as:
-- **Annual Income**: Standard pension payments with COLA (inflation) options.
+Pensions and Social Security are fully modeled with:
+- **Annual Income**: Standard payments with COLA (inflation) options.
 - **Lump Sum**: Large one-time payouts that roll into your Traditional IRA.
+- **SS Optimization**: Model different claiming ages (62-70) and see the impact on your success rate.
 
 ---
 

@@ -125,4 +125,7 @@ audit_log       -- Security and compliance logging
 - **No Build Step**: Keep frontend as vanilla JS with ES6 modules
 - **Stateless Calculations**: All financial math must recalculate on demand
 - **Privacy First**: Never log or transmit sensitive financial data
-- **Data Encryption**: Profile data is encrypted at rest (AES-256-GCM)
+## Version
+
+**RPS Version**: 3.10.0
+**Last Updated**: February 27, 2026

@@ -1,4 +1,4 @@
-# Getting Started with RPS (v3.9)
+# Getting Started with RPS (v3.10.0)
 
 Welcome to the Retirement Planning System (RPS). This guide will help you set up your first profile and run your first Monte Carlo simulation in minutes.
 

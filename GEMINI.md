@@ -5,13 +5,13 @@ Project context for Google Gemini AI.
 ## Project: Retirement & Wealth Planning System (RPS)
 
 **Type**: Web Application (Flask/Vanilla JS)
-**Version**: patch
+**Version**: 3.10.0
 **Location**: `/home/paul/src/rps`
 **Manager**: `bin/manage` (Main CLI entry point)
 
 ## Overview
 
-RPS is a comprehensive, **local-first** financial planning application designed for high-fidelity retirement modeling. It combines a rigorous Monte Carlo simulation engine with optional AI capabilities to provide professional-grade financial analysis while maintaining complete data privacy.
+RPS is a comprehensive, **local-first** financial planning application designed for high-fidelity retirement modeling. It combines a rigorous Monte Carlo simulation engine with optional AI capabilities to provide professional-grade financial analysis while maintaining complete data privacy. Licensed under **Apache 2.0**.
 
 ## Key Capabilities
 
@@ -103,7 +103,7 @@ Features:
 pytest                       # Run test suite
 pytest tests/test_models/    # Run specific tests
 alembic revision --autogenerate -m "msg"  # Create migration
-./bin/bump-version 3.9.X "msg"  # CRITICAL: Version bump before push
+./bin/bump-version 3.10.X "msg"  # CRITICAL: Version bump before push
 ```
 
 ## Documentation Map

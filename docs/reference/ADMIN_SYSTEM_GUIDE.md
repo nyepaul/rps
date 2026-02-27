@@ -789,5 +789,5 @@ GET /api/admin/system/info
 
 ---
 
-**Last Updated:** 2026-01-22
-**Version:** 2.1
+**Last Updated:** 2026-02-27
+**Version:** 3.10.0

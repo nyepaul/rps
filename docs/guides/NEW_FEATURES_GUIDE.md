@@ -1,8 +1,8 @@
 # RPS New Features Guide
 
-**Version:** 3.9
-**Date:** January 2026
-**Summary:** Welcome Screen, Profile Creation Wizard, Educational Hub, and Level-Based Progression
+**Version:** 3.10.0
+**Date:** February 2026
+**Summary:** 2025 Tax Year Updates, AI Strategic Advisor, and Enhanced Financial Modeling
 
 ---
 
@@ -549,6 +549,7 @@ rps/
 For issues, questions, or feature requests, please refer to the project repository or contact the development team.
 
 **Version History:**
+- v3.10.0 (2026-02): 2025 tax year updates (brackets, IRMAA, FICA), enhanced AI advisor, SS optimization
 - v3.9 (2026-01): Cash Flow improvements, Monte Carlo tax engine fixes
 - v3.8 (2026-01): Admin dashboard, backup/restore, audit logging
 - v2.0 (2026-01): Welcome screen, wizard, educational hub, progression system
@@ -556,5 +557,5 @@ For issues, questions, or feature requests, please refer to the project reposito
 
 ---
 
-*Last Updated: January 2026*
-*RPS Version: 3.9*
+*Last Updated: February 2026*
+*RPS Version: 3.10.0*

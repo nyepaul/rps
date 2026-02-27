@@ -117,6 +117,10 @@ The following variables are used for system-level configuration or testing. **Us
 | `SECRET_KEY` | Flask session encryption |
 | `ENCRYPTION_KEY` | Data encryption (required in production) |
 
+## License
+
+This project is licensed under the **Apache License 2.0**. See the [LICENSE](LICENSE) file for details.
+
 ---
 
-**Version**: 3.10.0 | **Last Updated**: 2026-02-14
+**Version**: 3.10.0 | **Last Updated**: 2026-02-27

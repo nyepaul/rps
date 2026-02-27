@@ -418,5 +418,5 @@ Potential additions for future versions:
 
 ---
 
-**Last Updated**: January 15, 2026
-**Version**: 2.0 Professional Edition
+**Last Updated**: February 27, 2026
+**Version**: 3.10.0 Professional Edition

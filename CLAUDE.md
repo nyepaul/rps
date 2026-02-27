@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-RPS is a retirement and wealth planning system - a local-first financial planning application for Monte Carlo retirement simulations, tax optimization, and AI-powered financial advice. Version 3.9 with modular architecture.
+RPS is a retirement and wealth planning system - a local-first financial planning application for Monte Carlo retirement simulations, tax optimization, and AI-powered financial advice. Version 3.10.0 with modular architecture. Licensed under **Apache License 2.0**.
 
 **Authored by**: pan
 
@@ -13,14 +13,14 @@ RPS is a retirement and wealth planning system - a local-first financial plannin
 **CRITICAL: Always bump version before pushing when making ANY code changes.**
 
 ### Version Scheme
-- Current major.minor: **3.9.x** (Current: patch)
-- Use patch versions: 3.9.1, 3.9.2, ..., 3.9.199
+- Current major.minor: **3.10.x** (Current: patch)
+- Use patch versions: 3.10.1, 3.10.2, ..., 3.10.199
 - Increment patch for ALL changes (features, fixes, improvements)
-- Only move to 3.10.0 when explicitly requested
+- Only move to 3.11.0 when explicitly requested
 
 ### Version Bump Process
 ```bash
-./bin/bump-version 3.9.X "Description of changes"
+./bin/bump-version 3.10.X "Description of changes"
 ```
 
 This updates:

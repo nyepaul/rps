@@ -760,5 +760,5 @@ SCENARIOS (Planning Variations)
 
 ---
 
-**Last Updated:** 2025-01-15
-**Version:** 2.0
+**Last Updated:** 2026-02-27
+**Version:** 3.10.0

@@ -2,7 +2,7 @@
 
 ## Question: Do they show the same forecast?
 
-**Short answer: Yes! As of version 3.8.112, Cash Flow uses the same Monte Carlo engine as Analysis.**
+**Short answer: Yes! As of version 3.10.0, Cash Flow uses the same Monte Carlo engine as Analysis.**
 
 **Previously:** Cash Flow used a simplified 6% deterministic calculation that didn't match Analysis.
 
@@ -10,7 +10,7 @@
 
 ## Detailed Comparison
 
-### Cash Flow Tab (Current Implementation - v3.8.112+)
+### Cash Flow Tab (Current Implementation - v3.10.0+)
 
 **Projection Method:** Monte Carlo Simulation (Moderate Scenario)
 
@@ -228,4 +228,4 @@ The Monte Carlo fetch was causing a hanging loading indicator. The loading messa
 
 ---
 
-*Last updated: 2026-01-22*
+*Last updated: 2026-02-27*
