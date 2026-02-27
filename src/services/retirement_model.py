@@ -131,6 +131,23 @@ class RetirementModel:
         age_now = (datetime.now() - person.birth_date).days / 365.25
         return int(target_age - age_now)
 
+    def _get_401k_limit(self, age: int) -> float:
+        """Return the 401k employee contribution limit for the given age.
+
+        Applies SECURE 2.0 super-catchup ($11,250) for ages 60-63 (2025+),
+        standard catchup ($7,500) for all other ages ≥ 50.
+        """
+        limit = self.contribution_limits["401k_base"]
+        if age >= self.contribution_limits["catchup_age"]:
+            super_catchup = self.contribution_limits.get("401k_super_catchup", 0)
+            super_min = int(self.contribution_limits.get("super_catchup_age_min", 999))
+            super_max = int(self.contribution_limits.get("super_catchup_age_max", -1))
+            if super_catchup > 0 and super_min <= age <= super_max:
+                limit += super_catchup
+            else:
+                limit += self.contribution_limits["401k_catchup"]
+        return limit
+
     def get_standard_deduction(
         self, current_cpi: np.ndarray = 1.0, p1_age: float = 0, p2_age: float = 0
     ) -> np.ndarray:
@@ -870,8 +887,10 @@ class RetirementModel:
                     employment_income_gross, self.tax_year
                 )
 
-            # State tax on ALL taxable ordinary income (Simplified flat rate)
-            state_rate = 0.05  # Default
+            # State tax on ALL taxable ordinary income (state-specific flat rate)
+            state_rate = TaxEngine.get_state_tax_rate(
+                getattr(self.profile, "state", "NY")
+            )
             state_tax_paid = (
                 employment_income_gross + other_ordinary_income_gross
             ) * state_rate
@@ -909,10 +928,7 @@ class RetirementModel:
                             self.profile.person1.annual_401k_contribution, 0
                         ) / np.maximum(p1_salary, 1)
                     p1_401k_contrib = p1_salary * rate
-                    limit = self.contribution_limits["401k_base"]
-                    if p1_age >= self.contribution_limits["catchup_age"]:
-                        limit += self.contribution_limits["401k_catchup"]
-                    p1_401k_contrib = np.minimum(p1_401k_contrib, limit)
+                    p1_401k_contrib = np.minimum(p1_401k_contrib, self._get_401k_limit(p1_age))
 
                 # Person 2 contributions
                 if not p2_retired:
@@ -929,10 +945,7 @@ class RetirementModel:
                             self.profile.person2.annual_401k_contribution, 0
                         ) / np.maximum(p2_salary, 1)
                     p2_401k_contrib = p2_salary * rate
-                    limit = self.contribution_limits["401k_base"]
-                    if p2_age >= self.contribution_limits["catchup_age"]:
-                        limit += self.contribution_limits["401k_catchup"]
-                    p2_401k_contrib = np.minimum(p2_401k_contrib, limit)
+                    p2_401k_contrib = np.minimum(p2_401k_contrib, self._get_401k_limit(p2_age))
 
             # IRA (Pre-tax portion)
             ira_contrib_annual = safe_float(self.profile.annual_ira_contribution, 0)
@@ -1513,6 +1526,13 @@ class RetirementModel:
 
         detailed_ledger = []
 
+        # Track prior years' MAGI for IRMAA 2-year lookback (consistent with Monte Carlo)
+        prior_year_magi_dp = {
+            0: np.zeros(simulations),
+            -1: np.zeros(simulations),
+            -2: np.zeros(simulations),
+        }
+
         # 3. Simulation Loop (Year by Year)
         for year_idx in range(years):
             simulation_year = self.current_year + year_idx
@@ -1591,10 +1611,7 @@ class RetirementModel:
                         / np.maximum(p1_salary, 1)
                     )
                 p1_401k_annual = p1_salary * rate
-                limit = self.contribution_limits["401k_base"]
-                if p1_age_start >= self.contribution_limits["catchup_age"]:
-                    limit += self.contribution_limits["401k_catchup"]
-                p1_401k_annual = np.minimum(p1_401k_annual, limit)
+                p1_401k_annual = np.minimum(p1_401k_annual, self._get_401k_limit(p1_age_start))
 
             p2_401k_annual = 0
             if not p2_retired:
@@ -1614,10 +1631,7 @@ class RetirementModel:
                         / np.maximum(p2_salary, 1)
                     )
                 p2_401k_annual = p2_salary * rate
-                limit = self.contribution_limits["401k_base"]
-                if p2_age_start >= self.contribution_limits["catchup_age"]:
-                    limit += self.contribution_limits["401k_catchup"]
-                p2_401k_annual = np.minimum(p2_401k_annual, limit)
+                p2_401k_annual = np.minimum(p2_401k_annual, self._get_401k_limit(p2_age_start))
 
             ira_contrib_annual = safe_float(self.profile.annual_ira_contribution, 0)
             if ira_contrib_annual > 0:
@@ -1660,8 +1674,8 @@ class RetirementModel:
 
             fed_tax_annual, _ = self._vectorized_federal_tax(taxable_income_federal)
 
-            state_rate = (
-                0.0585 if getattr(self.profile, "state", "NY") == "NY" else 0.05
+            state_rate = TaxEngine.get_state_tax_rate(
+                getattr(self.profile, "state", "NY")
             )
             state_tax_annual = (
                 total_employment_annual + total_other_ord_annual
@@ -1723,9 +1737,15 @@ class RetirementModel:
                 # Monthly Expenses
                 irmaa_mo = 0
                 if p1_age_start >= 65 or p2_age_start >= 65:
+                    # Use 2-year lookback MAGI per IRS rules (consistent with Monte Carlo)
+                    magi_for_irmaa_dp = (
+                        prior_year_magi_dp[-2]
+                        if year_idx >= 2
+                        else total_ord_taxable_annual
+                    )
                     irmaa_mo = (
                         self._vectorized_irmaa(
-                            total_ord_taxable_annual,
+                            magi_for_irmaa_dp,
                             both_on_medicare=(
                                 p1_age_start >= 65 and p2_age_start >= 65
                             ),
@@ -1961,7 +1981,7 @@ class RetirementModel:
                         m_shortfall -= w
                         m_withdrawals += w
 
-                # Apply monthly growth
+                # Apply monthly growth using geometric monthly rate: (1+annual)^(1/12)-1
                 ret = (
                     assumptions.stock_allocation * assumptions.stock_return_mean
                     + assumptions.bond_allocation * assumptions.bond_return_mean
@@ -1970,9 +1990,9 @@ class RetirementModel:
                     + assumptions.gold_allocation * assumptions.gold_return_mean
                     + assumptions.crypto_allocation * assumptions.crypto_return_mean
                 )
-                m_ret = ret / 12
+                m_ret = (1 + ret) ** (1 / 12) - 1
 
-                cash *= 1 + assumptions.cash_return_mean / 12
+                cash *= 1 + (1 + assumptions.cash_return_mean) ** (1 / 12) - 1
                 taxable_val *= 1 + m_ret * 0.85
                 pretax_std *= 1 + m_ret
                 roth *= 1 + m_ret
@@ -2046,6 +2066,10 @@ class RetirementModel:
                         ),
                     }
                 )
+            # Update prior-year MAGI for next year's IRMAA 2-year lookback
+            prior_year_magi_dp[-2] = prior_year_magi_dp[-1].copy()
+            prior_year_magi_dp[-1] = prior_year_magi_dp[0].copy()
+            prior_year_magi_dp[0] = total_ord_taxable_annual.copy()
         return detailed_ledger
 
     def calculate_rmd(self, age: int, ira_balance: float):
@@ -2100,9 +2124,6 @@ class RetirementModel:
         )
         if years_until_rmd <= 0:
             return {"opportunity": "none", "reason": "Already past RMD age"}
-        # Use target annual income as a proxy for retirement taxable income baseline
-        # This is a simplification but better than hardcoding
-        current_income = self.profile.target_annual_income
         pension_annual = self.profile.pension_annual
         # Include dynamic income streams starting before or at RMD age (73)
         p1_birth_year = self.profile.person1.birth_date.year
@@ -2164,7 +2185,8 @@ class RetirementModel:
             }
 
     def calculate_wealth_transfer_strategy(self):
-        annual_gift_per_child = 18000 * 2
+        gift_exclusion = self.contribution_limits.get("gift_annual_exclusion", 18000)
+        annual_gift_per_child = gift_exclusion * 2
         total_annual_gifts = annual_gift_per_child * len(self.profile.children)
         years_until_90 = min(
             self.calculate_life_expectancy_years(self.profile.person1),

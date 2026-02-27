@@ -1,5 +1,5 @@
 {
-    "version": "3.9.302",
-    "release_date": "2026-02-17",
-    "release_notes": "security: remediate critical and high vulnerabilities in auth and config"
+    "version": "3.9.1",
+    "release_date": "2026-02-27",
+    "release_notes": "fix: financial accuracy - state tax by state, 2025 tax policy, SS taxability, IRMAA MFS, super-catchup, monthly compounding"
 }

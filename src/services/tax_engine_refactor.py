@@ -88,7 +88,9 @@ class TaxEngine:
 
         above_threshold_2 = provisional > threshold_2
         excess_2 = np.maximum(0, provisional - threshold_2)
-        base_taxable = (threshold_2 - threshold_1) * 0.5
+        # base_taxable is what would be taxable if provisional stopped at threshold_2:
+        # = min(ss * 0.5, (threshold_2 - threshold_1) * 0.5)
+        base_taxable = np.minimum(ss_benefit * 0.5, (threshold_2 - threshold_1) * 0.5)
         additional = excess_2 * 0.85
         max_85 = ss_benefit * 0.85
         taxable_ss = np.where(
@@ -135,7 +137,9 @@ class TaxEngine:
         both_on_medicare: bool = True,
     ) -> np.ndarray:
         policy = get_tax_policy(tax_year)
-        thresholds = policy.irmaa.get(filing_status, policy.irmaa["mfj"])
+        # MFS uses single-filer IRMAA thresholds per IRS rules, not MFJ thresholds
+        irmaa_status = "single" if filing_status == "mfs" else filing_status
+        thresholds = policy.irmaa.get(irmaa_status, policy.irmaa.get("single", policy.irmaa["mfj"]))
 
         irmaa = np.zeros_like(magi)
         for lower, upper, surcharge in thresholds:
@@ -175,16 +179,29 @@ class TaxEngine:
         med_tax = gross_income * medicare_rate
         return ss_tax + med_tax
 
+    # Flat-rate state income tax approximations (top marginal / blended effective rate)
+    STATE_TAX_RATES: dict = {
+        "AL": 0.050, "AK": 0.000, "AZ": 0.025, "AR": 0.047, "CA": 0.093,
+        "CO": 0.044, "CT": 0.055, "DE": 0.066, "FL": 0.000, "GA": 0.055,
+        "HI": 0.080, "ID": 0.058, "IL": 0.0495, "IN": 0.0315, "IA": 0.057,
+        "KS": 0.057, "KY": 0.040, "LA": 0.0425, "ME": 0.0715, "MD": 0.0575,
+        "MA": 0.050, "MI": 0.0425, "MN": 0.0985, "MS": 0.050, "MO": 0.048,
+        "MT": 0.0575, "NE": 0.0584, "NV": 0.000, "NH": 0.000, "NJ": 0.0637,
+        "NM": 0.059, "NY": 0.0585, "NC": 0.0475, "ND": 0.025, "OH": 0.035,
+        "OK": 0.0475, "OR": 0.099, "PA": 0.0307, "RI": 0.0599, "SC": 0.064,
+        "SD": 0.000, "TN": 0.000, "TX": 0.000, "UT": 0.0465, "VT": 0.0875,
+        "VA": 0.0575, "WA": 0.000, "WV": 0.055, "WI": 0.0765, "WY": 0.000,
+        "DC": 0.0895,
+    }
+
+    @staticmethod
+    def get_state_tax_rate(state: str) -> float:
+        """Return the flat-rate state income tax approximation for the given state."""
+        return TaxEngine.STATE_TAX_RATES.get(state.upper(), 0.05)
+
     @staticmethod
     def calculate_state_tax(taxable_income: float, state: str = "NY") -> float:
-        # Simplified flat rates for now; should be policy driven by state
-        rates = {
-            "NY": 0.0585,
-            "CA": 0.093,
-            "TX": 0.0,
-            "FL": 0.0,
-        }
-        rate = rates.get(state, 0.05)
+        rate = TaxEngine.get_state_tax_rate(state)
         return taxable_income * rate
 
     @staticmethod

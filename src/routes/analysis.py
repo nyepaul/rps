@@ -14,6 +14,7 @@ from src.services.retirement_model import (
     RetirementModel,
 )
 from src.services.tax_engine_refactor import TaxEngine
+from src.services.tax_policy import get_tax_policy
 from src.services.rebalancing_service import RebalancingService
 from src.services.healthcare_planning_service import HealthcarePlanningService
 from src.services.phase1_planning_service import (
@@ -2044,10 +2045,16 @@ def get_calculation_report():
                 elif owner == "spouse":
                     spouse_salary += amount_annual
 
-            # Primary 401k - apply IRS limits
+            # Primary 401k - apply IRS limits (including SECURE 2.0 super-catchup 60-63)
             p1_401k_limit = contrib_limits["401k_base"]
             if current_age >= contrib_limits["catchup_age"]:
-                p1_401k_limit += contrib_limits["401k_catchup"]
+                super_catchup = contrib_limits.get("401k_super_catchup", 0)
+                super_min = int(contrib_limits.get("super_catchup_age_min", 999))
+                super_max = int(contrib_limits.get("super_catchup_age_max", -1))
+                if super_catchup > 0 and super_min <= current_age <= super_max:
+                    p1_401k_limit += super_catchup
+                else:
+                    p1_401k_limit += contrib_limits["401k_catchup"]
             p1_401k_raw = primary_salary * contrib_rate_p1
             p1_401k = min(p1_401k_raw, p1_401k_limit)
 
@@ -2081,7 +2088,13 @@ def get_calculation_report():
             if spouse_data.get("name") and spouse_salary > 0:
                 p2_401k_limit = contrib_limits["401k_base"]
                 if spouse_age >= contrib_limits["catchup_age"]:
-                    p2_401k_limit += contrib_limits["401k_catchup"]
+                    super_catchup = contrib_limits.get("401k_super_catchup", 0)
+                    super_min = int(contrib_limits.get("super_catchup_age_min", 999))
+                    super_max = int(contrib_limits.get("super_catchup_age_max", -1))
+                    if super_catchup > 0 and super_min <= spouse_age <= super_max:
+                        p2_401k_limit += super_catchup
+                    else:
+                        p2_401k_limit += contrib_limits["401k_catchup"]
                 p2_401k_raw = spouse_salary * contrib_rate_p2
                 p2_401k = min(p2_401k_raw, p2_401k_limit)
 
@@ -2258,10 +2271,9 @@ def get_calculation_report():
         has_spouse_for_filing = bool(spouse_data.get("birth_date") or spouse_data.get("name") or spouse_data.get("social_security_benefit"))
         default_filing = "mfj" if has_spouse_for_filing else "single"
         filing_status = tax_settings.get("filing_status") or financial_data.get("filing_status") or default_filing
-        if filing_status in ("mfj", "mqw"):
-            threshold1, threshold2 = 32000, 44000
-        else:
-            threshold1, threshold2 = 25000, 34000
+        _ss_thresholds = get_tax_policy(tax_year).ss_taxability
+        _fs_key = filing_status if filing_status in _ss_thresholds else ("mfj" if filing_status in ("mfj", "mqw") else "single")
+        threshold1, threshold2 = _ss_thresholds[_fs_key]
 
         if provisional_income <= threshold1:
             taxable_ss = 0
@@ -2278,23 +2290,10 @@ def get_calculation_report():
             if "Employee Contribution" in item["label"]
         )
 
-        # Standard deduction (with 65+ additional)
-        # filing_status already set above from tax_settings/auto-detect
-        if filing_status == "mfj":
-            std_deduction = 29200
-            # Add 65+ additional ($1,550 per person for MFJ)
-            if current_age >= 65:
-                std_deduction += 1550
-            if spouse_age >= 65:
-                std_deduction += 1550
-        elif filing_status == "hoh":
-            std_deduction = 21900
-            if current_age >= 65:
-                std_deduction += 1950
-        else:  # single / mfs
-            std_deduction = 14600
-            if current_age >= 65:
-                std_deduction += 1950
+        # Standard deduction (with 65+ additional) - from tax policy (year-correct)
+        std_deduction = TaxEngine.calculate_standard_deduction(
+            tax_year, filing_status, p1_age=current_age, p2_age=spouse_age
+        )
         taxable_income = max(0, ordinary_income_after_401k - std_deduction)
 
         tax_section["items"].append({
@@ -2327,23 +2326,27 @@ def get_calculation_report():
             "amount": federal_tax
         })
 
-        # State Tax
-        state_rate = float(tax_settings.get("tax_bracket_state") or financial_data.get("tax_bracket_state", 0.05) or 0.05)
+        # State Tax - use profile state if available, then tax_settings override
+        _profile_state = address_data.get("state") or tax_settings.get("state") or "NY"
+        _explicit_state_rate = tax_settings.get("tax_bracket_state") or financial_data.get("tax_bracket_state")
+        if _explicit_state_rate:
+            state_rate = float(_explicit_state_rate)
+        else:
+            state_rate = TaxEngine.get_state_tax_rate(_profile_state)
         state_tax = taxable_income * state_rate
         tax_section["items"].append({
-            "label": f"State Income Tax ({state_rate*100:.0f}% rate)",
+            "label": f"State Income Tax ({state_rate*100:.2g}% rate, {_profile_state})",
             "value": f"${state_tax:,.0f}",
             "amount": state_tax
         })
 
-        # FICA (on employment income only, if under retirement)
+        # FICA (on employment income only, if under retirement) - use tax policy for wage base
         fica_tax = 0
         if current_age < retirement_age and employment_income_annual > 0:
-            # Social Security tax: 6.2% capped at wage base ($168,600 for 2024)
-            ss_wage_base = 168600
-            ss_tax = min(employment_income_annual, ss_wage_base) * 0.062
-            # Medicare tax: 1.45% on all employment income
-            medicare_tax = employment_income_annual * 0.0145
+            _fica_policy = get_tax_policy(tax_year).fica
+            ss_wage_base = _fica_policy["ss_wage_base"]
+            ss_tax = min(employment_income_annual, ss_wage_base) * _fica_policy["ss_rate"]
+            medicare_tax = employment_income_annual * _fica_policy["medicare_rate"]
             # Additional Medicare tax: 0.9% on employment income over $200K (single) / $250K (MFJ)
             additional_medicare_threshold = 250000 if filing_status in ("mfj", "mqw") else 200000
             additional_medicare = max(0, employment_income_annual - additional_medicare_threshold) * 0.009
