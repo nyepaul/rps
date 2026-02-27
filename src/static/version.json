@@ -1,5 +1,5 @@
 {
-    "version": "3.10.0",
+    "version": "3.10.1",
     "release_date": "2026-02-27",
-    "release_notes": "feat: 2025 tax year - updated brackets, IRMAA, LTCG, FICA, contribution limits, super-catchup, state tax accuracy, SS taxability fix, IRMAA MFS fix, monthly compounding fix"
+    "release_notes": "docs: implement Apache 2.0 license, audit and align all reference documentation, and fix flask vulnerability CVE-2026-27205"
 }
