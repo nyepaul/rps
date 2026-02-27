@@ -1,9 +1,9 @@
 #!/bin/bash
-# Bump version number in centralized config and cache-busting
+# Bump version number in centralized config, cache-busting, and ALL documentation
 
 if [ $# -eq 0 ]; then
     echo "Usage: ./bin/bump-version <new_version> [release_notes]"
-    echo "Example: ./bin/bump-version 3.10.0 'Add new feature X'"
+    echo "Example: ./bin/bump-version 3.10.2 'Add new feature X'"
     exit 1
 fi
 
@@ -12,7 +12,7 @@ RELEASE_NOTES=${2:-"Bug fixes and improvements"}
 # Use UTC date for consistency across environments/timezones.
 RELEASE_DATE=$(date -u +%Y-%m-%d)
 
-# Update centralized version.json
+# 1. Update centralized version.json
 cat > src/static/version.json <<EOF
 {
     "version": "$NEW_VERSION",
@@ -21,21 +21,31 @@ cat > src/static/version.json <<EOF
 }
 EOF
 
-# Update index.html and login.html cache-busting parameter (keep this build-time update)
+# 2. Update cache-busting in HTML files
+echo "🌐 Updating HTML cache-busting..."
 sed -i "s|/js/main.js?v=.*\"|/js/main.js?v=$NEW_VERSION\"|g" src/static/index.html
 sed -i "s|/js/login.js?v=.*\"|/js/login.js?v=$NEW_VERSION\"|g" src/static/login.html
 
-# Update version in core documentation files
-echo "📖 Updating documentation files..."
-SEMVER_PATTERN='[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*'
-sed -i "s|Version: $SEMVER_PATTERN|Version: $NEW_VERSION|g" GEMINI.md
-sed -i "s|\*\*Version\*\*: $SEMVER_PATTERN|**Version**: $NEW_VERSION|g" README.md
-sed -i "s|(Current: $SEMVER_PATTERN)|(Current: $NEW_VERSION)|g" CLAUDE.md
-sed -i "s|Version\*\*: $SEMVER_PATTERN|Version**: $NEW_VERSION|g" GEMINI.md 2>/dev/null || true
-sed -i "s|RPS Version\*\*: $SEMVER_PATTERN|RPS Version**: $NEW_VERSION|g" docs/ai-integration/GEMINI.md
-sed -i "s|Version:\*\* $SEMVER_PATTERN|Version:** $NEW_VERSION|g" docs/security/SYSTEM_SECURITY_DOCUMENTATION.md
-sed -i "s|Version: $SEMVER_PATTERN|Version: $NEW_VERSION|g" docs/security/AUDIT_LOGGING.md
-sed -i "s|v3\.9\.[0-9]* reorganized|v$NEW_VERSION reorganized|g" docs/architecture/PROJECT_STRUCTURE.md
+# 3. Update ALL documentation recursively
+echo "📖 Synchronizing version in all .md files..."
+# Pattern matches Version: X.Y.Z, **Version**: X.Y.Z, RPS Version: X.Y.Z, etc.
+# Also handles (Current: 3.10.1) style in CLAUDE.md
+SEMVER_PATTERN='[0-9]\{1,\}\.[0-9]\{1,\}\.[0-9]\{1,\}'
+
+# Find all .md files and apply replacements
+# We target common version label patterns to avoid accidentally changing unrelated numbers
+find . -maxdepth 3 -name "*.md" -not -path "*/venv/*" -not -path "*/node_modules/*" -print0 | xargs -0 sed -i \
+    -e "s/\([Vv]ersion[:* ]\{1,\}\)$SEMVER_PATTERN/\1$NEW_VERSION/g" \
+    -e "s/\(Current: \)$SEMVER_PATTERN/\1$NEW_VERSION/g" \
+    -e "s/\(RPS v\)$SEMVER_PATTERN/\1$NEW_VERSION/g" \
+    -e "s/\(RPS Version[:* ]\{1,\}\)$SEMVER_PATTERN/\1$NEW_VERSION/g"
+
+# Special case for PROJECT_STRUCTURE.md which uses "vX.Y.Z reorganized"
+sed -i "s/v$SEMVER_PATTERN reorganized/v$NEW_VERSION reorganized/g" docs/architecture/PROJECT_STRUCTURE.md 2>/dev/null || true
+
+# 4. Update dates in main files
+sed -i "s/\(Last Updated: \)[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}/\1$RELEASE_DATE/g" README.md
+sed -i "s/\(Last Updated: \)[A-Za-z]\{1,\} [0-9]\{1,2\}, [0-9]\{4\}/\1$(date +'%B %d, %Y')/g" README.md 2>/dev/null || true
 
 echo "✅ Version bumped to $NEW_VERSION"
 echo "📅 Release date: $RELEASE_DATE"
@@ -43,10 +53,12 @@ echo "📝 Notes: $RELEASE_NOTES"
 echo ""
 echo "Modified files:"
 echo "  - src/static/version.json"
-echo "  - src/static/index.html (cache busting)"
+echo "  - src/static/index.html & login.html"
+echo "  - All matched .md files in docs/ and root"
+echo ""
+echo "Verification:"
+echo "  ./bin/check-version-consistency"
 echo ""
 echo "Don't forget to commit and deploy:"
-echo "  git add src/static/version.json src/static/index.html"
-echo "  git commit -m 'chore: bump version to $NEW_VERSION'"
-echo "  git push"
-echo "  sudo ./bin/deploy"
+echo "  git add . && git commit -m 'chore: bump to v$NEW_VERSION'"
+echo "  git push && sudo ./bin/deploy-docker"

@@ -1,0 +1,51 @@
+#!/bin/bash
+# Verify that all documentation version strings match src/static/version.json
+
+# Colors
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+# Get current version from source of truth
+if [ ! -f "src/static/version.json" ]; then
+    echo -e "${RED}Error: src/static/version.json not found!${NC}"
+    exit 1
+fi
+
+CURRENT_VERSION=$(grep '"version":' src/static/version.json | cut -d'"' -f4)
+echo -e "${YELLOW}Checking consistency for RPS Version: ${GREEN}$CURRENT_VERSION${NC}"
+echo "--------------------------------------------------------"
+
+# Files to ignore (archives, legacy notes)
+IGNORE_PATTERN='(RELEASE_NOTES_v2|FINAL_SUMMARY|README_PHASE1|DEPLOYMENT_PHASE1|v3\.8|v3\.9)'
+
+# Find inconsistent version strings
+# We look for any Version: X.Y.Z that DOES NOT match CURRENT_VERSION
+SEMVER_PATTERN='[0-9]\{1,\}\.[0-9]\{1,\}\.[0-9]\{1,\}'
+MISMATCHES=0
+
+# Search recursively through markdown files
+FILES=$(find . -maxdepth 3 -name "*.md" -not -path "*/venv/*" -not -path "*/node_modules/*" | grep -vE "$IGNORE_PATTERN")
+
+for file in $FILES; do
+    # Find versions in the file that don't match the current one
+    # This grep logic: find all version strings, then filter out the correct one
+    OUTDATED=$(grep -oE "([Vv]ersion[:* ]{1,}|$SEMVER_PATTERN)" "$file" | grep -E "$SEMVER_PATTERN" | grep -v "$CURRENT_VERSION" | sort -u)
+    
+    if [ -n "$OUTDATED" ]; then
+        echo -e "${RED}✗ Mismatch in $file:${NC}"
+        echo -e "  Found: ${YELLOW}$OUTDATED${NC}"
+        MISMATCHES=$((MISMATCHES + 1))
+    fi
+done
+
+echo "--------------------------------------------------------"
+if [ $MISMATCHES -eq 0 ]; then
+    echo -e "${GREEN}✅ All documentation is consistent with v$CURRENT_VERSION${NC}"
+    exit 0
+else
+    echo -e "${RED}❌ Found $MISMATCHES file(s) with inconsistent version strings.${NC}"
+    echo -e "${YELLOW}Run ./bin/bump-version $CURRENT_VERSION to synchronize.${NC}"
+    exit 1
+fi
