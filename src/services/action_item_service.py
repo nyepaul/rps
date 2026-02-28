@@ -142,7 +142,7 @@ class ActionItemService:
             )
 
         # Federal estate tax planning
-        if total_assets > 13610000:  # 2024 federal estate tax exemption
+        if total_assets > 13990000:  # 2025 federal estate tax exemption
             items.append(
                 ActionItem(
                     user_id=user_id,
