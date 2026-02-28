@@ -3222,7 +3222,7 @@ def bulk_create_user_backups():
             results.append({"user_id": uid, "status": "success"})
             success_count += 1
         except Exception as e:
-            current_app.logger.error(f"Bulk backup creation failed for user {uid}: {e}")
+            current_app.logger.exception(f"Bulk backup creation failed for user {uid}")
             results.append(
                 {"user_id": uid, "status": "error", "error": "Backup creation failed"})
 
@@ -3271,7 +3271,7 @@ def bulk_restore_user_backups():
                 UserBackupService.create_backup(
                     uid, f"Pre-restore Safety (Bulk Admin)")
             except Exception as e:
-                current_app.logger.error(f"Safety backup failed for user {uid}: {e}")
+                current_app.logger.exception(f"Safety backup failed for user {uid}")
 
             # Restore
             UserBackupService.restore_backup(uid, latest_backup["id"])
@@ -3285,7 +3285,7 @@ def bulk_restore_user_backups():
             success_count += 1
 
         except Exception as e:
-            current_app.logger.error(f"Bulk backup restore failed for user {uid}: {e}")
+            current_app.logger.exception(f"Bulk backup restore failed for user {uid}")
             results.append(
                 {"user_id": uid, "status": "error", "error": "Backup restore failed"})
 
