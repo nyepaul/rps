@@ -1,5 +1,5 @@
 {
-    "version": "3.10.9",
+    "version": "3.10.10",
     "release_date": "2026-02-28",
-    "release_notes": "Update estate tax exemption to 2025 value"
+    "release_notes": "Update legacy UI QCD limit and RMD table year to 2025"
 }

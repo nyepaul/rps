@@ -1610,7 +1610,7 @@
                         <h4 style="color: var(--text-primary); margin-bottom: 10px;">QCDs (Age 70.5+)</h4>
                         <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 10px;">Qualified Charitable Distributions:</p>
                         <ul style="font-size: 13px; color: var(--text-secondary); margin-left: 20px; line-height: 1.8;">
-                            <li>Direct IRA → charity (up to $105k/year in 2024)</li>
+                            <li>Direct IRA → charity (up to $108k/year in 2025)</li>
                             <li>Counts toward RMD but excluded from taxable income</li>
                             <li>Reduces AGI (helps avoid IRMAA surcharges)</li>
                             <li>More tax-efficient than itemized deduction</li>
@@ -2452,7 +2452,7 @@
                 rmdCalcHtml += `<tr style="border-bottom: 1px solid #eee;"><td style="padding: 8px;">${age}</td><td style="padding: 8px; text-align: right;">${factor.toFixed(1)}</td><td style="padding: 8px; text-align: right; font-weight: 600;">$${rmd.toLocaleString(undefined, {maximumFractionDigits: 0})}</td><td style="padding: 8px; text-align: right;">${pct.toFixed(2)}%</td></tr>`;
             }
             rmdCalcHtml += '</tbody></table>';
-            rmdCalcHtml += '<p style="margin-top: 10px; font-size: 12px; color: var(--text-secondary);">Note: RMD factors decrease each year (you must withdraw larger % as you age). Calculated using 2024 Uniform Lifetime Table.</p>';
+            rmdCalcHtml += '<p style="margin-top: 10px; font-size: 12px; color: var(--text-secondary);">Note: RMD factors decrease each year (you must withdraw larger % as you age). Calculated using 2025 Uniform Lifetime Table.</p>';
             document.getElementById('rmd-calculator').innerHTML = rmdCalcHtml;
         }
 
