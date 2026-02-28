@@ -5,6 +5,8 @@ from __future__ import annotations
 from datetime import date
 from typing import Dict, List
 
+from src.services.tax_policy import CURRENT_TAX_YEAR
+
 
 def _safe_float(value, default: float = 0.0) -> float:
     try:
@@ -1108,7 +1110,7 @@ def build_plan_health_monitoring_drift_alerts(profile_data: Dict, scenario_resul
 
 def build_tax_law_update_engine(profile_data: Dict) -> Dict:
     tax_settings = profile_data.get("tax_settings", {}) or {}
-    configured_year = _safe_int(tax_settings.get("tax_year"), date.today().year)
+    configured_year = _safe_int(tax_settings.get("tax_year"), CURRENT_TAX_YEAR)
     current_year = date.today().year
     years_stale = max(0, current_year - configured_year)
     freshness = max(0.0, 100.0 - (years_stale * 40.0))

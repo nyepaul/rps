@@ -16,7 +16,7 @@ from typing import Dict, List, Optional, Tuple
 from datetime import datetime, date
 import math
 
-from src.services.tax_policy import get_tax_policy
+from src.services.tax_policy import get_tax_policy, CURRENT_TAX_YEAR
 from src.services.tax_engine_refactor import TaxEngine
 
 # State income tax rates (simplified - top marginal rate)
@@ -110,7 +110,7 @@ class TaxCalculator:
     def __init__(self, filing_status: str = "mfj", state: str = "CA", tax_year: Optional[int] = None):
         self.filing_status = filing_status.lower()
         self.state = state.upper()
-        self.tax_year = tax_year or datetime.now().year
+        self.tax_year = tax_year or CURRENT_TAX_YEAR
         self.policy = get_tax_policy(self.tax_year)
 
     def get_brackets(self) -> List[Tuple[float, float, float]]:
@@ -203,7 +203,7 @@ class SocialSecurityAnalyzer:
 
     def __init__(self, filing_status: str = "mfj", tax_year: Optional[int] = None):
         self.filing_status = filing_status.lower()
-        self.tax_year = tax_year or datetime.now().year
+        self.tax_year = tax_year or CURRENT_TAX_YEAR
         self.policy = get_tax_policy(self.tax_year)
 
     def calculate_taxable_ss(
@@ -326,7 +326,7 @@ class IRMAACalculator:
 
     def __init__(self, filing_status: str = "mfj", tax_year: Optional[int] = None):
         self.filing_status = filing_status.lower()
-        self.tax_year = tax_year or datetime.now().year
+        self.tax_year = tax_year or CURRENT_TAX_YEAR
         self.policy = get_tax_policy(self.tax_year)
 
     def get_thresholds(self) -> List[Tuple[float, float, float]]:
@@ -516,7 +516,7 @@ class RMDCalculator:
         Returns:
             RMD calculation details
         """
-        policy = get_tax_policy(tax_year or datetime.now().year)
+        policy = get_tax_policy(tax_year or CURRENT_TAX_YEAR)
         rmd_age = policy.rmd_age
         rmd_factors = policy.rmd_factors
 
@@ -565,7 +565,7 @@ class RMDCalculator:
         Returns:
             List of yearly RMD projections
         """
-        policy = get_tax_policy(tax_year or datetime.now().year)
+        policy = get_tax_policy(tax_year or CURRENT_TAX_YEAR)
         rmd_age = policy.rmd_age
         rmd_factors = policy.rmd_factors
 
@@ -611,7 +611,7 @@ class TaxOptimizationService:
         spouse_age: int = 65,
         tax_year: Optional[int] = None,
     ):
-        self.tax_year = tax_year or datetime.now().year
+        self.tax_year = tax_year or CURRENT_TAX_YEAR
         self.settings = TaxSettings(
             filing_status=filing_status.lower(),
             state=state.upper(),

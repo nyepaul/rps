@@ -10,6 +10,7 @@ from typing import Optional, List
 from datetime import datetime
 from src.models.profile import Profile
 from src.services.tax_optimization_service import TaxOptimizationService
+from src.services.tax_policy import CURRENT_TAX_YEAR
 from src.utils.error_sanitizer import sanitize_pydantic_error
 
 tax_optimization_bp = Blueprint(
@@ -78,7 +79,7 @@ def analyze_taxes():
         tax_settings = profile_data.get("tax_settings", {})
         address = profile_data.get("address", {})
         filing_status = data.filing_status or tax_settings.get("filing_status", "mfj")
-        tax_year = int(tax_settings.get("tax_year") or datetime.now().year)
+        tax_year = int(tax_settings.get("tax_year") or CURRENT_TAX_YEAR)
 
         # Resolve state with explicit None checks (empty string is valid and should not fallback)
         state = data.state
@@ -163,7 +164,7 @@ def analyze_roth_conversion():
         financial = profile_data.get("financial", {})
         assets = profile_data.get("assets", {})
         tax_settings = profile_data.get("tax_settings", {})
-        tax_year = int(tax_settings.get("tax_year") or datetime.now().year)
+        tax_year = int(tax_settings.get("tax_year") or CURRENT_TAX_YEAR)
         address = profile_data.get("address", {})
 
         # Calculate current taxable income
@@ -293,7 +294,7 @@ def analyze_social_security_timing():
 
         tax_settings = profile_data.get("tax_settings", {})
         filing_status = data.filing_status or tax_settings.get("filing_status", "mfj")
-        tax_year = int(tax_settings.get("tax_year") or datetime.now().year)
+        tax_year = int(tax_settings.get("tax_year") or CURRENT_TAX_YEAR)
 
         # Create service
         service = TaxOptimizationService(filing_status=filing_status, tax_year=tax_year)
@@ -427,7 +428,7 @@ def get_tax_snapshot():
         ss_benefit = (financial.get("social_security_benefit", 0) or 0) * 12
 
         filing_status = tax_settings.get("filing_status", "mfj")
-        tax_year = int(tax_settings.get("tax_year") or datetime.now().year)
+        tax_year = int(tax_settings.get("tax_year") or CURRENT_TAX_YEAR)
 
         # Resolve state with explicit None checks
         state = address.get("state")
@@ -481,7 +482,7 @@ def compare_states():
             current_state = tax_settings.get("state")
         if not current_state:
             current_state = "CA"
-        tax_year = int(tax_settings.get("tax_year") or datetime.now().year)
+        tax_year = int(tax_settings.get("tax_year") or CURRENT_TAX_YEAR)
 
         # Get taxable income
         financial = profile_data.get("financial", {})
@@ -543,7 +544,7 @@ def project_rmds():
             return jsonify({"error": "Profile data is empty"}), 400
 
         tax_settings = profile_data.get("tax_settings", {})
-        tax_year = int(tax_settings.get("tax_year") or datetime.now().year)
+        tax_year = int(tax_settings.get("tax_year") or CURRENT_TAX_YEAR)
 
         # Calculate age
         age = 65

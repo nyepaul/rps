@@ -8,6 +8,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List
 
+# The most recent completed tax year with published IRS data.
+# Update this when new-year data is added to config/tax_policy.json.
+CURRENT_TAX_YEAR = 2024
+
 
 @dataclass(frozen=True)
 class TaxPolicy:

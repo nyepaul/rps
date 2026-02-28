@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 from src.services.tax_optimization_service import IRMAACalculator
+from src.services.tax_policy import CURRENT_TAX_YEAR
 
 
 @dataclass(frozen=True)
@@ -26,7 +27,7 @@ class HealthcarePlanningService:
         premiums: Optional[MedicarePremiumAssumptions] = None,
     ):
         self.filing_status = (filing_status or "mfj").lower()
-        self.tax_year = tax_year or datetime.now().year
+        self.tax_year = tax_year or CURRENT_TAX_YEAR
         self.irmaa_calculator = IRMAACalculator(
             filing_status=self.filing_status, tax_year=self.tax_year
         )

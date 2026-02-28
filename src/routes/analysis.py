@@ -14,7 +14,7 @@ from src.services.retirement_model import (
     RetirementModel,
 )
 from src.services.tax_engine_refactor import TaxEngine
-from src.services.tax_policy import get_tax_policy
+from src.services.tax_policy import get_tax_policy, CURRENT_TAX_YEAR
 from src.services.rebalancing_service import RebalancingService
 from src.services.healthcare_planning_service import HealthcarePlanningService
 from src.services.phase1_planning_service import (
@@ -721,7 +721,7 @@ def run_analysis():
         default_filing = "mfj" if has_spouse_for_filing else "single"
         filing_status = tax_settings.get("filing_status") or default_filing
         state = tax_settings.get("state") or address_data.get("state") or "NY"
-        tax_year = int(tax_settings.get("tax_year") or datetime.now().year)
+        tax_year = int(tax_settings.get("tax_year") or CURRENT_TAX_YEAR)
 
         financial_profile = FinancialProfile(
             person1=person1,
@@ -1270,7 +1270,7 @@ def get_cashflow_details():
         default_filing = "mfj" if has_spouse_for_filing else "single"
         filing_status = tax_settings.get("filing_status") or default_filing
         state = tax_settings.get("state") or address_data.get("state") or "NY"
-        tax_year = int(tax_settings.get("tax_year") or datetime.now().year)
+        tax_year = int(tax_settings.get("tax_year") or CURRENT_TAX_YEAR)
 
         financial_profile = FinancialProfile(
             person1=person1,
@@ -1644,7 +1644,7 @@ def analyze_roth_conversion():
             asset_allocation={"stocks": 0.6, "bonds": 0.4},
             future_expenses=[],
             income_streams=profile_data.get("income_streams", []),
-            tax_year=int(profile_data.get("tax_settings", {}).get("tax_year") or datetime.now().year),
+            tax_year=int(profile_data.get("tax_settings", {}).get("tax_year") or CURRENT_TAX_YEAR),
         )
 
         # Calculate Roth conversion tax impact
@@ -1653,7 +1653,7 @@ def analyze_roth_conversion():
         current_income = sum(s.get("amount", 0) * 12 for s in income_streams)
         tax_settings = profile_data.get("tax_settings", {})
         filing_status = tax_settings.get("filing_status", "mfj")
-        tax_year = int(tax_settings.get("tax_year") or datetime.now().year)
+        tax_year = int(tax_settings.get("tax_year") or CURRENT_TAX_YEAR)
 
         # Estimate tax on conversion
         tax_before = TaxEngine.calculate_federal_tax(current_income, tax_year, filing_status)
@@ -1823,7 +1823,7 @@ def get_calculation_report():
             address_data = profile_data.get("address", {})
             has_spouse_for_filing = bool(spouse_data.get("birth_date") or spouse_data.get("name") or spouse_data.get("social_security_benefit"))
             default_filing = "mfj" if has_spouse_for_filing else "single"
-            tax_year = int(tax_settings.get("tax_year") or datetime.now().year)
+            tax_year = int(tax_settings.get("tax_year") or CURRENT_TAX_YEAR)
             contrib_limits = TaxEngine.get_contribution_limits(tax_year)
 
             logger.info(f"Income streams type: {type(income_streams)}, count: {len(income_streams) if isinstance(income_streams, list) else 'NOT A LIST'}")

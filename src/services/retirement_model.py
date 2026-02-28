@@ -32,7 +32,7 @@ from dataclasses import dataclass
 from typing import List, Dict
 
 from src.services.tax_engine_refactor import TaxEngine
-from src.services.tax_policy import get_tax_policy
+from src.services.tax_policy import get_tax_policy, CURRENT_TAX_YEAR
 
 
 def safe_float(value, default=0.0):
@@ -135,7 +135,7 @@ class RetirementModel:
     def __init__(self, profile: FinancialProfile):
         self.profile = profile
         self.current_year = datetime.now().year
-        self.tax_year = profile.tax_year or self.current_year
+        self.tax_year = profile.tax_year or CURRENT_TAX_YEAR
         self.tax_policy = get_tax_policy(self.tax_year)
         self.contribution_limits = TaxEngine.get_contribution_limits(self.tax_year)
         self.rmd_age = self.tax_policy.rmd_age
