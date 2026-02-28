@@ -1621,15 +1621,28 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
     const goldAllocation = marketProfile.gold_allocation || 0.0;
     const cryptoAllocation = marketProfile.crypto_allocation || 0.0;
     
-    const annualGrowthRate = 
-        (stockAllocation * (marketProfile.stock_return_mean || 0.10)) + 
+    const annualGrowthRate =
+        (stockAllocation * (marketProfile.stock_return_mean || 0.10)) +
         (bondAllocation * (marketProfile.bond_return_mean || 0.04)) +
         (cashAllocation * (marketProfile.cash_return_mean || 0.015)) +
         (reitAllocation * (marketProfile.reit_return_mean || 0.08)) +
         (goldAllocation * (marketProfile.gold_return_mean || 0.04)) +
         (cryptoAllocation * (marketProfile.crypto_return_mean || 0.20));
-    
-    const monthlyGrowthRate = annualGrowthRate / 12;
+
+    // Compute advisory fee drag from managed accounts
+    const allAccounts = [
+        ...(assets.retirement_accounts || []),
+        ...(assets.taxable_accounts || []),
+    ];
+    const totalPortfolioValue = allAccounts.reduce((s, a) => s + (a.value || 0), 0);
+    const weightedFee = allAccounts.reduce(
+        (s, a) => s + (a.value || 0) * ((a.management_fee_rate || 0) / 100),
+        0
+    );
+    const feeDrag = totalPortfolioValue > 0 ? weightedFee / totalPortfolioValue : 0;
+    const effectiveAnnualGrowthRate = Math.max(annualGrowthRate - feeDrag, -1);
+
+    const monthlyGrowthRate = effectiveAnnualGrowthRate / 12;
     const monthlyInflationRate = (marketProfile.inflation_mean || 0.03) / 12;
 
     // Pre-compute per-person annual employment income for SS estimation
