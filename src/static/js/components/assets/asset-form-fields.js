@@ -24,7 +24,10 @@ export const FIELD_DEFINITIONS = {
         { name: 'value', label: 'Current Balance', type: 'currency', required: true, placeholder: '$0' },
         { name: 'stock_pct', label: 'Stock Allocation (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '60' },
         { name: 'bond_pct', label: 'Bond Allocation (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '40' },
-        { name: 'cash_pct', label: 'Cash Allocation (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '0' }
+        { name: 'cash_pct', label: 'Cash Allocation (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '0' },
+        { name: 'management_fee_rate', label: 'Advisory Fee Rate (%)', type: 'number',
+          min: 0, max: 5, step: 0.01, placeholder: '0.00',
+          help: 'Annual AUM fee charged by your advisor (e.g., 1.00 for 1%). Applied as a return drag in simulations.' }
     ],
 
     taxable_accounts: [
@@ -48,7 +51,11 @@ export const FIELD_DEFINITIONS = {
         { name: 'cost_basis', label: 'Cost Basis', type: 'currency', placeholder: '$0', showFor: ['brokerage'], help: 'For calculating capital gains' },
         { name: 'stock_pct', label: 'Stock Allocation (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '60', showFor: ['brokerage'] },
         { name: 'bond_pct', label: 'Bond Allocation (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '40', showFor: ['brokerage'] },
-        { name: 'cash_pct', label: 'Cash Allocation (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '0', showFor: ['brokerage'] }
+        { name: 'cash_pct', label: 'Cash Allocation (%)', type: 'number', min: 0, max: 100, step: 1, placeholder: '0', showFor: ['brokerage'] },
+        { name: 'management_fee_rate', label: 'Advisory Fee Rate (%)', type: 'number',
+          min: 0, max: 5, step: 0.01, placeholder: '0.00',
+          showFor: ['brokerage'],
+          help: 'Annual AUM fee charged by your advisor (e.g., 1.00 for 1%). Applied as a return drag in simulations.' }
     ],
 
     real_estate: [
