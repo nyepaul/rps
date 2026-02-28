@@ -540,6 +540,7 @@ class RetirementModel:
         effective_tax_rate: float = 0.22,
         spending_model: str = "constant_real",
         market_periods: Dict = None,
+        management_fee_drag: float = 0.0,
     ):
         """Run Monte Carlo simulation using vectorized NumPy operations for high performance.
 
@@ -785,6 +786,8 @@ class RetirementModel:
                 + allocs["gold"] * year_assumptions.gold_return_mean
                 + allocs["crypto"] * year_assumptions.crypto_return_mean
             )
+            # Subtract advisory fee drag (weighted average of AUM fees on managed accounts)
+            ret_mean = max(ret_mean - management_fee_drag, -1.0)
 
             # Calculate Portfolio Volatility (Variance-Covariance)
             # Simplification: Use weighted average of variances for additional assets
@@ -1395,6 +1398,7 @@ class RetirementModel:
         years: int,
         assumptions: MarketAssumptions = None,
         spending_model: str = "constant_real",
+        management_fee_drag: float = 0.0,
     ):
         """
         Run a SINGLE deterministic projection to capture granular details like tax breakdown.
@@ -2004,6 +2008,8 @@ class RetirementModel:
                     + assumptions.gold_allocation * assumptions.gold_return_mean
                     + assumptions.crypto_allocation * assumptions.crypto_return_mean
                 )
+                # Subtract advisory fee drag
+                ret = max(ret - management_fee_drag, -1.0)
                 m_ret = (1 + ret) ** (1 / 12) - 1
 
                 cash *= 1 + (1 + assumptions.cash_return_mean) ** (1 / 12) - 1

@@ -1103,3 +1103,18 @@ class TestMonteCarloWithMarketPeriods:
         # Results should be significantly different
         # Period mode should have higher success rate (has growth periods)
         assert period_result["success_rate"] > simple_result["success_rate"]
+
+
+def test_management_fee_drag_reduces_ret_mean():
+    """A 1% management fee drag should produce lower median outcome than no drag."""
+    model = _create_basic_model()
+    assumptions = MarketAssumptions(stock_allocation=0.6)
+
+    result_no_fee = model.monte_carlo_simulation(
+        years=20, simulations=500, assumptions=assumptions, management_fee_drag=0.0
+    )
+    result_with_fee = model.monte_carlo_simulation(
+        years=20, simulations=500, assumptions=assumptions, management_fee_drag=0.01
+    )
+    # With a 1% drag, median final balance should be meaningfully lower
+    assert result_no_fee["median_final_balance"] > result_with_fee["median_final_balance"]
