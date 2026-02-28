@@ -946,7 +946,7 @@ cat src/__version__.py
 **Step 2: Bump version using script**
 
 ```bash
-./bin/bump-version 3.10.3 "Frontend redesign: Sage & Amber design system with enhanced typography and animations"
+./bin/bump-version 3.10.4 "Frontend redesign: Sage & Amber design system with enhanced typography and animations"
 ```
 
 **Step 3: Full visual verification**

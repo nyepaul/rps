@@ -790,4 +790,4 @@ GET /api/admin/system/info
 ---
 
 **Last Updated:** 2026-02-27
-**Version:** 3.10.3
+**Version:** 3.10.4

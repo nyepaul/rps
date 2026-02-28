@@ -1,5 +1,5 @@
 {
-    "version": "3.10.3",
+    "version": "3.10.4",
     "release_date": "2026-02-28",
-    "release_notes": "feat: editable fee rates in Investment Fee Impact Analyzer"
+    "release_notes": "fix: rent-vs-own form wrapper includes all fields"
 }

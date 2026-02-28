@@ -89,4 +89,4 @@ Located in: `/src/static/js/utils/financial-calculations.js`
 - `calculateTotalDebts(assets)` - Returns sum of all mortgages and liabilities.
 
 **Last Updated:** 2026-02-27
-**Version:** 3.10.3
+**Version:** 3.10.4
