@@ -98,7 +98,8 @@ class HomeOwnershipService:
             "summary": {
                 "net_worth_difference": net_worth_own - net_worth_rent,
                 "total_cost_difference": total_owning_costs - total_renting_costs,
-                "recommendation": "Own" if (net_worth_own - net_worth_rent) > 0 else "Rent"
+                "recommendation": "Own" if (net_worth_own - net_worth_rent) > 0 else "Rent",
+                "time_horizon_years": time_horizon_years,
             }
         }
 
@@ -118,20 +119,28 @@ class HomeOwnershipService:
         annual_property_tax = params["purchase_price"] * params["property_tax_rate_pct"]
         annual_maintenance = params["purchase_price"] * params["maintenance_annual_pct"]
         
-        total_mortgage_payments = monthly_piti * 12 * time_horizon_years
+        # Proper remaining balance using amortization formula:
+        # balance = P * [(1+r)^N - (1+r)^n] / [(1+r)^N - 1]
+        monthly_rate = params["interest_rate_pct"] / 12
+        N = params["mortgage_term_years"] * 12  # total payments
+        n = min(time_horizon_years * 12, N)     # payments made by horizon
+
+        if monthly_rate > 0:
+            factor = (1 + monthly_rate) ** N
+            remaining_balance = params["loan_amount"] * (factor - (1 + monthly_rate) ** n) / (factor - 1)
+        else:
+            remaining_balance = max(0.0, params["loan_amount"] - (params["loan_amount"] / N) * n)
+        remaining_balance = max(0.0, remaining_balance)
+        principal_paid = params["loan_amount"] - remaining_balance
+
+        actual_payments = min(time_horizon_years, params["mortgage_term_years"]) * 12
+        total_mortgage_payments = monthly_piti * actual_payments
         total_property_tax = annual_property_tax * time_horizon_years
         total_insurance = params["home_insurance_annual"] * time_horizon_years
         total_maintenance = annual_maintenance * time_horizon_years
 
-        # Simplified equity and home value projection
         ending_home_value = project_future_value(params["purchase_price"], params["appreciation_annual_pct"], time_horizon_years)
-        
-        # This is a very simplified equity calculation. A full amortization schedule would be needed for accuracy.
-        # For now, let's assume equity gained is primarily through appreciation and some principal paydown.
-        # For simplicity, assume principal paydown is (loan_amount / loan_term_years) * time_horizon_years
-        # This is not entirely accurate due to front-loaded interest, but serves as an approximation.
-        principal_paid_approx = min(params["loan_amount"], (params["loan_amount"] / params["mortgage_term_years"]) * time_horizon_years)
-        ending_equity = (ending_home_value - params["loan_amount"]) + principal_paid_approx # Very rough approximation
+        ending_equity = ending_home_value - remaining_balance
 
         return {
             "monthly_piti": monthly_piti,
@@ -142,7 +151,7 @@ class HomeOwnershipService:
             "total_maintenance": total_maintenance,
             "ending_home_value": ending_home_value,
             "ending_equity": ending_equity,
-            "total_interest_paid": total_mortgage_payments - principal_paid_approx # Very rough
+            "total_interest_paid": total_mortgage_payments - principal_paid,
         }
 
     def _calculate_renting_costs(self, params: Dict[str, Any], time_horizon_years: int) -> Dict[str, Any]:

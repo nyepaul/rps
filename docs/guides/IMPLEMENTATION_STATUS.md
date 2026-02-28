@@ -1,6 +1,6 @@
 # Implementation Status
 
-**Version**: 3.10.4
+**Version**: 3.10.5
 **Date**: 2026-02-04
 
 ---

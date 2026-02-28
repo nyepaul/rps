@@ -18,7 +18,7 @@ A comprehensive static analysis and expert code review was performed using state
 ### 📦 Dependency Scan (OSV Database)
 *   **Runtime Dependencies (`requirements.txt`):** ✅ **CLEAN**. No known vulnerabilities.
 *   **Dev Dependencies (`requirements-dev.txt`):** ⚠️ **1 Medium Issue**.
-    *   **Package:** `black` (Version 3.10.4)
+    *   **Package:** `black` (Version 3.10.5)
     *   **Issue:** Regular expression DoS (ReDoS).
     *   **Impact:** **Low/None** for production. This is a development formatting tool and is not deployed to the runtime environment.
     *   **Recommendation:** Update to `black>=24.3.0` in `requirements-dev.txt`.

@@ -63,7 +63,7 @@ The endpoint queries multiple tables:
 ---
 
 **Last Updated:** 2026-02-27
-**Version:** 3.10.4
+**Version:** 3.10.5
 
 ### Frontend
 **File**: `src/static/js/components/admin/user-report.js`

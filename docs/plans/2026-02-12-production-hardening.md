@@ -354,7 +354,7 @@ Expected: No output (only audit log details fields should remain)
 
 **Step 1: Bump version**
 ```bash
-./bin/bump-version 3.10.4 "Production hardening: logging, error sanitization, null-safety"
+./bin/bump-version 3.10.5 "Production hardening: logging, error sanitization, null-safety"
 ```
 
 **Step 2: Final commit with all remaining changes**
