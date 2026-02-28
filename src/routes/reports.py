@@ -16,6 +16,7 @@ from src.services.retirement_model import (
     RetirementModel,
 )
 from src.services.enhanced_audit_logger import enhanced_audit_logger
+from src.routes.analysis import compute_management_fee_drag
 from datetime import datetime
 
 reports_bp = Blueprint("reports", __name__, url_prefix="/api/reports")
@@ -141,6 +142,7 @@ def run_analysis_for_report(profile):
 
     assets_data = profile_data.get("assets", {})
     investment_types = transform_assets_to_investment_types(assets_data)
+    management_fee_drag = compute_management_fee_drag(investment_types)
 
     liquid_assets = sum(
         a.get("value", 0) for a in assets_data.get("taxable_accounts", [])
@@ -220,6 +222,7 @@ def run_analysis_for_report(profile):
             years=years,
             simulations=1000,  # Reduced for faster PDF generation
             assumptions=market_assumptions,
+            management_fee_drag=management_fee_drag,
         )
         scenario_result["scenario_name"] = scenario_config["name"]
         scenario_results[scenario_key] = scenario_result
