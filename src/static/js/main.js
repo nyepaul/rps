@@ -123,14 +123,7 @@ function getAllowedTabNames() {
 }
 
 function resolveInitialTab() {
-    // Keep restore lookups wired for compatibility checks and future use,
-    // but force landing on Welcome as the initial app entry.
-    const hashTab = sanitizeTabName(window.location.hash.replace('#', ''));
-    const historyTab = sanitizeTabName(window.history.state?.tab);
-    const lastTab = sanitizeTabName(localStorage.getItem(STORAGE_KEYS.LAST_TAB));
-    void hashTab;
-    void historyTab;
-    void lastTab;
+    // Always land on Welcome as the initial app entry.
     return 'welcome';
 }
 
@@ -1148,9 +1141,12 @@ async function openSettings(defaultTab = 'general', focusElementId = null) {
                 });
 
                 renderPasswordMessage('Password updated successfully!', '#28a745');
-                modal.querySelector('#current-password-input').value = '';
-                modal.querySelector('#new-password-input').value = '';
-                modal.querySelector('#confirm-password-input').value = '';
+                const curInput = modal.querySelector('#current-password-input');
+                const newInput = modal.querySelector('#new-password-input');
+                const confInput = modal.querySelector('#confirm-password-input');
+                if (curInput) curInput.value = '';
+                if (newInput) newInput.value = '';
+                if (confInput) confInput.value = '';
             } catch (error) {
                 console.error('Failed to update password:', error);
                 renderPasswordMessage(error.message || 'Failed to update password', '#dc3545');

@@ -484,12 +484,12 @@ function reindexChildren(container) {
  * Clear all spouse fields
  */
 function clearSpouseFields(container) {
-    container.querySelector('#spouse_name').value = '';
-    container.querySelector('#spouse_birth_date').value = '';
-    container.querySelector('#spouse_retirement_date').value = '';
-    container.querySelector('#spouse_current_age').value = '';
-    container.querySelector('#spouse_retirement_age').value = '';
-    container.querySelector('#spouse_life_expectancy').value = '';
+    _setVal(container, '#spouse_name', '');
+    _setVal(container, '#spouse_birth_date', '');
+    _setVal(container, '#spouse_retirement_date', '');
+    _setVal(container, '#spouse_current_age', '');
+    _setVal(container, '#spouse_retirement_age', '');
+    _setVal(container, '#spouse_life_expectancy', '');
 
     // Hide the clear button
     const clearBtn = container.querySelector('#clear-spouse-btn');
