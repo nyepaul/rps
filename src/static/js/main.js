@@ -1182,7 +1182,7 @@ async function openSettings(defaultTab = 'general', focusElementId = null) {
             localStorage.setItem(STORAGE_KEYS.SIMULATIONS, simulations);
         }
 
-        const marketProfile = modal.querySelector('#market-profile-setting').value;
+        const marketProfile = modal.querySelector('#market-profile-setting')?.value;
         localStorage.setItem(STORAGE_KEYS.MARKET_PROFILE, marketProfile);
 
         import('./utils/dom.js').then(({ showSuccess }) => {

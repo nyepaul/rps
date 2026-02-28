@@ -17,6 +17,10 @@ function _setText(container, selector, value) {
     const el = container.querySelector(selector);
     if (el) el.textContent = value;
 }
+function _setChecked(container, selector, value) {
+    const el = container.querySelector(selector);
+    if (el) el.checked = value;
+}
 
 export async function renderProfileTab(container) {
     const profile = store.get('currentProfile');
