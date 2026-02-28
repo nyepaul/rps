@@ -25,7 +25,7 @@
             --text-on-accent: #ffffff;
 
             /* Semantic Colors - Success is teal, distinct from sage accent */
-            --success-color: #0f766e;
+            --success-color: #2d6a4f;
             --warning-color: #b45309;
             --danger-color: #b91c1c;
             --info-color: #1e40af;
@@ -52,13 +52,13 @@
 
             /* Gradients */
             --gradient-primary-start: #2d6a4f;
-            --gradient-primary-end: #3d8b6a;
+            --gradient-primary-end: #40916c;
             --gradient-accent-start: #d4a373;
             --gradient-accent-end: #e9c46a;
 
             /* Card Gradients (used by existing code) */
             --card-gradient-1: #2d6a4f;
-            --card-gradient-2: #3d8b6a;
+            --card-gradient-2: #40916c;
 
             /* Chart text colors */
             --chart-text-primary: #1a1a1a;
@@ -101,7 +101,7 @@
             /* Text - Warm whites, muted brightened for AA compliance */
             --text-primary: #f5f3f0;
             --text-secondary: #a3a3a3;
-            --text-muted: #919191;
+            --text-muted: #737373;
             --text-light: #919191;
 
             /* Header */
@@ -116,7 +116,7 @@
             --text-on-accent: #000000;
 
             /* Semantic Colors - Success is teal, distinct from sage accent */
-            --success-color: #2dd4bf;
+            --success-color: #52b788;
             --warning-color: #fbbf24;
             --danger-color: #f87171;
             --info-color: #60a5fa;
@@ -183,7 +183,7 @@
             --text-on-accent: #000000;
 
             /* Semantic Colors - Success is cyan, distinct from green accent */
-            --success-color: #22d3ee;
+            --success-color: #4ade80;
             --warning-color: #fbbf24;
             --danger-color: #f87171;
             --info-color: #60a5fa;
