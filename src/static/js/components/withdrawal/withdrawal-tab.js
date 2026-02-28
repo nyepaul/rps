@@ -4,6 +4,7 @@
 
 import { store } from '../../state/store.js';
 import { formatCurrency } from '../../utils/formatters.js';
+import { profilesAPI } from '../../api/profiles.js';
 import {
     glossaryTerm as renderGlossaryTerm,
     wireGlossaryTermClicks as wireGlossaryTerms,
@@ -164,6 +165,7 @@ export function renderWithdrawalTab(container) {
     // but the links exist in HTML. We should probably add the handler back if we want them to work.
     // For now, I'll add a simple handler if learn links exist.
     setupLearnLinks(container);
+    setupWithdrawalRateInput(container, profile);
 }
 
 function renderCurrentWithdrawalState(data) {
@@ -181,8 +183,14 @@ function renderCurrentWithdrawalState(data) {
     return `
         <div style="text-align: center;">
             <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: var(--space-2);">${glossaryTerm('Withdrawal Rate', 'withdrawal_rate')}</div>
-            <div style="font-size: var(--font-2xl); font-weight: bold; color: var(--accent-color);">${withdrawalRatePercent}%</div>
-            <div style="font-size: var(--font-xs); color: var(--text-light); margin-top: var(--space-1);">Annual rate</div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
+                <input id="withdrawal-rate-input"
+                    type="number" min="1" max="15" step="0.1"
+                    value="${withdrawalRatePercent}"
+                    style="width: 70px; padding: 4px 6px; font-size: var(--font-xl); font-weight: bold; color: var(--accent-color); background: var(--bg-secondary); border: 1px solid var(--accent-color); border-radius: 4px; text-align: center;">
+                <span style="font-size: var(--font-xl); font-weight: bold; color: var(--accent-color);">%</span>
+            </div>
+            <div id="withdrawal-rate-status" style="font-size: var(--font-xs); color: var(--text-light); margin-top: var(--space-1);">Annual rate</div>
         </div>
         <div style="text-align: center;">
             <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: var(--space-2);">Annual Amount</div>
@@ -300,5 +308,46 @@ function setupLearnLinks(container) {
                 console.error('Error loading learn module', e);
             }
         });
+    });
+}
+
+function setupWithdrawalRateInput(container, profile) {
+    const input = container.querySelector('#withdrawal-rate-input');
+    const status = container.querySelector('#withdrawal-rate-status');
+    if (!input) return;
+
+    input.addEventListener('change', async () => {
+        const raw = parseFloat(input.value);
+        if (!isFinite(raw) || raw < 1 || raw > 15) {
+            status.textContent = 'Enter 1–15%';
+            status.style.color = 'var(--error-color)';
+            return;
+        }
+        const rate = raw / 100;
+        const currentData = profile.data || {};
+        const updatedData = {
+            ...currentData,
+            withdrawal_strategy: {
+                ...(currentData.withdrawal_strategy || {}),
+                withdrawal_rate: rate,
+            },
+        };
+        status.textContent = 'Saving…';
+        status.style.color = 'var(--text-secondary)';
+        try {
+            const result = await profilesAPI.update(profile.name, { data: updatedData });
+            if (result.success) {
+                store.set('currentProfile', result.profile || { ...profile, data: updatedData });
+                status.textContent = 'Saved';
+                status.style.color = 'var(--success-color)';
+                setTimeout(() => { status.textContent = 'Annual rate'; status.style.color = 'var(--text-light)'; }, 2000);
+            } else {
+                status.textContent = 'Save failed';
+                status.style.color = 'var(--error-color)';
+            }
+        } catch {
+            status.textContent = 'Save failed';
+            status.style.color = 'var(--error-color)';
+        }
     });
 }
