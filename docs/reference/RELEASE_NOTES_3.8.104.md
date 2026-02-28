@@ -1,4 +1,4 @@
-# Release Notes - RPS v3.10.5
+# Release Notes - RPS v3.10.6
 
 **Release Date:** 2026-01-22
 
@@ -127,7 +127,7 @@ No new dependencies added. Uses existing:
 
 ---
 
-**Version:** 3.10.5
-**Previous Version:** 3.10.5
+**Version:** 3.10.6
+**Previous Version:** 3.10.6
 **Type:** Bug Fix (Critical)
 **Breaking Changes:** None

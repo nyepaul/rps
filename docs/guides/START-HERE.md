@@ -20,7 +20,7 @@ Navigate to: **[http://127.0.0.1:5137](http://127.0.0.1:5137)**
 
 ---
 
-## What's New in Version 3.10.5
+## What's New in Version 3.10.6
 
 ### 2025 Tax Year Updates
 The system now includes full support for the 2025 tax year, including:

@@ -194,7 +194,7 @@ function renderCurrentWithdrawalState(data) {
         </div>
         <div style="text-align: center;">
             <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: var(--space-2);">Annual Amount</div>
-            <div style="font-size: var(--font-2xl); font-weight: bold; color: var(--success-color);">${formatCurrency(annualWithdrawal, 0)}</div>
+            <div id="withdrawal-annual-amount" style="font-size: var(--font-2xl); font-weight: bold; color: var(--success-color);">${formatCurrency(annualWithdrawal, 0)}</div>
             <div style="font-size: var(--font-xs); color: var(--text-light); margin-top: var(--space-1);">Based on current portfolio</div>
         </div>
         <div style="text-align: center;">
@@ -339,6 +339,16 @@ function setupWithdrawalRateInput(container, profile) {
             const result = await profilesAPI.update(liveProfile.name, { data: updatedData });
             if (result && result.profile) {
                 store.setState({ currentProfile: result.profile });
+                // Update Annual Amount display immediately
+                const amountEl = container.querySelector('#withdrawal-annual-amount');
+                if (amountEl) {
+                    const profileData = result.profile.data || {};
+                    const assets = profileData.assets || {};
+                    const totalPortfolio =
+                        (assets.taxable_accounts || []).reduce((s, a) => s + (a.value || 0), 0) +
+                        (assets.retirement_accounts || []).reduce((s, a) => s + (a.value || 0), 0);
+                    amountEl.textContent = formatCurrency(totalPortfolio * rate, 0);
+                }
                 status.textContent = 'Saved';
                 status.style.color = 'var(--success-color)';
                 setTimeout(() => { status.textContent = 'Annual rate'; status.style.color = 'var(--text-light)'; }, 2000);
