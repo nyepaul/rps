@@ -336,8 +336,8 @@ function setupWithdrawalRateInput(container, profile) {
         status.style.color = 'var(--text-secondary)';
         try {
             const result = await profilesAPI.update(profile.name, { data: updatedData });
-            if (result.success) {
-                store.set('currentProfile', result.profile || { ...profile, data: updatedData });
+            if (result && result.profile) {
+                store.set('currentProfile', result.profile);
                 status.textContent = 'Saved';
                 status.style.color = 'var(--success-color)';
                 setTimeout(() => { status.textContent = 'Annual rate'; status.style.color = 'var(--text-light)'; }, 2000);
