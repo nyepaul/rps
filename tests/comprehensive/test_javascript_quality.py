@@ -212,15 +212,14 @@ class TestJavaScriptCriticalIssues:
         ), f"Found {const_canvas_count} 'const canvas' declarations (should be 1)"
 
     def test_main_tab_restore_logic_present(self):
-        """Ensure refresh/back restores the active tab instead of defaulting prematurely."""
+        """Ensure tab navigation infrastructure (history, storage) is present."""
         main_js = JS_BASE_DIR / "main.js"
         if not main_js.exists():
             pytest.skip("main.js not found")
 
         content = main_js.read_text()
         assert "function resolveInitialTab()" in content
-        assert "window.location.hash" in content
-        assert "window.history.state?.tab" in content
+        # Tab navigation infrastructure must remain even though initial load always lands on welcome
         assert "STORAGE_KEYS.LAST_TAB" in content
         assert "window.addEventListener('popstate'" in content
         assert "window.history.pushState({ tab: tabName }" in content
