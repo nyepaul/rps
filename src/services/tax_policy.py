@@ -10,7 +10,7 @@ from typing import Any, Dict, List
 
 # The most recent completed tax year with published IRS data.
 # Update this when new-year data is added to config/tax_policy.json.
-CURRENT_TAX_YEAR = 2024
+CURRENT_TAX_YEAR = 2025
 
 
 @dataclass(frozen=True)

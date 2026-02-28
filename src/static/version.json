@@ -1,5 +1,5 @@
 {
     "version": "3.10.7",
     "release_date": "2026-02-28",
-    "release_notes": "Use 2024 tax year data as default across all services"
+    "release_notes": "Use 2025 tax year data as default; add update-tax-policy script"
 }

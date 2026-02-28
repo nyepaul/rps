@@ -1,0 +1,265 @@
+#!/usr/bin/env python3
+"""
+Update tax policy data for a new tax year.
+
+Usage: ./bin/update-tax-policy <year>
+
+Walks through each section of config/tax_policy.json interactively,
+showing the previous year's values as defaults. After confirming all
+values, writes the new year to the JSON file and optionally bumps
+CURRENT_TAX_YEAR in src/services/tax_policy.py.
+
+IRS data sources:
+  Brackets / deductions : Rev. Proc. (published ~Oct/Nov prior year)
+  401k / IRA limits     : IRS Notice (published ~Nov prior year)
+  SS wage base          : SSA.gov announcement (published ~Oct prior year)
+  IRMAA thresholds      : CMS.gov announcement (published ~Nov prior year)
+  QCD limit             : IRS Notice (published ~Nov prior year)
+"""
+
+import json
+import re
+import sys
+from copy import deepcopy
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).parent.parent
+TAX_POLICY_JSON = PROJECT_ROOT / "config" / "tax_policy.json"
+TAX_POLICY_PY = PROJECT_ROOT / "src" / "services" / "tax_policy.py"
+
+
+# ── helpers ──────────────────────────────────────────────────────────────────
+
+def ask(label: str, default, cast=float):
+    """Prompt with a default; blank input keeps the default."""
+    suffix = f" [{default}]: "
+    while True:
+        raw = input(f"  {label}{suffix}").strip()
+        if raw == "":
+            return default
+        try:
+            return cast(raw)
+        except ValueError:
+            print(f"  Invalid value; expected {cast.__name__}. Try again.")
+
+
+def ask_int(label: str, default: int) -> int:
+    return ask(label, default, int)
+
+
+def ask_float(label: str, default: float) -> float:
+    return ask(label, default, float)
+
+
+def fmt_bracket(row) -> str:
+    lo, hi, rate = row
+    hi_str = "inf" if hi == "inf" or hi == float("inf") else int(hi)
+    return f"  {int(lo):>10,} – {str(hi_str):>10}  @ {rate*100:.1f}%"
+
+
+def show_brackets(name: str, rows: list):
+    print(f"\n  {name}:")
+    for r in rows:
+        print(fmt_bracket(r))
+
+
+def edit_brackets(label: str, rows: list) -> list:
+    """Show existing bracket table and allow replacement via JSON paste."""
+    show_brackets(label, rows)
+    print(
+        "\n  Press Enter to keep these brackets, or paste new rows as JSON"
+        "\n  (array of [lower, upper_or_'inf', rate] e.g. [[0,11925,0.10],...]):"
+    )
+    raw = input("  > ").strip()
+    if not raw:
+        return rows
+    try:
+        new = json.loads(raw)
+        if not isinstance(new, list):
+            raise ValueError
+        # normalise: replace numeric inf sentinel
+        out = []
+        for r in new:
+            lo, hi, rate = r[0], r[1], r[2]
+            if str(hi).lower() == "inf":
+                hi = "inf"
+            out.append([lo, hi, rate])
+        print(f"  Accepted {len(out)} brackets.")
+        return out
+    except Exception:
+        print("  Could not parse — keeping original brackets.")
+        return rows
+
+
+def section(title: str):
+    width = 60
+    print(f"\n{'─' * width}")
+    print(f"  {title}")
+    print(f"{'─' * width}")
+
+
+# ── main ─────────────────────────────────────────────────────────────────────
+
+def main():
+    if len(sys.argv) < 2:
+        print(f"Usage: {sys.argv[0]} <year>")
+        sys.exit(1)
+
+    new_year = sys.argv[1]
+    try:
+        new_year_int = int(new_year)
+    except ValueError:
+        print(f"Invalid year: {new_year}")
+        sys.exit(1)
+
+    if not TAX_POLICY_JSON.exists():
+        print(f"Tax policy file not found: {TAX_POLICY_JSON}")
+        sys.exit(1)
+
+    raw = json.loads(TAX_POLICY_JSON.read_text())
+    years = raw.get("years", {})
+
+    if str(new_year_int) in years:
+        print(f"Year {new_year_int} already exists in tax_policy.json.")
+        ans = input("Overwrite it? [y/N] ").strip().lower()
+        if ans != "y":
+            print("Aborted.")
+            sys.exit(0)
+
+    # find the most recent prior year to use as baseline
+    available = sorted(int(y) for y in years.keys() if y.isdigit())
+    prior_candidates = [y for y in available if y < new_year_int]
+    if not prior_candidates:
+        print("No prior year found to copy from. Cannot continue.")
+        sys.exit(1)
+    prior_year = max(prior_candidates)
+
+    print(f"\n{'═' * 60}")
+    print(f"  Tax Policy Update: {new_year_int}  (based on {prior_year})")
+    print(f"{'═' * 60}")
+    print(
+        "\n  Press Enter to keep the previous year's value, or type a"
+        "\n  new value and press Enter.\n"
+    )
+
+    data = deepcopy(years[str(prior_year)])
+
+    # ── 1. FICA ──────────────────────────────────────────────────────────────
+    section("1 / 7  FICA")
+    fica = data["fica"]
+    fica["ss_wage_base"] = ask_int(
+        "SS Wage Base (SSA.gov)", int(fica["ss_wage_base"])
+    )
+    fica["ss_rate"] = ask_float(
+        "SS Employee Rate (usually 0.062)", fica["ss_rate"]
+    )
+    fica["medicare_rate"] = ask_float(
+        "Medicare Employee Rate (usually 0.0145)", fica["medicare_rate"]
+    )
+
+    # ── 2. Standard deductions ───────────────────────────────────────────────
+    section("2 / 7  Standard Deductions  (Rev. Proc.)")
+    sd = data["standard_deduction"]
+    for fs in ("single", "mfj", "hoh"):
+        sd[fs] = ask_float(f"Standard Deduction — {fs.upper()}", sd[fs])
+
+    # ── 3. Contribution limits ───────────────────────────────────────────────
+    section("3 / 7  Contribution Limits  (IRS Notice)")
+    cl = data["contribution_limits"]
+    cl["401k_base"]       = ask_float("401k Base Limit",              cl["401k_base"])
+    cl["401k_catchup"]    = ask_float("401k Catchup (age 50+)",       cl["401k_catchup"])
+    cl["401k_super_catchup"] = ask_float(
+        "401k Super Catchup (age 60-63)", cl["401k_super_catchup"]
+    )
+    cl["ira_base"]        = ask_float("IRA Base Limit",               cl["ira_base"])
+    cl["ira_catchup"]     = ask_float("IRA Catchup (age 50+)",        cl["ira_catchup"])
+    cl["section_415c"]    = ask_float("Section 415(c) Total Limit",   cl["section_415c"])
+    cl["section_415c_catchup"] = ask_float(
+        "Section 415(c) Catchup Total", cl["section_415c_catchup"]
+    )
+    cl["gift_annual_exclusion"] = ask_float(
+        "Annual Gift Exclusion",         cl["gift_annual_exclusion"]
+    )
+
+    # ── 4. QCD ───────────────────────────────────────────────────────────────
+    section("4 / 7  QCD  (IRS Notice)")
+    qcd = data["qcd"]
+    qcd["age"]          = ask_float("QCD Minimum Age (usually 70.5)", qcd["age"])
+    qcd["annual_limit"] = ask_float("QCD Annual Limit",               qcd["annual_limit"])
+
+    # ── 5. Federal income tax brackets ───────────────────────────────────────
+    section("5 / 7  Federal Income Tax Brackets  (Rev. Proc.)")
+    fb = data["federal_brackets"]
+    for fs in ("single", "mfj", "hoh"):
+        fb[fs] = edit_brackets(fs.upper(), fb[fs])
+
+    # ── 6. LTCG brackets ─────────────────────────────────────────────────────
+    section("6 / 7  Long-Term Capital Gains Brackets  (Rev. Proc.)")
+    ltcg = data["ltcg_brackets"]
+    for fs in ("single", "mfj", "hoh"):
+        ltcg[fs] = edit_brackets(f"LTCG {fs.upper()}", ltcg[fs])
+
+    # ── 7. IRMAA ─────────────────────────────────────────────────────────────
+    section("7 / 7  IRMAA Surcharges  (CMS.gov)")
+    print(
+        "  IRMAA rows: [MAGI_lower, MAGI_upper, monthly_surcharge]"
+        "\n  (surcharge is the *extra* monthly premium, not the base Part B premium)"
+    )
+    irmaa = data["irmaa"]
+    for fs in ("single", "mfj", "hoh"):
+        irmaa[fs] = edit_brackets(f"IRMAA {fs.upper()}", irmaa[fs])
+
+    # ── SS taxability and RMD (rarely change) ────────────────────────────────
+    print(f"\n{'─' * 60}")
+    print("  SS taxability thresholds and RMD factors rarely change.")
+    chg = input("  Edit SS taxability / RMD data? [y/N] ").strip().lower()
+    if chg == "y":
+        print("\n  SS Taxability — enter as JSON [{filing_status: [lower, upper]}, ...]")
+        print(f"  Current: {json.dumps(data['ss_taxability'])}")
+        raw = input("  > ").strip()
+        if raw:
+            try:
+                data["ss_taxability"] = json.loads(raw)
+            except Exception:
+                print("  Could not parse — keeping original.")
+
+        print("\n  RMD age:")
+        data["rmd"]["age"] = ask_int("RMD Start Age", data["rmd"]["age"])
+        print("  RMD factors unchanged (IRS Pub 590-B table rarely changes).")
+
+    # ── write ─────────────────────────────────────────────────────────────────
+    print(f"\n{'═' * 60}")
+    print(f"  Preview complete. Writing year {new_year_int} to tax_policy.json...")
+    raw["years"][str(new_year_int)] = data
+    TAX_POLICY_JSON.write_text(json.dumps(raw, indent=2) + "\n")
+    print(f"  ✓ config/tax_policy.json updated.")
+
+    # ── optionally bump CURRENT_TAX_YEAR ─────────────────────────────────────
+    if TAX_POLICY_PY.exists():
+        py_text = TAX_POLICY_PY.read_text()
+        match = re.search(r"^CURRENT_TAX_YEAR\s*=\s*(\d+)", py_text, re.MULTILINE)
+        current_const = int(match.group(1)) if match else None
+        if current_const != new_year_int:
+            ans = input(
+                f"\n  Update CURRENT_TAX_YEAR from {current_const} → {new_year_int}"
+                f" in src/services/tax_policy.py? [Y/n] "
+            ).strip().lower()
+            if ans != "n":
+                new_py = re.sub(
+                    r"^(CURRENT_TAX_YEAR\s*=\s*)\d+",
+                    rf"\g<1>{new_year_int}",
+                    py_text,
+                    flags=re.MULTILINE,
+                )
+                TAX_POLICY_PY.write_text(new_py)
+                print(f"  ✓ CURRENT_TAX_YEAR = {new_year_int}")
+
+    print(
+        f"\n  Done! Commit with:"
+        f"\n    git add config/tax_policy.json src/services/tax_policy.py"
+        f"\n    git commit -m 'chore: add {new_year_int} tax policy data'\n"
+    )
+
+
+if __name__ == "__main__":
+    main()
