@@ -1524,3 +1524,39 @@
         display: block;
     }
 }
+
+/* ===================================
+   Secondary Amber Accent Utilities
+   =================================== */
+
+/* Secondary accent button (amber) */
+.btn-accent-secondary {
+    background: var(--accent-secondary);
+    color: #1a1a1a;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-accent-secondary:hover {
+    background: var(--accent-secondary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(212, 163, 115, 0.3);
+}
+
+/* Amber highlight for important notices */
+.highlight-amber {
+    background: linear-gradient(135deg, var(--accent-secondary) 0%, var(--gradient-accent-end) 100%);
+    color: #1a1a1a;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+/* Action item priority indicator */
+.action-item.priority-high {
+    border-left-color: var(--accent-secondary);
+}
