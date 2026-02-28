@@ -10,29 +10,30 @@ from src.services.tax_optimization_service import (
 def test_tax_calculator_deductions():
     """Test standard deduction logic including age additions."""
     calc = TaxCalculator(filing_status="mfj")
-    # Under 65
-    assert calc.get_standard_deduction(age=60, spouse_age=60) == 29200
-    # One person 65+
-    assert calc.get_standard_deduction(age=65, spouse_age=60) == 29200 + 1550
+    # Under 65 — 2025 MFJ standard deduction
+    assert calc.get_standard_deduction(age=60, spouse_age=60) == 30000
+    # One person 65+ — adds $1,600 per qualifying spouse (2025)
+    assert calc.get_standard_deduction(age=65, spouse_age=60) == 30000 + 1600
     # Both 65+
-    assert calc.get_standard_deduction(age=65, spouse_age=65) == 29200 + 1550 * 2
+    assert calc.get_standard_deduction(age=65, spouse_age=65) == 30000 + 1600 * 2
 
     calc_single = TaxCalculator(filing_status="single")
-    assert calc_single.get_standard_deduction(age=70) == 14600 + 1950
+    # 2025 single standard deduction + $2,000 age addition
+    assert calc_single.get_standard_deduction(age=70) == 15000 + 2000
 
 
 def test_tax_calculator_ltcg_stacking():
     """Test LTCG tax stacking on top of ordinary income."""
     calc = TaxCalculator(filing_status="mfj")
-    # 2024 MFJ LTCG: 0% up to $94,050
+    # 2025 MFJ LTCG: 0% up to $96,700
     # If ordinary income is $50,000 and LTCG is $20,000, total is $70,000 (all 0% for LTCG)
     assert calc.calculate_ltcg_tax(capital_gains=20000, ordinary_income=50000) == 0
 
     # If ordinary income is $90,000 and LTCG is $10,000
-    # $4,050 of LTCG at 0%
-    # $5,950 of LTCG at 15%
+    # $6,700 of LTCG at 0% (96700 - 90000)
+    # $3,300 of LTCG at 15%
     tax = calc.calculate_ltcg_tax(capital_gains=10000, ordinary_income=90000)
-    assert abs(tax - (5950 * 0.15)) < 1.0
+    assert abs(tax - (3300 * 0.15)) < 1.0
 
 
 def test_ss_taxability_analyzer():
@@ -61,7 +62,8 @@ def test_irmaa_surcharges():
     surcharge, tier, info = calc.calculate_surcharge(magi=110000)
     assert surcharge > 0
     assert tier == 1
-    assert info["room_to_next"] == 129000 - 110000
+    # 2025 single Tier 1: $106k–$133k
+    assert info["room_to_next"] == 133000 - 110000
 
 
 def test_roth_conversion_bracket_space():
@@ -70,9 +72,9 @@ def test_roth_conversion_bracket_space():
     irmaa = IRMAACalculator(filing_status="mfj")
     optimizer = RothConversionOptimizer(calc, irmaa)
 
-    # MFJ 12% bracket ends at $94,300
-    # If taxable income is $50,000, space in 12% is $44,300
+    # 2025 MFJ 12% bracket ends at $96,950
+    # If taxable income is $50,000, space in 12% is $46,950
     space = optimizer.calculate_bracket_space(current_taxable_income=50000)
     # Find the 12% bracket entry
     entry = next(s for s in space if s["bracket"] == "12%")
-    assert abs(entry["space_available"] - 44300) < 1.0
+    assert abs(entry["space_available"] - 46950) < 1.0
