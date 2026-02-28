@@ -518,29 +518,44 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
         window.cashFlowChart.destroy();
     }
 
+    // Get theme-aware colors from CSS variables
+    const themeColors = getChartThemeColors();
+    const cfStyle = getComputedStyle(document.documentElement);
+    const cfPalette = {
+        income: themeColors.successColor || '#2d6a4f',
+        retirement: cfStyle.getPropertyValue('--accent-color').trim() || '#2d6a4f',
+        withdrawals: cfStyle.getPropertyValue('--accent-secondary').trim() || '#d4a373',
+        expenses: themeColors.dangerColor || '#b91c1c',
+        fedTax: themeColors.dangerColor || '#b91c1c',
+        stateTax: cfStyle.getPropertyValue('--warning-color').trim() || '#b45309',
+        ficaTax: cfStyle.getPropertyValue('--warning-color').trim() || '#b45309',
+        netCashFlow: cfStyle.getPropertyValue('--accent-secondary').trim() || '#d4a373',
+        portfolio: themeColors.successColor || '#2d6a4f'
+    };
+
     // Build datasets array with Tax Separation
     const datasets = [
         {
             label: 'Work Income',
             data: chartData.map(d => d.workIncome),
-            backgroundColor: 'rgba(46, 213, 115, 0.8)',
-            borderColor: 'rgba(46, 213, 115, 1)',
+            backgroundColor: cfPalette.income + 'cc',
+            borderColor: cfPalette.income,
             borderWidth: 1,
             stack: 'income'
         },
         {
             label: 'Retirement Benefits (SS/Pension)',
             data: chartData.map(d => d.retirementBenefits),
-            backgroundColor: 'rgba(52, 152, 219, 0.8)',
-            borderColor: 'rgba(52, 152, 219, 1)',
+            backgroundColor: cfPalette.retirement + 'cc',
+            borderColor: cfPalette.retirement,
             borderWidth: 1,
             stack: 'income'
         },
         {
             label: 'Investment Withdrawals',
             data: chartData.map(d => d.investmentIncome),
-            backgroundColor: 'rgba(155, 89, 182, 0.8)',
-            borderColor: 'rgba(155, 89, 182, 1)',
+            backgroundColor: cfPalette.withdrawals + 'cc',
+            borderColor: cfPalette.withdrawals,
             borderWidth: 1,
             stack: 'income'
         },
@@ -548,16 +563,16 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
         {
             label: 'Living Expenses',
             data: chartData.map(d => -(d.livingExpenses || d.expenses)), // Negative for visual
-            backgroundColor: 'rgba(255, 107, 107, 0.7)',
-            borderColor: 'rgba(255, 107, 107, 1)',
+            backgroundColor: cfPalette.expenses + 'b3',
+            borderColor: cfPalette.expenses,
             borderWidth: 1,
             stack: 'expenses'
         },
         {
             label: 'Federal Tax',
             data: chartData.map(d => -(d.federalTax || 0)),
-            backgroundColor: 'rgba(231, 76, 60, 0.9)',
-            borderColor: 'rgba(192, 57, 43, 1)',
+            backgroundColor: cfPalette.fedTax + 'e6',
+            borderColor: cfPalette.fedTax,
             borderWidth: 1,
             stack: 'expenses',
             hidden: !detailedLedger
@@ -565,8 +580,8 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
         {
             label: 'State Tax',
             data: chartData.map(d => -(d.stateTax || 0)),
-            backgroundColor: 'rgba(230, 126, 34, 0.9)',
-            borderColor: 'rgba(211, 84, 0, 1)',
+            backgroundColor: cfPalette.stateTax + 'e6',
+            borderColor: cfPalette.stateTax,
             borderWidth: 1,
             stack: 'expenses',
             hidden: !detailedLedger
@@ -574,8 +589,8 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
         {
             label: 'FICA Tax',
             data: chartData.map(d => -(d.ficaTax || 0)),
-            backgroundColor: 'rgba(243, 156, 18, 0.9)',
-            borderColor: 'rgba(230, 126, 34, 1)',
+            backgroundColor: cfPalette.ficaTax + 'cc',
+            borderColor: cfPalette.ficaTax,
             borderWidth: 1,
             stack: 'expenses',
             hidden: !detailedLedger
@@ -585,8 +600,8 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
             label: 'Net Cash Flow',
             data: chartData.map(d => d.netCashFlow),
             type: 'line',
-            borderColor: 'rgba(241, 196, 15, 1)',
-            backgroundColor: 'rgba(241, 196, 15, 0.1)',
+            borderColor: cfPalette.netCashFlow,
+            backgroundColor: cfPalette.netCashFlow + '1a',
             borderWidth: 3,
             fill: true,
             tension: 0.4,
@@ -598,8 +613,8 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
             label: 'Portfolio Balance',
             data: chartData.map(d => d.portfolioValue),
             type: 'line',
-            borderColor: 'rgba(52, 211, 153, 1)',
-            backgroundColor: 'rgba(52, 211, 153, 0.1)',
+            borderColor: cfPalette.portfolio,
+            backgroundColor: cfPalette.portfolio + '1a',
             borderWidth: 2,
             borderDash: [5, 5],
             fill: false,
@@ -616,8 +631,8 @@ async function renderCashFlowChart(container, profile, months, viewType, scenari
             label: 'Scenario Median Portfolio (MC)',
             data: scenarioMedianData,
             type: 'line',
-            borderColor: 'rgba(255, 99, 132, 1)',
-            backgroundColor: 'rgba(255, 99, 132, 0.1)',
+            borderColor: themeColors.dangerColor,
+            backgroundColor: themeColors.dangerColor + '1a',
             borderWidth: 3,
             borderDash: [10, 5],
             fill: false,

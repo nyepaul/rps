@@ -1342,7 +1342,7 @@ function showNetWorthDetails(profile) {
             </h3>
             <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;">
                 ${retirementPct > 0 ? `
-                    <div style="padding: 14px; background: var(--bg-secondary); border-radius: 8px; border-left: 3px solid #3b82f6;">
+                    <div style="padding: 14px; background: var(--bg-secondary); border-radius: 8px; border-left: 3px solid var(--accent-color);">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
                             <div style="flex: 1;">
                                 <div style="font-weight: 600; color: var(--text-primary); font-size: 14px; margin-bottom: 4px;">
@@ -1353,17 +1353,17 @@ function showNetWorthDetails(profile) {
                                 </div>
                             </div>
                             <div style="text-align: right;">
-                                <div style="font-weight: bold; color: #3b82f6; font-size: 16px;">${retirementPct.toFixed(1)}%</div>
+                                <div style="font-weight: bold; color: var(--accent-color); font-size: 16px;">${retirementPct.toFixed(1)}%</div>
                                 <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${formatCurrency(breakdown.retirementAssets, 0)}</div>
                             </div>
                         </div>
-                        <div style="background: rgba(59,130,246,0.15); border-radius: 4px; height: 8px; overflow: hidden;">
-                            <div style="background: linear-gradient(90deg, #3b82f6, #2563eb); height: 100%; width: ${retirementPct}%; transition: width 0.5s ease;"></div>
+                        <div style="background: var(--accent-light); border-radius: 4px; height: 8px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, var(--accent-color), var(--accent-dark)); height: 100%; width: ${retirementPct}%; transition: width 0.5s ease;"></div>
                         </div>
                     </div>
                 ` : ''}
                 ${taxablePct > 0 ? `
-                    <div style="padding: 14px; background: var(--bg-secondary); border-radius: 8px; border-left: 3px solid #22c55e;">
+                    <div style="padding: 14px; background: var(--bg-secondary); border-radius: 8px; border-left: 3px solid var(--success-color);">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
                             <div style="flex: 1;">
                                 <div style="font-weight: 600; color: var(--text-primary); font-size: 14px; margin-bottom: 4px;">
@@ -1374,17 +1374,17 @@ function showNetWorthDetails(profile) {
                                 </div>
                             </div>
                             <div style="text-align: right;">
-                                <div style="font-weight: bold; color: #22c55e; font-size: 16px;">${taxablePct.toFixed(1)}%</div>
+                                <div style="font-weight: bold; color: var(--success-color); font-size: 16px;">${taxablePct.toFixed(1)}%</div>
                                 <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${formatCurrency(breakdown.taxableAssets, 0)}</div>
                             </div>
                         </div>
-                        <div style="background: rgba(34,197,94,0.15); border-radius: 4px; height: 8px; overflow: hidden;">
-                            <div style="background: linear-gradient(90deg, #22c55e, #16a34a); height: 100%; width: ${taxablePct}%; transition: width 0.5s ease;"></div>
+                        <div style="background: var(--success-bg); border-radius: 4px; height: 8px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, var(--success-color), var(--success-color)); height: 100%; width: ${taxablePct}%; transition: width 0.5s ease;"></div>
                         </div>
                     </div>
                 ` : ''}
                 ${realEstatePct > 0 ? `
-                    <div style="padding: 14px; background: var(--bg-secondary); border-radius: 8px; border-left: 3px solid #8b5cf6;">
+                    <div style="padding: 14px; background: var(--bg-secondary); border-radius: 8px; border-left: 3px solid var(--accent-secondary);">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
                             <div style="flex: 1;">
                                 <div style="font-weight: 600; color: var(--text-primary); font-size: 14px; margin-bottom: 4px;">
@@ -1395,17 +1395,17 @@ function showNetWorthDetails(profile) {
                                 </div>
                             </div>
                             <div style="text-align: right;">
-                                <div style="font-weight: bold; color: #8b5cf6; font-size: 16px;">${realEstatePct.toFixed(1)}%</div>
+                                <div style="font-weight: bold; color: var(--accent-secondary); font-size: 16px;">${realEstatePct.toFixed(1)}%</div>
                                 <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${formatCurrency(breakdown.realEstateAssets, 0)}</div>
                             </div>
                         </div>
-                        <div style="background: rgba(139,92,246,0.15); border-radius: 4px; height: 8px; overflow: hidden;">
-                            <div style="background: linear-gradient(90deg, #8b5cf6, #7c3aed); height: 100%; width: ${realEstatePct}%; transition: width 0.5s ease;"></div>
+                        <div style="background: var(--secondary-light); border-radius: 4px; height: 8px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, var(--accent-secondary), var(--accent-secondary)); height: 100%; width: ${realEstatePct}%; transition: width 0.5s ease;"></div>
                         </div>
                     </div>
                 ` : ''}
                 ${otherPct > 0 ? `
-                    <div style="padding: 14px; background: var(--bg-secondary); border-radius: 8px; border-left: 3px solid #f59e0b;">
+                    <div style="padding: 14px; background: var(--bg-secondary); border-radius: 8px; border-left: 3px solid var(--warning-color);">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
                             <div style="flex: 1;">
                                 <div style="font-weight: 600; color: var(--text-primary); font-size: 14px; margin-bottom: 4px;">
@@ -1416,12 +1416,12 @@ function showNetWorthDetails(profile) {
                                 </div>
                             </div>
                             <div style="text-align: right;">
-                                <div style="font-weight: bold; color: #f59e0b; font-size: 16px;">${otherPct.toFixed(1)}%</div>
+                                <div style="font-weight: bold; color: var(--warning-color); font-size: 16px;">${otherPct.toFixed(1)}%</div>
                                 <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${formatCurrency(breakdown.otherAssets, 0)}</div>
                             </div>
                         </div>
-                        <div style="background: rgba(245,158,11,0.15); border-radius: 4px; height: 8px; overflow: hidden;">
-                            <div style="background: linear-gradient(90deg, #f59e0b, #d97706); height: 100%; width: ${otherPct}%; transition: width 0.5s ease;"></div>
+                        <div style="background: var(--warning-bg); border-radius: 4px; height: 8px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, var(--warning-color), var(--warning-color)); height: 100%; width: ${otherPct}%; transition: width 0.5s ease;"></div>
                         </div>
                     </div>
                 ` : ''}
