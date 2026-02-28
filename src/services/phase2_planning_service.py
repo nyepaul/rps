@@ -298,22 +298,28 @@ def build_investment_fee_impact_analyzer(profile_data: Dict) -> Dict:
 
     investable_accounts = []
     for category in ("retirement_accounts", "taxable_accounts", "education_accounts"):
-        for account in assets.get(category, []) or []:
+        for idx, account in enumerate(assets.get(category, []) or []):
             value = _safe_float(account.get("value"), 0.0)
             if value <= 0:
                 continue
-            fee = _safe_float(account.get("expense_ratio"), -1.0)
-            if fee > 1.0:
-                fee = fee / 100.0
-            if fee < 0:
-                # Default heuristics when fee data is missing
-                fee = 0.006 if category == "retirement_accounts" else 0.008
+            # Priority: management_fee_rate (stored as %, e.g. 0.6 → 0.006), then expense_ratio, then heuristic
+            mgmt_fee = _safe_float(account.get("management_fee_rate"), -1.0)
+            if mgmt_fee >= 0:
+                fee = mgmt_fee / 100.0
+            else:
+                fee = _safe_float(account.get("expense_ratio"), -1.0)
+                if fee > 1.0:
+                    fee = fee / 100.0
+                if fee < 0:
+                    # Default heuristics when fee data is missing
+                    fee = 0.006 if category == "retirement_accounts" else 0.008
             investable_accounts.append(
                 {
                     "name": str(account.get("name") or account.get("type") or "Account"),
                     "category": category,
+                    "account_index": idx,
                     "value": value,
-                    "fee_rate": max(0.0, min(fee, 0.03)),
+                    "fee_rate": max(0.0, min(fee, 0.15)),
                 }
             )
 
@@ -339,7 +345,7 @@ def build_investment_fee_impact_analyzer(profile_data: Dict) -> Dict:
     fv_low_cost = total_assets * ((1 + max(0.0, gross_return - low_cost_fee)) ** years)
     lifetime_fee_impact = max(0.0, fv_low_cost - fv_current)
 
-    highest_fee = sorted(investable_accounts, key=lambda a: a["fee_rate"], reverse=True)[:5]
+    highest_fee = sorted(investable_accounts, key=lambda a: a["fee_rate"], reverse=True)
     recommendation = (
         "Fee drag appears material; review high-fee holdings and consider low-cost index alternatives."
         if weighted_fee - low_cost_fee >= 0.0025
@@ -362,6 +368,7 @@ def build_investment_fee_impact_analyzer(profile_data: Dict) -> Dict:
             {
                 "name": a["name"],
                 "category": a["category"],
+                "account_index": a["account_index"],
                 "value": round(a["value"], 2),
                 "fee_rate": round(a["fee_rate"], 4),
             }

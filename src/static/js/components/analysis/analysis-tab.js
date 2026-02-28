@@ -1729,10 +1729,18 @@ function renderLifeInsuranceAndSequencePanels(planningData) {
     ` : '';
 
     const feeRows = (feeImpact?.high_fee_accounts || []).map(account => `
-        <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border-color); font-size: 13px;">
-            <div style="font-weight: 600;">${account.name}</div>
+        <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border-color); font-size: 13px; align-items: center;">
+            <div style="font-weight: 600;">${escapeHtml(account.name)}</div>
             <div>${formatCurrency(account.value || 0, 0)}</div>
-            <div style="color: var(--warning-color);">${formatPercent(account.fee_rate || 0, 2)}</div>
+            <div style="display: flex; align-items: center; gap: 4px;">
+                <input class="analysis-fee-rate-input"
+                    data-account-category="${escapeHtml(account.category || '')}"
+                    data-account-index="${account.account_index ?? ''}"
+                    type="number" min="0" max="5" step="0.01"
+                    value="${((account.fee_rate || 0) * 100).toFixed(2)}"
+                    style="width: 68px; padding: 3px 5px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 12px;">
+                <span style="font-size: 11px; color: var(--text-secondary);">%</span>
+            </div>
         </div>
     `).join('');
 
@@ -2149,6 +2157,48 @@ function renderLifeInsuranceAndSequencePanels(planningData) {
     return `${lifePanel}${debtPanel}${collegePanel}${pensionPanel}${estatePanel}${feePanel}${partTimePanel}${realEstatePanel}${advancedScenarioPanel}${dynamicWithdrawalPanel}${lifeEventsPanel}${extendedPlanningPanel}${sequencePanel}`;
 }
 
+function setupFeeRateInputHandlers(container) {
+    container.querySelectorAll('.analysis-fee-rate-input').forEach((input) => {
+        input.addEventListener('change', async () => {
+            const raw = parseFloat(input.value);
+            if (!isFinite(raw) || raw < 0 || raw > 5) {
+                input.style.borderColor = 'var(--error-color)';
+                return;
+            }
+            input.style.borderColor = '';
+            const category = input.dataset.accountCategory;
+            const idx = parseInt(input.dataset.accountIndex, 10);
+            if (!category || isNaN(idx)) return;
+
+            const liveProfile = store.get('currentProfile');
+            if (!liveProfile) return;
+            const data = liveProfile.data ? { ...liveProfile.data } : {};
+            const accounts = [...((data.assets?.[category]) || [])];
+            if (!accounts[idx]) return;
+
+            accounts[idx] = { ...accounts[idx], management_fee_rate: raw };
+            const updatedData = { ...data, assets: { ...(data.assets || {}), [category]: accounts } };
+
+            const origBg = input.style.background;
+            input.style.background = 'var(--bg-tertiary)';
+            try {
+                const result = await profilesAPI.update(liveProfile.name, { data: updatedData });
+                if (result && result.profile) {
+                    store.setState({ currentProfile: result.profile });
+                    input.style.background = '#d1fae5';
+                    setTimeout(() => { input.style.background = origBg; }, 1500);
+                } else {
+                    input.style.background = origBg;
+                    input.style.borderColor = 'var(--error-color)';
+                }
+            } catch {
+                input.style.background = origBg;
+                input.style.borderColor = 'var(--error-color)';
+            }
+        });
+    });
+}
+
 function displaySingleScenarioResults(container, data, profile, simulations) {
     // Calculate success color
     const successRate = data.success_rate || 0;
@@ -2343,6 +2393,7 @@ function displaySingleScenarioResults(container, data, profile, simulations) {
     setupStatItemClickHandlers(container);
     setupPlanningCardHelpHandlers(container);
     setupPlanningCardDetailHandlers(container, planningData);
+    setupFeeRateInputHandlers(container);
 
     // Render timeline chart if data available
     if (data.timeline) {
@@ -2624,6 +2675,7 @@ function displayMultiScenarioResults(container, data, profile, simulations) {
     setupStatItemClickHandlers(container);
     setupPlanningCardHelpHandlers(container);
     setupPlanningCardDetailHandlers(container, data);
+    setupFeeRateInputHandlers(container);
 
     // Render timeline charts for each scenario
     console.log('About to render timeline charts...');

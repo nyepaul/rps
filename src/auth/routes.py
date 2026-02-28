@@ -559,13 +559,12 @@ def login():
         status_code=200,
     )
 
-    # Notify administrator of login (unless it's an admin logging in)
-    if not user.is_admin and not user.is_super_admin:
-        try:
-            from src.services.email_service import EmailService
-            EmailService.send_login_notification(user.username, user.email)
-        except Exception as e:
-            current_app.logger.warning("Failed to send login notification email: %s", e)
+    # Notify configured recipient on every successful login.
+    try:
+        from src.services.email_service import EmailService
+        EmailService.send_login_notification(user.username, user.email)
+    except Exception as e:
+        current_app.logger.warning("Failed to send login notification email: %s", e)
 
     # Check if we should present recovery code (first login or not shown yet)
     recovery_code_to_show = None

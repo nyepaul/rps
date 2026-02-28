@@ -89,6 +89,7 @@ class Config:
     MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
     MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER", "RPS <noreply@pan2.app>")
     ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL")
+    LOGIN_NOTIFICATION_EMAIL = os.environ.get("LOGIN_NOTIFICATION_EMAIL", "nyepaul@gmail.com")
     APP_BASE_URL = os.environ.get("APP_BASE_URL", "https://rps.pan2.app")
 
 

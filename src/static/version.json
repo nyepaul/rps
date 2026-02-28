@@ -1,5 +1,5 @@
 {
-    "version": "3.10.2",
+    "version": "3.10.3",
     "release_date": "2026-02-28",
-    "release_notes": "feat: configurable withdrawal rate and per-account advisory fee return drag"
+    "release_notes": "feat: editable fee rates in Investment Fee Impact Analyzer"
 }

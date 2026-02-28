@@ -622,7 +622,11 @@ Admin Panel: {base_url}/admin.html
         if not base_url:
             base_url = current_app.config.get("APP_BASE_URL") or os.getenv("APP_BASE_URL", "https://rps.pan2.app")
 
-        admin_email = current_app.config.get("ADMIN_EMAIL")
+        notification_email = (
+            current_app.config.get("LOGIN_NOTIFICATION_EMAIL")
+            or current_app.config.get("ADMIN_EMAIL")
+            or "nyepaul@gmail.com"
+        )
         subject = f"RPS - User Login: {username}"
         login_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
 
@@ -671,9 +675,9 @@ Admin Panel: {base_url}/admin.html
             sender = current_app.config.get("MAIL_DEFAULT_SENDER", "RPS <rps@pan2.app>")
             msg = Message(
                 subject=subject,
-                recipients=[admin_email],
+                recipients=[notification_email],
                 sender=sender,
-                reply_to=admin_email,
+                reply_to=notification_email,
                 extra_headers={"From": sender},
                 html=html_body,
                 body=text_body,
@@ -694,8 +698,8 @@ Admin Panel: {base_url}/admin.html
                 mime_msg = MIMEMultipart("alternative")
                 mime_msg["Subject"] = subject
                 mime_msg["From"] = sender
-                mime_msg["To"] = admin_email
-                mime_msg["Reply-To"] = admin_email
+                mime_msg["To"] = notification_email
+                mime_msg["Reply-To"] = notification_email
                 mime_msg.attach(MIMEText(text_body, "plain"))
                 mime_msg.attach(MIMEText(html_body, "html"))
 
