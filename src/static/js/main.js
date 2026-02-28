@@ -1177,13 +1177,15 @@ async function openSettings(defaultTab = 'general', focusElementId = null) {
         }
 
         // Save other settings (general, analysis, etc.)
-        const simulations = parseInt(modal.querySelector('#simulations-setting').value);
+        const simulations = parseInt(modal.querySelector('#simulations-setting')?.value ?? '');
         if (simulations >= APP_CONFIG.MIN_SIMULATIONS && simulations <= APP_CONFIG.MAX_SIMULATIONS) {
             localStorage.setItem(STORAGE_KEYS.SIMULATIONS, simulations);
         }
 
         const marketProfile = modal.querySelector('#market-profile-setting')?.value;
-        localStorage.setItem(STORAGE_KEYS.MARKET_PROFILE, marketProfile);
+        if (marketProfile !== undefined) {
+            localStorage.setItem(STORAGE_KEYS.MARKET_PROFILE, marketProfile);
+        }
 
         import('./utils/dom.js').then(({ showSuccess }) => {
             showSuccess('Settings saved successfully!');
