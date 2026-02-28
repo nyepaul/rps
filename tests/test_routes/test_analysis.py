@@ -544,3 +544,47 @@ def test_analysis_profile_strips_employment_streams_when_budget_income_exists(cl
             and (s.get("type") not in ("salary", "hourly", "wages", "bonus"))
             for s in streams
         )
+
+
+def test_transform_assets_preserves_management_fee_rate():
+    """transform_assets_to_investment_types should carry management_fee_rate through."""
+    from src.routes.analysis import transform_assets_to_investment_types
+    assets = {
+        "retirement_accounts": [
+            {"type": "traditional_ira", "value": 200000, "management_fee_rate": 1.0},
+            {"type": "roth_ira", "value": 100000},
+        ],
+        "taxable_accounts": [
+            {"type": "brokerage", "value": 50000, "management_fee_rate": 0.5},
+        ],
+    }
+    result = transform_assets_to_investment_types(assets)
+    ira = next(r for r in result if r["account"] == "Traditional IRA")
+    assert ira["management_fee_rate"] == 1.0
+    brokerage = next(r for r in result if r["account"] == "Taxable Brokerage")
+    assert brokerage["management_fee_rate"] == 0.5
+    roth = next(r for r in result if r["account"] == "Roth IRA" and r.get("management_fee_rate", 0) == 0)
+    assert roth is not None
+
+
+def test_compute_weighted_fee_drag():
+    """Weighted average of management fees across portfolio."""
+    from src.routes.analysis import compute_management_fee_drag
+    investment_types = [
+        {"value": 200000, "management_fee_rate": 1.0},  # 1% on 200k
+        {"value": 100000, "management_fee_rate": 0.0},  # no fee on 100k
+        {"value": 100000, "management_fee_rate": 0.5},  # 0.5% on 100k
+    ]
+    # Total = 400k. Fee = 200k*0.01 + 100k*0.005 = 2000 + 500 = 2500
+    # Drag = 2500 / 400000 = 0.00625 (decimal)
+    drag = compute_management_fee_drag(investment_types)
+    assert abs(drag - 0.00625) < 1e-9
+
+def test_compute_weighted_fee_drag_no_assets():
+    from src.routes.analysis import compute_management_fee_drag
+    assert compute_management_fee_drag([]) == 0.0
+
+def test_compute_weighted_fee_drag_no_fees():
+    from src.routes.analysis import compute_management_fee_drag
+    investment_types = [{"value": 500000, "management_fee_rate": 0}]
+    assert compute_management_fee_drag(investment_types) == 0.0

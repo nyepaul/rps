@@ -108,6 +108,7 @@ def transform_assets_to_investment_types(assets_data):
                 "value": asset.get("value", 0),
                 "cost_basis": asset.get("cost_basis", asset.get("value", 0)),
                 "name": asset.get("name", ""),
+                "management_fee_rate": asset.get("management_fee_rate", 0),
             }
         )
 
@@ -121,6 +122,7 @@ def transform_assets_to_investment_types(assets_data):
                 "value": asset.get("value", 0),
                 "cost_basis": asset.get("cost_basis", asset.get("value", 0)),
                 "name": asset.get("name", ""),
+                "management_fee_rate": asset.get("management_fee_rate", 0),
             }
         )
 
@@ -141,10 +143,27 @@ def transform_assets_to_investment_types(assets_data):
                 "value": asset.get("value", 0),
                 "cost_basis": asset.get("cost_basis", asset.get("value", 0)),
                 "name": asset.get("name", ""),
+                "management_fee_rate": asset.get("management_fee_rate", 0),
             }
         )
 
     return investment_types
+
+
+def compute_management_fee_drag(investment_types):
+    """Compute portfolio-weighted advisory fee drag (decimal, e.g. 0.01 for 1%).
+
+    The form stores management_fee_rate as a percent (e.g. 1.0 for 1%).
+    This converts to decimal and weights by account value.
+    """
+    total_value = sum(inv.get("value", 0) for inv in investment_types)
+    if total_value <= 0:
+        return 0.0
+    weighted_fee = sum(
+        inv.get("value", 0) * (inv.get("management_fee_rate", 0) / 100.0)
+        for inv in investment_types
+    )
+    return weighted_fee / total_value
 
 
 def _annualize_stream_amount(stream):
