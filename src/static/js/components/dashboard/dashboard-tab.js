@@ -1960,10 +1960,11 @@ function showSavingsRateDetails(profile) {
     const annualSavings = totalAnnualIncome - totalAnnualExpenses;
     const savingsRate = totalAnnualIncome > 0 ? (annualSavings / totalAnnualIncome) * 100 : 0;
 
-    // Years to Financial Independence (simplified 4% rule)
+    // Years to Financial Independence
     const assets = data.assets || {};
     const { netWorth } = calculateNetWorth(assets);
-    const targetAmount = totalAnnualExpenses * 25; // 4% rule
+    const fiWithdrawalRate = data.withdrawal_strategy?.withdrawal_rate || 0.04;
+    const targetAmount = fiWithdrawalRate > 0 ? totalAnnualExpenses / fiWithdrawalRate : totalAnnualExpenses * 25;
     const yearsToFI = annualSavings > 0 ? Math.max(0, (targetAmount - netWorth) / annualSavings) : 999;
 
     // Savings rate benchmarks
@@ -2025,7 +2026,7 @@ function showSavingsRateDetails(profile) {
                     <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 5px;">Years to Financial Independence</div>
                     <div style="font-size: 28px; font-weight: bold; color: var(--text-primary);">${yearsToFI.toFixed(1)} years</div>
                     <div style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">
-                        Based on 4% rule (${formatCurrency(targetAmount, 0)} target)
+                        Based on ${(fiWithdrawalRate * 100).toFixed(1)}% withdrawal rate (${formatCurrency(targetAmount, 0)} target)
                     </div>
                 </div>
             ` : ''}
