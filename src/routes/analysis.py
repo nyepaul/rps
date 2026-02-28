@@ -648,6 +648,7 @@ def run_analysis():
         # Get assets from profile and transform to investment_types format
         assets_data = profile_data.get("assets", {})
         investment_types = transform_assets_to_investment_types(assets_data)
+        management_fee_drag = compute_management_fee_drag(investment_types)
 
         # Calculate totals from assets for display/fallback
         liquid_assets = sum(
@@ -802,6 +803,7 @@ def run_analysis():
                 assumptions=market_assumptions,
                 spending_model=data.spending_model,
                 market_periods=data.market_periods.dict() if data.market_periods else None,
+                management_fee_drag=management_fee_drag,
             )
             scenario_result["scenario_name"] = scenario_config["name"]
             scenario_result["description"] = scenario_config["description"]
@@ -852,6 +854,7 @@ def run_analysis():
                 assumptions=stress_assumptions,
                 spending_model=data.spending_model,
                 market_periods=crash_market_periods,
+                management_fee_drag=management_fee_drag,
             )
             baseline_success = float(sequence_baseline.get("success_rate", 0.0))
             baseline_median = float(sequence_baseline.get("median_final_balance", 0.0))
@@ -1197,6 +1200,7 @@ def get_cashflow_details():
         # Get assets
         assets_data = profile_data.get("assets", {})
         investment_types = transform_assets_to_investment_types(assets_data)
+        management_fee_drag = compute_management_fee_drag(investment_types)
 
         liquid_assets = sum(
             a.get("value", 0) for a in assets_data.get("taxable_accounts", [])
@@ -1315,7 +1319,8 @@ def get_cashflow_details():
 
         # Run detailed projection
         detailed_ledger = model.run_detailed_projection(
-            years=years, assumptions=assumptions, spending_model=data.spending_model
+            years=years, assumptions=assumptions, spending_model=data.spending_model,
+            management_fee_drag=management_fee_drag,
         )
 
         response = {"profile_name": data.profile_name, "ledger": detailed_ledger}
@@ -2543,6 +2548,7 @@ def get_calculation_report():
         # 8. PORTFOLIO PROJECTION ATTRIBUTION (Deterministic)
         try:
             investment_types = transform_assets_to_investment_types(assets_data)
+            management_fee_drag = compute_management_fee_drag(investment_types)
 
             liquid_assets = sum(
                 float(a.get("value", 0) or 0)
@@ -2653,6 +2659,7 @@ def get_calculation_report():
                 years=years,
                 assumptions=MarketAssumptions(stock_allocation=0.60),
                 spending_model="constant_real",
+                management_fee_drag=management_fee_drag,
             )
 
             yearly_rollup = {}
