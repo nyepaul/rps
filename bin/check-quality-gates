@@ -18,6 +18,7 @@ if [[ -x "./venv/bin/pytest" ]]; then
   PYTEST_BIN="./venv/bin/pytest"
 fi
 
+SECRET_KEY="${SECRET_KEY:-test-secret-key-for-quality-gates}" \
 "$PYTEST_BIN" -q \
   tests/comprehensive/test_javascript_quality.py::TestJavaScriptCriticalIssues::test_main_tab_restore_logic_present \
   tests/comprehensive/test_javascript_quality.py::TestJavaScriptCriticalIssues::test_glossary_utility_used_in_key_tabs \
