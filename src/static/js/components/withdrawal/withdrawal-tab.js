@@ -314,7 +314,7 @@ function setupLearnLinks(container) {
 function setupWithdrawalRateInput(container, profile) {
     const input = container.querySelector('#withdrawal-rate-input');
     const status = container.querySelector('#withdrawal-rate-status');
-    if (!input) return;
+    if (!input || !status) return;
 
     input.addEventListener('change', async () => {
         const raw = parseFloat(input.value);
@@ -324,7 +324,8 @@ function setupWithdrawalRateInput(container, profile) {
             return;
         }
         const rate = raw / 100;
-        const currentData = profile.data || {};
+        const liveProfile = store.get('currentProfile');
+        const currentData = (liveProfile && liveProfile.data) || {};
         const updatedData = {
             ...currentData,
             withdrawal_strategy: {
@@ -335,9 +336,9 @@ function setupWithdrawalRateInput(container, profile) {
         status.textContent = 'Saving…';
         status.style.color = 'var(--text-secondary)';
         try {
-            const result = await profilesAPI.update(profile.name, { data: updatedData });
+            const result = await profilesAPI.update(liveProfile.name, { data: updatedData });
             if (result && result.profile) {
-                store.set('currentProfile', result.profile);
+                store.setState({ currentProfile: result.profile });
                 status.textContent = 'Saved';
                 status.style.color = 'var(--success-color)';
                 setTimeout(() => { status.textContent = 'Annual rate'; status.style.color = 'var(--text-light)'; }, 2000);
