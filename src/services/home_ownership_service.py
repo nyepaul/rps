@@ -56,23 +56,24 @@ class HomeOwnershipService:
         renting_data = self._get_renting_params(scenario_params)
 
         results_own = self._calculate_owning_costs_and_equity(owning_data, time_horizon_years)
-        results_rent = self._calculate_renting_costs(renting_data, time_horizon_years)
-        
-        # Calculate opportunity cost of down payment and closing costs
+
         initial_owning_cash_outlay = (
-            owning_data["purchase_price"] * owning_data["down_payment_pct"] + 
+            owning_data["purchase_price"] * owning_data["down_payment_pct"] +
             owning_data["purchase_price"] * owning_data["closing_costs_pct"]
         )
+        owner_monthly_cost = results_own["monthly_piti"] + results_own["monthly_maintenance"]
 
-        opportunity_gain = project_future_value(initial_owning_cash_outlay, opportunity_cost_return, time_horizon_years) - initial_owning_cash_outlay
-        
-        net_worth_own = results_own["ending_equity"] # equity already includes home value minus mortgage
-        net_worth_rent = initial_owning_cash_outlay + opportunity_gain # cash not spent, invested
+        results_rent = self._calculate_renting_costs(
+            renting_data, time_horizon_years, initial_owning_cash_outlay,
+            owner_monthly_cost, opportunity_cost_return
+        )
 
-        # Total costs
+        net_worth_own = results_own["ending_equity"]
+        net_worth_rent = results_rent["renter_net_worth"]
+
         total_owning_costs = (
-            results_own["total_mortgage_payments"] + results_own["total_property_tax"] + 
-            results_own["total_insurance"] + results_own["total_maintenance"] + 
+            results_own["total_mortgage_payments"] + results_own["total_property_tax"] +
+            results_own["total_insurance"] + results_own["total_maintenance"] +
             owning_data["purchase_price"] * owning_data["closing_costs_pct"]
         )
         total_renting_costs = results_rent["total_rent_payments"]
@@ -85,22 +86,22 @@ class HomeOwnershipService:
                 "ending_home_value": results_own["ending_home_value"],
                 "ending_equity": results_own["ending_equity"],
                 "net_worth_contribution": net_worth_own,
-                "monthly_cash_flow_impact_start": results_own["monthly_piti"] + results_own["monthly_maintenance"],
-                "total_interest_paid": results_own["total_interest_paid"]
+                "monthly_cash_flow_impact_start": owner_monthly_cost,
+                "total_interest_paid": results_own["total_interest_paid"],
             },
             "rent_scenario": {
                 "initial_monthly_rent": renting_data["initial_monthly_rent"],
                 "total_costs": total_renting_costs,
-                "opportunity_investment_gain": opportunity_gain,
+                "opportunity_investment_gain": results_rent["portfolio_gain"],
                 "net_worth_contribution": net_worth_rent,
-                "monthly_cash_flow_impact_start": renting_data["initial_monthly_rent"]
+                "monthly_cash_flow_impact_start": renting_data["initial_monthly_rent"],
             },
             "summary": {
                 "net_worth_difference": net_worth_own - net_worth_rent,
                 "total_cost_difference": total_owning_costs - total_renting_costs,
                 "recommendation": "Own" if (net_worth_own - net_worth_rent) > 0 else "Rent",
                 "time_horizon_years": time_horizon_years,
-            }
+            },
         }
 
     def _calculate_owning_costs_and_equity(self, params: Dict[str, Any], time_horizon_years: int) -> Dict[str, Any]:
@@ -154,18 +155,43 @@ class HomeOwnershipService:
             "total_interest_paid": total_mortgage_payments - principal_paid,
         }
 
-    def _calculate_renting_costs(self, params: Dict[str, Any], time_horizon_years: int) -> Dict[str, Any]:
-        """Calculates total renting costs over the time horizon."""
-        total_rent_payments = 0
-        current_monthly_rent = params["initial_monthly_rent"]
-        annual_rent_increase_rate = 1 + params["annual_rent_increase_pct"]
+    def _calculate_renting_costs(
+        self,
+        params: Dict[str, Any],
+        time_horizon_years: int,
+        initial_investment: float,
+        owner_monthly_cost: float,
+        annual_return: float,
+    ) -> Dict[str, Any]:
+        """
+        Simulate the renter's portfolio month by month.
 
-        for year in range(time_horizon_years):
-            total_rent_payments += current_monthly_rent * 12
-            current_monthly_rent *= annual_rent_increase_rate
-        
+        The renter starts by investing the down-payment + closing costs that the
+        owner spent upfront.  Each month the portfolio grows at the opportunity
+        cost rate, and the renter additionally invests (or withdraws) the
+        difference between what the owner spends and what the renter spends on
+        rent.  Negative monthly_surplus means renting is more expensive that
+        month and is subtracted from the portfolio.
+        """
+        monthly_rate = annual_return / 12
+        portfolio = initial_investment
+        monthly_rent = params["initial_monthly_rent"]
+        annual_rent_increase = params["annual_rent_increase_pct"]
+        total_rent_payments = 0.0
+
+        for month in range(time_horizon_years * 12):
+            portfolio *= (1 + monthly_rate)
+            monthly_surplus = owner_monthly_cost - monthly_rent
+            portfolio += monthly_surplus          # invest savings; subtract if rent > owner cost
+            total_rent_payments += monthly_rent
+            if (month + 1) % 12 == 0:
+                monthly_rent *= (1 + annual_rent_increase)
+
+        portfolio_gain = portfolio - initial_investment
         return {
-            "total_rent_payments": total_rent_payments
+            "total_rent_payments": total_rent_payments,
+            "portfolio_gain": portfolio_gain,
+            "renter_net_worth": portfolio,
         }
 
 # Helper for financial calculations that might be in src/utils/financial_calculations.py

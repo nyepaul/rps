@@ -1,5 +1,5 @@
 {
     "version": "3.10.5",
     "release_date": "2026-02-28",
-    "release_notes": "fix: rent-vs-own accurate amortization and display time horizon"
+    "release_notes": "fix: rent-vs-own model accounts for monthly cash flow and uses proper amortization"
 }
