@@ -3222,8 +3222,9 @@ def bulk_create_user_backups():
             results.append({"user_id": uid, "status": "success"})
             success_count += 1
         except Exception as e:
+            current_app.logger.error(f"Bulk backup creation failed for user {uid}: {e}")
             results.append(
-                {"user_id": uid, "status": "error", "error": str(e)})
+                {"user_id": uid, "status": "error", "error": "Backup creation failed"})
 
     enhanced_audit_logger.log_admin_action(
         action="BULK_CREATE_BACKUP",
@@ -3284,8 +3285,9 @@ def bulk_restore_user_backups():
             success_count += 1
 
         except Exception as e:
+            current_app.logger.error(f"Bulk backup restore failed for user {uid}: {e}")
             results.append(
-                {"user_id": uid, "status": "error", "error": str(e)})
+                {"user_id": uid, "status": "error", "error": "Backup restore failed"})
 
     enhanced_audit_logger.log_admin_action(
         action="BULK_RESTORE_BACKUP",
