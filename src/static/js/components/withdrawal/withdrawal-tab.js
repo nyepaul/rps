@@ -114,7 +114,7 @@ export function renderWithdrawalTab(container) {
                             <ul style="margin: 8px 0 0 0; padding-left: 18px; color: var(--text-secondary); font-size: 11px; line-height: 1.4;">
                                 <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Required Minimum Distributions (RMDs)" data-title="RMD Rules" style="cursor: pointer; color: var(--accent-color); margin-bottom: 4px;">${glossaryTerm('RMDs', 'rmd')} start at age 73</li>
                                 <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Social Security Taxation" data-title="Social Security Taxes" style="cursor: pointer; color: var(--accent-color); margin-bottom: 4px;">${glossaryTerm('Social Security', 'social_security_taxation')} may be taxable</li>
-                                <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Federal Income Tax Brackets (2024)" data-title="Tax Bracket Management" style="cursor: pointer; color: var(--accent-color);">${glossaryTerm('Active bracket management', 'tax_bracket_management')}</li>
+                                <li class="learn-link" data-skill="tax-strategy-SKILL.md" data-section="Federal Income Tax Brackets (2025)" data-title="Tax Bracket Management" style="cursor: pointer; color: var(--accent-color);">${glossaryTerm('Active bracket management', 'tax_bracket_management')}</li>
                             </ul>
                         </div>
                     </div>

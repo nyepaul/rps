@@ -544,14 +544,14 @@ def run_analysis():
                         annual_employment += amt * 12
 
             if annual_employment > 0:
-                # Simplified PIA estimation using 2024 bend points
+                # Simplified PIA estimation using 2025 bend points
                 aime = annual_employment / 12
-                if aime <= 1174:
+                if aime <= 1226:
                     pia = aime * 0.90
-                elif aime <= 7078:
-                    pia = 1174 * 0.90 + (aime - 1174) * 0.32
+                elif aime <= 7391:
+                    pia = 1226 * 0.90 + (aime - 1226) * 0.32
                 else:
-                    pia = 1174 * 0.90 + (7078 - 1174) * 0.32 + (aime - 7078) * 0.15
+                    pia = 1226 * 0.90 + (7391 - 1226) * 0.32 + (aime - 7391) * 0.15
 
                 # Adjust for claiming age (67 = full PIA)
                 claiming_age = person1.ss_claiming_age or 67
@@ -629,12 +629,12 @@ def run_analysis():
 
             if spouse_annual_employment > 0:
                 aime = spouse_annual_employment / 12
-                if aime <= 1174:
+                if aime <= 1226:
                     pia = aime * 0.90
-                elif aime <= 7078:
-                    pia = 1174 * 0.90 + (aime - 1174) * 0.32
+                elif aime <= 7391:
+                    pia = 1226 * 0.90 + (aime - 1226) * 0.32
                 else:
-                    pia = 1174 * 0.90 + (7078 - 1174) * 0.32 + (aime - 7078) * 0.15
+                    pia = 1226 * 0.90 + (7391 - 1226) * 0.32 + (aime - 7391) * 0.15
 
                 claiming_age = person2.ss_claiming_age or 67
                 if claiming_age < 67:
@@ -1104,12 +1104,12 @@ def get_cashflow_details():
 
             if annual_employment > 0:
                 aime = annual_employment / 12
-                if aime <= 1174:
+                if aime <= 1226:
                     pia = aime * 0.90
-                elif aime <= 7078:
-                    pia = 1174 * 0.90 + (aime - 1174) * 0.32
+                elif aime <= 7391:
+                    pia = 1226 * 0.90 + (aime - 1226) * 0.32
                 else:
-                    pia = 1174 * 0.90 + (7078 - 1174) * 0.32 + (aime - 7078) * 0.15
+                    pia = 1226 * 0.90 + (7391 - 1226) * 0.32 + (aime - 7391) * 0.15
 
                 claiming_age = person1.ss_claiming_age or 67
                 if claiming_age < 67:
@@ -1181,12 +1181,12 @@ def get_cashflow_details():
 
             if spouse_annual_employment > 0:
                 aime = spouse_annual_employment / 12
-                if aime <= 1174:
+                if aime <= 1226:
                     pia = aime * 0.90
-                elif aime <= 7078:
-                    pia = 1174 * 0.90 + (aime - 1174) * 0.32
+                elif aime <= 7391:
+                    pia = 1226 * 0.90 + (aime - 1226) * 0.32
                 else:
-                    pia = 1174 * 0.90 + (7078 - 1174) * 0.32 + (aime - 7078) * 0.15
+                    pia = 1226 * 0.90 + (7391 - 1226) * 0.32 + (aime - 7391) * 0.15
 
                 claiming_age = person2.ss_claiming_age or 67
                 if claiming_age < 67:

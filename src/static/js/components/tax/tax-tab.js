@@ -1402,7 +1402,7 @@ function showTaxSnapshotExplanation() {
                     </div>
 
                     <div style="font-size: 12px; color: var(--text-secondary); margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-color);">
-                        <strong>Note:</strong> These calculations are estimates based on 2024 federal tax brackets. For precise tax advice, consult a tax professional.
+                        <strong>Note:</strong> These calculations are estimates based on 2025 federal tax brackets. For precise tax advice, consult a tax professional.
                     </div>
                 </div>
 

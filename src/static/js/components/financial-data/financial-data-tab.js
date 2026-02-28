@@ -467,12 +467,12 @@ const SECTIONS = [
                 ${glossaryTerm('AIME', 'aime')} = annual_employment_income / 12<br><br>
                 If AIME &le; $1,174:<br>
                 &nbsp;&nbsp;PIA = AIME &times; 90%<br><br>
-                If $1,174 &lt; AIME &le; $7,078:<br>
-                &nbsp;&nbsp;PIA = $1,174 &times; 90% + (AIME - $1,174) &times; 32%<br><br>
-                If AIME &gt; $7,078:<br>
-                &nbsp;&nbsp;PIA = $1,174 &times; 90% + ($7,078 - $1,174) &times; 32% + (AIME - $7,078) &times; 15%
+                If $1,226 &lt; AIME &le; $7,391:<br>
+                &nbsp;&nbsp;PIA = $1,226 &times; 90% + (AIME - $1,226) &times; 32%<br><br>
+                If AIME &gt; $7,391:<br>
+                &nbsp;&nbsp;PIA = $1,226 &times; 90% + ($7,391 - $1,226) &times; 32% + (AIME - $7,391) &times; 15%
             </div>
-            <p>2024 SSA bend points: <strong>$1,174</strong> and <strong>$7,078</strong>. Used when user hasn't set an explicit SS benefit.</p>
+            <p>2025 SSA bend points: <strong>$1,226</strong> and <strong>$7,391</strong>. Used when user hasn't set an explicit SS benefit.</p>
 
             <h4>Claiming Age Adjustment</h4>
             <div class="formula">
@@ -659,7 +659,7 @@ export function renderFinancialDataTab(container) {
             <h2 style="color: var(--text-primary); margin-bottom: 4px;">Financial Calculation Reference</h2>
             <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 14px;">
                 Complete documentation of every formula, constant, and algorithm used in the simulation engine.
-                All values are 2024 IRS figures. Brackets and limits are inflation-adjusted during projection.
+                All values are 2025 IRS figures. Brackets and limits are inflation-adjusted during projection.
             </p>
             <div id="financial-data-sections"></div>
         </div>

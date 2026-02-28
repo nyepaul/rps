@@ -1536,16 +1536,16 @@ function calculatePeriodIncome(budget, period, currentDate) {
  * Calculate monthly cash flow data with portfolio growth projection
  */
 /**
- * Calculate federal tax using 2024 progressive brackets.
+ * Calculate federal tax using 2025 progressive brackets.
  */
 function calculateProgressiveTax(annualIncome, filingStatus) {
     let brackets;
     if (filingStatus === 'mfj' || filingStatus === 'mqw') {
-        brackets = [[23200, 0.10], [94300, 0.12], [201050, 0.22], [383900, 0.24], [487450, 0.32], [731200, 0.35], [Infinity, 0.37]];
+        brackets = [[23850, 0.10], [96950, 0.12], [206700, 0.22], [394600, 0.24], [501050, 0.32], [751600, 0.35], [Infinity, 0.37]];
     } else if (filingStatus === 'hoh') {
-        brackets = [[16550, 0.10], [63100, 0.12], [100500, 0.22], [191950, 0.24], [243725, 0.32], [609350, 0.35], [Infinity, 0.37]];
+        brackets = [[17000, 0.10], [64850, 0.12], [103350, 0.22], [197300, 0.24], [250500, 0.32], [626350, 0.35], [Infinity, 0.37]];
     } else {  // single / mfs
-        brackets = [[11600, 0.10], [47150, 0.12], [100525, 0.22], [191950, 0.24], [243725, 0.32], [365600, 0.35], [Infinity, 0.37]];
+        brackets = [[11925, 0.10], [48475, 0.12], [103350, 0.22], [197300, 0.24], [250525, 0.32], [626350, 0.35], [Infinity, 0.37]];
     }
     let tax = 0, prev = 0;
     for (const [limit, rate] of brackets) {
@@ -1564,12 +1564,12 @@ function estimateMonthlySSBenefit(annualEmploymentIncome, claimingAge = 67) {
     if (!annualEmploymentIncome || annualEmploymentIncome <= 0) return 0;
     const aime = annualEmploymentIncome / 12;
     let pia;
-    if (aime <= 1174) {
+    if (aime <= 1226) {
         pia = aime * 0.90;
-    } else if (aime <= 7078) {
-        pia = 1174 * 0.90 + (aime - 1174) * 0.32;
+    } else if (aime <= 7391) {
+        pia = 1226 * 0.90 + (aime - 1226) * 0.32;
     } else {
-        pia = 1174 * 0.90 + (7078 - 1174) * 0.32 + (aime - 7078) * 0.15;
+        pia = 1226 * 0.90 + (7391 - 1226) * 0.32 + (aime - 7391) * 0.15;
     }
     // Adjust for claiming age (FRA = 67)
     if (claimingAge < 67) {
@@ -2014,9 +2014,9 @@ function calculateMonthlyCashFlow(profile, months, marketScenario = 'balanced') 
         // Use 0%, 15%, or 20% based on income level
         let ltcgTax = 0;
         if (investmentCapitalGains > 0) {
-            // Simplified LTCG brackets for 2024 (most people fall in 15% bracket)
-            const ltcgThreshold0 = (filingStatus === 'mfj' ? 94050 : 47025) / 12;  // Monthly 0% threshold
-            const ltcgThreshold15 = (filingStatus === 'mfj' ? 583750 : 518900) / 12;  // Monthly 15%->20% threshold
+            // Simplified LTCG brackets for 2025 (most people fall in 15% bracket)
+            const ltcgThreshold0 = (filingStatus === 'mfj' ? 96700 : filingStatus === 'hoh' ? 64750 : 48350) / 12;
+            const ltcgThreshold15 = (filingStatus === 'mfj' ? 600050 : filingStatus === 'hoh' ? 566700 : 533400) / 12;
 
             // Stack capital gains on top of ordinary income
             const totalIncomeForLTCG = monthlyTaxableOrdinary;

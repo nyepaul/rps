@@ -173,7 +173,7 @@ function setupProfileFormHandlers(container, profile) {
     if (ssBenefitInput) {
         ssBenefitInput.addEventListener('blur', () => {
             const val = parseFloat(ssBenefitInput.value);
-            if (val > 5000) setFieldWarning(ssBenefitInput, 'Unusually high SS benefit (max 2024 is ~$3,822)');
+            if (val > 5000) setFieldWarning(ssBenefitInput, 'Unusually high SS benefit (max 2025 is ~$4,018)');
             else if (val < 0) setFieldError(ssBenefitInput, 'Benefit cannot be negative');
             else clearFieldError(ssBenefitInput);
         });
