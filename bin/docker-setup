@@ -3,29 +3,4 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
-
-if ! command -v docker >/dev/null 2>&1; then
-  echo "ERROR: docker is not installed or not on PATH." >&2
-  exit 1
-fi
-
-if ! docker compose version >/dev/null 2>&1; then
-  echo "ERROR: docker compose is not available (Docker Desktop / docker-compose v2 required)." >&2
-  exit 1
-fi
-
-RPS_HOST_PORT="${RPS_HOST_PORT:-5137}"
-
-if [[ -f "${ROOT}/.env" ]]; then
-  echo "[setup] detected .env (optional overrides for compose interpolation)"
-else
-  echo "[setup] no .env found (OK). Secrets will be auto-generated inside the container and persisted in the rps_data volume."
-fi
-
-echo "[setup] starting services (redis + rps) on http://127.0.0.1:${RPS_HOST_PORT}"
-docker compose up -d
-
-echo "[setup] done"
-echo "Next:"
-echo "  - View logs: docker compose logs -f rps"
-echo "  - Stop:      docker compose down"
+exec "${ROOT}/bin/install-app"

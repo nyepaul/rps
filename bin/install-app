@@ -1,0 +1,156 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
+APP_NAME="RPS"
+DOCKER_REPO_URL="https://download.docker.com/linux"
+COMPOSE_CMD=()
+SUDO_CMD=()
+OS_NAME="$(uname -s)"
+
+log() {
+  printf '[install:%s] %s\n' "$APP_NAME" "$1"
+}
+
+fail() {
+  printf '[install:%s] ERROR: %s\n' "$APP_NAME" "$1" >&2
+  exit 1
+}
+
+init_sudo() {
+  if [[ ${EUID:-$(id -u)} -eq 0 ]]; then
+    SUDO_CMD=()
+  elif command -v sudo >/dev/null 2>&1; then
+    SUDO_CMD=(sudo)
+  else
+    fail "docker is missing and sudo is unavailable; install Docker Engine + Compose v2 manually"
+  fi
+}
+
+resolve_compose() {
+  if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+    COMPOSE_CMD=(docker compose)
+    return 0
+  fi
+  if command -v docker-compose >/dev/null 2>&1; then
+    COMPOSE_CMD=(docker-compose)
+    return 0
+  fi
+  return 1
+}
+
+wait_for_docker() {
+  local timeout="${1:-60}"
+  local elapsed=0
+  while (( elapsed < timeout )); do
+    if docker info >/dev/null 2>&1 && resolve_compose; then
+      return 0
+    fi
+    sleep 2
+    elapsed=$((elapsed + 2))
+  done
+  return 1
+}
+
+install_docker_linux() {
+  init_sudo
+
+  if ! command -v apt-get >/dev/null 2>&1; then
+    fail "automatic Docker installation on Linux currently supports apt-based Ubuntu/Debian hosts only"
+  fi
+
+  if [[ ! -r /etc/os-release ]]; then
+    fail "cannot detect Linux distribution from /etc/os-release"
+  fi
+
+  # shellcheck disable=SC1091
+  source /etc/os-release
+
+  if [[ "${ID:-}" != "ubuntu" && "${ID:-}" != "debian" ]]; then
+    fail "automatic Docker installation on Linux supports Ubuntu/Debian; detected '${ID:-unknown}'"
+  fi
+
+  local codename="${VERSION_CODENAME:-}"
+  local gpg_url="${DOCKER_REPO_URL}/${ID}/gpg"
+  if [[ -z "$codename" && -n "${UBUNTU_CODENAME:-}" ]]; then
+    codename="$UBUNTU_CODENAME"
+  fi
+  [[ -n "$codename" ]] || fail "unable to determine distro codename for Docker apt repo"
+
+  log "installing Docker Engine and Compose plugin"
+  "${SUDO_CMD[@]}" apt-get update
+  "${SUDO_CMD[@]}" apt-get install -y ca-certificates curl gnupg
+  "${SUDO_CMD[@]}" install -m 0755 -d /etc/apt/keyrings
+
+  local tmp_gpg
+  tmp_gpg="$(mktemp)"
+  curl -fsSL "$gpg_url" -o "$tmp_gpg"
+  "${SUDO_CMD[@]}" gpg --dearmor -o /etc/apt/keyrings/docker.gpg "$tmp_gpg"
+  rm -f "$tmp_gpg"
+  "${SUDO_CMD[@]}" chmod a+r /etc/apt/keyrings/docker.gpg
+
+  printf 'deb [arch=%s signed-by=/etc/apt/keyrings/docker.gpg] %s/%s %s stable\n' \
+    "$(dpkg --print-architecture)" "$DOCKER_REPO_URL" "${ID}" "$codename" \
+    | "${SUDO_CMD[@]}" tee /etc/apt/sources.list.d/docker.list >/dev/null
+
+  "${SUDO_CMD[@]}" apt-get update
+  "${SUDO_CMD[@]}" apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  "${SUDO_CMD[@]}" systemctl enable --now docker >/dev/null 2>&1 || true
+
+  local target_user="${SUDO_USER:-${USER:-}}"
+  if [[ -n "$target_user" && "$target_user" != "root" ]] && id -u "$target_user" >/dev/null 2>&1; then
+    "${SUDO_CMD[@]}" usermod -aG docker "$target_user" || true
+    log "added ${target_user} to the docker group; a new login may be required before docker works without sudo"
+  fi
+}
+
+install_docker_macos() {
+  command -v brew >/dev/null 2>&1 || fail "automatic Docker installation on macOS requires Homebrew"
+  log "installing Docker Desktop with Homebrew"
+  brew install --cask docker
+  if command -v open >/dev/null 2>&1; then
+    open -a Docker >/dev/null 2>&1 || true
+  fi
+}
+
+install_docker_if_needed() {
+  if command -v docker >/dev/null 2>&1 && resolve_compose && docker info >/dev/null 2>&1; then
+    return 0
+  fi
+
+  case "$OS_NAME" in
+    Linux)
+      install_docker_linux
+      ;;
+    Darwin)
+      install_docker_macos
+      ;;
+    *)
+      fail "unsupported host OS '$OS_NAME'; use the PowerShell installer on Windows"
+      ;;
+  esac
+
+  wait_for_docker 90 || fail "Docker was installed but is not ready yet; start Docker Desktop or re-login, then rerun this script"
+}
+
+install_docker_if_needed
+
+if [[ -f "${ROOT}/.env" ]]; then
+  log "detected .env for compose interpolation overrides"
+else
+  log "no .env found; container will auto-generate secrets into Docker volumes on first boot"
+fi
+
+log "pulling application images"
+"${COMPOSE_CMD[@]}" pull
+
+RPS_HOST_PORT="${RPS_HOST_PORT:-5137}"
+log "starting services on http://127.0.0.1:${RPS_HOST_PORT}"
+"${COMPOSE_CMD[@]}" up -d
+
+log "install complete"
+printf 'Next: %s\n' \
+  "'${COMPOSE_CMD[*]} logs -f rps'" \
+  "'${COMPOSE_CMD[*]} down'"

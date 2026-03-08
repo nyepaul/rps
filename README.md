@@ -23,10 +23,16 @@ A local-first financial planning application for Monte Carlo retirement simulati
 # Configure AI features (optional)
 ./bin/setup-api-keys
 
-# Start RPS (Docker Compose + Redis, localhost only)
-./bin/start
+# Install/start RPS on macOS/Linux
+./bin/install-app
 
 # Open http://127.0.0.1:5137
+```
+
+On Windows PowerShell:
+
+```powershell
+.\bin\install-app.ps1
 ```
 
 ### Docker Localhost Runtime (Recommended)
@@ -46,7 +52,7 @@ On first boot, the container will:
 
 You can also use the helper:
 ```bash
-./bin/docker-setup
+./bin/install-app
 ```
 
 ## Prerequisites
@@ -59,7 +65,9 @@ You can also use the helper:
 | Command | Description |
 |---------|-------------|
 | `./bin/start` | Start RPS (Docker Compose + Redis) |
-| `./bin/docker-setup` | Start Docker Compose runtime (Redis included; secrets auto-init on first boot) |
+| `./bin/install-app` | Install Docker if needed, pull the RPS image, and start the Docker runtime |
+| `.\bin\install-app.ps1` | Windows PowerShell installer that installs Docker Desktop if needed and starts RPS |
+| `./bin/docker-setup` | Compatibility wrapper for `./bin/install-app` |
 | `./bin/check-env-consistency` | Verify dev/prod dependency config is aligned |
 | `./bin/check-no-secrets` | Scan tracked files for secret-like tokens |
 | `./bin/check-repo-hygiene` | Block committing generated/local artifacts |
