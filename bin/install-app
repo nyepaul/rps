@@ -8,6 +8,7 @@ APP_NAME="RPS"
 DOCKER_REPO_URL="https://download.docker.com/linux"
 COMPOSE_CMD=()
 SUDO_CMD=()
+DOCKER_CMD=()
 OS_NAME="$(uname -s)"
 
 log() {
@@ -29,15 +30,35 @@ init_sudo() {
   fi
 }
 
-resolve_compose() {
-  if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
-    COMPOSE_CMD=(docker compose)
-    return 0
+select_docker_runner() {
+  if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+    DOCKER_CMD=(docker)
+    if docker compose version >/dev/null 2>&1; then
+      COMPOSE_CMD=(docker compose)
+      return 0
+    fi
   fi
+
+  if [[ "$OS_NAME" == "Linux" ]] && [[ ${#SUDO_CMD[@]} -gt 0 ]] && command -v docker >/dev/null 2>&1; then
+    if "${SUDO_CMD[@]}" docker info >/dev/null 2>&1; then
+      DOCKER_CMD=("${SUDO_CMD[@]}" docker)
+      if "${SUDO_CMD[@]}" docker compose version >/dev/null 2>&1; then
+        COMPOSE_CMD=("${SUDO_CMD[@]}" docker compose)
+        return 0
+      fi
+      if command -v docker-compose >/dev/null 2>&1; then
+        COMPOSE_CMD=("${SUDO_CMD[@]}" docker-compose)
+        return 0
+      fi
+    fi
+  fi
+
   if command -v docker-compose >/dev/null 2>&1; then
     COMPOSE_CMD=(docker-compose)
+    DOCKER_CMD=(docker)
     return 0
   fi
+
   return 1
 }
 
@@ -45,7 +66,7 @@ wait_for_docker() {
   local timeout="${1:-60}"
   local elapsed=0
   while (( elapsed < timeout )); do
-    if docker info >/dev/null 2>&1 && resolve_compose; then
+    if select_docker_runner; then
       return 0
     fi
     sleep 2
@@ -116,7 +137,9 @@ install_docker_macos() {
 }
 
 install_docker_if_needed() {
-  if command -v docker >/dev/null 2>&1 && resolve_compose && docker info >/dev/null 2>&1; then
+  init_sudo
+
+  if select_docker_runner; then
     return 0
   fi
 
@@ -137,7 +160,7 @@ install_docker_if_needed() {
 
 install_docker_if_needed
 
-if [[ -f "${ROOT}/.env" ]]; then
+  if [[ -f "${ROOT}/.env" ]]; then
   log "detected .env for compose interpolation overrides"
 else
   log "no .env found; container will auto-generate secrets into Docker volumes on first boot"

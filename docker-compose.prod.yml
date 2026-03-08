@@ -7,9 +7,7 @@ services:
     restart: unless-stopped
 
   rps:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
+    image: ${RPS_IMAGE:-ghcr.io/nyepaul/rps:latest}
     depends_on:
       - redis
     ports:

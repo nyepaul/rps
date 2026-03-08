@@ -7,9 +7,7 @@ services:
     restart: unless-stopped
 
   rps:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
+    image: ${RPS_IMAGE:-ghcr.io/nyepaul/rps:latest}
     # Rootless docker runs in user-namespace; container root maps to the host user.
     # Run as root inside the container so bind-mounted SQLite/dirs remain writable.
     user: "0:0"

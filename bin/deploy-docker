@@ -15,6 +15,7 @@ SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TARGET_DIR="/var/www/rps.pan2.app"
 SERVICE_NAME="rps"
 DOCKER_MODE="${RPS_DOCKER_MODE:-rootful}" # rootful|rootless
+RPS_IMAGE="ghcr.io/nyepaul/rps:latest"
 
 echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${GREEN}║              RPS Docker Deployment to Production               ║${NC}"
@@ -143,12 +144,22 @@ if [[ "$DOCKER_MODE" == "rootless" ]]; then
   echo "  ✓ rootful stack stopped (if it was running)"
 
   echo -e "${YELLOW}→ Building docker image (rootless daemon)...${NC}"
-  sudo -u paul env DOCKER_HOST=unix:///run/user/1000/docker.sock docker compose -f docker-compose.prod.rootless.yml build
-  echo "  ✓ Image built (rootless)"
+  if sudo -u paul env DOCKER_HOST=unix:///run/user/1000/docker.sock docker pull "${RPS_IMAGE}"; then
+    echo "  ✓ Pulled ${RPS_IMAGE} (rootless)"
+  else
+    echo "  ℹ Pull failed; building ${RPS_IMAGE} locally (rootless)"
+    sudo -u paul env DOCKER_HOST=unix:///run/user/1000/docker.sock docker build -f docker/Dockerfile -t "${RPS_IMAGE}" .
+    echo "  ✓ Image built (rootless)"
+  fi
 else
-  echo -e "${YELLOW}→ Building docker image...${NC}"
-  docker compose -f docker-compose.prod.yml build
-  echo "  ✓ Image built"
+  echo -e "${YELLOW}→ Resolving docker image...${NC}"
+  if docker pull "${RPS_IMAGE}"; then
+    echo "  ✓ Pulled ${RPS_IMAGE}"
+  else
+    echo "  ℹ Pull failed; building ${RPS_IMAGE} locally"
+    docker build -f docker/Dockerfile -t "${RPS_IMAGE}" .
+    echo "  ✓ Image built"
+  fi
 fi
 
 echo -e "${YELLOW}→ Starting service...${NC}"
