@@ -1,5 +1,5 @@
 {
-    "version": "3.10.12",
-    "release_date": "2026-02-28",
-    "release_notes": "Frontend redesign: Sage & Amber design system with typography, animations, and modal enhancements"
+    "version": "3.10.13",
+    "release_date": "2026-03-08",
+    "release_notes": "Rootless Docker runtime hardening and deployment ownership fixes"
 }

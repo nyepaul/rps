@@ -61,11 +61,25 @@ echo -e "${YELLOW}→ Ensuring data/log directories exist...${NC}"
 mkdir -p "$TARGET_DIR/data" "$TARGET_DIR/logs" "$TARGET_DIR/backups" "$TARGET_DIR/data/redis"
 echo "  ✓ Directories ready"
 
+echo -e "${YELLOW}→ Normalizing deployment ownership...${NC}"
+chown -R paul:paul "$TARGET_DIR"
+find "$TARGET_DIR" -type d -exec chmod 755 {} \;
+find "$TARGET_DIR" -type f -exec chmod 644 {} \;
+find "$TARGET_DIR/bin" "$TARGET_DIR/scripts" -type f -exec chmod 755 {} \; 2>/dev/null || true
+find "$TARGET_DIR/docker" -type f -name '*.sh' -exec chmod 755 {} \; 2>/dev/null || true
+echo "  ✓ Code owned by paul:paul"
+
 if [[ "$DOCKER_MODE" == "rootless" ]]; then
   echo -e "${YELLOW}→ Ensuring bind-mount permissions for rootless runtime...${NC}"
   # Rootless containers run with host UID/GID permissions. Ensure the service user can write.
   chown -R paul:paul "$TARGET_DIR/data" "$TARGET_DIR/logs" "$TARGET_DIR/backups"
+  chmod -R 775 "$TARGET_DIR/data" "$TARGET_DIR/logs" "$TARGET_DIR/backups"
   echo "  ✓ Ownership set (paul:paul)"
+else
+  echo -e "${YELLOW}→ Ensuring bind-mount permissions for rootful runtime...${NC}"
+  chown -R www-data:www-data "$TARGET_DIR/data" "$TARGET_DIR/logs" "$TARGET_DIR/backups"
+  chmod -R 775 "$TARGET_DIR/data" "$TARGET_DIR/logs" "$TARGET_DIR/backups"
+  echo "  ✓ Runtime dirs owned by www-data:www-data"
 fi
 
 echo -e "${YELLOW}→ Backing up database (if present)...${NC}"
@@ -89,12 +103,16 @@ if [[ "$DOCKER_MODE" == "rootless" ]]; then
     chown paul:paul "$TARGET_DIR/.env.production.rootless"
     chmod 600 "$TARGET_DIR/.env.production.rootless"
   fi
+  chown paul:paul "$TARGET_DIR/.env.production.rootless"
+  chmod 600 "$TARGET_DIR/.env.production.rootless"
   echo "  ✓ .env.production.rootless present"
 else
   if [[ ! -f "$TARGET_DIR/.env.production" ]]; then
     echo -e "${RED}ERROR:${NC} missing $TARGET_DIR/.env.production (must include SECRET_KEY and ENCRYPTION_KEY)." >&2
     exit 2
   fi
+  chown root:www-data "$TARGET_DIR/.env.production"
+  chmod 640 "$TARGET_DIR/.env.production"
   echo "  ✓ .env.production present"
 fi
 

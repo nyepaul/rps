@@ -12,6 +12,7 @@ STRICT_MIGRATIONS="${RPS_MIGRATIONS_STRICT:-true}"
 RUN_LEGACY_MIGRATIONS="${RPS_RUN_LEGACY_MIGRATIONS:-false}"
 SEED_DEMO="${RPS_SEED_DEMO:-true}"
 DROP_PRIVS="${RPS_DROP_PRIVS:-true}"
+FIX_VOLUME_OWNERSHIP="${RPS_FIX_VOLUME_OWNERSHIP:-true}"
 INIT_MARKER="${RPS_INIT_MARKER:-/app/data/.rps_initialized_v1}"
 AUTO_SECRETS="${RPS_AUTO_SECRETS:-true}"
 
@@ -108,7 +109,7 @@ else
 fi
 
 # If we're root, fix volume permissions so we can drop privileges safely.
-if [ "$(id -u)" -eq 0 ]; then
+if [ "$(id -u)" -eq 0 ] && [ "${FIX_VOLUME_OWNERSHIP}" = "true" ]; then
   chown -R appuser:appuser /app/data /app/logs /app/backups "${MPLCONFIGDIR}" 2>/dev/null || true
 fi
 

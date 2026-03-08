@@ -16,6 +16,7 @@ TARGET_DIR="/var/www/rps.pan2.app"
 APACHE_CONFIG_SOURCE="${SOURCE_DIR}/apache2/rps.pan2.app.conf"
 APACHE_CONFIG_TARGET="/etc/apache2/sites-available/rps.pan2.app.conf"
 SERVICE_NAME="rps"
+SERVICE_USER="rps"
 PREV_COMMIT_FILE="$TARGET_DIR/DEPLOYED_COMMIT"
 
 # --- 1. PRE-DEPLOYMENT INFO ---
@@ -41,6 +42,7 @@ echo -e "${YELLOW}🔧 Deployment Specifications:${NC}"
 echo "   Source Directory: $SOURCE_DIR"
 echo "   Target Directory: $TARGET_DIR"
 echo "   Service Name:     $SERVICE_NAME"
+echo "   Service User:     $SERVICE_USER"
 echo "   Python Version:   $(python3 --version | cut -d' ' -f2)"
 echo "   OS:               $(lsb_release -ds 2>/dev/null || cat /etc/os-release | grep PRETTY_NAME | cut -d'"' -f2 || uname -sr)"
 echo "   Disk Space:       $(df -h "$TARGET_DIR" | tail -1 | awk '{print $4 " available on " $6}')"
@@ -188,13 +190,28 @@ else
     echo -e "  ℹ Database will be created on first run"
 fi
 
-# Set ownership to www-data
+# Set ownership: code stays with paul, runtime state with www-data
 echo -e "${YELLOW}→ Setting permissions...${NC}"
-chown -R www-data:www-data "$TARGET_DIR"
-chmod -R 755 "$TARGET_DIR"
-chmod -R 775 "$TARGET_DIR/data"
-chmod -R 775 "$TARGET_DIR/logs"
-chmod -R 775 "$TARGET_DIR/backups" 2>/dev/null || mkdir -p "$TARGET_DIR/backups" && chmod -R 775 "$TARGET_DIR/backups"
+mkdir -p "$TARGET_DIR/backups" "$TARGET_DIR/.config/matplotlib"
+chown -R paul:paul "$TARGET_DIR"
+chown -R "$SERVICE_USER":"$SERVICE_USER" "$TARGET_DIR/data" "$TARGET_DIR/logs" "$TARGET_DIR/backups" "$TARGET_DIR/.config"
+find "$TARGET_DIR" \
+  \( -path "$TARGET_DIR/data" -o -path "$TARGET_DIR/logs" -o -path "$TARGET_DIR/backups" -o -path "$TARGET_DIR/.config" -o -path "$TARGET_DIR/venv" \) -prune \
+  -o -type d -exec chmod 755 {} \;
+find "$TARGET_DIR" \
+  \( -path "$TARGET_DIR/data" -o -path "$TARGET_DIR/logs" -o -path "$TARGET_DIR/backups" -o -path "$TARGET_DIR/.config" -o -path "$TARGET_DIR/venv" \) -prune \
+  -o -type f -exec chmod 644 {} \;
+find "$TARGET_DIR/bin" "$TARGET_DIR/scripts" -type f -exec chmod 755 {} \; 2>/dev/null || true
+chmod -R 770 "$TARGET_DIR/data" "$TARGET_DIR/logs" "$TARGET_DIR/backups" "$TARGET_DIR/.config"
+find "$TARGET_DIR/data" "$TARGET_DIR/logs" "$TARGET_DIR/backups" "$TARGET_DIR/.config" -type f -exec chmod 660 {} \;
+if [ -f "$TARGET_DIR/.env" ]; then
+    chown root:"$SERVICE_USER" "$TARGET_DIR/.env"
+    chmod 640 "$TARGET_DIR/.env"
+fi
+if [ -f "$TARGET_DIR/.env.production" ]; then
+    chown root:"$SERVICE_USER" "$TARGET_DIR/.env.production"
+    chmod 640 "$TARGET_DIR/.env.production"
+fi
 echo -e "  ✓ Permissions set"
 
 # Copy Apache configuration
@@ -214,8 +231,8 @@ After=network.target
 
 [Service]
 Type=simple
-User=www-data
-Group=www-data
+User=$SERVICE_USER
+Group=$SERVICE_USER
 WorkingDirectory=$TARGET_DIR
 Environment="PATH=$TARGET_DIR/venv/bin"
 Environment="MPLCONFIGDIR=$TARGET_DIR/.config/matplotlib"
@@ -381,3 +398,9 @@ echo -e "${GREEN}🚀 Deployed:${NC}     $(date '+%Y-%m-%d %H:%M:%S')"
 echo -e "${GREEN}Commit:${NC}       $GIT_COMMIT - $GIT_SUBJECT"
 echo -e "${GREEN}📝 Changes:${NC}      $RELEASE_NOTES"
 echo ""
+# Ensure a dedicated service user exists so the app does not share Apache's account.
+if ! id -u "$SERVICE_USER" >/dev/null 2>&1; then
+    echo -e "${YELLOW}→ Creating dedicated service account ($SERVICE_USER)...${NC}"
+    useradd --system --home-dir /var/lib/"$SERVICE_USER" --create-home --shell /usr/sbin/nologin "$SERVICE_USER"
+    echo -e "  ✓ Service account created"
+fi

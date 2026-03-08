@@ -30,6 +30,7 @@ services:
       - RPS_AUTO_SECRETS=false
       - RPS_SEED_DEMO=false
       - RPS_DROP_PRIVS=false
+      - RPS_FIX_VOLUME_OWNERSHIP=false
       # Ensure matplotlib cache is writable even with bind-mounts.
       - MPLCONFIGDIR=/tmp/matplotlib
     env_file:

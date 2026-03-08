@@ -1,4 +1,4 @@
-# Release Notes - Version 3.10.6
+# Release Notes - Version 3.10.13
 **Release Date:** 2026-01-22
 
 ## Critical Financial Calculation Fixes
