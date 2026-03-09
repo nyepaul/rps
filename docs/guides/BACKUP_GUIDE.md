@@ -740,7 +740,7 @@ exit 0
 ./bin/restore --latest --type database --yes
 
 # Verify application still works
-curl http://localhost:5137/api/health
+curl http://localhost:5137/health
 ```
 
 ### 2. Keep Multiple Backup Locations
