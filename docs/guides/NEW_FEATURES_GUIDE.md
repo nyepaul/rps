@@ -1,6 +1,6 @@
 # RPS New Features Guide
 
-**Version:** 3.10.13
+**Version:** 3.10.14
 **Date:** February 2026
 **Summary:** 2025 Tax Year Updates, AI Strategic Advisor, and Enhanced Financial Modeling
 
@@ -558,4 +558,4 @@ For issues, questions, or feature requests, please refer to the project reposito
 ---
 
 *Last Updated: February 2026*
-*RPS Version: 3.10.13*
+*RPS Version: 3.10.14*

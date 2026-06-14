@@ -419,4 +419,4 @@ Potential additions for future versions:
 ---
 
 **Last Updated**: February 27, 2026
-**Version**: 3.10.13 Professional Edition
+**Version**: 3.10.14 Professional Edition

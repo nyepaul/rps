@@ -109,5 +109,5 @@ Gemini has rate limits. Wait and retry, or use Claude as an alternative.
 
 ## Version
 
-**RPS Version**: 3.10.13
+**RPS Version**: 3.10.14
 **Last Updated**: February 27, 2026

@@ -1,5 +1,5 @@
 {
-    "version": "3.10.13",
-    "release_date": "2026-03-08",
-    "release_notes": "Rootless Docker runtime hardening and deployment ownership fixes"
+    "version": "3.10.14",
+    "release_date": "2026-06-14",
+    "release_notes": "Fix file ownership and version sync"
 }
