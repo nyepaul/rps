@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-RPS is a retirement and wealth planning system - a local-first financial planning application for Monte Carlo retirement simulations, tax optimization, and AI-powered financial advice. Version 3.10.14 with modular architecture. Licensed under **Apache License 2.0**.
+RPS is a retirement and wealth planning system - a local-first financial planning application for Monte Carlo retirement simulations, tax optimization, and AI-powered financial advice. Version 3.10.15 with modular architecture. Licensed under **Apache License 2.0**.
 
 **Authored by**: pan
 

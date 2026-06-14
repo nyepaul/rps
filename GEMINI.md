@@ -5,7 +5,7 @@ Project context for Google Gemini AI.
 ## Project: Retirement & Wealth Planning System (RPS)
 
 **Type**: Web Application (Flask/Vanilla JS)
-**Version**: 3.10.14
+**Version**: 3.10.15
 **Location**: `/home/paul/src/rps`
 **Manager**: `bin/manage` (Main CLI entry point)
 

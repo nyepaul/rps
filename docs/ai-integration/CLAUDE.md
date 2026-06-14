@@ -127,5 +127,5 @@ audit_log       -- Security and compliance logging
 - **Privacy First**: Never log or transmit sensitive financial data
 ## Version
 
-**RPS Version**: 3.10.14
+**RPS Version**: 3.10.15
 **Last Updated**: February 27, 2026

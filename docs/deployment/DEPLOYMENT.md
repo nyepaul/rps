@@ -2,7 +2,7 @@
 
 This guide covers deploying RPS to Apache2 with Cloudflare Tunnel.
 
-As of **2026-02-27**, RPS is intended to run **only** via Docker Compose (with Redis). Version: 3.10.14.
+As of **2026-02-27**, RPS is intended to run **only** via Docker Compose (with Redis). Version: 3.10.15.
 
 For the production Docker workflow, also see: `docs/deployment/PRODUCTION_DOCKER_DEPLOY.md`.
 

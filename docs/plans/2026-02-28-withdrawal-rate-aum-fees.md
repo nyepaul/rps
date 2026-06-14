@@ -655,7 +655,7 @@ git commit -m "feat: apply advisory fee drag to cashflow projection growth rate"
 **Step 1: Bump to 3.10.2**
 
 ```bash
-./bin/bump-version 3.10.14 "feat: configurable withdrawal rate and per-account advisory fee return drag"
+./bin/bump-version 3.10.15 "feat: configurable withdrawal rate and per-account advisory fee return drag"
 ```
 
 **Step 2: Run full test suite**
@@ -687,4 +687,4 @@ git commit -m "chore: bump to v3.10.2 - configurable withdrawal rate and advisor
 | `src/static/js/components/cashflow/cashflow-tab.js` | Compute and apply fee drag to frontend cashflow projection |
 | `tests/test_routes/test_analysis.py` | Tests for fee rate passthrough and drag computation |
 | `tests/test_services/test_retirement_model.py` | Test that fee drag reduces median outcome |
-| `src/static/version.json`, `src/static/index.html` | Version 3.10.14 |
+| `src/static/version.json`, `src/static/index.html` | Version 3.10.15 |
