@@ -1,5 +1,5 @@
 {
-    "version": "3.10.15",
-    "release_date": "2026-06-14",
-    "release_notes": "Fix Apache CSP overriding Flask font/CDN allowlist"
+    "version": "3.10.16",
+    "release_date": "2026-06-29",
+    "release_notes": "Fix stale Docker RPS health by ensuring Redis restarts with Compose"
 }

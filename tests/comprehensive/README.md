@@ -276,5 +276,5 @@ For questions or suggestions about the testing framework:
 ---
 
 **Last Updated:** 2026-01-22
-**Version:** 3.10.15
+**Version:** 3.10.16
 **Maintainer:** Claude Sonnet 4.5 / Paul Nye
