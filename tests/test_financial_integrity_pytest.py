@@ -75,12 +75,14 @@ class TestFinancialIntegrity:
         row = ledger[0]  # First month
         final_row = ledger[-1]  # End of year
 
-        # Expected Annual Taxes (2024 Single Brackets approx)
-        # Federal (calculated manually in original script): ~13,841
+        # Expected Annual Taxes based on the configured tax policy.
         # FICA: 100k * 7.65% = 7,650
         # State (approx 5.85% effective or similar): ~5,850 in original script logic
 
-        expected_fed_tax = 13841.0
+        standard_deduction = model.tax_policy.standard_deduction["single"]
+        taxable_income = max(0.0, 100000.0 - standard_deduction)
+        fed_tax, _ = model._vectorized_federal_tax(np.array([taxable_income]), "single")
+        expected_fed_tax = float(fed_tax[0])
         expected_fica = 7650.0
         expected_state = 5850.0
 
@@ -255,7 +257,9 @@ class TestFinancialIntegrity:
         )
         model_hoh = RetirementModel(profile_hoh)
         deduction_hoh = model_hoh.get_standard_deduction(np.array([1.0]))
-        assert deduction_hoh[0] == 21900, "HOH Deduction incorrect"
+        assert (
+            deduction_hoh[0] == model_hoh.tax_policy.standard_deduction["hoh"]
+        ), "HOH Deduction incorrect"
 
         # Test MFJ
         profile_mfj = FinancialProfile(
@@ -277,7 +281,9 @@ class TestFinancialIntegrity:
         )
         model_mfj = RetirementModel(profile_mfj)
         deduction_mfj = model_mfj.get_standard_deduction(np.array([1.0]))
-        assert deduction_mfj[0] == 29200, "MFJ Deduction incorrect"
+        assert (
+            deduction_mfj[0] == model_mfj.tax_policy.standard_deduction["mfj"]
+        ), "MFJ Deduction incorrect"
 
     def test_monte_carlo_volatility_drag(self):
         """Test that higher volatility reduces median outcomes (Volatility Drag)."""

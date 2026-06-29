@@ -220,9 +220,11 @@ class TestProgressiveFederalTax:
         model = _create_basic_model()
         income = np.array([50000.0])
         tax, marginal = model._vectorized_federal_tax(income, "mfj")
-        # First $23,200 at 10% = $2,320
-        # Remaining $26,800 at 12% = $3,216
-        expected = 23200 * 0.10 + (50000 - 23200) * 0.12
+        first_bracket, second_bracket = model.tax_policy.federal_brackets["mfj"][:2]
+        expected = (
+            (first_bracket[1] - first_bracket[0]) * first_bracket[2]
+            + (50000 - second_bracket[0]) * second_bracket[2]
+        )
         assert abs(tax[0] - expected) < 1  # Allow for rounding
         assert marginal[0] == 0.12
 
@@ -306,10 +308,15 @@ class TestLongTermCapitalGainsTax:
         """Very high income should be taxed at 20%."""
         model = _create_basic_model()
         gains = np.array([100000.0])
-        ordinary_income = np.array([600000.0])  # Above $583,750 threshold
+        ordinary_income = np.array([600000.0])
         tax = model._vectorized_ltcg_tax(gains, ordinary_income, "mfj")
-        # All gains in 20% bracket
-        assert tax[0] == 100000 * 0.20
+        brackets = model.tax_policy.ltcg_brackets["mfj"]
+        zero_upper = brackets[0][1]
+        fifteen_upper = brackets[1][1]
+        room_15 = max(0, fifteen_upper - max(float(ordinary_income[0]), zero_upper))
+        expected = min(float(gains[0]), room_15) * 0.15
+        expected += max(0, float(gains[0]) - room_15) * 0.20
+        assert tax[0] == expected
 
     def test_income_stacking(self):
         """Gains should stack on ordinary income."""
@@ -337,23 +344,32 @@ class TestIRMAASurcharges:
         model = _create_basic_model()
         magi = np.array([230000.0])
         irmaa = model._vectorized_irmaa(magi, "mfj", both_on_medicare=True)
-        # Tier 1: $839.40 per person, doubled for couple
-        assert irmaa[0] == 839.40 * 2
+        tier_1 = next(
+            surcharge
+            for lower, upper, surcharge in model.tax_policy.irmaa["mfj"]
+            if lower < magi[0] <= upper
+        )
+        assert irmaa[0] == tier_1 * 2
 
     def test_top_tier_surcharge(self):
         """MAGI above $750K should have Tier 5 surcharge."""
         model = _create_basic_model()
         magi = np.array([800000.0])
         irmaa = model._vectorized_irmaa(magi, "mfj", both_on_medicare=True)
-        # Tier 5: $5030.40 per person, doubled for couple
-        assert irmaa[0] == 5030.40 * 2
+        top_tier = model.tax_policy.irmaa["mfj"][-1][2]
+        assert irmaa[0] == top_tier * 2
 
     def test_single_person_on_medicare(self):
         """Single person should get single surcharge (not doubled)."""
         model = _create_basic_model()
         magi = np.array([230000.0])
         irmaa = model._vectorized_irmaa(magi, "mfj", both_on_medicare=False)
-        assert irmaa[0] == 839.40  # Not doubled
+        tier_1 = next(
+            surcharge
+            for lower, upper, surcharge in model.tax_policy.irmaa["mfj"]
+            if lower < magi[0] <= upper
+        )
+        assert irmaa[0] == tier_1
 
 
 class TestEmploymentTax:

@@ -466,7 +466,15 @@ def test_analysis_profile_strips_employment_streams_when_budget_income_synthesiz
 
     captured = []
 
-    def fake_monte_carlo(self, years, simulations, assumptions, spending_model="constant_real", market_periods=None):
+    def fake_monte_carlo(
+        self,
+        years,
+        simulations,
+        assumptions,
+        spending_model="constant_real",
+        market_periods=None,
+        **kwargs,
+    ):
         captured.append(
             {
                 "streams": list(self.profile.income_streams or []),
@@ -513,7 +521,15 @@ def test_analysis_profile_strips_employment_streams_when_budget_income_exists(cl
 
     captured = []
 
-    def fake_monte_carlo(self, years, simulations, assumptions, spending_model="constant_real", market_periods=None):
+    def fake_monte_carlo(
+        self,
+        years,
+        simulations,
+        assumptions,
+        spending_model="constant_real",
+        market_periods=None,
+        **kwargs,
+    ):
         captured.append(list(self.profile.income_streams or []))
         return {
             "success_rate": 0.85,
